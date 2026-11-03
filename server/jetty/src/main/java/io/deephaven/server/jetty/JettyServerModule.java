@@ -6,7 +6,9 @@ package io.deephaven.server.jetty;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.plugin.js.JsPluginRegistration;
+import io.deephaven.server.arrow.TransportCompression;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.runner.GrpcServer;
 import io.grpc.BindableService;
@@ -65,6 +67,10 @@ public interface JettyServerModule {
         serverBuilder.scheduledExecutorService(executor);
 
         serverBuilder.maxInboundMessageSize(maxMessageSize);
+        // only the types the server's configuration leaves enabled
+        serverBuilder.compressorRegistry(CompressionCodecs.compressorRegistry(TransportCompression.ENABLED_TYPES));
+        serverBuilder.decompressorRegistry(CompressionCodecs.decompressorRegistry(
+                TransportCompression.ENABLED_TYPES, TransportCompression.ENABLED_TYPES));
 
         serverBuilder.directExecutor();
 

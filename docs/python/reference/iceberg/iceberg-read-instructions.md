@@ -2,7 +2,10 @@
 title: IcebergReadInstructions
 ---
 
-The `IcebergReadInstructions` class specifies the instructions for reading Iceberg tables into Deephaven. These include column renames, table definitions, and special instructions for loading files from cloud storage.
+The `IcebergReadInstructions` class specifies the instructions for reading Iceberg tables into Deephaven. These include special instructions for loading files from cloud storage, the update mode, and the snapshot to read.
+
+> [!NOTE]
+> The `table_definition` and `column_renames` parameters are deprecated and have no effect. Passing either one only raises a `DeprecationWarning`. To choose columns, set their types, or map Deephaven column names to Iceberg fields, pass an [`UnboundResolver`](./unbound-resolver.md) to [`IcebergCatalogAdapter.load_table`](./iceberg-catalog-adapter.md) instead.
 
 ## Syntax
 
@@ -12,7 +15,8 @@ IcebergReadInstructions(
     data_instructions: S3Instructions = None,
     column_renames: Dict[str, str] = None,
     update_mode: IcebergUpdateMode = None,
-    snapshot_id: int = None
+    snapshot_id: int = None,
+    ignore_resolving_errors: bool = False,
 )
 ```
 
@@ -21,17 +25,17 @@ IcebergReadInstructions(
 <ParamTable>
 <Param name="table_definition" type="Union[Dict[str, DType], List[Column]]" Optional>
 
-The table definition. If not given, the definition is inferred from the Iceberg schema. Setting a definition guarantees the returned table has the given definition. This is mostly used to specify a subset of Iceberg schema columns.
+Deprecated. This parameter has no effect.
 
 </Param>
 <Param name="data_instructions" type="S3Instructions" Optional>
 
-Special instructions for reading data files from S3 cloud storage.
+Special instructions for reading data files from a non-local file system, such as S3. If not given, the data instructions are derived from the catalog.
 
 </Param>
 <Param name="column_renames" type="Dict[str, str]" Optional>
 
-A mapping of old to new column names for the table. If not given, the column names are the same as the Iceberg schema.
+Deprecated. This parameter has no effect.
 
 </Param>
 <Param name="update_mode" type="IcebergUpdateMode" Optional>
@@ -48,6 +52,11 @@ The update mode for the table. Options include:
 The snapshot ID to read. If not given, the most recent snapshot ID is used.
 
 </Param>
+<Param name="ignore_resolving_errors" type="bool" Optional>
+
+Whether to ignore unexpected errors when resolving columns. If `True`, Deephaven reads null values for a column in any data file where the column should be present but can't be resolved. These errors can be a sign of an incorrect resolver or name mapping, or of an Iceberg metadata or data problem. The default is `False`.
+
+</Param>
 </ParamTable>
 
 ## Methods
@@ -59,32 +68,6 @@ None.
 An `IcebergReadInstructions` is constructed directly from the class.
 
 ## Examples
-
-The following example creates an `IcebergReadInstructions` object that renames Iceberg columns `region` and `item_type` to `Area` and `Category` in Deephaven, respectively:
-
-```python order=null
-from deephaven.experimental import iceberg
-
-custom_instructions = iceberg.IcebergReadInstructions(
-    column_renames={"region": "Area", "item_type": "Category"}
-)
-```
-
-The following example creates an `IcebergReadInstructions` object that renames columns as well as specifies the table definition:
-
-```python order=null
-from deephaven.experimental import iceberg
-from deephaven import dtypes as dht
-
-custom_instructions = iceberg.IcebergReadInstructions(
-    column_renames={"region": "Area", "item_type": "Category", "unit_price": "Price"},
-    table_definition={
-        "Area": dht.string,
-        "Category": dht.string,
-        "Price": dht.double,
-    },
-)
-```
 
 The following example creates four `IcebergReadInstructions` objects. The first is for static Iceberg tables, the second is for Iceberg tables that can be manually refreshed, and the third and fourth are for Iceberg tables that will be refreshed automatically. The third uses the default value of 60 seconds, whereas the fourth sets the interval to 30 seconds.
 
@@ -137,6 +120,7 @@ iceberg_instructions = iceberg.IcebergReadInstructions(
 - [`IcebergTableWriter`](./iceberg-table-writer.md)
 - [`IcebergUpdateMode`](./iceberg-update-mode.md)
 - [`IcebergWriteInstructions`](./iceberg-write-instructions.md)
+- [`UnboundResolver`](./unbound-resolver.md)
 - [`SortOrderProvider`](./sort-order-provider.md)
 - [`TableParquetWriterOptions`](./table-parquet-writer-options.md)
 - [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.IcebergReadInstructions)

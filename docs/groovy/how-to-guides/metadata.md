@@ -140,7 +140,7 @@ The following methods report a table's current state: whether it is a blink, emp
 
 ### `isBlink`
 
-The [`isBlink`](../reference/table-operations/metadata/isBlink.md) method returns `true` if the source table is a [blink table](../conceptual/table-types.md#specialization-3-blink), and `false` otherwise. The static `miami` table is not a blink table. A [time table](./time-table.md#timetable-as-a-blink-table) built with `blinkTable(true)` is, because it keeps only the rows added in the current update cycle:
+The [`isBlink`](../reference/table-operations/metadata/isBlink.md) method returns `true` if the source table is a [blink table](../conceptual/table-types.md#specialization-3-blink), and `false` otherwise. The static `miami` table is not a blink table. A [time table](./time-table.md#create-a-blink-time-table) built with `blinkTable(true)` is, because it keeps only the rows added in the current update cycle:
 
 ```groovy test-set=2 ticking-table order=:log
 liveBlink = timeTableBuilder().period("PT1s").blinkTable(true).build()
@@ -196,7 +196,7 @@ println miami.size()
 
 ### `getUpdateGraph`
 
-To get the [UpdateGraph](../conceptual/dag.md#update-graph-ug-cycles) that schedules a table's updates, use [`getUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/NotificationQueue.Dependency.html#getUpdateGraph()):
+To get the [UpdateGraph](../conceptual/dag.md#update-graph-cycles) that schedules a table's updates, use [`getUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/NotificationQueue.Dependency.html#getUpdateGraph()):
 
 ```groovy test-set=2 order=:log
 println miami.getUpdateGraph()

@@ -154,4 +154,4 @@ source = empty_table(1).update(
 - [Build and launch Deephaven from source code](../getting-started/launch-build.md)
 - [How to use Java packages in query strings](./install-and-use-java-packages.md#use-java-packages-in-query-strings)
 - [How to use jpy](./use-jpy.md)
-- [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)
+- [Access your file system with Docker bind mounts](../conceptual/docker-data-volumes.md)

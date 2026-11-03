@@ -3,7 +3,7 @@ title: merge
 slug: ./merge
 ---
 
-`merge` combines two or more tables into one aggregate table. This essentially appends the tables one on top of the other. Null tables are ignored.
+`merge` combines two or more tables into one aggregate table. This essentially appends the tables one on top of the other. It skips `null` tables, but at least one table must be non-null.
 
 ## Syntax
 
@@ -20,7 +20,7 @@ merge(theList)
 Source tables to be merged.
 
 - The tables to be merged must include the same columns of the same type.
-- Null inputs are skipped.
+- `null` inputs are skipped. If every input is `null`, `merge` throws an `IllegalArgumentException`.
 
 </Param>
 <Param name="tables" type="Collection<Table>">
@@ -28,7 +28,7 @@ Source tables to be merged.
 Source tables to be merged.
 
 - The tables to be merged must include the same columns of the same type.
-- Null inputs are skipped.
+- `null` inputs are skipped. If every input is `null`, `merge` throws an `IllegalArgumentException`.
 
 </Param>
 <Param name="theList" type="List<Table>">
@@ -36,7 +36,7 @@ Source tables to be merged.
 Source tables to be merged.
 
 - The tables to be merged must include the same columns of the same type.
-- Null inputs are skipped.
+- `null` inputs are skipped. If every input is `null`, `merge` throws an `IllegalArgumentException`.
 
 </Param>
 </ParamTable>

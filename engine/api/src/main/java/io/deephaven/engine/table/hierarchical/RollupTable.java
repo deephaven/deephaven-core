@@ -83,9 +83,11 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
 
     /**
      * Apply a filter to the source table for this RollupTable before applying the rollup operation. This filter must
-     * use only non-aggregate columns and must not use column arrays.
+     * use only non-aggregate columns and must not have cross-row dependencies (virtual row variables or column arrays);
+     * apply such a filter to the source table before the rollup instead.
      *
-     * @param filter The filter to apply; must only reference non-aggregate columns and must not use column arrays
+     * @param filter The filter to apply; must only reference non-aggregate columns and must not have cross-row
+     *        dependencies
      * @return The new RollupTable
      */
     RollupTable withFilter(Filter filter);

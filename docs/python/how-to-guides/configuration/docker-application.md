@@ -106,7 +106,7 @@ RUN pip install some-awesome-package
 
 ### Standard images
 
-- `ghcr.io/deephaven/server`: Deephaven's server-side Python API. Includes jpy, deephaven-plugin, numpy, pandas, numba, and deephaven-ui.
+- `ghcr.io/deephaven/server`: Deephaven's server-side Python API. Includes jpy, deephaven-plugin, numpy, pandas, and deephaven-ui, plus Numba in 43.0 and later.
 - `ghcr.io/deephaven/server-slim`: Deephaven's server-side Groovy API.
 
 ### Extended Python images

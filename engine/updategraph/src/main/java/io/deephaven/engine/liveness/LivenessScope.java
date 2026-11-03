@@ -48,6 +48,8 @@ public class LivenessScope extends ReferenceCountedLivenessNode implements Relea
         }
         if (other instanceof ReferenceCountedLivenessNode) {
             tracker.transferReferencesTo(((ReferenceCountedLivenessNode) other).tracker);
+        } else if (other instanceof StandaloneLivenessManager) {
+            tracker.transferReferencesTo(((StandaloneLivenessManager) other).tracker);
         } else if (other instanceof PermanentLivenessManager) {
             tracker.makeReferencesPermanent();
         } else {

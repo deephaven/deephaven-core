@@ -1,0 +1,1 @@
+{"file":"conceptual/deephaven-mental-model.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"X","type":"int"},{"name":"RunningTotal","type":"long"}],"rows":[[{"value":"1"},{"value":"1"}],[{"value":"2"},{"value":"3"}],[{"value":"3"},{"value":"6"}],[{"value":"4"},{"value":"10"}],[{"value":"5"},{"value":"15"}]]}}}}

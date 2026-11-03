@@ -95,7 +95,7 @@ docker run --rm -p 10000:10000 my-deephaven-image
 
 ### Standard images
 
-- `ghcr.io/deephaven/server`: Deephaven's server-side Python API. Includes jpy, deephaven-plugin, numpy, pandas, numba, and deephaven-ui.
+- `ghcr.io/deephaven/server`: Deephaven's server-side Python API. Includes jpy, deephaven-plugin, numpy, pandas, and deephaven-ui, plus Numba in 43.0 and later.
 - `ghcr.io/deephaven/server-slim`: Deephaven's server-side Groovy API.
 
 ### Debugging

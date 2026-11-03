@@ -1,5 +1,5 @@
 [versions]
-adbc = "0.24.0"
+adbc = "0.25.0"
 airlift = "2.0.3"
 arrow = "19.0.0"
 autoservice = "1.1.1"
@@ -39,7 +39,7 @@ groovy = "3.0.25"
 
 # Only bump this in concert with netty (which will update boringssl). See the dependency matrix
 # for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
-grpc = "1.85.0"
+grpc = "1.85.1"
 netty = "4.2.19.Final"
 
 protobuf-gwt='4.33.4-1'
@@ -56,7 +56,7 @@ hdrhistogram = "2.2.2"
 iceberg = "1.12.0"
 immutables = "2.12.3"
 jackson = "2.22.4"
-jakarta-servlet = "6.0.0"
+jakarta-servlet = "6.1.0"
 jakarta-websocket = "2.2.0"
 jama = "1.1.1"
 javaparser = "3.28.2"
@@ -70,11 +70,11 @@ jpy = "2.2.0"
 jsinterop = "2.1.0"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.2.0"
-logback = "1.6.5"
-lz4 = "1.12.0"
+logback = "1.6.6"
+lz4 = "1.12.1"
 mindrot = "0.4"
 nidi = "0.18.1"
-oshi = "7.7.1"
+oshi = "7.7.2"
 pac4j = "5.7.9"
 parquet = "1.18.1"
 picocli = "4.7.7"
@@ -87,6 +87,7 @@ rewrite-java = "8.90.4"
 selenium = "4.51.0"
 slf4j = "2.0.20"
 snappy = "1.1.10.12"
+zstd-jni = "1.5.7-24"
 javapoet = "0.22.0"
 ayza = "10.1.0"
 tdunning = "3.3"
@@ -319,6 +320,8 @@ slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" 
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "snappy" }
+
+zstd-jni = { module = "com.github.luben:zstd-jni", version.ref = "zstd-jni" }
 
 javapoet = { module = "com.palantir.javapoet:javapoet", version.ref = "javapoet" }
 

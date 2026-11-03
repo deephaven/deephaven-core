@@ -169,7 +169,7 @@ at io.deephaven.dynamic.Script_6.run(Script_6.groovy:8)                    // f(
 ```
 
 > [!NOTE]
-> Groovy closures appear in stack traces as `Script_N$_run_closureM`, where `M` is a number based on the closure's position in the script. This is how the Groovy compiler names anonymous closures internally. A named method would appear as `Script_N.methodName`. For more on closures, see [Groovy closures](./groovy-closures.md).
+> Groovy closures appear in stack traces as `Script_N$_run_closureM`, where `M` is a number based on the closure's position in the script. This is how the Groovy compiler names anonymous closures internally. A named method would appear as `Script_N.methodName`. For more on closures, see [Groovy closures in queries](./groovy-closures.md).
 
 Now let's add another level of depth. The closure `g` calls `f` and accumulates the results:
 
@@ -593,7 +593,7 @@ The formula string in the error is `Y = Math.floorDiv((long)1, X)`—preserved e
 ## Related documentation
 
 - [Triage errors in queries](./triage-errors.md)
-- [Groovy closures](./groovy-closures.md)
+- [Groovy closures in queries](./groovy-closures.md)
 - [Formulas](./formulas.md)
 - [Use filters in query strings](./use-filters.md)
 - [Create and work with time tables](./time-table.md)

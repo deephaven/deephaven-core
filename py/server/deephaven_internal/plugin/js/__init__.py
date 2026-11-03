@@ -5,8 +5,9 @@
 import pathlib
 
 import jpy
-from deephaven.jcompat import j_json_value
 from deephaven.plugin.js import JsPlugin
+
+from deephaven.jcompat import j_json_value
 
 _JJsPlugin = jpy.get_type("io.deephaven.plugin.js.JsPlugin")
 _JPath = jpy.get_type("java.nio.file.Path")

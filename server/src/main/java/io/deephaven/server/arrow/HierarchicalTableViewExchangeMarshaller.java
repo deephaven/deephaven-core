@@ -10,6 +10,7 @@ import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
@@ -48,6 +49,11 @@ public class HierarchicalTableViewExchangeMarshaller implements ExchangeMarshall
     @Override
     public boolean accept(final Object export) {
         return export instanceof HierarchicalTableView;
+    }
+
+    @Override
+    public AttributeMap<?> attributesFor(final Object export) {
+        return ((HierarchicalTableView) export).getHierarchicalTable();
     }
 
     @Override

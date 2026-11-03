@@ -91,6 +91,7 @@ createJmhTask('jmhRunNullableLongLongMap', 'NullableLongLongMapBench')
 createJmhTask('jmhRunPercentileBy', 'PercentileByBenchmark', [], '12g')
 createJmhTask('jmhRunPositionalSelect', 'PositionalSelectBenchmark', [], '32g')
 createJmhTask('jmhRunPositionalSelectRead', 'PositionalSelectReadBenchmark', [], '16g')
+createJmhTask('jmhRunAggregationKeyMatchFilter', 'AggregationKeyMatchFilterBenchmark', [], '31g')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->

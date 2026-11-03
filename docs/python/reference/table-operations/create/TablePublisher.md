@@ -32,7 +32,7 @@ The blink table's column definitions. See [`TableDefinitionLike`](./TableDefinit
 </Param>
 <Param name="on_flush_callback" type="Callable" optional>
 
-The on-flush callback, if present, is called once at the beginning of each update graph cycle. It allows publishers to add any data they may have been batching. This blocks the update cycle from proceeding, so implements should take care not to do extraneous work. The default is `None`.
+The on-flush callback, if present, is called once at the beginning of each update graph cycle. It allows publishers to add any data they may have been batching. This blocks the update cycle from proceeding, so implementations should take care not to do extraneous work. The default is `None`.
 
 </Param>
 <Param name="on_shutdown_callback" type="Callable" optional>

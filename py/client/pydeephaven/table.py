@@ -7,7 +7,7 @@ data."""
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 import pyarrow as pa
 
@@ -50,9 +50,9 @@ class Table(TableInterface["Table"], ServerObject):
         session: Session,
         ticket: Ticket,
         schema_header: bytes = b"",
-        size: Optional[int] = None,
-        is_static: Optional[bool] = None,
-        schema: Optional[pa.Schema] = None,
+        size: int | None = None,
+        is_static: bool | None = None,
+        schema: pa.Schema | None = None,
     ):
         ServerObject.__init__(self, type="Table", ticket=ticket)
         if not session or not session.is_alive:
@@ -63,7 +63,7 @@ class Table(TableInterface["Table"], ServerObject):
         self.size = size
         if not schema:
             self._parse_schema(schema_header)
-        self._meta_table: Optional[Table] = None
+        self._meta_table: Table | None = None
         self._closed: bool = False
 
     def __del__(self) -> None:
@@ -129,7 +129,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return self.session.flight_service.do_get_table(self)
 
-    def drop_columns(self, cols: Union[str, list[str]]) -> Table:
+    def drop_columns(self, cols: str | list[str]) -> Table:
         """The drop_column method creates a new table with the same size as this table but omits any of the specified
         columns.
 
@@ -144,7 +144,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().drop_columns(cols)
 
-    def update(self, formulas: Union[str, list[str]]) -> Table:
+    def update(self, formulas: str | list[str]) -> Table:
         """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
@@ -158,7 +158,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().update(formulas)
 
-    def lazy_update(self, formulas: Union[str, list[str]]) -> Table:
+    def lazy_update(self, formulas: str | list[str]) -> Table:
         """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
 
         Args:
@@ -172,7 +172,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().lazy_update(formulas)
 
-    def view(self, formulas: Union[str, list[str]]) -> Table:
+    def view(self, formulas: str | list[str]) -> Table:
         """The view method creates a new formula table that includes one column for each formula.
 
         Args:
@@ -186,7 +186,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().view(formulas)
 
-    def update_view(self, formulas: Union[str, list[str]]) -> Table:
+    def update_view(self, formulas: str | list[str]) -> Table:
         """The update_view method creates a new table containing a new, formula column for each formula.
 
         Args:
@@ -200,7 +200,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().update_view(formulas)
 
-    def select(self, formulas: Optional[Union[str, list[str]]] = None) -> Table:
+    def select(self, formulas: str | list[str] | None = None) -> Table:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
 
@@ -215,7 +215,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().select(formulas)
 
-    def select_distinct(self, cols: Optional[Union[str, list[str]]] = None) -> Table:
+    def select_distinct(self, cols: str | list[str] | None = None) -> Table:
         """The select_distinct method creates a new table containing all the unique values for a set of key columns.
         When the selectDistinct method is used on multiple columns, it looks for distinct sets of values in the
         selected columns.
@@ -233,8 +233,8 @@ class Table(TableInterface["Table"], ServerObject):
 
     def sort(
         self,
-        order_by: Union[str, list[str]],
-        order: Optional[Union[SortDirection, list[SortDirection]]] = None,
+        order_by: str | list[str],
+        order: SortDirection | list[SortDirection] | None = None,
     ) -> Table:
         """The sort method creates a new table where the rows are ordered based on values in the specified set of
         columns.
@@ -253,7 +253,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().sort(order_by, order)
 
-    def sort_descending(self, order_by: Union[str, list[str]]) -> Table:
+    def sort_descending(self, order_by: str | list[str]) -> Table:
         """The sort_descending method creates a new table where rows in a table are sorted in descending
         order based on the order_by column(s).
 
@@ -270,7 +270,7 @@ class Table(TableInterface["Table"], ServerObject):
         order = SortDirection.DESCENDING
         return super().sort(order_by, order)
 
-    def where(self, filters: Union[str, list[str], Filter, list[Filter]]) -> Table:
+    def where(self, filters: str | list[str] | Filter | list[Filter]) -> Table:
         """The where method creates a new table with only the rows meeting the filter criteria in the column(s) of
         the table.
 
@@ -316,8 +316,8 @@ class Table(TableInterface["Table"], ServerObject):
     def natural_join(
         self,
         table: Table,
-        on: Union[str, list[str]],
-        joins: Optional[Union[str, list[str]]] = None,
+        on: str | list[str],
+        joins: str | list[str] | None = None,
         type: NaturalJoinType = NaturalJoinType.ERROR_ON_DUPLICATE,
     ) -> Table:
         """The natural_join method creates a new table containing all the rows and columns of this table,
@@ -346,8 +346,8 @@ class Table(TableInterface["Table"], ServerObject):
     def exact_join(
         self,
         table: Table,
-        on: Union[str, list[str]],
-        joins: Optional[Union[str, list[str]]] = None,
+        on: str | list[str],
+        joins: str | list[str] | None = None,
     ) -> Table:
         """The exact_join method creates a new table containing all the rows and columns of this table plus
         additional columns containing data from the right table. For columns appended to the left table (joins),
@@ -373,8 +373,8 @@ class Table(TableInterface["Table"], ServerObject):
     def join(
         self,
         table: Table,
-        on: Optional[Union[str, list[str]]] = None,
-        joins: Optional[Union[str, list[str]]] = None,
+        on: str | list[str] | None = None,
+        joins: str | list[str] | None = None,
         reserve_bits: int = 10,
     ) -> Table:
         """The join method creates a new table containing rows that have matching values in both tables. Rows that do
@@ -402,8 +402,8 @@ class Table(TableInterface["Table"], ServerObject):
     def aj(
         self,
         table: Table,
-        on: Union[str, list[str]],
-        joins: Optional[Union[str, list[str]]] = None,
+        on: str | list[str],
+        joins: str | list[str] | None = None,
     ) -> Table:
         """The aj (as-of join) method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
@@ -432,8 +432,8 @@ class Table(TableInterface["Table"], ServerObject):
     def raj(
         self,
         table: Table,
-        on: Union[str, list[str]],
-        joins: Optional[Union[str, list[str]]] = None,
+        on: str | list[str],
+        joins: str | list[str] | None = None,
     ) -> Table:
         """The raj (reverse as-of join) method creates a new table containing all the rows and columns of the left
         table, plus additional columns containing data from the right table. For columns appended to the left table (
@@ -459,7 +459,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().raj(table, on, joins)
 
-    def head_by(self, num_rows: int, by: Union[str, list[str]]) -> Table:
+    def head_by(self, num_rows: int, by: str | list[str]) -> Table:
         """The head_by method creates a new table containing the first number of rows for each group.
 
         Args:
@@ -474,7 +474,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().head_by(num_rows, by)
 
-    def tail_by(self, num_rows: int, by: Union[str, list[str]]) -> Table:
+    def tail_by(self, num_rows: int, by: str | list[str]) -> Table:
         """The tail_by method creates a new table containing the last number of rows for each group.
 
         Args:
@@ -489,7 +489,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().tail_by(num_rows, by)
 
-    def group_by(self, by: Optional[Union[str, list[str]]] = None) -> Table:
+    def group_by(self, by: str | list[str] | None = None) -> Table:
         """The group_by method creates a new table containing grouping columns and grouped data, column content is
         grouped into arrays.
 
@@ -508,7 +508,7 @@ class Table(TableInterface["Table"], ServerObject):
         return super().group_by(by)
 
     def ungroup(
-        self, cols: Optional[Union[str, list[str]]] = None, null_fill: bool = True
+        self, cols: str | list[str] | None = None, null_fill: bool = True
     ) -> Table:
         """The ungroup method creates a new table in which array columns from the source table are unwrapped into
         separate rows. The ungroup columns should be of array types.
@@ -526,7 +526,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().ungroup(cols, null_fill)
 
-    def first_by(self, by: Optional[Union[str, list[str]]] = None) -> Table:
+    def first_by(self, by: str | list[str] | None = None) -> Table:
         """The first_by method creates a new table which contains the first row of each distinct group.
 
         Args:
@@ -541,7 +541,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().first_by(by)
 
-    def last_by(self, by: Optional[Union[str, list[str]]] = None) -> Table:
+    def last_by(self, by: str | list[str] | None = None) -> Table:
         """The last_by method creates a new table which contains the last row of each distinct group.
 
         Args:
@@ -556,7 +556,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().last_by(by)
 
-    def sum_by(self, by: Optional[Union[str, list[str]]] = None) -> Table:
+    def sum_by(self, by: str | list[str] | None = None) -> Table:
         """The sum_by method creates a new table containing the sum for each group. Columns not used in the grouping
         must be of numeric types.
 
@@ -572,7 +572,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().sum_by(by)
 
-    def avg_by(self, by: Optional[Union[str, list[str]]] = None) -> Table:
+    def avg_by(self, by: str | list[str] | None = None) -> Table:
         """The avg_by method creates a new table containing the average for each group. Columns not used in the
         grouping must be of numeric types.
 
@@ -588,7 +588,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().avg_by(by)
 
-    def std_by(self, by: Optional[Union[str, list[str]]] = None) -> Table:
+    def std_by(self, by: str | list[str] | None = None) -> Table:
         """The std_by method creates a new table containing the sample standard deviation for each group. Columns not
         used in the grouping must be of numeric types.
 
@@ -607,7 +607,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().std_by(by)
 
-    def var_by(self, by: Optional[Union[str, list[str]]] = None) -> Table:
+    def var_by(self, by: str | list[str] | None = None) -> Table:
         """The var_by method creates a new table containing the sample variance for each group. Columns not used in the
         grouping must be of numeric types.
 
@@ -626,7 +626,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().var_by(by)
 
-    def median_by(self, by: Optional[Union[str, list[str]]] = None) -> Table:
+    def median_by(self, by: str | list[str] | None = None) -> Table:
         """The median_by method creates a new table containing the median for each group. Columns not used in the
         grouping must be of numeric types.
 
@@ -642,7 +642,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().median_by(by)
 
-    def min_by(self, by: Optional[Union[str, list[str]]] = None) -> Table:
+    def min_by(self, by: str | list[str] | None = None) -> Table:
         """The min_by method creates a new table containing the minimum value for each group. Columns not used in the
         grouping must be of numeric types.
 
@@ -658,7 +658,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().min_by(by)
 
-    def max_by(self, by: Optional[Union[str, list[str]]] = None) -> Table:
+    def max_by(self, by: str | list[str] | None = None) -> Table:
         """The max_by method creates a new table containing the maximum value for each group. Columns not used in the
         grouping must be of numeric types.
 
@@ -674,7 +674,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().max_by(by)
 
-    def count_by(self, col: str, by: Optional[Union[str, list[str]]] = None) -> Table:
+    def count_by(self, col: str, by: str | list[str] | None = None) -> Table:
         """The count_by method creates a new table containing the number of rows for each group. The count of each
         group is stored in a new column named after the 'col' parameter.
 
@@ -692,7 +692,7 @@ class Table(TableInterface["Table"], ServerObject):
         return super().count_by(col, by)
 
     def agg_by(
-        self, aggs: Union[Aggregation, list[Aggregation]], by: Union[str, list[str]]
+        self, aggs: Aggregation | list[Aggregation], by: str | list[str]
     ) -> Table:
         """The agg_by method creates a new table containing grouping columns and grouped data. The resulting grouped
         data is defined by the aggregation(s) specified.
@@ -709,7 +709,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().agg_by(aggs, by)
 
-    def agg_all_by(self, agg: Aggregation, by: Union[str, list[str]]) -> Table:
+    def agg_all_by(self, agg: Aggregation, by: str | list[str]) -> Table:
         """The agg_all_by method creates a new table containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregation specified.
 
@@ -730,8 +730,8 @@ class Table(TableInterface["Table"], ServerObject):
 
     def update_by(
         self,
-        ops: Union[UpdateByOperation, list[UpdateByOperation]],
-        by: Optional[Union[str, list[str]]] = None,
+        ops: UpdateByOperation | list[UpdateByOperation],
+        by: str | list[str] | None = None,
     ) -> Table:
         """The update_by method creates a table with additional columns calculated from
         window-based aggregations of columns in this table. The aggregations are defined by the provided operations,
@@ -766,7 +766,7 @@ class Table(TableInterface["Table"], ServerObject):
     def snapshot_when(
         self,
         trigger_table: Table,
-        stamp_cols: Optional[Union[str, list[str]]] = None,
+        stamp_cols: str | list[str] | None = None,
         initial: bool = False,
         incremental: bool = False,
         history: bool = False,
@@ -801,7 +801,7 @@ class Table(TableInterface["Table"], ServerObject):
             trigger_table, stamp_cols, initial, incremental, history
         )
 
-    def where_in(self, filter_table: Table, cols: Union[str, list[str]]) -> Table:
+    def where_in(self, filter_table: Table, cols: str | list[str]) -> Table:
         """The where_in method creates a new table containing rows from the source table, where the rows match values
         in the filter table.
 
@@ -817,7 +817,7 @@ class Table(TableInterface["Table"], ServerObject):
         """
         return super().where_in(filter_table, cols)
 
-    def where_not_in(self, filter_table: Table, cols: Union[str, list[str]]) -> Table:
+    def where_not_in(self, filter_table: Table, cols: str | list[str]) -> Table:
         """The where_not_in method creates a new table containing rows from the source table, where the rows do not
         match values in the filter table.
 
@@ -883,16 +883,16 @@ class InputTable(Table):
     The keyed input tablet has keys for each row and supports addition/deletion/modification of rows by the keys.
     """
 
-    key_cols: Optional[list[str]]
+    key_cols: list[str] | None
 
     def __init__(
         self,
         session: Session,
         ticket: Ticket,
         schema_header: bytes = b"",
-        size: Optional[int] = None,
-        is_static: Optional[bool] = None,
-        schema: Optional[pa.Schema] = None,
+        size: int | None = None,
+        is_static: bool | None = None,
+        schema: pa.Schema | None = None,
     ):
         super().__init__(
             session=session,
@@ -957,14 +957,14 @@ class MultiJoinInput:
     """
 
     table: Table
-    on: Union[str, Sequence[str]]
-    joins: Optional[Union[str, Sequence[str]]] = None
+    on: str | Sequence[str]
+    joins: str | Sequence[str] | None = None
 
     def __init__(
         self,
         table: Table,
-        on: Union[str, Sequence[str]],
-        joins: Optional[Union[str, Sequence[str]]] = None,
+        on: str | Sequence[str],
+        joins: str | Sequence[str] | None = None,
     ):
         """Initializes a MultiJoinInput object.
 
@@ -981,8 +981,8 @@ class MultiJoinInput:
 
 
 def multi_join(
-    input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
-    on: Optional[Union[str, Sequence[str]]] = None,
+    input: Table | Sequence[Table] | MultiJoinInput | Sequence[MultiJoinInput],
+    on: str | Sequence[str] | None = None,
 ) -> MultiJoinTable:
     """The multi_join method creates a new table by performing a multi-table natural join on the input tables. The
     result consists of the set of distinct keys from the input tables natural joined to each input table. Input

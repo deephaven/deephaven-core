@@ -13,7 +13,7 @@ table.hasAttribute(key)
 ## Parameters
 
 <ParamTable>
-<Param name="key>" type="String">
+<Param name="key" type="String">
 
 The name of the attribute.
 
