@@ -118,8 +118,10 @@ def to_pandas(
         dtype_backend (Literal[None, "pyarrow", "numpy_nullable"]): which dtype backend to use. "numpy_nullable" and
             "pyarrow" convert the table through pyarrow. "numpy_nullable" uses pandas nullable dtypes for the numeric,
             boolean, and string types that have one. "pyarrow" uses pd.ArrowDtype for numeric, boolean, string, and
-            timestamp types, and requires pandas 2.0.0 or later. Other types use pyarrow's default conversion. Both
-            convert Deephaven nulls to pd.NA. None reads the column data into NumPy-backed Series; when conv_null is
+            timestamp types, and requires pandas 2.0.0 or later. Other types use pyarrow's default conversion.
+            Deephaven nulls become pd.NA in the columns that use these dtypes. Columns that use pyarrow's default
+            conversion get its missing-value marker instead, such as NaT for timestamp columns with "numpy_nullable".
+            None reads the column data into NumPy-backed Series; when conv_null is
             True, boolean, char, and numeric columns then use pandas nullable dtypes so that Deephaven nulls become
             pd.NA. Default is "numpy_nullable".
         conv_null (bool): when dtype_backend is set to None, whether to check for Deephaven nulls in the data and
@@ -239,10 +241,12 @@ def to_table(
 ) -> Table:
     """Creates a new table from a pandas DataFrame.
 
-    Column names are converted to valid Deephaven column names: each run of characters other than letters, digits,
-    and underscores becomes a single underscore, and such characters at the start or end of a name are removed. For
-    example, "Shades.1" becomes "Shades_1". When the DataFrame has a pyarrow-backed column, the table is created
-    through pyarrow and the column names are used unchanged, unless that conversion fails.
+    Column names are converted in one of two ways. When the DataFrame has a pyarrow-backed column, the table is
+    created through pyarrow, which removes characters that aren't allowed in column names: "Shades.1" becomes
+    "Shades1". Otherwise, or if that conversion fails, each run of characters other than letters, digits, and
+    underscores becomes a single underscore, and such characters at the start or end of a name are removed:
+    "Shades.1" becomes "Shades_1". This second conversion changes nothing else, so a name such as "123" or the
+    reserved word "in" is still rejected.
 
     Args:
         df (DataFrame): the pandas DataFrame instance
