@@ -8,13 +8,16 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -39,8 +43,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests of {@link ExecutorJobScheduler#submit} and {@link ExecutorJobScheduler#newHelperPool}. The iteration behavior
- * that the scheduler exists for is covered by {@link TestInvokeParallel}.
+ * Tests of {@link ExecutorJobScheduler#submit}, {@link ExecutorJobScheduler#awaitCompletion} and
+ * {@link ExecutorJobScheduler#newHelperPool}, and of {@link OperationInitializerJobScheduler}, which is an
+ * {@link ExecutorJobScheduler} over its initializer. The iteration behavior that the schedulers exist for is covered by
+ * {@link TestInvokeParallel}.
  */
 public class TestExecutorJobScheduler {
 
@@ -284,15 +290,18 @@ public class TestExecutorJobScheduler {
         final Executor direct = Runnable::run;
         final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(direct, 2);
         final AtomicInteger runs = new AtomicInteger();
+        final IllegalStateException jobFailure = new IllegalStateException("job failed");
         final RejectedExecutionException fromTheJob = new RejectedExecutionException("thrown by the job's handler");
 
         assertThatThrownBy(() -> scheduler.submit(null, () -> {
             runs.incrementAndGet();
-            throw new IllegalStateException("job failed");
+            throw jobFailure;
         }, null, e -> {
             throw fromTheJob;
         })).isInstanceOf(FakeProcessEnvironment.FakeFatalException.class).hasCause(fromTheJob);
 
+        // the job's failure has no other way out, so the handler's failure carries it
+        assertThat(fromTheJob.getSuppressed()).containsExactly(jobFailure);
         assertThat(runs.get()).isEqualTo(1);
         // released once, by the job, and not again for the rejection
         assertThat(outstandingJobs(scheduler)).isZero();
@@ -303,8 +312,7 @@ public class TestExecutorJobScheduler {
     public void testPerformanceWaitRestoresTheInterrupt() throws InterruptedException {
         final CountDownLatch release = new CountDownLatch(1);
         final CountDownLatch running = new CountDownLatch(1);
-        final OperationInitializerJobScheduler scheduler =
-                new OperationInitializerJobScheduler(ExecutionContext.getContext().getOperationInitializer());
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(newPool(1), 2);
         scheduler.submit(null, () -> {
             running.countDown();
             try {
@@ -391,24 +399,32 @@ public class TestExecutorJobScheduler {
 
     /**
      * A job a synchronous executor runs on the submitting thread is that thread's own work, and is not accounted again
-     * by the scheduler.
+     * by the scheduler; neither is a job submitted from inside one, which runs inline too.
      */
     @Test
     public void testJobRunOnTheSubmittingThreadIsNotAccounted() {
         final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(Runnable::run, 2);
-        final AtomicReference<Thread> runningThread = new AtomicReference<>();
-
-        scheduler.submit(null, () -> {
-            runningThread.set(Thread.currentThread());
+        final Set<Thread> runningThreads = ConcurrentHashMap.newKeySet();
+        final AtomicInteger runs = new AtomicInteger();
+        final Runnable sleep = () -> {
+            runningThreads.add(Thread.currentThread());
+            runs.incrementAndGet();
             try {
                 Thread.sleep(20);
             } catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
+        };
+
+        scheduler.submit(null, () -> {
+            sleep.run();
+            scheduler.submit(null, sleep, null, e -> {
+            });
         }, null, e -> {
         });
 
-        assertThat(runningThread.get()).isSameAs(Thread.currentThread());
+        assertThat(runs.get()).isEqualTo(2);
+        assertThat(runningThreads).containsExactly(Thread.currentThread());
         assertThat(outstandingJobs(scheduler)).isZero();
         assertThat(scheduler.getAccumulatedPerformance().getUsageNanos()).isZero();
     }
@@ -659,6 +675,173 @@ public class TestExecutorJobScheduler {
                         sawForbidden::completeExceptionally);
             }
             assertThat(scheduler.awaitCompletion(sawForbidden)).isEqualTo(forbidden);
+        }
+    }
+
+    /** A job the waiting thread runs fails the future, which the wait reports as an {@link ExecutionException}. */
+    @Test
+    public void testAwaitCompletionReportsAFailedJob() {
+        final List<Runnable> queued = new ArrayList<>();
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(queued::add, 2);
+        final IllegalStateException failure = new IllegalStateException("job failed");
+        final CompletableFuture<Void> done = new CompletableFuture<>();
+        scheduler.submit(ExecutionContext.getContext(), () -> {
+            throw failure;
+        }, null, done::completeExceptionally);
+        assertThat(queued).hasSize(1);
+
+        assertThatThrownBy(() -> scheduler.awaitCompletion(done))
+                .isInstanceOf(ExecutionException.class)
+                .hasCauseReference(failure);
+        assertThat(outstandingJobs(scheduler)).isZero();
+    }
+
+    /**
+     * A job already running on a pool thread is not run again: the waiting thread waits for it to complete the future.
+     */
+    @Test
+    public void testAwaitCompletionWaitsForAJobRunningOnThePool() throws Exception {
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(newPool(1), 2);
+        final CountDownLatch running = new CountDownLatch(1);
+        final CountDownLatch release = new CountDownLatch(1);
+        final AtomicInteger runs = new AtomicInteger();
+        final CompletableFuture<Thread> done = new CompletableFuture<>();
+        scheduler.submit(ExecutionContext.getContext(), () -> {
+            runs.incrementAndGet();
+            running.countDown();
+            try {
+                release.await();
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            done.complete(Thread.currentThread());
+        }, null, done::completeExceptionally);
+        await(running);
+        final Thread releaser = new Thread(() -> {
+            try {
+                Thread.sleep(100);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            release.countDown();
+        });
+        releaser.start();
+
+        assertThat(scheduler.awaitCompletion(done)).isNotSameAs(Thread.currentThread());
+        assertThat(runs.get()).isEqualTo(1);
+        assertThat(outstandingJobs(scheduler)).isZero();
+        releaser.join();
+    }
+
+    /** A synchronous executor runs each job inside submit, so there is nothing left for the waiting thread to run. */
+    @Test
+    public void testSynchronousExecutorLeavesTheWaitNothingToRun() throws InterruptedException, ExecutionException {
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(Runnable::run, 2);
+        final CompletableFuture<Integer> done = new CompletableFuture<>();
+        scheduler.submit(null, () -> done.complete(42), null, done::completeExceptionally);
+        assertThat(done.isDone()).isTrue();
+        assertThat(scheduler.awaitCompletion(done)).isEqualTo(42);
+        assertThat(outstandingJobs(scheduler)).isZero();
+    }
+
+    /**
+     * An {@link OperationInitializerJobScheduler}'s thread count is its initializer's parallelism, read each time it is
+     * asked for, so that constructing one over an initializer that cannot answer yet does not fail.
+     */
+    @Test
+    public void testOperationInitializerThreadCountIsReadWhenAskedFor() {
+        final AtomicInteger parallelism = new AtomicInteger(-1);
+        final OperationInitializer initializer = new OperationInitializer() {
+            @Override
+            public boolean canParallelize() {
+                return true;
+            }
+
+            @Override
+            public Future<?> submit(final Runnable runnable) {
+                runnable.run();
+                return CompletableFuture.completedFuture(null);
+            }
+
+            @Override
+            public int parallelismFactor() {
+                final int value = parallelism.get();
+                if (value < 0) {
+                    throw new IllegalStateException("no parallelism yet");
+                }
+                return value;
+            }
+        };
+        final OperationInitializerJobScheduler scheduler = new OperationInitializerJobScheduler(initializer);
+        assertThatThrownBy(scheduler::threadCount).isInstanceOf(IllegalStateException.class);
+        parallelism.set(3);
+        assertThat(scheduler.threadCount()).isEqualTo(3);
+        parallelism.set(5);
+        assertThat(scheduler.threadCount()).isEqualTo(5);
+    }
+
+    /**
+     * With every thread of an {@link OperationInitializationThreadPool} blocked, a callback-form iteration and the jobs
+     * it submits from its callbacks run on the thread waiting for its completion, which therefore finishes.
+     */
+    @Test
+    public void testOperationInitializerWaitFinishesWhilePoolIsBlocked() throws InterruptedException {
+        final int poolThreads = 2;
+        final OperationInitializationThreadPool pool =
+                new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP, poolThreads);
+        final CountDownLatch releasePool = new CountDownLatch(1);
+        try {
+            final CountDownLatch blocked = new CountDownLatch(poolThreads);
+            for (int ii = 0; ii < poolThreads; ++ii) {
+                pool.submit(() -> {
+                    blocked.countDown();
+                    try {
+                        releasePool.await();
+                    } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                });
+            }
+            await(blocked);
+
+            // on a thread of its own, so that a wait that never finishes fails the test rather than hanging it
+            final ExecutionContext executionContext = ExecutionContext.getContext();
+            final OperationInitializerJobScheduler scheduler = new OperationInitializerJobScheduler(pool);
+            final Set<Thread> taskThreads = ConcurrentHashMap.newKeySet();
+            final AtomicInteger followUps = new AtomicInteger();
+            final AtomicReference<Thread> waitingThread = new AtomicReference<>();
+            final AtomicReference<Throwable> thrown = new AtomicReference<>();
+            final Thread waiter = new Thread(() -> {
+                waitingThread.set(Thread.currentThread());
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    final CompletableFuture<Void> done = new CompletableFuture<>();
+                    scheduler.iterateParallel(ExecutionContext.getContext(), null,
+                            JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 8,
+                            (context, idx, nec) -> taskThreads.add(Thread.currentThread()),
+                            () -> scheduler.submit(ExecutionContext.getContext(), () -> {
+                                followUps.incrementAndGet();
+                                done.complete(null);
+                            }, null, done::completeExceptionally),
+                            () -> {
+                            },
+                            done::completeExceptionally);
+                    scheduler.awaitCompletion(done);
+                } catch (final Throwable t) {
+                    thrown.set(t);
+                }
+            }, "operation-initializer-waiter");
+            waiter.setDaemon(true);
+            waiter.start();
+            waiter.join(TimeUnit.SECONDS.toMillis(30));
+
+            assertThat(waiter.isAlive()).as("the waiting thread finished").isFalse();
+            assertThat(thrown.get()).isNull();
+            assertThat(taskThreads).containsExactly(waitingThread.get());
+            assertThat(followUps.get()).isEqualTo(1);
+            assertThat(outstandingJobs(scheduler)).isZero();
+        } finally {
+            releasePool.countDown();
+            pool.shutdown();
         }
     }
 }
