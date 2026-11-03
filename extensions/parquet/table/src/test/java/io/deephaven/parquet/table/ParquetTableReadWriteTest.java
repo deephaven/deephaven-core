@@ -3361,6 +3361,20 @@ public final class ParquetTableReadWriteTest {
     }
 
     /**
+     * Reads a snappy file whose V2 pages of {@code I} are stored uncompressed ({@code is_compressed=false}), written by
+     * {@code ReferenceRequiredColumnsV2.py}, and its V1 counterpart.
+     */
+    @Test
+    public void testReadUncompressedParquetV2Pages() {
+        final Table expected = emptyTable(5_000).update(
+                "I = i", "L = ii * 3", "D = ii / 3.0", "Str = `value-` + ii", "Sym = `sym-` + (ii % 50)");
+        for (final String name : new String[] {"ReferenceRequiredColumnsV1", "ReferenceRequiredColumnsV2"}) {
+            final String path = ParquetTableReadWriteTest.class.getResource("/" + name + ".parquet").getFile();
+            assertTableEquals(expected, readParquetFileFromGitLFS(new File(path)));
+        }
+    }
+
+    /**
      * Test if the parquet reading code can read pre-generated parquet files which have different number of rows in each
      * page. Following is how these files are generated.
      *
