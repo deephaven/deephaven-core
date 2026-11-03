@@ -302,7 +302,18 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             @NotNull final ExecutionContext executionContext) {
         final CompletableFuture<QueryTable> resultFuture = new CompletableFuture<>();
         try {
-            new StaticRangeJoinPhase1(jobScheduler, executionContext, resultFuture).start();
+            // rethrown once the wait below has finished the jobs start submitted before it threw
+            RuntimeException startException = null;
+            Error startError = null;
+            try {
+                new StaticRangeJoinPhase1(jobScheduler, executionContext, resultFuture).start();
+            } catch (final RuntimeException e) {
+                startException = e;
+                resultFuture.completeExceptionally(e);
+            } catch (final Error e) {
+                startError = e;
+                resultFuture.completeExceptionally(e);
+            }
             try {
                 return jobScheduler.awaitCompletion(resultFuture);
             } catch (InterruptedException e) {
@@ -312,6 +323,12 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 resultFuture.completeExceptionally(cancellation);
                 throw cancellation;
             } catch (Exception e) {
+                if (startError != null) {
+                    throw startError;
+                }
+                if (startException != null) {
+                    throw startException;
+                }
                 throw new OperationException(String.format("%s failed", description), e);
             }
         } finally {

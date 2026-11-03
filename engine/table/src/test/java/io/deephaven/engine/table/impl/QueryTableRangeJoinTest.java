@@ -16,9 +16,11 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.OperationException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -42,6 +44,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import static io.deephaven.api.agg.Aggregation.*;
@@ -456,6 +459,85 @@ public class QueryTableRangeJoinTest {
             Thread.interrupted();
         }
         return heldJobsRunning;
+    }
+
+    /**
+     * An Error from the right table work, which rangeJoin does on the calling thread while its left grouping job is
+     * queued, reaches the caller once the caller has run that job itself, since no thread of the pool is free to.
+     */
+    @Test
+    public void testErrorFromTheRightTableWorkRunsTheQueuedLeftGroupingJob() throws InterruptedException {
+        final RightTableError rightTableError = new RightTableError();
+        final Table left = TableTools.emptyTable(10).view("K = (int) 0", "LSV = (int) ii", "LEV = (int) ii + 2");
+        final Table right = new CoalesceFailingTable(TableDefinition.of(
+                ColumnDefinition.ofInt("K"), ColumnDefinition.ofInt("RRV"), ColumnDefinition.ofInt("Sentinel")),
+                rightTableError);
+
+        final int poolThreads = 2;
+        final OperationInitializationThreadPool threadPool =
+                new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP, poolThreads);
+        final CountDownLatch releasePool = new CountDownLatch(1);
+        try {
+            final CountDownLatch blocked = new CountDownLatch(poolThreads);
+            for (int ii = 0; ii < poolThreads; ++ii) {
+                threadPool.submit(() -> {
+                    blocked.countDown();
+                    try {
+                        releasePool.await();
+                    } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                });
+            }
+            assertThat(blocked.await(JOB_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+
+            final ExecutionContext parallelContext =
+                    ExecutionContext.getContext().withOperationInitializer(threadPool);
+            final AtomicReference<Throwable> thrown = new AtomicReference<>();
+            final Thread operationThread = new Thread(() -> {
+                try (final SafeCloseable ignored = parallelContext.open()) {
+                    left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
+                } catch (final Throwable t) {
+                    thrown.set(t);
+                }
+            }, "QueryTableRangeJoinTest-operation");
+            operationThread.setDaemon(true);
+            operationThread.start();
+            operationThread.join(TimeUnit.SECONDS.toMillis(JOB_TIMEOUT_SECONDS));
+
+            assertThat(operationThread.isAlive()).as("rangeJoin finished while the pool was blocked").isFalse();
+            assertThat(thrown.get()).isSameAs(rightTableError);
+        } finally {
+            releasePool.countDown();
+            threadPool.shutdown();
+        }
+    }
+
+    private static final class RightTableError extends Error {
+        private RightTableError() {
+            super("right table work failed");
+        }
+    }
+
+    /** A right table whose coalesce, part of the right table work, fails with an Error. */
+    private static final class CoalesceFailingTable extends UncoalescedTable<CoalesceFailingTable> {
+
+        private final Error error;
+
+        private CoalesceFailingTable(@NotNull final TableDefinition definition, @NotNull final Error error) {
+            super(definition, "CoalesceFailingTable");
+            this.error = error;
+        }
+
+        @Override
+        public Table coalesce() {
+            throw error;
+        }
+
+        @Override
+        protected CoalesceFailingTable copy(final Map<String, Object> attributes) {
+            return new CoalesceFailingTable(getDefinition(), error);
+        }
     }
 
     // endregion job lifecycle tests

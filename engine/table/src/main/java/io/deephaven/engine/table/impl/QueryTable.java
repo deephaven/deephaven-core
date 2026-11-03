@@ -1860,6 +1860,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                                         new SelectAndViewAnalyzer.UpdateHelper(rowSet, fakeUpdate)) {
 
+                            // rethrown once the wait below has finished the jobs the analyzer submitted before it
+                            // threw
+                            Error applyError = null;
                             try {
                                 try {
                                     analyzer.applyUpdate(
@@ -1868,12 +1871,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                                             waitForResult::completeExceptionally);
                                 } catch (Exception e) {
                                     waitForResult.completeExceptionally(e);
+                                } catch (Error e) {
+                                    applyError = e;
+                                    waitForResult.completeExceptionally(e);
                                 }
 
                                 jobScheduler.awaitCompletion(waitForResult);
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
                             } catch (ExecutionException e) {
+                                if (applyError != null) {
+                                    throw applyError;
+                                }
                                 throw new TableInitializationException(updateDescription,
                                         "an exception occurred while performing the initial select or update",
                                         e.getCause());
