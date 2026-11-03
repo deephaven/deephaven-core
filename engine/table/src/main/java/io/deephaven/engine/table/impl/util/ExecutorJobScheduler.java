@@ -397,7 +397,6 @@ public class ExecutorJobScheduler implements JobScheduler {
                     }
                 }
             } finally {
-                // null when installing this thread's count failed, an allocation in practice, perhaps part way
                 if (jobsRunningHere == null || jobsRunningHere.decrementAndGet() == 0) {
                     jobsRunningOnThisThread.remove();
                 }
