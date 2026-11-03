@@ -140,6 +140,9 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         final Table filtered0 = TailInitializationFilter.mostRecentRows(input.assertAddOnly(), 0);
         assertEquals(0, filtered0.size());
         assertTableEquals(filtered0, TableTools.newTable(input.getDefinition()));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> TailInitializationFilter.mostRecentRows(input.assertAddOnly(), -1));
     }
 
     @Test

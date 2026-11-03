@@ -657,7 +657,7 @@ result = emptyTable(5).update("Y = a")
 
 See our guides:
 
-- [How to write a Groovy closure](../../how-to-guides/groovy-closures.md)
+- [Groovy closures in queries](../../how-to-guides/groovy-closures.md)
 
 ```groovy test-set=1 order=null
 // Create and Use a custom function
@@ -1208,7 +1208,7 @@ numberAndColor = staticSource1.formatColumns(
 )
 ```
 
-You will find an itemization of stock colors in [the docs](../../assets/deephaven-colors.pdf).
+For the full list of stock colors, see [Named colors](../table-operations/format/named-colors.md).
 
 ## Plot programmatically
 

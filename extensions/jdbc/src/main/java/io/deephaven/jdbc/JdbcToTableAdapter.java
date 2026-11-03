@@ -335,6 +335,9 @@ public class JdbcToTableAdapter {
         }
 
         public void flush() {
+            if (destChunkOffset == 0) {
+                return;
+            }
             columnSource.ensureCapacity(destRowOffset + destChunkOffset, false);
             try (final RowSequence rows =
                     RowSequenceFactory.forRange(destRowOffset, destRowOffset + destChunkOffset - 1)) {

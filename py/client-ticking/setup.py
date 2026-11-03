@@ -36,7 +36,7 @@ _system = platform.system()
 
 if _system == "Windows":
     dhinstall = os.environ["DHINSTALL"]
-    extra_compiler_args = ["/std:c++17", f"/I{dhinstall}\\include"]
+    extra_compiler_args = ["/std:c++20", f"/I{dhinstall}\\include"]
     extra_link_args = [f"/LIBPATH:{dhinstall}\\lib"]
 
     # Ensure distutils uses the compiler and linker in %PATH%
@@ -50,7 +50,7 @@ if _system == "Windows":
     libraries = ["dhcore_static", "ws2_32"]
 
 else:
-    extra_compiler_args = ["-std=c++17"]
+    extra_compiler_args = ["-std=c++20"]
     extra_link_args = []
     libraries = ["dhcore_static"]
 
@@ -74,7 +74,6 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
@@ -92,7 +91,7 @@ setup(
             )
         ]
     ),
-    python_requires=">=3.9",
+    python_requires=">=3.10",
     install_requires=[f"pydeephaven=={_version}"],
     package_data={"pydeephaven_ticking": ["py.typed"]},
 )

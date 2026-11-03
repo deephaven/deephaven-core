@@ -156,7 +156,7 @@ public final class ContainerUtil {
      *         comp.directionFrom(array[pos]) == 0, return any of them.
      */
     public static int search(final short[] array, final int begin, final int end, final TargetComparator comp) {
-        if (end < 1) {
+        if (end <= begin) {
             return -1;
         }
         int high = end - 1;
@@ -798,9 +798,9 @@ public final class ContainerUtil {
     public static int unsignedIntersect2by2(final short[] set1, final int length1, final short[] set2,
             final int length2, final short[] buffer) {
         final int THRESHOLD = 25;
-        if (set1.length * THRESHOLD < set2.length) {
+        if (length1 * THRESHOLD < length2) {
             return unsignedOneSidedGallopingIntersect2by2(set1, length1, set2, length2, buffer);
-        } else if (set2.length * THRESHOLD < set1.length) {
+        } else if (length2 * THRESHOLD < length1) {
             return unsignedOneSidedGallopingIntersect2by2(set2, length2, set1, length1, buffer);
         } else {
             return unsignedLocalIntersect2by2(set1, length1, set2, length2, buffer);
@@ -968,7 +968,7 @@ public final class ContainerUtil {
 
     protected static int unsignedOneSidedGallopingIntersect2by2(final short[] smallSet,
             final int smallLength, final short[] largeSet, final int largeLength, final short[] buffer) {
-        if (0 == smallLength) {
+        if ((0 == smallLength) || (0 == largeLength)) {
             return 0;
         }
         int k1 = 0;

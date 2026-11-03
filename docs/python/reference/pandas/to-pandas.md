@@ -35,16 +35,16 @@ The source table columns to convert. If not specified, all columns are converted
 
 Which `dtype_backend` to use. The default is "numpy_nullable".
 
-- `"numpy_nullable"` uses nullable NumPy data types as the backend.
-- `None` uses non-nullable NumPy data types as the backend.
-- `"PyArrow"` uses PyArrow data types as the backend.
+- `"numpy_nullable"` uses pandas nullable data types.
+- `None` builds each column from a NumPy array. Unless `conv_null` is `False`, numeric, `char`, and Boolean columns still get pandas nullable dtypes.
+- `"pyarrow"` uses PyArrow data types as the backend.
 
-Both “numpy_nullable” and “pyarrow” automatically convert Deephaven nulls to pandas NA and enable pandas extension types. Extension types are needed to support types beyond NumPy’s type system. Extension types support operations such as properly mapping Java Strings to Python strings.
+Both "numpy_nullable" and "pyarrow" automatically convert Deephaven nulls to pandas NA and enable pandas extension types. Extension types are needed to support types beyond NumPy's type system. Extension types support operations such as properly mapping Java Strings to Python strings.
 
 </Param>
 <Param name="conv_null" type="bool" optional>
 
-When `dtype_backend` is set to `None`, `conv_null` determines whether to check for Deephaven nulls in the data and automatically replace them with `pd.NA`. The default is True.
+When `dtype_backend` is set to `None`, `conv_null` determines whether to check for Deephaven nulls in the data and automatically replace them with `pd.NA`. The default is True. Setting it to `False` with any other `dtype_backend` raises a `DHError`.
 
 </Param>
 </ParamTable>
@@ -71,4 +71,4 @@ result = to_pandas(source)
 
 - [Create a new table](../../how-to-guides/new-and-empty-table.md#new_table)
 - [`new_table`](../table-operations/create/newTable.md)
-- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.pandas.html#deephaven.pandas.to_pandas)
+- [Pydoc](/core/pydoc/code/deephaven.pandas.html#deephaven.pandas.to_pandas)

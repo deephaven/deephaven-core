@@ -13,7 +13,7 @@ Optional instructions for customizations while writing. Valid values are:
 - `LZ4`: **Deprecated** Compression codec loosely based on the [LZ4 compression algorithm](https://github.com/lz4/lz4), but with an additional undocumented framing scheme. The framing is part of the original Hadoop compression library and was historically copied first in parquet-mr, then emulated with mixed results by parquet-cpp. Note that `LZ4` is deprecated; use `LZ4_RAW` instead.
 - `LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
 - `GZIP`: Compression codec based on the GZIP format (not the closely-related "zlib" or "deflate" formats) defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
-- `ZSTD`: Compression codec with the highest compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
+- `ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
 
 Reading instructions have all the above plus `LEGACY` avaialable:
 
@@ -46,6 +46,6 @@ source_read = parquet.read("/data/output.parquet")
 - [Parquet export](../../how-to-guides/data-import-export/parquet-export.md)
 - [`read`](../data-import-export/Parquet/readTable.md)
 - [`write`](../data-import-export/Parquet/writeTable.md)
-- [Docker data volumes](../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(java.lang.String))
 - [Pydoc](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write)

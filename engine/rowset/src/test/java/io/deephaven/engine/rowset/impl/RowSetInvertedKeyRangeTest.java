@@ -3,7 +3,9 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import org.junit.Test;
@@ -17,11 +19,13 @@ import static io.deephaven.engine.rowset.impl.RowSetTestCommon.singleRangeOf;
 import static io.deephaven.engine.rowset.impl.RowSetTestCommon.sortedRangesOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 /**
  * A key range whose end precedes its start holds no keys. {@code [start, start + n - 1]} with {@code n == 0} is the
- * natural way to arrive at one, so every operation must treat it as empty rather than walk it as if it ran forward.
+ * natural way to arrive at one, so queries and removals must treat it as empty rather than walk it as if it ran
+ * forward. Inserting one is rejected.
  */
 public class RowSetInvertedKeyRangeTest {
 
@@ -68,6 +72,18 @@ public class RowSetInvertedKeyRangeTest {
     }
 
     @Test
+    public void testBuildersRejectInvertedRanges() {
+        assertThrows(AssertionFailure.class, () -> RowSetFactory.builderRandom().addRange(5, 3));
+        assertThrows(AssertionFailure.class, () -> RowSetFactory.builderSequential().appendRange(5, 3));
+        // Adjacent to the pending range, so the order check alone would accept it.
+        assertThrows(AssertionFailure.class, () -> {
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+            builder.appendKey(4);
+            builder.appendRange(5, 4);
+        });
+    }
+
+    @Test
     public void testMutations() {
         for (final Supplier<?> supplier : rowSets()) {
             try (final WritableRowSet rs = (WritableRowSet) supplier.get()) {
@@ -86,7 +102,8 @@ public class RowSetInvertedKeyRangeTest {
                         assertEquals(what + " retainRange size", 0, retained.size());
                     }
                     try (final WritableRowSet inserted = rs.copy()) {
-                        inserted.insertRange(range[0], range[1]);
+                        assertThrows(what + " insertRange", AssertionFailure.class,
+                                () -> inserted.insertRange(range[0], range[1]));
                         inserted.validate();
                         assertEquals(what + " insertRange", keysOf(rs), keysOf(inserted));
                     }
@@ -95,19 +112,17 @@ public class RowSetInvertedKeyRangeTest {
         }
     }
 
-    /** {@code insertRange(0, size - 1)} on an empty rowset for an empty table is a common way to arrive at one. */
+    /**
+     * {@code insertRange(0, size - 1)} for an empty table bounds an empty range with a negative key, which is rejected
+     * even though the range holds no keys.
+     */
     @Test
-    public void testInsertingAnEmptyRangeIntoAnEmptyRowSet() {
+    public void testNegativeBoundOfAnEmptyRangeIsRejected() {
         try (final WritableRowSet rs = RowSetFactory.empty()) {
-            rs.insertRange(0, -1);
+            assertThrows(AssertionFailure.class, () -> rs.insertRange(0, -1));
             rs.validate();
             assertTrue(rs.isEmpty());
-            assertEquals(0, rs.size());
         }
-        try (final WritableRowSet rs = RowSetFactory.fromRange(0, -1)) {
-            rs.validate();
-            assertTrue(rs.isEmpty());
-            assertEquals(0, rs.size());
-        }
+        assertThrows(AssertionFailure.class, () -> RowSetFactory.fromRange(0, -1));
     }
 }

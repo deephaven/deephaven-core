@@ -39,6 +39,11 @@ public final class GroupByChunkedOperator implements GroupByOperator {
     private final String exposeRowSetsAs;
 
     private final boolean live;
+    /**
+     * Whether the input only adds rows. Each update then appends each destination's added rows in increasing row key
+     * order, so they accumulate in sequential builders, and no removed builders are kept.
+     */
+    private final boolean addOnly;
     private final ObjectArraySource<WritableRowSet> rowSets;
     private final ObjectArraySource<Object> addedBuilders;
     private final ObjectArraySource<Object> removedBuilders;
@@ -85,6 +90,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
         this.aggregatedColumnPairs = aggregatedColumnPairs;
 
         live = inputTable.isRefreshing();
+        addOnly = inputTable.isAddOnly();
         rowSets = new ObjectArraySource<>(WritableRowSet.class);
         addedBuilders = new ObjectArraySource<>(Object.class);
 
@@ -110,7 +116,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
         final String[] inputColumnNames = MatchPair.getRightColumns(aggregatedColumnPairs);
         if (live) {
             aggregationInputsModifiedColumnSet = inputTable.newModifiedColumnSet(inputColumnNames);
-            removedBuilders = new ObjectArraySource<>(Object.class);
+            removedBuilders = addOnly ? null : new ObjectArraySource<>(Object.class);
         } else {
             aggregationInputsModifiedColumnSet = null;
             removedBuilders = null;
@@ -277,8 +283,8 @@ public final class GroupByChunkedOperator implements GroupByOperator {
         if (length == 0) {
             return;
         }
-        if (!initialized) {
-            // during initialization, all rows are guaranteed to be in-order
+        if (!initialized || addOnly) {
+            // during initialization, and for add-only inputs, all rows are guaranteed to be in-order
             accumulateToBuilderSequential(addedBuilders, rowKeys, start, length, destination);
         } else {
             accumulateToBuilderRandom(addedBuilders, rowKeys, start, length, destination);
@@ -292,8 +298,8 @@ public final class GroupByChunkedOperator implements GroupByOperator {
         if (addRowSet.isEmpty()) {
             return;
         }
-        if (!initialized) {
-            // during initialization, all rows are guaranteed to be in-order
+        if (!initialized || addOnly) {
+            // during initialization, and for add-only inputs, all rows are guaranteed to be in-order
             accumulateToBuilderSequential(addedBuilders, addRowSet, destination);
         } else {
             accumulateToBuilderRandom(addedBuilders, addRowSet, destination);
@@ -304,6 +310,9 @@ public final class GroupByChunkedOperator implements GroupByOperator {
             final long destination) {
         if (length == 0) {
             return;
+        }
+        if (addOnly) {
+            throw new UnsupportedOperationException("Add-only group by operators do not support removals or shifts");
         }
         accumulateToBuilderRandom(removedBuilders, rowKeys, start, length, destination);
         stepDestinationsModified.addKey(destination);
@@ -410,7 +419,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
     public void ensureCapacity(final long tableSize) {
         rowSets.ensureCapacity(tableSize);
         addedBuilders.ensureCapacity(tableSize);
-        if (live) {
+        if (removedBuilders != null) {
             removedBuilders.ensureCapacity(tableSize);
         }
     }
@@ -582,66 +591,80 @@ public final class GroupByChunkedOperator implements GroupByOperator {
                 return;
             }
 
-            // use the builders to modify the rowsets
-            try (final ResettableWritableObjectChunk<WritableRowSet, Values> rowSetResettableChunk =
-                    ResettableWritableObjectChunk.makeResettableChunk();
-                    final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersResettableChunk =
-                            ResettableWritableObjectChunk.makeResettableChunk();
-                    final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersResettableChunk =
-                            ResettableWritableObjectChunk.makeResettableChunk();
-                    final RowSequence.Iterator destinationsIterator =
-                            stepDestinations.getRowSequenceIterator()) {
-
-                // noinspection unchecked
-                final WritableObjectChunk<WritableRowSet, Values> rowSetBackingChunk =
-                        rowSetResettableChunk.asWritableObjectChunk();
-                // noinspection unchecked
-                final WritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersBackingChunk =
-                        addedBuildersResettableChunk.asWritableObjectChunk();
-                // noinspection unchecked
-                final WritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersBackingChunk =
-                        removedBuildersResettableChunk.asWritableObjectChunk();
-
-                while (destinationsIterator.hasMore()) {
-                    final long firstSliceDestination = destinationsIterator.peekNextKey();
-                    final long firstBackingChunkDestination =
-                            rowSets.resetWritableChunkToBackingStore(rowSetResettableChunk, firstSliceDestination);
-                    addedBuilders.resetWritableChunkToBackingStore(addedBuildersResettableChunk,
-                            firstSliceDestination);
-                    removedBuilders.resetWritableChunkToBackingStore(removedBuildersResettableChunk,
-                            firstSliceDestination);
-
-                    final long lastBackingChunkDestination =
-                            firstBackingChunkDestination + rowSetBackingChunk.size() - 1;
-                    final RowSequence initialDestinationsSlice =
-                            destinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
-
-                    initialDestinationsSlice.forAllRowKeys((final long destination) -> {
-                        final int backingChunkOffset =
-                                Math.toIntExact(destination - firstBackingChunkDestination);
-                        final WritableRowSet workingRowSet = rowSetBackingChunk.get(backingChunkOffset);
-                        if (workingRowSet == null) {
-                            // use the addRowSet as the new rowset
-                            final WritableRowSet addRowSet = nullToEmpty(
-                                    extractAndClearBuilderRandom(addedBuildersBackingChunk, backingChunkOffset));
-                            rowSetBackingChunk.set(backingChunkOffset, live ? addRowSet.toTracking() : addRowSet);
-                        } else {
-                            try (final WritableRowSet addRowSet =
-                                    nullToEmpty(extractAndClearBuilderRandom(addedBuildersBackingChunk,
-                                            backingChunkOffset));
-                                    final WritableRowSet removeRowSet =
-                                            nullToEmpty(extractAndClearBuilderRandom(removedBuildersBackingChunk,
-                                                    backingChunkOffset))) {
-                                workingRowSet.remove(removeRowSet);
-                                workingRowSet.insert(addRowSet);
-                            }
-                        }
-                    });
-                }
-            }
+            updateRowSets(stepDestinations, addOnly);
             stepDestinationsModified = null;
         }
         initializeNewRowSetPreviousValues(newDestinations);
+    }
+
+    /**
+     * Apply each destination's accumulated added and removed rows to its row set, creating the row sets of new
+     * destinations.
+     *
+     * @param stepDestinations the destinations updated in this step
+     * @param onlyAdds whether the added rows were accumulated in sequential builders, with no removed rows
+     */
+    private void updateRowSets(@NotNull final RowSet stepDestinations, final boolean onlyAdds) {
+        try (final ResettableWritableObjectChunk<WritableRowSet, Values> rowSetResettableChunk =
+                ResettableWritableObjectChunk.makeResettableChunk();
+                final ResettableWritableObjectChunk<Object, Values> addedBuildersResettableChunk =
+                        ResettableWritableObjectChunk.makeResettableChunk();
+                final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersResettableChunk =
+                        onlyAdds ? null : ResettableWritableObjectChunk.makeResettableChunk();
+                final RowSequence.Iterator destinationsIterator = stepDestinations.getRowSequenceIterator()) {
+
+            // noinspection unchecked
+            final WritableObjectChunk<WritableRowSet, Values> rowSetBackingChunk =
+                    rowSetResettableChunk.asWritableObjectChunk();
+            // added rows accumulate in sequential builders for an add-only input, and in random builders otherwise
+            // noinspection unchecked
+            final WritableObjectChunk<RowSetBuilderSequential, Values> sequentialAddedBuildersBackingChunk =
+                    onlyAdds ? addedBuildersResettableChunk.asWritableObjectChunk() : null;
+            // noinspection unchecked
+            final WritableObjectChunk<RowSetBuilderRandom, Values> randomAddedBuildersBackingChunk =
+                    onlyAdds ? null : addedBuildersResettableChunk.asWritableObjectChunk();
+            // noinspection unchecked
+            final WritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersBackingChunk =
+                    onlyAdds ? null : removedBuildersResettableChunk.asWritableObjectChunk();
+
+            while (destinationsIterator.hasMore()) {
+                final long firstSliceDestination = destinationsIterator.peekNextKey();
+                final long firstBackingChunkDestination =
+                        rowSets.resetWritableChunkToBackingStore(rowSetResettableChunk, firstSliceDestination);
+                addedBuilders.resetWritableChunkToBackingStore(addedBuildersResettableChunk, firstSliceDestination);
+                if (!onlyAdds) {
+                    removedBuilders.resetWritableChunkToBackingStore(removedBuildersResettableChunk,
+                            firstSliceDestination);
+                }
+
+                final long lastBackingChunkDestination =
+                        firstBackingChunkDestination + rowSetBackingChunk.size() - 1;
+                final RowSequence destinationsSlice =
+                        destinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
+
+                destinationsSlice.forAllRowKeys((final long destination) -> {
+                    final int backingChunkOffset = Math.toIntExact(destination - firstBackingChunkDestination);
+                    final WritableRowSet addRowSet = nullToEmpty(onlyAdds
+                            ? extractAndClearBuilderSequential(sequentialAddedBuildersBackingChunk, backingChunkOffset)
+                            : extractAndClearBuilderRandom(randomAddedBuildersBackingChunk, backingChunkOffset));
+                    final WritableRowSet workingRowSet = rowSetBackingChunk.get(backingChunkOffset);
+                    if (workingRowSet == null) {
+                        // use the addRowSet as the new rowset
+                        rowSetBackingChunk.set(backingChunkOffset, live ? addRowSet.toTracking() : addRowSet);
+                        return;
+                    }
+                    try (final WritableRowSet ignored = addRowSet) {
+                        if (!onlyAdds) {
+                            try (final WritableRowSet removeRowSet = nullToEmpty(
+                                    extractAndClearBuilderRandom(removedBuildersBackingChunk, backingChunkOffset))) {
+                                workingRowSet.remove(removeRowSet);
+                            }
+                        }
+                        workingRowSet.subsume(addRowSet);
+                    }
+                });
+            }
+        }
     }
 
     private void initializeNewRowSetPreviousValues(@NotNull final RowSequence newDestinations) {

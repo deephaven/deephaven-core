@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.impl.RowSequenceKeyRangesChunkImpl;
@@ -191,13 +192,29 @@ public class RowSequenceFactory {
     }
 
     /**
-     * Create and return a new {@link RowSequence} object from the supplied closed range.
+     * Get a flat {@link RowSequence} covering the row key range {@code [0, size)}, or {@link #EMPTY} if
+     * {@code size == 0}.
+     *
+     * @param size The number of row keys in the sequence
+     * @return A flat {@link RowSequence} covering the row key range {@code [0, size)}, or {@link #EMPTY} if
+     *         {@code size == 0}
+     */
+    public static RowSequence flat(final long size) {
+        Assert.geqZero(size, "size");
+        return size == 0 ? EMPTY : new SingleRangeRowSequence(0, size - 1);
+    }
+
+    /**
+     * Create and return a new {@link RowSequence} object from the supplied closed range. The range must hold at least
+     * one row key: {@code 0 <= firstRowKey <= lastRowKey}.
      *
      * @param firstRowKey The first row key (inclusive) in the range
      * @param lastRowKey The last row key (inclusive) in the range
      * @return A new {@link RowSequence} object covering the requested range of row keys
      */
     public static RowSequence forRange(final long firstRowKey, final long lastRowKey) {
+        Assert.geqZero(firstRowKey, "firstRowKey");
+        Assert.leq(firstRowKey, "firstRowKey", lastRowKey, "lastRowKey");
         return new SingleRangeRowSequence(firstRowKey, lastRowKey);
     }
 }

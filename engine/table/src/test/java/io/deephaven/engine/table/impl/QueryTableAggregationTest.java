@@ -4020,6 +4020,25 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    public void testInitialGroupsRefreshingWithoutPreserveEmpty() {
+        // initial group A starts empty, so it is absent from the result until a row for it arrives
+        final TrackingWritableRowSet inputRows = RowSetFactory.fromRange(0, 1).toTracking();
+        final QueryTable input = testRefreshingTable(inputRows, col("C", 'A', 'B'));
+        inputRows.remove(0);
+
+        final Table initialKeys = testTable(col("C", 'A', 'B'));
+        final Table aggregated = input.aggBy(List.of(AggCount("Count")), false, initialKeys, ColumnName.from("C"));
+        assertTableEquals(testTable(col("C", 'B'), longCol("Count", 1)), aggregated);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            inputRows.insert(0);
+            input.notifyListeners(i(0), i(), i());
+        });
+        assertTableEquals(testTable(col("C", 'A', 'B'), longCol("Count", 1, 1)), aggregated);
+    }
+
+    @Test
     public void testPreserveEmptyNoKey() {
         final Collection<? extends Aggregation> aggs = List.of(
                 AggCount("Count"),

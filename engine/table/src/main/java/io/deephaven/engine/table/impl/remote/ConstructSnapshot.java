@@ -16,6 +16,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.ColumnSnapshotUnsuccessfulException;
 import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
 import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
+import io.deephaven.engine.table.impl.by.AggregationKeyColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.updategraph.*;
@@ -266,8 +267,13 @@ public class ConstructSnapshot {
          */
         private void startLockedSnapshot(@NotNull final SnapshotControl control) {
             checkAndRecordUpdateGraph(control.getUpdateGraph());
+            try {
+                maybeAcquireLock();
+            } catch (final RuntimeException | Error failure) {
+                maybeClearUpdateGraph();
+                throw failure;
+            }
             ++lockedSnapshotDepth;
-            maybeAcquireLock();
         }
 
         /**
@@ -1191,6 +1197,10 @@ public class ConstructSnapshot {
                     // Nobody is waiting for this snapshot any more, so neither another concurrent attempt nor the
                     // locked attempt they fall back to is worth the update graph lock it would take.
                     throw ce;
+                } catch (UpdateGraphWaitForbiddenException forbidden) {
+                    // A nested snapshot would have waited for the update graph, which this thread is forbidden to do,
+                    // and neither another concurrent attempt nor a locked attempt would be permitted to wait either.
+                    throw forbidden;
                 } catch (Exception e) {
                     functionSuccessful = false;
                     caughtException = e;
@@ -1427,17 +1437,21 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Check if the column source is in-memory or redirected to an in-memory column source.
+     * Check if the column source is in-memory, or redirected to or the key column of an aggregation over an in-memory
+     * column source.
      */
     private static boolean isColumnSourceInMemory(ColumnSource<?> columnSource) {
         do {
-            if (columnSource instanceof InMemoryColumnSource) {
-                return ((InMemoryColumnSource) columnSource).isInMemory();
+            if (InMemoryColumnSource.isInMemory(columnSource)) {
+                return true;
             }
-            if (!(columnSource instanceof RedirectedColumnSource)) {
+            if (columnSource instanceof RedirectedColumnSource) {
+                columnSource = ((RedirectedColumnSource<?>) columnSource).getInnerSource();
+            } else if (columnSource instanceof AggregationKeyColumnSource) {
+                columnSource = ((AggregationKeyColumnSource<?>) columnSource).getKeySource();
+            } else {
                 return false;
             }
-            columnSource = ((RedirectedColumnSource<?>) columnSource).getInnerSource();
         } while (true);
     }
 

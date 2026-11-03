@@ -6,8 +6,12 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -22,6 +26,7 @@ import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
@@ -37,6 +42,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -445,8 +451,10 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
             throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
-        if (indexed) {
-            DataIndexer.getOrCreateDataIndex(table, "z");
+        // where uses only data indexes whose tables are populated, and finds an index only while it is retained
+        final DataIndex dataIndex = indexed ? DataIndexer.getOrCreateDataIndex(table, "z") : null;
+        if (dataIndex != null) {
+            dataIndex.table();
         }
         final Table tableStart =
                 TstUtils.testRefreshingTable(i(2, 6).toTracking(),
@@ -480,6 +488,9 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         }
 
         final Table filter3 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        if (dataIndex != null) {
+            assertSame(dataIndex, DataIndexer.getDataIndex(table, "z"));
+        }
 
         TstUtils.assertTableEquals(tableStart, prevTable(filter1));
         TstUtils.assertTableEquals(tableStart, prevTable(filter2));
@@ -1315,6 +1326,51 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
     }
 
     @Test
+    public void testStaticSnapshotRetry() throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), col("x", 1, 2, 3));
+
+        // The first snapshot attempt reads previous values; it holds there until the cycle completes, so the attempt
+        // is inconsistent and ConstructSnapshot retries it with current values.
+        final CountDownLatch readingPrev = new CountDownLatch(1);
+        final CountDownLatch cycleCompleted = new CountDownLatch(1);
+        final AtomicBoolean prevRead = new AtomicBoolean();
+        final ColumnSource<Integer> blockingSource =
+                new DelegatingColumnSource<>(int.class, null, table.getColumnSource("x", int.class)) {
+                    @Override
+                    public Chunk<? extends Values> getPrevChunk(
+                            @NotNull final GetContext context,
+                            @NotNull final RowSequence rowSequence) {
+                        if (prevRead.compareAndSet(false, true)) {
+                            readingPrev.countDown();
+                            try {
+                                Assert.eqTrue(cycleCompleted.await(TIMEOUT_LENGTH, TIMEOUT_UNIT),
+                                        "cycleCompleted.await(TIMEOUT_LENGTH, TIMEOUT_UNIT)");
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                        return super.getPrevChunk(context, rowSequence);
+                    }
+                };
+        final QueryTable base = new QueryTable(table.getRowSet(), Map.of("x", blockingSource));
+        table.addUpdateListener(new BaseTable.ListenerImpl("blocking source", table, base));
+
+        updateGraph.startCycleForUnitTests(false);
+        TstUtils.addToTable(table, i(3), col("x", 4));
+
+        final Future<Table> snapshotFuture = pool.submit(base::snapshot);
+        assertTrue(readingPrev.await(TIMEOUT_LENGTH, TIMEOUT_UNIT));
+
+        table.notifyListeners(i(3), i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+        updateGraph.completeCycleForUnitTests();
+        cycleCompleted.countDown();
+
+        final Table snapshot = snapshotFuture.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        TstUtils.assertTableEquals(TableTools.newTable(intCol("x", 1, 4, 2, 3)), snapshot);
+    }
+
+    @Test
     public void testSnapshotLiveness() {
         final QueryTable trigger, base, snap;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
@@ -1347,6 +1403,85 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
             trigger.notifyListeners(downstream);
         });
         TstUtils.assertTableEquals(snap, base);
+    }
+
+    @Test
+    public void testStaticTriggerSnapshotLiveness() {
+        final QueryTable base;
+        final SingletonLivenessManager baseManager;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            base = TstUtils.testRefreshingTable(i(0).toTracking(), col("x", 1));
+            baseManager = new SingletonLivenessManager(base);
+        }
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Table snapshot = base.snapshot();
+            final Table snapshotWhen = base.snapshotWhen(TableTools.emptyTable(1), Flag.INITIAL);
+            TstUtils.assertTableEquals(base, snapshot);
+            TstUtils.assertTableEquals(base, snapshotWhen);
+
+            // the static results hold copies of the data, so the base is free to go once its own manager releases it
+            updateGraph.exclusiveLock().doLocked(baseManager::release);
+            assertFalse(base.tryRetainReference());
+            TstUtils.assertTableEquals(TableTools.newTable(intCol("x", 1)), snapshot);
+        }
+    }
+
+    @Test
+    public void testIncrementalSnapshotOfStaticBaseLiveness() {
+        final QueryTable trigger;
+        final SingletonLivenessManager triggerManager;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            trigger = TstUtils.testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+            triggerManager = new SingletonLivenessManager(trigger);
+        }
+        final Table base = TableTools.newTable(intCol("A", 1, 2));
+
+        final Table snapshot;
+        final SingletonLivenessManager snapshotManager;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            snapshot = base.snapshotWhen(trigger, Flag.INCREMENTAL);
+            snapshotManager = new SingletonLivenessManager(snapshot);
+        }
+        assertEquals(0, snapshot.size());
+
+        // the first trigger tick copies the static base, after which the result can never change
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(trigger, i(1), intCol("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+        TstUtils.assertTableEquals(base.updateView("T=2"), snapshot);
+        assertFalse(trigger.hasListeners());
+
+        updateGraph.exclusiveLock().doLocked(triggerManager::release);
+        assertFalse(trigger.tryRetainReference());
+        TstUtils.assertTableEquals(base.updateView("T=2"), snapshot);
+        updateGraph.exclusiveLock().doLocked(snapshotManager::release);
+    }
+
+    @Test
+    public void testSnapshotHistoryLiveness() {
+        final QueryTable trigger, source, history;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            source = TstUtils.testRefreshingTable(i(0).toTracking(), col("x", 1));
+            trigger = TstUtils.testRefreshingTable(i(0).toTracking(), col("T", 1));
+            final Table base = source.update("y = x * 2");
+            history = (QueryTable) base.snapshotWhen(trigger, Flag.HISTORY);
+            history.retainReference();
+        }
+
+        TstUtils.assertTableEquals(TableTools.newTable(intCol("T", 1), intCol("x", 1), intCol("y", 2)), history);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(0), col("x", 5));
+            source.notifyListeners(i(), i(), i(0));
+            TstUtils.addToTable(trigger, i(1), col("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+        TstUtils.assertTableEquals(
+                TableTools.newTable(intCol("T", 1, 2), intCol("x", 1, 5), intCol("y", 2, 10)), history);
+
+        history.dropReference();
     }
 
     @Test

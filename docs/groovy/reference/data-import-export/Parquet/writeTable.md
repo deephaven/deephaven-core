@@ -58,7 +58,7 @@ A Parquet file located in the specified path.
 ## Examples
 
 > [!NOTE]
-> All examples in this document write data to the `/data` directory in Deephaven. For more information on this directory and how it relates to your local file system, see [Docker data volumes](../../../conceptual/docker-data-volumes.md).
+> All examples in this document write data to the `/data` directory in Deephaven. For more information on this directory and how it relates to your local file system, see [Docker bind mounts](../../../conceptual/docker-data-volumes.md).
 
 ### Single Parquet file
 
@@ -99,5 +99,5 @@ ParquetTools.writeTable(source, "/data/output_GZIP.parquet", ParquetTools.GZIP)
 - [Write Parquet files](../../../how-to-guides/data-import-export/parquet-export.md)
 - [`readTable`](./readTable.md)
 - [`writeKeyValuePartitionedTable`](./writeKeyValuePartitionedTable.md)
-- [Docker data volumes](../../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTable(io.deephaven.engine.table.Table,java.lang.String))

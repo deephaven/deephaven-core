@@ -4,10 +4,9 @@
 """This module provides utilities for listening to table changes."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from functools import wraps
 from inspect import signature
-from typing import Callable, Optional, Union
 
 import jpy
 import numpy
@@ -49,9 +48,7 @@ class TableUpdate(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_table_update
 
-    def added(
-        self, cols: Optional[Union[str, list[str]]] = None
-    ) -> dict[str, numpy.ndarray]:
+    def added(self, cols: str | list[str] | None = None) -> dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of
         all the added rows in the columns.
 
@@ -73,7 +70,7 @@ class TableUpdate(JObjectWrapper):
         )
 
     def added_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, list[str]]] = None
+        self, chunk_size: int, cols: str | list[str] | None = None
     ) -> Generator[dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of added rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the rows in the chunk.
@@ -96,9 +93,7 @@ class TableUpdate(JObjectWrapper):
             prev=False,
         )
 
-    def removed(
-        self, cols: Optional[Union[str, list[str]]] = None
-    ) -> dict[str, numpy.ndarray]:
+    def removed(self, cols: str | list[str] | None = None) -> dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of
         all the removed rows in the columns.
 
@@ -116,7 +111,7 @@ class TableUpdate(JObjectWrapper):
         )
 
     def removed_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, list[str]]] = None
+        self, chunk_size: int, cols: str | list[str] | None = None
     ) -> Generator[dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of removed rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the rows in the chunk.
@@ -139,9 +134,7 @@ class TableUpdate(JObjectWrapper):
             prev=True,
         )
 
-    def modified(
-        self, cols: Optional[Union[str, list[str]]] = None
-    ) -> dict[str, numpy.ndarray]:
+    def modified(self, cols: str | list[str] | None = None) -> dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of the current values of
         all the modified rows in the columns.
 
@@ -163,7 +156,7 @@ class TableUpdate(JObjectWrapper):
         )
 
     def modified_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, list[str]]] = None
+        self, chunk_size: int, cols: str | list[str] | None = None
     ) -> Generator[dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of modified rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the current values of the rows in the chunk.
@@ -187,7 +180,7 @@ class TableUpdate(JObjectWrapper):
         )
 
     def modified_prev(
-        self, cols: Optional[Union[str, list[str]]] = None
+        self, cols: str | list[str] | None = None
     ) -> dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of the previous values of
         all the modified rows in the columns.
@@ -210,7 +203,7 @@ class TableUpdate(JObjectWrapper):
         )
 
     def modified_prev_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, list[str]]] = None
+        self, chunk_size: int, cols: str | list[str] | None = None
     ) -> Generator[dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of modified rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the previous values of the rows in the chunk.
@@ -308,10 +301,10 @@ class TableListenerHandle(JObjectWrapper):
     def __init__(
         self,
         t: Table,
-        listener: Union[Callable[[TableUpdate, bool], None], TableListener],
-        description: Optional[str] = None,
-        dependencies: Optional[Union[Table, Sequence[Table]]] = None,
-        on_error: Optional[Callable[[Exception], None]] = None,
+        listener: Callable[[TableUpdate, bool], None] | TableListener,
+        description: str | None = None,
+        dependencies: Table | Sequence[Table] | None = None,
+        on_error: Callable[[Exception], None] | None = None,
     ):
         """Creates a new table listener handle with dependencies.
 
@@ -430,11 +423,11 @@ class TableListenerHandle(JObjectWrapper):
 
 def listen(
     t: Table,
-    listener: Union[Callable[[TableUpdate, bool], None], TableListener],
-    description: Optional[str] = None,
+    listener: Callable[[TableUpdate, bool], None] | TableListener,
+    description: str | None = None,
     do_replay: bool = False,
-    dependencies: Optional[Union[Table, Sequence[Table]]] = None,
-    on_error: Optional[Callable[[Exception], None]] = None,
+    dependencies: Table | Sequence[Table] | None = None,
+    on_error: Callable[[Exception], None] | None = None,
 ) -> TableListenerHandle:
     """This is a convenience function that creates a TableListenerHandle object and immediately starts it to listen
     for table updates.
@@ -504,7 +497,7 @@ class _ListenerRecorder(JObjectWrapper):
         )
         self.table = table
 
-    def table_update(self) -> Optional[TableUpdate]:
+    def table_update(self) -> TableUpdate | None:
         """Gets the table update from the listener recorder. If there is no update in the current update graph cycle,
         returns None.
 
@@ -521,7 +514,7 @@ class MergedListener(ABC):
 
     @abstractmethod
     def on_update(
-        self, updates: dict[Table, Optional[TableUpdate]], is_replay: bool
+        self, updates: dict[Table, TableUpdate | None], is_replay: bool
     ) -> None:
         """The required method on a listener object that receives table updates from the
         tables that are listened to.
@@ -540,7 +533,7 @@ class MergedListener(ABC):
 class MergedListenerHandle(JObjectWrapper):
     """A handle to manage a merged listener's lifecycle."""
 
-    listener: Callable[[dict[Table, Optional[TableUpdate]], bool], None]
+    listener: Callable[[dict[Table, TableUpdate | None], bool], None]
 
     j_object_type = _JPythonMergedListenerAdapter
 
@@ -551,12 +544,11 @@ class MergedListenerHandle(JObjectWrapper):
     def __init__(
         self,
         tables: Sequence[Table],
-        listener: Union[
-            Callable[[dict[Table, Optional[TableUpdate]], bool], None], MergedListener
-        ],
-        description: Optional[str] = None,
-        dependencies: Optional[Union[Table, Sequence[Table]]] = None,
-        on_error: Optional[Callable[[Exception], None]] = None,
+        listener: Callable[[dict[Table, TableUpdate | None], bool], None]
+        | MergedListener,
+        description: str | None = None,
+        dependencies: Table | Sequence[Table] | None = None,
+        on_error: Callable[[Exception], None] | None = None,
     ):
         """Creates a new MergedListenerHandle with the provided listener recorders and dependencies.
 
@@ -676,9 +668,11 @@ class MergedListenerHandle(JObjectWrapper):
                     j_replay_updates = (
                         self.merged_listener_adapter.currentRowsAsUpdates()
                     )
-                    replay_updates: dict[Table, Optional[TableUpdate]] = {
+                    replay_updates: dict[Table, TableUpdate | None] = {
                         t: TableUpdate(t, tu)
-                        for t, tu in zip(self.tables, j_list_to_list(j_replay_updates))
+                        for t, tu in zip(
+                            self.tables, j_list_to_list(j_replay_updates), strict=True
+                        )
                     }
                     try:
                         self.listener(replay_updates, True)
@@ -708,13 +702,11 @@ class MergedListenerHandle(JObjectWrapper):
 
 def merged_listen(
     tables: Sequence[Table],
-    listener: Union[
-        Callable[[dict[Table, Optional[TableUpdate]], bool], None], MergedListener
-    ],
+    listener: Callable[[dict[Table, TableUpdate | None], bool], None] | MergedListener,
     do_replay: bool = False,
-    description: Optional[str] = None,
-    dependencies: Optional[Union[Table, Sequence[Table]]] = None,
-    on_error: Optional[Callable[[Exception], None]] = None,
+    description: str | None = None,
+    dependencies: Table | Sequence[Table] | None = None,
+    on_error: Callable[[Exception], None] | None = None,
 ) -> MergedListenerHandle:
     """This is a convenience function that creates a MergedListenerHandle object and immediately starts it to
     listen for table updates.

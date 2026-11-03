@@ -149,6 +149,10 @@ public class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExch
             return;
         }
 
+        // must precede subscribe(), which may send the schema immediately
+        marshaller.applyCompression(marshallerForExport, export,
+                ticketRouter.getLogNameFor(subscriptionRequest.ticketAsByteBuffer(), "table"));
+
         final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.of(subscriptionRequest);
 
         final ExchangeMarshaller.Subscription newSubscriptionObject =

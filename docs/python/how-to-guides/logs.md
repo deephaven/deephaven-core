@@ -17,10 +17,10 @@ docker logs <CONTAINER>
 ```
 
 > [!NOTE]
-> If you do not know the name of your container, use the following command in your terminal to show all running containers:
+> If you do not know the name of your container, run the following command. It lists all containers, including stopped ones:
 >
 > ```shell
-> docker stats
+> docker ps -a
 > ```
 
 It is useful to redirect the logs to a file for easy searchability. To do this, use `>` for standard output and `>&` for standard error.
@@ -33,7 +33,7 @@ docker logs <CONTAINER> >& log.txt
 
 One of the most common crashes involves the JVM. This results in a `SIGSEGV error`.
 
-When this error occurs, the server Docker container will generate a log. To retrieve that log from the Docker container to your local machine, copy the file. The container needs to be running to copy the log file.
+When this error occurs, the server Docker container generates a log. To retrieve that log from the Docker container to your local machine, copy the file. The container does not need to be running, but it must still exist. Copy the file before you remove the container with a command such as `docker compose down` or `docker rm`.
 
 Replace `<SERVER_CONTAINER>` with the name of your server:
 
@@ -42,10 +42,10 @@ docker cp <SERVER_CONTAINER>:/tmp/hs_err_pid1.log ./
 ```
 
 > [!NOTE]
-> If you do not know the name of your server container, run:
+> If you do not know the name of your server container, run the following command. It lists all containers, including stopped ones:
 >
 > ```shell
-> docker stats
+> docker ps -a
 > ```
 
 ## Debug log

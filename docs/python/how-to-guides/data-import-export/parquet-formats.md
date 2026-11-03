@@ -2,51 +2,85 @@
 title: Supported Parquet formats
 ---
 
-[Apache Parquet](https://parquet.apache.org/) is an open-source, column-oriented data file format for efficient data storage and retrieval. Parquet is designed for complex, large-scale data, with several types of data compression formats available.
+[Apache Parquet](https://parquet.apache.org/) is an open-source, column-oriented data file format for efficient data storage and retrieval. Parquet is designed for complex, large-scale data and supports several compression codecs.
 
-Parquet files are composed of row groups, a header, and a footer. Each row group contains data from every column, stored in a columnar format. This column-oriented structure optimizes performance and minimizes I/O. Parquet partitioning works by dividing the data into separate files based on specified criteria. For example, data may be partitioned by a date column, resulting in separate files for each day.
+Parquet files are composed of row groups, a header, and a footer. Each row group contains data from every column, stored in a columnar format. This column-oriented structure optimizes performance and minimizes I/O.
 
-Parquet is meant to be a standard interchange format for batch and interactive workloads. Deephaven supports standard Parquet file formats out of the box.
+Parquet is a standard interchange format for batch and interactive workloads. Deephaven reads most standard Parquet files without extra plugins or configuration. This page describes the file layouts Deephaven can read, the Parquet logical types whose Deephaven column types may be unexpected, and the column types Deephaven can't read.
 
-## Single Parquet file
+## File layouts
 
-Deephaven supports single Parquet files. Using [a single large Parquet file](../data-import-export/parquet-import.md#read-a-single-parquet-file) may be more storage efficient than many smaller files with accompanying metadata. It can be faster to read and process because there is less overhead in opening and closing files.
+Deephaven reads four Parquet file layouts, one for each value of [`ParquetFileLayout`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout). When you call [`read`](../../reference/data-import-export/Parquet/readTable.md) without a `file_layout` argument, Deephaven infers the layout from the path:
 
-## Parquet file directories
+- A path ending in `.parquet` is read as a single file.
+- A path whose last component is `_metadata` or `_common_metadata` is read as metadata-partitioned. The `_metadata` file must exist in the same directory.
+- Any other path is treated as a directory. Deephaven reads it as metadata-partitioned if it contains a `_metadata` file, and as key-value partitioned otherwise. Deephaven also reads flat directories this way. A single Parquet file must have a name ending in `.parquet`, even when you set the [single-file layout](#single-parquet-file) explicitly.
 
-Directories can contain multiple Parquet files. These can be [loaded as sections of a single table](../data-import-export/parquet-import.md#partitioned-parquet-directories). They must be _flat_ Parquet files -- they have no partitioning columns.
+To read a layout explicitly, pass its value as the `file_layout` argument to `read`:
 
-A flat layout may be useful if:
+| Layout                                                                  | `ParquetFileLayout` value |
+| ----------------------------------------------------------------------- | ------------------------- |
+| [Single Parquet file](#single-parquet-file)                             | `SINGLE_FILE`             |
+| [Flat partitioned directories](#flat-partitioned-directories)           | `FLAT_PARTITIONED`        |
+| [Key-value partitioned directories](#key-value-partitioned-directories) | `KV_PARTITIONED`          |
+| [Metadata-partitioned directories](#metadata-partitioned-directories)   | `METADATA_PARTITIONED`    |
 
-- you want to control the size of your file.
-- you want to write one piece at a time.
-- you are writing files sequentially; e.g., writing once per hour.
-- you have different systems publishing.
-- you are using a third-party index.
+### Single Parquet file
 
-## Nested Parquet files
+Deephaven supports single Parquet files. Using [a single large Parquet file](./parquet-import.md#read-a-single-parquet-file) may be more storage efficient than many smaller files with accompanying [metadata files](#metadata-partitioned-directories). It can be faster to read and process because there is less overhead in opening and closing files.
 
-These Parquet files are hierarchically [partitioned](../../reference/data-import-export/Parquet/readTable.md#partitioned-datasets), nested in directories with names in the form of "key=value". All Parquet files are stored at the same nesting level. Choose this format if you have hierarchical partitioning and want Deephaven to determine the partitioning columns and value types automatically. Deephaven infers partitioning column names from the “keys” and parses the value type. This is useful if you do not have metadata files with information about expected types.
+Deephaven doesn't support refreshing reads of a single file, so `is_refreshing=True` fails.
 
-Note that if Deephaven does not know how to parse a value, it becomes a string. Support for unknown types can be accomplished with [`codec_args`](/core/pydoc/code/deephaven.parquet.html#module-deephaven.parquet).
+### Flat partitioned directories
 
-## Metadata files
+A directory can contain multiple Parquet files, and Deephaven can [load them as sections of a single table](./parquet-import.md#read-a-flat-partitioned-parquet-directory). In a _flat_ partitioned directory, the Parquet files sit directly in one directory. A flat directory has no `key=value` subdirectories, so the table has no partitioning columns.
 
-Deephaven supports optional metadata files that let you specify the types of your partitioning columns, which may not be obvious otherwise. Top-level metadata files can supply the full table schema and information about partitioning columns, while leaf-level files provide additional information to the engine (such as grouping/indexing). Deephaven can discover your Parquet files without looking at the entire file system, and all metadata is loaded at once.
+When you write data, a flat layout may be useful if:
 
-## Logical type support
+- You want to control the size of each file.
+- You write one file at a time, for example, once per hour.
+- Several systems write files to the same directory.
 
-Deephaven maps Parquet [logical types](https://github.com/apache/parquet-format/blob/master/LogicalTypes.md) to Deephaven column types on read. The following non-obvious mappings are supported:
+### Key-value partitioned directories
 
-- **`ENUM`**: Read as `String`. The `ENUM` logical type is physically identical to `STRING` (both are `BINARY` with UTF-8 encoding) and is commonly used by tools such as Apache Spark and PyArrow to annotate columns with a finite set of string values. Deephaven reads `ENUM`-annotated columns transparently as `String`.
-- **`UINT_64`**: Read as `java.math.BigInteger`. Deephaven promotes the narrower unsigned integer types to a wider signed type that holds their full range — `UINT_8` and `UINT_16` become `char`, and `UINT_32` becomes `long` — but no Java primitive holds the full `UINT_64` range, so Deephaven reads these columns as `BigInteger` by default. Set `unsigned_long_target` on a [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) to choose a different type.
+In a key-value partitioned directory, Parquet files are hierarchically [partitioned](./parquet-import.md#read-partitioned-parquet-directories) into nested directories named `key=value`. All of the Parquet files sit at the same nesting level.
 
-### Reading `UINT_64` as a long
+Deephaven takes each partitioning column's name from the directory keys and infers its type from the directory values. Write data in this layout when it is partitioned hierarchically and you don't write [metadata files](#metadata-partitioned-directories) that record the partitioning column types.
 
-`BigInteger` represents every `UINT_64` value exactly, at the cost of an object per value. Two alternatives read the column as a primitive `long` instead:
+If Deephaven cannot infer a more specific type for a partition value, the column becomes a `String` column. To choose the type yourself, pass a table definition with the `table_definition` argument to `read`.
 
-- `UnsignedLongTarget.LONG` reads values that fit in a `long` and raises an error on any value greater than 2<sup>63</sup> - 1. Use this option when the data is known to stay within the `long` range and an unnoticed overflow is unacceptable.
-- `UnsignedLongTarget.SIGNED_LONG` reinterprets the bit pattern as signed, so values greater than 2<sup>63</sup> - 1 read as negative numbers. This option never fails, but it is imprecise in one further respect: 2<sup>63</sup> reads as `NULL_LONG`, which is indistinguishable from a null.
+See [Read a key-value partitioned Parquet directory](./parquet-import.md#read-a-key-value-partitioned-parquet-directory) for examples.
+
+### Metadata-partitioned directories
+
+A metadata-partitioned directory is a Parquet dataset with a `_metadata` file, and optionally a `_common_metadata` file, at its root:
+
+- `_metadata` describes every row group in every Parquet file in the dataset. Deephaven reads it to find all of the data files at once, without listing the directory tree.
+- `_common_metadata` supplies the full schema, including the partitioning columns, which `_metadata` does not describe. If a dataset has `_metadata` but no `_common_metadata`, Deephaven reads it without partitioning columns unless you pass a table definition with the `table_definition` argument to `read`.
+
+Write these files by passing `generate_metadata_files=True` to [`write`](../../reference/data-import-export/Parquet/writeTable.md) or [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md), as shown in [Export Parquet files](./parquet-export.md).
+
+Reading a metadata-partitioned directory with `is_refreshing=True` fails.
+
+## Unexpected logical type mappings
+
+Deephaven maps Parquet [logical types](https://github.com/apache/parquet-format/blob/master/LogicalTypes.md) to Deephaven column types on read. Some of these mappings are ones you might not expect:
+
+- **`ENUM`**: Read as `String`. Some Parquet writers use `ENUM` to mark columns that hold a finite set of string values. Physically, an `ENUM` column is stored the same way as a `STRING` column, as UTF-8 bytes in a `BINARY` column.
+- **`UINT_8` and `UINT_16`**: Read as `char`, Java's unsigned 16-bit type.
+- **`UINT_32`**: Read as `long`.
+- **`UINT_64`**: Read as `java.math.BigInteger` by default, because no Java primitive holds the full `UINT_64` range. To read it as a `long` instead, see [Reading `UINT_64` as a `long`](#reading-uint_64-as-a-long).
+
+### Reading `UINT_64` as a `long`
+
+`BigInteger` represents every `UINT_64` value exactly but allocates an object per value. To read the column as a primitive `long` instead, pass [`read`](../../reference/data-import-export/Parquet/readTable.md) a [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) for the column.
+
+When reading, every `ColumnInstruction` must set both `parquet_column_name` and `column_name`. Omitting either raises an error.
+
+Set `unsigned_long_target` to one of two [`UnsignedLongTarget`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.UnsignedLongTarget) options:
+
+- `UnsignedLongTarget.LONG` reads values that fit in a `long` and raises an error when Deephaven reads a page that contains a value greater than 2<sup>63</sup> - 1. The call to `read` itself succeeds; the error comes up when that data is accessed. Use this option when you know the data stays within the `long` range and an unnoticed overflow is unacceptable.
+- `UnsignedLongTarget.SIGNED_LONG` reinterprets the bit pattern as signed, so values greater than 2<sup>63</sup> - 1 read as negative numbers. This option never fails. The value 2<sup>63</sup> reads as [`NULL_LONG`](../../reference/query-language/types/nulls.md). Deephaven reserves that `long` value for null, so a stored 2<sup>63</sup> is indistinguishable from a null.
 
 The following example reads a `UINT_64` column as a `long`, rejecting any value that does not fit:
 
@@ -65,10 +99,21 @@ result = read(
 )
 ```
 
-Deephaven never writes `UINT_64`, so these options apply only to reads. Deephaven applies the same default and offers the same coercions when reading Arrow data; see the notes on integral coercion in the [Arrow Flight guide](./arrow-flight.md).
+Deephaven never writes `UINT_64`, so these options apply only to reads, and only when Deephaven infers the table definition. A table definition you supply governs the column type instead, and Deephaven rejects one that disagrees with the target. For how Arrow Flight handles unsigned 64-bit integers, see the [Arrow type support matrix](./arrow-flight.md#arrow-type-support-matrix).
+
+## Unsupported column types
+
+Deephaven can't infer a column type for the following Parquet columns:
+
+- `JSON`, `BSON`, `UUID`, `INTERVAL`, `FLOAT16`, `GEOMETRY`, `GEOGRAPHY`, `VARIANT`, and `MAP` columns
+- Group columns, also called structs, that have more than one field
+- Nested repeated columns, such as lists of lists
+
+Reading a file that contains such a column fails with an error unless you pass [`read`](../../reference/data-import-export/Parquet/readTable.md) a `table_definition` that leaves that column out.
 
 ## Related documentation
 
 - [Import Parquet into Deephaven video](https://youtu.be/k4gI6hSZ2Jc)
 - [Import Parquet files](./parquet-import.md)
 - [Export Parquet files](./parquet-export.md)
+- [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md)

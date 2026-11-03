@@ -89,7 +89,7 @@ std::vector<std::unique_ptr<AbstractFlexVectorBase>> MakeEmptyFlexVectorsFromSch
 std::unique_ptr<AbstractFlexVectorBase> MakeFlexVectorFromColumnSource(const ColumnSource &source, size_t begin,
     size_t end);
 void AssertAllSame(size_t val0, size_t val1, size_t val2);
-void AssertLeq(size_t lhs, size_t rhs, const char *format);
+void AssertLeq(size_t lhs, size_t rhs, fmt::format_string<size_t, size_t> format);
 }  // namespace
 
 ImmerTableState::ImmerTableState(std::shared_ptr<Schema> schema) : schema_(std::move(schema)) {
@@ -385,11 +385,14 @@ void AssertAllSame(size_t val0, size_t val1, size_t val2) {
   }
 }
 
-void AssertLeq(size_t lhs, size_t rhs, const char *format) {
+// Taking fmt::format_string (rather than const char*) lets fmt check the
+// callers' literal format strings at compile time. Inside, forward through
+// vformat: fmt::format would try to re-check the (now runtime) string.
+void AssertLeq(size_t lhs, size_t rhs, fmt::format_string<size_t, size_t> format) {
   if (lhs <= rhs) {
     return;
   }
-  auto message = fmt::format(format, lhs, rhs);
+  auto message = fmt::vformat(format, fmt::make_format_args(lhs, rhs));
   throw std::runtime_error(message);
 }
 }  // namespace

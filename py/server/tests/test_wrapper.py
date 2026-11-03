@@ -11,30 +11,33 @@ from tests.testbase import BaseTestCase
 
 
 def alpha():
-    return MyObject(0, "ALPHA")
+    return MyObject(0)
 
 
 def beta():
-    return MyObject(1, "BETA")
+    return MyObject(1)
 
 
 def charlie():
-    return MyObject(2, "CHARLIE")
+    return MyObject(2)
 
 
 def delta():
-    return MyObject(3, "DELTA")
+    return MyObject(3)
 
 
 def other():
-    return Other(0, "ALPHA")
+    return Other(0)
 
 
+# BigInteger's hashCode() for 0 to 3 is the value, and its toString() is the value in decimal. java.lang.Integer won't
+# do, because jpy returns it as a Python int. Each wrapper builds a new BigInteger from a string. BigInteger.valueOf
+# returns cached objects for small values, so the equality tests would compare one Java object with itself.
 class MyObject(JObjectWrapper):
-    j_object_type = jpy.get_type("io.deephaven.integrations.pyserver.wrapper.MyObject")
+    j_object_type = jpy.get_type("java.math.BigInteger")
 
-    def __init__(self, hash: int, s: str):
-        self._j_my_object = MyObject.j_object_type(hash, s)
+    def __init__(self, value: int):
+        self._j_my_object = MyObject.j_object_type(str(value))
 
     @property
     def j_object(self) -> jpy.JType:
@@ -42,10 +45,10 @@ class MyObject(JObjectWrapper):
 
 
 class Other(JObjectWrapper):
-    j_object_type = jpy.get_type("io.deephaven.integrations.pyserver.wrapper.MyObject")
+    j_object_type = jpy.get_type("java.math.BigInteger")
 
-    def __init__(self, hash: int, s: str):
-        self._j_my_object = Other.j_object_type(hash, s)
+    def __init__(self, value: int):
+        self._j_my_object = Other.j_object_type(str(value))
 
     @property
     def j_object(self) -> jpy.JType:
@@ -54,17 +57,19 @@ class Other(JObjectWrapper):
 
 class WrapperTestCase(BaseTestCase):
     def test_repr(self):
-        regex = r"^tests.test_wrapper.MyObject\(io.deephaven.integrations.pyserver.wrapper.MyObject\(objectRef=0x.+\)\)$"
+        regex = (
+            r"^tests.test_wrapper.MyObject\(java.math.BigInteger\(objectRef=0x.+\)\)$"
+        )
         self.assertRegex(repr(alpha()), regex)
         self.assertRegex(repr(beta()), regex)
         self.assertRegex(repr(charlie()), regex)
         self.assertRegex(repr(delta()), regex)
 
     def test_str(self):
-        self.assertEqual(str(alpha()), "ALPHA")
-        self.assertEqual(str(beta()), "BETA")
-        self.assertEqual(str(charlie()), "CHARLIE")
-        self.assertEqual(str(delta()), "DELTA")
+        self.assertEqual(str(alpha()), "0")
+        self.assertEqual(str(beta()), "1")
+        self.assertEqual(str(charlie()), "2")
+        self.assertEqual(str(delta()), "3")
 
     def test_hash(self):
         self.assertEqual(hash(alpha()), 0)

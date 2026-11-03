@@ -18,6 +18,7 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    properties under `Configuration/` and `props/`, gRPC definitions under `proto/`, etc. — see
    that skill's "Technical accuracy review" step for the full path list). Search source first;
    never correct an example from memory.
+   If the snippet imports or calls a Deephaven class or member, confirm in source that it is `public`; examples may use only public API, even in Groovy, which ignores Java visibility (see `deephaven-core-accuracy-check`'s **Non-public APIs in examples**).
 
    **Verify the whole sentence, not just the changed words.** If the edit rewords one clause of a
    sentence or one sentence of a paragraph, check the claims in the clauses around it too. They are

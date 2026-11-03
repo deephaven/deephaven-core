@@ -7,7 +7,7 @@
 from collections.abc import Sequence
 from enum import Enum
 from functools import cached_property
-from typing import Any, Optional
+from typing import Any
 from warnings import warn
 
 import jpy
@@ -61,7 +61,7 @@ class ColumnDefinition(JObjectWrapper):
         return from_jtype(self.j_column_definition.getDataType())  # type: ignore[return-value]
 
     @cached_property
-    def component_type(self) -> Optional[DType]:
+    def component_type(self) -> DType | None:
         """The column component type."""
         return from_jtype(self.j_column_definition.getComponentType())
 
@@ -78,7 +78,7 @@ class Column(ColumnDefinition):
         self,
         name: str,
         data_type: DType,
-        component_type: Optional[DType] = None,
+        component_type: DType | None = None,
         column_type: ColumnType = ColumnType.NORMAL,
     ):
         """Deprecated for removal next release, prefer col_def."""
@@ -99,9 +99,9 @@ class InputColumn:
         self,
         name: str,
         data_type: DType,
-        component_type: Optional[DType] = None,
+        component_type: DType | None = None,
         column_type: ColumnType = ColumnType.NORMAL,
-        input_data: Optional[Any] = None,
+        input_data: Any | None = None,
     ):
         """Creates an InputColumn.
         Args:
@@ -125,7 +125,7 @@ class InputColumn:
         except Exception as e:
             raise DHError(e, f"failed to create an InputColumn ({name}).") from e
 
-    def _to_j_column(self, input_data: Optional[Any] = None) -> jpy.JType:
+    def _to_j_column(self, input_data: Any | None = None) -> jpy.JType:
         if input_data is None:
             return _JColumn.empty(
                 _JColumnHeader.of(
@@ -153,7 +153,7 @@ class InputColumn:
 def col_def(
     name: str,
     data_type: DType,
-    component_type: Optional[DType] = None,
+    component_type: DType | None = None,
     column_type: ColumnType = ColumnType.NORMAL,
 ) -> ColumnDefinition:
     """Creates a ColumnDefinition.

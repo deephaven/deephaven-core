@@ -294,13 +294,9 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
 
             @Override
             public void close() {
-                if (RspArray.debug) {
-                    throw new IllegalStateException();
-                }
-                // We purposely /do not/ close the RspRowSequence part as it will get reused.
-                // The API doc for Iterator states that clients should /never/ call close. So that we ended up here
-                // means there is some kind of bug.
-                closeRowSequenceAsChunkImpl();
+                // The API doc for Iterator states that clients should /never/ close the RowSequences it returns; this
+                // one is reused for the next call.
+                throw new IllegalStateException("RowSequence returned by a RowSequence.Iterator must not be closed");
             }
         }
 

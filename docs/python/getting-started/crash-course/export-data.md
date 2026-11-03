@@ -2,7 +2,18 @@
 title: Import and Export Data
 ---
 
-Data I/O is mission-critical for any real-time data analysis platform. Deephaven supports a wide variety of data sources and formats, including [CSV](../../reference/cheat-sheets/csv.md), [Parquet](../../reference/cheat-sheets/parquet.md), [Kafka](../../reference/cheat-sheets/kafka.md), and more. This document covers those formats in Deephaven.
+Data I/O is mission-critical for any real-time data analysis platform. Deephaven supports a wide variety of data sources and formats, including [CSV](../../reference/cheat-sheets/csv.md), [Parquet](../../reference/cheat-sheets/parquet.md), [Kafka](../../reference/cheat-sheets/kafka.md), and more. This chapter shows how to:
+
+- Read and write CSV and Parquet data.
+- Read Parquet files from S3.
+- Consume and publish Kafka streams.
+- Read and write Iceberg tables.
+- Convert tables to HTML.
+- Use pandas DataFrames as a bridge to other Python libraries.
+- Use function-generated tables to pull in data from other sources.
+
+> [!NOTE]
+> The first CSV and Parquet examples read files from Deephaven's [example data](https://github.com/deephaven/examples). A container has those files at `/data/examples` only when you start it from a [deployment that includes example data](../../getting-started/docker-install.md#choose-a-deployment). The `docker run` command in [Get started](./get-started.md) does not include them. To run these examples, start one of those deployments, or download the files into the `data/examples` directory that command mounts, keeping the same paths.
 
 ## CSV
 
@@ -19,7 +30,7 @@ from deephaven import read_csv
 iris = read_csv("/data/examples/Iris/csv/iris.csv")
 ```
 
-It can also [write data to CSV](../../how-to-guides/data-import-export/csv-export.md). The code below writes that same table back to a CSV file.
+Deephaven can also [write data to CSV](../../how-to-guides/data-import-export/csv-export.md). The code below writes that same table back to a CSV file.
 
 ```python test-set=1 order=null
 from deephaven import write_csv
@@ -27,7 +38,7 @@ from deephaven import write_csv
 write_csv(iris, "/data/iris_new.csv")
 ```
 
-Just to show that it's there:
+Just to show that it's there, the code below reads the new file back.
 
 ```python test-set=1 order=iris_new
 iris_new = read_csv("/data/iris_new.csv")
@@ -35,7 +46,7 @@ iris_new = read_csv("/data/iris_new.csv")
 
 ## Parquet
 
-[Apache Parquet](../../reference/cheat-sheets/parquet.md) is a columnar storage format that supports compression to store more data in less space. Deephaven supports reading and writing single Parquet files and partitioned Parquet directories. Parquet data can be stored locally or in [S3](/core/pydoc/code/deephaven.experimental.s3.html#module-deephaven.experimental.s3).
+[Apache Parquet](https://parquet.apache.org/) is a columnar storage format that supports compression to store more data in less space. Deephaven reads and writes single Parquet files as well as [partitioned Parquet directories](../../how-to-guides/data-import-export/parquet-import.md#read-partitioned-parquet-directories), where one table's data is split across many Parquet files in a directory. Deephaven reads Parquet data stored locally or in cloud object storage, such as Amazon S3, any S3-compatible object store, and Google Cloud Storage.
 
 The example below reads from a local Parquet file.
 
@@ -47,26 +58,26 @@ crypto_trades = dhpq.read(
 )
 ```
 
-That same table can be written back to a Parquet file:
+The code below writes that same table back to a Parquet file.
 
 ```python test-set=2 order=null
 dhpq.write(crypto_trades, "/data/crypto_trades_new.parquet")
 ```
 
-Just to show that it worked:
+Just to show that it worked, the code below reads the new file back.
 
 ```python test-set=2 order=crypto_trades_new
 crypto_trades_new = dhpq.read("/data/crypto_trades_new.parquet")
 ```
 
-The example below reads a Parquet file from S3. This example uses [RustFS](https://rustfs.com/) as a local S3-compatible object store. The `s3` module in Deephaven provides a way to specify how to connect to the S3 instance.
+The example below reads a Parquet file from a [RustFS](https://rustfs.com/) server at `rustfs.example.com`. RustFS is an S3-compatible object store. The [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class from the [`deephaven.experimental.s3`](/core/pydoc/code/deephaven.experimental.s3.html) module specifies how to connect to the S3 instance. To run the example, replace the endpoint, file path, and credentials with those of your own S3 instance. See [Read Parquet from S3](../../how-to-guides/data-import-export/parquet-import.md#from-s3) for more.
 
-```python test-set=2 docker-config=rustfs order=grades
-from deephaven import parquet
+```python test-set=7 docker-config=rustfs order=grades
+from deephaven import parquet as dhpq
 from deephaven.experimental import s3
 
 # pass the S3 URL, as well as instructions on how to talk to the S3 instance
-grades = parquet.read(
+grades = dhpq.read(
     path="s3://example-bucket/grades/grades.parquet",
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
@@ -81,9 +92,13 @@ grades = parquet.read(
 
 ## Kafka
 
-[Apache Kafka](https://kafka.apache.org/) is a distributed event streaming platform that can be used to publish and subscribe to streams of records. Deephaven can consume and publish to Kafka streams. See the [Kafka guide](../../how-to-guides/data-import-export/kafka-stream.md) for more. The code below consumes a stream.
+[Apache Kafka](https://kafka.apache.org/) is a distributed event streaming platform for publishing and subscribing to streams of records. Deephaven can consume data from Kafka streams and publish data to them. See the [Kafka guide](../../how-to-guides/data-import-export/kafka-stream.md) for more.
 
-```python test-set=3 docker-config=kafka order=result_append
+The examples below connect to a Kafka broker at `redpanda:9092`. Redpanda is a Kafka-compatible broker. To run the examples, start Deephaven alongside Redpanda as described in [Launching Kafka with Deephaven](../../how-to-guides/data-import-export/kafka-stream.md#launching-kafka-with-deephaven). Run the `docker compose` commands below from the directory that holds the `docker-compose.yml` file from that guide.
+
+The code below consumes a stream.
+
+```python test-set=3 docker-config=kafka ticking-table order=null
 from deephaven.stream.kafka import consumer as kc
 from deephaven import dtypes as dht
 
@@ -96,14 +111,16 @@ result_append = kc.consume(
 )
 ```
 
+The `result_append` table starts empty. Rows appear as records arrive on `test.topic`. To send some, run `docker compose exec redpanda rpk topic produce test.topic` in a terminal and type a few lines. `rpk` is Redpanda's command-line client.
+
 Similarly, this code publishes the data in a Deephaven table to a Kafka stream.
 
-```python test-set=4 docker-config=kafka order=source
+```python test-set=4 docker-config=kafka ticking-table order=null
 from deephaven.stream.kafka import producer as kp
 from deephaven import time_table
 
 # create ticking table to publish to Kafka stream
-source = time_table("PT1s").update("X = i")
+source = time_table("PT1s").update("X = `Value ` + i")
 
 # publish to time-topic
 write_topic = kp.produce(
@@ -115,11 +132,15 @@ write_topic = kp.produce(
 )
 ```
 
+To see the records arrive, run `docker compose exec redpanda rpk topic consume time-topic` in a terminal.
+
 ## Iceberg
 
-[Apache Iceberg](https://iceberg.apache.org/) is a high-performance, open table format for huge analytic datasets. Deephaven's `deephaven.experimental.iceberg` module allows you to interact with Iceberg tables. For more on Deephaven's Iceberg integration, see the [Iceberg user guide](../../how-to-guides/data-import-export/iceberg.md).
+[Apache Iceberg](https://iceberg.apache.org/) is a high-performance, open table format for huge analytic datasets. Deephaven's [`deephaven.experimental.iceberg`](/core/pydoc/code/deephaven.experimental.iceberg.html#module-deephaven.experimental.iceberg) module reads and writes Iceberg tables. For more on Deephaven's Iceberg integration, see the [Iceberg user guide](../../how-to-guides/data-import-export/iceberg.md).
 
-The following example reads data from an existing Iceberg table into a Deephaven table. It uses a custom Docker deployment found [here](../../how-to-guides/data-import-export/iceberg.md#a-deephaven-deployment-for-iceberg).
+Both Iceberg examples need the custom Docker deployment described in [A Deephaven deployment for Iceberg](../../how-to-guides/data-import-export/iceberg.md#a-deephaven-deployment-for-iceberg).
+
+An Iceberg catalog adapter connects Deephaven to an Iceberg catalog. The following example creates one with [`iceberg.adapter`](../../reference/iceberg/adapter.md) and uses it to read an existing Iceberg table into a Deephaven table.
 
 ```python test-set=5 docker-config=iceberg order=deephaven_table
 from deephaven.experimental import iceberg
@@ -152,27 +173,11 @@ deephaven_table = my_iceberg_table_adapter.table(
 # Now 'deephaven_table' can be used like any other Deephaven table.
 ```
 
-Similarly, this code creates a new Iceberg table and writes a Deephaven table to it. [`create_table`](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.IcebergCatalogAdapter.create_table) fails if the table already exists; use [`load_table`](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.IcebergCatalogAdapter.load_table) to write to an existing table.
+Using the same `iceberg_catalog_adapter`, this code creates a new Iceberg table and writes a Deephaven table to it. [`create_table`](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.IcebergCatalogAdapter.create_table) fails if the table already exists. To write to an existing table, use [`load_table`](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.IcebergCatalogAdapter.load_table) instead.
 
-```python docker-config=iceberg order=null
-from deephaven.experimental import iceberg
+```python test-set=5 order=null
 from deephaven import new_table
 from deephaven.column import int_col, string_col
-
-# Configure the Iceberg catalog adapter.
-iceberg_catalog_adapter = iceberg.adapter(
-    name="rustfs-iceberg",
-    properties={
-        "type": "rest",
-        "uri": "http://rest:8181",
-        "warehouse": "s3a://warehouse/wh",
-        "client.region": "us-east-1",
-        "s3.access-key-id": "admin",
-        "s3.secret-access-key": "password",
-        "s3.endpoint": "http://rustfs:9000",
-        "io-impl": "org.apache.iceberg.aws.s3.S3FileIO",
-    },
-)
 
 # Create a sample Deephaven table.
 my_deephaven_table = new_table(
@@ -183,7 +188,7 @@ my_deephaven_table = new_table(
     ]
 )
 
-# Create a new Iceberg table. This fails if 'crash_course_db.output_table' already exists.
+# Create a new Iceberg table.
 iceberg_target_adapter = iceberg_catalog_adapter.create_table(
     table_identifier="crash_course_db.output_table",
     table_definition=my_deephaven_table.definition,
@@ -201,9 +206,9 @@ iceberg_writer.append(iceberg.IcebergWriteInstructions([my_deephaven_table]))
 
 ## HTML
 
-Deephaven tables can be converted into an HTML representation using the `to_html` function from the `deephaven.html` module. This is useful for displaying small tables in web pages or for creating simple HTML reports. The HTML string is built in memory, so avoid converting large tables.
+The [`to_html`](../../reference/data-import-export/HTML/to-html.md) function from the [`deephaven.html`](/core/pydoc/code/deephaven.html.html) module converts a Deephaven table into an HTML string. This is useful for displaying small tables in web pages or for creating simple HTML reports. `to_html` builds the whole string in memory, so avoid converting large tables.
 
-```python
+```python order=:log,source_table
 from deephaven import new_table
 from deephaven.column import string_col
 from deephaven.html import to_html
@@ -219,56 +224,25 @@ html_string = to_html(source_table)
 
 # The html_string now contains the HTML representation of the table.
 # You can print it or write it to a file:
-# print(html_string)
-# with open("/data/my_table.html", "w") as f:
-#     f.write(html_string)
+print(html_string)
+with open("/data/my_table.html", "w") as f:
+    f.write(html_string)
 ```
 
-## Pandas DataFrames
+## pandas DataFrames
 
-Deephaven provides functions to convert tables to [Pandas DataFrames](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) and vice-versa using the `deephaven.pandas` module. This is particularly useful when you want to leverage Pandas' extensive data manipulation and analysis capabilities or integrate with other Python libraries that operate on DataFrames.
-
-To convert a Deephaven table to a Pandas DataFrame, use the `to_pandas` function.
-
-```python order=iris,iris_df
-from deephaven import read_csv
-from deephaven.pandas import to_pandas
-
-# Assuming 'iris' table from the CSV example above
-iris = read_csv("/data/examples/Iris/csv/iris.csv")
-
-iris_df = to_pandas(iris)
-
-# iris_df is now a Pandas DataFrame
-# print(iris_df.head())
-```
+The [Python integrations](./py-integrations.md#pandas) chapter showed how [`to_pandas`](../../reference/pandas/to-pandas.md) and [`to_table`](../../reference/pandas/to-table.md) from the [`deephaven.pandas`](/core/pydoc/code/deephaven.pandas.html) module convert between Deephaven tables and [pandas DataFrames](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html). For I/O, that makes pandas a bridge. Convert a table with `to_pandas` to leverage pandas' extensive data manipulation and analysis capabilities, or to hand it to any other Python library that works on DataFrames. Convert a DataFrame with `to_table` to bring a library's results back into Deephaven.
 
 > [!NOTE]
-> Converting a table to a Pandas DataFrame copies the entire table into memory. For large tables, filter or aggregate the data in Deephaven first.
+> Converting a table to a pandas DataFrame copies the entire table into memory. For large tables, [filter](../../how-to-guides/use-filters.md) or [aggregate](../../how-to-guides/combined-aggregations.md) the data in Deephaven first.
 
-You can also convert a Pandas DataFrame back to a Deephaven table using `to_table` from the same module.
+## Function-generated tables
 
-```python order=sample_df,deephaven_table_from_df
-import pandas as pd
-from deephaven.pandas import to_table
+[Function-generated tables](../../how-to-guides/function-generated-tables.md) are a powerful tool for ingesting data from external sources such as WebSockets, databases, and much more. A Python function populates a function-generated table. Deephaven reruns the function at a regular interval, or whenever one of the tables you pass in the `source_tables` argument of [`function_generated_table`](../../reference/table-operations/create/function_generated_table.md) changes. The table does no data I/O on its own, but your function can read from an external source each time it runs.
 
-# Create a sample Pandas DataFrame
-data = {"col1": [1, 2], "col2": ["a", "b"]}
-sample_df = pd.DataFrame(data)
+The following example regenerates data in a table once per second. To keep the example self-contained, the function generates random data instead of reading from an external source.
 
-# Convert the Pandas DataFrame to a Deephaven table
-deephaven_table_from_df = to_table(sample_df)
-
-# deephaven_table_from_df is now a Deephaven table
-# You can view its contents or perform Deephaven operations on it
-# deephaven_table_from_df.show()
-```
-
-## Function generated tables
-
-[Function generated tables](../../how-to-guides/function-generated-tables.md) are tables populated by a Python function. The function is reevaluated when source tables change or at a regular interval. The following example re-generates data in a table once per second.
-
-```python test-set=6 ticking-table order=fgt
+```python test-set=6 ticking-table order=null
 from deephaven import empty_table, function_generated_table
 
 
@@ -276,8 +250,8 @@ def regenerate():
     return empty_table(10).update(
         [
             "Group = randomInt(1, 4)",
-            "GroupMean = Group == 1 ? -10.0 : Group == 2 ? 0.0 : Group == 3 ? 10.0 : NULL_DOUBLE",
-            "GroupStd = Group == 1 ? 2.5 : Group == 2 ? 0.5 : Group == 3 ? 1.0 : NULL_DOUBLE",
+            "GroupMean = Group == 1 ? -10.0 : Group == 2 ? 0.0 : 10.0",
+            "GroupStd = Group == 1 ? 2.5 : Group == 2 ? 0.5 : 1.0",
             "X = randomGaussian(GroupMean, GroupStd)",
         ]
     )
@@ -286,4 +260,4 @@ def regenerate():
 fgt = function_generated_table(table_generator=regenerate, refresh_interval_ms=1000)
 ```
 
-[Function generated tables](../../how-to-guides/function-generated-tables.md), on their own, don't do any data I/O. However, Python functions evaluated at a regular interval to create a ticking table are a powerful tool for data ingestion from external sources like WebSockets, databases, and much more. Check out this [blog post](/blog/2023/10/06/function-generated-tables#what-is-a-function-generated-table) that uses WebSockets to stream data into Deephaven with function generated tables.
+For an example that polls a web API for weather data, see the [function-generated tables blog post](/blog/2023/10/06/function-generated-tables#weather-api-example).

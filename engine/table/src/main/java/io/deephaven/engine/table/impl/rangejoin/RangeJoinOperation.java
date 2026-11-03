@@ -109,6 +109,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
         memoizedOperationKey = MemoizedOperationKey.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations);
 
+        QueryTable.checkJoinInputsNotFailed(leftTable, rightTable);
         if (leftTable.isRefreshing() || rightTable.isRefreshing()) {
             throw new UnsupportedOperationException(String.format(
                     "%s: rangeJoin only supports static (not refreshing) inputs at this time: left table is %s, right table is %s",
@@ -301,9 +302,16 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             @NotNull final ExecutionContext executionContext) {
         final CompletableFuture<QueryTable> resultFuture = new CompletableFuture<>();
         try {
-            new StaticRangeJoinPhase1(jobScheduler, executionContext, resultFuture).start();
+            // rethrown once the wait below has finished the jobs start submitted before it threw
+            Throwable startFailure = null;
             try {
-                return resultFuture.get();
+                new StaticRangeJoinPhase1(jobScheduler, executionContext, resultFuture).start();
+            } catch (final RuntimeException | Error e) {
+                startFailure = e;
+                resultFuture.completeExceptionally(e);
+            }
+            try {
+                return jobScheduler.awaitCompletion(resultFuture);
             } catch (InterruptedException e) {
                 final CancellationException cancellation =
                         new CancellationException(String.format("%s interrupted", description), e);
@@ -311,6 +319,12 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 resultFuture.completeExceptionally(cancellation);
                 throw cancellation;
             } catch (Exception e) {
+                if (startFailure instanceof Error) {
+                    throw (Error) startFailure;
+                }
+                if (startFailure != null) {
+                    throw (RuntimeException) startFailure;
+                }
                 throw new OperationException(String.format("%s failed", description), e);
             }
         } finally {
@@ -367,7 +381,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             }
             final Table leftTableGrouped;
             try {
-                leftTableGrouped = groupLeftTableFuture.get();
+                leftTableGrouped = jobScheduler.awaitCompletion(groupLeftTableFuture);
             } catch (InterruptedException e) {
                 // staticRangeJoin observes the restored interrupt in its wait for the result and reports cancellation
                 Thread.currentThread().interrupt();
@@ -721,8 +735,9 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 @NotNull final TaskContext tc,
                 final int index,
                 @NotNull final Consumer<Exception> nestedErrorConsumer) {
-            if (resultFuture.isDone()) {
-                // The result is complete before all range search tasks have run only if the operation was cancelled
+            // The result is complete before all range search tasks have run only if the operation was cancelled. A task
+            // that the thread waiting for the result runs sees that thread's interrupt before the result is cancelled.
+            if (resultFuture.isDone() || Thread.currentThread().isInterrupted()) {
                 throw new CancellationException(String.format("%s cancelled", description));
             }
             final RowSet leftRows = leftGroupRowSets.get(index);

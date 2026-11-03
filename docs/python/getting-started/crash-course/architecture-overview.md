@@ -2,11 +2,11 @@
 title: An Overview of Deephaven's Architecture
 ---
 
-Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like [Pandas DataFrames](https://pandas.pydata.org/docs/user_guide/dsintro.html#dataframe), except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data for a seamless, integrated experience. This section covers the conceptual building blocks of Deephaven tables before diving deeper into code.
+Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like [pandas DataFrames](https://pandas.pydata.org/docs/user_guide/dsintro.html#dataframe), except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data for a seamless, integrated experience. This chapter covers the three main pieces of Deephaven's architecture: tables and the operations that act on them, the engine that runs your queries, and the web user interface. Let's look at each one before diving deeper into code.
 
-## The Deephaven Table API
+## Tables and table operations
 
-If you're familiar with tabular data (think Excel, Pandas, and more), Deephaven will feel natural to you. In addition to representing data as tables, you must be able to manipulate, transform, extract, and analyze the data to produce valuable insight. Deephaven represents transformations to the data stored in a table as _operations_ on that table. These table operations can be chained together to generate a new perspective on the data:
+If you're familiar with tabular data (think Excel, pandas, and more), Deephaven will feel natural to you. Beyond representing data as tables, Deephaven lets you manipulate, transform, extract, and analyze that data to produce valuable insight. Deephaven represents transformations to the data stored in a table as _operations_ on that table. You can chain these [table operations](./table-ops.md) together to transform the data step by step:
 
 ```python order=result_table,source_table
 from deephaven import new_table
@@ -23,30 +23,37 @@ result_table = (
 )
 ```
 
-This paradigm of representing data transformations with methods that act on tables is not new. However, Deephaven takes this a step further. In addition to its large collection of table operations, Deephaven provides a vast library of efficient functions and operations, accessible through _query strings_ that get invoked from _within_ table operations. Query strings are one of Deephaven's most powerful features. More on these later.
+Here's what each step does:
 
-Collectively, the representation of data as tables, the table operations that act upon them, and the query strings used within table operations are known as the _Deephaven Query Language_, or DQL for short. The data transformations written with DQL (like the code above) are called _Deephaven queries_. The fundamental principle of the Deephaven experience is this:
+- [`new_table`](../../reference/table-operations/create/newTable.md) builds a small static table, which the [next chapter](./create-tables.md) covers in detail.
+- [`update_view`](../../reference/table-operations/select/update-view.md) adds a `NewData` column.
+- [`sum_by`](../../reference/table-operations/group-and-aggregate/sumBy.md) sums the `Data` and `NewData` columns for each value in `Group`.
+- [`rename_columns`](../../reference/table-operations/select/rename-columns.md) gives the sums clearer names.
+
+This paradigm of representing data transformations with methods that act on tables is not new. However, Deephaven takes this a step further. In addition to its large collection of table operations, Deephaven provides a vast library of efficient functions that you call through _query strings_. You pass query strings _into_ table operations. The `"NewData = Data * 2"` argument in the example above is a query string. Query strings are one of Deephaven's most powerful features. The [query strings chapter](./query-strings.md) covers them in detail.
+
+Together, tables, the table operations that act on them, and the query strings inside those operations make up the _Deephaven Query Language_, or DQL. Code written in DQL, like the example above, is a _Deephaven query_. The fundamental principle of the Deephaven experience is this:
 
 <Pullquote>
 Most Deephaven queries are indifferent to whether the underlying data source is static or streaming.
 </Pullquote>
 
-The same query written to parse a simple CSV file can usually analyze a similarly structured live dataset without changing the query itself. A few operations, such as [`range_join`](../../reference/table-operations/join/range-join.md), support only static tables.
+The same query written to analyze data from a simple CSV file can usually analyze a similarly structured live dataset without changing the query itself. A few operations, such as [`range_join`](../../reference/table-operations/join/range-join.md), support only static tables.
 
 ### Immutable schema, mutable data
 
-When Deephaven tables are created, they follow a well-defined recipe that _cannot_ be modified after creation. This means that the number of columns in a table, the column names, and their data types — collectively known as the table's _schema_ — are immutable. Even so, the data stored in a table can change. Here's a simple example that uses [`time_table`](../../reference/table-operations/create/timeTable.md):
+Every Deephaven table has a _schema_: the number of columns, the column names, and their data types. A table's schema _cannot_ change after the table is created. Even so, the data stored in a table can change. Here's a simple example that uses [`time_table`](../../reference/table-operations/create/timeTable.md):
 
 ```python test-set=1 ticking-table order=null
 from deephaven import time_table
 
-# Create a table that ticks once per second - defaults to a single "Timestamp" column
+# Create a table that ticks once per second — defaults to a single "Timestamp" column
 ticking_table = time_table("PT1s")
 ```
 
-![The above ticking table](../../assets/tutorials/crash-course/crash-course-1.gif)
+![A ticking table with a Timestamp column that gains a row each second](../../assets/tutorials/crash-course/crash-course-1.gif)
 
-New data is added to the table each second, but the schema stays the same.
+The table gains a new row each second, but its schema stays the same. Deephaven calls a table whose data changes over time a _ticking_ table. Earlier sections of this page call this kind of data real-time, live, or streaming. All four terms mean the same thing.
 
 Some queries appear to modify a table's schema. They may add or remove a column, modify a column's type, or rename a column. For example, the following query appears to rename the `Timestamp` column in the table to `RenamedTimestamp`:
 
@@ -55,38 +62,52 @@ Some queries appear to modify a table's schema. They may add or remove a column,
 ticking_table = ticking_table.rename_columns("RenamedTimestamp=Timestamp")
 ```
 
-![The above ticking table](../../assets/tutorials/crash-course/crash-course-2.gif)
+![The same ticking table with the column renamed to RenamedTimestamp](../../assets/tutorials/crash-course/crash-course-2.gif)
 
-Since the schema of `ticking_table` is immutable, its columns cannot be renamed. Instead, Deephaven creates a new table with a new schema. Operations like `rename_columns` reuse the existing column data, so the new table uses very little additional memory. An important consequence of this design is that Deephaven does not support in-place operations:
+The original table's schema is immutable, so no operation can rename its columns. Instead, [`rename_columns`](../../reference/table-operations/select/rename-columns.md) creates a new table with a new schema, and the assignment points the `ticking_table` variable at that new table. Operations like `rename_columns` reuse the existing column data, so the new table uses very little additional memory.
+
+Because table operations return new tables, Deephaven tables do not support in-place operations, unlike pandas DataFrames:
 
 ```python skip-test
-# In-place operation - DON'T DO THIS! ticking_table is not changed.
+# Attempted in-place operation — DON'T DO THIS! The result is discarded and ticking_table is not changed.
 ticking_table.update_view("NewColumn = 1")
 ```
 
-That operation has no effect, because its result is discarded. Instead, always assign the output of any table operation to a new table, even if it has the same name:
+That operation creates a new table and immediately discards it, so `ticking_table` itself is unchanged. Instead, always assign the result of a table operation to a variable, either a new one or the same one:
 
-```python test-set=1 order=new_ticking_table,ticking_table
+```python test-set=1 ticking-table order=new_ticking_table,ticking_table
 ticking_table = ticking_table.update_view("NewColumn = 1")
-new_ticking_table = ticking_table.update_view("RowIndex = ii")
+new_ticking_table = ticking_table.update_view("DoubledColumn = NewColumn * 2")
 ```
+
+This is the same [`update_view`](../../reference/table-operations/select/update-view.md) you used on the static `source_table` earlier. The query code doesn't change when the data is ticking.
 
 ## The engine
 
-The Deephaven engine is the powerhouse that implements everything you've seen so far. The engine is responsible for processing streaming data as efficiently as possible, and all Deephaven queries must flow through the engine.
+The Deephaven engine is the powerhouse that implements everything you've seen so far. Every Deephaven query runs through the engine, which processes both static and streaming data as efficiently as possible.
 
-Internally, the engine represents queries as [directed acyclic graphs (DAGs)](../../conceptual/dag.md). This representation is key to Deephaven's efficiency. When a parent (upstream) table changes, a change summary is sent to child (downstream) tables. This compute-on-deltas model means child tables generally process only the changes from each update cycle, not the whole table.
+Internally, the engine represents queries as [directed acyclic graphs (DAGs)](../../conceptual/dag.md). In the graph:
 
-For the sake of efficiency and scalability, the engine is implemented mostly in [Java](https://en.wikipedia.org/wiki/Java_(programming_language)). Although you primarily interface with tables and write queries from Python, _all_ of the underlying data in a table is stored in Java data structures, and all low-level operations are implemented in Java. Most Deephaven users will interact with Java at least a little bit, and there are [important things to consider](../../conceptual/python-java-boundary.md) when passing data between Python and Java.
+- Each table is a node.
+- Each table operation connects one or more parent (upstream) tables to the child (downstream) table it produces.
+
+The engine processes data changes in repeating rounds called [_update cycles_](../../conceptual/table-update-model.md). In each update cycle:
+
+- When a parent table changes, the engine sends an update notification describing those changes to its child tables.
+- Child tables generally process only those changes, not the whole table.
+
+This incremental update model is key to Deephaven's efficiency.
+
+For the sake of efficiency and scalability, the engine is implemented mostly in [Java](https://en.wikipedia.org/wiki/Java_(programming_language)). You work with tables and write queries in Python, but Deephaven stores a table's underlying data in Java data structures and runs table operations in Java. Python functions that you write yourself and call from query strings run in Python; the [query strings chapter](./query-strings.md#python-in-query-strings) shows how. To learn what to consider when data passes between Python and Java, see the [Python-Java boundary guide](../../conceptual/python-java-boundary.md).
 
 ## User interface
 
 The Deephaven user interface (UI) is a web-based application that runs in your browser and communicates with the Deephaven engine using the [JavaScript API](../../how-to-guides/use-jsapi.md). The UI provides a rich experience for exploring tables, writing queries, and visualizing data.
 
-Using [deephaven.ui](../crash-course/deephaven-ui.md), you can create interactive web applications that leverage the power of Deephaven tables directly from your Python code. The deephaven.ui library provides Python components and hooks, modeled on React, that make it easy to build custom dashboards, data explorers, and visualizations. You can use these components to display tables, create charts, and interact with data in real time.
+Using [`deephaven.ui`](./deephaven-ui.md), you can build interactive web applications that leverage the power of Deephaven tables directly from your Python code. The `deephaven.ui` library provides Python components that make it easy to build custom dashboards, data explorers, and visualizations, with an API modeled on the [React](https://react.dev/) JavaScript library. You can use these components to display tables, create charts, and interact with data in real time.
 
-The UI is also highly extensible. You can add custom widgets, visualizations, and functionality using [JavaScript plugins](../../how-to-guides/configuration/js-plugins.md). These plugins can be [installed in your Deephaven server](../../how-to-guides/install-use-plugins.md) configuration and are loaded automatically when the server starts. Create your own plugin starting with one of the [plugin templates](https://github.com/deephaven/deephaven-plugins/tree/main/templates) available on GitHub.
+The UI is also highly extensible. You can add custom widgets, visualizations, and functionality with [JavaScript plugins](../../how-to-guides/configuration/js-plugins.md). Create your own plugin starting with one of the [plugin templates](https://github.com/deephaven/deephaven-plugins/tree/main/templates) available on GitHub.
 
-All components of the Deephaven UI are published as packages to npmjs under the [@deephaven](https://www.npmjs.com/org/deephaven) organization. These packages can be used and installed in your own web applications. Example React applications that use the Deephaven UI components are available in the [deephaven-react-app](https://github.com/deephaven-examples/deephaven-react-app) repository.
+All Core components of the UI are open source on GitHub in the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository, and the source code for the plugins is at [deephaven/deephaven-plugins](https://github.com/deephaven/deephaven-plugins). You can explore the source code, contribute to the project, or even fork it to create your own custom version of the Deephaven UI.
 
-In addition to publishing the packages, all Core components of the UI are available open-source on GitHub in the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository. Source code for the plugins is at [deephaven/deephaven-plugins](https://github.com/deephaven/deephaven-plugins). You can explore the source code, contribute to the project, or even fork it to create your own custom version of the Deephaven UI.
+Next, [Create Your First Tables](./create-tables.md) shows how to build static and ticking tables of your own.

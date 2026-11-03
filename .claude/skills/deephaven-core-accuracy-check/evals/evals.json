@@ -3,10 +3,10 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Check the parallelization concept guide at .claude/skills/eval-fixtures/parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "prompt": "Check the parallelization concept guide at .claude/skills/deephaven-core-accuracy-check/evals/files/parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
       "expected_output": "An accuracy report that catches the deferred-evaluation misclassification of view/update_view/lazy_update, cites the engine's stateful-column guard, and treats the inline config properties as a placement problem rather than proposing more of them.",
       "files": [
-        "../eval-fixtures/parallelization-pre-review.md"
+        "evals/files/parallelization-pre-review.md"
       ],
       "expectations": [
         "Flags the 'What does NOT get parallelized' classification of view/update_view/lazy_update as wrong or misleading, because deferred formulas run on the reading thread and can run concurrently",
@@ -18,10 +18,10 @@
     },
     {
       "id": 2,
-      "prompt": "Check the parallelization chapter of the Crash Course at .claude/skills/eval-fixtures/crash-course-parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/getting-started/crash-course/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "prompt": "Check the parallelization chapter of the Crash Course at .claude/skills/deephaven-core-accuracy-check/evals/files/crash-course-parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/getting-started/crash-course/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
       "expected_output": "Held-out doc (not used to write the skill changes). The report flags that 'use with_serial any time your formula depends on shared state' is insufficient when several columns share the state, treats the inline QueryTable.minimumParallelSelectRows as a Tutorial placement problem, and corrects the threshold semantics.",
       "files": [
-        "../eval-fixtures/crash-course-parallelization-pre-review.md"
+        "evals/files/crash-course-parallelization-pre-review.md"
       ],
       "expectations": [
         "Flags the prescription to use with_serial whenever a formula depends on shared state (the NOTE after the fix and/or the Key takeaways) as insufficient when more than one column or formula shares that state, because with_serial only prevents an expression from running concurrently with itself",
@@ -31,10 +31,10 @@
     },
     {
       "id": 3,
-      "prompt": "Check the Create Your First Tables page of the Crash Course at .claude/skills/eval-fixtures/crash-course-create-tables-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/getting-started/crash-course/create-tables.md from main before the DOC-1940 fixes; treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "prompt": "Check the Create Your First Tables page of the Crash Course at .claude/skills/deephaven-core-accuracy-check/evals/files/crash-course-create-tables-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/getting-started/crash-course/create-tables.md from main before the DOC-1940 fixes; treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
       "expected_output": "Held-out doc: the skill names the defect patterns, not these defects. The report reaches past the edited lines: it flags the wrong 'time_table works similarly to empty_table in that DQL populates the table' comparison, the i/ii note that says 'only append-only' when the engine allows other table types, and the unsourced marketing claims. It reports how many claims it checked.",
       "files": [
-        "../eval-fixtures/crash-course-create-tables-pre-review.md"
+        "evals/files/crash-course-create-tables-pre-review.md"
       ],
       "expectations": [
         "Flags the sentence saying time_table works similarly to empty_table in that DQL is used to populate the table as wrong, citing TimeTable (it supplies its own Timestamp column and adds rows itself) rather than only confirming that both functions exist",
@@ -45,10 +45,10 @@
       ]
     },
     {
-      "prompt": "Check the Groovy Docker install guide at .claude/skills/eval-fixtures/groovy-docker-install-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/groovy/getting-started/docker-install.md from main; treat it as that path when judging category and links. Review this file only. Report only — don't edit anything.",
+      "prompt": "Check the Groovy Docker install guide at .claude/skills/deephaven-core-accuracy-check/evals/files/groovy-docker-install-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/groovy/getting-started/docker-install.md from main; treat it as that path when judging category and links. Review this file only. Report only — don't edit anything.",
       "expected_output": "Treats claims about what the published ghcr.io/deephaven images contain or default to as needing evidence from deephaven/deephaven-server-docker, and doesn't flag the Compose examples that set START_OPTS=-Xmx4g as losing the Groovy console on the strength of this repo's docker/ Dockerfiles.",
       "files": [
-        "../eval-fixtures/groovy-docker-install-pre-review.md"
+        "evals/files/groovy-docker-install-pre-review.md"
       ],
       "expectations": [
         "Does not report that setting START_OPTS (for example START_OPTS=-Xmx4g in the Compose examples) drops the Groovy console or makes server-slim start Python; in the published server-slim image the console type comes from its deephaven.prop, not START_OPTS",
@@ -58,10 +58,10 @@
       "id": 4
     },
     {
-      "prompt": "Check the rollup tables how-to guide at .claude/skills/eval-fixtures/rollup-table-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/how-to-guides/rollup-table.md from main; treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "prompt": "Check the rollup tables how-to guide at .claude/skills/deephaven-core-accuracy-check/evals/files/rollup-table-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/how-to-guides/rollup-table.md from main; treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
       "expected_output": "Flags the aggregations table's unsupported marks for group (and distinct and formula) as wrong from the engine's rollup converters and tests, doesn't treat the Python Table.rollup docstring's unsupported list as evidence, reports that docstring as stale follow-up work, and flags the TODO's deephaven.io issue link for a state check without recommending its deletion.",
       "files": [
-        "../eval-fixtures/rollup-table-pre-review.md"
+        "evals/files/rollup-table-pre-review.md"
       ],
       "expectations": [
         "Flags `group` marked as unsupported (RedX) in the aggregations table as wrong, citing the engine (AggregationProcessor's rollup converters handle AggSpecGroup, or TestRollupTable builds rollups with AggGroup) rather than the Python docstring",
@@ -73,11 +73,11 @@
       "id": 5
     },
     {
-      "prompt": "Check the exact and relational joins how-to guide at .claude/skills/eval-fixtures/joins-exact-relational-pre-review.md for technical accuracy against the source, including its figures. The file is a snapshot of docs/python/how-to-guides/joins-exact-relational.md from main; treat it as that path when judging category and links. The flowchart it embeds (`../assets/conceptual/joins3.svg`) is at .claude/skills/eval-fixtures/joins3-pre-redesign.svg. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "prompt": "Check the exact and relational joins how-to guide at .claude/skills/deephaven-core-accuracy-check/evals/files/joins-exact-relational-pre-review.md for technical accuracy against the source, including its figures. The file is a snapshot of docs/python/how-to-guides/joins-exact-relational.md from main; treat it as that path when judging category and links. The flowchart it embeds (`../assets/conceptual/joins3.svg`) is at .claude/skills/deephaven-core-accuracy-check/evals/files/joins3-pre-redesign.svg. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
       "expected_output": "Reads the flowchart and reports that it has no path to multi_join although the page teaches multi_join for three or more tables, alongside the page's other accuracy findings.",
       "files": [
-        "../eval-fixtures/joins-exact-relational-pre-review.md",
-        "../eval-fixtures/joins3-pre-redesign.svg"
+        "evals/files/joins-exact-relational-pre-review.md",
+        "evals/files/joins3-pre-redesign.svg"
       ],
       "expectations": [
         "Reads the flowchart's content (its labels or branches), not just the fact that an image is embedded",
@@ -86,6 +86,20 @@
         "Control: does not report the flowchart's existing branches (exact join on no match raising an error, natural join filling nulls, left and full outer joins, as-of and reverse as-of joins, range join) as wrong"
       ],
       "id": 6
+    },
+    {
+      "prompt": "Check the 'What is and isn't parallelized' section of this deephaven-core concept guide for technical accuracy against the source: .claude/skills/deephaven-core-accuracy-check/evals/files/parallelization-d186-post-restructure.md (the section is around lines 61-95; its three-row table is around lines 65-69). The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from a PR branch; treat it as that path. Review only that section. Report only; don't edit anything.",
+      "expected_output": "Copilot's finding on PR #7457 after the restructure: the table cell says `with_serial` 'keeps the rows in order on one thread', but ConcurrencyControl promises only that the expression is never invoked concurrently with itself and that rows are evaluated in row-set order; nothing pins it to a thread.",
+      "files": [
+        "evals/files/parallelization-d186-post-restructure.md"
+      ],
+      "expectations": [
+        "Flags 'keeps the rows in order on one thread' in the table's 'Rows in one column or filter' row (around line 69) as overstating the `with_serial` contract, quoting or paraphrasing ConcurrencyControl's guarantee (never invoked concurrently with itself; rows evaluated in row-set order) and saying that it does not promise a single thread",
+        "Proposes a replacement that drops the thread claim (for example 'keeps the rows in order and never runs the formula concurrently with itself')",
+        "Control: does not report the table's other two rows (independent tables update at the same time; independent columns run at the same time) as wrong"
+      ],
+      "id": 7,
+      "notes": "DOC-1990 round 5 (PR #8897): new 9/9, baseline 7/9. Two baseline runs already caught the thread claim from the existing 'single CPU core' example; the eval guards the behavior more than it separates the configurations."
     }
   ]
 }

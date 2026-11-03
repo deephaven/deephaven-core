@@ -176,7 +176,7 @@ Tick amplification can take place in some of the following operations:
 
 - [Grouping and ungrouping](../how-to-guides/grouping-data.md)
   - Very small parent changes may unnecessarily mark the entire table as changed.
-- [Cross joins](../reference/table-operations/join/join.md) (if the `on` parameter is not given)
+- [Cross joins](../reference/table-operations/join/join.md) (if no `columnsToMatch` are given)
   - Even when the left table is static, any right table changes affect k-times as many cells as the original right table update.
 
 You can typically minimize the effect of tick amplification with [partitioned tables](../how-to-guides/partitioned-tables.md). For each case mentioned above, they help in the following way:

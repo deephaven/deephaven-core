@@ -1,6 +1,5 @@
 package io.deephaven.project.util
 
-import com.github.jengelman.gradle.plugins.shadow.ShadowJavaPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import groovy.transform.CompileStatic
@@ -149,7 +148,7 @@ class PublishingTools {
     }
 
     static void setupShadowName(Project project, String name) {
-        project.tasks.named(ShadowJavaPlugin.SHADOW_JAR_TASK_NAME, ShadowJar) {
+        project.tasks.named(ShadowJar.SHADOW_JAR_TASK_NAME, ShadowJar) {
             it.archiveBaseName.set(name)
         }
         project.extensions.getByType(PublishingExtension).publications.named(SHADOW_PUBLICATION_NAME, MavenPublication) {

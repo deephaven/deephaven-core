@@ -63,3 +63,18 @@ def createJmhTask = {
 }
 
 createJmhTask('jmhRunTableWrite', 'TableWriteBenchmark')
+// DH-24083 benchmark: arguments from -PjmhArgs, data dir from -PbenchDataDir.
+task jmhBarrierPushdown(type: JavaExec) {
+    new File("$rootDir/tmp/workspace").mkdirs()
+    workingDir "$rootDir/tmp/workspace"
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set 'io.deephaven.benchmarking.runner.BenchmarkRunner'
+    jvmArgs '-DConfiguration.rootFile=dh-tests.prop',
+            "-Dworkspace=$rootDir/tmp/workspace",
+            '-Dconfiguration.quiet=true',
+            '-Djava.awt.headless=true',
+            '-DQueryTable.memoizeResults=false',
+            "-Dbench.dataDir=${project.findProperty('benchDataDir') ?: "$rootDir/tmp/workspace/bench-dh24083-data"}",
+            '-Xmx8g'
+    args((project.findProperty('jmhArgs') ?: 'BarrierPushdownBenchmark').toString().split(' ') as List)
+}

@@ -1,6 +1,6 @@
 ---
 title: Crash Course Overview
-description: A crash course in Deephaven that covers the basics of working with tables and plots.
+description: A crash course in Deephaven that covers tables, time and calendars, query strings, Python integrations, plots, deephaven.ui, data I/O, and configuration.
 hide_table_of_contents: true
 ---
 
@@ -8,7 +8,7 @@ import { CoreTutorialCard } from '@theme/deephaven/core-docs-components';
 
 <div className="comment-title">
 
-A crash course in Deephaven that covers the basics of working with tables and plots.
+This crash course takes you from starting a Deephaven server to building real-time queries, plots, and UIs. Each chapter builds on the ones before it, so work through them in order.
 
 </div>
 
@@ -20,7 +20,7 @@ A crash course in Deephaven that covers the basics of working with tables and pl
 
 ## Get started
 
-This guide provides a broad, clear, and technically informative overview of Deephaven's capabilities. Dive in and unlock the potential of this powerful platform.
+Start a Deephaven server with Docker or pip, open the IDE, and get familiar with the console and workspace. Dive in and unlock the potential of this powerful platform.
 
 </CoreTutorialCard>
 
@@ -28,7 +28,7 @@ This guide provides a broad, clear, and technically informative overview of Deep
 
 ## Architecture overview
 
-Deephaven's central concept is that everything is a table.
+Learn how Deephaven's tables, table operations, engine, and user interface fit together, starting from the central idea that everything is a table.
 
 </CoreTutorialCard>
 
@@ -36,7 +36,7 @@ Deephaven's central concept is that everything is a table.
 
 ## Create tables
 
-Learn to create tables from scratch with synthetic data or by importing data from external sources.
+Learn to create static tables from scratch, read CSV data from a file or URL into a table, create ticking tables that update in real time, and replay static data as a ticking table.
 
 </CoreTutorialCard>
 
@@ -44,7 +44,15 @@ Learn to create tables from scratch with synthetic data or by importing data fro
 
 ## Table operations
 
-This section covers some table operations that appear in almost all queries.
+Learn the table operations that appear in almost every query: add, select, and drop columns; filter and sort rows; group and aggregate data; and merge and join tables.
+
+</CoreTutorialCard>
+
+<CoreTutorialCard to="/core/docs/getting-started/crash-course/time-calendars/">
+
+## Time and calendars
+
+Work with date-time types, time zones, time arithmetic, and business calendars.
 
 </CoreTutorialCard>
 
@@ -52,7 +60,7 @@ This section covers some table operations that appear in almost all queries.
 
 ## Query strings
 
-Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They translate the user's intention into compiled code that the engine can execute.
+Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They tell the engine what to compute, and the engine turns them into filters and formulas, compiling code where needed. Learn the query-string syntax that table operations use to filter rows and compute new columns, and how to call built-in and user-defined functions from inside a query string.
 
 </CoreTutorialCard>
 
@@ -60,7 +68,7 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 ## Recipes, not loops!
 
-Understand why Deephaven uses declarative recipes instead of loops. Learn the paradigm shift that unlocks automatic real-time updates.
+Understand why Deephaven uses declarative recipes instead of loops. Learn the paradigm shift that unlocks automatic real-time updates: a recipe lets query results update in real time as new data arrives, without re-running your code.
 
 </CoreTutorialCard>
 
@@ -68,7 +76,7 @@ Understand why Deephaven uses declarative recipes instead of loops. Learn the pa
 
 ## Python integrations
 
-Deephaven empowers Python developers by providing efficient integrations with popular Python libraries. This section covers some highlights of Deephaven's Python interoperability as well as the inherent limitations of static Python data structures.
+Deephaven empowers Python developers by providing efficient integrations with popular Python libraries. Convert Deephaven tables to and from pandas and NumPy, and learn the limits of static Python data structures when data updates in real time. Then apply machine learning models to ticking data with table listeners and `deephaven.learn`.
 
 </CoreTutorialCard>
 
@@ -76,7 +84,15 @@ Deephaven empowers Python developers by providing efficient integrations with po
 
 ## Real-time plots
 
-Whether your data is static or updating in real time, Deephaven supports plotting via multiple libraries, including its own built-in plotting API.
+Whether your data is static or updating in real time, Deephaven can plot it. Build basic plots, plots with multiple axes, and subplots with the built-in plotting API. The chapter also points you to Deephaven Express, the recommended plotting library.
+
+</CoreTutorialCard>
+
+<CoreTutorialCard to="/core/docs/getting-started/crash-course/deephaven-ui/">
+
+## deephaven.ui
+
+Use the `deephaven.ui` Python package to build interactive UIs and dashboards that present your tables and plots.
 
 </CoreTutorialCard>
 
@@ -84,23 +100,23 @@ Whether your data is static or updating in real time, Deephaven supports plottin
 
 ## Data I/O
 
-Data I/O is mission-critical for any real-time data analysis platform. Deephaven supports a wide variety of data sources and formats, including CSV, Parquet, Kafka, and more.
+Data I/O is mission-critical for any real-time data analysis platform. Read data into Deephaven and write it back out in common formats and systems, including CSV, Parquet, Kafka, Iceberg, and pandas DataFrames.
 
 </CoreTutorialCard>
 
 <CoreTutorialCard to="/core/docs/getting-started/crash-course/configure/">
 
-## Configure your Deephaven Instance
+## Configure your Deephaven instance
 
-This section covers configuration details needed to take your Deephaven instance beyond the defaults.
+Take your Deephaven instance beyond the defaults: change authentication, choose a deployment, install Python packages, set memory limits, and keep your instance up to date.
 
 </CoreTutorialCard>
 
 <CoreTutorialCard to="/core/docs/getting-started/crash-course/crash-course-wrap-up/">
 
-## Wrapping Up
+## Wrapping up
 
-Where to go from here.
+Find out where to go next in the documentation and where to get help from the Deephaven community.
 
 </CoreTutorialCard>
 

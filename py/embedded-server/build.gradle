@@ -4,6 +4,8 @@ plugins {
 }
 
 evaluationDependsOn ':docker-server-jetty'
+// For its deephaven.javaOpts / JAVA_OPTS override, which replaces the default VM options in the wheel
+evaluationDependsOn ':py-embedded-server-java-runtime'
 
 configurations {
     classpath
@@ -51,6 +53,11 @@ def testEmbeddedServer = Docker.registerDockerTask(project, 'testEmbeddedServer'
         copyFile('wheels', '/wheels')
 
         workingDir('/project')
+        // test_vmoptions.py expects an override of the default VM options instead of the defaults
+        def javaOptsOverride = project(':py-embedded-server-java-runtime').deephavenJavaOptsOverride
+        if (javaOptsOverride != null) {
+            environmentVariable('DH_JAVA_OPTS_OVERRIDE', '"' + javaOptsOverride.join(' ') + '"')
+        }
         runCommand '''set -eux; \\
                       mkdir -p /out/report; \\
                       pip install --upgrade pip; \\
@@ -65,3 +72,16 @@ def testEmbeddedServer = Docker.registerDockerTask(project, 'testEmbeddedServer'
 }
 
 tasks.getByName('check').dependsOn(testEmbeddedServer)
+
+// Prints the version of the deephaven-server wheel this build makes, in Python's form: 43.0-SNAPSHOT becomes
+// 43.0+snapshot. It copies the rule in _normalize_version in py/embedded-server/setup.py, which stamps the wheel. Keep
+// the two in step: if they differ, an install of the local wheel by this version fails to find the file. Use it to name
+// the local wheel, for example
+// "build/wheel/deephaven_server-$(./gradlew -q :py-embedded-server:printWheelVersion)-py3-none-any.whl".
+tasks.register('printWheelVersion') {
+    def javaVersion = project.version.toString()
+    doLast {
+        def parts = javaVersion.split('-', 2)
+        println(parts.length == 2 ? "${parts[0]}+${parts[1].toLowerCase().replaceAll('[-_]', '.')}" : parts[0])
+    }
+}

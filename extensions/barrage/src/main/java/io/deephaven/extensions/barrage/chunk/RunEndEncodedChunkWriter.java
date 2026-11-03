@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.function.UnaryOperator;
 
 /**
  * Serializes a flat column chunk as Arrow Run-End Encoded (REE) on the wire.
@@ -46,12 +47,29 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     private final ChunkType runEndsChunkType;
     private final ChunkType valuesChunkType;
     private final BarrageRunKernel runKernel;
+    /**
+     * Converts a source chunk to {@link #valuesChunkType} before runs are detected in it, or {@code null} when sources
+     * always arrive as {@link #valuesChunkType}. A transform returns its argument when no conversion is needed, and
+     * otherwise a new chunk that this writer closes.
+     */
+    @Nullable
+    private final UnaryOperator<Chunk<Values>> sourceTransform;
 
+    /**
+     * @param runEndsWriter writes the {@code run_ends} child
+     * @param valuesWriter writes the {@code values} child, one value per run
+     * @param runEndsChunkType the chunk type {@code runEndsWriter} consumes
+     * @param valuesChunkType the chunk type {@code valuesWriter} consumes, and that runs are detected in
+     * @param sourceTransform converts source chunks that do not arrive as {@code valuesChunkType}; see
+     *        {@link #sourceTransform}
+     * @param fieldNullable whether the field is nullable
+     */
     public RunEndEncodedChunkWriter(
             @NotNull final ChunkWriter<IntChunk<Values>> runEndsWriter,
             @NotNull final ChunkWriter<Chunk<Values>> valuesWriter,
             @NotNull final ChunkType runEndsChunkType,
             @NotNull final ChunkType valuesChunkType,
+            @Nullable final UnaryOperator<Chunk<Values>> sourceTransform,
             final boolean fieldNullable) {
         super(null, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
         this.runEndsWriter = runEndsWriter;
@@ -59,6 +77,7 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         this.runEndsChunkType = runEndsChunkType;
         this.valuesChunkType = valuesChunkType;
         this.runKernel = BarrageRunKernel.makeBarrageRunKernel(valuesChunkType);
+        this.sourceTransform = sourceTransform;
     }
 
     @Override
@@ -131,7 +150,15 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
             // Pre-allocate worst-case capacity; the kernel resets sizes to zero and uses add().
             final WritableIntChunk<Values> tempRunEnds = WritableIntChunk.makeWritableChunk(logicalSize);
             final WritableChunk<Values> tempRunValues = valuesChunkType.makeWritableChunk(logicalSize);
-            runKernel.encodeRunEnds(context.getChunk(), subset, tempRunEnds, tempRunValues);
+            final Chunk<Values> source = context.getChunk();
+            final Chunk<Values> converted = sourceTransform == null ? source : sourceTransform.apply(source);
+            try {
+                runKernel.encodeRunEnds(converted, subset, tempRunEnds, tempRunValues);
+            } finally {
+                if (converted != source) {
+                    ((WritableChunk<Values>) converted).close();
+                }
+            }
 
             // Create child contexts (contexts own the chunks and close them on ref-count zero).
             this.runEndsCtx = runEndsWriter.makeContext(tempRunEnds, 0);

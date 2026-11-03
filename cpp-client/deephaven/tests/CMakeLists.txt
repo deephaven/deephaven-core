@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(dhclient_tests)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 add_executable(dhclient_tests
         src/add_drop_test.cc
@@ -42,7 +42,7 @@ add_executable(dhclient_tests
 )
 
 if (LINUX)
-    target_compile_options(dhclient_tests PRIVATE -Wall -Werror -Wno-deprecated-declarations)
+    target_compile_options(dhclient_tests PRIVATE -Wall -Werror -Wno-deprecated-declarations -Wno-tautological-compare)
 endif()
 
 if (WIN32)

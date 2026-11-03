@@ -33,7 +33,7 @@ Optional instructions for customizations while reading. Valid values are:
 - `ParquetTools.LZ4_RAW`: Compression codec loosely based on the [LZ4 compression algorithm](https://github.com/lz4/lz4), but with an additional undocumented framing scheme. The framing is part of the original Hadoop compression library and was historically copied first in parquet-mr, then emulated with mixed results by parquet-cpp.
 - `ParquetTools.LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
 - `ParquetTools.GZIP`: Compression codec based on the GZIP format (not the closely-related "zlib" or "deflate" formats) defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
-- `ParquetTools.ZSTD`: Compression codec with the highest compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
+- `ParquetTools.ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
 - `ParquetTools.LEGACY`: Load any binary fields as strings. Helpful to load files written in older versions of Parquet that lacked a distinction between binary and string.
 
 </Param>
@@ -46,7 +46,7 @@ A new in-memory table from a Parquet file, metadata file, or directory with a re
 ## Examples
 
 > [!NOTE]
-> All examples in this document use data mounted in `/data` in Deephaven. For more information on the relation between this location in Deephaven and on your local file system, see [Docker data volumes](../../../conceptual/docker-data-volumes.md).
+> All examples in this document use data mounted in `/data` in Deephaven. For more information on the relation between this location in Deephaven and on your local file system, see [Docker bind mounts](../../../conceptual/docker-data-volumes.md).
 
 ### Single Parquet file
 
@@ -138,5 +138,5 @@ Additionally, the `S3.maxFragmentSize` [configuration property](../../../how-to-
 - [Parquet instructions](../../../how-to-guides/data-import-export/parquet-instructions.md)
 - [Parquet formats](../../../how-to-guides/data-import-export/parquet-formats.md)
 - [Write Parquet files](./writeTable.md)
-- [Docker data volumes](../../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(java.lang.String))

@@ -130,14 +130,27 @@ public:
 
         if constexpr (Style == ArrowProcessingStyle::kNormal) {
           // Process these types using pointer operations and the Deephaven Null convention
+          constexpr auto kNullValue = DeephavenTraits<typename TChunk::value_type>::kNullValue;
           const auto *src_beginp = innerp->raw_values() + relative_begin;
           const auto *src_endp = innerp->raw_values() + relative_end;
+          auto *dest_beginp = destp;
           std::copy(src_beginp, src_endp, destp);
           destp += src_endp - src_beginp;
 
+          // A null by Arrow's validity bitmap need not hold the Deephaven null value underneath:
+          // an Arrow builder leaves zero there, as this client's decoders of run-end and dictionary
+          // encoded arrays do. Store the Deephaven null value for those rows too.
+          if (innerp->null_count() != 0) {
+            for (auto i = relative_begin; i != relative_end; ++i) {
+              if (innerp->IsNull(i)) {
+                dest_beginp[i - relative_begin] = kNullValue;
+              }
+            }
+          }
+
           if (null_destp != nullptr) {
-            for (const auto *current = src_beginp; current != src_endp; ++current) {
-              *null_destp = *current == DeephavenTraits<typename TChunk::value_type>::kNullValue;
+            for (const auto *current = dest_beginp; current != destp; ++current) {
+              *null_destp = *current == kNullValue;
               ++null_destp;
             }
           }
@@ -169,9 +182,11 @@ public:
               DEEPHAVEN_LOCATION_EXPR(innerp->type().get()));
           auto time_nano_scale_factor = ScaleFromUnit(typed_type->unit());
 
+          // As above, a row is null by either the Deephaven null value or Arrow's validity bitmap.
+          constexpr auto kNullValue = DeephavenTraits<int64_t>::kNullValue;
           for (const auto *ip = src_beginp; ip != src_endp; ++ip) {
-            auto is_null = *ip == DeephavenTraits<int64_t>::kNullValue;
-            *destp = DateTime::FromNanos(is_null ? *ip : (*ip * time_nano_scale_factor));
+            auto is_null = *ip == kNullValue || innerp->IsNull(relative_begin + (ip - src_beginp));
+            *destp = DateTime::FromNanos(is_null ? kNullValue : (*ip * time_nano_scale_factor));
             ++destp;
 
             if (null_destp != nullptr) {
@@ -184,12 +199,15 @@ public:
           const auto *src_beginp = innerp->raw_values() + relative_begin;
           const auto *src_endp = innerp->raw_values() + relative_end;
 
+          // As above, a row is null by either the Deephaven null value or Arrow's validity bitmap.
+          constexpr auto kNullValue = DeephavenTraits<int64_t>::kNullValue;
           for (const auto *ip = src_beginp; ip != src_endp; ++ip) {
-            *destp = LocalDate::FromMillis(*ip);
+            auto is_null = *ip == kNullValue || innerp->IsNull(relative_begin + (ip - src_beginp));
+            *destp = LocalDate::FromMillis(is_null ? kNullValue : *ip);
             ++destp;
 
             if (null_destp != nullptr) {
-              *null_destp = *ip == DeephavenTraits<int64_t>::kNullValue;
+              *null_destp = is_null;
               ++null_destp;
             }
           }
@@ -202,9 +220,11 @@ public:
               DEEPHAVEN_LOCATION_EXPR(innerp->type().get()));
           auto time_nano_scale_factor = ScaleFromUnit(typed_type->unit());
 
+          // As above, a row is null by either the Deephaven null value or Arrow's validity bitmap.
+          constexpr auto kNullValue = DeephavenTraits<int64_t>::kNullValue;
           for (const auto *ip = src_beginp; ip != src_endp; ++ip) {
-            auto is_null = *ip == DeephavenTraits<int64_t>::kNullValue;
-            *destp = LocalTime::FromNanos(is_null ? *ip : (*ip * time_nano_scale_factor));
+            auto is_null = *ip == kNullValue || innerp->IsNull(relative_begin + (ip - src_beginp));
+            *destp = LocalTime::FromNanos(is_null ? kNullValue : (*ip * time_nano_scale_factor));
             ++destp;
 
             if (null_destp != nullptr) {

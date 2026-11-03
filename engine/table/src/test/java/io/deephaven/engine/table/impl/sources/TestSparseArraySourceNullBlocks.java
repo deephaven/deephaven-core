@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
@@ -567,6 +568,18 @@ public class TestSparseArraySourceNullBlocks {
     public void testUpdateMarchingBounded() {
         checkMarchingBounded(marchingLeft(), left -> left.update("Doubled = Stamp * 2"),
                 table -> sparseSize(table, "Doubled"));
+    }
+
+    @Test
+    public void testSnapshotIncrementalMarchingBounded() {
+        for (final String column : List.of("Stamp", "Ts")) {
+            final QueryTable left = marchingLeft();
+            final Table result = checkMarchingBounded(left,
+                    table -> table.snapshotWhen(table.tail(1).view("Trigger = Stamp"), Flag.INCREMENTAL,
+                            Flag.INITIAL),
+                    table -> sparseSize(table, column));
+            TstUtils.assertTableEquals(left, result.dropColumns("Trigger"));
+        }
     }
 
     @Test

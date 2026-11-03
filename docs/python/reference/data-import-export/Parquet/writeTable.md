@@ -48,7 +48,7 @@ One or more optional [`ColumnInstruction`](./ColumnInstruction.md) objects that 
 </Param>
 <Param name="compression_codec_name" type="str" optional>
 
-The [compression codec](https://www.javadoc.io/doc/org.apache.parquet/parquet-hadoop/1.8.1/org/apache/parquet/hadoop/metadata/CompressionCodecName.html) to use.
+The [compression codec](https://www.javadoc.io/doc/org.apache.parquet/parquet-common/1.18.1/org/apache/parquet/hadoop/metadata/CompressionCodecName.html) to use.
 
 Options are:
 
@@ -113,7 +113,7 @@ A Parquet file located in the specified path.
 ## Examples
 
 > [!NOTE]
-> All examples in this document write data to the `/data` directory in Deephaven. For more information on this directory and how it relates to your local file system, see [Docker data volumes](../../../conceptual/docker-data-volumes.md).
+> All examples in this document write data to the `/data` directory in Deephaven. For more information on this directory and how it relates to your local file system, see [Docker bind mounts](../../../conceptual/docker-data-volumes.md).
 
 ### Single Parquet file
 
@@ -161,5 +161,5 @@ write(source, "/data/output_GZIP.parquet", compression_codec_name="GZIP")
 - [Export Parquet files](../../../how-to-guides/data-import-export/parquet-export.md)
 - [`read_table`](./readTable.md)
 - [`write_partitioned`](./writePartitioned.md)
-- [Docker data volumes](../../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
 - [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write)

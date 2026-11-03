@@ -1,16 +1,45 @@
 #
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
+import gc
+import queue
+import subprocess
+import sys
+import threading
 import unittest
+import weakref
 from time import sleep, time
+from unittest import mock
 
 import pandas as pd
 import pyarrow as pa
 from pyarrow import csv
 
+from deephaven_core.proto import config_pb2, config_pb2_grpc
 from pydeephaven import DHError, Session
+from pydeephaven.session import _SessionJob
+from pydeephaven.table import Table
 from pydeephaven.ticket import ScopeTicket, SharedTicket
 from tests.testbase import BaseTestCase
+
+_Event = threading.Event
+
+
+def _short_refresh_sleep():
+    """Wakes the token refresh thread every 0.05 seconds, so it ends soon after its session is closed."""
+    return mock.patch.object(Session, "_seconds_until_refresh", lambda self: 0.05)
+
+
+class _WaitSignalingQueue(queue.SimpleQueue):
+    """A SimpleQueue that signals when a thread starts to wait on it."""
+
+    def __init__(self):
+        super().__init__()
+        self.waiting = _Event()
+
+    def get(self, block=True, timeout=None):
+        self.waiting.set()
+        return super().get(block, timeout)
 
 
 class SessionTestCase(BaseTestCase):
@@ -174,11 +203,364 @@ t1 = empty_table(0) if t.is_blink else None
             with self.assertRaises(PermissionError):
                 append_input_t.delete(dh_table)
 
-    def test_auto_close(self):
+    def test_close_stops_threads(self):
+        def failing_close():
+            raise DHError("simulated CloseSession failure")
+
+        for case in ("normal", "CloseSession fails", "already disconnected"):
+            with self.subTest(case), _short_refresh_sleep():
+                session = Session()
+                threads = [session._release_thread, session._refresh_thread]
+                self.assertTrue(all(t.is_alive() for t in threads))
+                if case == "CloseSession fails":
+                    session.session_service.close = failing_close
+                    with self.assertRaises(DHError):
+                        session.close()
+                else:
+                    if case == "already disconnected":
+                        session.is_connected = (
+                            False  # as a failed token refresh leaves it
+                        )
+                    session.close()
+                self.assertFalse(session.is_connected)
+                for t in threads:
+                    t.join(5)
+                    self.assertFalse(t.is_alive())
+
+    def test_token_is_refreshed(self):
+        refreshes = []
+        original_refresh = Session._refresh_token
+
+        def counting_refresh(session):
+            refreshes.append(time())
+            return original_refresh(session)
+
+        with mock.patch.multiple(
+            Session,
+            _seconds_until_refresh=lambda self: 0.05,
+            _refresh_token=counting_refresh,
+        ):
+            with Session() as session:
+                deadline = time() + 10
+                while len(refreshes) < 3:
+                    if time() > deadline:
+                        self.fail(f"only {len(refreshes)} token refreshes")
+                    sleep(0.05)
+                self.assertEqual(session.empty_table(3).size, 3)
+
+    def test_close_during_token_refresh(self):
+        refreshes = []
+        refresh_started = threading.Event()
+        finish_refresh = threading.Event()
+
+        def slow_refresh(session):
+            refreshes.append(time())
+            refresh_started.set()
+            finish_refresh.wait(10)
+            return True
+
+        with mock.patch.multiple(
+            Session,
+            _seconds_until_refresh=lambda self: 0.05,
+            _refresh_token=slow_refresh,
+        ):
+            session = Session()
+            refresher = session._refresh_thread
+            self.assertTrue(refresh_started.wait(10))
+            session.close()
+            finish_refresh.set()
+            refresher.join(10)
+            self.assertFalse(refresher.is_alive())
+            self.assertEqual(len(refreshes), 1, "refreshed after close")
+
+    def test_failing_job_does_not_stop_release_thread(self):
+        ran_after_failure = threading.Event()
+
+        class FailingJob(_SessionJob):
+            def run(self, session):
+                raise RuntimeError("simulated job failure")
+
+        class MarkerJob(_SessionJob):
+            def run(self, session):
+                ran_after_failure.set()
+
         session = Session()
-        # this should trigger __del__
-        session = None
-        self.assertIsNone(session)
+        try:
+            with self.assertLogs("pydeephaven.session", level="ERROR") as logs:
+                session._release_queue.put(FailingJob())
+                session._release_queue.put(MarkerJob())
+                self.assertTrue(ran_after_failure.wait(10))
+            self.assertIn("FailingJob failed", logs.output[0])
+            self.assertTrue(session._release_thread.is_alive())
+        finally:
+            session.close()
+
+    def test_reconnect_leaves_one_release_thread(self):
+        session = Session()
+        old_thread = session._release_thread
+        session.is_connected = False  # as a failed is_alive check leaves it
+        with session:  # reconnects
+            new_thread = session._release_thread
+            self.assertIsNot(new_thread, old_thread)
+            old_thread.join(5)
+            self.assertFalse(old_thread.is_alive())
+            self.assertTrue(new_thread.is_alive())
+
+    def test_paused_release_does_not_block_token_refresh(self):
+        refreshed = threading.Event()
+
+        def recording_refresh(session):
+            refreshed.set()
+            return True
+
+        with mock.patch.multiple(
+            Session,
+            _seconds_until_refresh=lambda self: 0.05,
+            _refresh_token=recording_refresh,
+        ):
+            session = Session()
+            try:
+                release_started = threading.Event()
+                finish_release = threading.Event()
+
+                def paused_release(ticket):
+                    release_started.set()
+                    finish_release.wait(10)
+
+                session.release = paused_release
+                session._queue_release(session.make_export_ticket())
+                self.assertTrue(release_started.wait(10))
+                refreshed.clear()
+                self.assertTrue(
+                    refreshed.wait(10), "no token refresh while a release ran"
+                )
+            finally:
+                finish_release.set()
+                session.close()
+
+    def test_dropped_session_is_collected(self):
+        refresher_sleeping = _Event()
+        tested_known = _Event()
+        tested_thread = []
+
+        def signaling_sleep(seconds):
+            # The patch is global. Only the tested session's refresh thread may signal, not one left over from another
+            # test.
+            if threading.current_thread().name.endswith("token refresh"):
+                tested_known.wait(10)
+                if threading.current_thread() in tested_thread:
+                    refresher_sleeping.set()
+            sleep(seconds)
+
+        with mock.patch("time.sleep", signaling_sleep):
+            with mock.patch("queue.SimpleQueue", _WaitSignalingQueue):
+                session = Session()
+            tested_thread.append(session._refresh_thread)
+            tested_known.set()
+            releaser = session._release_thread
+            release_waiting = session._release_queue.waiting
+            session_ref = weakref.ref(session)
+            del session
+            # Each thread drops its reference to the session before it waits.
+            self.assertTrue(release_waiting.wait(30), "the release thread never waited")
+            self.assertTrue(
+                refresher_sleeping.wait(30), "the refresh thread never slept"
+            )
+            gc.collect()
+        self.assertIsNone(session_ref(), "a session thread kept the session alive")
+        releaser.join(5)
+        self.assertFalse(releaser.is_alive())
+
+    def test_session_collected_on_refresh_thread_does_not_hang(self):
+        dropped = _Event()
+        collected = _Event()
+        tested_thread = []
+
+        def collecting_sleep(seconds):
+            # The patch is global. Only the tested session's refresh thread may collect, or a refresh thread left
+            # over from another test could pass the test.
+            if threading.current_thread().name.endswith("token refresh"):
+                dropped.wait(10)  # until the tested thread is known
+                if threading.current_thread() in tested_thread:
+                    gc.collect()  # runs Session.__del__ on the refresh thread
+                    collected.set()
+            sleep(seconds)
+
+        gc.disable()  # only the collection on the refresh thread may free the session
+        try:
+            with mock.patch("time.sleep", collecting_sleep):
+                session = Session()
+                tested_thread.append(session._refresh_thread)
+                session.cycle = session  # only the garbage collector frees a cycle
+                session_ref = weakref.ref(session)
+                del session
+                dropped.set()
+                self.assertTrue(
+                    collected.wait(30), "the finalizer hung on the refresh thread"
+                )
+        finally:
+            gc.enable()
+        self.assertIsNone(session_ref(), "the collection did not free the session")
+
+    def test_session_collected_on_its_grpc_thread_does_not_hang(self):
+        # gRPC runs an RPC's done callbacks on the thread that delivers results for that RPC's channel. A collection
+        # there runs Session.__del__ on that thread, so an RPC from __del__ would wait for itself.
+        collected = _Event()
+        test_thread = threading.current_thread()
+        ran_inline = []
+
+        def collect(_future):
+            if threading.current_thread() is test_thread:
+                # The RPC finished before add_done_callback, which then ran this on the test thread. Try again.
+                ran_inline.append(True)
+                return
+            gc.collect()
+            collected.set()
+
+        gc.disable()  # only the collection in the callback may free the session
+        try:
+            # No token refresh thread, which holds the session for a moment when it starts.
+            session = Session(never_timeout=False)
+            session.cycle = session  # only the garbage collector frees a cycle
+            session_ref = weakref.ref(session)
+            stub = config_pb2_grpc.ConfigServiceStub(session.grpc_channel)
+            metadata = session.grpc_metadata
+            del session
+            for _ in range(10):
+                ran_inline.clear()
+                future = stub.GetConfigurationConstants.future(
+                    config_pb2.ConfigurationConstantsRequest(), metadata=metadata
+                )
+                future.add_done_callback(collect)
+                if not ran_inline:
+                    break  # the callback runs on the gRPC thread
+            else:
+                self.skipTest("every RPC finished before its done callback was added")
+            self.assertTrue(
+                collected.wait(30), "the finalizer hung on the session's gRPC thread"
+            )
+        finally:
+            gc.enable()
+        self.assertIsNone(session_ref(), "the collection did not free the session")
+
+    def test_failed_construction_leaves_no_finalizer_error(self):
+        errors = []
+        with mock.patch.object(sys, "unraisablehook", errors.append):
+            with self.assertRaises(UnicodeEncodeError):
+                Session(auth_type="Basic", auth_token="caf\u00e9")  # not ASCII
+            gc.collect()
+        self.assertEqual(errors, [], "Session.__del__ failed on a partly built session")
+
+    def test_unclosed_session_does_not_block_interpreter_exit(self):
+        # A session left open in a reference cycle is collected during interpreter shutdown.
+        script = (
+            "from pydeephaven import Session\n"
+            "session = Session()\n"
+            "session.cycle = session\n"
+            "session.empty_table(1)\n"
+        )
+        try:
+            result = subprocess.run([sys.executable, "-c", script], timeout=60)
+        except subprocess.TimeoutExpired:
+            self.fail("the interpreter did not exit")
+        self.assertEqual(result.returncode, 0)
+
+    def test_garbage_collected_table_is_released(self):
+        for name, columns in (("with columns", ["X = i"]), ("without columns", [])):
+            with self.subTest(name):
+                t = self.session.empty_table(10)
+                if columns:
+                    t = t.update(columns)
+                shared_ticket = SharedTicket.random_ticket()
+                self.session.publish_table(shared_ticket, t)
+                with Session() as sub_session:
+                    self.assertEqual(sub_session.fetch_table(shared_ticket).size, 10)
+                    del t
+                    gc.collect()
+                    # The session's release thread releases the ticket shortly after.
+                    deadline = time() + 10
+                    while True:
+                        try:
+                            sub_session.fetch_table(shared_ticket)
+                        except DHError:
+                            break
+                        if time() > deadline:
+                            self.fail("the table was not released")
+                        sleep(0.1)
+
+    def test_garbage_collected_borrowed_wrapper_is_not_released(self):
+        t = self.session.empty_table(10)
+        # Shares t's export, as InputTable(session, t.ticket) does.
+        wrapper = Table(self.session, ticket=t.ticket)
+        with mock.patch.object(self.session, "_queue_release") as queue_release:
+            del wrapper
+            gc.collect()
+        queue_release.assert_not_called()
+        self.assertEqual(t.update(["X = i"]).size, 10)
+
+    def test_garbage_collection_during_rpc_does_not_deadlock(self):
+        """A Table finalized in the middle of a gRPC call on the same thread must not make an RPC itself. gRPC holds
+        its channel lock there, so that RPC would wait on the lock forever. This forces a collection at that point:
+        gRPC starts its channel spin thread while it holds the lock.
+        """
+        import grpc._channel as grpc_channel
+
+        original_spin = getattr(grpc_channel, "_run_channel_spin_thread", None)
+        if original_spin is None:
+            self.skipTest(
+                "grpc._channel._run_channel_spin_thread is gone; update this test"
+            )
+
+        collected_under_lock = threading.Event()
+
+        def spin_thread_with_gc(state):
+            # The patch is global. Only the test thread's call may collect, or another session's RPC could pass the test.
+            if threading.current_thread() is thread:
+                gc.collect()
+                collected_under_lock.set()
+            return original_spin(state)
+
+        table_refs = []
+        worker_errors = []
+
+        def run():
+            try:
+                # A separate session, so a deadlocked thread does not block tearDown.
+                session = Session()
+                t = session.empty_table(5).update(["X = i"])
+                t.cycle = t  # a reference cycle, so only the garbage collector frees it
+                table_refs.append(weakref.ref(t))
+                del t
+                grpc_channel._run_channel_spin_thread = spin_thread_with_gc
+                # The spin thread starts on a call made while no other call is in flight, so retry until one does.
+                for _ in range(50):
+                    session.empty_table(1)
+                    if collected_under_lock.is_set():
+                        break
+                    sleep(0.05)
+                grpc_channel._run_channel_spin_thread = original_spin
+                session.close()
+            except BaseException as e:
+                worker_errors.append(e)
+
+        gc.disable()  # only the collection under the lock may free the table
+        try:
+            thread = threading.Thread(target=run, daemon=True)
+            thread.start()
+            thread.join(60)
+        finally:
+            # Restored here, not in the worker: a deadlocked worker never gets to its own cleanup.
+            grpc_channel._run_channel_spin_thread = original_spin
+            gc.enable()
+        self.assertFalse(
+            thread.is_alive(), "deadlocked: a finalizer made an RPC inside a gRPC call"
+        )
+        if worker_errors:
+            raise worker_errors[0]
+        self.assertTrue(
+            collected_under_lock.is_set(), "gRPC never started its spin thread"
+        )
+        self.assertIsNone(table_refs[0](), "the collection did not free the table")
 
     def test_blink_input_table(self):
         pa_types = [

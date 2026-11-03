@@ -675,7 +675,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
         assertOneError("existing-full", existingClient);
         assertOneError("late-full", failedClient);
 
-        rejoinedClient.flushEventsToReplicatedTable();
+        rejoinedClient.flushMessages();
         updateGraph().runWithinUnitTestCycle(updateSourceCombiner::run);
         rejoinedClient.validate("after rejoining a failed producer", sourceTable);
     }
