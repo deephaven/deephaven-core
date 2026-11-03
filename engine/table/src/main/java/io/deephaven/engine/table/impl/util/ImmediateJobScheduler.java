@@ -4,12 +4,16 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
@@ -70,6 +74,18 @@ public class ImmediateJobScheduler implements JobScheduler {
             PROCESSING_THREAD_UPDATER.set(this, null);
         }
         return Submission.NOT_WITHDRAWABLE;
+    }
+
+    /**
+     * Return the result of {@code future}, which the jobs have completed by the time {@link #submit} returns.
+     *
+     * @throws io.deephaven.base.verify.AssertionFailure if {@code future} is not done
+     */
+    @Override
+    public <T> T awaitCompletion(@NotNull final CompletableFuture<T> future)
+            throws InterruptedException, ExecutionException {
+        Assert.assertion(future.isDone(), "future.isDone()", "jobs run before submit returns");
+        return future.get();
     }
 
     @Override

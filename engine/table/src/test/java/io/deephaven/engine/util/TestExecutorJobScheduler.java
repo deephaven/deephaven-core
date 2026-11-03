@@ -5,6 +5,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
@@ -19,7 +20,11 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -493,5 +498,116 @@ public class TestExecutorJobScheduler {
         // made and the Error itself propagates to the pool
         assertThat(escaped.get()).isNotNull();
         assertThat(JobScheduler.asDeliverableException(error).getCause()).isSameAs(error);
+    }
+
+    /**
+     * A thread waiting for a callback-form iteration runs the jobs the executor has not started, those submitted from
+     * the iteration's callbacks included, as its own work; the executor's entries for them then do nothing.
+     */
+    @Test
+    public void testAwaitCompletionRunsJobsTheExecutorHasNotStarted() throws InterruptedException, ExecutionException {
+        final List<Runnable> queued = new ArrayList<>();
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(queued::add, 4);
+        final Set<Thread> taskThreads = ConcurrentHashMap.newKeySet();
+        final AtomicInteger followUps = new AtomicInteger();
+        final CompletableFuture<Void> done = new CompletableFuture<>();
+        scheduler.iterateParallel(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 8,
+                (context, idx, nec) -> taskThreads.add(Thread.currentThread()),
+                // a job submitted from a callback, after the waiting thread has begun to wait
+                () -> scheduler.submit(ExecutionContext.getContext(), () -> {
+                    followUps.incrementAndGet();
+                    done.complete(null);
+                }, null, done::completeExceptionally),
+                () -> {
+                },
+                done::completeExceptionally);
+        assertThat(queued).isNotEmpty();
+
+        assertThat(scheduler.awaitCompletion(done)).isNull();
+        assertThat(taskThreads).containsExactly(Thread.currentThread());
+        assertThat(followUps.get()).isEqualTo(1);
+        assertThat(outstandingJobs(scheduler)).isZero();
+        assertThat(scheduler.getAccumulatedPerformance().getUsageNanos()).isZero();
+
+        final int runnersBefore = taskThreads.size();
+        new ArrayList<>(queued).forEach(Runnable::run);
+        assertThat(taskThreads).hasSize(runnersBefore);
+        assertThat(followUps.get()).isEqualTo(1);
+    }
+
+    /** The wait goes on until a job a pool thread started has finished, even once the future is done. */
+    @Test
+    public void testAwaitCompletionWaitsForAJobStillRunningAfterTheFuture() throws Exception {
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(newPool(1), 2);
+        final CompletableFuture<Void> done = new CompletableFuture<>();
+        final CountDownLatch release = new CountDownLatch(1);
+        final AtomicInteger finished = new AtomicInteger();
+        scheduler.submit(ExecutionContext.getContext(), () -> {
+            done.complete(null);
+            try {
+                release.await();
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            finished.incrementAndGet();
+        }, null, done::completeExceptionally);
+        assertThat(done.get(10, TimeUnit.SECONDS)).isNull();
+        final Thread releaser = new Thread(() -> {
+            try {
+                Thread.sleep(100);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            release.countDown();
+        });
+        releaser.start();
+
+        scheduler.awaitCompletion(done);
+        assertThat(finished.get()).isEqualTo(1);
+        releaser.join();
+    }
+
+    /**
+     * An interrupt cancels the future, so that a job that checks it stops early, but the waiting thread still runs the
+     * job before it throws.
+     */
+    @Test
+    public void testInterruptCancelsTheFutureAndFinishesTheJobs() {
+        final List<Runnable> queued = new ArrayList<>();
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(queued::add, 2);
+        final CompletableFuture<Void> done = new CompletableFuture<>();
+        final AtomicReference<Boolean> sawCancelled = new AtomicReference<>();
+        scheduler.submit(null, () -> sawCancelled.set(done.isCancelled()), null, done::completeExceptionally);
+
+        Thread.currentThread().interrupt();
+        assertThatThrownBy(() -> scheduler.awaitCompletion(done)).isInstanceOf(InterruptedException.class);
+        assertThat(sawCancelled.get()).isTrue();
+        assertThat(outstandingJobs(scheduler)).isZero();
+    }
+
+    /**
+     * A job that waits for its own scheduler would wait for itself, so the wait fails the job instead, whether a
+     * synchronous executor, the pool or the waiting thread runs it.
+     */
+    @Test
+    public void testJobWaitingForItsOwnSchedulerFails() throws InterruptedException {
+        final List<Runnable> queued = new ArrayList<>();
+        final List<Executor> executors = List.of(Runnable::run, newPool(2), queued::add);
+        for (final Executor executor : executors) {
+            final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(executor, 2);
+            final CompletableFuture<Void> done = new CompletableFuture<>();
+            scheduler.submit(ExecutionContext.getContext(), () -> {
+                try {
+                    scheduler.awaitCompletion(new CompletableFuture<Void>());
+                    done.complete(null);
+                } catch (final InterruptedException | ExecutionException e) {
+                    done.completeExceptionally(e);
+                }
+            }, null, done::completeExceptionally);
+            assertThatThrownBy(() -> scheduler.awaitCompletion(done))
+                    .isInstanceOf(ExecutionException.class)
+                    .hasCauseInstanceOf(AssertionFailure.class);
+            assertThat(outstandingJobs(scheduler)).isZero();
+        }
     }
 }

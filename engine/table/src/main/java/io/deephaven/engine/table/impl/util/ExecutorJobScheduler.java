@@ -4,11 +4,18 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -29,7 +36,8 @@ import java.util.function.Consumer;
  * the work it can finish. That pool queues a job while all of its threads are busy, so a thread that finishes another
  * caller's job then helps with this one, and a callback-form iteration returns once its jobs are submitted. A job on
  * the pool must therefore not block waiting for a callback-form iteration or another submitted job, which may be queued
- * behind it; it calls {@link #invokeParallel} instead, which runs the work itself when no thread is free.
+ * behind it, except through {@link #invokeParallel} or {@link #awaitCompletion}, which run the work themselves when no
+ * thread is free.
  * </p>
  *
  * <p>
@@ -38,6 +46,12 @@ import java.util.function.Consumer;
  * withdrawing its queued job, so this holds for any executor, and a queue never makes it wait behind other callers'
  * jobs. A task that itself calls {@code invokeParallel} is such a caller too, and works through its nested iteration
  * the same way; when the pool has no free thread, it runs its nested helpers itself and does not wait at all.
+ * </p>
+ *
+ * <p>
+ * A thread waiting in {@link #awaitCompletion} likewise runs any of this scheduler's jobs that no thread has started,
+ * and blocks only while every job not yet finished is running on another thread. A job that such a thread runs is part
+ * of its own work, and its performance is not accumulated here.
  * </p>
  *
  * <p>
@@ -51,7 +65,23 @@ public class ExecutorJobScheduler implements JobScheduler {
     private static final long HELPER_POOL_KEEP_ALIVE_SECONDS = 60;
 
     private final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
+    /**
+     * The jobs submitted that have not finished or been withdrawn, whichever thread runs them. Its monitor guards the
+     * waits for jobs, and is notified when a job is queued for waiting threads, when the count reaches zero, and when a
+     * future being waited for completes.
+     */
     private final AtomicInteger outstandingJobs = new AtomicInteger(0);
+    /**
+     * The jobs the executor has accepted, in order, for a waiting thread to claim. A job an executor thread claims or
+     * the submitter withdraws is removed; any other claimed job is discarded when a waiting thread polls it.
+     */
+    private final Queue<Job> pendingJobs = new ConcurrentLinkedQueue<>();
+    /**
+     * The jobs of this scheduler that the current thread is running, or null when it runs none, so that no entry
+     * outlives the jobs on a thread. None of them may wait in {@link #awaitCompletion}, which waits for every job, the
+     * waiting job included.
+     */
+    private final ThreadLocal<MutableInt> jobsRunningOnThisThread = new ThreadLocal<>();
     private final Executor executor;
     private final int threadCount;
 
@@ -115,7 +145,87 @@ public class ExecutorJobScheduler implements JobScheduler {
             job.withdraw();
             throw t;
         }
+        // Waiting threads see only accepted jobs. One a thread has already claimed is skipped here, or discarded when a
+        // waiting thread polls it.
+        if (!job.isClaimed()) {
+            pendingJobs.add(job);
+            signalWaiters();
+        }
         return job;
+    }
+
+    @Override
+    public <T> T awaitCompletion(@NotNull final CompletableFuture<T> future)
+            throws InterruptedException, ExecutionException {
+        Assert.eqNull(jobsRunningOnThisThread.get(), "jobs of this scheduler running on the waiting thread");
+        future.whenComplete((result, failure) -> signalWaiters());
+        boolean interrupted = false;
+        while (true) {
+            // always clear the interrupt, so that the wait below blocks
+            if (Thread.interrupted() && !interrupted) {
+                interrupted = true;
+                // jobs that check the future stop early; the rest still run, since what they use is about to be
+                // released
+                future.cancel(false);
+            }
+            final Job job = claimNextPendingJob();
+            if (job != null) {
+                runOnWaitingThread(job);
+                continue;
+            }
+            synchronized (outstandingJobs) {
+                if (future.isDone() && outstandingJobs.get() == 0) {
+                    break;
+                }
+                if (pendingJobs.isEmpty()) {
+                    try {
+                        outstandingJobs.wait();
+                    } catch (InterruptedException e) {
+                        // handled at the top of the loop
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+        }
+        if (interrupted) {
+            throw new InterruptedException();
+        }
+        return future.get();
+    }
+
+    /**
+     * Run a job this waiting thread has claimed. It ends as it would on an executor thread: a failure reaches the job's
+     * own error handler, and an Error, or a failure of the handler itself, is also reported as fatal, so the future
+     * being waited for reports the outcome and nothing the job throws escapes the wait.
+     */
+    private static void runOnWaitingThread(@NotNull final Job job) {
+        try {
+            job.runClaimed(false);
+        } catch (Throwable t) {
+            // JobScheduler.runJob reported this as fatal before rethrowing it: an Error from the job, or a failure of
+            // its error handler.
+        }
+    }
+
+    /**
+     * @return a job no other thread has claimed, now claimed by this thread, or null when every job submitted has been
+     *         claimed
+     */
+    @Nullable
+    private Job claimNextPendingJob() {
+        Job job;
+        while ((job = pendingJobs.poll()) != null) {
+            if (job.tryClaim()) {
+                return job;
+            }
+        }
+        return null;
+    }
+
+    private void signalWaiters() {
+        synchronized (outstandingJobs) {
+            outstandingJobs.notifyAll();
+        }
     }
 
     /**
@@ -124,9 +234,7 @@ public class ExecutorJobScheduler implements JobScheduler {
      */
     private void decrementOutstandingJobs() {
         if (outstandingJobs.decrementAndGet() == 0) {
-            synchronized (outstandingJobs) {
-                outstandingJobs.notifyAll();
-            }
+            signalWaiters();
         }
     }
 
@@ -155,8 +263,9 @@ public class ExecutorJobScheduler implements JobScheduler {
     }
 
     /**
-     * A submitted job, which runs once: on the executor's thread that first starts it, or on the submitting thread if
-     * the executor refuses it. A job the submitter withdraws first does nothing when the executor starts it.
+     * A submitted job, which runs once: on the executor's thread that first starts it, on a thread waiting in
+     * {@link #awaitCompletion} that claims it first, or on the submitting thread if the executor refuses it. A job the
+     * submitter withdraws first does nothing when the executor starts it.
      */
     private final class Job implements Runnable, Submission {
 
@@ -189,12 +298,18 @@ public class ExecutorJobScheduler implements JobScheduler {
             return claimed.compareAndSet(false, true);
         }
 
+        /** @return whether a thread has claimed this job to run it, or withdrawn it */
+        private boolean isClaimed() {
+            return claimed.get();
+        }
+
         @Override
         public void withdraw() {
             if (!tryClaim()) {
                 return;
             }
             release();
+            pendingJobs.remove(this);
             decrementOutstandingJobs();
         }
 
@@ -218,12 +333,29 @@ public class ExecutorJobScheduler implements JobScheduler {
         @Override
         public void run() {
             if (!tryClaim()) {
-                // withdrawn, and its count released, before the executor started it
+                // withdrawn, or claimed by a waiting thread, before the executor started it
                 return;
             }
+            pendingJobs.remove(this);
+            // A synchronous executor that runs it here makes it the submitting thread's own work, as a refused job is
+            runClaimed(Thread.currentThread() != submitter || !inExecute);
+        }
+
+        /**
+         * Run this job, which this thread has claimed, and release its count.
+         *
+         * @param accumulatePerformance whether to accumulate the job's performance, as for a job that does not run as
+         *        part of the work of the submitting thread or of a thread waiting for this scheduler's jobs
+         */
+        private void runClaimed(final boolean accumulatePerformance) {
+            MutableInt jobsRunningHere = jobsRunningOnThisThread.get();
+            if (jobsRunningHere == null) {
+                jobsRunningHere = new MutableInt();
+                jobsRunningOnThisThread.set(jobsRunningHere);
+            }
+            jobsRunningHere.increment();
             try {
-                if (Thread.currentThread() == submitter && inExecute) {
-                    // A synchronous executor ran it here: the submitting thread's own work, as a refused job is
+                if (!accumulatePerformance) {
                     JobScheduler.runJob(executionContext, runnable, description, onError);
                     return;
                 }
@@ -236,7 +368,12 @@ public class ExecutorJobScheduler implements JobScheduler {
                     accumulatedBaseEntry.accumulate(baseEntry);
                 }
             } finally {
+                if (jobsRunningHere.decrementAndGet() == 0) {
+                    jobsRunningOnThisThread.remove();
+                }
                 release();
+                // even if the performance accounting failed, or getAccumulatedPerformance would wait for this job
+                // forever
                 decrementOutstandingJobs();
             }
         }

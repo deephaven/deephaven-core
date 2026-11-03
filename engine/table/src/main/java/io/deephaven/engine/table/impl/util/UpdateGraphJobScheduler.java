@@ -11,6 +11,7 @@ import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class UpdateGraphJobScheduler implements JobScheduler {
@@ -58,6 +59,18 @@ public class UpdateGraphJobScheduler implements JobScheduler {
         });
         // nothing waits for a notification's performance, so there is no need to withdraw one
         return Submission.NOT_WITHDRAWABLE;
+    }
+
+    /**
+     * Not supported: this scheduler's jobs are update graph notifications, which a thread must not block for. A
+     * listener that submits them completes its work from their callbacks instead.
+     *
+     * @throws UnsupportedOperationException always
+     */
+    @Override
+    public <T> T awaitCompletion(@NotNull final CompletableFuture<T> future) {
+        throw new UnsupportedOperationException(
+                "UpdateGraphJobScheduler jobs are update graph notifications, which a thread must not block for");
     }
 
     @Override

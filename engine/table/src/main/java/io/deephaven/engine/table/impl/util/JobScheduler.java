@@ -218,25 +218,29 @@ public interface JobScheduler {
      * does.
      *
      * <p>
-     * The {@link OperationInitializerJobScheduler} returns or throws only once {@code future} is done and every job
-     * submitted to it has finished, so that {@link #getAccumulatedPerformance} has nothing left to wait for; one of its
-     * own jobs, which would wait for itself, fails instead of waiting. While it waits, it runs on the calling thread
-     * any of its jobs that no other thread has started, and blocks only while every job it has not finished is running
-     * on another thread. The wait therefore never depends on a job queued behind threads that are themselves waiting,
-     * perhaps for a lock the calling thread holds. An interrupt cancels {@code future}, so that jobs that check it can
-     * stop early, but the wait goes on until every job has finished, because the caller is about to release what they
-     * are using; then {@link InterruptedException} is thrown. Other schedulers wait as {@link Future#get()} does.
+     * Each scheduler decides how a caller waits, or whether it may:
      * </p>
+     * <ul>
+     * <li>{@link OperationInitializerJobScheduler} and {@link ExecutorJobScheduler} return or throw only once
+     * {@code future} is done and every job submitted to them has finished, so that {@link #getAccumulatedPerformance}
+     * has nothing left to wait for; one of their own jobs, which would wait for itself, fails instead of waiting. While
+     * they wait, they run on the calling thread any of their jobs that no other thread has started, and block only
+     * while every job not yet finished is running on another thread. The wait therefore never depends on a job queued
+     * behind threads that are themselves waiting, perhaps for a lock the calling thread holds. An interrupt cancels
+     * {@code future}, so that jobs that check it can stop early, but the wait goes on until every job has finished,
+     * because the caller is about to release what they are using; then {@link InterruptedException} is thrown.</li>
+     * <li>{@link ImmediateJobScheduler} has run every job by the time {@link #submit} returns, so {@code future} must
+     * already be done, and the call fails if it is not.</li>
+     * <li>{@link UpdateGraphJobScheduler} runs its jobs as update graph notifications, which a thread must not block
+     * for, so the call fails.</li>
+     * </ul>
      *
      * @param future the future to wait for
      * @return the result of {@code future}
      * @throws InterruptedException if the calling thread is interrupted while waiting
      * @throws ExecutionException if {@code future} completed exceptionally
      */
-    default <T> T awaitCompletion(@NotNull final CompletableFuture<T> future)
-            throws InterruptedException, ExecutionException {
-        return future.get();
-    }
+    <T> T awaitCompletion(@NotNull CompletableFuture<T> future) throws InterruptedException, ExecutionException;
 
     /**
      * How many threads exist in the job scheduler? The job submitters can use this value to determine how many sub-jobs
