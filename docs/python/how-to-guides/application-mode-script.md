@@ -77,7 +77,7 @@ Because you're extending Deephaven's Docker image, you need to build this locall
 
 The `docker-compose.yml` file sets the [`deephaven.application.dir`](../reference/app-mode/application-mode-config.md) property to `/app.d`, the directory where the `Dockerfile` copies `app.d`. Pass the property through `START_OPTS`, as described in the [Docker application configuration guide](./configuration/docker-application.md).
 
-The `ports` and `volumes` lines are optional. They publish the server port and mount a `data` folder. In the `environment` line, only `-Ddeephaven.application.dir=/app.d` is specific to Application Mode. `-Xmx4g` sets the JVM heap size and is optional.
+The `ports` line publishes the server port, which you need to open the web IDE from the host. The `volumes` line mounts a `data` folder and is optional. In the `environment` line, only `-Ddeephaven.application.dir=/app.d` is specific to Application Mode. `-Xmx4g` sets the JVM heap size and is optional.
 
 Our `docker-compose.yml` file should look like this.
 

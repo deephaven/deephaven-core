@@ -29,7 +29,7 @@ ApplicationContext.initialize(start)
 
 ## When the application state is available
 
-[`ApplicationContext.get()`](/core/javadoc/io/deephaven/appmode/ApplicationContext.html) and [`ApplicationContext.initialize(...)`](/core/javadoc/io/deephaven/appmode/ApplicationContext.html) work only while the files of an Application Mode script run during startup. Calling either one at any other time throws an `IllegalStateException`.
+[`ApplicationContext.get`](/core/javadoc/io/deephaven/appmode/ApplicationContext.html) and [`ApplicationContext.initialize`](/core/javadoc/io/deephaven/appmode/ApplicationContext.html) work only while the files of an Application Mode script run during startup. Calling either one at any other time throws an `IllegalStateException`.
 
 Deephaven runs every file listed in the `file_N` properties under the same [`ApplicationContext`](/core/javadoc/io/deephaven/appmode/ApplicationContext.html), so each file gets the same [`ApplicationState`](/core/javadoc/io/deephaven/appmode/ApplicationState.html). If a script needs to add fields later, it must keep a reference to the [`ApplicationState`](/core/javadoc/io/deephaven/appmode/ApplicationState.html).
 
