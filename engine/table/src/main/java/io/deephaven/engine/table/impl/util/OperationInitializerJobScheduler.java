@@ -51,10 +51,11 @@ public class OperationInitializerJobScheduler implements JobScheduler {
      */
     private final Queue<Job> pendingJobs = new ConcurrentLinkedQueue<>();
     /**
-     * The jobs of this scheduler that the current thread is running. None of them may wait in {@link #awaitCompletion},
-     * which waits for every job, the waiting job included.
+     * The jobs of this scheduler that the current thread is running, or null when it runs none, so that no entry
+     * outlives the jobs on a thread. None of them may wait in {@link #awaitCompletion}, which waits for every job, the
+     * waiting job included.
      */
-    private final ThreadLocal<MutableInt> jobsRunningOnThisThread = ThreadLocal.withInitial(MutableInt::new);
+    private final ThreadLocal<MutableInt> jobsRunningOnThisThread = new ThreadLocal<>();
 
     public OperationInitializerJobScheduler(@NotNull final OperationInitializer operationInitializer) {
         this.operationInitializer = operationInitializer;
@@ -99,7 +100,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
     @Override
     public <T> T awaitCompletion(@NotNull final CompletableFuture<T> future)
             throws InterruptedException, ExecutionException {
-        Assert.eqZero(jobsRunningOnThisThread.get().intValue(), "jobs of this scheduler running on the waiting thread");
+        Assert.eqNull(jobsRunningOnThisThread.get(), "jobs of this scheduler running on the waiting thread");
         future.whenComplete((result, failure) -> signalWaiters());
         boolean interrupted = false;
         while (true) {
@@ -309,7 +310,11 @@ public class OperationInitializerJobScheduler implements JobScheduler {
          *        thread waiting for this scheduler's jobs
          */
         private void run(final boolean accumulatePerformance) {
-            final MutableInt jobsRunningHere = jobsRunningOnThisThread.get();
+            MutableInt jobsRunningHere = jobsRunningOnThisThread.get();
+            if (jobsRunningHere == null) {
+                jobsRunningHere = new MutableInt();
+                jobsRunningOnThisThread.set(jobsRunningHere);
+            }
             jobsRunningHere.increment();
             try (final SafeCloseable ignored = waitsForbidden ? UpdateGraphWaitGuard.forbidWaits() : null) {
                 if (accumulatePerformance) {
@@ -318,7 +323,9 @@ public class OperationInitializerJobScheduler implements JobScheduler {
                     JobScheduler.runJob(executionContext, runnable, description, onError);
                 }
             } finally {
-                jobsRunningHere.decrement();
+                if (jobsRunningHere.decrementAndGet() == 0) {
+                    jobsRunningOnThisThread.remove();
+                }
                 release();
                 // even if the performance accounting failed, or getAccumulatedPerformance would wait for this job
                 // forever
