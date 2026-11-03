@@ -2,7 +2,7 @@
 title: Casting
 ---
 
-Data type conversion, or casting for short, is the process of changing a value from one data type to another. This guide shows how to use type casts in [query strings](./query-string-overview.md) to control column types. It covers common numeric and string conversions, then casts on values from Groovy variables, closures, and classes.
+Casting changes a value from one data type to another. This guide shows how to use type casts in [query strings](./query-string-overview.md) to control column types. It covers common numeric and string conversions, then casts on values from Groovy variables, closures, and classes.
 
 In tables, casting gives a column the data type that later operations need. Casting to a Java primitive type also stores the values in compact primitive columns instead of `Object` or `BigDecimal` columns.
 

@@ -1207,15 +1207,14 @@ public class AggregationProcessor implements AggregationContextFactory {
     }
 
     /**
-     * AggFormula SelectColumns are not permitted to use column arrays or virtual row variables; verify that.
+     * AggFormula SelectColumns read the rows of one bucket, so they are not permitted to have
+     * {@link SelectColumn#hasCrossRowDependencies() cross-row dependencies} (virtual row variables or column arrays);
+     * verify that.
      */
     private static void validateSelectColumnForFormula(SelectColumn selectColumn) {
-        if (!selectColumn.getColumnArrays().isEmpty()) {
-            throw new IllegalArgumentException("AggFormula does not support column arrays ("
-                    + selectColumn.getColumnArrays() + ")");
-        }
-        if (selectColumn.hasVirtualRowVariables()) {
-            throw new IllegalArgumentException("AggFormula does not support virtual row variables");
+        if (selectColumn.hasCrossRowDependencies()) {
+            throw new IllegalArgumentException("AggFormula cannot use cross-row dependencies (virtual row variables or "
+                    + "column arrays): " + selectColumn);
         }
     }
 

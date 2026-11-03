@@ -66,13 +66,13 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.PartitionedTable;
@@ -614,6 +614,49 @@ public class TestPartitionAwareSourceTableNoMocks {
     }
 
     /**
+     * A gRPC handler may coalesce a deferred table, here through selectDistinct, on a thread that holds no update graph
+     * lock and may not initiate serial table operations.
+     */
+    @Test
+    public void testDeferredTimeSeriesFilterWithoutLock() throws Exception {
+        // the test locations' timestamps are a few nanoseconds after the epoch, so all of them are in the window
+        final TestClock clock = new TestClock().setNanos(DateTimeUtils.MINUTE);
+        checkDeferredTimeSeriesFilterWithoutLock(TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp").period("PT5m").clock(clock).build());
+        checkDeferredTimeSeriesFilterWithoutLock(DisjunctiveFilter.of(
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(clock).build(),
+                WhereFilter.of(RawString.of("II < 0"))).withDeclaredBarriers(new Object()));
+    }
+
+    private void checkDeferredTimeSeriesFilterWithoutLock(final WhereFilter filter) throws Exception {
+        final Table source = refreshingPartitionedSource(partitionedLocationProvider(128));
+        final Table deferred = source.where(filter);
+        assertTrue(deferred instanceof DeferredViewTable);
+
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final UpdateGraph contextUpdateGraph = executionContext.getUpdateGraph();
+
+        final ExecutorService unlockedThread = Executors.newSingleThreadExecutor();
+        final Table distinct;
+        try {
+            distinct = unlockedThread.submit(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    assertFalse(contextUpdateGraph.serialTableOperationsSafe());
+                    assertFalse(contextUpdateGraph.exclusiveLock().isHeldByCurrentThread());
+                    assertFalse(contextUpdateGraph.sharedLock().isHeldByCurrentThread());
+                    final Table result = deferred.selectDistinct("partition");
+                    assertFalse(contextUpdateGraph.sharedLock().isHeldByCurrentThread());
+                    return result;
+                }
+            }).get();
+        } finally {
+            unlockedThread.shutdownNow();
+        }
+        assertTrue(distinct.isRefreshing());
+        assertEquals(4, distinct.size());
+    }
+
+    /**
      * One thread coalesces a deferred table during an update cycle without the update graph lock. Its condition uses a
      * query scope parameter, so it cannot filter previous values, and the deferred where's snapshot waits for the
      * shared lock. Another thread, already waiting for the exclusive lock when that happens, holds it once the cycle
@@ -919,30 +962,23 @@ public class TestPartitionAwareSourceTableNoMocks {
      * One thread computes a memoized where during an update cycle without the update graph lock; the where cannot
      * filter previous values, so it waits for the shared lock while computing. Another thread, already waiting for the
      * exclusive lock when that happens, holds it once the cycle completes and transforms a partitioned table, whose
-     * transformation runs the same where on an initialization worker. Since the transforming thread holds the lock and
-     * waits for the worker, the worker must not wait for the other thread's memoized computation.
+     * transformation runs the same where on initialization workers and on the transforming thread, which runs the jobs
+     * no worker has started. Since the transforming thread holds the lock and waits for the workers, a worker must not
+     * wait for the other thread's memoized computation.
      */
     @Test
-    public void testTransformWorkerDoesNotWaitForMemoizedOperationWhileExclusiveLockHolderTransforms()
+    public void testTransformDoesNotWaitForMemoizedOperationWhileExclusiveLockHolderTransforms()
             throws Exception {
         final long partitionSize = 128;
         final Table source = refreshingPartitionedSource(partitionedLocationProvider(partitionSize)).coalesce();
         final WhereFilter filter = new PreviousRejectingFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
         final PartitionedTable partitioned = PartitionedTableFactory.ofTables(source);
-        final AtomicReference<Thread> exclusiveThread = new AtomicReference<>();
-        final AtomicBoolean transformedOnWorker = new AtomicBoolean();
         final boolean oldMemoize = QueryTable.setMemoizeResults(true);
-        try (final SafeCloseable ignored = new ForcedParallelSelect()) {
-            final Table[] results = runWhileExclusiveLockHolderRuns(() -> {
-                exclusiveThread.set(Thread.currentThread());
-                return partitioned.transform(constituent -> {
-                    if (Thread.currentThread() != exclusiveThread.get()) {
-                        transformedOnWorker.set(true);
-                    }
-                    return constituent.where(filter);
-                }).merge();
-            }, () -> source.where(filter));
-            assertTrue("the transformation must run on an initialization worker", transformedOnWorker.get());
+        // a job per constituent, so that workers may transform some while the transforming thread runs others
+        try (final SafeCloseable ignored = new ForcedParallelSelect(1)) {
+            final Table[] results = runWhileExclusiveLockHolderRuns(
+                    () -> partitioned.transform(constituent -> constituent.where(filter)).merge(),
+                    () -> source.where(filter));
             assertEquals(4 * partitionSize, results[0].size());
             assertEquals(4 * partitionSize, results[1].size());
         } finally {

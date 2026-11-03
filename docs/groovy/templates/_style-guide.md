@@ -8,7 +8,7 @@ We've adopted Diátaxis Framework for documentation. All new content should fit 
 
 - **Tutorial** - A learning resource / lesson that guides a reader step-by-step to a specific outcome. All users will achieve the same outcome.
 - **How-to** - A "follow along" resource that also guides a reader step-by-step. A getting started guide for new users to show how to solve a specific problem. Similar to a recipe: when following along with a how-to guide, all users will learn the same information, but they can use their own ingredients, so outcomes may differ. As opposed to a reference guide, here advice or general recommendations on how to use a feature / method may be offered.
-- **Reference** - A resource to study. Purely informative; purpose is to describe. No extraneous information - very pointed, without advice or general tips.
+- **Reference** - A resource to study. It describes the thing it documents, without extraneous information or general tips. A reference page may say when to use the documented item, in its own labeled section ("When to use ...") scoped to that item. Guidance about combining several features belongs in a concept guide or how-to guide, linked from the reference page.
 - **Conceptual Guide** - A resource to study. Intended to broaden understanding of higher concepts, to explain how or why, with contextual explanations.
 
 ## Code Formatting and Conventions
