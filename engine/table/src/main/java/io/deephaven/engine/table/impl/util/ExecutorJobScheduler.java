@@ -401,8 +401,8 @@ public class ExecutorJobScheduler implements JobScheduler {
                     jobsRunningOnThisThread.remove();
                 }
                 release();
-                // even if the performance accounting failed, or getAccumulatedPerformance would wait for this job
-                // forever
+                // Decrement the outstanding jobs, even if performance accounting failed; otherwise
+                // getAccumulatedPerformance would wait for the job forever.
                 decrementOutstandingJobs();
             }
         }
