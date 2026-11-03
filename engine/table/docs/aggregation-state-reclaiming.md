@@ -34,6 +34,12 @@ mode keeps these rules:
 - **A group keeps its row key while it has rows,** unless the mode collapses blocks. A group that empties and returns
   is a new row, at the end of the result. This differs from the encounter-order promise of an aggregation that does not
   reclaim.
+- **Removing or moving a state marks the cycle as a hash table change.** The key column of a single-key aggregation
+  answers match filters by probing the hash table, and a probe on another thread scans the column instead when the
+  hash table may no longer hold the previous or current state it filters (see
+  `IncrementalOperatorAggregationStateManager.lastStateChangeStep`). Removing a state from the hash table and
+  collapsing states change it as an insert does, so they record the cycle's step before their first change, including
+  in a cycle that adds no rows.
 - **Storage is released after the cycle.** A block's storage is freed by a terminal notification, once every listener
   in the cycle has run, so previous values stay readable for the whole cycle that removed the states. The array sources
   return a released block's storage to their element type's recycler, where a later block borrows it rather than

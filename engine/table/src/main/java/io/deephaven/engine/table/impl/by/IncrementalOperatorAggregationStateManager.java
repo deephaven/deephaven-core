@@ -28,8 +28,9 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
 
     /**
      * The step of the last update cycle that {@link #beginUpdateCycle(long) began} changing the hash table, set before
-     * its first change. A cycle that has rehash work left, adds rows or modifies keys may change the hash table, so it
-     * records its step; a cycle that only removes rows or modifies other columns leaves the hash table unchanged, and
+     * its first change. A cycle that has rehash work left, adds rows, modifies keys, {@link #tombstoneStates removes
+     * states} or {@link #shiftOutputPositions moves them} may change the hash table, so it records its step; a cycle
+     * that only removes rows without removing a state, or modifies other columns, leaves the hash table unchanged, and
      * records nothing. A reader on another thread reads the clock's step before its reads, and this after them behind a
      * {@link java.lang.invoke.VarHandle#acquireFence() fence}. Compared to the reader's step, this is:
      * <ul>
@@ -73,7 +74,8 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
 
     /**
      * Move states to new output positions, updating the hash table to match. Every shift must move states toward lower
-     * positions.
+     * positions. Called before the result's key columns move, so that the step this records for
+     * {@link #lastStateChangeStep()} precedes their change as well.
      *
      * @param shiftData the shifts to apply to the states' output positions
      */

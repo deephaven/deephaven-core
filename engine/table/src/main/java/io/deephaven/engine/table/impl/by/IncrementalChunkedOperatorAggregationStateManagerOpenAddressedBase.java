@@ -494,6 +494,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         if (removed.isEmpty()) {
             return;
         }
+        beginStateChange();
         // look the removed states' hash slots up a chunk at a time, rather than one row key callback at a time
         final int chunkSize = (int) Math.min(CHUNK_SIZE, removed.size());
         try (final RowSequence.Iterator it = removed.getRowSequenceIterator();
@@ -511,6 +512,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     public void shiftOutputPositions(final RowSetShiftData shiftData) {
+        beginStateChange();
         final RowSetShiftData.Iterator it = shiftData.applyIterator();
         while (it.hasNext()) {
             it.next();
