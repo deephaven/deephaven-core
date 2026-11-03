@@ -63,7 +63,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
         for (final SelectColumn selectColumn : columns) {
             final List<String> usedColumnNames = new ArrayList<>(
                     selectColumn.initDef(allColumns, compilationProcessor));
-            if (selectColumn.hasVirtualRowVariables() || !selectColumn.getColumnArrays().isEmpty()) {
+            if (selectColumn.hasCrossRowDependencies()) {
                 // It is not strictly necessary to coalesce; we could instead mark that we have views with a row
                 // variable or array. But if we were to ever filter the table, we would be required to coalesce
                 // at that point to get correct handling of the pre-filtered rowset in the formula.
@@ -134,7 +134,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
         ColumnDefinition<?>[] columnDefinitions = definition.getColumnsArray();
         // Create arrays that will contain the new column definitions (excluding removed columns)
         ColumnDefinition<?>[] resultColumnsExternal = new ColumnDefinition[columnDefinitions.length - removedCount];
-        SelectColumn[] viewColumns = new SelectColumn[columnDefinitions.length - removedCount];
+        SourceColumn[] viewColumns = new SourceColumn[columnDefinitions.length - removedCount];
 
         int resultColIdx = 0;
         for (final ColumnDefinition<?> cDef : columnDefinitions) {
@@ -154,7 +154,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
                 resultColIdx++;
             }
         }
-        return redefine(TableDefinition.of(resultColumnsExternal), definition, viewColumns);
+        return redefineWithRename(TableDefinition.of(resultColumnsExternal), viewColumns);
     }
 
     /**
@@ -187,9 +187,24 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
      *        redefine(newDefinitionInternal).view(viewColumns).
      * @param newDefinitionInternal A TableDefinition with a subset of this RedefinableTable's ColumnDefinitions.
      * @param viewColumns A set of SelectColumns to apply in order to transform a table with newDefinitionInternal to a
-     *        table with newDefinitionExternal.
+     *        table with newDefinitionExternal. Each column may read the result of an earlier column, as in
+     *        {@link Table#view(Collection)}.
      * @return the redefined table
      */
     protected abstract Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns);
+
+    /**
+     * Redefine this table by renaming the table's columns. Unlike the view columns of
+     * {@link #redefine(TableDefinition, TableDefinition, SelectColumn[])}, which apply in order, the rename columns
+     * apply simultaneously, as {@link Table#renameColumns(Collection)} requires: every rename column reads a column of
+     * this table, never the result of another rename column. Applied in order, a swap would read a column that the swap
+     * had already replaced.
+     *
+     * @param newDefinitionExternal A TableDefinition that represents the result of the rename.
+     * @param renameColumns One SourceColumn per column of newDefinitionExternal, in the same order, each naming a
+     *        column of this table to read.
+     * @return the renamed table
+     */
+    protected abstract Table redefineWithRename(TableDefinition newDefinitionExternal, SourceColumn[] renameColumns);
 }

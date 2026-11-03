@@ -1626,12 +1626,10 @@ public class UpdateByOperatorFactory {
             // Get the input column names from the formula and provide them to the rolling formula operator
             final String[] allInputColumns =
                     selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
-            if (!selectColumn.getColumnArrays().isEmpty()) {
-                throw new IllegalArgumentException("RollingFormulaMultiColumnOperator does not support column arrays ("
-                        + selectColumn.getColumnArrays() + ")");
-            }
-            if (selectColumn.hasVirtualRowVariables()) {
-                throw new IllegalArgumentException("RollingFormula does not support virtual row variables");
+            // the formula reads the rows of one window
+            if (selectColumn.hasCrossRowDependencies()) {
+                throw new IllegalArgumentException("RollingFormula cannot use cross-row dependencies (virtual row "
+                        + "variables or column arrays): " + selectColumn);
             }
 
             final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)

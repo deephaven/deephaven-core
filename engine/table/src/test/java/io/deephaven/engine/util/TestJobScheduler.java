@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
@@ -24,7 +25,9 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -742,7 +745,7 @@ public final class TestJobScheduler {
         }
 
         @Override
-        public void submit(
+        public Submission submit(
                 final ExecutionContext executionContext,
                 final Runnable runnable,
                 final LogOutputAppendable description,
@@ -752,6 +755,7 @@ public final class TestJobScheduler {
             }
             --remainingAccepts;
             accepted.add(runnable);
+            return Submission.NOT_WITHDRAWABLE;
         }
 
         private void runAccepted() {
@@ -759,6 +763,11 @@ public final class TestJobScheduler {
             while ((runnable = accepted.poll()) != null) {
                 runnable.run();
             }
+        }
+
+        @Override
+        public <T> T awaitCompletion(final CompletableFuture<T> future) {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -1172,5 +1181,29 @@ public final class TestJobScheduler {
                 onContextClosed();
             }
         }
+    }
+
+    /** The immediate scheduler has run every job when submit returns, so the future it is given is already done. */
+    @Test
+    public void testImmediateAwaitCompletionReturnsTheDoneFuture() throws InterruptedException, ExecutionException {
+        final JobScheduler scheduler = new ImmediateJobScheduler();
+        final CompletableFuture<Integer> done = new CompletableFuture<>();
+        scheduler.submit(null, () -> done.complete(42), null, done::completeExceptionally);
+        assertEquals(42, (int) scheduler.awaitCompletion(done));
+    }
+
+    /** A future the immediate scheduler's jobs have not completed never will be, so waiting for it fails. */
+    @Test
+    public void testImmediateAwaitCompletionFailsForAFutureNotDone() {
+        final JobScheduler scheduler = new ImmediateJobScheduler();
+        assertThrows(AssertionFailure.class, () -> scheduler.awaitCompletion(new CompletableFuture<Void>()));
+    }
+
+    /** The update graph scheduler's jobs are notifications, which a thread must not block for. */
+    @Test
+    public void testUpdateGraphAwaitCompletionIsUnsupported() {
+        final JobScheduler scheduler = new UpdateGraphJobScheduler(ExecutionContext.getContext().getUpdateGraph());
+        final CompletableFuture<Void> done = CompletableFuture.completedFuture(null);
+        assertThrows(UnsupportedOperationException.class, () -> scheduler.awaitCompletion(done));
     }
 }

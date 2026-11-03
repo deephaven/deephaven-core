@@ -18,7 +18,7 @@ Deephaven's `server` Docker image doesn't include [TensorFlow](https://www.tenso
 Both examples below classify the [Iris dataset](https://en.wikipedia.org/wiki/Iris_flower_data_set) from [Deephaven's examples repository](https://github.com/deephaven/examples). The first example uses [TensorFlow](https://www.tensorflow.org/) with [pandas](https://pandas.pydata.org/). The second reads the data into a Deephaven table and uses [`deephaven.learn`](./use-deephaven-learn.md) to make predictions, first on a static table and then on a live table that gains rows as new data arrives.
 
 > [!NOTE]
-> In this guide, we read data from [Deephaven's examples repository](https://github.com/deephaven/examples). You can also load files from the `/data` directory in the Docker container, which Deephaven's Docker Compose deployments mount from `./data` in the deployment directory. See [Docker data volumes](../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
+> In this guide, we read data from [Deephaven's examples repository](https://github.com/deephaven/examples). You can also load files from the `/data` directory in the Docker container, which Deephaven's Docker Compose deployments mount from `./data` in the deployment directory. See [Docker bind mounts](../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
 
 ## Classify the Iris dataset with pandas
 
@@ -332,7 +332,7 @@ As new measurements arrive, `iris_predicted_live` gains rows with a `PredictedCl
 
 ## Related documentation
 
-- [Docker data volumes](../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../conceptual/docker-data-volumes.md)
 - [Table types](../conceptual/table-types.md)
 - [Install and run with Docker](../getting-started/docker-install.md)
 - [How to install and use Python packages](./install-and-use-python-packages.md)

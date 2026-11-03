@@ -12,6 +12,7 @@ import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
@@ -25,6 +26,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.TimeLiteralReplacedExpression;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
 
 import java.lang.reflect.InvocationTargetException;
@@ -34,9 +36,26 @@ import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFIX;
 
-public abstract class AbstractConditionFilter extends WhereFilterImpl {
+public abstract class AbstractConditionFilter extends WhereFilterImpl implements RenameableFilter {
     private static final Logger log = LoggerFactory.getLogger(AbstractConditionFilter.class);
     final Map<String, String> outerToInnerNames;
+    /**
+     * The formula input this filter reads from columns, recorded when the filter is renamed; null if the filter was
+     * never renamed. A renamed filter is executed before a view, on the view's source table, which may have columns
+     * that the view hides. Restricting column reads to this set keeps any other input, such as a query-scope variable,
+     * from reading a hidden column of the same name.
+     */
+    @Nullable
+    final Set<String> formulaColumns;
+    /**
+     * The query-scope variables this filter reads, with the values the original filter read, recorded when the filter
+     * is renamed; null if the filter was never renamed. A DeferredViewTable renames a filter, and initializes the
+     * renamed filter, when the view's table coalesces, which may happen long after the where, under another query
+     * scope: a Python caller's local variables are gone by then, and a session variable may hold another value. Parsing
+     * against these variables gives the renamed filter the values that the where read.
+     */
+    @Nullable
+    final Map<String, Object> formulaVariables;
     @NotNull
     protected final String formula;
     List<String> usedColumns;
@@ -53,11 +72,21 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         this.formula = formula;
         this.unboxArguments = unboxArguments;
         this.outerToInnerNames = Collections.emptyMap();
+        this.formulaColumns = null;
+        this.formulaVariables = null;
     }
 
-    protected AbstractConditionFilter(@NotNull String formula, Map<String, String> renames, boolean unboxArguments) {
+    /**
+     * @param formulaColumns see {@link #formulaColumns}; null exactly when {@code formulaVariables} is null
+     * @param formulaVariables see {@link #formulaVariables}; null exactly when {@code formulaColumns} is null
+     */
+    protected AbstractConditionFilter(@NotNull String formula, Map<String, String> renames,
+            @Nullable Set<String> formulaColumns, @Nullable Map<String, Object> formulaVariables,
+            boolean unboxArguments) {
         this.formula = formula;
         this.outerToInnerNames = renames;
+        this.formulaColumns = formulaColumns;
+        this.formulaVariables = formulaVariables;
         this.unboxArguments = unboxArguments;
     }
 
@@ -91,9 +120,28 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         }
 
         try {
-            final QueryLanguageParser.Result result = FormulaAnalyzer.parseFormula(
-                    formula, tableDefinition.getColumnNameMap(), outerToInnerNames,
-                    compilationProcessor.getFormulaImports(), unboxArguments);
+            final QueryLanguageParser.Result result;
+            if (formulaColumns == null) {
+                result = FormulaAnalyzer.parseFormula(
+                        formula, tableDefinition.getColumnNameMap(), outerToInnerNames,
+                        compilationProcessor.getFormulaImports(), unboxArguments);
+            } else {
+                // offer the parser a column for each formula input in formulaColumns, as the formula writes the input,
+                // and no other column, so the other columns of the table being filtered cannot shadow a query-scope
+                // variable; offer the query-scope variables that the original filter read, rather than the current
+                // query scope
+                final Map<String, ColumnDefinition<?>> availableColumns = new LinkedHashMap<>();
+                for (final String formulaColumn : formulaColumns) {
+                    final ColumnDefinition<?> column = tableDefinition.getColumn(
+                            outerToInnerNames.getOrDefault(formulaColumn, formulaColumn));
+                    if (column != null) {
+                        availableColumns.put(formulaColumn, column.withName(formulaColumn));
+                    }
+                }
+                result = FormulaAnalyzer.parseFormula(formula, availableColumns, Collections.emptyMap(),
+                        compilationProcessor.getFormulaImports().withQueryScopeVariables(formulaVariables),
+                        unboxArguments);
+            }
 
             formulaShiftedColumnDefinitions = result.getShiftedColumnDefinitions();
             if (formulaShiftedColumnDefinitions != null) {
@@ -102,25 +150,6 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                                 .map(ShiftedColumnDefinition::toString)
                                 .collect(Collectors.joining(", ")))
                         .endl();
-
-                // apply renames to shift column pairs immediately
-                if (!outerToInnerNames.isEmpty()) {
-                    String newFormula = formulaShiftedColumnDefinitions.getFirst();
-                    final Set<ShiftedColumnDefinition> resultSet = new LinkedHashSet<>();
-                    for (final ShiftedColumnDefinition shift : formulaShiftedColumnDefinitions.getSecond()) {
-                        if (outerToInnerNames.containsKey(shift.getColumnName())) {
-                            final String innerName = outerToInnerNames.get(shift.getColumnName());
-                            final ShiftedColumnDefinition newDefinition =
-                                    new ShiftedColumnDefinition(innerName, shift.getShiftAmount());
-                            resultSet.add(newDefinition);
-                            newFormula = newFormula.replaceAll(shift.getResultColumnName(),
-                                    newDefinition.getResultColumnName());
-                        } else {
-                            resultSet.add(shift);
-                        }
-                    }
-                    formulaShiftedColumnDefinitions = new Pair(newFormula, resultSet);
-                }
             }
 
             log.debug("Expression (after language conversion) : " + result.getConvertedExpression());
@@ -130,16 +159,9 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
             final List<QueryScopeParam<?>> paramsList = new ArrayList<>();
             for (String variable : result.getVariablesUsed()) {
-                final String columnToFind = outerToInnerNames.getOrDefault(variable, variable);
-                final String arrayColumnToFind;
-                final String arrayColumnOuterName;
-                if (variable.endsWith(COLUMN_SUFFIX)) {
-                    arrayColumnOuterName = variable.substring(0, variable.length() - COLUMN_SUFFIX.length());
-                    arrayColumnToFind = outerToInnerNames.getOrDefault(arrayColumnOuterName, arrayColumnOuterName);
-                } else {
-                    arrayColumnToFind = null;
-                    arrayColumnOuterName = null;
-                }
+                final String arrayColumnOuterName = variable.endsWith(COLUMN_SUFFIX)
+                        ? variable.substring(0, variable.length() - COLUMN_SUFFIX.length())
+                        : null;
 
                 if (variable.equals("i")) {
                     usesI = true;
@@ -147,9 +169,9 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                     usesII = true;
                 } else if (variable.equals("k")) {
                     usesK = true;
-                } else if (tableDefinition.getColumn(columnToFind) != null) {
+                } else if (resolvesAsColumn(tableDefinition, variable)) {
                     usedColumns.add(variable);
-                } else if (arrayColumnToFind != null && tableDefinition.getColumn(arrayColumnToFind) != null) {
+                } else if (arrayColumnOuterName != null && resolvesAsColumn(tableDefinition, arrayColumnOuterName)) {
                     usedColumnArrays.add(arrayColumnOuterName);
                 } else if (result.getPossibleParams().containsKey(variable)) {
                     paramsList.add(new QueryScopeParam<>(variable, result.getPossibleParams().get(variable)));
@@ -177,7 +199,8 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             return;
         }
         if (sourceTable.isRefreshing() && !AbstractFormulaColumn.ALLOW_UNSAFE_REFRESHING_FORMULAS) {
-            // note that constant offset array access does not use i/ii or end up in usedColumnArrays
+            // constant offset array access, such as A_[i - 1], reports i or ii and the column array, so these checks
+            // cover a shifted formula too
             boolean isUnsafe = (usesI || usesII) && !sourceTable.isAppendOnly() && !sourceTable.isBlink();
             isUnsafe |= usesK && !sourceTable.isAddOnly() && !sourceTable.isBlink();
             isUnsafe |= !usedColumnArrays.isEmpty() && !sourceTable.isBlink();
@@ -227,9 +250,14 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(vectorized,
                     pyCallableWrapper.getSignature().getReturnType(), usedColumns.toArray(new String[0]),
                     argumentsChunked, true);
+            // The arguments name the columns as the formula writes them; the chunk filter reads the columns of the
+            // table being filtered, which a renamed filter reads under other names. The names i, ii and k are reserved,
+            // so no rename maps them.
             setPythonFilter(new ConditionFilter.ChunkFilter(
                     dcf.toFilterKernel(),
-                    dcf.getColumnNames().toArray(new String[0]),
+                    dcf.getColumnNames().stream()
+                            .map(name -> outerToInnerNames.getOrDefault(name, name))
+                            .toArray(String[]::new),
                     ConditionFilter.CHUNK_SIZE));
             initialized = true;
         }
@@ -350,7 +378,34 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         return formulaShiftedColumnDefinitions;
     }
 
-    public abstract AbstractConditionFilter renameFilter(Map<String, String> renames);
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The renamed filter reads the columns through {@code renames} in addition to any renames this filter already
+     * carries. The formula keeps the names the formula was written with, so a filter renamed once per level of nested
+     * views composes the renames of every level. The renamed filter offers the formula only the names this filter
+     * resolved as columns, as values or as arrays, and the query-scope variables this filter read, with the values this
+     * filter read.
+     * <p>
+     * A filter with {@link #hasConstantArrayAccess() constant array access}, such as {@code A_[i - 1]}, is not renamed,
+     * and the result is empty: shifted columns read other rows of the table that the filter's where receives, so the
+     * filter must stay after the view. A {@link io.deephaven.engine.table.impl.DeferredViewTable DeferredViewTable}
+     * runs a where that holds such a filter on the coalesced table.
+     */
+    @Override
+    public abstract Optional<WhereFilter> renamedFilter(Map<String, String> renames);
+
+    /**
+     * Whether the formula input {@code formulaName} reads a column of {@code tableDefinition}: the input must name a
+     * column of the table, through any rename, and a renamed filter must have read the input from a column before the
+     * rename.
+     */
+    private boolean resolvesAsColumn(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final String formulaName) {
+        return (formulaColumns == null || formulaColumns.contains(formulaName))
+                && tableDefinition.getColumn(outerToInnerNames.getOrDefault(formulaName, formulaName)) != null;
+    }
 
     public interface Filter {
         /**

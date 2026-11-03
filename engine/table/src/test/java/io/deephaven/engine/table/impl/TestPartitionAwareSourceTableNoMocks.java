@@ -70,9 +70,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.PartitionedTable;
@@ -919,30 +917,23 @@ public class TestPartitionAwareSourceTableNoMocks {
      * One thread computes a memoized where during an update cycle without the update graph lock; the where cannot
      * filter previous values, so it waits for the shared lock while computing. Another thread, already waiting for the
      * exclusive lock when that happens, holds it once the cycle completes and transforms a partitioned table, whose
-     * transformation runs the same where on an initialization worker. Since the transforming thread holds the lock and
-     * waits for the worker, the worker must not wait for the other thread's memoized computation.
+     * transformation runs the same where on initialization workers and on the transforming thread, which runs the jobs
+     * no worker has started. Since the transforming thread holds the lock and waits for the workers, a worker must not
+     * wait for the other thread's memoized computation.
      */
     @Test
-    public void testTransformWorkerDoesNotWaitForMemoizedOperationWhileExclusiveLockHolderTransforms()
+    public void testTransformDoesNotWaitForMemoizedOperationWhileExclusiveLockHolderTransforms()
             throws Exception {
         final long partitionSize = 128;
         final Table source = refreshingPartitionedSource(partitionedLocationProvider(partitionSize)).coalesce();
         final WhereFilter filter = new PreviousRejectingFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
         final PartitionedTable partitioned = PartitionedTableFactory.ofTables(source);
-        final AtomicReference<Thread> exclusiveThread = new AtomicReference<>();
-        final AtomicBoolean transformedOnWorker = new AtomicBoolean();
         final boolean oldMemoize = QueryTable.setMemoizeResults(true);
-        try (final SafeCloseable ignored = new ForcedParallelSelect()) {
-            final Table[] results = runWhileExclusiveLockHolderRuns(() -> {
-                exclusiveThread.set(Thread.currentThread());
-                return partitioned.transform(constituent -> {
-                    if (Thread.currentThread() != exclusiveThread.get()) {
-                        transformedOnWorker.set(true);
-                    }
-                    return constituent.where(filter);
-                }).merge();
-            }, () -> source.where(filter));
-            assertTrue("the transformation must run on an initialization worker", transformedOnWorker.get());
+        // a job per constituent, so that workers may transform some while the transforming thread runs others
+        try (final SafeCloseable ignored = new ForcedParallelSelect(1)) {
+            final Table[] results = runWhileExclusiveLockHolderRuns(
+                    () -> partitioned.transform(constituent -> constituent.where(filter)).merge(),
+                    () -> source.where(filter));
             assertEquals(4 * partitionSize, results[0].size());
             assertEquals(4 * partitionSize, results[1].size());
         } finally {
