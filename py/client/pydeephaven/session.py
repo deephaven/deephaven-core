@@ -185,7 +185,7 @@ class Session:
     execute queries.
 
     Session objects can be used in Python with statement so that whatever happens in the with statement block, they
-    are guaranteed to be closed upon exit. A closed or disconnected session cannot be used in a with statement again.
+    are guaranteed to be closed upon exit. A closed or disconnected session cannot be used again.
     Create a new Session instead.
 
     Attributes:
