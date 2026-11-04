@@ -31,23 +31,45 @@ Then get the full picture of what's changed since that tag:
 
 ```bash
 # Total commit count for context
-git log <tag>..main --oneline | wc -l
+git log <tag>..main --oneline --first-parent | wc -l
 
 # All changed files, grouped
 git diff --name-status <tag>..main
 
-# All merge commits (typically one per PR) with their titles
-git log <tag>..main --oneline --merges
+# All first-parent commits (one per PR, including squash-merged and rebased PRs)
+git log <tag>..main --oneline --first-parent
 ```
 
-The merge commit titles are the primary triage input — each represents a PR that landed, and
-the Conventional Commits prefix (`feat:`, `fix:`, `perf:`, `chore:`, `docs:`, `test:`, `refactor:`)
-tells you its intent. The `--name-status` diff tells you what files actually changed.
+Use `--first-parent` — not `--merges` — so squash-merged PRs, rebased PRs, and direct commits
+are included. `--merges` would silently skip any PR that was squash-merged or rebased onto main.
+
+The commit titles are the primary triage input — each represents a PR or direct commit that
+landed, and the Conventional Commits prefix (`feat:`, `fix:`, `perf:`, `chore:`, `docs:`,
+`test:`, `refactor:`) tells you its intent. The `--name-status` diff tells you what files
+actually changed.
+
+### Filter out changes already shipped in minor releases
+
+Minor releases cherry-pick fixes from `main` onto a release branch (see `RELEASE.md`). A commit
+on `main` whose change was already cherry-picked into a patch release (e.g., `v42.5` ships a fix
+that landed on `main` before `v42.4`) does not need documentation for the *next* release — it was
+already released. Check for this:
+
+```bash
+# List minor release tags since the base tag
+git tag --sort=v:refname | grep -E '^v<major>\.[0-9]+$' | awk -v base="<tag>" '$0 > base'
+```
+
+For each minor release tag after the base tag, diff the tag against its predecessor. If a commit
+on `main` produced a change that is already present in a shipped minor release (same diff content,
+even under a different SHA due to cherry-pick), exclude it from the triage — it was already
+released and any documentation for it belongs to that earlier release.
 
 ## 2. First pass: triage by commit prefix
 
-Sort every merge commit into one of three buckets based on its prefix and title. This is a
-fast first pass — the detailed analysis in step 3 refines it.
+Sort every first-parent commit into one of three buckets based on its prefix and title. This
+is a preliminary sort — **not a final exclusion**. Every bucket, including "likely no docs,"
+gets diff inspection in step 3 before anything is definitively excluded.
 
 ### Likely needs documentation
 
@@ -59,10 +81,16 @@ fast first pass — the detailed analysis in step 3 refines it.
 
 ### Likely does NOT need documentation
 
+These are *preliminary* classifications. Each still gets diff inspection in step 3 — a prefix
+alone cannot rule out documentation needs. For example, a `chore:` dependency upgrade can change
+deployment requirements, and a `refactor:` can rename a public API.
+
 - **`docs:`** — Already documentation changes.
-- **`chore:`** — Build, dependency, CI, tooling changes.
+- **`chore:`** — Build, dependency, CI, tooling changes — but inspect the diff for user-facing
+  side effects (runtime/dependency changes that affect deployment, new system requirements).
 - **`test:`** — Test-only changes.
-- **`refactor:`** — Internal restructuring with no API change.
+- **`refactor:`** — Internal restructuring — but inspect the diff to confirm no public API
+  surface changed.
 - **`fix:`** where code now matches existing docs — Bug fix that corrects behavior to what docs
   already say.
 - **`perf:`** with no new config or changed defaults — Pure internal optimization.
@@ -75,8 +103,10 @@ fast first pass — the detailed analysis in step 3 refines it.
 
 ## 3. Second pass: analyze user-facing changes in detail
 
-For every commit in the "likely needs documentation" and "needs closer inspection" buckets,
-examine the actual diff to determine the documentation impact.
+For every commit in **all three buckets** — including "likely does NOT need documentation" —
+examine the actual diff to determine the documentation impact. The prefix-based triage is a
+sorting heuristic, not a filter. A commit must be confirmed internal-only by its diff before
+it can be excluded from the report.
 
 ### What makes a change user-facing
 
@@ -134,12 +164,18 @@ examine the actual diff to determine the documentation impact.
 
 ## 4. Check what's already documented
 
-For each change that needs docs, check whether documentation already covers it or needs
-updating:
+For each change that needs docs, check whether documentation on `main` already covers it or
+needs updating. Search documentation **at the `main` revision**, not the working tree — running
+this skill from a documentation branch or an older checkout would otherwise produce wrong
+results (marking unmerged doc work as "already documented," or missing docs that are already on
+`main`).
 
 ```bash
-# Search for existing mentions of the feature/class/method in docs
-grep -r "featureName\|ClassName\|method_name" docs/ --include="*.md" -l
+# Search for existing mentions of the feature/class/method in docs on main
+git grep -l "featureName\|ClassName\|method_name" main -- 'docs/**/*.md'
+
+# Read a specific doc page at the main revision
+git show main:docs/python/path/to/page.md
 ```
 
 Also check if any `docs:` commits in the same release window already documented the feature.
@@ -148,7 +184,7 @@ already handled.
 
 Classify each item:
 - **Already documented** — a `docs:` commit in this release window covers it, or existing docs
-  already describe the new behavior accurately.
+  on `main` already describe the new behavior accurately.
 - **Needs a new page** — entirely new feature or concept with no existing coverage.
 - **Needs updates to existing pages** — changed behavior, new parameters, new options on an
   existing feature.
@@ -165,8 +201,7 @@ Structure the output as:
 ## Release documentation triage: <tag>..main
 
 **Release tag:** <tag>
-**Commits since release:** <count>
-**Merge commits (PRs):** <count>
+**Commits since release (first-parent):** <count>
 
 ### Documentation items (action needed)
 
