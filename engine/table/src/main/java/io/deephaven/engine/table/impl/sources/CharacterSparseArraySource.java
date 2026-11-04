@@ -27,6 +27,7 @@ import io.deephaven.engine.table.impl.sources.sparse.CharCompactLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.CharSortedLeaf;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.SoftRecyclerWindow;
 import io.deephaven.util.annotations.TestUseOnly;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
@@ -85,22 +86,27 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     // region recycler
     /** Blocks for previous value snapshots, which are not null-filled when borrowed. */
     private static final SoftRecycler<char[]> snapshotRecycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY,
-                    () -> new char[BLOCK_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY,
+                    SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_MAXIMUM_CAPACITY,
+                    () -> new char[BLOCK_SIZE], null));
     // endregion recycler
     // The arrays of the previous value page table, which are returned with every entry null.
     private static final SoftRecycler<char[][]> blocksArrayRecycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY2,
-                    () -> new char[BLOCK2_SIZE][], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_MAXIMUM_CAPACITY2,
+                    () -> new char[BLOCK2_SIZE][], null));
     private static final SoftRecycler<CharCompactLeaf[]> compactsArrayRecycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY2,
-                    () -> new CharCompactLeaf[BLOCK2_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_MAXIMUM_CAPACITY2,
+                    () -> new CharCompactLeaf[BLOCK2_SIZE], null));
     private static final SoftRecycler<Level2[]> level2ArrayRecycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY1,
-                    () -> new Level2[BLOCK1_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY1,
+                    SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_MAXIMUM_CAPACITY1,
+                    () -> new Level2[BLOCK1_SIZE], null));
     private static final SoftRecycler<Level1[]> level1ArrayRecycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY0,
-                    () -> new Level1[BLOCK0_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY0,
+                    SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_MAXIMUM_CAPACITY0,
+                    () -> new Level1[BLOCK0_SIZE], null));
 
     private final int sortedThreshold;
     private final int compactThreshold;

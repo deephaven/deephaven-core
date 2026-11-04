@@ -31,6 +31,7 @@ import io.deephaven.engine.table.impl.sources.sparse.ObjectCompactLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.ObjectSortedLeaf;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.SoftRecyclerWindow;
 import io.deephaven.util.annotations.TestUseOnly;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
@@ -65,10 +66,10 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  * <p>
  * For parallel population, {@link #prepareForParallelPopulation(RowSequence, boolean)} allocates the page table above
  * each leaf to be written, for current and previous values, so that writers of different leaves change no shared
- * structure. When the writers' divisions are aligned to leaves, each writer builds and records its own leaves; a
- * bottom level gets an array of compact leaves only when one of its leaves may be compact, and a writer makes a leaf
- * with no room for a compact leaf a full block from its first chunk. Otherwise it also builds each leaf with every
- * offset to be written, holding null, and records the previous values, so that writers only store values.
+ * structure. When the writers' divisions are aligned to leaves, each writer builds and records its own leaves; a bottom
+ * level gets an array of compact leaves only when one of its leaves may be compact, and a writer makes a leaf with no
+ * room for a compact leaf a full block from its first chunk. Otherwise it also builds each leaf with every offset to be
+ * written, holding null, and records the previous values, so that writers only store values.
  */
 public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
         implements MutableColumnSourceGetDefaults.ForObject<T> /* MIXIN_IMPLS */ {
@@ -92,22 +93,27 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
      * cleared, so that the recycler holds no references to previous values.
      */
     private static final SoftRecycler<Object[]> snapshotRecycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,
-                    () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null));
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,
+                    SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY,
+                    () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null)));
     // endregion recycler
     // The arrays of the previous value page table, which are returned with every entry null.
     private static final SoftRecycler<Object[][]> blocksArrayRecycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY2,
-                    () -> new Object[BLOCK2_SIZE][], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY2,
+                    () -> new Object[BLOCK2_SIZE][], null));
     private static final SoftRecycler<ObjectCompactLeaf[]> compactsArrayRecycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY2,
-                    () -> new ObjectCompactLeaf[BLOCK2_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY2,
+                    () -> new ObjectCompactLeaf[BLOCK2_SIZE], null));
     private static final SoftRecycler<Level2[]> level2ArrayRecycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY1,
-                    () -> new Level2[BLOCK1_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY1,
+                    SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY1,
+                    () -> new Level2[BLOCK1_SIZE], null));
     private static final SoftRecycler<Level1[]> level1ArrayRecycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY0,
-                    () -> new Level1[BLOCK0_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY0,
+                    SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY0,
+                    () -> new Level1[BLOCK0_SIZE], null));
 
     private final int sortedThreshold;
     private final int compactThreshold;
@@ -864,9 +870,10 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     /**
      * Allocate the page table entries that writing {@code count} row keys of the leaf holding {@code firstKey} may
      * need, for current and, if {@code trackPrevious}, previous values. A leaf that may hold more values than a compact
-     * leaf holds gets room only for a full block, unless its bottom level has room for compact leaves anyway; its writer
-     * then makes it a full block from its first chunk (see {@link #writesAlignedDivisions()}). Any other leaf gets room
-     * only for a compact leaf. The previous values get room for both, since their arrays are recycled each cycle.
+     * leaf holds gets room only for a full block, unless its bottom level has room for compact leaves anyway; its
+     * writer then makes it a full block from its first chunk (see {@link #writesAlignedDivisions()}). Any other leaf
+     * gets room only for a compact leaf. The previous values get room for both, since their arrays are recycled each
+     * cycle.
      */
     private void prepareLeafIndex(final long firstKey, final int count, final boolean trackPrevious) {
         final int block2 = block2(firstKey);
@@ -886,9 +893,9 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     }
 
     /**
-     * @return whether this cycle's writers populate leaves that {@link #prepareForParallelPopulation(RowSequence,
-     *         boolean)} prepared for divisions aligned to leaves, so that a leaf without room for a compact leaf must
-     *         become a full block
+     * @return whether this cycle's writers populate leaves that
+     *         {@link #prepareForParallelPopulation(RowSequence, boolean)} prepared for divisions aligned to leaves, so
+     *         that a leaf without room for a compact leaf must become a full block
      */
     private boolean writesAlignedDivisions() {
         return !preparedLeaves && prepareClockStep == updateGraph.clock().currentStep();

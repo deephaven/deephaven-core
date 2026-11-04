@@ -634,8 +634,9 @@ public class ReplicateSourcesAndChunks {
                 "     * cleared, so that the recycler holds no references to previous values.",
                 "     */",
                 "    private static final SoftRecycler<Object[]> snapshotRecycler =",
-                "            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,",
-                "                    () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null));"));
+                "            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,",
+                "                    SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY,",
+                "                    () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null)));"));
         lines = replaceRegion(lines, "constructor", Arrays.asList(
                 "    /**",
                 "     * Make a source whose leaves are all full blocks.",
