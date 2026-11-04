@@ -1,16 +1,17 @@
 ---
 name: deephaven-documentation-needs-check
 description: >
-  Analyze everything in main since the latest release tag and determine what needs documentation
-  for the upcoming release. Diffs main against the most recent vX.Y tag, filters out internal-only
-  changes (tests, build, refactoring, style, docs-only), and triages every user-facing change —
-  new public APIs, changed behavior, new configuration properties, new or changed gRPC services,
-  Python binding additions, new extensions or integrations — into a prioritized report of what
-  needs documenting and where. **Use this skill when:** preparing release documentation, asking
-  "what needs docs for the next release?", triaging documentation work for an upcoming release,
-  or reviewing what's undocumented since the last release. **Do NOT use for:** reviewing existing
-  documentation (use deephaven-docs-review-full), writing documentation, checking a single PR
-  (just read the PR diff), or Enterprise/deephaven-ent code.
+  Analyze everything on upstream/main since the latest release tag and determine what needs
+  documentation. Diffs upstream/main against the most recent vX.Y tag, checks the RC branch
+  (rc/vNN.x) to distinguish changes confirmed for the next release from those still only on
+  main, filters out internal-only changes and already-shipped cherry-picks, and triages every
+  user-facing change — new public APIs, changed behavior, new configuration properties, new or
+  changed gRPC services, Python binding additions, new extensions or integrations — into a
+  prioritized report partitioned by release status. **Use this skill when:** preparing release
+  documentation, asking "what needs docs for the next release?", triaging documentation work
+  for an upcoming release, or reviewing what's undocumented since the last release. **Do NOT
+  use for:** reviewing existing documentation (use deephaven-docs-review-full), writing
+  documentation, checking a single PR (just read the PR diff), or Enterprise/deephaven-ent code.
 allowed-tools: Read, Grep, Glob, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git tag *), Bash(git fetch *), Bash(git grep *), Bash(find *), Bash(wc *)
 ---
 
@@ -27,12 +28,14 @@ Release tags follow the pattern `vX.Y` (e.g., `v42.5`, `v41.10`).
 
 ### Ensure local state is current
 
-Before anything else, fetch tags and `main` from upstream so the triage reflects what has
-actually shipped and landed, not a stale local snapshot:
+Before anything else, fetch tags, `main`, and RC branches from upstream so the triage reflects
+what has actually shipped, what's confirmed for the next release, and what has landed but not
+yet been picked:
 
 ```bash
 git fetch upstream --tags
 git fetch upstream main
+git fetch upstream 'refs/heads/rc/*:refs/remotes/upstream/rc/*'
 ```
 
 If `upstream` is not configured or the fetch fails, stop and tell the user — an outdated local
@@ -51,7 +54,27 @@ than `v42.10`):
 git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+$' | head -1
 ```
 
-Then get the full picture of what's changed since that tag:
+### Find the RC branch for the upcoming release
+
+RC (release candidate) branches follow the pattern `rc/vNN.x` (e.g., `upstream/rc/v42.x`,
+`upstream/rc/v0.33.x`). Find the one for the next release — the RC branch whose major version
+is higher than the latest release tag's, or, if there is no newer major, the one matching the
+current major series:
+
+```bash
+git branch -r | grep 'upstream/rc/v' | sort -V
+```
+
+Not every commit on `upstream/main` gets cherry-picked onto the RC branch. The RC branch
+determines what ships in the next release, so use it to partition the report: changes that
+have been cherry-picked onto the RC branch are **confirmed for the next release**, while
+changes only on `upstream/main` are **not yet picked** and may or may not ship.
+
+If no RC branch exists yet, note this in the report and treat all changes as unconfirmed.
+
+### Build the change set
+
+Get the full picture of what's changed since the latest release tag:
 
 ```bash
 # Total commit count for context
@@ -95,6 +118,21 @@ first-parent diff has no changes to exclude. If a non-empty first-parent diff ma
 first-parent diff of any commit reachable from a release tag (including the selected base tag
 and any later minor releases), exclude it from the triage — it was already released and any
 documentation for it belongs to that earlier release.
+
+### Classify each commit as RC-confirmed or main-only
+
+For each remaining commit (after filtering out already-shipped cherry-picks), determine whether
+it has been cherry-picked onto the RC branch. Cherry-picks produce different SHAs, so compare
+by patch content (first-parent diff), not by SHA:
+
+- **RC-confirmed**: the commit's first-parent diff matches a commit on the RC branch. This
+  change is confirmed for the next release.
+- **Main-only**: the commit's first-parent diff has no match on the RC branch. This change is
+  on `upstream/main` but has not been picked for the next release and may be held back.
+
+This classification carries through to the report — every documentation item is tagged as
+RC-confirmed or main-only so the reader knows which items are urgent (shipping soon) vs which
+may wait.
 
 ## 2. First pass: triage by commit prefix
 
@@ -231,12 +269,15 @@ Structure the output as:
 ```
 ## Release documentation triage: <tag>..upstream/main
 
-**Release tag:** <tag>
+**Latest release tag:** <tag>
+**RC branch:** <upstream/rc/vNN.x, or "none">
 **Commits since release (first-parent):** <count>
+**RC-confirmed:** <count>  |  **Main-only:** <count>
 
-### Documentation items (action needed)
+### Confirmed for next release (on RC branch)
 
-Group by priority. For each item:
+Items whose changes have been cherry-picked onto the RC branch. These need docs before
+the next release ships. Group by priority.
 
 #### [High | Medium | Low] — <short description>
 
@@ -245,7 +286,14 @@ Group by priority. For each item:
 - **Where in docs:** <existing page to update, or "new page needed" with suggested location>
 - **What to document:** <specific content needed — parameters, examples, migration notes>
 
-Priority guide:
+### On main only (not yet picked for release)
+
+Items that are on upstream/main but have not been cherry-picked onto the RC branch. These
+may ship in a future release or may be held back. Group by priority.
+
+(Same format as above.)
+
+Priority guide (for both sections):
 - **High:** Breaking changes, new major features, removed/deprecated APIs, changed defaults
 - **Medium:** New non-breaking APIs, new configuration properties, new extensions
 - **Low:** Minor behavioral refinements, new optional parameters, edge-case fixes
