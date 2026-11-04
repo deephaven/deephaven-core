@@ -30,10 +30,20 @@ than kilobytes per leaf.
 
 ## Layout
 
-Row keys are split as in `SparseConstants`: a leaf covers `BLOCK_SIZE` (1024) consecutive row keys, and three page
-table levels above it cover bits 40 and up (`Level0`), bits 25 to 39 (`Level1`) and bits 10 to 24 (`Level2`). Each
-level holds its first child in a field and allocates an array of children only for a second one, so a source whose
-rows lie in one range of keys allocates no arrays above its leaves.
+A source finds a row key's value by splitting the key into four fields, defined in `SparseConstants`, and using each
+field as an index at one level:
+
+| Row key bits | Indexes into | To find | Which covers |
+|---|---|---|---|
+| 40 to 62 | the source's `Level0` | a `Level1` | 2^40 row keys |
+| 25 to 39 | that `Level1` | a `Level2` | 2^25 row keys |
+| 10 to 24 | that `Level2` | a leaf | 1024 (`BLOCK_SIZE`) row keys |
+| 0 to 9 | that leaf | the value | one row key |
+
+So a read walks three page table levels and then looks up its offset in the leaf. Each level holds its first child in
+a field and allocates an array of children only for a second one: a source whose rows all lie within one `Level2`'s
+2^25 row keys allocates no arrays in `Level0` or `Level1`, and one whose rows all lie in one leaf allocates none at
+all.
 
 `Level0`, `Level1` and `Level2` are nested classes of each source, typed per type. `Level2` keeps full blocks and
 compact leaves in separate arrays (`char[][] blocks` and `CharCompactLeaf[] compacts`), so reading a full block is a
