@@ -35,9 +35,9 @@ There is one catch. You need to use double quotes for your [query strings](../ho
 
 For example:
 
-`s1 = "This is 'OK'"`
+`s1 = "'This' is OK"`
 
-`s2 = 'This is 'NOT''`
+`s2 = ''This' is NOT'`
 
 Double quotes are the safer default for [query strings](../how-to-guides/query-string-overview.md). When in doubt, use double quotes. You can use single quotes with escapes, but they are more difficult to read.
 

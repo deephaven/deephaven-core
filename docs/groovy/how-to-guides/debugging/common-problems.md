@@ -67,8 +67,8 @@ services:
 > [!NOTE]
 > The `127.0.0.1:` prefix on each port publishes it only on your own machine. This matters because, with this configuration, anyone who can reach either port has full access to the server:
 >
-> - The `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` setting turns on [anonymous authentication](../authentication/auth-anon.md), so any client that reaches port 10000 can run code without a password.
-> - Any client that reaches port 5005 can attach a debugger to the server's JVM.
+> - The `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` setting turns on [anonymous authentication](../authentication/auth-anon.md), so any client that reaches port `10000` can run code without a password.
+> - Any client that reaches port `5005` can attach a debugger to the server's JVM.
 >
 > Inside the container, the debug agent still listens on all interfaces (`address=*:5005`), so that Docker can forward the port to it.
 

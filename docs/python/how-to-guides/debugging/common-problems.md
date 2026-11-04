@@ -41,7 +41,7 @@ t_new = t.update_view("Y = udf(X)")
 ```
 
 > [!NOTE]
-> The `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` argument turns on [anonymous authentication](../authentication/auth-anon.md), so you can open the Deephaven web IDE without a [pre-shared key](../authentication/auth-psk.md). The debugger doesn't need it. With it on, any client that can reach port 10000 can run code without a password, so use it only on a machine and network you trust.
+> The `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` argument turns on [anonymous authentication](../authentication/auth-anon.md), so you can open the Deephaven web IDE without a [pre-shared key](../authentication/auth-psk.md). The debugger doesn't need it. With it on, any client that can reach port `10000` can run code without a password, so use it only on a machine and network you trust.
 
 In this case, the debugger does not reach the breakpoint, because [`update_view`](../../reference/table-operations/select/update-view.md) does not evaluate `udf`. The script prints `Server started on port 10000` and then finishes without pausing at the breakpoint.
 

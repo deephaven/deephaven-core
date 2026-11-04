@@ -40,7 +40,7 @@ Set the following fields:
 - **Host**: `localhost`
 - **Port**: `5005`
 
-Port 5005 is the default debug port that the server opens when you start it with `-Pdebug` in [step 3](#3-start-the-server-with-debugging-enabled). If you use a different port there, enter the same port here.
+Port `5005` is the default debug port that the server opens when you start it with `-Pdebug` in [step 3](#3-start-the-server-with-debugging-enabled). If you use a different port there, enter the same port here.
 
 ![img](../../assets/how-to/debugging/source-2.png)
 
@@ -54,7 +54,7 @@ Open a terminal in the `deephaven-core` directory and run:
 ./gradlew server-jetty-app:run -Pgroovy -Pdebug
 ```
 
-The `-Pdebug` flag starts the server's JVM with [JDWP](https://docs.oracle.com/en/java/javase/21/docs/specs/jdwp/jdwp-spec.html), the Java Debug Wire Protocol that IntelliJ connects to. It listens on port 5005 by default. To use another port, pass it to the flag, for example `-Pdebug=5006`.
+The `-Pdebug` flag starts the server's JVM with [JDWP](https://docs.oracle.com/en/java/javase/21/docs/specs/jdwp/jdwp-spec.html), the Java Debug Wire Protocol that IntelliJ connects to. It listens on port `5005` by default. To use another port, pass it to the flag, for example `-Pdebug=5006`.
 
 > [!WARNING]
 > Anyone who can reach a JDWP port can run code in the JVM. `-Pdebug` opens the port on all of your machine's network interfaces, not just `localhost`. Use it only on a machine and network you trust, and don't enable it on a server other people can reach.
@@ -70,7 +70,7 @@ Listening for transport dt_socket at address: 5005
 
 ![img](../../assets/how-to/debugging/source-3.png)
 
-By default, the server uses [pre-shared key authentication](../authentication/auth-psk.md) and prints the key to the server log, so enter that key when you open the Deephaven IDE. To skip the key prompt, add the `-Panonymous` flag to the command above. The flag enables [anonymous authentication](../authentication/auth-anon.md), so anyone who can reach port 10000 can use the server, and the server listens on all network interfaces. Use it only on a network you trust. The debugger works with either.
+By default, the server uses [pre-shared key authentication](../authentication/auth-psk.md) and prints the key to the server log, so enter that key when you open the Deephaven IDE. To skip the key prompt, add the `-Panonymous` flag to the command above. The flag enables [anonymous authentication](../authentication/auth-anon.md), so anyone who can reach port `10000` can use the server, and the server listens on all network interfaces. Use it only on a network you trust. The debugger works with either.
 
 The server is ready when the log shows `Server started on port 10000`. Open the Deephaven IDE at [http://localhost:10000/ide/](http://localhost:10000/ide/).
 
@@ -78,7 +78,7 @@ The server is ready when the log shows `Server started on port 10000`. Open the 
 
 In IntelliJ IDEA, start the debug configuration by selecting **Run > Debug 'source-debug'** or by clicking the bug icon in the toolbar.
 
-IntelliJ connects to the server on port 5005. The **Debug** tool window shows `Connected to the target VM, address: 'localhost:5005', transport: 'socket'`.
+IntelliJ connects to the server on port `5005`. The **Debug** tool window shows `Connected to the target VM, address: 'localhost:5005', transport: 'socket'`.
 
 ![img](../../assets/how-to/debugging/source-4.png)
 
@@ -113,7 +113,7 @@ IntelliJ IDEA's debugger can step through Java source, inspect variables, evalua
 **Solutions**:
 
 - Verify the server started and shows the `Listening for transport dt_socket at address: 5005` message.
-- Check that no firewall blocks port 5005.
+- Check that no firewall blocks port `5005`.
 - Ensure the port in the IntelliJ configuration matches the port used with `-Pdebug`.
 
 ### Gradle build fails

@@ -185,7 +185,7 @@ s = Server(
 )
 ```
 
-The `address=127.0.0.1:5005` setting makes the JVM listen for a debugger on port 5005 of your own machine only. Then attach a JVM debugger, such as an IntelliJ IDEA **Remote JVM Debug** configuration, to port 5005. Remote JVM Debug is available in every edition of IntelliJ IDEA, including the free one.
+The `address=127.0.0.1:5005` setting makes the JVM listen for a debugger on port `5005` of your own machine only. Then attach a JVM debugger, such as an IntelliJ IDEA **Remote JVM Debug** configuration, to port `5005`. Remote JVM Debug is available in every edition of IntelliJ IDEA, including the free one.
 
 ## Troubleshooting
 

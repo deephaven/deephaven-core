@@ -80,7 +80,7 @@ Now start the Deephaven server from a shell where `source-dh-venv` is active. Th
 
 ![img](../../assets/how-to/debugging/source-6.png)
 
-By default, the server uses [pre-shared key authentication](../authentication/auth-psk.md) and prints the key to the server log, so enter that key when you open the Deephaven IDE. To skip the key prompt, add the `-Panonymous` flag to the command above. The flag enables [anonymous authentication](../authentication/auth-anon.md), so anyone who can reach port 10000 can use the server, and the server listens on all network interfaces. Use it only on a network you trust. The debugger works with either.
+By default, the server uses [pre-shared key authentication](../authentication/auth-psk.md) and prints the key to the server log, so enter that key when you open the Deephaven IDE. To skip the key prompt, add the `-Panonymous` flag to the command above. The flag enables [anonymous authentication](../authentication/auth-anon.md), so anyone who can reach port `10000` can use the server, and the server listens on all network interfaces. Use it only on a network you trust. The debugger works with either.
 
 The server is ready when the log shows `Server started on port 10000`.
 
@@ -172,7 +172,7 @@ IntelliJ pauses inside [`where`](../../reference/table-operations/filter/where.m
 **Solutions**:
 
 - Verify that the PyCharm debug server is running. Its green bug icon is active while it runs.
-- Check that no firewall blocks port 4444.
+- Check that no firewall blocks port `4444`.
 - Ensure the port in the `pydevd.settrace` call matches the port in the PyCharm configuration.
 - If `import pydevd` fails, verify that `source-dh-venv` is active in the shell where you started the server, and that it is the PyCharm project interpreter.
 
