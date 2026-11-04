@@ -108,6 +108,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
 
     private final int sortedThreshold;
     private final int compactThreshold;
+    private final int recordThreshold;
     private final Level0 root = new Level0(false);
 
     /**
@@ -171,6 +172,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         super(short.class);
         this.sortedThreshold = checkSortedThreshold(sortedThreshold, compactThreshold);
         this.compactThreshold = compactThreshold;
+        this.recordThreshold = compactThreshold > 0 ? compactThreshold : DEFAULT_COMPACT_THRESHOLD;
     }
     // endregion constructor
 
@@ -803,7 +805,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         }
         final boolean trackPrevious = prevFlusher != null;
         final int[] offsets = alignedDivisions ? null : new int[BLOCK_SIZE];
-        final PrevScratch scratch = !alignedDivisions && trackPrevious ? new PrevScratch(compactThreshold) : null;
+        final PrevScratch scratch = !alignedDivisions && trackPrevious ? new PrevScratch(recordThreshold) : null;
         try (final RowSequence.Iterator it = changedRows.getRowSequenceIterator()) {
             if (alignedDivisions) {
                 // the writers build their own leaves, so preparing a leaf needs only the number of its row keys
@@ -844,8 +846,8 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             final Level2 prevLevel2 = ensurePrevLevel2(firstKey);
             final ShortCompactLeaf recorded = prevLevel2.getCompact(block2);
             final boolean mayBeSnapshot = prevLevel2.getBlock(block2) == null
-                    && (recorded == null ? 0 : recorded.size()) + count > compactThreshold;
-            prevLevel2.prepareIndex(block2, mayBeSnapshot, compactThreshold > 0);
+                    && (recorded == null ? 0 : recorded.size()) + count > recordThreshold;
+            prevLevel2.prepareIndex(block2, mayBeSnapshot, true);
         }
     }
 
@@ -989,7 +991,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             }
         }
         final int newSize = (recorded == null ? 0 : recorded.size()) + count;
-        if (newSize > compactThreshold) {
+        if (newSize > recordThreshold) {
             // the offsets not yet recorded have not changed this cycle, so their current values are previous values
             final short[] snapshot = snapshotRecycler.borrowItem();
             final short[] block = level2 == null ? null : level2.getBlock(block2);
@@ -1272,7 +1274,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
     public void setNull(@NotNull final RowSequence rowSequence) {
         final boolean trackPrevious = shouldTrackPrevious();
         final int[] offsets = trackPrevious ? new int[BLOCK_SIZE] : null;
-        final PrevScratch scratch = trackPrevious ? new PrevScratch(compactThreshold) : null;
+        final PrevScratch scratch = trackPrevious ? new PrevScratch(recordThreshold) : null;
         rowSequence.forAllRowKeyRanges((final long firstKey, final long lastKey) -> {
             long key = firstKey;
             while (true) {
@@ -1607,7 +1609,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
 
     @Override
     public FillFromContext makeFillFromContext(final int chunkCapacity) {
-        return new AdaptiveFillFromContext(compactThreshold);
+        return new AdaptiveFillFromContext(recordThreshold);
     }
 
     @Override
@@ -1634,7 +1636,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             final ShortCompactLeaf existing = block == null ? level2.getCompact(block2) : null;
             // a new leaf of more values than a compact leaf holds becomes a full block, which needs no offsets, and
             // previous values need them only when they may be recorded in a compact leaf
-            if ((trackPrevious && compactThreshold > 0)
+            if (trackPrevious
                     || (block == null && (existing != null || count <= compactThreshold))) {
                 leaves.offsets(offsets);
             }

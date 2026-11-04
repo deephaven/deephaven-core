@@ -643,6 +643,7 @@ public class ReplicateSourcesAndChunks {
                 "        super(type, componentType);",
                 "        this.sortedThreshold = checkSortedThreshold(sortedThreshold, compactThreshold);",
                 "        this.compactThreshold = compactThreshold;",
+                "        this.recordThreshold = compactThreshold > 0 ? compactThreshold : DEFAULT_COMPACT_THRESHOLD;",
                 "    }"));
         lines = replaceRegion(lines, "primitive get", Arrays.asList(
                 "    @Override",
