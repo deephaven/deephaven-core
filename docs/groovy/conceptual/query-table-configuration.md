@@ -229,12 +229,12 @@ A recycler shrinks at the end of each window. A window is sized to span a whole 
 
 Windows end only when an update graph starts a cycle. In a process whose update graphs never cycle, recyclers never shrink. The recyclers hold their arrays through soft references, so the garbage collector reclaims them under memory pressure in any case.
 
-| Property Name                      | Default Value | Description                                                                                                                                                                              |
-| ---------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SoftRecycler.windowMillis`        | 1000          | The shortest window, in milliseconds, and the window when no update graph has a longer interval between cycles                                                                           |
-| `SoftRecycler.maximumWindowMillis` | 60000         | The longest window, in milliseconds, however slow an update graph is; a longer interval between cycles, such as an event-driven update graph's idle time, counts as this                 |
-| `SoftRecycler.windowMargin`        | 1.5           | The multiple of the longest interval between update graph cycle starts that a window lasts                                                                                               |
-| `SoftRecycler.shrinkFraction`      | 0.5           | The fraction, from 0 to 1, of the arrays a window never needed that the recycler discards when the window ends; 0 keeps the capacity once grown, and 1 shrinks to what the window needed |
+| Property Name                      | Default Value | Description                                                                                                                                                                                                                                              |
+| ---------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SoftRecycler.windowMillis`        | 1000          | The shortest window, in milliseconds, and the window when no update graph has a longer interval between cycles                                                                                                                                           |
+| `SoftRecycler.maximumWindowMillis` | 60000         | The longest window, in milliseconds, between possibly shrinking the recycler. Even if one of the update graphs has a longer interval between cycles, the next update graph to start a cycle will shrink the recycler after the window exceeds this value |
+| `SoftRecycler.windowMargin`        | 1.5           | The multiple of the longest interval between update graph cycle starts that a window lasts                                                                                                                                                               |
+| `SoftRecycler.shrinkFraction`      | 0.5           | The fraction, from 0 to 1, of the arrays a window never needed that the recycler discards when the window ends; 0 keeps the capacity once grown, and 1 shrinks to what the window needed                                                                 |
 
 ### Tuning recyclers
 

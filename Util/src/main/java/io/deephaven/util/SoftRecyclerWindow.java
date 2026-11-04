@@ -34,7 +34,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * </p>
  */
 public final class SoftRecyclerWindow {
-    /** The property for the most milliseconds a window may last, however slow a reporting graph is. */
+    /**
+     * The property for the longest window, in milliseconds, between possibly shrinking the recyclers. Even if one of
+     * the reporting graphs has a longer interval between cycles, the next reporting graph to start a cycle ends the
+     * window, possibly shrinking the recyclers, once the window exceeds this value.
+     */
     public static final String MAXIMUM_WINDOW_MILLIS_PROPERTY = "SoftRecycler.maximumWindowMillis";
     /** The property for the multiple of the longest interval between cycle starts that a window lasts. */
     public static final String WINDOW_MARGIN_PROPERTY = "SoftRecycler.windowMargin";
