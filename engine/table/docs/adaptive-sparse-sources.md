@@ -1,10 +1,11 @@
 # Adaptive sparse array sources
 
-How the sparse array sources (`CharacterSparseArraySource` and its replicas) store values, record previous values,
-prepare for parallel population and release memory, and which performance traps shaped them. The sources address row
-keys through a page table, as they always have, but a leaf of the page table is stored according to how many values it
-holds: a leaf with few values is a compact leaf, and a fuller leaf is a full block. By default every leaf is a full
-block, as before; `select` and `update` use compact leaves when `SparseMemoryColumnSourceFactory.adaptive` is true.
+This document describes how the sparse array sources (`CharacterSparseArraySource` and its replicas) store values,
+record previous values, prepare for parallel population and release memory, and which performance traps shaped them. The
+sources address row keys through a page table, as they always have, but a leaf of the page table is stored according to
+how many values it holds: a leaf with few values is a compact leaf, and a fuller leaf is a full block. By default every
+leaf is a full block, as before; `select` and `update` use compact leaves when
+`SparseMemoryColumnSourceFactory.adaptive` is true.
 
 | | |
 |---|---|
