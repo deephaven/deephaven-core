@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -36,6 +37,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.byteCol;
@@ -258,6 +265,112 @@ public class TestMultiColumnSort {
                 checkSame(table, t -> t.sort(column));
                 checkSame(table, t -> t.sortDescending(column));
             }
+        }
+    }
+
+    /**
+     * An Error submitting one of a parallel sort's jobs, once others have been submitted, unwinds the sort only after
+     * those jobs have finished with the chunks the sort then releases: none of them compares after the sort has ended.
+     * Each run fails a later submission, until a run makes fewer submissions than the one it was to fail.
+     */
+    @Test
+    public void testSubmissionErrorWaitsForTheSubmittedSortJobs() throws InterruptedException {
+        final long oldMinimum = QueryTable.MINIMUM_PARALLEL_SORT_ROWS;
+        final long oldSegment = SortHelpers.parallelSortSegmentSize;
+        final ExecutorService jobThreads = Executors.newCachedThreadPool(runnable -> {
+            final Thread thread = new Thread(runnable, "sort-submission-error-test");
+            thread.setDaemon(true);
+            return thread;
+        });
+        // distinct values, so that the jobs compare them rather than a few unique values sorted up front
+        final String[] keys = new String[10000];
+        final Random random = new Random(31337);
+        for (int ii = 0; ii < keys.length; ++ii) {
+            keys[ii] = "K" + random.nextInt() + "_" + ii;
+        }
+        try {
+            QueryTable.MINIMUM_PARALLEL_SORT_ROWS = 1;
+            SortHelpers.parallelSortSegmentSize = 1;
+            int failuresReached = 0;
+            for (int failingSubmission = 1;; ++failingSubmission) {
+                final OutOfMemoryError cannotMakeThread = new OutOfMemoryError("unable to create native thread");
+                final AtomicInteger submissions = new AtomicInteger();
+                final AtomicInteger jobsInFlight = new AtomicInteger();
+                final int failAt = failingSubmission;
+                final OperationInitializer initializer = new OperationInitializer() {
+                    @Override
+                    public boolean canParallelize() {
+                        return true;
+                    }
+
+                    @Override
+                    public Future<?> submit(final Runnable runnable) {
+                        if (submissions.incrementAndGet() == failAt) {
+                            throw cannotMakeThread;
+                        }
+                        jobsInFlight.incrementAndGet();
+                        return jobThreads.submit(() -> {
+                            try {
+                                // start late, so that a job outlives a sort that does not wait for it
+                                Thread.sleep(20);
+                                runnable.run();
+                            } catch (final InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            } finally {
+                                jobsInFlight.decrementAndGet();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public int parallelismFactor() {
+                        return 4;
+                    }
+                };
+                final AtomicBoolean sortEnded = new AtomicBoolean();
+                final AtomicInteger comparisonsAfterTheSortEnded = new AtomicInteger();
+                final Comparator<String> naturalOrder = Comparator.nullsFirst(Comparator.naturalOrder());
+                final Comparator<String> comparator = (left, right) -> {
+                    if (sortEnded.get()) {
+                        comparisonsAfterTheSortEnded.incrementAndGet();
+                    }
+                    return naturalOrder.compare(left, right);
+                };
+                final QueryTable table = (QueryTable) TableTools.newTable(stringCol("Key", keys));
+
+                Throwable thrown = null;
+                try (final SafeCloseable ignored =
+                        ExecutionContext.getContext().withOperationInitializer(initializer).open()) {
+                    table.sort(ComparatorSortColumn.asc("Key", comparator, true));
+                } catch (final Throwable t) {
+                    thrown = t;
+                } finally {
+                    sortEnded.set(true);
+                }
+                final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+                while (jobsInFlight.get() > 0 && System.nanoTime() < deadline) {
+                    Thread.sleep(5);
+                }
+                assertEquals("jobs still in flight", 0, jobsInFlight.get());
+
+                if (submissions.get() < failAt) {
+                    assertNull(thrown);
+                    break;
+                }
+                ++failuresReached;
+                assertNotNull("the sort failed", thrown);
+                boolean carriesTheError = false;
+                for (Throwable cause = thrown; cause != null; cause = cause.getCause()) {
+                    carriesTheError |= cause == cannotMakeThread;
+                }
+                assertTrue("the sort's failure carries the submission's", carriesTheError);
+                assertEquals("comparisons after the sort ended", 0, comparisonsAfterTheSortEnded.get());
+            }
+            assertTrue("some run failed a submission", failuresReached > 0);
+        } finally {
+            QueryTable.MINIMUM_PARALLEL_SORT_ROWS = oldMinimum;
+            SortHelpers.parallelSortSegmentSize = oldSegment;
+            jobThreads.shutdownNow();
         }
     }
 
