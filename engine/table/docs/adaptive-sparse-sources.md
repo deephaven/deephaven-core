@@ -56,13 +56,14 @@ Each source has two thresholds:
 - `compactThreshold` (default 128): the most values a compact leaf holds. 0 makes every leaf a full block, which is what
   the no-argument constructor does.
 
-A leaf takes the next representation when a write would take it past its threshold: absent, then sorted, then bitmap,
-then full block. It never returns to a smaller one. Removing values leaves a leaf's representation as it is; releasing a
-leaf with no live rows is `clearBlocks`'s job (below).
+The representations, from smallest to largest, are absent, sorted, bitmap and full block. A new leaf starts in the
+smallest one that holds the values of its first write, and a write that takes a leaf past its representation's
+threshold moves it to the smallest one that holds the result. A leaf never returns to a smaller representation: removing
+values leaves it as it is, and releasing a leaf with no live rows is `clearBlocks`'s job (below).
 
 ## Compact leaves
 
-`CharCompactLeaf` is the abstract interface for a leaf of fewer values than a block: `get`, `put`, `putSorted` (a
+`CharCompactLeaf` is the abstract class of a leaf of fewer values than a block: `get`, `put`, `putSorted` (a
 merge of ascending offsets), `insertAbsent` (add offsets holding null, for parallel preparation), `remove`,
 `removeRange`, `copyTo` a block, `copyOffsets`, `overlayRange` and `fillRange` for chunked reads, and `estimateSize`.
 
@@ -101,7 +102,7 @@ the compact leaf, promoting the leaf if the new offset takes it past its thresho
 leaf it knows how many row keys the write puts there before touching the leaf, so it picks the representation once:
 
 - an absent leaf receiving more than `compactThreshold` values becomes a full block directly, and the cursor copies the
-  values into it by key or by range, without computing offsets;
+  values into it by key or by range, without computing offsets unless previous values are recorded;
 - a compact leaf receives its offsets in one `putSorted` merge, or becomes a block first if the merge would take it past
   `compactThreshold`;
 - a full block is written in place.
@@ -162,12 +163,13 @@ entries above every leaf to be written, for current and previous values.
 
 The sources report `parallelPopulationAlignment() == BLOCK_SIZE`. `SelectColumnLayer` then divides the rows with
 `divideAligned`, ending each division at a leaf boundary, and passes `alignedDivisions = true`. Each writer then owns
-whole leaves, and the preparation only counts the row keys in each leaf (`prepareLeafIndex`). A leaf that may hold more
-values than a compact leaf holds becomes a full block in the preparation, and its previous values a snapshot; for any
-other leaf the preparation allocates the `Level2`'s array of compact leaves (`Level2.prepareCompactIndex`), and the
-writer builds the leaf, promotes it within the compact tiers and records its previous values itself. A writer may write
-a leaf in several chunks, so without the early block it could make the leaf compact before making it a block, and every
-`Level2` would need both arrays.
+whole leaves: it builds them, promotes them and records their previous values itself, and the preparation only counts the
+row keys in each leaf to decide which arrays of the `Level2` the leaf may need (`prepareLeafIndex`,
+`Level2.prepareIndex`). A leaf that may hold more values than a compact leaf holds gets room for a full block, and any
+other leaf room for a compact leaf. A writer may write a leaf in several chunks, so the first chunk of a leaf that will
+be a full block may hold few values; when its `Level2` has no array of compact leaves, the writer makes the leaf a full
+block at once (`writesAlignedDivisions`). The previous values get room for both a snapshot and a compact leaf, since
+their arrays are recycled each cycle.
 
 When divisions are not aligned (a caller that uses `prepareForParallelPopulation(rows)`, or a Table or RowSet result,
 which divides rows singly), several writers may share a leaf, so the preparation does all structural work up front: it
@@ -273,6 +275,12 @@ allocated the array of compact leaves for every leaf not yet a full block, in ca
 compact, every multi-leaf `Level2` of a dense parallel result carried an empty 128 KB array beside its blocks.
 `QueryTableAjTest.testAjRandomStatic`, which keeps about 80,000 tables alive, ran out of a 3.5 GB heap on 5,760 such
 empty arrays. The preparation now decides from the row count which array a leaf needs.
+
+**Allocating blocks in the parallel preparation.** Making each leaf that would be a full block in the preparation, so
+that writers never needed an array of compact leaves, moved the allocation and null fill of every block onto the one
+thread that prepares: a parallel Dense initial update over 2^23 rows took 7.6 ms instead of 3.5. The writers allocate
+their own blocks; the preparation leaves no room for a compact leaf where none is needed, and the writer makes such a
+leaf a full block from its first chunk.
 
 **Comparing across builds.** Layout and inlining differences between builds moved results by more than the effects
 measured here. Every comparison above ran the storages being compared in one build, selected by a parameter.
