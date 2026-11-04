@@ -831,30 +831,66 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
 
     @Override
     public void prepareForParallelPopulation(final RowSequence changedRows, final boolean alignedDivisions) {
+        startPreparation(!alignedDivisions);
+        if (alignedDivisions) {
+            // the writers build their own leaves, so preparing a leaf needs only the number of its row keys
+            prepareLeafIndices(changedRows);
+        } else {
+            prepareLeaves(changedRows);
+        }
+    }
+
+    @Override
+    public void prepareForParallelPopulationInDivisions(final RowSequence changedRows) {
+        startPreparation(true);
+        // prepareDivisionForParallelPopulation builds the leaves, a division at a time, in the room this allocates
+        prepareLeafIndices(changedRows);
+    }
+
+    @Override
+    public void prepareDivisionForParallelPopulation(final RowSequence division) {
+        prepareLeaves(division);
+    }
+
+    /**
+     * Record that this cycle's writers populate prepared rows, so that preparing again in this cycle fails.
+     *
+     * @param leavesBuilt whether the writers will find every leaf built and its previous values recorded
+     */
+    private void startPreparation(final boolean leavesBuilt) {
         final long currentStep = updateGraph.clock().currentStep();
         if (prepareClockStep == currentStep) {
             throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
         }
         prepareClockStep = currentStep;
-        preparedLeaves = !alignedDivisions;
-        if (changedRows.isEmpty()) {
-            return;
-        }
+        preparedLeaves = leavesBuilt;
+    }
+
+    /**
+     * Allocate the page table entries for each leaf of {@code rows}, as {@link #prepareLeafIndex} does.
+     */
+    private void prepareLeafIndices(final RowSequence rows) {
         final boolean trackPrevious = prevFlusher != null;
-        final int[] offsets = alignedDivisions ? null : new int[BLOCK_SIZE];
-        final PrevScratch scratch = !alignedDivisions && trackPrevious ? new PrevScratch(recordThreshold) : null;
-        try (final RowSequence.Iterator it = changedRows.getRowSequenceIterator()) {
-            if (alignedDivisions) {
-                // the writers build their own leaves, so preparing a leaf needs only the number of its row keys
-                while (it.hasMore()) {
-                    final long firstKey = it.peekNextKey();
-                    final int count = it.getNextRowSequenceThrough(firstKey | INDEX_MASK).intSize();
-                    prepareLeafIndex(firstKey, count, trackPrevious);
-                }
-                return;
+        try (final RowSequence.Iterator it = rows.getRowSequenceIterator()) {
+            while (it.hasMore()) {
+                final long firstKey = it.peekNextKey();
+                final int count = it.getNextRowSequenceThrough(firstKey | INDEX_MASK).intSize();
+                prepareLeafIndex(firstKey, count, trackPrevious);
             }
-            final LeafRanges ranges = new LeafRanges();
-            final LeafKeys keys = new LeafKeys();
+        }
+    }
+
+    /**
+     * Build each leaf of {@code rows} with each of its row keys, as {@link #prepareLeaf} does. When leaves of other
+     * rows are built concurrently, the page table entries above these leaves must already be allocated.
+     */
+    private void prepareLeaves(final RowSequence rows) {
+        final boolean trackPrevious = prevFlusher != null;
+        final int[] offsets = new int[BLOCK_SIZE];
+        final PrevScratch scratch = trackPrevious ? new PrevScratch(recordThreshold) : null;
+        final LeafRanges ranges = new LeafRanges();
+        final LeafKeys keys = new LeafKeys();
+        try (final RowSequence.Iterator it = rows.getRowSequenceIterator()) {
             while (it.hasMore()) {
                 // each piece of the row keys is a whole number of leaves, so that each leaf is prepared once
                 final RowSequence piece = it.getNextRowSequenceThrough(it.peekNextKey() | PREPARE_PIECE_MASK);

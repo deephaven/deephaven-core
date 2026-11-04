@@ -61,6 +61,30 @@ public interface WritableSourceWithPrepareForParallelPopulation {
     }
 
     /**
+     * Prepare this column source as {@link #prepareForParallelPopulation(RowSequence)} does, for writers whose
+     * divisions need not be aligned, but leave the work for each row to
+     * {@link #prepareDivisionForParallelPopulation(RowSequence)}. The caller then calls that method, possibly
+     * concurrently, once for each of a set of divisions of {@code rowSequence} that are aligned to
+     * {@link #parallelPopulationAlignment()} and together cover it, before any writer starts.
+     * <p>
+     * The default prepares every row here and leaves nothing to the divisions.
+     *
+     * @param rowSequence the row sequence of values that will change on this cycle
+     */
+    default void prepareForParallelPopulationInDivisions(final RowSequence rowSequence) {
+        prepareForParallelPopulation(rowSequence);
+    }
+
+    /**
+     * Do the preparation that {@link #prepareForParallelPopulationInDivisions(RowSequence)} left for the rows of
+     * {@code division}: every row key from {@code k * alignment} through {@code (k + 1) * alignment - 1} of the
+     * prepared rows, for each {@code k} that {@code division} touches. Divisions may be prepared concurrently.
+     *
+     * @param division the rows of whole aligned blocks of the prepared row sequence
+     */
+    default void prepareDivisionForParallelPopulation(final RowSequence division) {}
+
+    /**
      * Test if all {@code sources} support parallel parallel population.
      *
      * @param sources The {@link WritableColumnSource sources} to test

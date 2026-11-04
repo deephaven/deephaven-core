@@ -220,11 +220,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 final long divisionSize = resultTypeIsTableOrRowSet ? 1
                         : Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                 (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
-                // a Table or RowSet result divides its rows singly, and leaves the destination to prepare for that
-                final int alignment = resultTypeIsTableOrRowSet ? 1
-                        : ((WritableSourceWithPrepareForParallelPopulation) writableSource)
-                                .parallelPopulationAlignment();
-                final boolean alignedDivisions = alignment > 1;
+                final int alignment =
+                        ((WritableSourceWithPrepareForParallelPopulation) writableSource).parallelPopulationAlignment();
+                // a Table or RowSet result divides its rows singly; a destination with an alignment still prepares
+                // its rows in parallel, in divisions aligned to it, before the single rows are written
+                final boolean alignedDivisions = !resultTypeIsTableOrRowSet && alignment > 1;
+                final int preparationAlignment = resultTypeIsTableOrRowSet ? alignment : 1;
                 final List<TableUpdate> updates = alignedDivisions
                         ? divideAligned(upstream, divisionSize, alignment, firstAddedPosition)
                         : divideByCount(upstream, divisionSize);
@@ -236,7 +237,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 jobScheduler.submit(
                         executionContext,
                         () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper, liveResultOwner, onSuccess,
-                                onError, updates, serialTableOperationsSafe, firstAddedPosition, alignedDivisions),
+                                onError, updates, serialTableOperationsSafe, firstAddedPosition, alignedDivisions,
+                                preparationAlignment),
                         SelectColumnLayer.this, onError);
             } else {
                 jobScheduler.submit(
@@ -259,13 +261,69 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             final List<TableUpdate> splitUpdates,
             final boolean serialTableOperationsSafe,
             final long firstAddedPosition,
-            final boolean alignedDivisions) {
+            final boolean alignedDivisions,
+            final int preparationAlignment) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity();
 
+        if (preparationAlignment > 1) {
+            prepareSourceInParallel(jobScheduler, upstream, firstAddedPosition, preparationAlignment,
+                    () -> populateInParallel(jobScheduler, toClear, helper, liveResultOwner, onSuccess, onError,
+                            splitUpdates, serialTableOperationsSafe, firstAddedPosition),
+                    onError);
+            return;
+        }
         prepareSourcesForParallelPopulation(upstream, firstAddedPosition, alignedDivisions);
+        populateInParallel(jobScheduler, toClear, helper, liveResultOwner, onSuccess, onError, splitUpdates,
+                serialTableOperationsSafe, firstAddedPosition);
+    }
 
+    /**
+     * Prepare the destination for parallel population as {@link #prepareSourcesForParallelPopulation} does, for writers
+     * whose divisions need not be aligned, but with the per-row work done by parallel jobs, each on a division of whole
+     * blocks of {@code alignment} row keys, then run {@code onPrepared}.
+     */
+    private void prepareSourceInParallel(
+            final JobScheduler jobScheduler,
+            final TableUpdate upstream,
+            final long firstAddedPosition,
+            final int alignment,
+            final Runnable onPrepared,
+            final Consumer<Exception> onError) {
+        final WritableSourceWithPrepareForParallelPopulation destination =
+                (WritableSourceWithPrepareForParallelPopulation) writableSource;
+        final List<RowSet> divisions;
+        try (final WritableRowSet rows = preparedRows(upstream, firstAddedPosition)) {
+            destination.prepareForParallelPopulationInDivisions(rows);
+            final long divisionSize = (rows.size() + jobScheduler.threadCount() - 1) / jobScheduler.threadCount();
+            divisions = divideRowsAligned(rows, Math.max(1, divisionSize), alignment);
+        }
+        final Runnable closeDivisions = () -> divisions.forEach(RowSet::close);
+        jobScheduler.iterateParallel(
+                executionContext, SelectColumnLayer.this, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
+                divisions.size(), (ctx, di, nec) -> destination.prepareDivisionForParallelPopulation(divisions.get(di)),
+                onPrepared,
+                closeDivisions,
+                (final Exception error) -> {
+                    closeDivisions.run();
+                    onError.accept(error);
+                });
+    }
+
+    /**
+     * Apply each of {@code splitUpdates} in a parallel job, to a destination already prepared for parallel population.
+     */
+    private void populateInParallel(
+            final JobScheduler jobScheduler,
+            final RowSet toClear,
+            final SelectAndViewAnalyzer.UpdateHelper helper,
+            @Nullable final LivenessNode liveResultOwner,
+            final Runnable onSuccess,
+            final Consumer<Exception> onError,
+            final List<TableUpdate> splitUpdates,
+            final boolean serialTableOperationsSafe,
+            final long firstAddedPosition) {
         final int numTasks = splitUpdates.size();
         final long[] destinationOffsets = new long[numTasks];
         if (writesByPosition) {
@@ -701,6 +759,16 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             @NotNull final TableUpdate upstream,
             final long firstAddedPosition,
             final boolean alignedDivisions) {
+        try (final WritableRowSet rows = preparedRows(upstream, firstAddedPosition)) {
+            ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
+                    .prepareForParallelPopulation(rows, alignedDivisions);
+        }
+    }
+
+    /**
+     * @return the rows of the destination that a parallel update of {@code upstream} may write
+     */
+    private WritableRowSet preparedRows(@NotNull final TableUpdate upstream, final long firstAddedPosition) {
         // We do not permit in-column parallelization with redirected results, so do not need to worry about how this
         // interacts with the previous clearing of the RowRedirection that has occurred at the start of applyUpdate.
         Assert.eqFalse(isRedirected, "isRedirected");
@@ -712,20 +780,35 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
             Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
             Assert.assertion(upstream.added().isNonempty(), "upstream.added().isNonempty()");
-            try (final RowSequence addedPositions = RowSequenceFactory.forRange(
-                    firstAddedPosition, firstAddedPosition + upstream.added().size() - 1)) {
-                ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
-                        .prepareForParallelPopulation(addedPositions, alignedDivisions);
-            }
-        } else {
-            // Upstream is not permitted to have shifts for parallel update processing.
-            Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
-            try (final WritableRowSet changedRows = upstream.added().union(upstream.modified())) {
-                changedRows.insert(upstream.removed());
-                ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
-                        .prepareForParallelPopulation(changedRows, alignedDivisions);
+            return RowSetFactory.fromRange(firstAddedPosition, firstAddedPosition + upstream.added().size() - 1);
+        }
+        // Upstream is not permitted to have shifts for parallel update processing.
+        Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
+        final WritableRowSet changedRows = upstream.added().union(upstream.modified());
+        changedRows.insert(upstream.removed());
+        return changedRows;
+    }
+
+    /**
+     * Divide {@code rows} into row sets of about {@code divisionSize} rows each, each made of whole blocks of
+     * {@code alignment} row keys starting at multiples of {@code alignment}.
+     */
+    private static List<RowSet> divideRowsAligned(final RowSet rows, final long divisionSize, final int alignment) {
+        final List<RowSet> divisions = new ArrayList<>();
+        final long alignmentMask = alignment - 1;
+        try (final RowSequence.Iterator it = rows.getRowSequenceIterator()) {
+            while (it.hasMore()) {
+                final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+                final RowSequence head = it.getNextRowSequenceWithLength(divisionSize);
+                final long divisionEnd = head.lastRowKey() | alignmentMask;
+                builder.appendRowSequence(head);
+                if (it.hasMore()) {
+                    builder.appendRowSequence(it.getNextRowSequenceThrough(divisionEnd));
+                }
+                divisions.add(builder.build());
             }
         }
+        return divisions;
     }
 
     private void clearObjectsAtThisLevel(RowSet keys) {

@@ -171,12 +171,16 @@ be a full block may hold few values; when its `Level2` has no array of compact l
 block at once (`writesAlignedDivisions`). The previous values get room for both a snapshot and a compact leaf, since
 their arrays are recycled each cycle.
 
-When divisions are not aligned (a caller that uses `prepareForParallelPopulation(rows)`, or a Table or RowSet result,
-which divides rows singly), several writers may share a leaf, so the preparation does all structural work up front: it
-builds each leaf with every offset to be written, holding null (`insertAbsent`, or a block), and records the previous
-values. Writers then only store values into offsets that already exist, which `putSorted` does in place when every
-offset is present. The preparation reads the row keys in pieces of 64 leaves (`PREPARE_PIECE_MASK`), which bounds the
-chunk each piece builds.
+When divisions are not aligned (a caller that uses `prepareForParallelPopulation(rows)`), several writers may share a
+leaf, so the preparation does all structural work up front: it builds each leaf with every offset to be written, holding
+null (`insertAbsent`, or a block), and records the previous values. Writers then only store values into offsets that
+already exist, which `putSorted` does in place when every offset is present. The preparation reads the row keys in
+pieces of 64 leaves (`PREPARE_PIECE_MASK`), which bounds the chunk each piece builds.
+
+A Table or RowSet result divides its rows singly, so its writers share leaves too. Its preparation still runs in parallel: `prepareForParallelPopulationInDivisions` allocates the page table
+entries above each leaf, as for aligned divisions, and `SelectColumnLayer` then calls
+`prepareDivisionForParallelPopulation` from parallel jobs, each on a division of whole leaves, to build the leaves and
+record their previous values. The single-row writers start once every division is prepared.
 
 `prevLeafKeys` and `prevLevel2Keys` are the only shared state writers add to, under the lock of `prevLeafKeys`.
 

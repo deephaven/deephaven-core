@@ -77,4 +77,14 @@ public class BooleanSparseArraySource extends WritableByteAsBooleanColumnSource
     public void prepareForParallelPopulation(final RowSequence rowSequence, final boolean alignedDivisions) {
         byteSource.prepareForParallelPopulation(rowSequence, alignedDivisions);
     }
+
+    @Override
+    public void prepareForParallelPopulationInDivisions(final RowSequence rowSequence) {
+        byteSource.prepareForParallelPopulationInDivisions(rowSequence);
+    }
+
+    @Override
+    public void prepareDivisionForParallelPopulation(final RowSequence division) {
+        byteSource.prepareDivisionForParallelPopulation(division);
+    }
 }

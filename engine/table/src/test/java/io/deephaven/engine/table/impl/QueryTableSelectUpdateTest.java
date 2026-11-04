@@ -768,6 +768,74 @@ public class QueryTableSelectUpdateTest {
         }
     }
 
+    /**
+     * A RowSet result is written one row per job, after its destination prepares whole leaves of its rows in parallel
+     * jobs. Check every row's current and previous values in the middle of cycles that modify, add and remove rows
+     * spread over many leaves.
+     */
+    @Test
+    public void testParallelRowSetResult() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 2, 1);
+        try (final SafeCloseable ignored0 = new ForcedParallelSelect(4);
+                final SafeCloseable ignored1 = LivenessScopeStack.open()) {
+            final Random random = new Random(0);
+            // every fifth row key, so that the rows span many leaves
+            final int initialRows = 3000;
+            final Map<Long, Integer> values = new HashMap<>();
+            final long[] initialKeys = new long[initialRows];
+            final int[] initialValues = new int[initialRows];
+            for (int ii = 0; ii < initialRows; ++ii) {
+                initialKeys[ii] = ii * 5L;
+                initialValues[ii] = random.nextInt(100);
+                values.put(initialKeys[ii], initialValues[ii]);
+            }
+            final QueryTable table = testRefreshingTable(RowSetFactory.fromKeys(initialKeys).toTracking(),
+                    intCol("A", initialValues));
+            final Table result = table.update("RS = io.deephaven.engine.rowset.RowSetFactory.flat(A % 7 + 1)");
+            final ColumnSource<RowSet> rowSets = result.getColumnSource("RS", RowSet.class);
+            long nextKey = initialRows * 5L;
+            for (int cycle = 0; cycle < 10; ++cycle) {
+                final Map<Long, Integer> previous = new HashMap<>(values);
+                final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+                final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
+                for (final long key : previous.keySet()) {
+                    final int choice = random.nextInt(20);
+                    if (choice == 0) {
+                        removedBuilder.addKey(key);
+                    } else if (choice < 4) {
+                        modifiedBuilder.addKey(key);
+                    }
+                }
+                final RowSet removed = removedBuilder.build();
+                final RowSet modified = modifiedBuilder.build();
+                final RowSet added = RowSetFactory.fromRange(nextKey, nextKey + 199);
+                nextKey += 1000;
+                removed.forAllRowKeys(values::remove);
+                final RowSet written = modified.union(added);
+                final int[] writtenValues = new int[written.intSize()];
+                final int[] position = new int[1];
+                written.forAllRowKeys(key -> {
+                    final int value = random.nextInt(100);
+                    writtenValues[position[0]++] = value;
+                    values.put(key, value);
+                });
+
+                updateGraph.startCycleForUnitTests();
+                removeRows(table, removed);
+                addToTable(table, written, intCol("A", writtenValues));
+                table.notifyListeners(added, removed, modified);
+                updateGraph.flushAllNormalNotificationsForUnitTests();
+                assertEquals(values.size(), result.size());
+                result.getRowSet().forAllRowKeys(
+                        key -> assertEquals(values.get(key) % 7 + 1, rowSets.get(key).size()));
+                result.getRowSet().prev().forAllRowKeys(
+                        key -> assertEquals(previous.get(key) % 7 + 1, rowSets.getPrev(key).size()));
+                updateGraph.completeCycleForUnitTests();
+            }
+        }
+    }
+
     @Test
     public void testAppendOnlySparseIncrementalParallel() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();

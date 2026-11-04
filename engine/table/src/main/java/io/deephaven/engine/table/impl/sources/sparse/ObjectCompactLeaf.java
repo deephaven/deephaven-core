@@ -118,7 +118,8 @@ public abstract class ObjectCompactLeaf {
 
     /**
      * Write the value for the offset of each of {@code keys[start, end)}, row keys within this leaf in ascending order,
-     * that holds a value into {@code dest}, from {@code destOffset}, leaving the other entries of {@code dest} unchanged.
+     * that holds a value into {@code dest}, from {@code destOffset}, leaving the other entries of {@code dest}
+     * unchanged.
      */
     public abstract void overlayKeys(LongChunk<? extends RowKeys> keys, int start, int end, WritableObjectChunk<Object, ?> dest,
             int destOffset);

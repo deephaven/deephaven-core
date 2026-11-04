@@ -188,13 +188,37 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
 
     @Test
     public void testParallelPopulation() throws Exception {
-        for (final boolean aligned : new boolean[] {true, false}) {
+        for (final Preparation preparation : Preparation.values()) {
             for (final int compactThreshold : new int[] {0, 4,
                     ByteSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
-                checkParallelPopulation(new ByteSparseArraySource(16, compactThreshold), aligned,
-                        compactThreshold + (aligned ? 1 : 0));
+                checkParallelPopulation(new ByteSparseArraySource(16, compactThreshold), preparation,
+                        compactThreshold * 3 + preparation.ordinal());
             }
         }
+    }
+
+    /** How a test prepares a source for parallel population. */
+    private enum Preparation {
+        /** For writers whose divisions are aligned to leaves. */
+        ALIGNED,
+        /** For writers whose divisions end anywhere. */
+        UNALIGNED,
+        /** For writers whose divisions end anywhere, building the leaves in parallel divisions aligned to leaves. */
+        IN_DIVISIONS
+    }
+
+    /**
+     * @return the end of a division of {@code rows} from position {@code start}, about {@code length} rows long, moved
+     *         to the next leaf boundary if {@code aligned}
+     */
+    private static long divisionEnd(final RowSet rows, final long start, final int length, final boolean aligned) {
+        long end = Math.min(rows.size(), start + length);
+        if (aligned && end < rows.size()) {
+            final long leafEnd = rows.get(end - 1) | (BLOCK_SIZE - 1);
+            end = rows.find(leafEnd + 1);
+            end = end < 0 ? -end - 1 : end;
+        }
+        return end;
     }
 
     /**
@@ -203,8 +227,9 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
      */
     private static void checkParallelPopulation(
             final ByteSparseArraySource source,
-            final boolean aligned,
+            final Preparation preparation,
             final int seed) throws Exception {
+        final boolean aligned = preparation == Preparation.ALIGNED;
         final Random random = new Random(seed);
         final Long2ByteOpenHashMap expected = new Long2ByteOpenHashMap();
         expected.defaultReturnValue(NULL_BYTE);
@@ -225,17 +250,31 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
                         position.increment();
                         expected.put(key, value);
                     });
-                    source.prepareForParallelPopulation(rows, aligned);
+                    if (preparation == Preparation.IN_DIVISIONS) {
+                        source.prepareForParallelPopulationInDivisions(rows);
+                        final List<Future<?>> preparations = new ArrayList<>();
+                        long start = 0;
+                        while (start < rows.size()) {
+                            final long end = divisionEnd(rows, start, 1 + random.nextInt(600), true);
+                            final RowSet division = rows.subSetByPositionRange(start, end);
+                            preparations.add(executor.submit(() -> {
+                                try (final RowSet ignored = division) {
+                                    source.prepareDivisionForParallelPopulation(division);
+                                }
+                            }));
+                            start = end;
+                        }
+                        for (final Future<?> future : preparations) {
+                            future.get();
+                        }
+                    } else {
+                        source.prepareForParallelPopulation(rows, aligned);
+                    }
                     // aligned divisions end at a leaf boundary, others anywhere
                     final List<Future<?>> futures = new ArrayList<>();
                     long start = 0;
                     while (start < rows.size()) {
-                        long end = Math.min(rows.size(), start + 1 + random.nextInt(300));
-                        if (aligned && end < rows.size()) {
-                            final long leafEnd = rows.get(end - 1) | (BLOCK_SIZE - 1);
-                            end = rows.find(leafEnd + 1);
-                            end = end < 0 ? -end - 1 : end;
-                        }
+                        final long end = divisionEnd(rows, start, 1 + random.nextInt(300), aligned);
                         final long divisionStart = start;
                         final long divisionEnd = end;
                         // a division is written in pieces, which may end inside a leaf
