@@ -59,7 +59,7 @@ Options are:
 - `LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
 - `GZIP`: Compression codec based on the GZIP format (not the closely-related "zlib" or "deflate" formats) defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
 - `ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
-- `BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios.
+- `BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios. Deephaven does not include a Brotli codec. To use this option, add one (`org.apache.hadoop.io.compress.BrotliCodec`) to the server classpath. Otherwise, the write fails with a `Failed to find CompressionCodec` error.
 
 If not specified, defaults to `SNAPPY`.
 
