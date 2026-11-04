@@ -64,9 +64,8 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * the same thresholds, or, once more offsets are recorded than a compact leaf holds, a full block that snapshots the
  * whole leaf. A row without a recorded value has not changed this cycle, so its previous value is its current value.
  * The previous values are discarded when the cycle completes. The snapshot blocks and the arrays of the previous value
- * page table come from recyclers shared by the sources of this type; the
- * leaves and page table levels created in a cycle are listed, so that completing it clears exactly the entries set and
- * returns each array with every entry null.
+ * page table come from recyclers shared by the sources of this type; the leaves and page table levels created in a
+ * cycle are listed, so that completing it clears exactly the entries set and returns each array with every entry null.
  * <p>
  * For parallel population, {@link #prepareForParallelPopulation(RowSequence, boolean)} allocates the page table above
  * each leaf to be written, for current and previous values, so that writers of different leaves change no shared
