@@ -8,6 +8,7 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import dagger.multibindings.IntoSet;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.util.AuthorizationWrappedGrpcBinding;
 import io.grpc.BindableService;
@@ -43,5 +44,14 @@ public interface SessionModule {
     @ElementsIntoSet
     static Set<SessionListener> primeSessionListeners() {
         return Collections.emptySet();
+    }
+
+    /**
+     * The wall clock, for session token deadlines and other code that needs wall-clock time; the
+     * {@link io.deephaven.server.util.Scheduler} only provides monotonic time.
+     */
+    @Provides
+    static Clock provideClock() {
+        return Clock.system();
     }
 }

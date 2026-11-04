@@ -4,6 +4,7 @@
 package io.deephaven.server.hierarchicaltable;
 
 import com.google.rpc.Code;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
@@ -490,7 +491,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
         @Override
         public synchronized void run() {
-            final Instant now = scheduler.instantMillis();
+            final Instant now = Clock.system().instantMillis();
             if (running) {
                 scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
             }

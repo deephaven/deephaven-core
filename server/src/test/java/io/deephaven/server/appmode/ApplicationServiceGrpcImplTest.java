@@ -47,8 +47,8 @@ public class ApplicationServiceGrpcImplTest {
     @Before
     public void setup() {
         scheduler = new TestControlledScheduler();
-        sessionService = new SessionService(scheduler,
-                authContext -> new SessionState(scheduler, new SessionService.ObfuscatingErrorTransformer(),
+        sessionService = new SessionService(scheduler, scheduler,
+                authContext -> new SessionState(scheduler, scheduler, new SessionService.ObfuscatingErrorTransformer(),
                         TestExecutionContext::createForUnitTests, authContext),
                 TOKEN_EXPIRE_MS, Collections.emptyMap(), Collections.emptySet());
         applicationServiceGrpcImpl = new ApplicationServiceGrpcImpl(scheduler, sessionService,

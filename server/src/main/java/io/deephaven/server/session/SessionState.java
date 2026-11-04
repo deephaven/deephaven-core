@@ -8,6 +8,7 @@ import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.text.TimestampBuffer;
@@ -134,6 +135,7 @@ public class SessionState {
 
     private final String logPrefix;
     private final Scheduler scheduler;
+    private final Clock clock;
     private final SessionService.ErrorTransformer errorTransformer;
     private final AuthContext authContext;
 
@@ -170,12 +172,14 @@ public class SessionState {
     @AssistedInject
     public SessionState(
             final Scheduler scheduler,
+            final Clock clock,
             final SessionService.ErrorTransformer errorTransformer,
             final Provider<ExecutionContext> executionContextProvider,
             @Assisted final AuthContext authContext) {
         this.sessionId = UuidCreator.toString(UuidCreator.getRandomBased());
         this.logPrefix = "SessionState{" + sessionId + "}: ";
         this.scheduler = scheduler;
+        this.clock = clock;
         this.errorTransformer = errorTransformer;
         this.authContext = authContext;
         this.executionContext = executionContextProvider.get().withAuthContext(authContext);
@@ -246,7 +250,7 @@ public class SessionState {
      */
     public boolean isExpired() {
         final SessionService.TokenExpiration currToken = expiration;
-        return currToken == null || currToken.deadlineMillis <= scheduler.currentTimeMillis();
+        return currToken == null || currToken.deadlineMillis <= clock.currentTimeMillis();
     }
 
     /**

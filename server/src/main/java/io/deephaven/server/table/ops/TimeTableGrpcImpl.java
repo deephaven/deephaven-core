@@ -7,6 +7,7 @@ import com.google.rpc.Code;
 import io.deephaven.api.updateby.spec.CumMinMaxSpec;
 import io.deephaven.api.updateby.spec.CumSumSpec;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
@@ -16,7 +17,6 @@ import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.server.util.Scheduler;
 import io.deephaven.time.DateTimeUtils;
 import io.grpc.StatusRuntimeException;
 
@@ -28,15 +28,15 @@ import java.util.List;
 @Singleton
 public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
 
-    private final Scheduler scheduler;
+    private final Clock clock;
 
     @Inject()
     public TimeTableGrpcImpl(
             final TableServiceContextualAuthWiring authWiring,
-            final Scheduler scheduler) {
+            final Clock clock) {
         super(authWiring::checkPermissionTimeTable, BatchTableRequest.Operation::getTimeTable,
                 TimeTableRequest::getResultId);
-        this.scheduler = scheduler;
+        this.clock = clock;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 0);
 
-        return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), scheduler,
+        return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), clock,
                 adaptStartTime(request),
                 adaptPeriod(request),
                 request.getBlinkTable());
