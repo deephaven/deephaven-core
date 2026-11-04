@@ -82,10 +82,13 @@ comparison treats `v42.9` as newer than `v42.10`:
 git tag --sort=v:refname | grep -E '^v<major>\.[0-9]+$'
 ```
 
-For each commit in `<tag>..main`, check whether its patch content (`git show --format= <sha>`)
-matches any commit reachable from a release tag (including the selected base tag and any later
-minor releases). If the diff content already shipped, exclude the commit from the triage — it
-was already released and any documentation for it belongs to that earlier release.
+For each commit in `<tag>..main`, get its first-parent diff (`git diff <sha>^..<sha>`) — not
+`git show`, which produces an empty combined diff for clean merges and would falsely match other
+empty diffs. Only compare commits whose first-parent diff is non-empty; a commit with an empty
+first-parent diff has no changes to exclude. If a non-empty first-parent diff matches the
+first-parent diff of any commit reachable from a release tag (including the selected base tag
+and any later minor releases), exclude it from the triage — it was already released and any
+documentation for it belongs to that earlier release.
 
 ## 2. First pass: triage by commit prefix
 
