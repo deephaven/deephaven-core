@@ -6,12 +6,14 @@ package io.deephaven.server.netty;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
+import io.deephaven.server.arrow.TransportCompression;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
 
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 
 public class NettyFlightRoundTripTest extends FlightMessageRoundTripTest {
 
@@ -39,5 +41,11 @@ public class NettyFlightRoundTripTest extends FlightMessageRoundTripTest {
     @Override
     protected TestComponent component() {
         return DaggerNettyFlightRoundTripTest_NettyTestComponent.create();
+    }
+
+    @Override
+    protected Set<String> serverCompressionTypes() {
+        // NettyServerModule keeps grpc-java's default registries, which hold only gzip, unless gzip is disabled
+        return TransportCompression.ENABLED_TYPES.contains("gzip") ? Set.of("gzip") : Set.of();
     }
 }

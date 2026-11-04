@@ -62,7 +62,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -327,6 +326,13 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedColumn",
+                    false);
+
+    /**
+     * Disable probing an aggregation's hash table during push-down filtering of its single key column.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_AGGREGATION_KEY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownAggregationKey",
                     false);
 
     /**
@@ -1541,8 +1547,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(extractedFilters), () -> {
-                        try (final SafeCloseable ignored = Arrays.stream(extractedFilters)
-                                .map(filter -> filter.beginOperation(this)).collect(SafeCloseableList.COLLECTOR)) {
+                        try (final SafeCloseable ignored = WhereFilter.beginOperations(this, extractedFilters)) {
                             // Identify which data indexes we might use during this operation and create a map
                             // from filter to data index.
                             final Map<WhereFilter, DataIndex> filterDataIndexMap = USE_DATA_INDEX_FOR_WHERE
@@ -1584,12 +1589,24 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                         usePrev);
                                         final TrackingWritableRowSet currentMapping;
                                         initialFilterExecution.scheduleCompletion((adds, mods) -> {
-                                            currentMappingFuture.complete(adds.writableCast().toTracking());
+                                            final TrackingWritableRowSet mapping = adds.writableCast().toTracking();
+                                            if (!currentMappingFuture.complete(mapping)) {
+                                                // an interrupt cancelled the filter, and nothing will use the mapping
+                                                mapping.close();
+                                            }
                                         }, currentMappingFuture::completeExceptionally);
 
                                         try {
-                                            currentMapping = currentMappingFuture.get();
+                                            currentMapping = initialFilterExecution.jobScheduler()
+                                                    .awaitCompletion(currentMappingFuture);
                                         } catch (ExecutionException | InterruptedException e) {
+                                            if (e instanceof InterruptedException
+                                                    && !currentMappingFuture.cancel(false)
+                                                    && !currentMappingFuture.isCompletedExceptionally()) {
+                                                // the filter finished before the interrupt, which abandons its mapping;
+                                                // a filter still running finds the future cancelled, and closes its own
+                                                currentMappingFuture.join().close();
+                                            }
                                             final Throwable cause = (e instanceof InterruptedException)
                                                     ? new CancellationException("interrupted while filtering")
                                                     : e.getCause();
@@ -1850,6 +1867,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                                         new SelectAndViewAnalyzer.UpdateHelper(rowSet, fakeUpdate)) {
 
+                            // rethrown once the wait below has finished the jobs the analyzer submitted before it
+                            // threw
+                            Error applyError = null;
                             try {
                                 try {
                                     analyzer.applyUpdate(
@@ -1858,12 +1878,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                                             waitForResult::completeExceptionally);
                                 } catch (Exception e) {
                                     waitForResult.completeExceptionally(e);
+                                } catch (Error e) {
+                                    applyError = e;
+                                    waitForResult.completeExceptionally(e);
                                 }
 
-                                waitForResult.get();
+                                jobScheduler.awaitCompletion(waitForResult);
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
                             } catch (ExecutionException e) {
+                                if (applyError != null) {
+                                    throw applyError;
+                                }
                                 throw new TableInitializationException(updateDescription,
                                         "an exception occurred while performing the initial select or update",
                                         e.getCause());
@@ -3405,7 +3431,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         final MemoizedResult<R> cachedResult = getMemoizedResult(memoKey, ensureCachedOperations());
-        return cachedResult.getOrCompute(operation);
+        return cachedResult.getOrCompute(operation, !currentThreadMustNotWaitForOtherThreads());
     }
 
     private Map<MemoizedOperationKey, MemoizedResult<?>> ensureCachedOperations() {

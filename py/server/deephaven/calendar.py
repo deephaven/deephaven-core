@@ -4,8 +4,6 @@
 
 """This module defines functions for working with business calendars."""
 
-from typing import Optional, Union
-
 import jpy
 
 from deephaven import DHError
@@ -29,7 +27,7 @@ def remove_calendar(name: str) -> None:
         raise DHError(e, f"failed to remove calendar '{name}'") from e
 
 
-def add_calendar(cal: Union[BusinessCalendar, str]) -> None:
+def add_calendar(cal: BusinessCalendar | str) -> None:
     """Adds a new business calendar to the set of available options.
 
     Args:
@@ -100,7 +98,7 @@ def calendar_name() -> str:
         raise DHError(e, "failed to get the default calendar name.") from e
 
 
-def calendar(name: Optional[str] = None) -> BusinessCalendar:
+def calendar(name: str | None = None) -> BusinessCalendar:
     """Returns the calendar with the given name.
 
     The returned calendar is an 'io.deephaven.time.calendar.BusinessCalendar' Java object that can be used in Python.

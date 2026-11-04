@@ -32,14 +32,32 @@ final class FloatChunkedSumOperator extends FpChunkedNonNormalCounter
     // instead of using states, we maintain parallel arrays, which are going to be more efficient
     // memory wise than one state per output row
     private final FloatArraySource resultColumn = new FloatArraySource();
-    private final DoubleArraySource runningSum = new DoubleArraySource();
-    private final NonNullCounter nonNullCount = new NonNullCounter();
+    /**
+     * The running sum of each destination. An operator that receives removals and modifications sums only the normal
+     * values here, and counts the NaN and infinite values separately.
+     */
+    private final DoubleArraySource runningSum;
+    /**
+     * The number of normal values in each destination, or null for an add-only operator.
+     */
+    private final NonNullCounter nonNullCount;
 
     private final boolean isAbsolute;
+    /**
+     * Whether the operator only receives additions. A NaN or infinite value then never leaves a destination, so the
+     * result is the IEEE sum of every non-null value and no counts are kept.
+     */
+    private final boolean addOnly;
 
-    FloatChunkedSumOperator(boolean absolute, String name) {
+    FloatChunkedSumOperator(boolean absolute, boolean addOnly, String name) {
         isAbsolute = absolute;
+        this.addOnly = addOnly;
         this.name = name;
+        nonNullCount = addOnly ? null : new NonNullCounter();
+        // region runningSum
+        // an add-only float sum accumulates every non-null value here, in double precision
+        runningSum = new DoubleArraySource();
+        // endregion runningSum
     }
 
     @Override
@@ -110,6 +128,12 @@ final class FloatChunkedSumOperator extends FpChunkedNonNormalCounter
         final double sum = doSum(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount, chunkInfinityCount,
                 chunkMinusInfinityCount);
 
+        if (addOnly) {
+            addOnlySum(destination, sum, chunkNormalCount.get(), chunkNanCount.get(), chunkInfinityCount.get(),
+                    chunkMinusInfinityCount.get());
+            return true;
+        }
+
         final long totalNanCount = updateNanCount(destination, chunkNanCount.get());
         final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination, chunkInfinityCount.get());
         final long totalNegativeInfinityCount =
@@ -130,8 +154,29 @@ final class FloatChunkedSumOperator extends FpChunkedNonNormalCounter
         return true;
     }
 
+    private void addOnlySum(long destination, double normalSum, int normalCount, int nanCount,
+            int positiveInfinityCount, int negativeInfinityCount) {
+        final double chunkSum;
+        if (nanCount > 0 || (positiveInfinityCount > 0 && negativeInfinityCount > 0)) {
+            chunkSum = Double.NaN;
+        } else if (positiveInfinityCount > 0) {
+            chunkSum = Double.POSITIVE_INFINITY;
+        } else if (negativeInfinityCount > 0) {
+            chunkSum = Double.NEGATIVE_INFINITY;
+        } else if (normalCount > 0) {
+            chunkSum = normalSum;
+        } else {
+            return;
+        }
+        // region addOnlySum
+        final double newSum = NullSafeAddition.plusDouble(runningSum.getUnsafe(destination), chunkSum);
+        runningSum.set(destination, newSum);
+        resultColumn.set(destination, (float) newSum);
+        // endregion addOnlySum
+    }
 
     private boolean removeChunk(FloatChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
+        requireNonNullCount();
         final MutableInt chunkNormalCount = new MutableInt(0);
         final MutableInt chunkNanCount = new MutableInt(0);
         final MutableInt chunkInfinityCount = new MutableInt(0);
@@ -184,6 +229,7 @@ final class FloatChunkedSumOperator extends FpChunkedNonNormalCounter
 
     private boolean modifyChunk(FloatChunk<? extends Values> preValues, FloatChunk<? extends Values> postValues,
             long destination, int chunkStart, int chunkSize) {
+        requireNonNullCount();
         final MutableInt preChunkNormalCount = new MutableInt(0);
         final MutableInt preChunkNanCount = new MutableInt(0);
         final MutableInt preChunkInfinityCount = new MutableInt(0);
@@ -311,11 +357,21 @@ final class FloatChunkedSumOperator extends FpChunkedNonNormalCounter
         return sum;
     }
 
+    private void requireNonNullCount() {
+        if (nonNullCount == null) {
+            throw new UnsupportedOperationException("Add-only sum operators do not support removals or modifications");
+        }
+    }
+
     @Override
     public void ensureCapacity(long tableSize) {
         resultColumn.ensureCapacity(tableSize);
-        nonNullCount.ensureCapacity(tableSize);
-        runningSum.ensureCapacity(tableSize);
+        if (nonNullCount != null) {
+            nonNullCount.ensureCapacity(tableSize);
+        }
+        if (runningSum != null) {
+            runningSum.ensureCapacity(tableSize);
+        }
         ensureNonNormalCapacity(tableSize);
     }
 

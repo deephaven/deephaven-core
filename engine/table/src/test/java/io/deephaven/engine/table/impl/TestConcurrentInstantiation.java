@@ -451,8 +451,10 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
             throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
-        if (indexed) {
-            DataIndexer.getOrCreateDataIndex(table, "z");
+        // where uses only data indexes whose tables are populated, and finds an index only while it is retained
+        final DataIndex dataIndex = indexed ? DataIndexer.getOrCreateDataIndex(table, "z") : null;
+        if (dataIndex != null) {
+            dataIndex.table();
         }
         final Table tableStart =
                 TstUtils.testRefreshingTable(i(2, 6).toTracking(),
@@ -486,6 +488,9 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         }
 
         final Table filter3 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        if (dataIndex != null) {
+            assertSame(dataIndex, DataIndexer.getDataIndex(table, "z"));
+        }
 
         TstUtils.assertTableEquals(tableStart, prevTable(filter1));
         TstUtils.assertTableEquals(tableStart, prevTable(filter2));

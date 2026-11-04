@@ -13,7 +13,7 @@ without_attributes(attrs: Union[str, Sequence[str]]) -> Table
 ## Parameters
 
 <ParamTable>
-<Param name="attrs>" type="Union[str, Sequence[str]]">
+<Param name="attrs" type="Union[str, Sequence[str]]">
 
 The names of the attributes to remove.
 

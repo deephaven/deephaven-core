@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.Chunk;
@@ -35,7 +36,18 @@ import java.util.concurrent.Future;
  * copy into the output table. This means that each output column is independent of every other output column, which
  * enables column-level parallelism.
  * </p>
+ *
+ * @deprecated {@link Table#select} and {@link Table#update} cover the same uses, and take part in the engine's row and
+ *             column parallelism. Use {@code table.select()} in place of {@link #sparseSelect(Table)},
+ *             {@code table.select(columns)} in place of {@link #sparseSelect(Table, String...)}, and
+ *             {@code table.update(columns)} in place of {@link #partialSparseSelect(Table, String...)}. Unlike
+ *             {@code sparseSelect}, {@code select} may give its result new, flat row keys when the source is static or
+ *             append-only and not flat; {@code update} always keeps the source's row keys, so call {@code update} with
+ *             every column name to materialize every column without changing row keys. This class and its
+ *             {@code SparseSelect.threads} and {@code SparseSelect.chunkSize} configuration properties will be removed
+ *             in a future release.
  */
+@Deprecated(forRemoval = true)
 public class SparseSelect {
     /**
      * How many threads should be used for sparse select? All concurrent sparseSelect operations use the same thread
@@ -70,7 +82,9 @@ public class SparseSelect {
      * @param source the input table
      *
      * @return a copy of the source table with materialized column
+     * @deprecated Use {@link Table#select()}.
      */
+    @Deprecated(forRemoval = true)
     public static Table sparseSelect(Table source) {
         return sparseSelect(source, source.getDefinition().getColumnNamesArray());
     }
@@ -82,7 +96,9 @@ public class SparseSelect {
      * @param columnNames the columns to copy to the output
      *
      * @return a copy of the source table with materialized column
+     * @deprecated Use {@link Table#select(String...)}.
      */
+    @Deprecated(forRemoval = true)
     public static Table sparseSelect(Table source, String... columnNames) {
         return sparseSelect((QueryTable) source.coalesce(), ArrayTypeUtils.EMPTY_STRING_ARRAY, columnNames);
     }
@@ -94,7 +110,9 @@ public class SparseSelect {
      * @param columnNames the columns to copy to the output
      *
      * @return a copy of the source table with materialized column
+     * @deprecated Use {@link Table#select(Collection)} with {@link Selectable#from(Collection)}.
      */
+    @Deprecated(forRemoval = true)
     public static Table sparseSelect(Table source, Collection<String> columnNames) {
         return sparseSelect((QueryTable) source.coalesce(), ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 columnNames.toArray(String[]::new));
@@ -109,7 +127,9 @@ public class SparseSelect {
      * @param columnNames the columns to materialize in the output
      *
      * @return a copy of the source table with materialized columns
+     * @deprecated Use {@link Table#update(Collection)} with {@link Selectable#from(Collection)}.
      */
+    @Deprecated(forRemoval = true)
     public static Table partialSparseSelect(Table source, Collection<String> columnNames) {
         return partialSparseSelect(source, columnNames.toArray(String[]::new));
     }
@@ -123,7 +143,9 @@ public class SparseSelect {
      * @param columnNames the columns to materialize in the output
      *
      * @return a copy of the source table with materialized columns
+     * @deprecated Use {@link Table#update(String...)}.
      */
+    @Deprecated(forRemoval = true)
     public static Table partialSparseSelect(Table source, String... columnNames) {
         final Set<String> columnsToCopy = new HashSet<>(Arrays.asList(columnNames));
         final String[] preserveColumns = source.getDefinition().getColumnStream().map(ColumnDefinition::getName)

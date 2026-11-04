@@ -14,7 +14,7 @@ Before diving into the details, let's define the key concepts:
 
 - **Positional index (`i` and `ii`)**: The current position of a row within a table, starting from 0 for the first row. Unlike row keys, positional indices always reflect the current order of rows.
 
-- **Shifts**: When rows need to be inserted between existing rows (such as in sorted tables), Deephaven communicates row shift data that moves ranges of row keys by a positive or negative shift delta. This allows the engine to maintain proper ordering without spurious modifications. The row data itself doesn't change, but the row keys do. See [Table update model - Shifts](../../conceptual/table-update-model.md#shifts) for detailed technical information.
+- **Shifts**: When rows need to be inserted between existing rows (such as in sorted tables), Deephaven communicates row shift data that moves ranges of row keys by a positive or negative shift delta. This allows the engine to maintain proper ordering without spurious modifications. The row data itself doesn't change, but the row keys do. See [Incremental update model: Shifts](../../conceptual/table-update-model.md#shifts) for detailed technical information.
 
 - **Constituent tables**: The individual tables that make up a larger table structure, such as tables being merged, joined, or subtables within a partitioned table. Each constituent table gets its own allocated range of row keys in the result.
 
@@ -144,7 +144,7 @@ The `zebra` and `bear` rows maintain their original `MyRowIdx` values because th
 
 Shifts are a performance optimization that allows the engine to avoid re-evaluating formulas, joins, and aggregations when rows are simply moved to accommodate table growth. Only when row data is actually modified does the engine need to recalculate dependent operations.
 
-For more detailed information about shifts and the table update model, see [Table update model - Shifts](../../conceptual/table-update-model.md#shifts).
+For more detailed information about shifts and the table update model, see [Incremental update model: Shifts](../../conceptual/table-update-model.md#shifts).
 
 While this example focuses on merge operations, **shifts can occur with any table operation** that works with live/refreshing data, including joins, updates, selects, and other operations. The same safety concerns about positional indices apply regardless of which operation triggers the shift. Note that even without shifts, any operations that add or remove rows from refreshing tables can similarly cause positional indices (`i`, `ii`) to become incorrect in downstream operations.
 
