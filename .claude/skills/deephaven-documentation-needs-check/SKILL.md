@@ -11,7 +11,7 @@ description: >
   or reviewing what's undocumented since the last release. **Do NOT use for:** reviewing existing
   documentation (use deephaven-docs-review-full), writing documentation, checking a single PR
   (just read the PR diff), or Enterprise/deephaven-ent code.
-allowed-tools: Read, Grep, Glob, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git tag *), Bash(find *), Bash(wc *)
+allowed-tools: Read, Grep, Glob, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git tag *), Bash(git fetch *), Bash(git grep *), Bash(find *), Bash(wc *)
 ---
 
 # Release documentation needs check
@@ -21,7 +21,25 @@ documentation for the upcoming release.
 
 ## 1. Find the latest release tag and build the change set
 
-Release tags follow the pattern `vX.Y` (e.g., `v42.5`, `v41.10`). Find the latest one:
+Release tags follow the pattern `vX.Y` (e.g., `v42.5`, `v41.10`).
+
+### Ensure local state is current
+
+Before anything else, fetch tags and `main` from upstream so the triage reflects what has
+actually shipped and landed, not a stale local snapshot:
+
+```bash
+git fetch upstream --tags
+git fetch upstream main
+```
+
+If `upstream` is not configured or the fetch fails, stop and tell the user — an outdated local
+checkout can produce an empty or incomplete report.
+
+### Find the latest release tag
+
+Use `--sort=-v:refname` for correct version ordering (lexical sorting treats `v42.9` as newer
+than `v42.10`):
 
 ```bash
 git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+$' | head -1
@@ -48,22 +66,26 @@ landed, and the Conventional Commits prefix (`feat:`, `fix:`, `perf:`, `chore:`,
 `test:`, `refactor:`) tells you its intent. The `--name-status` diff tells you what files
 actually changed.
 
-### Filter out changes already shipped in minor releases
+### Filter out changes already shipped via cherry-picks
 
-Minor releases cherry-pick fixes from `main` onto a release branch (see `RELEASE.md`). A commit
-on `main` whose change was already cherry-picked into a patch release (e.g., `v42.5` ships a fix
-that landed on `main` before `v42.4`) does not need documentation for the *next* release — it was
-already released. Check for this:
+Minor releases cherry-pick fixes from `main` onto a release branch (see `RELEASE.md`). These
+cherry-picks create new SHAs on the release branch, so the original commits on `main` still
+appear in `<tag>..main` even though their changes already shipped. This applies to fixes
+cherry-picked into the selected tag itself as well as any later minor releases.
+
+Check for patch-equivalent commits by comparing diff content (not SHAs) between `main` commits
+and what shipped in each release. Use `--sort=v:refname` for correct version ordering — lexical
+comparison treats `v42.9` as newer than `v42.10`:
 
 ```bash
-# List minor release tags since the base tag
-git tag --sort=v:refname | grep -E '^v<major>\.[0-9]+$' | awk -v base="<tag>" '$0 > base'
+# List all release tags in the same major series, version-sorted
+git tag --sort=v:refname | grep -E '^v<major>\.[0-9]+$'
 ```
 
-For each minor release tag after the base tag, diff the tag against its predecessor. If a commit
-on `main` produced a change that is already present in a shipped minor release (same diff content,
-even under a different SHA due to cherry-pick), exclude it from the triage — it was already
-released and any documentation for it belongs to that earlier release.
+For each commit in `<tag>..main`, check whether its patch content (`git show --format= <sha>`)
+matches any commit reachable from a release tag (including the selected base tag and any later
+minor releases). If the diff content already shipped, exclude the commit from the triage — it
+was already released and any documentation for it belongs to that earlier release.
 
 ## 2. First pass: triage by commit prefix
 
