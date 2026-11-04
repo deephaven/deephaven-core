@@ -21,9 +21,11 @@ import java.util.function.Supplier;
  * items you return are held by SoftReferences, so the garbage collector may reclaim them if it feels like it.
  * Otherwise, previously-returned items are re-borrowed in LIFO order, which hopefully is somewhat cache-friendly.
  * <p>
- * Note that the caller has no special obligation to return a borrowed item nor to return borrowed items in any
- * particular order. If your code has a need to keep a borrowed item forever, there is no problem with that. But if you
- * want your objects to be reused, you have to return them.
+ * For unregistered recyclers (see {@link SoftRecyclerWindow#register}) the caller has no special obligation to return a
+ * borrowed item nor to return borrowed items in any particular order. If your code has a need to keep a borrowed item
+ * forever, there is no problem with that. But if you want your objects to be reused, you have to return them.
+ * Registered recyclers adapt their capacity to their traffic; an item kept forever simply never counts toward it, so
+ * callers need not return what they borrow, though only returned items are reused.
  * <p>
  * The recycle bin holds at most its current capacity, which a {@link CapacityAdaptor} adapts to its traffic between the
  * capacity the recycler was created with and its maximum. The capacity grows on its own, but shrinks only when the
