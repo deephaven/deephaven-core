@@ -88,7 +88,7 @@ def _run_release_worker(
     session_ref: weakref.ReferenceType[Session],
     jobs: queue.SimpleQueue[_SessionJob],
 ) -> None:
-    """Runs a session's queued jobs. It ends when the session is closed or reconnects, or when the session is gone.
+    """Runs a session's queued jobs. It ends when the session is closed or when the session is gone.
     While it waits for a job it holds the session only weakly, so a dropped session can be collected. A failing job is
     logged and does not end the thread."""
     while True:
@@ -185,7 +185,8 @@ class Session:
     execute queries.
 
     Session objects can be used in Python with statement so that whatever happens in the with statement block, they
-    are guaranteed to be closed upon exit.
+    are guaranteed to be closed upon exit. A closed or disconnected session cannot be used in a with statement again.
+    Create a new Session instead.
 
     Attributes:
         tables (list[str]): names of the global tables available in the server after running scripts
@@ -311,10 +312,9 @@ class Session:
         self._connect()
 
     def __enter__(self) -> Session:
+        # A session does not reconnect. Its services and auth token are bound to its first connection.
         if not self.is_connected:
-            # double-checked locking, is_connected is checked inside _connect again, which
-            # may not end up connecting.
-            self._connect()
+            raise DHError("the session is not connected. Create a new Session.")
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -503,8 +503,6 @@ class Session:
     def _connect(self) -> None:
         _trace(f"_connect id={id(self)}")
         with self._r_lock:
-            if self.is_connected:
-                return
             _trace(f"_connect id={id(self)} connecting.")
             try:
                 scheme = "grpc+tls" if self._use_tls else "grpc"
@@ -563,11 +561,6 @@ class Session:
             if self._never_timeout:
                 self._next_refresh = time.monotonic() + 0.5 * self._timeout_seconds
 
-            # New threads per connection: tickets from an earlier connection are invalid. Stop the earlier release
-            # thread, which still runs if the session was marked disconnected without close(). The earlier refresh
-            # thread ends when it next wakes.
-            self._release_queue.put(_STOP)
-            self._release_queue = queue.SimpleQueue()
             self._release_thread = threading.Thread(
                 target=_run_release_worker,
                 args=(weakref.ref(self), self._release_queue),
