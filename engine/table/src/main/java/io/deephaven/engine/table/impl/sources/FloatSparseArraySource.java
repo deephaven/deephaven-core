@@ -67,9 +67,11 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * <p>
  * For parallel population, {@link #prepareForParallelPopulation(RowSequence, boolean)} allocates the page table above
  * each leaf to be written, for current and previous values, so that writers of different leaves change no shared
- * structure. When the writers' divisions are aligned to leaves, each writer builds and records its own leaves.
- * Otherwise it also builds each leaf with every offset to be written, holding null, and records the previous values, so
- * that writers only store values.
+ * structure. When the writers' divisions are aligned to leaves, each writer builds and records its own leaves, except
+ * that a leaf to hold more values than a compact leaf holds is made a full block, and its previous values a snapshot,
+ * in advance; so each bottom level allocates an array of compact leaves only when it may hold one. Otherwise it also
+ * builds each leaf with every offset to be written, holding null, and records the previous values, so that writers
+ * only store values.
  */
 public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
         implements MutableColumnSourceGetDefaults.ForFloat /* MIXIN_IMPLS */ {
@@ -419,21 +421,12 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
         }
 
         /**
-         * Allocate what writing the leaf at {@code index} may need, so that making it a block or a compact leaf writes
-         * only its own slot.
-         *
-         * @param mayBeBlock whether the leaf may become a full block
-         * @param mayBeCompact whether the leaf may become a compact leaf
+         * Allocate what making the leaf at {@code index} a compact leaf needs, so that doing so writes only its own
+         * slot.
          */
-        private void prepareIndex(final int index, final boolean mayBeBlock, final boolean mayBeCompact) {
+        private void prepareCompactIndex(final int index) {
             ensureIndex(index);
-            if (oneIndex != MANY_CHILDREN) {
-                return;
-            }
-            if (mayBeBlock && blocks == null) {
-                blocks = newBlocks();
-            }
-            if (mayBeCompact && compacts == null) {
+            if (oneIndex == MANY_CHILDREN && compacts == null) {
                 compacts = newCompacts();
             }
         }
@@ -838,23 +831,35 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
     }
 
     /**
-     * Allocate the page table entries that writing {@code count} row keys of the leaf holding {@code firstKey} may
-     * need, for current and, if {@code trackPrevious}, previous values.
+     * Prepare the leaf holding {@code firstKey}, and, if {@code trackPrevious}, its previous values, for a writer that
+     * puts {@code count} row keys there and changes no structure shared with other leaves. A leaf that may then hold more
+     * values than a compact leaf holds becomes a full block now, and its previous values a snapshot, so that its writer
+     * never makes it a compact leaf in between, when it writes the rows in pieces; any other leaf gets room for a
+     * compact leaf.
      */
     private void prepareLeafIndex(final long firstKey, final int count, final boolean trackPrevious) {
         final int block2 = block2(firstKey);
         final Level2 level2 = ensureLevel2(firstKey);
-        final FloatCompactLeaf compact = level2.getCompact(block2);
-        final boolean isBlock = level2.getBlock(block2) != null;
-        final boolean mayBeBlock = !isBlock && (compact == null ? 0 : compact.size()) + count > compactThreshold;
-        // a leaf that becomes a block may still be a compact leaf in between, when its rows are written in pieces
-        level2.prepareIndex(block2, mayBeBlock, !isBlock && compactThreshold > 0);
+        if (level2.getBlock(block2) == null) {
+            final FloatCompactLeaf compact = level2.getCompact(block2);
+            if ((compact == null ? 0 : compact.size()) + count > compactThreshold) {
+                level2.setBlock(block2, compact == null ? newBlock() : toBlock(compact));
+            } else {
+                level2.prepareCompactIndex(block2);
+            }
+        }
         if (trackPrevious) {
             final Level2 prevLevel2 = ensurePrevLevel2(firstKey);
-            final FloatCompactLeaf recorded = prevLevel2.getCompact(block2);
-            final boolean mayBeSnapshot = prevLevel2.getBlock(block2) == null
-                    && (recorded == null ? 0 : recorded.size()) + count > recordThreshold;
-            prevLevel2.prepareIndex(block2, mayBeSnapshot, true);
+            if (prevLevel2.getBlock(block2) == null) {
+                final FloatCompactLeaf recorded = prevLevel2.getCompact(block2);
+                if ((recorded == null ? 0 : recorded.size()) + count > recordThreshold) {
+                    // no row of the leaf has been written since its values were recorded, so the snapshot holds the
+                    // values at the start of the cycle
+                    preparePrevLeaf(firstKey, prevLevel2, block2, recorded, count, level2);
+                } else {
+                    prevLevel2.prepareCompactIndex(block2);
+                }
+            }
         }
     }
 
@@ -872,9 +877,8 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
             final PrevScratch scratch) {
         final long firstKey = leaves.firstKey;
         final int count = leaves.count;
-        prepareLeafIndex(firstKey, count, trackPrevious);
         final int block2 = block2(firstKey);
-        final Level2 level2 = getLevel2(firstKey);
+        final Level2 level2 = ensureLevel2(firstKey);
         leaves.offsets(offsets);
         if (trackPrevious) {
             recordPrevious(firstKey, level2, block2, offsets, count, scratch);

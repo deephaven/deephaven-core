@@ -32,7 +32,8 @@ than kilobytes per leaf.
 
 Row keys are split as in `SparseConstants`: a leaf covers `BLOCK_SIZE` (1024) consecutive row keys, and three page
 table levels above it cover bits 40 and up (`Level0`), bits 25 to 39 (`Level1`) and bits 10 to 24 (`Level2`). Each
-level holds its first child in a field and allocates an array of children only for a second one, so a source whose rows lie in one range of keys allocates no arrays above its leaves.
+level holds its first child in a field and allocates an array of children only for a second one, so a source whose
+rows lie in one range of keys allocates no arrays above its leaves.
 
 `Level0`, `Level1` and `Level2` are nested classes of each source, typed per type. `Level2` keeps full blocks and
 compact leaves in separate arrays (`char[][] blocks` and `CharCompactLeaf[] compacts`), so reading a full block is a
@@ -147,13 +148,16 @@ there.
 
 `select` and `update` populate a result from several threads when the column allows it. Writers of different leaves must
 change no shared structure, so `prepareForParallelPopulation` allocates, before the threads start, the page table
-entries above every leaf to be written, for current and previous values, and the arrays of `Level2` that may hold the
-leaf (`Level2.prepareIndex`).
+entries above every leaf to be written, for current and previous values.
 
 The sources report `parallelPopulationAlignment() == BLOCK_SIZE`. `SelectColumnLayer` then divides the rows with
 `divideAligned`, ending each division at a leaf boundary, and passes `alignedDivisions = true`. Each writer then owns
-whole leaves: it builds them, promotes them and records their previous values itself, and the preparation only counts
-the row keys in each leaf to decide which arrays a leaf may need.
+whole leaves, and the preparation only counts the row keys in each leaf (`prepareLeafIndex`). A leaf that may hold more
+values than a compact leaf holds becomes a full block in the preparation, and its previous values a snapshot; for any
+other leaf the preparation allocates the `Level2`'s array of compact leaves (`Level2.prepareCompactIndex`), and the
+writer builds the leaf, promotes it within the compact tiers and records its previous values itself. A writer may write
+a leaf in several chunks, so without the early block it could make the leaf compact before making it a block, and every
+`Level2` would need both arrays.
 
 When divisions are not aligned (a caller that uses `prepareForParallelPopulation(rows)`, or a Table or RowSet result,
 which divides rows singly), several writers may share a leaf, so the preparation does all structural work up front: it
@@ -253,6 +257,12 @@ the cache) and was no faster.
 **Removing a range one offset at a time.** Each removal from a compact leaf moves the values above it, so removing a
 range by single removals is quadratic in the leaf's size: clearing a 128-value bitmap leaf moved more than 8,000 values.
 `removeRange` moves the values once.
+
+**Allocating both `Level2` arrays.** Each array of a `Level2` has 32,768 entries, 128 KB. When the parallel preparation
+allocated the array of compact leaves for every leaf not yet a full block, in case a writer's first chunk made it
+compact, every multi-leaf `Level2` of a dense parallel result carried an empty 128 KB array beside its blocks.
+`QueryTableAjTest.testAjRandomStatic`, which keeps about 80,000 tables alive, ran out of a 3.5 GB heap on 5,760 such
+empty arrays. The preparation now decides from the row count which array a leaf needs.
 
 **Comparing across builds.** Layout and inlining differences between builds moved results by more than the effects
 measured here. Every comparison above ran the storages being compared in one build, selected by a parameter.
