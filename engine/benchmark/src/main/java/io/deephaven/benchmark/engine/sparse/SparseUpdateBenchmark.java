@@ -142,6 +142,8 @@ public class SparseUpdateBenchmark {
         setQueryTableFlag("ENABLE_PARALLEL_SELECT_AND_UPDATE", parallel);
         // divide a cycle's rows between several jobs
         QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = 1L << 14;
+        // each initialUpdate must build a new result rather than return the memoized one
+        QueryTable.setMemoizeResults(false);
 
         window = 1L << logWindow;
         cycleKeys = 1L << logCycleKeys;
