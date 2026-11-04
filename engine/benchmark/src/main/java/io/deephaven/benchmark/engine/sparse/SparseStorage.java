@@ -11,7 +11,6 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
@@ -27,11 +26,11 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * <p>
  * Storages:
  * <ul>
- * <li>Sparse: {@link DoubleSparseArraySource}, a page table above full blocks</li>
+ * <li>Sparse: {@link DoubleSparseArraySource} with every leaf a full block</li>
  * <li>Redirected: a {@link DoubleArraySource} of dense positions behind the hash {@link WritableRowRedirection} that
  * {@code QueryTable.redirectUpdate} uses</li>
- * <li>Adaptive: {@link DoubleSparseArraySource}, whose leaves are sorted, bitmap or full blocks by the number of values
- * they hold</li>
+ * <li>Adaptive: {@link DoubleSparseArraySource} with the default thresholds, whose leaves are sorted, bitmap or full
+ * blocks by the number of values they hold</li>
  * </ul>
  * Patterns cover a space of {@link #KEY_SPACE} row keys:
  * <ul>
@@ -111,9 +110,8 @@ final class SparseStorage {
             case "Sparse":
                 return new DoubleSparseArraySource();
             case "Adaptive":
-                return new DoubleSparseArraySource();
-            case "AdaptiveDense":
-                return new DoubleSparseArraySource(DoubleSparseArraySource.DEFAULT_SORTED_THRESHOLD, 0);
+                return new DoubleSparseArraySource(DoubleSparseArraySource.DEFAULT_SORTED_THRESHOLD,
+                        DoubleSparseArraySource.DEFAULT_COMPACT_THRESHOLD);
             case "Redirected": {
                 final DoubleArraySource dense = new DoubleArraySource();
                 dense.ensureCapacity(expectedSize);

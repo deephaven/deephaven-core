@@ -46,7 +46,7 @@ import java.util.function.Supplier;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 
 /**
- * Measures {@code update()} into the sparse array sources and the adaptive sparse array sources, selected by
+ * Measures {@code update()} into sparse array sources with every leaf a full block, or with compact leaves, selected by
  * {@link SparseMemoryColumnSourceFactory#USE_ADAPTIVE}, for a refreshing parent whose row keys follow a pattern over a
  * window of {@code 2^logWindow} row keys:
  * <ul>
@@ -108,8 +108,8 @@ public class SparseUpdateBenchmark {
         }
     }
 
-    /** Sparse array sources, adaptive sparse sources, or adaptive sparse sources whose leaves are all full blocks. */
-    @Param({"Sparse", "Adaptive", "AdaptiveDense"})
+    /** Sparse array sources whose leaves are all full blocks, or whose leaves may be compact. */
+    @Param({"Sparse", "Adaptive"})
     private String storage;
 
     @Param({"Dense", "Stride8", "Stride64", "Stride512", "Random1", "Clustered"})
@@ -142,7 +142,6 @@ public class SparseUpdateBenchmark {
         updateGraph.resetForUnitTests(false);
 
         SparseMemoryColumnSourceFactory.USE_ADAPTIVE = !storage.equals("Sparse");
-        SparseMemoryColumnSourceFactory.DENSE = storage.equals("AdaptiveDense");
         final boolean parallel = threads.equals("parallel");
         setQueryTableFlag("ENABLE_PARALLEL_SELECT_AND_UPDATE", parallel);
         // divide a cycle's rows between several jobs

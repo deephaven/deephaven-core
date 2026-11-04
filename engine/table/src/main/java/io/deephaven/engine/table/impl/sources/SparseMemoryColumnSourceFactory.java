@@ -12,20 +12,18 @@ import java.time.Instant;
 /**
  * Creates the in-memory column sources that select and update write at the row keys of their results.
  * <p>
- * The sources are the adaptive sparse sources, such as {@link DoubleSparseArraySource}, when {@link #USE_ADAPTIVE} is
- * set, and the sources of {@link SparseArrayColumnSource#getSparseMemoryColumnSource(long, Class, Class)} otherwise.
+ * The sources are sparse array sources, such as {@link DoubleSparseArraySource}. When {@link #USE_ADAPTIVE} is set,
+ * they hold a leaf with few values in a compact leaf, with the default thresholds; otherwise they are the sources of
+ * {@link SparseArrayColumnSource#getSparseMemoryColumnSource(long, Class, Class)}, whose leaves are full blocks.
  */
 public final class SparseMemoryColumnSourceFactory {
 
     /**
-     * Whether to create adaptive sparse sources. Configured by the {@code SparseMemoryColumnSourceFactory.adaptive}
-     * property, which defaults to false.
+     * Whether to create sparse sources with compact leaves. Configured by the
+     * {@code SparseMemoryColumnSourceFactory.adaptive} property, which defaults to false.
      */
     public static boolean USE_ADAPTIVE = Configuration.getInstance()
             .getBooleanWithDefault("SparseMemoryColumnSourceFactory.adaptive", false);
-
-    /** Whether the adaptive primitive sources keep every leaf a full block. */
-    public static boolean DENSE = false;
 
     private SparseMemoryColumnSourceFactory() {}
 
@@ -43,7 +41,7 @@ public final class SparseMemoryColumnSourceFactory {
             return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type, componentType);
         }
         final int sortedThreshold = CharacterSparseArraySource.DEFAULT_SORTED_THRESHOLD;
-        final int compactThreshold = DENSE ? 0 : CharacterSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
+        final int compactThreshold = CharacterSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
         final WritableColumnSource<?> result;
         if (type == byte.class || type == Byte.class) {
             result = new ByteSparseArraySource(sortedThreshold, compactThreshold);
