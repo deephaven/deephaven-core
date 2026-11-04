@@ -16,8 +16,10 @@ allowed-tools: Read, Grep, Glob, Bash(git diff *), Bash(git log *), Bash(git sho
 
 # Release documentation needs check
 
-Analyze everything that has landed on `main` since the latest release and determine what needs
-documentation for the upcoming release.
+Analyze everything that has landed on `upstream/main` since the latest release and determine
+what needs documentation for the upcoming release. All commands use `upstream/main` (the fetched
+remote ref) rather than the local `main` branch, so the triage is always against the latest
+upstream state regardless of the local checkout.
 
 ## 1. Find the latest release tag and build the change set
 
@@ -36,6 +38,10 @@ git fetch upstream main
 If `upstream` is not configured or the fetch fails, stop and tell the user — an outdated local
 checkout can produce an empty or incomplete report.
 
+**Use `upstream/main` — not bare `main` — in every command below.** The local `main` branch may
+be behind `upstream/main` after a fetch, so bare `main` can silently omit newly merged features
+and read outdated documentation.
+
 ### Find the latest release tag
 
 Use `--sort=-v:refname` for correct version ordering (lexical sorting treats `v42.9` as newer
@@ -49,13 +55,13 @@ Then get the full picture of what's changed since that tag:
 
 ```bash
 # Total commit count for context
-git log <tag>..main --oneline --first-parent | wc -l
+git log <tag>..upstream/main --oneline --first-parent | wc -l
 
 # All changed files, grouped
-git diff --name-status <tag>..main
+git diff --name-status <tag>..upstream/main
 
 # All first-parent commits (one per PR, including squash-merged and rebased PRs)
-git log <tag>..main --oneline --first-parent
+git log <tag>..upstream/main --oneline --first-parent
 ```
 
 Use `--first-parent` — not `--merges` — so squash-merged PRs, rebased PRs, and direct commits
@@ -70,7 +76,7 @@ actually changed.
 
 Minor releases cherry-pick fixes from `main` onto a release branch (see `RELEASE.md`). These
 cherry-picks create new SHAs on the release branch, so the original commits on `main` still
-appear in `<tag>..main` even though their changes already shipped. This applies to fixes
+appear in `<tag>..upstream/main` even though their changes already shipped. This applies to fixes
 cherry-picked into the selected tag itself as well as any later minor releases.
 
 Check for patch-equivalent commits by comparing diff content (not SHAs) between `main` commits
@@ -82,7 +88,7 @@ comparison treats `v42.9` as newer than `v42.10`:
 git tag --sort=v:refname | grep -E '^v<major>\.[0-9]+$'
 ```
 
-For each commit in `<tag>..main`, get its first-parent diff (`git diff <sha>^..<sha>`) — not
+For each commit in `<tag>..upstream/main`, get its first-parent diff (`git diff <sha>^..<sha>`) — not
 `git show`, which produces an empty combined diff for clean merges and would falsely match other
 empty diffs. Only compare commits whose first-parent diff is non-empty; a commit with an empty
 first-parent diff has no changes to exclude. If a non-empty first-parent diff matches the
@@ -189,18 +195,18 @@ it can be excluded from the report.
 
 ## 4. Check what's already documented
 
-For each change that needs docs, check whether documentation on `main` already covers it or
-needs updating. Search documentation **at the `main` revision**, not the working tree — running
-this skill from a documentation branch or an older checkout would otherwise produce wrong
-results (marking unmerged doc work as "already documented," or missing docs that are already on
-`main`).
+For each change that needs docs, check whether documentation on `upstream/main` already covers
+it or needs updating. Search documentation **at the `upstream/main` revision**, not the working
+tree — running this skill from a documentation branch or an older checkout would otherwise
+produce wrong results (marking unmerged doc work as "already documented," or missing docs that
+are already on `upstream/main`).
 
 ```bash
-# Search for existing mentions of the feature/class/method in docs on main
-git grep -l "featureName\|ClassName\|method_name" main -- 'docs/**/*.md'
+# Search for existing mentions of the feature/class/method in docs on upstream/main
+git grep -l "featureName\|ClassName\|method_name" upstream/main -- 'docs/**/*.md'
 
-# Read a specific doc page at the main revision
-git show main:docs/python/path/to/page.md
+# Read a specific doc page at the upstream/main revision
+git show upstream/main:docs/python/path/to/page.md
 ```
 
 Also check if any `docs:` commits in the same release window already documented the feature.
@@ -209,7 +215,7 @@ already handled.
 
 Classify each item:
 - **Already documented** — a `docs:` commit in this release window covers it, or existing docs
-  on `main` already describe the new behavior accurately.
+  on `upstream/main` already describe the new behavior accurately.
 - **Needs a new page** — entirely new feature or concept with no existing coverage.
 - **Needs updates to existing pages** — changed behavior, new parameters, new options on an
   existing feature.
@@ -223,7 +229,7 @@ Classify each item:
 Structure the output as:
 
 ```
-## Release documentation triage: <tag>..main
+## Release documentation triage: <tag>..upstream/main
 
 **Release tag:** <tag>
 **Commits since release (first-parent):** <count>
