@@ -124,6 +124,17 @@ class OperationControl(_UpdateByBase):
         )
 
 
+def _to_filter_strings(filters: str | list[str]) -> list[str]:
+    """Returns the count_where filters as a list of strings. The request carries filters only as strings, so a Filter
+    object would fail inside protobuf with an unclear TypeError."""
+    filters = to_list(filters)
+    if not all(isinstance(f, str) for f in filters):
+        raise DHError(
+            message="count_where filters must be strings. Filter objects are not supported."
+        )
+    return filters
+
+
 class UpdateByOperation(_UpdateByBase):
     """A UpdateByOperation represents an operator for the Table update-by operation."""
 
@@ -200,8 +211,7 @@ def cum_count_where(col: str, filters: str | list[str]) -> UpdateByOperation:
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
-            expression(s) or Filter object(s)
+        filters (Union[str, list[str]]): the filter condition expression(s). Filter objects are not supported.
 
     Returns:
         an UpdateByOperation
@@ -210,7 +220,7 @@ def cum_count_where(col: str, filters: str | list[str]) -> UpdateByOperation:
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = to_list(filters)
+    filters = _to_filter_strings(filters)
 
     ub_spec = _GrpcUpdateBySpec(
         count_where=_GrpcUpdateBySpec.UpdateByCumulativeCountWhere(
@@ -484,7 +494,7 @@ def emmin_tick(
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
         return UpdateByOperation(ub_column=ub_column)
     except Exception as e:
-        raise DHError("failed to create a tick-decay EMS UpdateByOperation.") from e
+        raise DHError("failed to create a tick-decay EM Min UpdateByOperation.") from e
 
 
 def emmin_time(
@@ -533,7 +543,7 @@ def emmin_time(
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
         return UpdateByOperation(ub_column=ub_column)
     except Exception as e:
-        raise DHError("failed to create a time-decay EMA UpdateByOperation.") from e
+        raise DHError("failed to create a time-decay EM Min UpdateByOperation.") from e
 
 
 def emmax_tick(
@@ -573,7 +583,7 @@ def emmax_tick(
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
         return UpdateByOperation(ub_column=ub_column)
     except Exception as e:
-        raise DHError("failed to create a tick-decay EMS UpdateByOperation.") from e
+        raise DHError("failed to create a tick-decay EM Max UpdateByOperation.") from e
 
 
 def emmax_time(
@@ -622,7 +632,7 @@ def emmax_time(
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
         return UpdateByOperation(ub_column=ub_column)
     except Exception as e:
-        raise DHError("failed to create a time-decay EMA UpdateByOperation.") from e
+        raise DHError("failed to create a time-decay EM Max UpdateByOperation.") from e
 
 
 def emstd_tick(
@@ -664,7 +674,7 @@ def emstd_tick(
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
         return UpdateByOperation(ub_column=ub_column)
     except Exception as e:
-        raise DHError("failed to create a tick-decay EMS UpdateByOperation.") from e
+        raise DHError("failed to create a tick-decay EM Std UpdateByOperation.") from e
 
 
 def emstd_time(
@@ -715,7 +725,7 @@ def emstd_time(
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
         return UpdateByOperation(ub_column=ub_column)
     except Exception as e:
-        raise DHError("failed to create a time-decay EMA UpdateByOperation.") from e
+        raise DHError("failed to create a time-decay EM Std UpdateByOperation.") from e
 
 
 def rolling_sum_tick(
@@ -1998,8 +2008,7 @@ def rolling_count_where_tick(
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
-            expression(s) or Filter object(s)
+        filters (Union[str, list[str]]): the filter condition expression(s). Filter objects are not supported.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -2013,7 +2022,7 @@ def rolling_count_where_tick(
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = to_list(filters)
+    filters = _to_filter_strings(filters)
 
     try:
         rev_window_scale = _GrpcUpdateByWindowScale(
@@ -2066,8 +2075,7 @@ def rolling_count_where_time(
     Args:
         ts_col (str): the timestamp column for determining the window
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
-            expression(s) or Filter object(s)
+        filters (Union[str, list[str]]): the filter condition expression(s). Filter objects are not supported.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -2083,7 +2091,7 @@ def rolling_count_where_time(
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = to_list(filters)
+    filters = _to_filter_strings(filters)
 
     try:
         if isinstance(rev_time, str):

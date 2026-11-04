@@ -30,10 +30,14 @@ from deephaven_core.proto.table_pb2 import (
     Value,
 )
 
+from ._utils import to_list
+
 # Type alias for datetime-like types
 DatetimeLike: TypeAlias = (
     datetime.datetime | datetime.date | np.datetime64 | pd.Timestamp
 )
+
+_EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
 
 
 def _datetime_to_nanos(dt: DatetimeLike) -> int:
@@ -52,15 +56,16 @@ def _datetime_to_nanos(dt: DatetimeLike) -> int:
         # numpy datetime64 - convert to nanoseconds
         return dt.astype("datetime64[ns]").astype(int)
     elif isinstance(dt, datetime.datetime):
-        # Python datetime - convert to nanoseconds
-        # timestamp() returns seconds since epoch (as float)
-        return int(dt.timestamp() * 1_000_000_000)
+        # Python datetime - a naive one is local time, as in datetime.timestamp(). Integer math keeps every
+        # microsecond. timestamp() returns a float, which cannot hold epoch nanoseconds exactly.
+        aware = dt if dt.tzinfo is not None else dt.astimezone()
+        return (aware - _EPOCH) // datetime.timedelta(microseconds=1) * 1_000
     elif isinstance(dt, datetime.date):
         # Python date - convert to datetime at midnight UTC, then to nanos
         dt_obj = datetime.datetime.combine(
             dt, datetime.time.min, tzinfo=datetime.timezone.utc
         )
-        return int(dt_obj.timestamp() * 1_000_000_000)
+        return (dt_obj - _EPOCH) // datetime.timedelta(microseconds=1) * 1_000
     else:
         raise TypeError(f"Unsupported datetime type: {type(dt)}")
 
@@ -137,7 +142,8 @@ class _InFilter(Filter):
         case_sensitive: bool = True,
     ):
         self._col = col
-        self._values = values
+        # A single string is one value. Iterating it would send each character as a value.
+        self._values = to_list(values)
         self._case_sensitivity = (
             CaseSensitivity.MATCH_CASE
             if case_sensitive

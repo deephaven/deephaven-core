@@ -154,6 +154,26 @@ class FiltersTestCase(BaseTestCase):
         nanos = filters._datetime_to_nanos(epoch)
         self.assertEqual(nanos, 0)
 
+    def test_datetime_to_nanos_keeps_microseconds(self):
+        """Test that a Python datetime keeps every microsecond. A float conversion loses some."""
+        import datetime
+
+        base_nanos = 1704110400 * 1_000_000_000  # 2024-01-01 12:00:00 UTC
+        for us in (1, 7, 654321, 999999):
+            dt = datetime.datetime(
+                2024, 1, 1, 12, 0, 0, us, tzinfo=datetime.timezone.utc
+            )
+            self.assertEqual(filters._datetime_to_nanos(dt), base_nanos + us * 1000)
+
+    def test_datetime_to_nanos_naive_is_local_time(self):
+        """Test that a naive Python datetime is read as local time, as datetime.timestamp() reads it."""
+        import datetime
+
+        naive = datetime.datetime(2024, 1, 1, 12, 0, 0)
+        self.assertEqual(
+            filters._datetime_to_nanos(naive), int(naive.timestamp()) * 1_000_000_000
+        )
+
     def test_eq_filter_with_datetime(self):
         """Test eq() function with datetime values."""
         import datetime
@@ -459,6 +479,13 @@ class FiltersTestCase(BaseTestCase):
         condition = filter_obj.make_grpc_message()
         self.assertTrue(condition.HasField("in"))
         self.assertEqual(len(condition.__getattribute__("in").candidates), 1)
+
+    def test_in_filter_with_single_string(self):
+        """Test in_() function with one string, which is one value and not a sequence of characters."""
+        condition = in_("Sym", "AAPL").make_grpc_message()
+        candidates = condition.__getattribute__("in").candidates
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0].literal.string_value, "AAPL")
 
     def test_in_filter_with_mixed_numeric_types(self):
         """Test in_() function with mixed integer and float values."""

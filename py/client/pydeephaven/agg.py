@@ -432,7 +432,12 @@ def unique(
         an aggregation
     """
     if non_unique_sentinel is not None:
-        if isinstance(non_unique_sentinel, np.byte):
+        # bool comes first because bool is a subclass of int, so the int branch would catch True and False.
+        if isinstance(non_unique_sentinel, (bool, np.bool_)):
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+                bool_value=bool(non_unique_sentinel)
+            )
+        elif isinstance(non_unique_sentinel, np.byte):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
                 byte_value=int(non_unique_sentinel)
             )
@@ -463,10 +468,6 @@ def unique(
         elif isinstance(non_unique_sentinel, str):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
                 string_value=non_unique_sentinel
-            )
-        elif isinstance(non_unique_sentinel, (bool, np.bool_)):
-            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
-                bool_value=bool(non_unique_sentinel)
             )
         else:
             raise TypeError(

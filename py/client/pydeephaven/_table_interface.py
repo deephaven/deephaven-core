@@ -669,7 +669,7 @@ class TableInterface(ABC, Generic[T]):
         for agg in aggs:  # noqa: F402
             if hasattr(agg, "cols") and not agg.cols:
                 raise DHError(
-                    message="No columns specified for the aggregation operation {agg}."
+                    message=f"No columns specified for the aggregation operation {agg}."
                 )
 
         table_op = AggregateOp(aggs=aggs, by=to_list(by))

@@ -6,6 +6,8 @@ import unittest
 
 from pyarrow import csv
 
+from pydeephaven import DHError
+from pydeephaven.filters import ColumnName, eq
 from pydeephaven.updateby import (
     BadDataBehavior,
     DeltaControl,
@@ -33,6 +35,7 @@ from pydeephaven.updateby import (
     rolling_count_tick,
     rolling_count_time,
     rolling_count_where_tick,
+    rolling_count_where_time,
     rolling_formula_tick,
     rolling_formula_time,
     rolling_group_tick,
@@ -483,6 +486,22 @@ class UpdateByTestCase(BaseTestCase):
             self.assertEqual(len(rt.schema), 10 + len(t.schema))
             if not rt.is_refreshing:
                 self.assertEqual(rt.size, t.size)
+
+    def test_count_where_rejects_filter_objects(self):
+        a_filter = eq(ColumnName("a"), 1)
+        with self.subTest("cum_count_where"):
+            with self.assertRaises(DHError):
+                cum_count_where(col="c", filters=a_filter)
+        with self.subTest("rolling_count_where_tick"):
+            with self.assertRaises(DHError):
+                rolling_count_where_tick(
+                    col="c", filters=["a > 0", a_filter], rev_ticks=2
+                )
+        with self.subTest("rolling_count_where_time"):
+            with self.assertRaises(DHError):
+                rolling_count_where_time(
+                    ts_col="Timestamp", col="c", filters=a_filter, rev_time="PT1S"
+                )
 
     def test_cum_count_where_output(self):
         """

@@ -52,6 +52,9 @@ class Query(TableInterface["Query"]):
         Raises:
             DHError
         """
+        # The first op is the NoneOp that holds the source table. It cannot be sent as a request on its own.
+        if len(self._ops) < 2:
+            raise DHError("the query has no table operations to execute.")
         return self.session.table_service.batch(self._ops)
 
     def drop_columns(self, cols: str | list[str]) -> Query:
