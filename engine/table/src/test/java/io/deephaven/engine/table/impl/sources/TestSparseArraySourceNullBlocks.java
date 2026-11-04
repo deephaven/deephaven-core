@@ -37,6 +37,7 @@ import java.util.stream.LongStream;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK0_SHIFT;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK1_SHIFT;
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK2_SIZE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
 import static io.deephaven.engine.testutil.TstUtils.i;
@@ -506,8 +507,11 @@ public class TestSparseArraySourceNullBlocks {
             maxSize = Math.max(maxSize, currentSize);
         }
         assertEquals(LIVE_ROWS, result.size());
-        // the live rows are a contiguous range, so they span the same number of blocks, give or take one, each cycle
-        assertTrue("firstSize=" + firstSize + ", maxSize=" + maxSize, maxSize <= firstSize + 2 * LONG_BLOCK_BYTES);
+        // the live rows are a contiguous range, so they span the same number of blocks, give or take one, each cycle; a
+        // cycle that first writes few rows to a leaf may also allocate the bottom page table level's array of compact
+        // leaves
+        assertTrue("firstSize=" + firstSize + ", maxSize=" + maxSize,
+                maxSize <= firstSize + 2 * LONG_BLOCK_BYTES + (long) BLOCK2_SIZE * Long.BYTES);
         return result;
     }
 
