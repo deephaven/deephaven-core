@@ -42,7 +42,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
 /**
  * A sparse in-memory column source of chars whose leaves adapt to the number of values they hold.
  * <p>
- * Row keys are addressed as in {@link CharacterSparseArraySource}: three page table levels above leaves that each cover
+ * Row keys are addressed through three page table levels above leaves that each cover
  * {@link io.deephaven.engine.table.impl.sources.sparse.SparseConstants#BLOCK_SIZE} consecutive row keys. A leaf is one
  * of:
  * <ul>
@@ -58,9 +58,8 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * the same thresholds, or, once more offsets are recorded than a compact leaf holds, a full block that snapshots the
  * whole leaf. A row without a recorded value has not changed this cycle, so its previous value is its current value.
  * The previous values are discarded when the cycle completes. The snapshot blocks and the arrays of the previous value
- * page table come from recyclers shared by the sources of this type, as in {@link CharacterSparseArraySource}; the
- * leaves and page table levels created in a cycle are listed, so that completing it clears exactly the entries set and
- * returns each array with every entry null.
+ * page table come from recyclers shared by the sources of this type; the leaves and page table levels created in a
+ * cycle are listed, so that completing it clears exactly the entries set and returns each array with every entry null.
  * <p>
  * For parallel population, {@link #prepareForParallelPopulation(RowSequence, boolean)} allocates the page table above
  * each leaf to be written, for current and previous values, so that writers of different leaves change no shared
@@ -180,7 +179,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
 
     // region page table
-    // Like the levels of CharacterSparseArraySource, each page table level holds its first child without allocating an
+    // Each page table level holds its first child without allocating an
     // array of children.
     private static final int NO_CHILD = -1;
     private static final int MANY_CHILDREN = -2;
@@ -313,7 +312,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
     /**
      * The bottom page table level, holding leaves. A leaf is either a full block or a compact leaf, kept in separate
-     * arrays so that reading a full block takes no more than reading a {@link CharacterSparseArraySource} block.
+     * arrays so that reading a full block needs no test of the leaf's type.
      */
     private static final class Level2 {
         /** Whether the arrays of leaves are borrowed from recyclers, as for previous values. */
