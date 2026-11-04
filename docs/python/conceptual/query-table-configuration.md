@@ -43,7 +43,7 @@ The `QueryTable` has the following user-configurable properties:
 | [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.windowMillis`                              | 1000       |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.maximumWindowMillis`                       | 60000      |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.windowMargin`                              | 1.5        |
-| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.shrinkFraction`                            | 0.5        |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.shrinkFraction`                            | 0.1        |
 | [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |
 
 Each property is described below, roughly categorized by similarity.
@@ -234,7 +234,7 @@ Windows end only when an update graph starts a cycle. In a process whose update 
 | `SoftRecycler.windowMillis`        | 1000          | The shortest window, in milliseconds, and the window when no update graph has a longer interval between cycles                                                                                                                                           |
 | `SoftRecycler.maximumWindowMillis` | 60000         | The longest window, in milliseconds, between possibly shrinking the recycler. Even if one of the update graphs has a longer interval between cycles, the next update graph to start a cycle will shrink the recycler after the window exceeds this value |
 | `SoftRecycler.windowMargin`        | 1.5           | The multiple of the longest interval between update graph cycle starts that a window lasts                                                                                                                                                               |
-| `SoftRecycler.shrinkFraction`      | 0.5           | The fraction, from 0 to 1, of the arrays a window never needed that the recycler discards when the window ends; 0 keeps the capacity once grown, and 1 shrinks to what the window needed                                                                 |
+| `SoftRecycler.shrinkFraction`      | 0.1           | The fraction, from 0 to 1, of the arrays a window never needed that the recycler discards when the window ends; 0 keeps the capacity once grown, and 1 shrinks to what the window needed                                                                 |
 
 ### Tuning recyclers
 

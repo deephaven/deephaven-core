@@ -297,10 +297,10 @@ public class SoftRecyclerTest {
             items.clear();
         }
         assertEquals(40, recycler.getCapacity());
-        // a window in which nothing is borrowed needed none of the 40 items; the default fraction discards half
+        // a window in which nothing is borrowed needed none of the 40 items; the default fraction discards a tenth
         SoftRecyclerWindow.endWindowForRegisteredRecyclers();
         SoftRecyclerWindow.endWindowForRegisteredRecyclers();
-        assertEquals(20, recycler.getCapacity());
+        assertEquals(36, recycler.getCapacity());
     }
 
     @Test

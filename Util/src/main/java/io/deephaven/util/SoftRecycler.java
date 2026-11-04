@@ -30,7 +30,7 @@ import java.util.function.Supplier;
  * recycler's window ends, and windows end only for recyclers registered through
  * {@link SoftRecyclerWindow#register(SoftRecycler)}, which ends them from the update graphs' cycles. An unregistered
  * recycler grows to its maximum and stays there. The shrink fraction is the {@value #SHRINK_FRACTION_PROPERTY}
- * property, 0.5 by default.
+ * property, 0.1 by default.
  */
 public class SoftRecycler<T> {
     /** The property for the fewest milliseconds of traffic each shrink of the capacity is judged on. */
@@ -43,7 +43,7 @@ public class SoftRecycler<T> {
     public static final String SHRINK_FRACTION_PROPERTY = "SoftRecycler.shrinkFraction";
 
     private static final double DEFAULT_SHRINK_FRACTION =
-            Configuration.getInstance().getDoubleWithDefault(SHRINK_FRACTION_PROPERTY, 0.5);
+            Configuration.getInstance().getDoubleWithDefault(SHRINK_FRACTION_PROPERTY, 0.1);
 
     private final Supplier<T> constructItem;
     private final Consumer<T> sanitizeItem;
