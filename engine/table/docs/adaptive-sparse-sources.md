@@ -3,16 +3,16 @@
 This document describes how the sparse array sources (`CharacterSparseArraySource` and its replicas) store values,
 record previous values, prepare for parallel population and release memory, and which performance traps shaped them. The
 sources address row keys through a page table, as they always have, but a leaf of the page table is stored according to
-how many values it holds: a leaf with few values is a compact leaf, and a fuller leaf is a full block. By default every
-leaf is a full block, as before; `select` and `update` use compact leaves when
-`SparseMemoryColumnSourceFactory.adaptive` is true.
+how many values it holds: a leaf with few values is a compact leaf, and a fuller leaf is a full block. The sources that
+`select` and `update` create use compact leaves; setting `SparseMemoryColumnSourceFactory.adaptive` to false makes every
+leaf a full block, as before, and is kept as an escape hatch. Every other sparse source has only full blocks.
 
 | | |
 |---|---|
 | **Sources** | `CharacterSparseArraySource`, replicated to Byte, Short, Integer, Long, Float, Double and Object; `BooleanSparseArraySource` over Byte; `InstantSparseArraySource` and `ZonedDateTimeSparseArraySource` over Long, through `NanosBasedTimeSparseArraySource` |
 | **Compact leaves** | `sparse/CharCompactLeaf`, with `CharSortedLeaf` (at most 16 values) and `CharBitmapLeaf` (at most 128 values), replicated per type |
 | **Base class** | `SparseArrayColumnSource`: `clearBlocks`, `clearBlocksWithoutLiveRows`, `clearVacatedBlocks`, `estimateSize`, `getSparseMemoryColumnSource` |
-| **Configuration** | `SparseMemoryColumnSourceFactory.adaptive` (default false) selects the default thresholds for the sources `select` and `update` create; every other source has only full blocks |
+| **Configuration** | `SparseMemoryColumnSourceFactory.adaptive` (default true) selects the default thresholds for the sources `select` and `update` create; false makes their leaves all full blocks; every other source has only full blocks |
 | **Parallel population** | `WritableSourceWithPrepareForParallelPopulation.parallelPopulationAlignment` and `prepareForParallelPopulation(rows, alignedDivisions)`; `SelectColumnLayer.divideAligned` |
 | **Benchmarks** | `SparseStorageBenchmark` (`jmhRunSparseStorage`), `SparseStorageMemory` (`sparseStorageMemory`), `SparseUpdateBenchmark` (`jmhRunSparseUpdate`), all in `io.deephaven.benchmark.engine.sparse` |
 | **Tests** | `TestCharCompactLeaf` and `TestCharacterAdaptiveSparseArraySource` and their replicas, checked against reference maps; `TestBooleanAdaptiveSparseArraySource`, `TestInstantAdaptiveSparseArraySource`, `TestSparseArraySourceNullBlocks`; the `Abstract*ColumnSourceTest` suites |
@@ -194,18 +194,7 @@ All comparisons are against the sparse array sources before compact leaves, in t
 double column and 2^23 row keys. `SparseUpdateBenchmark` runs `update("X = V * 2.0")` over a refreshing parent whose
 row keys follow the pattern, and its cycles change 2^16 row keys.
 
-With every leaf a full block (the default):
-
-- Memory per row is unchanged.
-- Initial updates take 0.91 to 1.01x as long serially and 0.35 to 0.94x in parallel.
-- March and modify cycles take 0.34 to 1.00x as long, Dense gaining most, except a serial Stride8 modify at 1.05x.
-  Cycles allocate 1 to 5%
-  more, except Stride8, which allocates 782 KB against 703 KB per march cycle and 180 KB against 100 KB per modify
-  cycle, for the compact leaves that record previous values.
-- `fillUnordered` takes 0.56 to 0.65x as long and `randomSet` 0.35 to 0.94x; other storage operations are within 0.89
-  to 1.11x.
-
-With compact leaves:
+With compact leaves (the default):
 
 | Pattern | Bytes per row, full blocks | Bytes per row, compact | Initial update, serial | Initial update, parallel |
 |---|---|---|---|---|
@@ -222,6 +211,16 @@ March cycles take 0.58 to 0.92x as long and allocate a half to a seventh as much
 A point read in a compact leaf costs a bitmap rank or a sorted-leaf count. Random `get` takes 1.33 to 2.63x as long on
 Stride64, Stride512, Random1, Runs64 and Clustered, and 0.65 to 0.93x on Dense, Stride8 and Random10, whose smaller
 footprint offsets the rank.
+
+With every leaf a full block (`SparseMemoryColumnSourceFactory.adaptive=false`):
+
+- Memory per row is unchanged.
+- Initial updates take 0.91 to 1.01x as long serially and 0.35 to 0.94x in parallel.
+- March and modify cycles take 0.34 to 1.00x as long, Dense gaining most, except a serial Stride8 modify at 1.05x.
+  Cycles allocate 1 to 5% more, except Stride8, which allocates 782 KB against 703 KB per march cycle and 180 KB
+  against 100 KB per modify cycle, for the compact leaves that record previous values.
+- `fillUnordered` takes 0.56 to 0.65x as long and `randomSet` 0.35 to 0.94x; other storage operations are within 0.89
+  to 1.11x.
 
 ## Traps this code has already fallen into
 

@@ -12,18 +12,20 @@ import java.time.Instant;
 /**
  * Creates the in-memory column sources that select and update write at the row keys of their results.
  * <p>
- * The sources are sparse array sources, such as {@link DoubleSparseArraySource}. When {@link #USE_ADAPTIVE} is set,
- * they hold a leaf with few values in a compact leaf, with the default thresholds; otherwise they are the sources of
- * {@link SparseArrayColumnSource#getSparseMemoryColumnSource(long, Class, Class)}, whose leaves are full blocks.
+ * The sources are sparse array sources, such as {@link DoubleSparseArraySource}. When {@link #USE_ADAPTIVE} is set, as
+ * it is by default, they hold a leaf with few values in a compact leaf, with the default thresholds; otherwise they are
+ * the sources of {@link SparseArrayColumnSource#getSparseMemoryColumnSource(long, Class, Class)}, whose leaves are full
+ * blocks.
  */
 public final class SparseMemoryColumnSourceFactory {
 
     /**
      * Whether to create sparse sources with compact leaves. Configured by the
-     * {@code SparseMemoryColumnSourceFactory.adaptive} property, which defaults to false.
+     * {@code SparseMemoryColumnSourceFactory.adaptive} property, which defaults to true; false makes every leaf a full
+     * block.
      */
     public static boolean USE_ADAPTIVE = Configuration.getInstance()
-            .getBooleanWithDefault("SparseMemoryColumnSourceFactory.adaptive", false);
+            .getBooleanWithDefault("SparseMemoryColumnSourceFactory.adaptive", true);
 
     private SparseMemoryColumnSourceFactory() {}
 
