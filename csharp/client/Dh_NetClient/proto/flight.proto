@@ -1,0 +1,67 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+// A minimal subset of the Apache Arrow Flight protocol
+// (https://github.com/apache/arrow/blob/main/format/Flight.proto), containing
+// only what the Deephaven client needs to perform a raw DoGet.
+//
+// Why we have this: the Apache.Arrow.Flight C# library's stream reader only
+// understands RecordBatch messages, and throws NotImplementedException when the
+// server interleaves DictionaryBatch messages into a DoGet stream (as Deephaven
+// does for dictionary-encoded columns). By speaking the Flight wire protocol
+// directly, we get access to the raw FlightData messages and can reassemble
+// them into a standard Arrow IPC stream, which the (fully-featured)
+// Apache.Arrow ArrowStreamReader knows how to process.
+//
+// The package name must remain "arrow.flight.protocol" so that the generated
+// gRPC method paths (e.g. /arrow.flight.protocol.FlightService/DoGet) match
+// what the server expects. The message and field numbering matches Flight.proto
+// exactly; unused fields and messages are omitted (this is safe: protobuf
+// parsers skip unknown fields).
+
+syntax = "proto3";
+
+package arrow.flight.protocol;
+
+option csharp_namespace = "Deephaven.Dh_NetClient.ArrowFlightProtocol";
+
+service FlightService {
+  // Retrieve a single stream associated with a particular descriptor
+  // associated with the referenced ticket.
+  rpc DoGet(Ticket) returns (stream FlightData) {}
+}
+
+// An opaque identifier that the service can use to retrieve a particular
+// portion of a stream.
+message Ticket {
+  bytes ticket = 1;
+}
+
+// A batch of Arrow data as part of a stream of batches.
+message FlightData {
+  // The descriptor of the data. This is only relevant when a client is
+  // starting a new DoPut stream.
+  FlightDescriptor flight_descriptor = 1;
+
+  // Header for message data as described in Message.fbs::Message.
+  bytes data_header = 2;
+
+  // Application-defined metadata.
+  bytes app_metadata = 3;
+
+  // The actual batch of Arrow data.
+  bytes data_body = 1000;
+}
+
+// A name or tag by which a data stream can be requested.
+message FlightDescriptor {
+  enum DescriptorType {
+    UNKNOWN = 0;
+    PATH = 1;
+    CMD = 2;
+  }
+
+  DescriptorType type = 1;
+  bytes cmd = 2;
+  repeated string path = 3;
+}
