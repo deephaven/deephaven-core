@@ -84,7 +84,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
 
     @Test
     public void testThresholds() {
-        for (final int compactThreshold : new int[] {1, 4, 64, BLOCK_SIZE}) {
+        for (final int compactThreshold : new int[] {0, 1, 4, 64, BLOCK_SIZE}) {
             for (final int sortedThreshold : new int[] {1, 4, 16}) {
                 checkAgainstMap(new LongAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
@@ -142,7 +142,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
 
     @Test
     public void testPreviousValues() {
-        for (final int compactThreshold : new int[] {4, 64,
+        for (final int compactThreshold : new int[] {0, 4, 64,
                 LongAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
             for (final int sortedThreshold : new int[] {1, 16}) {
                 checkPreviousValues(new LongAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
@@ -183,7 +183,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
     @Test
     public void testParallelPopulation() throws Exception {
         for (final boolean aligned : new boolean[] {true, false}) {
-            for (final int compactThreshold : new int[] {4,
+            for (final int compactThreshold : new int[] {0, 4,
                     LongAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
                 checkParallelPopulation(new LongAdaptiveSparseArraySource(16, compactThreshold), aligned,
                         compactThreshold + (aligned ? 1 : 0));

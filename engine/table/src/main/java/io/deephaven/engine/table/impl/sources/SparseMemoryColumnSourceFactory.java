@@ -25,6 +25,9 @@ public final class SparseMemoryColumnSourceFactory {
     public static boolean USE_ADAPTIVE = Configuration.getInstance()
             .getBooleanWithDefault("SparseMemoryColumnSourceFactory.adaptive", false);
 
+    /** Whether the adaptive primitive sources keep every leaf a full block. */
+    public static boolean DENSE = false;
+
     private SparseMemoryColumnSourceFactory() {}
 
     /**
@@ -42,19 +45,26 @@ public final class SparseMemoryColumnSourceFactory {
         }
         final WritableColumnSource<?> result;
         if (type == byte.class || type == Byte.class) {
-            result = new ByteAdaptiveSparseArraySource();
+            result = new ByteAdaptiveSparseArraySource(ByteAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD,
+                    DENSE ? 0 : ByteAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD);
         } else if (type == char.class || type == Character.class) {
-            result = new CharacterAdaptiveSparseArraySource();
+            result = new CharacterAdaptiveSparseArraySource(CharacterAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD,
+                    DENSE ? 0 : CharacterAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD);
         } else if (type == double.class || type == Double.class) {
-            result = new DoubleAdaptiveSparseArraySource();
+            result = new DoubleAdaptiveSparseArraySource(DoubleAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD,
+                    DENSE ? 0 : DoubleAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD);
         } else if (type == float.class || type == Float.class) {
-            result = new FloatAdaptiveSparseArraySource();
+            result = new FloatAdaptiveSparseArraySource(FloatAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD,
+                    DENSE ? 0 : FloatAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD);
         } else if (type == int.class || type == Integer.class) {
-            result = new IntegerAdaptiveSparseArraySource();
+            result = new IntegerAdaptiveSparseArraySource(IntegerAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD,
+                    DENSE ? 0 : IntegerAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD);
         } else if (type == long.class || type == Long.class) {
-            result = new LongAdaptiveSparseArraySource();
+            result = new LongAdaptiveSparseArraySource(LongAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD,
+                    DENSE ? 0 : LongAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD);
         } else if (type == short.class || type == Short.class) {
-            result = new ShortAdaptiveSparseArraySource();
+            result = new ShortAdaptiveSparseArraySource(ShortAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD,
+                    DENSE ? 0 : ShortAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD);
         } else if (type == boolean.class || type == Boolean.class) {
             result = new BooleanAdaptiveSparseArraySource();
         } else if (type == Instant.class) {

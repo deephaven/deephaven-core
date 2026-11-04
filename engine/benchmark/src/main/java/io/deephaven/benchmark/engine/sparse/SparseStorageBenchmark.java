@@ -42,7 +42,7 @@ import static io.deephaven.benchmark.engine.sparse.SparseStorage.CHUNK_SIZE;
 public class SparseStorageBenchmark {
     private static final int RANDOM_READS = 1_000_000;
 
-    @Param({"Sparse", "Redirected", "Adaptive"})
+    @Param({"Sparse", "Redirected", "Adaptive", "AdaptiveDense"})
     private String storage;
 
     @Param({"Dense", "Stride8", "Stride64", "Stride512", "Runs64", "Random10", "Random1", "Clustered"})
@@ -153,6 +153,16 @@ public class SparseStorageBenchmark {
             sum += source.getDouble(key);
         }
         return sum;
+    }
+
+    @Benchmark
+    public WritableColumnSource<Double> randomSet() {
+        double value = 0;
+        for (final long key : randomKeys) {
+            source.set(key, value);
+            value += 1;
+        }
+        return source;
     }
 
     private double fillAndSum(final RowSet rows) {

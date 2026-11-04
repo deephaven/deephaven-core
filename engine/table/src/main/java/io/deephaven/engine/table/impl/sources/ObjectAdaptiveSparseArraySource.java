@@ -188,7 +188,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
 
     static int checkSortedThreshold(final int sortedThreshold, final int compactThreshold) {
         Require.inRange(compactThreshold, "compactThreshold", BLOCK_SIZE + 1, "BLOCK_SIZE + 1");
-        Require.gtZero(compactThreshold, "compactThreshold");
+        Require.geqZero(compactThreshold, "compactThreshold");
         Require.gtZero(sortedThreshold, "sortedThreshold");
         return sortedThreshold;
     }
@@ -859,13 +859,13 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
         final boolean isBlock = level2.getBlock(block2) != null;
         final boolean mayBeBlock = !isBlock && (compact == null ? 0 : compact.size()) + count > compactThreshold;
         // a leaf that becomes a block may still be a compact leaf in between, when its rows are written in pieces
-        level2.prepareIndex(block2, mayBeBlock, !isBlock);
+        level2.prepareIndex(block2, mayBeBlock, !isBlock && compactThreshold > 0);
         if (trackPrevious) {
             final Level2 prevLevel2 = ensurePrevLevel2(firstKey);
             final ObjectCompactLeaf recorded = prevLevel2.getCompact(block2);
             final boolean mayBeSnapshot = prevLevel2.getBlock(block2) == null
                     && (recorded == null ? 0 : recorded.size()) + count > compactThreshold;
-            prevLevel2.prepareIndex(block2, mayBeSnapshot, true);
+            prevLevel2.prepareIndex(block2, mayBeSnapshot, compactThreshold > 0);
         }
     }
 
@@ -1651,8 +1651,10 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
             final int block2 = block2(firstKey);
             Object[] block = level2.getBlock(block2);
             final ObjectCompactLeaf existing = block == null ? level2.getCompact(block2) : null;
-            // a new leaf of more values than a compact leaf holds becomes a full block, which needs no offsets
-            if (trackPrevious || (block == null && (existing != null || count <= compactThreshold))) {
+            // a new leaf of more values than a compact leaf holds becomes a full block, which needs no offsets, and
+            // previous values need them only when they may be recorded in a compact leaf
+            if ((trackPrevious && compactThreshold > 0)
+                    || (block == null && (existing != null || count <= compactThreshold))) {
                 leaves.offsets(offsets);
             }
             if (trackPrevious) {

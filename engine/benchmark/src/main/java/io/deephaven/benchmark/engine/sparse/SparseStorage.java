@@ -112,6 +112,8 @@ final class SparseStorage {
                 return new DoubleSparseArraySource();
             case "Adaptive":
                 return new DoubleAdaptiveSparseArraySource();
+            case "AdaptiveDense":
+                return new DoubleAdaptiveSparseArraySource(DoubleAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD, 0);
             case "Redirected": {
                 final DoubleArraySource dense = new DoubleArraySource();
                 dense.ensureCapacity(expectedSize);

@@ -108,8 +108,9 @@ public class SparseUpdateBenchmark {
         }
     }
 
-    @Param({"false", "true"})
-    private boolean adaptive;
+    /** Sparse array sources, adaptive sparse sources, or adaptive sparse sources whose leaves are all full blocks. */
+    @Param({"Sparse", "Adaptive", "AdaptiveDense"})
+    private String storage;
 
     @Param({"Dense", "Stride8", "Stride64", "Stride512", "Random1", "Clustered"})
     private String pattern;
@@ -140,7 +141,8 @@ public class SparseUpdateBenchmark {
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
 
-        SparseMemoryColumnSourceFactory.USE_ADAPTIVE = adaptive;
+        SparseMemoryColumnSourceFactory.USE_ADAPTIVE = !storage.equals("Sparse");
+        SparseMemoryColumnSourceFactory.DENSE = storage.equals("AdaptiveDense");
         final boolean parallel = threads.equals("parallel");
         setQueryTableFlag("ENABLE_PARALLEL_SELECT_AND_UPDATE", parallel);
         // divide a cycle's rows between several jobs
@@ -155,14 +157,14 @@ public class SparseUpdateBenchmark {
         result = locked(() -> parent.update(FORMULA));
         windowStart = 0;
         modifyStart = 0;
-        System.out.println("\nadaptive=" + adaptive + ", pattern=" + pattern + ", threads=" + threads + ", rows="
+        System.out.println("\nstorage=" + storage + ", pattern=" + pattern + ", threads=" + threads + ", rows="
                 + result.size() + ", X=" + result.getColumnSource("X").getClass().getSimpleName()
                 + ", estimateSize=" + estimateSize());
     }
 
     @TearDown(Level.Trial)
     public void tearDownTrial() {
-        System.out.println("\nadaptive=" + adaptive + ", pattern=" + pattern + ", threads=" + threads + ", rows="
+        System.out.println("\nstorage=" + storage + ", pattern=" + pattern + ", threads=" + threads + ", rows="
                 + result.size() + ", estimateSize=" + estimateSize());
     }
 
