@@ -8,10 +8,13 @@
 package io.deephaven.engine.table.impl.sources.sparse;
 
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import java.util.Arrays;
 
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.INDEX_MASK;
 
 /**
  * A {@link ObjectCompactLeaf} for a few values: the offsets that hold a value in ascending order, and their values at the
@@ -335,6 +338,43 @@ public final class ObjectSortedLeaf extends ObjectCompactLeaf {
                 dest.set(di, values[index++]);
             } else {
                 dest.set(di, null);
+            }
+        }
+    }
+
+    @Override
+    public void fillKeys(
+            final LongChunk<? extends RowKeys> keys,
+            final int start,
+            final int end,
+            final WritableObjectChunk<Object, ?> dest,
+            final int destOffset) {
+        // the offsets ascend, so the index of each is at or after the index of the one before
+        int index = lowerBound((int) (keys.get(start) & INDEX_MASK));
+        for (int ii = start, di = destOffset; ii < end; ++ii, ++di) {
+            final int offset = (int) (keys.get(ii) & INDEX_MASK);
+            while (index < size && offsetAt(index) < offset) {
+                ++index;
+            }
+            dest.set(di, index < size && offsetAt(index) == offset ? values[index] : null);
+        }
+    }
+
+    @Override
+    public void overlayKeys(
+            final LongChunk<? extends RowKeys> keys,
+            final int start,
+            final int end,
+            final WritableObjectChunk<Object, ?> dest,
+            final int destOffset) {
+        int index = lowerBound((int) (keys.get(start) & INDEX_MASK));
+        for (int ii = start, di = destOffset; ii < end && index < size; ++ii, ++di) {
+            final int offset = (int) (keys.get(ii) & INDEX_MASK);
+            while (index < size && offsetAt(index) < offset) {
+                ++index;
+            }
+            if (index < size && offsetAt(index) == offset) {
+                dest.set(di, values[index]);
             }
         }
     }

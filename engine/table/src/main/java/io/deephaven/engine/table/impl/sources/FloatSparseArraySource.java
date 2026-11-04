@@ -1447,6 +1447,33 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
         }
 
         /**
+         * Fill {@code chunk} at the positions of {@code keys[start, end)}, row keys within the current leaf in
+         * ascending order, with their values.
+         */
+        private void fillKeys(
+                final WritableFloatChunk<? super Values> chunk,
+                final LongChunk<OrderedRowKeys> keys,
+                final int start,
+                final int end) {
+            final float[] values = prevSnapshot != null ? prevSnapshot : block;
+            if (values != null) {
+                for (int ii = start; ii < end; ++ii) {
+                    chunk.set(ii, values[(int) (keys.get(ii) & INDEX_MASK)]);
+                }
+                if (prevSnapshot != null) {
+                    return;
+                }
+            } else if (compact != null) {
+                compact.fillKeys(keys, start, end, chunk, start);
+            } else {
+                chunk.fillWithNullValue(start, end - start);
+            }
+            if (prevRecorded != null) {
+                prevRecorded.overlayKeys(keys, start, end, chunk, start);
+            }
+        }
+
+        /**
          * Fill {@code chunk} at {@link #destOffset} with the values of offsets {@code firstOffset} through
          * {@code firstOffset + length - 1}.
          */
@@ -1522,27 +1549,30 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
         chunk.setSize(state.destOffset);
     }
 
+    /**
+     * Fill {@code chunk} with the values of {@code rowSequence}, a leaf at a time: each run of row keys within one leaf
+     * is read in one pass over the leaf.
+     */
     private void fillByKeys(
             final WritableFloatChunk<? super Values> chunk,
             final RowSequence rowSequence,
             final Level0 prevRoot) {
         final FillState state = new FillState(prevRoot);
-        if (prevRoot == null) {
-            rowSequence.forAllRowKeys((final long key) -> {
-                if (key > state.maxKeyInCurrentLeaf) {
-                    state.readLeaf(this, key);
-                }
-                chunk.set(state.destOffset++, state.get((int) (key & INDEX_MASK)));
-            });
-        } else {
-            rowSequence.forAllRowKeys((final long key) -> {
-                if (key > state.maxKeyInCurrentLeaf) {
-                    state.readLeaf(this, key);
-                }
-                chunk.set(state.destOffset++, state.getPrev((int) (key & INDEX_MASK)));
-            });
+        final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
+        final int size = keys.size();
+        int start = 0;
+        while (start < size) {
+            final long firstKey = keys.get(start);
+            state.readLeaf(this, firstKey);
+            final long lastKeyInLeaf = firstKey | INDEX_MASK;
+            int end = start + 1;
+            while (end < size && keys.get(end) <= lastKeyInLeaf) {
+                ++end;
+            }
+            state.fillKeys(chunk, keys, start, end);
+            start = end;
         }
-        chunk.setSize(state.destOffset);
+        chunk.setSize(size);
     }
 
     // region getChunk

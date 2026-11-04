@@ -8,10 +8,13 @@
 package io.deephaven.engine.table.impl.sources.sparse;
 
 import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import java.util.Arrays;
 
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.INDEX_MASK;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 /**
@@ -334,6 +337,43 @@ public final class ByteSortedLeaf extends ByteCompactLeaf {
                 dest.set(di, values[index++]);
             } else {
                 dest.set(di, NULL_BYTE);
+            }
+        }
+    }
+
+    @Override
+    public void fillKeys(
+            final LongChunk<? extends RowKeys> keys,
+            final int start,
+            final int end,
+            final WritableByteChunk<?> dest,
+            final int destOffset) {
+        // the offsets ascend, so the index of each is at or after the index of the one before
+        int index = lowerBound((int) (keys.get(start) & INDEX_MASK));
+        for (int ii = start, di = destOffset; ii < end; ++ii, ++di) {
+            final int offset = (int) (keys.get(ii) & INDEX_MASK);
+            while (index < size && offsetAt(index) < offset) {
+                ++index;
+            }
+            dest.set(di, index < size && offsetAt(index) == offset ? values[index] : NULL_BYTE);
+        }
+    }
+
+    @Override
+    public void overlayKeys(
+            final LongChunk<? extends RowKeys> keys,
+            final int start,
+            final int end,
+            final WritableByteChunk<?> dest,
+            final int destOffset) {
+        int index = lowerBound((int) (keys.get(start) & INDEX_MASK));
+        for (int ii = start, di = destOffset; ii < end && index < size; ++ii, ++di) {
+            final int offset = (int) (keys.get(ii) & INDEX_MASK);
+            while (index < size && offsetAt(index) < offset) {
+                ++index;
+            }
+            if (index < size && offsetAt(index) == offset) {
+                dest.set(di, values[index]);
             }
         }
     }

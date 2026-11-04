@@ -8,11 +8,14 @@
 package io.deephaven.engine.table.impl.sources.sparse;
 
 import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import java.util.Arrays;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.INDEX_MASK;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
@@ -287,6 +290,41 @@ public final class IntBitmapLeaf extends IntCompactLeaf {
                 dest.set(di, values[index++]);
             } else {
                 dest.set(di, NULL_INT);
+            }
+        }
+    }
+
+    @Override
+    public void fillKeys(
+            final LongChunk<? extends RowKeys> keys,
+            final int start,
+            final int end,
+            final WritableIntChunk<?> dest,
+            final int destOffset) {
+        for (int ii = start, di = destOffset; ii < end; ++ii, ++di) {
+            final int offset = (int) (keys.get(ii) & INDEX_MASK);
+            final int word = offset >>> 6;
+            final long wordBits = bits[word];
+            final long bit = 1L << offset;
+            dest.set(di, (wordBits & bit) == 0 ? NULL_INT
+                    : values[rankBefore[word] + Long.bitCount(wordBits & (bit - 1))]);
+        }
+    }
+
+    @Override
+    public void overlayKeys(
+            final LongChunk<? extends RowKeys> keys,
+            final int start,
+            final int end,
+            final WritableIntChunk<?> dest,
+            final int destOffset) {
+        for (int ii = start, di = destOffset; ii < end; ++ii, ++di) {
+            final int offset = (int) (keys.get(ii) & INDEX_MASK);
+            final int word = offset >>> 6;
+            final long wordBits = bits[word];
+            final long bit = 1L << offset;
+            if ((wordBits & bit) != 0) {
+                dest.set(di, values[rankBefore[word] + Long.bitCount(wordBits & (bit - 1))]);
             }
         }
     }

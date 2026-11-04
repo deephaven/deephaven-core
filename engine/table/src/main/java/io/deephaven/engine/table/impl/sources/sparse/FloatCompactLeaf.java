@@ -8,7 +8,9 @@
 package io.deephaven.engine.table.impl.sources.sparse;
 
 import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableFloatChunk;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 /**
  * A leaf of a {@link io.deephaven.engine.table.impl.sources.FloatSparseArraySource} that holds fewer values than a
@@ -105,6 +107,21 @@ public abstract class FloatCompactLeaf {
      * {@code lastOffset} inclusive.
      */
     public abstract void fillRange(int firstOffset, int lastOffset, WritableFloatChunk<?> dest, int destOffset);
+
+    /**
+     * Fill {@code dest}, from {@code destOffset}, with the values for the offsets of {@code keys[start, end)}, row keys
+     * within this leaf in ascending order; an offset without a value reads as null. The keys are visited in one pass
+     * over the leaf.
+     */
+    public abstract void fillKeys(LongChunk<? extends RowKeys> keys, int start, int end, WritableFloatChunk<?> dest,
+            int destOffset);
+
+    /**
+     * Write the value for the offset of each of {@code keys[start, end)}, row keys within this leaf in ascending order,
+     * that holds a value into {@code dest}, from {@code destOffset}, leaving the other entries of {@code dest} unchanged.
+     */
+    public abstract void overlayKeys(LongChunk<? extends RowKeys> keys, int start, int end, WritableFloatChunk<?> dest,
+            int destOffset);
 
     /**
      * @return an estimate of the bytes this leaf occupies

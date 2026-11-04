@@ -8,11 +8,14 @@
 package io.deephaven.engine.table.impl.sources.sparse;
 
 import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import java.util.Arrays;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.INDEX_MASK;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 /**
@@ -287,6 +290,41 @@ public final class DoubleBitmapLeaf extends DoubleCompactLeaf {
                 dest.set(di, values[index++]);
             } else {
                 dest.set(di, NULL_DOUBLE);
+            }
+        }
+    }
+
+    @Override
+    public void fillKeys(
+            final LongChunk<? extends RowKeys> keys,
+            final int start,
+            final int end,
+            final WritableDoubleChunk<?> dest,
+            final int destOffset) {
+        for (int ii = start, di = destOffset; ii < end; ++ii, ++di) {
+            final int offset = (int) (keys.get(ii) & INDEX_MASK);
+            final int word = offset >>> 6;
+            final long wordBits = bits[word];
+            final long bit = 1L << offset;
+            dest.set(di, (wordBits & bit) == 0 ? NULL_DOUBLE
+                    : values[rankBefore[word] + Long.bitCount(wordBits & (bit - 1))]);
+        }
+    }
+
+    @Override
+    public void overlayKeys(
+            final LongChunk<? extends RowKeys> keys,
+            final int start,
+            final int end,
+            final WritableDoubleChunk<?> dest,
+            final int destOffset) {
+        for (int ii = start, di = destOffset; ii < end; ++ii, ++di) {
+            final int offset = (int) (keys.get(ii) & INDEX_MASK);
+            final int word = offset >>> 6;
+            final long wordBits = bits[word];
+            final long bit = 1L << offset;
+            if ((wordBits & bit) != 0) {
+                dest.set(di, values[rankBefore[word] + Long.bitCount(wordBits & (bit - 1))]);
             }
         }
     }
