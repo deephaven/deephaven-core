@@ -259,6 +259,26 @@ public final class ByteSortedLeaf extends ByteCompactLeaf {
     }
 
     @Override
+    public void removeRange(final int firstOffset, final int lastOffset) {
+        final int start = lowerBound(firstOffset);
+        final int end = lowerBound(lastOffset + 1);
+        final int removed = end - start;
+        if (removed == 0) {
+            return;
+        }
+        final int newSize = size - removed;
+        for (int ii = start; ii < newSize; ++ii) {
+            setOffset(ii, offsetAt(ii + removed));
+        }
+        for (int ii = newSize; ii < size; ++ii) {
+            setOffset(ii, PAST_BLOCK);
+        }
+        System.arraycopy(values, end, values, start, size - end);
+        Arrays.fill(values, newSize, size, NULL_BYTE);
+        size = newSize;
+    }
+
+    @Override
     public void copyTo(final byte[] block) {
         for (int ii = 0; ii < size; ++ii) {
             block[offsetAt(ii)] = values[ii];

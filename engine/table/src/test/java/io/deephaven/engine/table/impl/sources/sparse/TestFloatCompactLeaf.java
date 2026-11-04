@@ -67,7 +67,9 @@ public class TestFloatCompactLeaf {
                     }
                     case 1: {
                         final int first = random.nextInt(offsetRange);
-                        final int last = Math.min(offsetRange - 1, first + random.nextInt(8));
+                        // mostly short ranges, and sometimes ranges across several bitmap words or the whole leaf
+                        final int length = random.nextInt(4) == 0 ? random.nextInt(offsetRange) : random.nextInt(8);
+                        final int last = Math.min(offsetRange - 1, first + length);
                         leaf.removeRange(first, last);
                         Arrays.fill(expected, first, last + 1, NULL_FLOAT);
                         Arrays.fill(present, first, last + 1, false);

@@ -203,6 +203,26 @@ public final class ByteBitmapLeaf extends ByteCompactLeaf {
     }
 
     @Override
+    public void removeRange(final int firstOffset, final int lastOffset) {
+        final int start = rank(firstOffset);
+        final int lastWord = lastOffset >>> 6;
+        int removed = 0;
+        for (int wi = firstOffset >>> 6; wi <= lastWord; ++wi) {
+            rankBefore[wi] -= removed;
+            final long cleared = bits[wi] & rangeMask(wi, firstOffset, lastOffset);
+            removed += Long.bitCount(cleared);
+            bits[wi] &= ~cleared;
+        }
+        if (removed == 0) {
+            return;
+        }
+        adjustRanksAfter(lastWord, -removed);
+        System.arraycopy(values, start + removed, values, start, size - start - removed);
+        Arrays.fill(values, size - removed, size, NULL_BYTE);
+        size -= removed;
+    }
+
+    @Override
     public void copyTo(final byte[] block) {
         int index = 0;
         for (int wi = 0; wi < WORDS; ++wi) {
