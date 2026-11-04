@@ -35,8 +35,12 @@ yet been picked:
 ```bash
 git fetch upstream --tags
 git fetch upstream main
-git fetch upstream 'refs/heads/rc/*:refs/remotes/upstream/rc/*'
+git fetch upstream --prune 'refs/heads/rc/*:refs/remotes/upstream/rc/*'
 ```
+
+The `--prune` on the RC fetch removes local remote-tracking refs for RC branches that have been
+deleted upstream. Without it, a previously fetched `upstream/rc/vNN.x` remains selectable after
+the branch is deleted, causing the skill to classify changes against a nonexistent RC.
 
 If `upstream` is not configured or the fetch fails, stop and tell the user — an outdated local
 checkout can produce an empty or incomplete report.
@@ -125,10 +129,18 @@ For each remaining commit (after filtering out already-shipped cherry-picks), de
 it has been cherry-picked onto the RC branch. Cherry-picks produce different SHAs, so compare
 by patch content (first-parent diff), not by SHA:
 
-- **RC-confirmed**: the commit's first-parent diff matches a commit on the RC branch. This
-  change is confirmed for the next release.
+- **RC-confirmed**: the commit's first-parent diff matches a commit on the RC branch **and**
+  the change is still effective at the RC tip (see verification below). This change is confirmed
+  for the next release.
 - **Main-only**: the commit's first-parent diff has no match on the RC branch. This change is
   on `upstream/main` but has not been picked for the next release and may be held back.
+
+**Verify the change is still effective at the RC tip.** A matching patch alone does not prove
+the feature will ship — if the cherry-pick was subsequently reverted on the RC branch, the
+original patch still matches but the change is no longer present. For each RC-confirmed commit,
+check whether the files it touched still contain its changes at the RC branch tip (e.g., compare
+`git show upstream/rc/vNN.x:<file>` against the expected state). If the change has been reverted
+or superseded on RC, reclassify it as main-only and note the revert.
 
 This classification carries through to the report — every documentation item is tagged as
 RC-confirmed or main-only so the reader knows which items are urgent (shipping soon) vs which
@@ -251,9 +263,23 @@ Also check if any `docs:` commits in the same release window already documented 
 A `feat:` commit followed by a `docs:` commit covering the same feature can be marked as
 already handled.
 
+**For RC-confirmed items, also check documentation coverage on the RC branch.** Documentation
+on `upstream/main` may not have been cherry-picked onto the RC branch alongside the code change.
+Since release documentation is published separately per branch, an RC-confirmed feature whose
+docs exist only on `upstream/main` still has a documentation gap for the release. For each
+RC-confirmed item, check whether its documentation is also present on the RC branch:
+
+```bash
+git grep -l "featureName" upstream/rc/vNN.x -- 'docs/**/*.md'
+```
+
+If documentation exists on `upstream/main` but not on the RC branch, report it as needing a
+documentation cherry-pick to the RC branch as outstanding work.
+
 Classify each item:
 - **Already documented** — a `docs:` commit in this release window covers it, or existing docs
-  on `upstream/main` already describe the new behavior accurately.
+  on `upstream/main` already describe the new behavior accurately. For RC-confirmed items, the
+  documentation must also be present on the RC branch.
 - **Needs a new page** — entirely new feature or concept with no existing coverage.
 - **Needs updates to existing pages** — changed behavior, new parameters, new options on an
   existing feature.
