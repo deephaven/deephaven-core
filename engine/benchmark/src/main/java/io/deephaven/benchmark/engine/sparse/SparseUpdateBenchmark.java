@@ -60,8 +60,8 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * <li>{@link #initialUpdate()}: computing the result of the whole parent</li>
  * <li>{@link #marchCycle()}: a cycle that removes the parent's lowest {@code 2^logCycleKeys} row keys and adds as many
  * beyond its highest, so that the result fills new leaves and releases old ones</li>
- * <li>{@link #modifyCycle()}: a cycle that modifies every parent row within {@code 2^logCycleKeys} row keys, so that
- * the result records previous values for them</li>
+ * <li>{@link #modifyCycle()}: a cycle that reports every parent row within {@code 2^logCycleKeys} row keys as modified,
+ * so that the result recomputes them and records their previous values</li>
  * </ul>
  * The parent's value column is computed from the row key, so the measured work is the result's. The retained size that
  * {@link SparseArrayColumnSource#estimateSize()} reports for the result column is printed at the end of each trial.
@@ -76,25 +76,22 @@ public class SparseUpdateBenchmark {
     private static final String FORMULA = "X = V * 2.0";
 
     /**
-     * A long column whose value at a row key is {@code rowKey + offset}; incrementing the offset changes every value.
+     * A long column whose value at a row key is the row key.
      */
     private static final class ComputedSource extends AbstractColumnSource<Long>
             implements MutableColumnSourceGetDefaults.ForLong {
-        private long offset;
-        private long prevOffset;
-
         private ComputedSource() {
             super(long.class);
         }
 
         @Override
         public long getLong(final long rowKey) {
-            return rowKey + offset;
+            return rowKey;
         }
 
         @Override
         public long getPrevLong(final long rowKey) {
-            return rowKey + prevOffset;
+            return rowKey;
         }
 
         @Override
@@ -126,7 +123,6 @@ public class SparseUpdateBenchmark {
 
     private ControlledUpdateGraph updateGraph;
     private QueryTable parent;
-    private ComputedSource values;
     private ModifiedColumnSet valuesModified;
     private Table result;
     private long windowStart;
@@ -149,8 +145,7 @@ public class SparseUpdateBenchmark {
 
         window = 1L << logWindow;
         cycleKeys = 1L << logCycleKeys;
-        values = new ComputedSource();
-        parent = new QueryTable(keys(pattern, 0, window).toTracking(), Map.of("V", values));
+        parent = new QueryTable(keys(pattern, 0, window).toTracking(), Map.of("V", new ComputedSource()));
         parent.setRefreshing(true);
         valuesModified = parent.newModifiedColumnSet("V");
         result = locked(() -> parent.update(FORMULA));
@@ -199,13 +194,10 @@ public class SparseUpdateBenchmark {
     public Table modifyCycle() {
         final long first = windowStart + modifyStart;
         updateGraph.runWithinUnitTestCycle(() -> {
-            values.prevOffset = values.offset;
-            ++values.offset;
             final RowSet modified = keys(pattern, first, first + cycleKeys);
             parent.notifyListeners(new TableUpdateImpl(RowSetFactory.empty(), RowSetFactory.empty(), modified,
                     RowSetShiftData.EMPTY, valuesModified));
         });
-        values.prevOffset = values.offset;
         modifyStart = (modifyStart + cycleKeys) % window;
         return result;
     }
