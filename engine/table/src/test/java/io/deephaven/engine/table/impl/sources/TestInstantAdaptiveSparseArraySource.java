@@ -59,6 +59,14 @@ public class TestInstantAdaptiveSparseArraySource {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
+    /**
+     * @return a source over a long source with the default thresholds, whose leaves may be compact
+     */
+    private static InstantSparseArraySource newSource() {
+        return new InstantSparseArraySource(new LongSparseArraySource(LongSparseArraySource.DEFAULT_SORTED_THRESHOLD,
+                LongSparseArraySource.DEFAULT_COMPACT_THRESHOLD));
+    }
+
     private static Instant randomInstant(final Random random) {
         return random.nextInt(10) == 0 ? null : DateTimeUtils.epochNanosToInstant(random.nextLong() >>> 2);
     }
@@ -80,7 +88,7 @@ public class TestInstantAdaptiveSparseArraySource {
     @Test
     public void testFills() {
         final Random random = new Random(0);
-        final InstantSparseArraySource source = new InstantSparseArraySource();
+        final InstantSparseArraySource source = newSource();
         final Map<Long, Instant> expected = new HashMap<>();
         for (int step = 0; step < 50; ++step) {
             if (random.nextBoolean()) {
@@ -149,7 +157,7 @@ public class TestInstantAdaptiveSparseArraySource {
 
     @Test
     public void testPreviousValues() {
-        final InstantSparseArraySource source = new InstantSparseArraySource();
+        final InstantSparseArraySource source = newSource();
         final Instant first = DateTimeUtils.epochNanosToInstant(1000);
         final Instant second = DateTimeUtils.epochNanosToInstant(2000);
         source.set(7, first);
@@ -183,7 +191,7 @@ public class TestInstantAdaptiveSparseArraySource {
 
     @Test
     public void testReinterpret() {
-        final InstantSparseArraySource source = new InstantSparseArraySource();
+        final InstantSparseArraySource source = newSource();
         source.set(3, DateTimeUtils.epochNanosToInstant(12345));
         final ColumnSource<Long> nanos = source.reinterpret(long.class);
         assertTrue(nanos instanceof LongSparseArraySource);
@@ -210,7 +218,7 @@ public class TestInstantAdaptiveSparseArraySource {
      * the current and previous values. Aligned divisions are whole leaves; others end anywhere.
      */
     private static void checkParallelPopulation(final boolean aligned) throws Exception {
-        final InstantSparseArraySource source = new InstantSparseArraySource();
+        final InstantSparseArraySource source = newSource();
         assertEquals(BLOCK_SIZE, source.parallelPopulationAlignment());
         final Random random = new Random(aligned ? 1 : 0);
         final Map<Long, Instant> expected = new HashMap<>();
@@ -289,7 +297,7 @@ public class TestInstantAdaptiveSparseArraySource {
 
     @Test
     public void testStructure() {
-        final InstantSparseArraySource source = new InstantSparseArraySource();
+        final InstantSparseArraySource source = newSource();
         final LongSparseArraySource nanos = (LongSparseArraySource) source.toEpochNano();
         assertEquals(0, nanos.estimateSize());
         source.ensureCapacity(4L * BLOCK_SIZE, true);

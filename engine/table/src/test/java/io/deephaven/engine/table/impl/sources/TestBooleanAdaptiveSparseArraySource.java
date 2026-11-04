@@ -46,10 +46,14 @@ import static org.junit.Assert.assertTrue;
 public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnSourceTest {
     private static final int KEY_RANGE = 8 * BLOCK_SIZE;
 
+    /**
+     * @return a source over a byte source with the default thresholds, whose leaves may be compact
+     */
     @NotNull
     @Override
     BooleanSparseArraySource makeTestSource() {
-        return new BooleanSparseArraySource();
+        return new BooleanSparseArraySource(new ByteSparseArraySource(ByteSparseArraySource.DEFAULT_SORTED_THRESHOLD,
+                ByteSparseArraySource.DEFAULT_COMPACT_THRESHOLD));
     }
 
     private static Boolean randomBoolean(final Random random) {

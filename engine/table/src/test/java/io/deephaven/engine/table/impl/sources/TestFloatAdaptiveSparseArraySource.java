@@ -48,11 +48,16 @@ public class TestFloatAdaptiveSparseArraySource extends AbstractFloatColumnSourc
     /** Row keys near zero, spread over many leaves, and far away, so that each page table level holds many nodes. */
     private static final long[] KEY_REGION_STARTS = {0, 1L << 26, 1L << 41};
     private static final int KEY_REGION_SIZE = 40 * BLOCK_SIZE;
+    private static final int SORTED_THRESHOLD = FloatSparseArraySource.DEFAULT_SORTED_THRESHOLD;
+    private static final int COMPACT_THRESHOLD = FloatSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
 
+    /**
+     * @return a source with the default thresholds, whose leaves may be compact
+     */
     @NotNull
     @Override
     FloatSparseArraySource makeTestSource() {
-        return new FloatSparseArraySource();
+        return new FloatSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
     }
 
     @Test
@@ -268,7 +273,7 @@ public class TestFloatAdaptiveSparseArraySource extends AbstractFloatColumnSourc
         try {
             for (int trial = 0; trial < 200; ++trial) {
                 final Random random = new Random(trial);
-                final FloatSparseArraySource source = new FloatSparseArraySource();
+                final FloatSparseArraySource source = makeTestSource();
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 for (int leaf = 0; leaf < threads * leavesPerThread; ++leaf) {
                     builder.appendRange((long) leaf * BLOCK_SIZE, (long) leaf * BLOCK_SIZE + rowsPerLeaf - 1);

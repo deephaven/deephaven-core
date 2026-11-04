@@ -44,11 +44,16 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
     /** Row keys near zero, spread over many leaves, and far away, so that each page table level holds many nodes. */
     private static final long[] KEY_REGION_STARTS = {0, 1L << 26, 1L << 41};
     private static final int KEY_REGION_SIZE = 40 * BLOCK_SIZE;
+    private static final int SORTED_THRESHOLD = CharacterSparseArraySource.DEFAULT_SORTED_THRESHOLD;
+    private static final int COMPACT_THRESHOLD = CharacterSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
 
+    /**
+     * @return a source with the default thresholds, whose leaves may be compact
+     */
     @NotNull
     @Override
     CharacterSparseArraySource makeTestSource() {
-        return new CharacterSparseArraySource();
+        return new CharacterSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
     }
 
     @Test
@@ -264,7 +269,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
         try {
             for (int trial = 0; trial < 200; ++trial) {
                 final Random random = new Random(trial);
-                final CharacterSparseArraySource source = new CharacterSparseArraySource();
+                final CharacterSparseArraySource source = makeTestSource();
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 for (int leaf = 0; leaf < threads * leavesPerThread; ++leaf) {
                     builder.appendRange((long) leaf * BLOCK_SIZE, (long) leaf * BLOCK_SIZE + rowsPerLeaf - 1);

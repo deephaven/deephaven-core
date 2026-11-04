@@ -48,11 +48,16 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
     /** Row keys near zero, spread over many leaves, and far away, so that each page table level holds many nodes. */
     private static final long[] KEY_REGION_STARTS = {0, 1L << 26, 1L << 41};
     private static final int KEY_REGION_SIZE = 40 * BLOCK_SIZE;
+    private static final int SORTED_THRESHOLD = ByteSparseArraySource.DEFAULT_SORTED_THRESHOLD;
+    private static final int COMPACT_THRESHOLD = ByteSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
 
+    /**
+     * @return a source with the default thresholds, whose leaves may be compact
+     */
     @NotNull
     @Override
     ByteSparseArraySource makeTestSource() {
-        return new ByteSparseArraySource();
+        return new ByteSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
     }
 
     @Test
@@ -268,7 +273,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
         try {
             for (int trial = 0; trial < 200; ++trial) {
                 final Random random = new Random(trial);
-                final ByteSparseArraySource source = new ByteSparseArraySource();
+                final ByteSparseArraySource source = makeTestSource();
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 for (int leaf = 0; leaf < threads * leavesPerThread; ++leaf) {
                     builder.appendRange((long) leaf * BLOCK_SIZE, (long) leaf * BLOCK_SIZE + rowsPerLeaf - 1);

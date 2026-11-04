@@ -48,11 +48,16 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
     /** Row keys near zero, spread over many leaves, and far away, so that each page table level holds many nodes. */
     private static final long[] KEY_REGION_STARTS = {0, 1L << 26, 1L << 41};
     private static final int KEY_REGION_SIZE = 40 * BLOCK_SIZE;
+    private static final int SORTED_THRESHOLD = IntegerSparseArraySource.DEFAULT_SORTED_THRESHOLD;
+    private static final int COMPACT_THRESHOLD = IntegerSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
 
+    /**
+     * @return a source with the default thresholds, whose leaves may be compact
+     */
     @NotNull
     @Override
     IntegerSparseArraySource makeTestSource() {
-        return new IntegerSparseArraySource();
+        return new IntegerSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
     }
 
     @Test
@@ -268,7 +273,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
         try {
             for (int trial = 0; trial < 200; ++trial) {
                 final Random random = new Random(trial);
-                final IntegerSparseArraySource source = new IntegerSparseArraySource();
+                final IntegerSparseArraySource source = makeTestSource();
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 for (int leaf = 0; leaf < threads * leavesPerThread; ++leaf) {
                     builder.appendRange((long) leaf * BLOCK_SIZE, (long) leaf * BLOCK_SIZE + rowsPerLeaf - 1);
