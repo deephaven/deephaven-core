@@ -389,13 +389,13 @@ public class RollingGroupOperator extends UpdateByOperator {
     // endregion Shifts
 
     @Override
-    protected void collectSparseSources(@NotNull final Consumer<SparseBlockColumnSource> consumer) {
+    protected void collectSparseSources(@NotNull final Consumer<SparseArrayColumnSource<?>> consumer) {
         super.collectSparseSources(consumer);
         if (rowRedirection == null) {
-            consumer.accept((SparseBlockColumnSource) groupRowSetSource);
+            consumer.accept((SparseArrayColumnSource<?>) groupRowSetSource);
             if (timestampColumnName != null) {
-                consumer.accept((SparseBlockColumnSource) startSource);
-                consumer.accept((SparseBlockColumnSource) endSource);
+                consumer.accept((SparseArrayColumnSource<?>) startSource);
+                consumer.accept((SparseArrayColumnSource<?>) endSource);
             }
         }
     }

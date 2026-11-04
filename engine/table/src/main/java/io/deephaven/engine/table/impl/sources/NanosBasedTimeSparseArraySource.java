@@ -6,7 +6,10 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -53,6 +56,16 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
     @Override
     public void prepareForParallelPopulation(final RowSequence rowSequence) {
         nanoSource.prepareForParallelPopulation(rowSequence);
+    }
+
+    @Override
+    public int parallelPopulationAlignment() {
+        return nanoSource.parallelPopulationAlignment();
+    }
+
+    @Override
+    public void prepareForParallelPopulation(final RowSequence rowSequence, final boolean alignedDivisions) {
+        nanoSource.prepareForParallelPopulation(rowSequence, alignedDivisions);
     }
 
     // region Getters & Setters
@@ -112,27 +125,55 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
         nanoSource.setImmutable();
     }
 
+    @Override
+    public boolean isImmutable() {
+        return nanoSource.isImmutable();
+    }
+
     // endregion
 
     // region Chunking
+    private class ToTimeFillContext implements FillContext {
+        private final GetContext nanoGetContext;
+        private final FillContext nanoFillContext;
+        private final WritableLongChunk<Values> nanoChunk;
+
+        private ToTimeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+            nanoGetContext = nanoSource.makeGetContext(chunkCapacity, sharedContext);
+            nanoFillContext = nanoSource.makeFillContext(chunkCapacity, sharedContext);
+            nanoChunk = WritableLongChunk.makeWritableChunk(chunkCapacity);
+        }
+
+        @Override
+        public void close() {
+            nanoGetContext.close();
+            nanoFillContext.close();
+            nanoChunk.close();
+        }
+    }
+
     @Override
     public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return nanoSource.makeFillContext(chunkCapacity, sharedContext);
+        return new ToTimeFillContext(chunkCapacity, sharedContext);
     }
 
     @Override
     public void fillChunk(
-            @NotNull FillContext context,
-            @NotNull WritableChunk<? super Values> destination,
-            @NotNull RowSequence rowSequence) {
-        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            nanoSource.fillByKeys(destination, rowSequence, this::makeValue);
-        } else {
-            nanoSource.fillByRanges(destination, rowSequence, this::makeValue);
-        }
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
+        final ToTimeFillContext fillContext = (ToTimeFillContext) context;
+        convertToTime(destination, nanoSource.getChunk(fillContext.nanoGetContext, rowSequence));
     }
 
-    // TODO (https://github.com/deephaven/deephaven-core/issues/4224): Override fillPrevChunk when suitable
+    @Override
+    public void fillPrevChunk(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
+        final ToTimeFillContext fillContext = (ToTimeFillContext) context;
+        convertToTime(destination, nanoSource.getPrevChunk(fillContext.nanoGetContext, rowSequence));
+    }
 
     @Override
     public boolean providesFillUnordered() {
@@ -143,44 +184,87 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
     public void fillChunkUnordered(
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends RowKeys> keys) {
-        nanoSource.fillByUnRowSequence(dest, keys, this::makeValue);
+            @NotNull final LongChunk<? extends RowKeys> keys) {
+        final ToTimeFillContext fillContext = (ToTimeFillContext) context;
+        fillContext.nanoChunk.setSize(keys.size());
+        nanoSource.fillChunkUnordered(fillContext.nanoFillContext, fillContext.nanoChunk, keys);
+        convertToTime(dest, fillContext.nanoChunk);
     }
 
     @Override
     public void fillPrevChunkUnordered(
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends RowKeys> keys) {
-        nanoSource.fillPrevByUnRowSequence(dest, keys, this::makeValue);
+            @NotNull final LongChunk<? extends RowKeys> keys) {
+        final ToTimeFillContext fillContext = (ToTimeFillContext) context;
+        fillContext.nanoChunk.setSize(keys.size());
+        nanoSource.fillPrevChunkUnordered(fillContext.nanoFillContext, fillContext.nanoChunk, keys);
+        convertToTime(dest, fillContext.nanoChunk);
     }
 
-    @Override
-    public FillFromContext makeFillFromContext(final int chunkCapacity) {
-        return nanoSource.makeFillFromContext(chunkCapacity);
+    private void convertToTime(
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final LongChunk<? extends Values> nanoChunk) {
+        final WritableObjectChunk<TIME_TYPE, ? super Values> timeDestination = destination.asWritableObjectChunk();
+        final int size = nanoChunk.size();
+        for (int ii = 0; ii < size; ++ii) {
+            timeDestination.set(ii, makeValue(nanoChunk.get(ii)));
+        }
+        timeDestination.setSize(size);
     }
 
-    public void fillFromChunk(
-            @NotNull FillFromContext context,
-            @NotNull Chunk<? extends Values> src,
-            @NotNull RowSequence rowSequence) {
-        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            nanoSource.fillFromChunkByKeys(rowSequence, src, this::toNanos);
-        } else {
-            nanoSource.fillFromChunkByRanges(rowSequence, src, this::toNanos);
+    private class ToNanosFillFromContext implements FillFromContext {
+        private final FillFromContext nanoFillFromContext;
+        private final WritableLongChunk<Values> nanoChunk;
+
+        private ToNanosFillFromContext(final int chunkCapacity) {
+            nanoFillFromContext = nanoSource.makeFillFromContext(chunkCapacity);
+            nanoChunk = WritableLongChunk.makeWritableChunk(chunkCapacity);
+        }
+
+        @Override
+        public void close() {
+            nanoFillFromContext.close();
+            nanoChunk.close();
+        }
+
+        private LongChunk<Values> convert(@NotNull final ObjectChunk<TIME_TYPE, ? extends Values> src) {
+            final int size = src.size();
+            for (int ii = 0; ii < size; ++ii) {
+                nanoChunk.set(ii, toNanos(src.get(ii)));
+            }
+            nanoChunk.setSize(size);
+            return nanoChunk;
         }
     }
 
     @Override
-    public void fillFromChunkUnordered(
-            @NotNull FillFromContext context,
-            @NotNull Chunk<? extends Values> src,
-            @NotNull LongChunk<RowKeys> keys) {
-        nanoSource.fillFromChunkUnordered(context, src, keys, this::toNanos);
+    public FillFromContext makeFillFromContext(final int chunkCapacity) {
+        return new ToNanosFillFromContext(chunkCapacity);
     }
 
     @Override
-    public void setNull(RowSequence rowSequence) {
+    public void fillFromChunk(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final RowSequence rowSequence) {
+        final ToNanosFillFromContext fillFromContext = (ToNanosFillFromContext) context;
+        nanoSource.fillFromChunk(fillFromContext.nanoFillFromContext, fillFromContext.convert(src.asObjectChunk()),
+                rowSequence);
+    }
+
+    @Override
+    public void fillFromChunkUnordered(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final LongChunk<RowKeys> keys) {
+        final ToNanosFillFromContext fillFromContext = (ToNanosFillFromContext) context;
+        nanoSource.fillFromChunkUnordered(fillFromContext.nanoFillFromContext,
+                fillFromContext.convert(src.asObjectChunk()), keys);
+    }
+
+    @Override
+    public void setNull(final RowSequence rowSequence) {
         nanoSource.setNull(rowSequence);
     }
     // endregion

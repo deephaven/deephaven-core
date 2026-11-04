@@ -249,12 +249,8 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
 
     // region Shifts
     @Override
-    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {
-        if (outputSource instanceof BooleanSparseArraySource.ReinterpretedAsByte) {
-            ((BooleanSparseArraySource.ReinterpretedAsByte)outputSource).shift(subIndexToShift, delta);
-        } else {
-            ((ByteSparseArraySource)outputSource).shift(subIndexToShift, delta);
-        }
+    public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
+        ((ByteSparseArraySource) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 

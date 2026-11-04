@@ -11,9 +11,9 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 
 /**
- * A leaf of a {@link io.deephaven.engine.table.impl.sources.LongAdaptiveSparseArraySource} that holds fewer values
- * than a full block. Values are addressed by their offset within the block, from 0 to
- * {@link SparseConstants#BLOCK_SIZE} - 1; an offset without a value reads as null.
+ * A leaf of a {@link io.deephaven.engine.table.impl.sources.LongSparseArraySource} that holds fewer values than a
+ * full block. Values are addressed by their offset within the block, from 0 to {@link SparseConstants#BLOCK_SIZE} - 1;
+ * an offset without a value reads as null.
  */
 public abstract class LongCompactLeaf {
 

@@ -19,7 +19,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.sources.SparseBlockColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseMemoryColumnSourceFactory;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.SafeCloseable;
@@ -64,7 +64,7 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * the result records previous values for them</li>
  * </ul>
  * The parent's value column is computed from the row key, so the measured work is the result's. The retained size that
- * {@link SparseBlockColumnSource#estimateSize()} reports for the result column is printed at the end of each trial.
+ * {@link SparseArrayColumnSource#estimateSize()} reports for the result column is printed at the end of each trial.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -170,7 +170,7 @@ public class SparseUpdateBenchmark {
 
     private long estimateSize() {
         final ColumnSource<?> column = result.getColumnSource("X");
-        return ((SparseBlockColumnSource) column).estimateSize();
+        return ((SparseArrayColumnSource<?>) column).estimateSize();
     }
 
     @Benchmark

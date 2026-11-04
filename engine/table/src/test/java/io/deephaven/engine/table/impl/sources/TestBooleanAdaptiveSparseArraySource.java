@@ -48,8 +48,8 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
 
     @NotNull
     @Override
-    BooleanAdaptiveSparseArraySource makeTestSource() {
-        return new BooleanAdaptiveSparseArraySource();
+    BooleanSparseArraySource makeTestSource() {
+        return new BooleanSparseArraySource();
     }
 
     private static Boolean randomBoolean(final Random random) {
@@ -59,11 +59,11 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
 
     @Test
     public void testReinterpret() {
-        final BooleanAdaptiveSparseArraySource source = makeTestSource();
+        final BooleanSparseArraySource source = makeTestSource();
         source.set(3, true);
         source.set(5, false);
         final ColumnSource<Byte> bytes = source.reinterpret(byte.class);
-        assertTrue(bytes instanceof ByteAdaptiveSparseArraySource);
+        assertTrue(bytes instanceof ByteSparseArraySource);
         assertSame(bytes, ReinterpretUtils.maybeConvertToPrimitive(source));
         assertSame(Boolean.TRUE, source.get(3));
         assertSame(Boolean.FALSE, source.get(5));
@@ -81,7 +81,7 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
      * the current and previous values. Aligned divisions are whole leaves; others end anywhere.
      */
     private void checkParallelPopulation(final boolean aligned) throws Exception {
-        final BooleanAdaptiveSparseArraySource source = makeTestSource();
+        final BooleanSparseArraySource source = makeTestSource();
         assertEquals(BLOCK_SIZE, source.parallelPopulationAlignment());
         final Random random = new Random(aligned ? 1 : 0);
         final Map<Long, Boolean> expected = new HashMap<>();
@@ -148,7 +148,7 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
      * Write positions {@code start} through {@code end - 1} of {@code rows} with their {@code values}.
      */
     private static void fillDivision(
-            final BooleanAdaptiveSparseArraySource source,
+            final BooleanSparseArraySource source,
             final RowSet rows,
             final Boolean[] values,
             final long start,
@@ -163,7 +163,7 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
     }
 
     private static void assertMatches(
-            final BooleanAdaptiveSparseArraySource source,
+            final BooleanSparseArraySource source,
             final Map<Long, Boolean> expected,
             final Map<Long, Boolean> expectedPrev) {
         for (long key = 0; key < KEY_RANGE + 64; ++key) {
@@ -174,7 +174,7 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
 
     @Test
     public void testStructure() {
-        final BooleanAdaptiveSparseArraySource source = makeTestSource();
+        final BooleanSparseArraySource source = makeTestSource();
         assertEquals(0, source.estimateSize());
         // a full leaf, then a leaf with a few values
         final Map<Long, Boolean> expected = new HashMap<>();
@@ -201,7 +201,8 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
             try (final RowSet removed = RowSetFactory.fromRange(0, 2L * BLOCK_SIZE - 1);
                     final RowSet live = RowSetFactory.fromRange(3L * BLOCK_SIZE, 3L * BLOCK_SIZE + 4)) {
                 source.setNull(removed);
-                SparseBlockColumnSource.clearBlocksWithoutLiveRows(removed, live, source);
+                SparseArrayColumnSource.clearBlocksWithoutLiveRows(removed, live,
+                        (ByteSparseArraySource) source.reinterpret(byte.class));
             }
         });
         assertTrue(source.estimateSize() < sizeBefore);
@@ -244,7 +245,7 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
                     RowSetFactory.fromKeys(LongStream.range(0, 3000).map(key -> key * 3).toArray()).toTracking());
             final Table updated = table.update("B = k % 7 == 0 ? null : k % 7 < 4");
             final ColumnSource<Boolean> column = updated.getColumnSource("B", Boolean.class);
-            assertTrue(column instanceof BooleanAdaptiveSparseArraySource);
+            assertTrue(column instanceof BooleanSparseArraySource);
             assertTableEquals(table.view("B = k % 7 == 0 ? null : k % 7 < 4"), updated);
 
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();

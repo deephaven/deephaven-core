@@ -7,9 +7,9 @@ import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.WritableCharChunk;
 
 /**
- * A leaf of a {@link io.deephaven.engine.table.impl.sources.CharacterAdaptiveSparseArraySource} that holds fewer values
- * than a full block. Values are addressed by their offset within the block, from 0 to
- * {@link SparseConstants#BLOCK_SIZE} - 1; an offset without a value reads as null.
+ * A leaf of a {@link io.deephaven.engine.table.impl.sources.CharacterSparseArraySource} that holds fewer values than a
+ * full block. Values are addressed by their offset within the block, from 0 to {@link SparseConstants#BLOCK_SIZE} - 1;
+ * an offset without a value reads as null.
  */
 public abstract class CharCompactLeaf {
 

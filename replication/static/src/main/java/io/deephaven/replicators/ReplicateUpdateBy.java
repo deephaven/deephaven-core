@@ -291,20 +291,6 @@ public class ReplicateUpdateBy {
                 "QueryConstants.NULL_BYTE", "nullValue",
                 "protected ByteArraySource bucketLastVal;", "protected WritableColumnSource<Byte> bucketLastVal;");
 
-        lines = replaceRegion(lines, "Shifts",
-                Collections.singletonList(
-                        "    @Override\n" +
-                                "    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {\n"
-                                +
-                                "        if (outputSource instanceof BooleanSparseArraySource.ReinterpretedAsByte) {\n"
-                                +
-                                "            ((BooleanSparseArraySource.ReinterpretedAsByte)outputSource).shift(subIndexToShift, delta);\n"
-                                +
-                                "        } else {\n" +
-                                "            ((ByteSparseArraySource)outputSource).shift(subIndexToShift, delta);\n" +
-                                "        }\n" +
-                                "    }"));
-
         lines = replaceRegion(lines, "extra-methods",
                 Collections.singletonList(
                         "    protected byte getNullValue() {\n" +

@@ -80,7 +80,7 @@ public class TestInstantAdaptiveSparseArraySource {
     @Test
     public void testFills() {
         final Random random = new Random(0);
-        final InstantAdaptiveSparseArraySource source = new InstantAdaptiveSparseArraySource();
+        final InstantSparseArraySource source = new InstantSparseArraySource();
         final Map<Long, Instant> expected = new HashMap<>();
         for (int step = 0; step < 50; ++step) {
             if (random.nextBoolean()) {
@@ -116,7 +116,7 @@ public class TestInstantAdaptiveSparseArraySource {
         }
     }
 
-    private static void assertMatches(final InstantAdaptiveSparseArraySource source,
+    private static void assertMatches(final InstantSparseArraySource source,
             final Map<Long, Instant> expected, final Random random) {
         try (final RowSet keys = randomRowSet(random);
                 final WritableObjectChunk<Instant, Values> values =
@@ -149,7 +149,7 @@ public class TestInstantAdaptiveSparseArraySource {
 
     @Test
     public void testPreviousValues() {
-        final InstantAdaptiveSparseArraySource source = new InstantAdaptiveSparseArraySource();
+        final InstantSparseArraySource source = new InstantSparseArraySource();
         final Instant first = DateTimeUtils.epochNanosToInstant(1000);
         final Instant second = DateTimeUtils.epochNanosToInstant(2000);
         source.set(7, first);
@@ -183,10 +183,10 @@ public class TestInstantAdaptiveSparseArraySource {
 
     @Test
     public void testReinterpret() {
-        final InstantAdaptiveSparseArraySource source = new InstantAdaptiveSparseArraySource();
+        final InstantSparseArraySource source = new InstantSparseArraySource();
         source.set(3, DateTimeUtils.epochNanosToInstant(12345));
         final ColumnSource<Long> nanos = source.reinterpret(long.class);
-        assertTrue(nanos instanceof LongAdaptiveSparseArraySource);
+        assertTrue(nanos instanceof LongSparseArraySource);
         assertSame(nanos, ReinterpretUtils.maybeConvertToPrimitive(source));
         assertSame(nanos, source.toEpochNano());
         assertSame(source, source.toInstant());
@@ -210,7 +210,7 @@ public class TestInstantAdaptiveSparseArraySource {
      * the current and previous values. Aligned divisions are whole leaves; others end anywhere.
      */
     private static void checkParallelPopulation(final boolean aligned) throws Exception {
-        final InstantAdaptiveSparseArraySource source = new InstantAdaptiveSparseArraySource();
+        final InstantSparseArraySource source = new InstantSparseArraySource();
         assertEquals(BLOCK_SIZE, source.parallelPopulationAlignment());
         final Random random = new Random(aligned ? 1 : 0);
         final Map<Long, Instant> expected = new HashMap<>();
@@ -263,7 +263,7 @@ public class TestInstantAdaptiveSparseArraySource {
      * Write positions {@code start} through {@code end - 1} of {@code rows} with their {@code values}.
      */
     private static void fillDivision(
-            final InstantAdaptiveSparseArraySource source,
+            final InstantSparseArraySource source,
             final RowSet rows,
             final Instant[] values,
             final long start,
@@ -278,7 +278,7 @@ public class TestInstantAdaptiveSparseArraySource {
     }
 
     private static void assertAllMatch(
-            final InstantAdaptiveSparseArraySource source,
+            final InstantSparseArraySource source,
             final Map<Long, Instant> expected,
             final Map<Long, Instant> expectedPrev) {
         for (long key = 0; key < KEY_RANGE + 64; ++key) {
@@ -289,10 +289,11 @@ public class TestInstantAdaptiveSparseArraySource {
 
     @Test
     public void testStructure() {
-        final InstantAdaptiveSparseArraySource source = new InstantAdaptiveSparseArraySource();
-        assertEquals(0, source.estimateSize());
+        final InstantSparseArraySource source = new InstantSparseArraySource();
+        final LongSparseArraySource nanos = (LongSparseArraySource) source.toEpochNano();
+        assertEquals(0, nanos.estimateSize());
         source.ensureCapacity(4L * BLOCK_SIZE, true);
-        assertEquals(0, source.estimateSize());
+        assertEquals(0, nanos.estimateSize());
         assertEquals(NULL_LONG, source.getLong(3L * BLOCK_SIZE));
         // a full leaf, then a leaf with a few values
         for (long key = 0; key < BLOCK_SIZE + 5; ++key) {
@@ -303,7 +304,7 @@ public class TestInstantAdaptiveSparseArraySource {
         assertEquals(NULL_LONG, source.getLong(7));
         assertEquals(8000, source.getLong(8));
         assertEquals(DateTimeUtils.epochNanosToInstant(8000), source.get(8));
-        assertTrue(source.estimateSize() > 0);
+        assertTrue(nanos.estimateSize() > 0);
 
         // move the second leaf's values up by two leaves
         try (final RowSet second = RowSetFactory.fromRange(BLOCK_SIZE, BLOCK_SIZE + 4)) {
@@ -315,17 +316,17 @@ public class TestInstantAdaptiveSparseArraySource {
         }
 
         source.startTrackingPrevValues();
-        final long sizeBefore = source.estimateSize();
+        final long sizeBefore = nanos.estimateSize();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
             try (final RowSet removed = RowSetFactory.fromRange(0, 2L * BLOCK_SIZE - 1);
                     final RowSet live = RowSetFactory.fromRange(3L * BLOCK_SIZE, 3L * BLOCK_SIZE + 4)) {
                 source.setNull(removed);
                 assertEquals(8000, source.getPrevLong(8));
-                SparseBlockColumnSource.clearBlocksWithoutLiveRows(removed, live, source);
+                SparseArrayColumnSource.clearBlocksWithoutLiveRows(removed, live, nanos);
             }
         });
-        assertTrue(source.estimateSize() < sizeBefore);
+        assertTrue(nanos.estimateSize() < sizeBefore);
         assertEquals(NULL_LONG, source.getPrevLong(8));
         for (long key = 0; key < BLOCK_SIZE; ++key) {
             assertNull(source.get(key));
@@ -366,7 +367,7 @@ public class TestInstantAdaptiveSparseArraySource {
                     RowSetFactory.fromKeys(LongStream.range(0, 3000).map(key -> key * 3).toArray()).toTracking());
             final Table updated = table.update("T = k % 7 == 0 ? null : DateTimeUtils.epochNanosToInstant(k * 1000)");
             final ColumnSource<Instant> column = updated.getColumnSource("T", Instant.class);
-            assertTrue(column instanceof InstantAdaptiveSparseArraySource);
+            assertTrue(column instanceof InstantSparseArraySource);
             assertTableEquals(table.view("T = k % 7 == 0 ? null : DateTimeUtils.epochNanosToInstant(k * 1000)"),
                     updated);
 

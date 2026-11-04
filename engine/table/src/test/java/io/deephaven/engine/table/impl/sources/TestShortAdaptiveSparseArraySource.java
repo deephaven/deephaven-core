@@ -51,13 +51,13 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
 
     @NotNull
     @Override
-    ShortAdaptiveSparseArraySource makeTestSource() {
-        return new ShortAdaptiveSparseArraySource();
+    ShortSparseArraySource makeTestSource() {
+        return new ShortSparseArraySource();
     }
 
     @Test
     public void confirmAliasingForbidden() {
-        final ShortAdaptiveSparseArraySource source = makeTestSource();
+        final ShortSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         // a full leaf, which getChunk aliases
         for (int ii = 0; ii < BLOCK_SIZE; ++ii) {
@@ -87,7 +87,7 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
     public void testThresholds() {
         for (final int compactThreshold : new int[] {0, 1, 4, 64, BLOCK_SIZE}) {
             for (final int sortedThreshold : new int[] {1, 4, 16}) {
-                checkAgainstMap(new ShortAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
+                checkAgainstMap(new ShortSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -127,7 +127,7 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
         return builder.build();
     }
 
-    private static void checkAgainstMap(final ShortAdaptiveSparseArraySource source, final int seed) {
+    private static void checkAgainstMap(final ShortSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2ShortOpenHashMap expected = new Long2ShortOpenHashMap();
         expected.defaultReturnValue(NULL_SHORT);
@@ -144,9 +144,9 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
     @Test
     public void testPreviousValues() {
         for (final int compactThreshold : new int[] {0, 4, 64,
-                ShortAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                ShortSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
             for (final int sortedThreshold : new int[] {1, 16}) {
-                checkPreviousValues(new ShortAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
+                checkPreviousValues(new ShortSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -156,7 +156,7 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
      * Apply random operations in update cycles, checking that previous values are the values at the start of each
      * cycle.
      */
-    private static void checkPreviousValues(final ShortAdaptiveSparseArraySource source, final int seed) {
+    private static void checkPreviousValues(final ShortSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2ShortOpenHashMap expected = new Long2ShortOpenHashMap();
         expected.defaultReturnValue(NULL_SHORT);
@@ -185,8 +185,8 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
     public void testParallelPopulation() throws Exception {
         for (final boolean aligned : new boolean[] {true, false}) {
             for (final int compactThreshold : new int[] {0, 4,
-                    ShortAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
-                checkParallelPopulation(new ShortAdaptiveSparseArraySource(16, compactThreshold), aligned,
+                    ShortSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                checkParallelPopulation(new ShortSparseArraySource(16, compactThreshold), aligned,
                         compactThreshold + (aligned ? 1 : 0));
             }
         }
@@ -197,7 +197,7 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
      * the current and previous values.
      */
     private static void checkParallelPopulation(
-            final ShortAdaptiveSparseArraySource source,
+            final ShortSparseArraySource source,
             final boolean aligned,
             final int seed) throws Exception {
         final Random random = new Random(seed);
@@ -262,13 +262,13 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
     public void testParallelPopulationOfSplitFullLeaves() throws Exception {
         final int threads = 4;
         final int leavesPerThread = 4;
-        final int rowsPerLeaf = ShortAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
-        final int pieceSize = ShortAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
+        final int rowsPerLeaf = ShortSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
+        final int pieceSize = ShortSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
         final ExecutorService executor = Executors.newFixedThreadPool(threads);
         try {
             for (int trial = 0; trial < 200; ++trial) {
                 final Random random = new Random(trial);
-                final ShortAdaptiveSparseArraySource source = new ShortAdaptiveSparseArraySource();
+                final ShortSparseArraySource source = new ShortSparseArraySource();
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 for (int leaf = 0; leaf < threads * leavesPerThread; ++leaf) {
                     builder.appendRange((long) leaf * BLOCK_SIZE, (long) leaf * BLOCK_SIZE + rowsPerLeaf - 1);
@@ -314,7 +314,7 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
      * {@code pieceSize} rows at a time.
      */
     private static void fillDivision(
-            final ShortAdaptiveSparseArraySource source,
+            final ShortSparseArraySource source,
             final RowSet rows,
             final short[] values,
             final long start,
@@ -337,7 +337,7 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
 
     @Test
     public void testClearBlocks() {
-        final ShortAdaptiveSparseArraySource source = makeTestSource();
+        final ShortSparseArraySource source = makeTestSource();
         source.startTrackingPrevValues();
         final Random random = new Random(0);
         // a full leaf, a bitmap leaf and a sorted leaf, in that order
@@ -354,7 +354,7 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
             try (final RowSet removed = RowSetFactory.fromRange(0, 2L * BLOCK_SIZE - 1);
                     final RowSet live = RowSetFactory.fromKeys(2L * BLOCK_SIZE)) {
                 source.setNull(removed);
-                SparseBlockColumnSource.clearBlocksWithoutLiveRows(removed, live, source);
+                SparseArrayColumnSource.clearBlocksWithoutLiveRows(removed, live, source);
             }
         });
         assertTrue(source.estimateSize() < sizeBefore);
@@ -365,7 +365,7 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
 
     @Test
     public void testClearNeverWrittenStructures() {
-        final ShortAdaptiveSparseArraySource source = makeTestSource();
+        final ShortSparseArraySource source = makeTestSource();
         final short value = randomValue(new Random(0));
         source.set(0, value);
         source.startTrackingPrevValues();
@@ -375,7 +375,7 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
             // a leaf, a block2 structure and a block1 structure that were never written
             try (final RowSet candidates = RowSetFactory.fromKeys(BLOCK_SIZE, 1L << BLOCK1_SHIFT, 1L << BLOCK0_SHIFT);
                     final RowSet live = RowSetFactory.fromKeys(0)) {
-                SparseBlockColumnSource.clearBlocksWithoutLiveRows(candidates, live, source);
+                SparseArrayColumnSource.clearBlocksWithoutLiveRows(candidates, live, source);
             }
         });
         assertEquals(sizeBefore, source.estimateSize());
@@ -383,7 +383,7 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
     }
 
     private static void applyRandomOperation(
-            final ShortAdaptiveSparseArraySource source,
+            final ShortSparseArraySource source,
             final Long2ShortOpenHashMap expected,
             final Random random) {
         switch (random.nextInt(6)) {
@@ -473,7 +473,7 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
      * through each way of reading them.
      */
     private static void assertMatches(
-            final ShortAdaptiveSparseArraySource source,
+            final ShortSparseArraySource source,
             final Long2ShortOpenHashMap expected,
             final Random random,
             final boolean usePrev) {

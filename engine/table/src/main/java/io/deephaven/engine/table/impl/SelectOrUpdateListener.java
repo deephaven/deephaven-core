@@ -11,7 +11,8 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
-import io.deephaven.engine.table.impl.sources.SparseBlockColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
@@ -30,7 +31,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private final TrackingRowSet resultRowSet;
     private final ModifiedColumnSet.Transformer transformer;
     private final SelectAndViewAnalyzer analyzer;
-    private final SparseBlockColumnSource[] sparseArraysToFree;
+    private final SparseArrayColumnSource<?>[] sparseArraysToFree;
 
     private volatile boolean updateInProgress = false;
     private final boolean enableParallelUpdate;
@@ -57,13 +58,18 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             mcss[nextIndex] = dependent.newModifiedColumnSet(entry.getValue());
             ++nextIndex;
         }
-        final Set<SparseBlockColumnSource> columnsToFree = Collections.newSetFromMap(new IdentityHashMap<>());
+        final Set<SparseArrayColumnSource<?>> columnsToFree = Collections.newSetFromMap(new IdentityHashMap<>());
         for (final ColumnSource<?> resultSource : dependent.getColumnSources()) {
-            if (resultSource instanceof SparseBlockColumnSource && !parent.getColumnSources().contains(resultSource)) {
-                columnsToFree.add((SparseBlockColumnSource) resultSource);
+            // a reinterpretable result, such as a Boolean or Instant source, may hold its values in a sparse primitive
+            // source
+            final ColumnSource<?> storage = resultSource instanceof SparseArrayColumnSource
+                    ? resultSource
+                    : ReinterpretUtils.maybeConvertToPrimitive(resultSource);
+            if (storage instanceof SparseArrayColumnSource && !parent.getColumnSources().contains(resultSource)) {
+                columnsToFree.add((SparseArrayColumnSource<?>) storage);
             }
         }
-        sparseArraysToFree = columnsToFree.toArray(SparseBlockColumnSource[]::new);
+        sparseArraysToFree = columnsToFree.toArray(SparseArrayColumnSource<?>[]::new);
         transformer = parent.newModifiedColumnSetTransformer(parentNames, mcss);
         this.analyzer = analyzer;
         this.enableParallelUpdate =
@@ -147,7 +153,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private void completionRoutine(TableUpdate upstream, JobScheduler jobScheduler,
             WritableRowSet toClear, SelectAndViewAnalyzer.UpdateHelper updateHelper) {
         try {
-            SparseBlockColumnSource.clearBlocksWithoutLiveRows(toClear, resultRowSet, sparseArraysToFree);
+            SparseArrayColumnSource.clearBlocksWithoutLiveRows(toClear, resultRowSet, sparseArraysToFree);
 
             final TableUpdateImpl downstream;
             if (analyzer.flatResult()) {

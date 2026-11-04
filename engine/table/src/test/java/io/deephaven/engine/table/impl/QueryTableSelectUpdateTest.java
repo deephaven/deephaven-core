@@ -24,8 +24,9 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
+import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
-import io.deephaven.engine.table.impl.sources.SparseBlockColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.InverseWrappedRowSetRowRedirection;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
@@ -562,7 +563,7 @@ public class QueryTableSelectUpdateTest {
             final ColumnSource<?> selectFlatColumn = selectFlat.getColumnSource("Sentinel");
             Assert.assertTrue(select1Column instanceof RedirectedColumnSource);
             Assert.assertFalse(select1Column.isImmutable());
-            Assert.assertTrue(selectFlatColumn instanceof SparseBlockColumnSource);
+            Assert.assertTrue(selectFlatColumn instanceof SparseArrayColumnSource);
         } finally {
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = startSelect;
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = startUpdate;
@@ -1028,7 +1029,7 @@ public class QueryTableSelectUpdateTest {
 
         assertSame(selected.getColumnSource("Value"), selected2.getColumnSource("Value"));
         assertNotSame(withUpdateView.getColumnSource("Value2"), selected2.getColumnSource("Value2"));
-        assertTrue(selected2.<Long>getColumnSource("Value2") instanceof SparseBlockColumnSource);
+        assertTrue(selected2.<Long>getColumnSource("Value2") instanceof LongSparseArraySource);
 
         assertTableEquals(prevTable(table), prevTable(selected));
 
@@ -2019,9 +2020,9 @@ public class QueryTableSelectUpdateTest {
 
         Assert.assertEquals(0, selected.size());
         selected.getColumnSources().forEach(cs -> {
-            if (cs instanceof SparseBlockColumnSource) {
+            if (cs instanceof SparseArrayColumnSource) {
                 // we've deleted everything, so things should be zero
-                assertEquals(0, ((SparseBlockColumnSource) cs).estimateSize());
+                assertEquals(0, ((SparseArrayColumnSource<?>) cs).estimateSize());
             }
         });
     }
@@ -2105,9 +2106,9 @@ public class QueryTableSelectUpdateTest {
         }
 
         en[0].originalValue.getColumnSources().forEach(cs -> {
-            if (cs instanceof SparseBlockColumnSource) {
+            if (cs instanceof SparseArrayColumnSource) {
                 // there is still data, it should take space
-                final SparseBlockColumnSource sacs = (SparseBlockColumnSource) cs;
+                final SparseArrayColumnSource<?> sacs = (SparseArrayColumnSource<?>) cs;
                 final long sizeEstimate = sacs.estimateSize();
                 System.out.println("Size estimate: " + sizeEstimate);
                 assertTrue("Expected data in source: " + sizeEstimate, sizeEstimate > 0);
@@ -2121,9 +2122,9 @@ public class QueryTableSelectUpdateTest {
         });
 
         en[0].originalValue.getColumnSources().forEach(cs -> {
-            if (cs instanceof SparseBlockColumnSource) {
+            if (cs instanceof SparseArrayColumnSource) {
                 // we've deleted everything, so things should be zero
-                assertEquals(0, ((SparseBlockColumnSource) cs).estimateSize());
+                assertEquals(0, ((SparseArrayColumnSource<?>) cs).estimateSize());
             }
         });
 

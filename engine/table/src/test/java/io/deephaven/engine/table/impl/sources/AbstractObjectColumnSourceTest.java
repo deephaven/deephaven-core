@@ -15,6 +15,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
@@ -317,7 +318,9 @@ public abstract class AbstractObjectColumnSourceTest {
         try (final RowSet keys = RowSetFactory.empty();
                 final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
-            src.fillFromChunkByKeys(keys, chunk);
+            try (final ChunkSink.FillFromContext context = src.makeFillFromContext(0)) {
+                src.fillFromChunk(context, chunk, keys);
+            }
         }
         // NullPointerException in ObjectSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();

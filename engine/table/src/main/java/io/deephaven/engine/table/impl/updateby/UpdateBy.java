@@ -28,7 +28,7 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.sources.SparseBlockColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.*;
@@ -97,8 +97,8 @@ public abstract class UpdateBy {
     /** Store every bucket in this list for processing */
     protected final IntrusiveDoublyLinkedQueue<UpdateByBucketHelper> buckets;
 
-    /** The sparse block sources the operators write at the source table's row keys */
-    private final SparseBlockColumnSource[] sparseSourcesToFree;
+    /** The sparse array sources the operators write at the source table's row keys */
+    private final SparseArrayColumnSource<?>[] sparseSourcesToFree;
 
     static class UpdateByRedirectionHelper {
         @Nullable
@@ -215,9 +215,9 @@ public abstract class UpdateBy {
         this.redirHelper = new UpdateByRedirectionHelper(rowRedirection);
         this.control = control;
 
-        final Set<SparseBlockColumnSource> sparseSources = Collections.newSetFromMap(new IdentityHashMap<>());
+        final Set<SparseArrayColumnSource<?>> sparseSources = Collections.newSetFromMap(new IdentityHashMap<>());
         forAllOperators(op -> op.collectSparseSources(sparseSources::add));
-        sparseSourcesToFree = sparseSources.toArray(SparseBlockColumnSource[]::new);
+        sparseSourcesToFree = sparseSources.toArray(SparseArrayColumnSource<?>[]::new);
 
         this.inputSourceCacheNeeded = new boolean[inputSources.length];
         cacheableSourceIndices = IntStream.range(0, inputSources.length)
@@ -958,7 +958,7 @@ public abstract class UpdateBy {
             // clear the sparse output columns for rows that no longer exist
             if (!initialStep && !redirHelper.isRedirected() && !toClear.isEmpty()) {
                 forAllOperators(op -> op.clearOutputRows(toClear));
-                SparseBlockColumnSource.clearBlocksWithoutLiveRows(toClear, source.getRowSet(), sparseSourcesToFree);
+                SparseArrayColumnSource.clearBlocksWithoutLiveRows(toClear, source.getRowSet(), sparseSourcesToFree);
             }
 
             // release remaining resources
