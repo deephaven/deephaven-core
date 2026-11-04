@@ -145,7 +145,7 @@ class QueryTestCase(BaseTestCase):
         result_table = query.exec()
         self.assertEqual(5, result_table.size)
 
-    def test_exec_without_ops(self):
+    def test_exec_without_ops(self) -> None:
         query = self.session.query(self.session.empty_table(1))
         with self.assertRaises(DHError):
             query.exec()

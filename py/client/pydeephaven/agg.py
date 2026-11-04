@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from deephaven_core.proto import table_pb2
-from pydeephaven._utils import to_list
+from pydeephaven._utils import to_filter_strings, to_list
 
 _GrpcSelectable = table_pb2.Selectable
 _GrpcAggregation = table_pb2.Aggregation
@@ -162,12 +162,15 @@ def count_where(col: str, filters: str | list[str]) -> Aggregation:
 
     Args:
         col (str): the column to hold the counts of each distinct group
-        filters (Union[str, list[str]]): the filter string(s)
+        filters (Union[str, list[str]]): the filter string(s). Filter objects are not supported.
 
     Returns:
         an aggregation
+
+    Raises:
+        DHError
     """
-    return _AggregationCountWhere(col=col, filters=to_list(filters))
+    return _AggregationCountWhere(col=col, filters=to_filter_strings(filters))
 
 
 def partition(col: str, include_by_columns: bool = True) -> Aggregation:
@@ -409,7 +412,7 @@ def std(cols: str | list[str] | None = None) -> Aggregation:
 def unique(
     cols: str | list[str] | None = None,
     include_nulls: bool = False,
-    non_unique_sentinel: np.number | str | bool | None = None,
+    non_unique_sentinel: np.number | np.bool_ | int | float | str | bool | None = None,
 ) -> Aggregation:
     """Creates a Unique aggregation which computes the single unique value within an aggregation group for each of
     the given columns. If all values in a column are null, or if there is more than one distinct value in a column, the
@@ -420,10 +423,11 @@ def unique(
             default is None, only valid when used in Table agg_all_by operation
         include_nulls (bool): whether null is treated as a value for the purpose of determining if the values in the
             aggregation group are unique, default is False.
-        non_unique_sentinel (Optional[Union[np.number, str, bool]]): the non-null sentinel value when no unique value exists,
-            default is None. Must be a non-None value when include_nulls is True. When passed in as a numpy scalar
-            number value, it must be of one of these types: np.int8, np.int16, np.uint16, np.int32, np.int64(int),
-            np.float32, np.float64(float). Please note that np.uint16 is interpreted as a Deephaven/Java char.
+        non_unique_sentinel (Optional[Union[np.number, np.bool_, int, float, str, bool]]): the non-null sentinel value
+            when no unique value exists, default is None. Must be a non-None value when include_nulls is True. When
+            passed in as a numpy scalar number value, it must be of one of these types: np.int8, np.int16, np.uint16,
+            np.int32, np.int64(int), np.float32, np.float64(float). Please note that np.uint16 is interpreted as a
+            Deephaven/Java char. bool and np.bool_ are sent as a boolean.
 
     Raises:
         TypeError

@@ -24,6 +24,7 @@ from pydeephaven.agg import (
     unique,
     weighted_avg,
 )
+from pydeephaven.filters import ColumnName, eq
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -466,7 +467,16 @@ class TableTestCase(BaseTestCase):
         test_table = self.session.import_table(pa_table).drop_columns(["e"])
         self.assertEqual(len(test_table.schema), len(test_table.meta_table.to_arrow()))
 
-    def test_unique_bool_sentinel(self):
+    def test_unique_bool_sentinel_request(self) -> None:
+        # True is an int in Python. It must still be sent as a boolean sentinel, and so must np.bool_.
+        for sentinel in (True, np.bool_(False)):
+            with self.subTest(type(sentinel).__name__):
+                spec = unique(cols=["U = Flag"], non_unique_sentinel=sentinel).agg_spec
+                self.assertEqual(
+                    spec.unique.non_unique_sentinel.WhichOneof("type"), "bool_value"
+                )
+
+    def test_unique_bool_sentinel(self) -> None:
         # True is an int in Python. It must still reach the server as a boolean sentinel.
         test_table = self.session.empty_table(10).update(
             ["Grp = i % 2", "Flag = i % 3 == 0"]
@@ -477,7 +487,11 @@ class TableTestCase(BaseTestCase):
         df = rt.to_arrow().to_pandas()
         self.assertEqual(list(df["U"]), [True, True])
 
-    def test_agg_by_without_columns_names_the_agg(self):
+    def test_count_where_rejects_filter_objects(self) -> None:
+        with self.assertRaises(DHError):
+            count_where("n", eq(ColumnName("a"), 1))
+
+    def test_agg_by_without_columns_names_the_agg(self) -> None:
         with self.assertRaises(DHError) as cm:
             self.session.empty_table(1).agg_by(aggs=[sum_()], by=[])
         self.assertNotIn("{agg}", str(cm.exception))

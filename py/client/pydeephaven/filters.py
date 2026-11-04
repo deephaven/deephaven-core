@@ -30,7 +30,7 @@ from deephaven_core.proto.table_pb2 import (
     Value,
 )
 
-from ._utils import to_list
+from .dherror import DHError
 
 # Type alias for datetime-like types
 DatetimeLike: TypeAlias = (
@@ -38,6 +38,12 @@ DatetimeLike: TypeAlias = (
 )
 
 _EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+
+
+def _aware_datetime_to_nanos(dt: datetime.datetime) -> int:
+    """Returns nanoseconds since the Unix epoch for an aware datetime. Integer math keeps every microsecond.
+    datetime.timestamp() returns a float, which cannot hold epoch nanoseconds exactly."""
+    return (dt - _EPOCH) // datetime.timedelta(microseconds=1) * 1_000
 
 
 def _datetime_to_nanos(dt: DatetimeLike) -> int:
@@ -56,16 +62,16 @@ def _datetime_to_nanos(dt: DatetimeLike) -> int:
         # numpy datetime64 - convert to nanoseconds
         return dt.astype("datetime64[ns]").astype(int)
     elif isinstance(dt, datetime.datetime):
-        # Python datetime - a naive one is local time, as in datetime.timestamp(). Integer math keeps every
-        # microsecond. timestamp() returns a float, which cannot hold epoch nanoseconds exactly.
-        aware = dt if dt.tzinfo is not None else dt.astimezone()
-        return (aware - _EPOCH) // datetime.timedelta(microseconds=1) * 1_000
+        # Python datetime - a naive one is local time, as in datetime.timestamp(). Python counts a datetime as naive
+        # when utcoffset() is None, even if it has a tzinfo, and subtracting the aware epoch from it would raise.
+        aware = dt if dt.utcoffset() is not None else dt.astimezone()
+        return _aware_datetime_to_nanos(aware)
     elif isinstance(dt, datetime.date):
         # Python date - convert to datetime at midnight UTC, then to nanos
         dt_obj = datetime.datetime.combine(
             dt, datetime.time.min, tzinfo=datetime.timezone.utc
         )
-        return (dt_obj - _EPOCH) // datetime.timedelta(microseconds=1) * 1_000
+        return _aware_datetime_to_nanos(dt_obj)
     else:
         raise TypeError(f"Unsupported datetime type: {type(dt)}")
 
@@ -75,8 +81,8 @@ def _to_proto_value(v: bool | int | float | str | DatetimeLike | ColumnName) -> 
         return Value(reference=Reference(column_name=v))
     elif isinstance(v, str):
         return Value(literal=Literal(string_value=v))
-    elif isinstance(v, bool):
-        return Value(literal=Literal(bool_value=v))
+    elif isinstance(v, (bool, np.bool_)):
+        return Value(literal=Literal(bool_value=bool(v)))
     elif isinstance(v, (datetime.datetime, datetime.date, np.datetime64, pd.Timestamp)):
         # Handle datetime types - convert to nanoseconds since epoch
         nanos = _datetime_to_nanos(v)
@@ -142,8 +148,18 @@ class _InFilter(Filter):
         case_sensitive: bool = True,
     ):
         self._col = col
-        # A single string is one value. Iterating it would send each character as a value.
-        self._values = to_list(values)
+        # A single string is one value. Iterating it would send each character as a value. Any other iterable,
+        # such as a NumPy array, pandas Series or set, is iterated.
+        self._values: list[bool | int | float | str]
+        if isinstance(values, str):
+            self._values = [values]
+        else:
+            try:
+                self._values = list(values)
+            except TypeError as e:
+                raise DHError(
+                    f"in_ values must be a string or an iterable of values, not {type(values)}."
+                ) from e
         self._case_sensitivity = (
             CaseSensitivity.MATCH_CASE
             if case_sensitive

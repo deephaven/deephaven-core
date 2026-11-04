@@ -487,7 +487,7 @@ class UpdateByTestCase(BaseTestCase):
             if not rt.is_refreshing:
                 self.assertEqual(rt.size, t.size)
 
-    def test_count_where_rejects_filter_objects(self):
+    def test_count_where_rejects_filter_objects(self) -> None:
         a_filter = eq(ColumnName("a"), 1)
         with self.subTest("cum_count_where"):
             with self.assertRaises(DHError):

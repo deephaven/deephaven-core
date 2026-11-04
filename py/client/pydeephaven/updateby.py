@@ -10,7 +10,7 @@ from typing import Any
 
 from deephaven_core.proto import table_pb2
 
-from ._utils import to_list
+from ._utils import to_filter_strings, to_list
 from .dherror import DHError
 
 _GrpcUpdateByOperation = table_pb2.UpdateByRequest.UpdateByOperation
@@ -124,17 +124,6 @@ class OperationControl(_UpdateByBase):
         )
 
 
-def _to_filter_strings(filters: str | list[str]) -> list[str]:
-    """Returns the count_where filters as a list of strings. The request carries filters only as strings, so a Filter
-    object would fail inside protobuf with an unclear TypeError."""
-    filters = to_list(filters)
-    if not all(isinstance(f, str) for f in filters):
-        raise DHError(
-            message="count_where filters must be strings. Filter objects are not supported."
-        )
-    return filters
-
-
 class UpdateByOperation(_UpdateByBase):
     """A UpdateByOperation represents an operator for the Table update-by operation."""
 
@@ -220,7 +209,7 @@ def cum_count_where(col: str, filters: str | list[str]) -> UpdateByOperation:
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = _to_filter_strings(filters)
+    filters = to_filter_strings(filters)
 
     ub_spec = _GrpcUpdateBySpec(
         count_where=_GrpcUpdateBySpec.UpdateByCumulativeCountWhere(
@@ -2022,7 +2011,7 @@ def rolling_count_where_tick(
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = _to_filter_strings(filters)
+    filters = to_filter_strings(filters)
 
     try:
         rev_window_scale = _GrpcUpdateByWindowScale(
@@ -2091,7 +2080,7 @@ def rolling_count_where_time(
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = _to_filter_strings(filters)
+    filters = to_filter_strings(filters)
 
     try:
         if isinstance(rev_time, str):
