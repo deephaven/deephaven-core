@@ -7,6 +7,8 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.table.ColumnSource;
+
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ByteChunk;
@@ -215,6 +217,10 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
                 return;
             }
             if (children == null) {
+                if (child == null) {
+                    // a level with one child holds no other child to clear
+                    return;
+                }
                 children = recycled ? level1ArrayRecycler.borrowItem() : new Level1[BLOCK0_SIZE];
                 children[oneIndex] = oneChild;
                 oneChild = null;
@@ -277,6 +283,10 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
                 return;
             }
             if (children == null) {
+                if (child == null) {
+                    // a level with one child holds no other child to clear
+                    return;
+                }
                 children = recycled ? level2ArrayRecycler.borrowItem() : new Level2[BLOCK1_SIZE];
                 children[oneIndex] = oneChild;
                 oneChild = null;
@@ -1704,5 +1714,18 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
     }
 
     // region reinterpretation
+    @Override
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        return alternateDataType == Boolean.class || super.allowsReinterpret(alternateDataType);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        if (alternateDataType == Boolean.class) {
+            return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource(this);
+        }
+        return super.doReinterpret(alternateDataType);
+    }
     // endregion reinterpretation
 }

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.time.DateTimeUtils;
@@ -22,6 +23,11 @@ public class InstantSparseArraySource extends NanosBasedTimeSparseArraySource<In
 
     public InstantSparseArraySource(@NotNull final LongSparseArraySource nanoSource) {
         super(Instant.class, nanoSource);
+    }
+
+    @Override
+    public ColumnSource<Instant> toInstant() {
+        return this;
     }
 
     @Override

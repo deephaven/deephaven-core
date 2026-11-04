@@ -563,7 +563,30 @@ public class ReplicateSourcesAndChunks {
         charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
         replicateLongSparseArraySource();
+        replicateByteSparseArraySource();
         replicateObjectSparseArraySource();
+    }
+
+    private static void replicateByteSparseArraySource() throws IOException {
+        final File classFile = new File(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/ByteSparseArraySource.java");
+        List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
+        lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;");
+        lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
+                "    @Override",
+                "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "        return alternateDataType == Boolean.class || super.allowsReinterpret(alternateDataType);",
+                "    }",
+                "",
+                "    @SuppressWarnings(\"unchecked\")",
+                "    @Override",
+                "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "        if (alternateDataType == Boolean.class) {",
+                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource(this);",
+                "        }",
+                "        return super.doReinterpret(alternateDataType);",
+                "    }"));
+        FileUtils.writeLines(classFile, lines);
     }
 
     private static void replicateObjectSparseArraySource() throws IOException {

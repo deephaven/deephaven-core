@@ -60,7 +60,7 @@ public class TestBooleanSparseArraySource extends AbstractBooleanColumnSourceTes
                             return;
                         }
                         for (int ii = rangeStart; ii <= rangeEnd; ++ii) {
-                            assertEquals(data[ii], source.getBoolean(ii + 1));
+                            assertEquals(BooleanUtils.byteAsBoolean(data[ii]), source.getBoolean(ii + 1));
                         }
                     }
                 }

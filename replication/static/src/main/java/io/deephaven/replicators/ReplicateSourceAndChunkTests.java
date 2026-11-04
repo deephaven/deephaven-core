@@ -193,6 +193,9 @@ public class ReplicateSourceAndChunkTests {
         if (!booleanPath.contains("Abstract") && !booleanPath.contains("Sparse")) {
             lines = removeImport(lines, "import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;");
         }
+        lines = globalReplacements(lines,
+                "assertEquals\\(data\\[ii\\], source.getBoolean\\(ii \\+ 1\\)\\)",
+                "assertEquals(BooleanUtils.byteAsBoolean(data[ii]), source.getBoolean(ii + 1))");
         lines = simpleFixup(lines, "elementGet",
                 "getBoolean", "getByte");
         FileUtils.writeLines(booleanFile, lines);

@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
@@ -170,7 +171,8 @@ public class TestSparseArraySourceNullBlocks {
                     .getSparseMemoryColumnSource(1, (Class<?>) typeAndValue[0]);
             source.set(0, typeAndValue[1]);
             source.startTrackingPrevValues();
-            final SparseArrayColumnSource<?> sparseSource = (SparseArrayColumnSource<?>) source;
+            final SparseArrayColumnSource<?> sparseSource =
+                    (SparseArrayColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(source);
             final long sizeBefore = sparseSource.estimateSize();
 
             updateGraph().runWithinUnitTestCycle(() -> {
