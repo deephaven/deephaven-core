@@ -99,6 +99,29 @@ landed, and the Conventional Commits prefix (`feat:`, `fix:`, `perf:`, `chore:`,
 `test:`, `refactor:`) tells you its intent. The `--name-status` diff tells you what files
 actually changed.
 
+### Filter out reverted changes on main
+
+Before triaging, identify commits on `upstream/main` that were subsequently reverted on
+`upstream/main` itself. Reverts typically use the title pattern `Revert "<original title>"` and
+produce a diff that is the exact inverse of the original commit. When a commit and its revert
+are both in the `<tag>..upstream/main` range, exclude both from the triage — the net effect is
+zero and neither needs documentation.
+
+To detect reverts: scan the first-parent commit list for titles matching `Revert "..."`. For
+each revert, find the original commit by title and verify the revert's diff is the inverse of
+the original's (the added/removed lines are swapped). Exclude both the original and the revert.
+
+### Filter out superseded changes on main
+
+When a feature lands on `upstream/main` and a later commit on `upstream/main` completely
+replaces or rewrites it (same files, same feature area, the later commit's changes fully
+overlap the earlier one's), only the latest version needs triage. The earlier commit is
+superseded — its documentation would be immediately outdated by the replacement.
+
+If the later commit only partially overlaps (extends or modifies the feature without fully
+replacing the earlier work), both commits are relevant and should be triaged together as a
+single documentation item.
+
 ### Filter out changes already shipped via cherry-picks
 
 Minor releases cherry-pick fixes from `main` onto a release branch (see `RELEASE.md`). These
@@ -123,11 +146,20 @@ first-parent diff of any commit reachable from a release tag (including the sele
 and any later minor releases), exclude it from the triage — it was already released and any
 documentation for it belongs to that earlier release.
 
+Cherry-picks sometimes have minor differences from the original commit due to conflict
+resolution or context-line drift. When an exact diff match is not found, also check for
+near-matches: compare the changed file paths and the added/removed lines (ignoring context
+lines and line numbers). If the same files are touched with substantially the same additions
+and removals, treat it as a match — the cherry-pick shipped the same change with minor
+adaptation.
+
 ### Classify each commit as RC-confirmed or main-only
 
-For each remaining commit (after filtering out already-shipped cherry-picks), determine whether
-it has been cherry-picked onto the RC branch. Cherry-picks produce different SHAs, so compare
-by patch content (first-parent diff), not by SHA:
+For each remaining commit (after filtering out reverted, superseded, and already-shipped
+changes), determine whether it has been cherry-picked onto the RC branch. Cherry-picks produce
+different SHAs, so compare by patch content (first-parent diff), not by SHA. Apply the same
+near-match tolerance as the release cherry-pick filter (same files, substantially same
+additions/removals, ignoring context lines and line numbers):
 
 - **RC-confirmed**: the commit's first-parent diff matches a commit on the RC branch **and**
   the change is still effective at the RC tip (see verification below). This change is confirmed
