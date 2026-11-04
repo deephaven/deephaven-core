@@ -65,11 +65,10 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  * <p>
  * For parallel population, {@link #prepareForParallelPopulation(RowSequence, boolean)} allocates the page table above
  * each leaf to be written, for current and previous values, so that writers of different leaves change no shared
- * structure. When the writers' divisions are aligned to leaves, each writer builds and records its own leaves, except
- * that a leaf to hold more values than a compact leaf holds is made a full block, and its previous values a snapshot,
- * in advance; so each bottom level allocates an array of compact leaves only when it may hold one. Otherwise it also
- * builds each leaf with every offset to be written, holding null, and records the previous values, so that writers
- * only store values.
+ * structure. When the writers' divisions are aligned to leaves, each writer builds and records its own leaves; a
+ * bottom level gets an array of compact leaves only when one of its leaves may be compact, and a writer makes a leaf
+ * with no room for a compact leaf a full block from its first chunk. Otherwise it also builds each leaf with every
+ * offset to be written, holding null, and records the previous values, so that writers only store values.
  */
 public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
         implements MutableColumnSourceGetDefaults.ForObject<T> /* MIXIN_IMPLS */ {
@@ -437,14 +436,30 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
         }
 
         /**
-         * Allocate what making the leaf at {@code index} a compact leaf needs, so that doing so writes only its own
-         * slot.
+         * Allocate what writing the leaf at {@code index} may need, so that making it a block or a compact leaf writes
+         * only its own slot.
+         *
+         * @param mayBeBlock whether the leaf may become a full block
+         * @param mayBeCompact whether the leaf may become a compact leaf
          */
-        private void prepareCompactIndex(final int index) {
+        private void prepareIndex(final int index, final boolean mayBeBlock, final boolean mayBeCompact) {
             ensureIndex(index);
-            if (oneIndex == MANY_CHILDREN && compacts == null) {
+            if (oneIndex != MANY_CHILDREN) {
+                return;
+            }
+            if (mayBeBlock && blocks == null) {
+                blocks = newBlocks();
+            }
+            if (mayBeCompact && compacts == null) {
                 compacts = newCompacts();
             }
+        }
+
+        /**
+         * @return whether making the leaf at {@code index} a compact leaf writes only its own slot
+         */
+        private boolean hasRoomForCompact(final int index) {
+            return oneIndex == index || compacts != null;
         }
 
         /** Release the leaf at {@code index}, if any. */
@@ -847,36 +862,36 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     }
 
     /**
-     * Prepare the leaf holding {@code firstKey}, and, if {@code trackPrevious}, its previous values, for a writer that
-     * puts {@code count} row keys there and changes no structure shared with other leaves. A leaf that may then hold more
-     * values than a compact leaf holds becomes a full block now, and its previous values a snapshot, so that its writer
-     * never makes it a compact leaf in between, when it writes the rows in pieces; any other leaf gets room for a
-     * compact leaf.
+     * Allocate the page table entries that writing {@code count} row keys of the leaf holding {@code firstKey} may
+     * need, for current and, if {@code trackPrevious}, previous values. A leaf that may hold more values than a compact
+     * leaf holds gets room only for a full block, unless its bottom level has room for compact leaves anyway; its writer
+     * then makes it a full block from its first chunk (see {@link #writesAlignedDivisions()}). Any other leaf gets room
+     * only for a compact leaf. The previous values get room for both, since their arrays are recycled each cycle.
      */
     private void prepareLeafIndex(final long firstKey, final int count, final boolean trackPrevious) {
         final int block2 = block2(firstKey);
         final Level2 level2 = ensureLevel2(firstKey);
-        if (level2.getBlock(block2) == null) {
-            final ObjectCompactLeaf compact = level2.getCompact(block2);
-            if ((compact == null ? 0 : compact.size()) + count > compactThreshold) {
-                level2.setBlock(block2, compact == null ? newBlock() : toBlock(compact));
-            } else {
-                level2.prepareCompactIndex(block2);
-            }
-        }
+        final ObjectCompactLeaf compact = level2.getCompact(block2);
+        final boolean isBlock = level2.getBlock(block2) != null;
+        final boolean mayBeBlock = !isBlock && (compact == null ? 0 : compact.size()) + count > compactThreshold;
+        level2.prepareIndex(block2, mayBeBlock, !isBlock && !mayBeBlock);
         if (trackPrevious) {
             final Level2 prevLevel2 = ensurePrevLevel2(firstKey);
-            if (prevLevel2.getBlock(block2) == null) {
-                final ObjectCompactLeaf recorded = prevLevel2.getCompact(block2);
-                if ((recorded == null ? 0 : recorded.size()) + count > recordThreshold) {
-                    // no row of the leaf has been written since its values were recorded, so the snapshot holds the
-                    // values at the start of the cycle
-                    preparePrevLeaf(firstKey, prevLevel2, block2, recorded, count, level2);
-                } else {
-                    prevLevel2.prepareCompactIndex(block2);
-                }
-            }
+            final ObjectCompactLeaf recorded = prevLevel2.getCompact(block2);
+            final boolean mayBeSnapshot = prevLevel2.getBlock(block2) == null
+                    && (recorded == null ? 0 : recorded.size()) + count > recordThreshold;
+            // a snapshot may still be a compact leaf in between, when the rows are written in pieces
+            prevLevel2.prepareIndex(block2, mayBeSnapshot, true);
         }
+    }
+
+    /**
+     * @return whether this cycle's writers populate leaves that {@link #prepareForParallelPopulation(RowSequence,
+     *         boolean)} prepared for divisions aligned to leaves, so that a leaf without room for a compact leaf must
+     *         become a full block
+     */
+    private boolean writesAlignedDivisions() {
+        return !preparedLeaves && prepareClockStep == updateGraph.clock().currentStep();
     }
 
     /**
@@ -1651,6 +1666,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
         final int[] offsets = fillFromContext.offsets;
         final ObjectChunk<Object, ? extends Values> values = src.asObjectChunk();
         final boolean trackPrevious = shouldTrackPrevious();
+        final boolean alignedDivisions = writesAlignedDivisions();
         int srcOffset = 0;
         while (leaves.hasMore()) {
             leaves.nextLeaf();
@@ -1668,6 +1684,12 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
             }
             if (trackPrevious) {
                 recordPrevious(firstKey, level2, block2, offsets, count, fillFromContext.scratch);
+            }
+            if (block == null && existing == null && alignedDivisions && !level2.hasRoomForCompact(block2)) {
+                // the preparation left room only for a full block, because the leaf will hold more values than a
+                // compact leaf holds
+                block = newBlock();
+                level2.setBlock(block2, block);
             }
             if (block == null) {
                 final int absent = existing == null ? count : existing.countAbsent(offsets, count);
