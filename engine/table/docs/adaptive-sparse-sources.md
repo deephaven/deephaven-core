@@ -140,9 +140,9 @@ not null-filled when borrowed, because taking a snapshot overwrites all of it.
 
 ### Why per-row recording, not per-leaf snapshots
 
-A snapshot costs the same for every leaf it covers, whatever the number of rows changed: it reads 1024 values and writes
-1024 values. Recording only the changed rows costs in proportion to them. With a double column, a cycle of 2^16 row keys
-touches 64 leaves:
+A snapshot of a leaf reads 1024 values and writes 1024 values, however few of its rows changed. Recording the changed
+rows instead reads and writes one value per changed row, so a leaf with few changes costs little. With a double column, a
+cycle of 2^16 row keys touches 64 leaves:
 
 | Pattern | Rows changed per leaf | Snapshot, cache lines per leaf | Recorded rows, cache lines per leaf |
 |---|---|---|---|
