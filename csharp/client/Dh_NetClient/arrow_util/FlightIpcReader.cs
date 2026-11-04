@@ -78,10 +78,13 @@ internal sealed class FlightIpcReader : IDisposable {
     DictionaryMemoField?.FieldType.GetField("_idToDictionary", BindingFlags.Instance | BindingFlags.NonPublic);
 
   /// <summary>
-  /// Works around an Apache.Arrow bug: a zero-row variable-width array deserialized from the
-  /// wire has zero-length buffers (in particular, no offsets buffer), and
-  /// ArrowArrayConcatenator throws ArgumentOutOfRangeException when a later isDelta
-  /// DictionaryBatch is concatenated onto such an array by DictionaryMemo.AddDeltaDictionary.
+  /// Works around an Apache.Arrow bug (apache/arrow-dotnet#462, fixed upstream by #465 and #470
+  /// on 2026-10-18 but in no release as of 23.0.0; delete this once we ship a release that has
+  /// the fix): a zero-row variable-width array deserialized from the wire has zero-length
+  /// buffers (in particular, no offsets buffer), a shape Arrow C++ accepts explicitly
+  /// (ARROW-544) and the Java and C++ IPC writers emit, and ArrowArrayConcatenator throws
+  /// ArgumentOutOfRangeException when a later isDelta DictionaryBatch is concatenated onto such
+  /// an array by DictionaryMemo.AddDeltaDictionary.
   /// A multi-batch DoGet hits this when a dictionary-encoded column is null throughout the
   /// first batch (snapshots start with a 4096-row batch and grow from there): that batch's
   /// isDelta=false base dictionary is empty and a later batch's values arrive as a delta. A

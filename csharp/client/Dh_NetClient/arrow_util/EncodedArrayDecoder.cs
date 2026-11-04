@@ -40,11 +40,11 @@ public static class EncodedArrayDecoder {
   /// Rewrites a schema so that encoded fields are replaced by fields of their plain
   /// (decoded) value type. Returns the original schema if nothing is encoded.
   /// </summary>
-  public static Schema DecodeSchema(Schema schema) {
+  public static Schema MaybeDecodeSchema(Schema schema) {
     if (!NeedsDecode(schema)) {
       return schema;
     }
-    var newFields = schema.FieldsList.Select(DecodeField).ToList();
+    var newFields = schema.FieldsList.Select(MaybeDecodeField).ToList();
     return new Schema(newFields, schema.Metadata);
   }
 
@@ -52,7 +52,7 @@ public static class EncodedArrayDecoder {
   /// Rewrites an encoded field as a field of its plain (decoded) value type,
   /// preserving name, nullability, and metadata. Non-encoded fields are returned unchanged.
   /// </summary>
-  public static Field DecodeField(Field field) {
+  public static Field MaybeDecodeField(Field field) {
     switch (field.DataType) {
       case DictionaryType dictType:
         return new Field(field.Name, dictType.ValueType, field.IsNullable, field.Metadata);
@@ -106,12 +106,12 @@ public static class EncodedArrayDecoder {
   /// Decodes all encoded columns of a RecordBatch into plain columns. Returns the original
   /// RecordBatch if nothing is encoded.
   /// </summary>
-  public static RecordBatch DecodeRecordBatch(RecordBatch recordBatch) {
+  public static RecordBatch MaybeDecodeRecordBatch(RecordBatch recordBatch) {
     if (!NeedsDecode(recordBatch.Schema)) {
       return recordBatch;
     }
-    var newSchema = DecodeSchema(recordBatch.Schema);
-    var newArrays = recordBatch.Arrays.Select(DecodeArray).ToList();
+    var newSchema = MaybeDecodeSchema(recordBatch.Schema);
+    var newArrays = recordBatch.Arrays.Select(MaybeDecodeArray).ToList();
     return new RecordBatch(newSchema, newArrays, recordBatch.Length);
   }
 
@@ -120,7 +120,7 @@ public static class EncodedArrayDecoder {
   /// RunEndEncoded-of-Dictionary) become plain arrays of the value type; anything
   /// else is returned unchanged.
   /// </summary>
-  public static IArrowArray DecodeArray(IArrowArray array) {
+  public static IArrowArray MaybeDecodeArray(IArrowArray array) {
     switch (array) {
       case DictionaryArray dictArray: {
         var target = MakeTarget(dictArray.Dictionary.Data.DataType);

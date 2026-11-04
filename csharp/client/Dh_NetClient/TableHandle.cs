@@ -666,14 +666,14 @@ public class TableHandle : IDisposable {
       if (recordBatch == null) {
         break;
       }
-      recordBatches.Add(EncodedArrayDecoder.DecodeRecordBatch(recordBatch));
+      recordBatches.Add(EncodedArrayDecoder.MaybeDecodeRecordBatch(recordBatch));
       // The server may attach Barrage metadata (app_metadata) to snapshot batches. A DoGet has
       // no use for it, so drop it rather than let the reader accumulate it for the whole fetch.
       reader.TakeAppMetadata();
     }
 
     var rawSchema = reader.Schema ?? throw new Exception("Flight stream contained no schema");
-    var schema = EncodedArrayDecoder.DecodeSchema(rawSchema);
+    var schema = EncodedArrayDecoder.MaybeDecodeSchema(rawSchema);
     if (recordBatches.Count != 0) {
       return Table.TableFromRecordBatches(schema, recordBatches);
     }

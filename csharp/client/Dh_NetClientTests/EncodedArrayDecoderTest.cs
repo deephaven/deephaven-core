@@ -43,7 +43,7 @@ public class EncodedArrayDecoderTest {
     AssertTrue(readBatch != null, "IPC roundtrip produced a record batch");
     AssertTrue(readBatch!.Column(0) is DictionaryArray, "column read back as DictionaryArray");
 
-    var decoded = EncodedArrayDecoder.DecodeRecordBatch(readBatch);
+    var decoded = EncodedArrayDecoder.MaybeDecodeRecordBatch(readBatch);
     AssertTrue(decoded.Schema.GetFieldByIndex(0).DataType is StringType, "decoded schema field is String");
     AssertSeqEqual(decoded.Column(0), ["x", "y", "z", null, null, "x"]);
   }
@@ -53,7 +53,7 @@ public class EncodedArrayDecoderTest {
     var runEnds = new Int32Array.Builder().Append(3).Append(6).Build();
     var values = new StringArray.Builder().Append("a").Append("b").Build();
     var ree = new RunEndEncodedArray(runEnds, values);
-    var decoded = EncodedArrayDecoder.DecodeArray(ree);
+    var decoded = EncodedArrayDecoder.MaybeDecodeArray(ree);
     AssertSeqEqual(decoded, ["a", "a", "a", "b", "b", "b"]);
   }
 
@@ -62,7 +62,7 @@ public class EncodedArrayDecoderTest {
     var runEnds = new Int32Array.Builder().Append(2).Append(4).Append(7).Build();
     var values = new StringArray.Builder().Append("p").AppendNull().Append("q").Build();
     var ree = new RunEndEncodedArray(runEnds, values);
-    var decoded = EncodedArrayDecoder.DecodeArray(ree);
+    var decoded = EncodedArrayDecoder.MaybeDecodeArray(ree);
     AssertSeqEqual(decoded, ["p", "p", null, null, "q", "q", "q"]);
   }
 
@@ -79,7 +79,7 @@ public class EncodedArrayDecoderTest {
     var runEnds = new Int32Array.Builder().Append(3).Append(6).Build();
     var reeDict = new RunEndEncodedArray(runEnds, dictArray);
 
-    var decoded = EncodedArrayDecoder.DecodeArray(reeDict);
+    var decoded = EncodedArrayDecoder.MaybeDecodeArray(reeDict);
     AssertSeqEqual(decoded, ["a", "a", "a", "b", "b", "b"]);
   }
 
@@ -89,7 +89,7 @@ public class EncodedArrayDecoderTest {
     var indices = new Int8Array.Builder().Append(1).AppendNull().Append(0).Append(2).Build();
     var dictType = new DictionaryType(Int8Type.Default, Int64Type.Default, false);
     var dictArray = new DictionaryArray(dictType, indices, dictValues);
-    var decoded = EncodedArrayDecoder.DecodeArray(dictArray);
+    var decoded = EncodedArrayDecoder.MaybeDecodeArray(dictArray);
     AssertTrue(decoded is Int64Array, "decoded is Int64Array");
     AssertSeqEqual(decoded, [200L, null, 100L, null]);
   }
@@ -108,7 +108,7 @@ public class EncodedArrayDecoderTest {
     var runEnds = new Int32Array.Builder().Append(2).Append(5).Build();
     var ree = new RunEndEncodedArray(runEnds, values);
 
-    var decoded = EncodedArrayDecoder.DecodeArray(ree);
+    var decoded = EncodedArrayDecoder.MaybeDecodeArray(ree);
     AssertTrue(decoded is TimestampArray, "decoded is TimestampArray");
     var ts = (TimestampArray)decoded;
     AssertTrue(ts.Length == 5, "length is 5");
@@ -132,7 +132,7 @@ public class EncodedArrayDecoderTest {
 
     var schema = new Schema([reeField, dictField], null);
     AssertTrue(EncodedArrayDecoder.NeedsDecode(schema), "NeedsDecode is true");
-    var decoded = EncodedArrayDecoder.DecodeSchema(schema);
+    var decoded = EncodedArrayDecoder.MaybeDecodeSchema(schema);
     var f0 = decoded.GetFieldByIndex(0);
     var f1 = decoded.GetFieldByIndex(1);
     AssertTrue(f0.DataType is StringType && f1.DataType is StringType, "both decoded to String");
@@ -146,9 +146,9 @@ public class EncodedArrayDecoderTest {
     var arr = new Int32Array.Builder().Append(1).Append(2).Build();
     var schema = new Schema([new Field("A", Int32Type.Default, true)], null);
     var batch = new RecordBatch(schema, [arr], 2);
-    AssertTrue(ReferenceEquals(EncodedArrayDecoder.DecodeSchema(schema), schema), "schema passthrough");
-    AssertTrue(ReferenceEquals(EncodedArrayDecoder.DecodeRecordBatch(batch), batch), "batch passthrough");
-    AssertTrue(ReferenceEquals(EncodedArrayDecoder.DecodeArray(arr), arr), "array passthrough");
+    AssertTrue(ReferenceEquals(EncodedArrayDecoder.MaybeDecodeSchema(schema), schema), "schema passthrough");
+    AssertTrue(ReferenceEquals(EncodedArrayDecoder.MaybeDecodeRecordBatch(batch), batch), "batch passthrough");
+    AssertTrue(ReferenceEquals(EncodedArrayDecoder.MaybeDecodeArray(arr), arr), "array passthrough");
   }
 
   /// <summary>
@@ -164,7 +164,7 @@ public class EncodedArrayDecoderTest {
     var reeField = new Field("Sym", new RunEndEncodedType(runEndsField, valuesField), false,
       new Dictionary<string, string> { { "deephaven:isSortable", "true" }, { "shared", "parent" } });
 
-    var decoded = EncodedArrayDecoder.DecodeField(reeField);
+    var decoded = EncodedArrayDecoder.MaybeDecodeField(reeField);
     AssertTrue(decoded.Metadata.Count == 3, "union of both maps");
     AssertTrue(decoded.Metadata["deephaven:type"] == "java.lang.String", "child-only key kept");
     AssertTrue(decoded.Metadata["deephaven:isSortable"] == "true", "parent-only key kept");
@@ -183,19 +183,19 @@ public class EncodedArrayDecoderTest {
 
     var nullableValues = new Field("values", StringType.Default, true, metadata);
     var reeOfNullable = new Field("Sym", new RunEndEncodedType(runEndsField, nullableValues), false, metadata);
-    AssertTrue(EncodedArrayDecoder.DecodeField(reeOfNullable).IsNullable,
+    AssertTrue(EncodedArrayDecoder.MaybeDecodeField(reeOfNullable).IsNullable,
       "non-nullable REE parent with nullable values child decodes to a nullable field");
 
     var nonNullableValues = new Field("values", StringType.Default, false, metadata);
     var reeOfNonNullable = new Field("Sym", new RunEndEncodedType(runEndsField, nonNullableValues), true, metadata);
-    AssertTrue(!EncodedArrayDecoder.DecodeField(reeOfNonNullable).IsNullable,
+    AssertTrue(!EncodedArrayDecoder.MaybeDecodeField(reeOfNonNullable).IsNullable,
       "non-nullable values child decodes to a non-nullable field regardless of the parent");
 
     // Doubly-encoded: the (nullable) values child is itself dictionary-encoded.
     var dictType = new DictionaryType(Int32Type.Default, StringType.Default, false);
     var dictValues = new Field("values", dictType, true, metadata);
     var reeOfDict = new Field("Sym", new RunEndEncodedType(runEndsField, dictValues), false, metadata);
-    var decoded = EncodedArrayDecoder.DecodeField(reeOfDict);
+    var decoded = EncodedArrayDecoder.MaybeDecodeField(reeOfDict);
     AssertTrue(decoded.IsNullable && decoded.DataType is StringType,
       "REE<Dictionary<utf8>> with a nullable values child decodes to a nullable utf8 field");
   }
@@ -210,7 +210,7 @@ public class EncodedArrayDecoderTest {
     var runEnds = new Int32Array.Builder().Append(2).Append(3).Append(5).Append(6).Build();
     var ree = new RunEndEncodedArray(runEnds, values);
 
-    var decoded = EncodedArrayDecoder.DecodeArray(ree);
+    var decoded = EncodedArrayDecoder.MaybeDecodeArray(ree);
     AssertTrue(decoded is ListArray, "decoded is ListArray");
     AssertTrue(((ListType)decoded.Data.DataType).ValueDataType is Int32Type, "element type preserved");
     AssertSeqEqual(decoded, [L(1, 2), L(1, 2), null, L(), L(), L(3, null)]);
@@ -223,7 +223,7 @@ public class EncodedArrayDecoderTest {
     var dictType = new DictionaryType(Int32Type.Default, dictValues.Data.DataType, false);
     var dictArray = new DictionaryArray(dictType, indices, dictValues);
 
-    var decoded = EncodedArrayDecoder.DecodeArray(dictArray);
+    var decoded = EncodedArrayDecoder.MaybeDecodeArray(dictArray);
     AssertTrue(decoded is ListArray, "decoded is ListArray");
     AssertSeqEqual(decoded, [L("r"), null, L("p", "q"), L("r")]);
   }
