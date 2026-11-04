@@ -25,7 +25,7 @@ This independence can cause consistency issues when you have multiple tables tha
 
 Both [`SyncTableFilter`](/core/javadoc/io/deephaven/engine/table/impl/util/SyncTableFilter.html) and [`LeaderTableFilter`](/core/javadoc/io/deephaven/engine/util/LeaderTableFilter.html) solve this problem by ensuring that only coordinated rows appear in the filtered results.
 
-Both filters match rows on two kinds of columns. A key column groups related rows, such as a `Symbol` column or a client session ID column. An ID column holds a number that never decreases within each key, such as a sequence number or transaction ID. Rows from different tables that have the same key and the same ID belong together.
+Both filters match rows on two kinds of columns. A key column groups related rows, such as a `Symbol` column or a client session ID column. An ID column holds a number that never decreases within each key, such as a sequence number or transaction ID. With [`SyncTableFilter`](/core/javadoc/io/deephaven/engine/table/impl/util/SyncTableFilter.html), rows from different tables that have the same key and the same ID belong together. With [`LeaderTableFilter`](/core/javadoc/io/deephaven/engine/util/LeaderTableFilter.html), the leader table has a separate ID column for each follower, so the IDs don't need to match across tables. Each leader row names the ID to take from each follower for its key.
 
 ## Choose a filter
 
