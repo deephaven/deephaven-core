@@ -61,7 +61,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
             a new Filter with the given declared barriers
 
         Raises:
-            DHError
+            DHError: If unable to create filter with declared barriers.
         """
         try:
             barriers = to_sequence(barriers)
@@ -79,7 +79,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
             a new Filter with the given respected barriers
 
         Raises:
-            DHError
+            DHError: If unable to create filter with respected barriers.
         """
         try:
             barriers = to_sequence(barriers)
@@ -94,7 +94,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
             a new Filter with serial evaluation enforced
 
         Raises:
-            DHError
+            DHError: If unable to create filter with serial evaluation.
         """
         try:
             return Filter(j_filter=self.j_filter.withSerial())
@@ -120,7 +120,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
             filter(s)
 
         Raises:
-            DHError
+            DHError: If unable to create filters.
         """
         conditions = to_sequence(conditions)
         try:
@@ -231,7 +231,7 @@ def pattern(
         a new pattern filter
 
     Raises:
-        DHError
+        DHError: If unable to create a pattern filter.
     """
     try:
         return Filter(
@@ -260,7 +260,7 @@ def incremental_release(initial_rows: int, increment: int) -> Filter:
         a new incremental release filter
 
     Raises:
-        DHError
+        DHError: If unable to create incremental release filter.
     """
     try:
         return Filter(j_filter=_JIncrementalReleaseFilter(initial_rows, increment))
@@ -279,7 +279,7 @@ def in_(col: str, values: Sequence[bool | int | float | str]) -> Filter:
         a new in Filter
 
     Raises:
-        DHError
+        DHError: If unable to create an in filter.
     """
     try:
         j_literals = [_JLiteral.of(v) for v in values]

@@ -33,7 +33,8 @@ def read_cursor(cursor: adbc_driver_manager.dbapi.Cursor) -> Table:
         a new Table
 
     Raises:
-        DHError, TypeError
+        DHError: If the operation fails.
+        TypeError: If expect got instead.
     """
 
     if not isinstance(cursor, adbc_driver_manager.dbapi.Cursor):

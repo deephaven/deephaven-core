@@ -305,7 +305,7 @@ def read(
         a table
 
     Raises:
-        DHError
+        DHError: If unable to read parquet data.
     """
 
     try:
@@ -339,7 +339,7 @@ def delete(path: str) -> None:
         path (str): path to delete
 
     Raises:
-        DHError
+        DHError: If unable to delete a parquet table: on disk.
     """
     try:
         _JParquetTools.deleteTable(path)
@@ -396,7 +396,7 @@ def write(
         special_instructions (Optional[s3.S3Instructions]): Special instructions for writing parquet files, useful when
             writing files to a non-local file system, like S3. By default, None.
     Raises:
-        DHError
+        DHError: If unable to write to parquet data.
     """
     try:
         write_instructions = _build_parquet_instructions(
@@ -484,7 +484,7 @@ def write_partitioned(
             writing files to a non-local file system, like S3. By default, None.
 
     Raises:
-        DHError
+        DHError: If unable to write to parquet data.
     """
     try:
         write_instructions = _build_parquet_instructions(
@@ -559,7 +559,7 @@ def batch_write(
             writing files to a non-local file system, like S3. By default, None.
 
     Raises:
-        DHError
+        DHError: If write multiple tables to parquet data fails.
     """
     try:
         write_instructions = _build_parquet_instructions(

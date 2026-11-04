@@ -142,7 +142,7 @@ def learn(
         a Table with added columns containing the results of evaluating model_func.
 
     Raises:
-        DHError
+        DHError: If unable to complete the learn function.
     """
 
     try:

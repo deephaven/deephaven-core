@@ -43,7 +43,7 @@ def process_info_log() -> Table:
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to obtain the process info log table.
     """
     try:
         return Table(j_table=_JTableLoggers.processInfoLog())
@@ -59,7 +59,7 @@ def server_state_log() -> Table:
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to obtain the server state log table.
     """
     try:
         return Table(j_table=_JTableLoggers.serverStateLog())
@@ -74,7 +74,7 @@ def process_metrics_log() -> Table:
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to obtain the process metrics log table.
     """
     try:
         return Table(j_table=_JTableLoggers.processMetricsLog())
@@ -90,7 +90,7 @@ def query_operation_performance_log() -> Table:
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to obtain the query operation performance log table.
     """
     try:
         return Table(j_table=_JTableLoggers.queryOperationPerformanceLog())
@@ -108,7 +108,7 @@ def query_performance_log() -> Table:
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to obtain the query performance log table.
     """
     try:
         return Table(j_table=_JTableLoggers.queryPerformanceLog())
@@ -123,7 +123,7 @@ def query_operation_performance_tree_table() -> TreeTable:
         a TreeTable
 
     Raises:
-        DHError
+        DHError: If unable to obtain the query operation performance log as tree table.
     """
     try:
         with auto_locking_ctx(query_performance_log()):
@@ -146,7 +146,7 @@ def query_performance_tree_table() -> TreeTable:
         a TreeTable
 
     Raises:
-        DHError
+        DHError: If unable to obtain the query performance log as tree table.
     """
     try:
         with auto_locking_ctx(query_performance_log()):
@@ -168,7 +168,7 @@ def update_performance_log() -> Table:
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to obtain the update performance log table.
     """
     try:
         return Table(j_table=_JTableLoggers.updatePerformanceLog())
@@ -183,7 +183,7 @@ def update_performance_ancestors_log() -> Table:
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to obtain the update performance log table.
     """
     try:
         return Table(j_table=_JTableLoggers.updatePerformanceAncestorsLog())
@@ -202,7 +202,7 @@ def barrage_subscription_performance_log() -> Table:
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to obtain the barrage subscription performance log table.
     """
     try:
         return Table(
@@ -224,7 +224,7 @@ def barrage_snapshot_performance_log() -> Table:
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to obtain the barrage snapshot performance log table.
     """
     try:
         return Table(j_table=_JBarragePerformanceLog.getInstance().getSnapshotTable())
@@ -260,7 +260,7 @@ def process_info(proc_id: str, proc_type: str, key: str) -> str:
         a string of process information
 
     Raises:
-        DHError
+        DHError: If unable to obtain the process info.
     """
     try:
         return _JPerformanceQueries.processInfo(proc_id, proc_type, key)
@@ -298,7 +298,7 @@ def query_operation_performance(eval_number: int) -> Table:
         a table of query operation performance data
 
     Raises:
-        DHError
+        DHError: If unable to obtain the query operation performance data.
     """
     try:
         return Table(
@@ -330,7 +330,7 @@ def query_performance(eval_number: int) -> Table:
         a Table of query performance data
 
     Raises:
-        DHError
+        DHError: If unable to obtain the query performance data.
     """
     try:
         return Table(j_table=_JPerformanceQueries.queryPerformance(eval_number))
@@ -351,7 +351,7 @@ def query_update_performance(eval_number: int) -> Table:
         a Table of query update performance data
 
     Raises:
-        DHError
+        DHError: If unable to obtain the query update performance data.
     """
     try:
         return Table(j_table=_JPerformanceQueries.queryUpdatePerformance(eval_number))
@@ -371,7 +371,7 @@ def query_update_performance_map(eval_number: int) -> dict[str, Table]:
         a dict
 
     Raises:
-        DHError
+        DHError: If unable to obtain the query update perf map.
     """
 
     try:
@@ -402,7 +402,7 @@ def ancestor_svg(
         the contents of an SVG image
 
     Raises:
-        DHError
+        DHError: If unable to produce ancestor SVG.
     """
     try:
         if isinstance(ids, int):
@@ -434,7 +434,7 @@ def ancestor_image(
         a UI component with an embedded graph of ancestors
 
     Raises:
-        DHError
+        DHError: If unable to produce ancestor image.
     """
 
     try:
@@ -468,7 +468,7 @@ def ancestor_dot(
         a string of graphviz DOT format data
 
     Raises:
-        DHError
+        DHError: If unable to produce ancestor DOT file.
     """
     try:
         if isinstance(ids, int):

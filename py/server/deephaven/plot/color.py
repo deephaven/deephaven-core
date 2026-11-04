@@ -44,7 +44,7 @@ class Color(JObjectWrapper):
              a Color
 
         Raises:
-            DHError
+            DHError: If unable to get a color by its name.
         """
         try:
             return Color(j_color=_JColor.color(name))
@@ -66,7 +66,7 @@ class Color(JObjectWrapper):
             a Color
 
         Raises:
-            DHError
+            DHError: If unable to create a color from rgb values.
         """
         try:
             return Color(j_color=_JColor.colorRGB(r, g, b, alpha))
@@ -88,7 +88,7 @@ class Color(JObjectWrapper):
             a color
 
         Raises:
-            DHError
+            DHError: If unable to create a color from rgb values.
         """
         try:
             return Color(j_color=_JColor.colorRGB(r, g, b, alpha))
@@ -111,7 +111,7 @@ class Color(JObjectWrapper):
             a Color
 
         Raises:
-            DHError
+            DHError: If unable to create a color from hue, saturation, lightness values.
         """
         try:
             return Color(j_color=_JColor.colorHSL(h, s, l, alpha))

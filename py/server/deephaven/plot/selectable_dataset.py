@@ -44,7 +44,7 @@ def one_click(
         a SelectableDataSet
 
     Raises:
-        DHError
+        DHError: If creating the SelectableDataSet fails.
     """
     if not by:
         by = []
@@ -70,7 +70,7 @@ def one_click_partitioned_table(
         a SelectableDataSet
 
     Raises:
-        DHError
+        DHError: If creating the SelectableDataSet fails.
     """
     try:
         return SelectableDataSet(

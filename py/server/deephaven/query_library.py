@@ -22,7 +22,7 @@ def import_class(name: str) -> None:
         name (str): the fully qualified name of the Java class
 
     Raises:
-        DHError
+        DHError: If unable to add the Java class to the Query Library.
     """
     try:
         j_class = _JClass.forName(name)
@@ -40,7 +40,7 @@ def import_static(name: str) -> None:
         name (str): the fully qualified name of the Java class
 
     Raises:
-        DHError
+        DHError: If unable to add the static members of the Java class to the Query Library.
     """
     try:
         j_class = _JClass.forName(name)
@@ -61,7 +61,7 @@ def import_package(name: str) -> None:
         name (str): the fully qualified name of the Java package
 
     Raises:
-        DHError
+        DHError: If unable to add the Java package into to the Query Library.
     """
     try:
         j_package = _JPackage.getPackage(name)

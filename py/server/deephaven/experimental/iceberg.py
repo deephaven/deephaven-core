@@ -905,7 +905,7 @@ def adapter_s3_rest(
         `IcebergCatalogAdapter`: the catalog adapter for the provided S3 REST catalog.
 
     Raises:
-        DHError: If unable to build the catalog adapter.
+        DHError: If unable to build the catalog adapter..
     """
     if not _JIcebergToolsS3:
         raise DHError(
@@ -947,7 +947,7 @@ def adapter_aws_glue(
         `IcebergCatalogAdapter`: the catalog adapter for the provided AWS Glue catalog.
 
     Raises:
-        DHError: If unable to build the catalog adapter.
+        DHError: If unable to build the catalog adapter..
     """
     if not _JIcebergToolsS3:
         raise DHError(
@@ -1053,7 +1053,7 @@ def adapter(
     `IcebergCatalogAdapter`: the catalog adapter created from the provided properties
 
     Raises:
-        DHError: If unable to build the catalog adapter
+        DHError: If unable to build the catalog adapter.
     """
 
     catalog_options = _build_catalog_options(

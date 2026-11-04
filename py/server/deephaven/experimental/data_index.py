@@ -91,7 +91,7 @@ def data_index(
         a DataIndex or None
 
     Raises:
-        DHError
+        DHError: If unable to create DataIndex.
     """
     try:
         if not create_if_absent:

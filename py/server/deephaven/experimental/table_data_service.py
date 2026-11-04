@@ -313,7 +313,7 @@ class TableDataService(JObjectWrapper):
             Table: a new table
 
         Raises:
-            DHError
+            DHError: If the operation fails.
         """
         j_table_key = _JTableKeyImpl(table_key)
         try:
@@ -335,7 +335,7 @@ class TableDataService(JObjectWrapper):
             PartitionedTable: a new partitioned table
 
         Raises:
-            DHError
+            DHError: If the operation fails.
         """
         j_table_key = _JTableKeyImpl(table_key)
         try:

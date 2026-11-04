@@ -25,7 +25,7 @@ def read_sql(
         a new Table
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     if isinstance(conn, str):
         if driver == "connectorx":

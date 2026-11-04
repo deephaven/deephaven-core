@@ -33,7 +33,7 @@ def add_only_to_blink(table: Table) -> Table:
         a blink table
 
     Raises:
-        DHError
+        DHError: If unable to create a blink table.
     """
     try:
         return Table(j_table=_JAddOnlyToBlinkTableAdapter.toBlink(table.j_table))
@@ -51,7 +51,7 @@ def blink_to_append_only(table: Table) -> Table:
         an append-only table
 
     Raises:
-        DHError
+        DHError: If unable to create an append-only table.
     """
     try:
         return Table(j_table=_JBlinkTableTools.blinkToAppendOnly(table.j_table))

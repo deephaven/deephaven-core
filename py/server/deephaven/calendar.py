@@ -19,7 +19,7 @@ def remove_calendar(name: str) -> None:
         name (str): the name of the calendar to remove
 
     Raises:
-        DHError
+        DHError: If unable to remove calendar ''.
     """
     try:
         _JCalendars.removeCalendar(name)
@@ -34,7 +34,7 @@ def add_calendar(cal: BusinessCalendar | str) -> None:
         cal (Union[BusinessCalendar, str]): business calendar or a path to a business calendar file
 
     Raises:
-        DHError
+        DHError: If unable to add calendar from file ''.
     """
 
     if cal is None:
@@ -58,7 +58,7 @@ def set_calendar(name: str) -> None:
         name (str): the name of the calendar
 
     Raises:
-        DHError
+        DHError: If unable to set the default calendar name to ''.
     """
     try:
         _JCalendars.setCalendar(name)
@@ -73,7 +73,7 @@ def calendar_names() -> list[str]:
         a list of all available calendar names
 
     Raises:
-        DHError
+        DHError: If unable to obtain the available calendar names.
     """
     try:
         return list(_JCalendars.calendarNames())
@@ -90,7 +90,7 @@ def calendar_name() -> str:
         the default business calendar name
 
     Raises:
-        DHError
+        DHError: If unable to get the default calendar name.
     """
     try:
         return _JCalendars.calendarName()
@@ -113,7 +113,7 @@ def calendar(name: str | None = None) -> BusinessCalendar:
         the calendar with the given name or the defalt calendar if name is not specified.
 
     Raises:
-        DHError
+        DHError: If unable to get the default calendar.
     """
     try:
         if name is None:

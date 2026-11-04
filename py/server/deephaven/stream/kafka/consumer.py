@@ -203,7 +203,7 @@ def consume(
         a Deephaven live table that will update based on Kafka messages consumed for the given topic
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     if table_type is None:
         table_type = TableType.blink()
@@ -265,7 +265,7 @@ def consume_to_partitioned_table(
         topic partition.
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     if table_type is None:
         table_type = TableType.blink()
@@ -468,7 +468,7 @@ def avro_spec(
         a KeyValueSpec
 
     Raises:
-        DHError
+        DHError: If unable to create a Kafka key/value spec.
     """
     try:
         mapping_func: Callable[[str], str] | None = (
@@ -520,7 +520,7 @@ def json_spec(
         a KeyValueSpec
 
     Raises:
-        DHError
+        DHError: If unable to create a Kafka key/value spec.
     """
     try:
         try:
@@ -559,7 +559,7 @@ def simple_spec(col_name: str, data_type: DType | None = None) -> KeyValueSpec:
         a KeyValueSpec
 
     Raises:
-        DHError
+        DHError: If unable to create a Kafka key/value spec.
     """
     try:
         if data_type is None:
@@ -582,6 +582,6 @@ def object_processor_spec(provider: jpy.JType) -> KeyValueSpec:
         a KeyValueSpec
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     return KeyValueSpec(j_spec=_JKafkaTools_Consume.objectProcessorSpec(provider))
