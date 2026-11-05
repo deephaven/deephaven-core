@@ -15,6 +15,10 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * Appending changes no position already held, so a reader that finds an index concurrently with an append finds it
  * where it was. Nothing else changes positions in place: the caller makes new positions to add indices among the
  * existing ones or to remove indices.
+ * <p>
+ * {@link #find(int)} stays small enough that the JIT inlines it even at a call site it rarely reaches, as do the
+ * lookups of a bitmap and of sorted positions of at most four indices, because a call left in a loop that reads a
+ * source keeps the JIT from moving the loads of the page table out of the loop.
  */
 public abstract class ChildPositions {
 
@@ -123,13 +127,14 @@ public abstract class ChildPositions {
 
     /**
      * Up to {@link #CAPACITY} child indices, sorted, packed four 16-bit lanes to a long in four fields, so that a
-     * lookup reads no array. A lookup counts the indices less than its target a word at a time, with no branch that
-     * depends on the indices, as {@link CharSortedLeaf} does. Unused lanes hold {@link #UNUSED}, which no lookup
-     * counts, because no target exceeds it. An append in place writes only unused lanes.
+     * lookup reads no array. A lookup marks the lanes equal to its target, a word at a time, and takes the position of
+     * the lowest mark, with no branch that depends on the indices; a level of at most four children looks only at the
+     * first word. Unused lanes hold {@link #UNUSED}, whose top bit no index has, so no lookup marks them. An append in
+     * place writes only unused lanes.
      */
     private static final class Sorted extends ChildPositions {
         private static final int CAPACITY = 16;
-        private static final int UNUSED = BLOCK2_SIZE - 1;
+        private static final int UNUSED = 0xFFFF;
         private static final long LANE_ONES = 0x0001_0001_0001_0001L;
         private static final long GUARD_BITS = 0x8000_8000_8000_8000L;
         private static final long UNUSED_WORD = UNUSED * LANE_ONES;
@@ -194,16 +199,42 @@ public abstract class ChildPositions {
             }
         }
 
-        private static int lessThan(final long word, final long target) {
-            return Long.bitCount(~((word | GUARD_BITS) - target) & GUARD_BITS);
+        /**
+         * @return the guard bit of each lane of {@code word} equal to its lane of {@code target}, and possibly of lanes
+         *         above an equal lane
+         */
+        private static long equalLanes(final long word, final long target) {
+            final long difference = word ^ target;
+            return (difference - LANE_ONES) & ~difference & GUARD_BITS;
         }
 
         @Override
         public int find(final int index) {
+            return size <= 4 ? findInFirstWord(index) : findInWords(index);
+        }
+
+        /**
+         * @return the position of {@code index} among at most four indices, all in the first word, or -1 if not held
+         */
+        private int findInFirstWord(final int index) {
+            final long equal = equalLanes(word0, index * LANE_ONES);
+            return equal == 0 ? -1 : Long.numberOfTrailingZeros(equal) >>> 4;
+        }
+
+        /**
+         * @return the position of {@code index}, or -1 if it is not held
+         */
+        private int findInWords(final int index) {
             final long target = index * LANE_ONES;
-            final int position = lessThan(word0, target) + lessThan(word1, target)
-                    + lessThan(word2, target) + lessThan(word3, target);
-            return position < size && indexAt(position) == index ? position : -1;
+            // lane l of word w lands on bit 16 * l + 4 * w; within a word, only lanes above an equal lane can be
+            // falsely marked, so the lowest bit is an equal lane
+            final long equal = equalLanes(word0, target) >>> 15 | equalLanes(word1, target) >>> 11
+                    | equalLanes(word2, target) >>> 7 | equalLanes(word3, target) >>> 3;
+            if (equal == 0) {
+                return -1;
+            }
+            final int bit = Long.numberOfTrailingZeros(equal);
+            return (bit & 0xC) | (bit >>> 4);
         }
 
         @Override
@@ -277,13 +308,16 @@ public abstract class ChildPositions {
 
         @Override
         public int find(final int index) {
-            final int word = index >>> 6;
-            final long wordBits = bits[word];
-            final long bit = 1L << index;
-            if ((wordBits & bit) == 0) {
-                return -1;
-            }
-            return rankBefore[word] + Long.bitCount(wordBits & (bit - 1));
+            // shift the bit of index to the sign bit, above the bits of the lower indices in its word
+            final long atAndBelow = bits[index >>> 6] << ~index;
+            return atAndBelow < 0 ? rank(index, atAndBelow) : -1;
+        }
+
+        /**
+         * @return the position of {@code index}, which is held, given the bits of its word at and below it
+         */
+        private int rank(final int index, final long atAndBelow) {
+            return rankBefore[index >>> 6] + Long.bitCount(atAndBelow) - 1;
         }
 
         @Override
