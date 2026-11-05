@@ -238,8 +238,10 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
             nanoChunk.close();
         }
 
-        private LongChunk<Values> convert(@NotNull final ObjectChunk<TIME_TYPE, ? extends Values> src) {
-            final int size = src.size();
+        /**
+         * @return the nanoseconds of the first {@code size} values of {@code src}
+         */
+        private LongChunk<Values> convert(@NotNull final ObjectChunk<TIME_TYPE, ? extends Values> src, final int size) {
             for (int ii = 0; ii < size; ++ii) {
                 nanoChunk.set(ii, toNanos(src.get(ii)));
             }
@@ -259,8 +261,8 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
             @NotNull final Chunk<? extends Values> src,
             @NotNull final RowSequence rowSequence) {
         final ToNanosFillFromContext fillFromContext = (ToNanosFillFromContext) context;
-        nanoSource.fillFromChunk(fillFromContext.nanoFillFromContext, fillFromContext.convert(src.asObjectChunk()),
-                rowSequence);
+        nanoSource.fillFromChunk(fillFromContext.nanoFillFromContext,
+                fillFromContext.convert(src.asObjectChunk(), rowSequence.intSize()), rowSequence);
     }
 
     @Override
@@ -270,7 +272,7 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
             @NotNull final LongChunk<RowKeys> keys) {
         final ToNanosFillFromContext fillFromContext = (ToNanosFillFromContext) context;
         nanoSource.fillFromChunkUnordered(fillFromContext.nanoFillFromContext,
-                fillFromContext.convert(src.asObjectChunk()), keys);
+                fillFromContext.convert(src.asObjectChunk(), keys.size()), keys);
     }
 
     @Override

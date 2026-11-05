@@ -11,6 +11,7 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -122,6 +123,29 @@ public class TestInstantAdaptiveSparseArraySource {
             }
             assertMatches(source, expected, random);
         }
+    }
+
+    @Test
+    public void testFillsFromLongerChunk() {
+        final InstantSparseArraySource source = newSource();
+        final Instant value = Instant.ofEpochSecond(1_700_000_000L, 123);
+        // Instant.MAX has no nanosecond value, so converting it would throw
+        try (final WritableObjectChunk<Instant, Values> values = WritableObjectChunk.makeWritableChunk(2);
+                final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(1);
+                final ChunkSink.FillFromContext context = source.makeFillFromContext(2)) {
+            values.set(0, value);
+            values.set(1, Instant.MAX);
+            source.fillFromChunk(context, values, RowSequenceFactory.forRange(5, 5));
+            assertEquals(value, source.get(5));
+            keys.set(0, 7);
+            source.fillFromChunkUnordered(context, values, keys);
+            assertEquals(value, source.get(7));
+            keys.setSize(0);
+            values.set(0, Instant.MAX);
+            source.fillFromChunkUnordered(context, values, keys);
+            source.fillFromChunk(context, values, RowSequenceFactory.EMPTY);
+        }
+        assertNull(source.get(6));
     }
 
     private static void assertMatches(final InstantSparseArraySource source,
