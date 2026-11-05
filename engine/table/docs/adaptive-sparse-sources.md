@@ -199,7 +199,7 @@ is not null-filled when borrowed, because taking a snapshot overwrites all of it
 
 A snapshot of a leaf reads 1024 values and writes 1024 values, however few of its rows changed. Recording the changed
 rows instead reads and writes one value per changed row, so a leaf with few changes costs little. With a double column,
-a cycle of 2^16 row keys touches 64 leaves:
+a cycle of 2^16 row keys touches 64 leaves, in the patterns of [Row key patterns](#row-key-patterns):
 
 | Pattern | Rows changed per leaf | Snapshot, cache lines per leaf | Recorded rows, cache lines per leaf |
 |---|---|---|---|
@@ -272,6 +272,35 @@ immutability, shifts and parallel population to the primitive source.
 `ReplicateSourcesAndChunks` and `ReplicateSourceAndChunkTests` generate the other types. The Object source keeps
 references in its leaves and recyclers, and nulls each array slot it releases so that the recyclers retain no values.
 
+## Row key patterns
+
+The benchmarks, and the measurements below, name the row keys a source holds by pattern. `SparseStorageBenchmark`,
+`SparseStorageMemory` and `SparseUpdateBenchmark` use these patterns over 2^23 row keys (8,192 leaves):
+
+| Pattern | Row keys | Rows per leaf |
+|---|---|---|
+| Dense | every row key | 1,024 |
+| Stride8 | every 8th row key | 128 |
+| Stride64 | every 64th row key | 16 |
+| Stride512 | every 512th row key | 2 |
+| Runs64 | the first 64 row keys of every 512 | 128 |
+| Random10 | each row key with probability 10% | about 102 |
+| Random1 | each row key with probability 1% | about 10 |
+| Clustered | every row key of a random eighth of the leaves, and 4 random row keys of each other leaf | 1,024 or 4 |
+
+`SparseSmallMemory` and `SparseSmallBenchmark` use shapes of n rows, each placing a small result where it exercises a
+different part of the page table:
+
+| Shape | Row keys | Page table |
+|---|---|---|
+| Dense | 0 to n - 1 | consecutive leaves of one `Level2` |
+| High | n consecutive row keys from 3 * 2^23 | consecutive leaves in the upper quarter of a `Level2` |
+| Stride64 | every 64th row key from 0 | 16 rows in each of consecutive leaves |
+| Spread | every 8,192nd row key from 0 | one row in every eighth leaf |
+| Level2s | every 2^25th row key from 0 | one row in each `Level2` |
+| Regions | n / 8 consecutive row keys at the start of each of eight regions 2^43 row keys apart, as a regioned source numbers its rows | eight `Level0` children 8 indices apart |
+| FarRegions | n / 2 consecutive row keys at the start of region 0 and of region 100,000 | two `Level0` children 800,000 indices apart |
+
 ## Measured behaviour
 
 All comparisons are against the sparse array sources before compact leaves, in the same build, with 2 forks, over a
@@ -310,7 +339,7 @@ With every leaf a full block (`SparseMemoryColumnSourceFactory.adaptive=false`):
 
 These comparisons are against page table levels that each hold either one child or an array indexed by child index, as
 the sources before compact leaves did, with compact leaves in both, in the same build, with 1 fork. `SparseSmallMemory`
-measures the bytes per row that results of a few rows retain, in the shapes it describes:
+measures the bytes per row that results of a few rows retain, in the shapes of [Row key patterns](#row-key-patterns):
 
 | Shape | Rows | Levels of one child or all, bytes per row | Adaptive levels, bytes per row |
 |---|---|---|---|
