@@ -11,7 +11,7 @@ leaf a full block, as before, and is kept as an escape hatch. Every other sparse
 |---|---|
 | **Sources** | `CharacterSparseArraySource`, replicated to Byte, Short, Integer, Long, Float, Double and Object; `BooleanSparseArraySource` over Byte; `InstantSparseArraySource` and `ZonedDateTimeSparseArraySource` over Long, through `NanosBasedTimeSparseArraySource` |
 | **Compact leaves** | `sparse/CharCompactLeaf`, with `CharSortedLeaf` (at most 16 values) and `CharBitmapLeaf` (at most 128 values), replicated per type |
-| **Level positions** | `sparse/ChildPositions`, with a sorted tier (at most 16 children) and a ranked bitmap tier, shared by every type and by the middle and bottom levels |
+| **Page table levels** | `Level0`, `Level1` and `Level2`, nested in each source; `Level0` and `Level1` hold windows of their children, ranked when sparse; `sparse/ChildPositions`, with a sorted tier (at most 16 children) and a ranked bitmap tier, ranks the children of `Level1` and `Level2` for every type |
 | **Base class** | `SparseArrayColumnSource`: `clearBlocks`, `clearBlocksWithoutLiveRows`, `clearVacatedBlocks`, `estimateSize`, `getSparseMemoryColumnSource` |
 | **Configuration** | `SparseMemoryColumnSourceFactory.adaptive` (default true) selects the default thresholds for the sources `select` and `update` create; false makes their leaves all full blocks; every other source has only full blocks |
 | **Parallel population** | `WritableSourceWithPrepareForParallelPopulation.parallelPopulationAlignment` and `prepareForParallelPopulation(rows, alignedDivisions)`; `SelectColumnLayer.divideAligned` |
@@ -45,41 +45,55 @@ So a read walks three page table levels and then looks up its offset in the leaf
 indexed by child index occupies however few children it holds, with compressed references (the default for heaps under
 32 GB); without them, the references take twice as much. Row keys spread across levels are common: a regioned source
 numbers the rows of region `r` from `r << 43`, so an `update` of a partitioned table writes under one `Level0` child per
-region. Each level therefore holds its children densely, at ranked positions (below), and only a `Level1` or `Level2`
-holding many children indexes an array by child index.
+region. So `Level0` and `Level1` hold their children in a window covering only the child indices in use, ranking them
+instead when they are too sparse for one, and `Level2` ranks its leaves until it holds many (below).
 
 `Level0`, `Level1` and `Level2` are nested classes of each source, typed per type. Each level is held directly by its
-parent's array, and `Level0` by the source's `root` field, so a read follows one reference per level. `Level2` keeps full blocks and
-compact leaves in separate arrays (`char[][] blocks` and `CharCompactLeaf[] compacts`), so reading a full block is a
-load from a `char[][]` with no type test, as it would be with no compact leaves at all. A leaf is a full block, a
-compact leaf, or absent, which reads as null.
+parent's array, and `Level0` by the source's `root` field, so a read follows one reference per level. `Level2` keeps
+full blocks and compact leaves in separate arrays (`char[][] blocks` and `CharCompactLeaf[] compacts`), so reading a
+full block is a load from a `char[][]` with no type test, as it would be with no compact leaves at all; a `Level2` of
+one leaf holds it in its own fields instead. A leaf is a full block, a compact leaf, or absent, which reads as null.
 
-### Level positions
+### Holding children
 
-A small result would spend more on arrays indexed by child index than on its values. A `Level1` or `Level2` therefore
-holds its children densely, in child index order, and finds a child's position with a `ChildPositions`, which follows
-the leaves' own tiers:
+A small result would spend more on arrays indexed by child index than on its values, so each level holds only what its
+children need.
 
-- a sorted tier for up to 16 children: child indices packed four 16-bit lanes to a `long` in four fields, counted
-  branch-free as in `CharSortedLeaf`;
+`Level0` and `Level1` hold their children in a window: an array indexed by child index less `base`, the index of its
+first entry. A window may have at most 64 entries, or eight for each child it holds (`maxWindow`); a level whose
+children would span more ranks them instead. A ranked `Level0` keeps the indices of its children in a sorted `int[]`,
+searched without a data-dependent branch, since its 23-bit indices fit neither a 16-bit lane nor a bitmap of reasonable
+size. A ranked `Level1` finds a child's position with a `ChildPositions`. A ranked level returns to a window when its
+children become dense enough, and a full window of a `Level1` is the old array indexed by child index. A window of one
+entry also records its index (`onlyIndex`), so that finding the only child of a level is one comparison against a field
+that does not change, which the JIT can move out of a loop over one source.
+
+`Level2` holds one leaf in its own fields (`onlyIndex`, `onlyBlock`, `onlyCompact`), with no arrays, so that reading it
+follows no reference past the level. It holds more in arrays of its own size, at positions from a `ChildPositions`, and
+past `DIRECT_THRESHOLD`, an eighth of the level (4,096 leaves), in arrays indexed by leaf index, which then hold at most
+eight entries per leaf.
+
+`ChildPositions` follows the leaves' own tiers:
+
+- a sorted tier for up to 16 children: child indices packed four 16-bit lanes to a `long` in four fields. A lookup marks
+  the lanes equal to the target and takes the position of the lowest mark, with no branch that depends on the indices,
+  looking only at the first word for at most four children;
 - a ranked bitmap tier for more: a bit per child and the number of children before each word, as in `CharBitmapLeaf`,
-  about 5 KB;
-- past `DIRECT_THRESHOLD`, an eighth of the level (4,096 children), no positions at all: the arrays are indexed by child
-  index, and hold at most eight entries per child held.
+  about 5 KB.
 
-`Level0` is indexed by 23 bits, which fit neither a 16-bit lane nor a bitmap of reasonable size, and it rarely holds
-more than a few children, so it keeps their indices in a sorted `int[]`, searched by binary search, and is never indexed
-directly.
+`find`, and the lookups of a bitmap and of at most four sorted children, stay under the JIT's limit for inlining a
+method at a call site it rarely reaches (35 bytes of bytecode; see the traps below).
 
-A level's positions and arrays are fixed for the level, with two exceptions: a child is set at its position, and
-appending child indices past the last one changes the positions in place, since an append moves no position already
-held and writes only unused lanes, clear bits or unused entries of arrays allocated once. The level grows its arrays
-before appending, and a read checks a position against the length of the array it reads. Any other change, such as
-merging indices among those held, growing an array, removing children or switching to direct indexing, makes a new
-level, which the writer publishes in place of the old one in its parent's array or in `root`. A concurrent reader, such
-as a snapshot reading a row that this cycle has not changed, loads each level once and reads its positions and arrays
-together, so it never pairs new positions with old arrays. A writer, in turn, uses the level that its last change
-returned (`setBlock`, `setCompact`), or reads the page table again after `prepareCompactLeaf`, which may have changed it.
+A level is fixed but for these changes made in place: a child is set at its entry or position, or cleared, and a ranked
+level appends child indices past its last one, since an append moves no position already held and writes only unused
+lanes, clear bits or unused entries of arrays allocated once. A ranked level grows its arrays before appending, and a
+read checks a position against the length of the array it reads. Any other change, such as widening a window, merging
+indices among those held, switching between a window and ranks, adding a second leaf to a `Level2` of one or switching
+to direct indexing, makes a new level, which the writer publishes in place of the old one in its parent or in `root`. A
+concurrent reader, such as a snapshot reading a row that this cycle has not changed, loads each level once and reads its
+window or positions and its arrays together, so it never pairs new positions with old arrays. A writer, in turn, uses
+the level that its last change returned (`setBlock`, `setCompact`), or reads the page table again after
+`prepareCompactLeaf`, which may have changed it.
 
 A serial `fillFromChunk` reserves the positions of every leaf of the chunk before writing, the leaves of each `Level2`
 together (`reserveLeaves`, `Level2.reserve`). A level then grows once per chunk rather than once per new leaf: indices
@@ -170,13 +184,14 @@ There is no in-use bitmap. A compact leaf is its own record of which rows it hol
 first write to a leaf in a cycle looks up the previous leaf, and later writes find it there; a bulk write records all of
 a leaf's offsets with one `putSorted` (`recordPrevious` with `PrevScratch`).
 
-Snapshot blocks and the arrays of the previous page table that are indexed by child index come from per-type
-`SoftRecycler`s. A previous value `Level1` or `Level2` of up to 4,096 children holds them at ranked positions in arrays
-of its own, which are discarded with it when the cycle completes, as is the previous value `Level0`. `commitUpdates`
-walks the previous page table (`recyclePrevious`), returning each snapshot block, and each recycled array with every
-entry null. A ranked level holds only its children, and a level indexed by child index holds more than 4,096 of them,
-so the walk reads at most eight entries for each child the cycle recorded; no list of the recorded leaves is needed. A
-snapshot block is not null-filled when borrowed, because taking a snapshot overwrites all of it.
+Snapshot blocks and the arrays of the previous page table that cover every child index come from per-type
+`SoftRecycler`s. Any smaller window and the arrays of a ranked level are the level's own, and are discarded with it when
+the cycle completes, as is the previous value `Level0`. `commitUpdates` walks the previous page table
+(`recyclePrevious`), returning each snapshot block, and each recycled array with every entry null. A ranked level holds
+only its children, a window has at most 64 entries or eight for each child, and a `Level2` indexed by leaf index holds
+more than 4,096 leaves, so the walk reads at most 64 entries for each level and eight for each child the cycle
+recorded; no list of the recorded leaves is needed. A snapshot block is not null-filled when borrowed, because taking a
+snapshot overwrites all of it.
 
 ### Why per-row recording, not per-leaf snapshots
 
@@ -234,9 +249,9 @@ leaves by walking the previous page table.
 `SelectOrUpdateListener` calls `SparseArrayColumnSource.clearBlocksWithoutLiveRows` with the rows a cycle removed or
 vacated, and each source frees, at the end of the cycle, the leaves, `Level2`s and `Level1`s that no longer hold a live
 row. A Boolean or Instant result is released through the primitive source it reinterprets to. Each level releases the
-children of a cycle together (`clearLeaves`, `clearLevel2s`, `clearLevel1s`): a level with ranked positions builds new
-positions and arrays of the remaining children once, rather than moving them under a reader, and a level indexed by
-child index nulls the released entries. Clearing a child a level never had changes nothing.
+children of a cycle together (`clearLeaves`, `clearLevel2s`, `clearLevel1s`): a ranked level builds new positions and
+arrays of the remaining children once, rather than moving them under a reader, and a window or a level indexed by child
+index nulls the released entries. Clearing a child a level never had changes nothing.
 
 `setNull(RowSequence)` nulls a range of a block with `Arrays.fill` and removes a range of a compact leaf with
 `removeRange`. A compact leaf is not shrunk when values are removed, and a full block is not demoted; only releasing a
@@ -289,6 +304,48 @@ With every leaf a full block (`SparseMemoryColumnSourceFactory.adaptive=false`):
 - `fillUnordered` takes 0.56 to 0.65x as long and `randomSet` 0.35 to 0.94x; other storage operations are within 0.89
   to 1.11x.
 
+### Page table levels
+
+These comparisons are against page table levels that each hold either one child or an array indexed by child index, as
+the sources before compact leaves did, with compact leaves in both, in the same build, with 1 fork. `SparseSmallMemory`
+measures the bytes per row that results of a few rows retain, in the shapes it describes:
+
+| Shape | Rows | Levels of one child or all, bytes per row | Windows and ranks, bytes per row |
+|---|---|---|---|
+| Dense | 10 | 40.4 | 45.2 |
+| Dense | 3,000 | 53.7 | 8.3 |
+| Stride64 | 100 | 1,327 | 17.1 |
+| Spread | 10 | 13,334 | 106 |
+| Level2s | 10 | 13,240 | 193 |
+| Level2s | 10,000 | 125 | 175 |
+| Regions | 10 | 4,194,437 | 219 |
+| Regions | 100,000 | 439 | 8.7 |
+| FarRegions | 10 | 4,194,361 | 73 |
+
+A `Level0` with more than one child allocated a 32 MB array, which is why every source spread across regions retained
+megabytes. Level2s, a row in each `Level2`, is the one shape that retains more: a `Level2` of one leaf still allocates
+its `ChildPositions`.
+
+Over 2^23 row keys, random `get`, random `set` and `fillUnordered` take 0.85 to 1.16x as long, and `sequentialFill`
+and `randomSubsetFill` 0.96 to 1.20x. Populating with compact leaves takes 1.31x as long on Random1 and 1.41x on
+Stride512, where each `Level2` grows its positions and arrays through the sorted and bitmap tiers to direct indexing.
+
+With 3,000 and 30,000 rows (`SparseSmallBenchmark`), each storage's time divided by the levels of one child or all:
+
+| Shape | `randomGet` | `randomGetAcrossCopies` | `fillUnordered` | `sequentialFill` |
+|---|---|---|---|---|
+| Dense | 1.43 to 1.52 | 1.92 to 2.10 | 1.13 to 1.18 | 1.00 |
+| Stride64 | 1.21 to 1.23 | 1.32 to 1.54 | 1.19 | 1.08 to 1.09 |
+| Spread | 1.15 to 1.30 | 1.29 to 1.37 | 1.17 to 1.24 | 1.28 to 1.34 |
+| Level2s | 1.20 to 1.67 | 1.44 to 2.26 | 1.08 to 1.45 | 1.08 to 1.11 |
+| Regions | 1.12 to 1.77 | 1.24 to 1.50 | 1.13 to 1.58 | 1.01 to 1.02 |
+| FarRegions | 2.27 to 3.07 | 2.23 to 2.72 | 1.53 to 2.53 | 0.95 to 1.03 |
+
+Random reads of a small result pay for finding each child's position, which an array indexed by child index gave for
+free. FarRegions at 30,000 rows holds 15 leaves in each `Level2`, whose lookup reads four words of sorted positions.
+`randomGetAcrossCopies` reads eight copies of the source in turn, so that no level's loads move out of the loop, as for
+a caller that reads many sources.
+
 ## Traps this code has already fallen into
 
 **Sharing page table levels between types.** Making `Level0` and `Level1` one generic class for every type stores the
@@ -339,6 +396,29 @@ immutable object, which the `Level2` replaced, kept readers consistent but added
 write: random `get` on a small Dense result took 1.66 ns against 1.03, and random `set` over 2^23 row keys 0.9 to 1.4 ns
 more per row even where the level was indexed by leaf index. Each level is now itself that immutable object, held by its
 parent.
+
+**Ranking every level with no single-child path.** Holding the children of `Level0` in a binary-searched sorted array
+and of `Level1` in a `ChildPositions`, with no shortcut for one child, made random `get` on a Dense result of 3,000 rows
+take 4.9x as long as levels of one child or all: about 110 instructions per read against 35, at about four
+instructions a cycle, with no stall. Replacing the counted rank with an equality test changed nothing, since the
+instruction count, not `popcnt`, was the limit. Binary search over the eight regions of Regions mispredicted, at 11.4x.
+A window with `onlyIndex` costs a compare when a level has one child and a subtraction and a load when it has many.
+
+**A rarely taken call in a read or write loop.** `ChildPositions.Bitmap.find` was 45 bytes of bytecode, over the 35
+bytes up to which the JIT inlines a method at a call site that is not hot. In `randomSet` over 2^23 row keys, every
+`Level2` was indexed by leaf index, so the call was never taken, but `populate` had reached it, so C2 compiled a call
+rather than a trap. A call in the loop meant C2 could not move the loads of `root` and the levels out of it: Clustered
+took 3.38 ms against 1.91 for levels of one child or all, and 1.96 ms with the method forced inline. The finds that a
+read reaches are kept under 35 bytes, splitting off a helper where needed.
+
+**A data-dependent branch to check a sorted find.** Counting the lanes less than the target and then checking the lane
+at that position chose the word to check with a `switch` on the position, which mispredicted when a `Level2` of 15
+leaves was read at random: `fillUnordered` on FarRegions at 30,000 rows took 4.84x as long as levels of one child or
+all. Marking the equal lanes of all four words and taking the lowest mark has no such branch, and took 2.43x.
+
+**A window with no limit.** Holding `Level0`'s children in a window covering every index between them made FarRegions,
+whose two regions are 800,000 `Level0` indices apart, retain 3.2 MB per source: 320,069 bytes per row with 10 rows. A
+level ranks its children when a window would have more than 64 entries and more than eight for each child.
 
 **Comparing across builds.** Layout and inlining differences between builds moved results by more than the effects
 measured here. Every comparison above ran the storages being compared in one build, selected by a parameter.
