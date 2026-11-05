@@ -193,6 +193,9 @@ project(':engine-updategraph').projectDir = file('engine/updategraph')
 include(':engine-api')
 project(':engine-api').projectDir = file('engine/api')
 
+include(':engine-api-proto')
+project(':engine-api-proto').projectDir = file('engine/api-proto')
+
 include(':engine-rowset')
 project(':engine-rowset').projectDir = file('engine/rowset')
 
