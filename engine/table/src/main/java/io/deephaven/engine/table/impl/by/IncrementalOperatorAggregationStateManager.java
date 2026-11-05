@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.SafeCloseable;
@@ -26,8 +28,9 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
 
     /**
      * The step of the last update cycle that {@link #beginUpdateCycle(long) began} changing the hash table, set before
-     * its first change. A cycle that has rehash work left, adds rows or modifies keys may change the hash table, so it
-     * records its step; a cycle that only removes rows or modifies other columns leaves the hash table unchanged, and
+     * its first change. A cycle that has rehash work left, adds rows, modifies keys, {@link #tombstoneStates removes
+     * states} or {@link #shiftOutputPositions moves them} may change the hash table, so it records its step; a cycle
+     * that only removes rows without removing a state, or modifies other columns, leaves the hash table unchanged, and
      * records nothing. A reader on another thread reads the clock's step before its reads, and this after them behind a
      * {@link java.lang.invoke.VarHandle#acquireFence() fence}. Compared to the reader's step, this is:
      * <ul>
@@ -51,4 +54,30 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
 
     void findModifications(SafeCloseable pc, RowSequence rowSequence, ColumnSource<?>[] sources,
             WritableIntChunk<RowKeys> outputPositions);
+
+    /**
+     * Remove the hash table entries for states that are empty at the end of an update cycle. Their output positions are
+     * not assigned to new states.
+     *
+     * @param removed the output positions of the empty states
+     */
+    void tombstoneStates(RowSet removed);
+
+    /**
+     * Release the storage for the blocks of the output position to hash slot mapping that lie entirely within a range
+     * of output positions whose states have all been removed by {@link #tombstoneStates(RowSet)}.
+     *
+     * @param firstOutputPosition the first output position
+     * @param lastOutputPosition the last output position, inclusive
+     */
+    void releaseOutputPositionBlocks(long firstOutputPosition, long lastOutputPosition);
+
+    /**
+     * Move states to new output positions, updating the hash table to match. Every shift must move states toward lower
+     * positions. Called before the result's key columns move, so that the step this records for
+     * {@link #lastStateChangeStep()} precedes their change as well.
+     *
+     * @param shiftData the shifts to apply to the states' output positions
+     */
+    void shiftOutputPositions(RowSetShiftData shiftData);
 }

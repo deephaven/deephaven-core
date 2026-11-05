@@ -3,10 +3,10 @@
 //
 package io.deephaven.server.partitionedtable;
 
-import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
 import io.deephaven.base.testing.JMockRule;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
@@ -94,10 +94,9 @@ public class TestPartitionedTableService {
         final ControlledUpdateGraph updateGraph = new ControlledUpdateGraph(initializer);
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
-        final ExecutionContext executionContext = ExecutionContext.newBuilder().setOperationInitializer(initializer)
-                .setUpdateGraph(updateGraph).newQueryScope().newQueryLibrary().build()
-                .withAuthContext(new AuthContext.Anonymous());
-        return executionContext;
+
+        return TestExecutionContext.createForUnitTests().withOperationInitializer(initializer)
+                .withUpdateGraph(updateGraph);
     }
 
     @Test

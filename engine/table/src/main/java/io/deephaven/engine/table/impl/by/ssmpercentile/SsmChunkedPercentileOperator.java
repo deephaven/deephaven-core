@@ -10,6 +10,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
@@ -45,7 +46,7 @@ import java.util.function.Supplier;
 public class SsmChunkedPercentileOperator implements IterativeChunkedAggregationOperator {
     private static final int NODE_SIZE =
             Configuration.getInstance().getIntegerWithDefault("SsmChunkedMinMaxOperator.nodeSize", 4096);
-    private final WritableColumnSource internalResult;
+    private final ShiftableColumnSource internalResult;
     private final ColumnSource externalResult;
     /**
      * Even slots hold the low values, odd slots hold the high values.
@@ -68,10 +69,13 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
      */
     private final ObjectArraySource<WritableChunk<Values>> stagedRemoves;
     /**
-     * The destinations with staged values, in the order they were first staged.
+     * The destinations with staged values, in the order they were first staged. It grows with the most destinations one
+     * cycle touches, rather than with every output position ever assigned.
      */
     private final IntegerArraySource touchedDestinations = new IntegerArraySource();
     private int touchedCount;
+    /** The capacity of {@link #touchedDestinations}. */
+    private long touchedCapacity;
 
     /**
      * @param type the data type of the values
@@ -113,10 +117,11 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
                     default:
                         // for things that are not int, long, double, or float we do not actually average the median;
                         // we just do the standard 50-%tile thing. It might be worth defining this to be friendlier.
-                        internalResult = ArrayBackedColumnSource.getMemoryColumnSource(0, type);
+                        internalResult =
+                                (ShiftableColumnSource<?>) ArrayBackedColumnSource.getMemoryColumnSource(0, type);
                 }
             } else {
-                internalResult = ArrayBackedColumnSource.getMemoryColumnSource(0, type);
+                internalResult = (ShiftableColumnSource<?>) ArrayBackedColumnSource.getMemoryColumnSource(0, type);
             }
             externalResult = internalResult;
         }
@@ -289,6 +294,10 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         if (chunk == null) {
             if (stagedAdds.getUnsafe(destination) == null
                     && (stagedRemoves == null || stagedRemoves.getUnsafe(destination) == null)) {
+                if (touchedCount == touchedCapacity) {
+                    touchedCapacity = Math.max(1, 2 * touchedCapacity);
+                    touchedDestinations.ensureCapacity(touchedCapacity);
+                }
                 touchedDestinations.getAndSetUnsafe(touchedCount++, destination);
             }
             chunk = chunkType.makeWritableChunk(length);
@@ -518,7 +527,6 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         if (stagedRemoves != null) {
             stagedRemoves.ensureCapacity(tableSize);
         }
-        touchedDestinations.ensureCapacity(tableSize);
     }
 
     @Override
@@ -577,6 +585,37 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             if (addCounts != null) {
                 addCounts.close();
             }
+        }
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        // output position p holds its SSMs at 2p and 2p + 1, so each range moves twice as far in the SSM source
+        final RowSetShiftData.Builder expandedShiftBuilder = new RowSetShiftData.Builder();
+        for (int si = 0; si < shiftData.size(); ++si) {
+            final long begin = shiftData.getBeginRange(si);
+            final long end = shiftData.getEndRange(si);
+            final long delta = shiftData.getShiftDelta(si);
+            expandedShiftBuilder.shiftRange(begin * 2, end * 2 + 1, delta * 2);
+        }
+        ssms.shift(expandedShiftBuilder.build());
+        internalResult.shift(shiftData);
+        // the staged values were all applied by propagateUpdates, so the staging sources hold only nulls
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        // each output position holds two SSMs
+        ssms.releaseBlocks(firstOutputPosition * 2, lastOutputPosition * 2 + 1);
+        internalResult.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        stagedAdds.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        if (stagedRemoves != null) {
+            stagedRemoves.releaseBlocks(firstOutputPosition, lastOutputPosition);
         }
     }
 }
