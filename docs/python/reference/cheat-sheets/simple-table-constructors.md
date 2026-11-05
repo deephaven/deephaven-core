@@ -4,11 +4,11 @@ title: Simple table constructors
 
 This cheat sheet shows the basic ways to create a table:
 
-- From column data.
-- With a set number of rows.
-- As a [time table](../../how-to-guides/time-table.md), which adds rows on a timer.
-- As a [ring table](../../how-to-guides/ring-table.md), which keeps the latest rows of another table.
-- As an [input table](../../how-to-guides/input-tables.md), which accepts new rows.
+- From column data
+- With a set number of rows
+- As a [time table](../../how-to-guides/time-table.md), which adds rows on a timer
+- As a [ring table](../../how-to-guides/ring-table.md), which keeps the latest rows of another table
+- As an [input table](../../how-to-guides/input-tables.md), which accepts new rows
 
 It ends with how to add [formula](../../how-to-guides/formulas.md) columns to a new table.
 
@@ -135,7 +135,7 @@ result2 = input_table(col_defs=my_col_defs)
 
 ## Add formula columns
 
-After creating a table, add columns calculated from its existing columns by passing a [formula](../../how-to-guides/formulas.md) to [`update`](../table-operations/select/update.md). A formula can combine columns, [built-in functions](../../how-to-guides/built-in-functions.md) such as [`sqrt`](../query-language/query-library/auto-imported/math.md), [variables](../../how-to-guides/query-scope.md), and [Python functions](../../how-to-guides/python-functions.md). The [type hints](../../how-to-guides/python-functions.md#type-hints) on `f` tell Deephaven that it returns an `int`. Without a return type hint, the function returns a [`PyObject`](../../how-to-guides/pyobjects.md), which the formula cannot add to the other terms.
+After creating a table, add columns calculated from its existing columns by passing a [formula](../../how-to-guides/formulas.md) to [`update`](../table-operations/select/update.md). A formula can combine columns, [built-in functions](../../how-to-guides/built-in-functions.md) such as [`sqrt`](../query-language/query-library/auto-imported/math.md), [variables](../../how-to-guides/query-scope.md), and [Python functions](../../how-to-guides/python-functions.md). The [type hints](../../how-to-guides/python-functions.md#type-hints) on `f` tell Deephaven that it returns a Python `int`, which Deephaven stores as a Java `long`. Without a return type hint, the function returns a [`PyObject`](../../how-to-guides/pyobjects.md), which the formula cannot add to the other terms.
 
 ```python order=source,result
 from deephaven import new_table

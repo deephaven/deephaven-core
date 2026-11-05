@@ -4,11 +4,11 @@ title: Simple table constructors
 
 This cheat sheet shows the basic ways to create a table:
 
-- From column data.
-- With a set number of rows.
-- As a [time table](../../how-to-guides/time-table.md), which adds rows on a timer.
-- As a [ring table](../../how-to-guides/ring-table.md), which keeps the latest rows of another table.
-- As an [input table](../../how-to-guides/input-tables.md), which accepts new rows.
+- From column data
+- With a set number of rows
+- As a [time table](../../how-to-guides/time-table.md), which adds rows on a timer
+- As a [ring table](../../how-to-guides/ring-table.md), which keeps the latest rows of another table
+- As an [input table](../../how-to-guides/input-tables.md), which accepts new rows
 
 It ends with how to add [formula](../../how-to-guides/formulas.md) columns to a new table.
 

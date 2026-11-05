@@ -99,7 +99,7 @@ Without a `_metadata` file:
 
 ### Read a directory that receives new files
 
-Pass `is_refreshing=True` to [`read`](../data-import-export/Parquet/readTable.md) to get a [refreshing table](../../conceptual/table-types.md) that picks up new Parquet files added to a directory and adds their rows. Add data as new files rather than changing files that have already been read. Refreshing reads work only on a directory without a `_metadata` file, such as `/data/partitioned_output`, and not on a single file. See [Refreshing tables](../data-import-export/Parquet/readTable.md#refreshing-tables) for an example that adds files.
+Pass `is_refreshing=True` to [`read`](../data-import-export/Parquet/readTable.md) to get a [refreshing table](../../conceptual/table-types.md) that picks up new Parquet files added to a directory and adds their rows. Add data as new files rather than changing files that have already been read. Refreshing reads don't work on a single file or with the metadata-file layout, which `read` uses when the directory has a `_metadata` file and no `file_layout` is set. To read such a directory as a refreshing table, pass `file_layout` set to [`ParquetFileLayout.KV_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout) or `ParquetFileLayout.FLAT_PARTITIONED`. See [Refreshing tables](../data-import-export/Parquet/readTable.md#refreshing-tables) for an example that adds files.
 
 ```python test-set=1 order=refreshing
 from deephaven import parquet
