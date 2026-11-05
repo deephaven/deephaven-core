@@ -134,9 +134,9 @@ There's a lot going on in this file. Here's what it all means:
 
 The `START_OPTS` properties set up the login. The `AuthHandlers` property tells Deephaven to use the OIDC authentication handler. The three `authentication.oidc.keycloak.*` properties set the following:
 
-- The Keycloak server URL (`authentication.oidc.keycloak.url`).
-- The realm, `deephaven_core` (`authentication.oidc.keycloak.realm`).
-- The client ID, `deephaven` (`authentication.oidc.keycloak.clientId`), which is the application that the realm file registers with Keycloak.
+- The Keycloak server URL (`authentication.oidc.keycloak.url`)
+- The realm, `deephaven_core` (`authentication.oidc.keycloak.realm`)
+- The client ID, `deephaven` (`authentication.oidc.keycloak.clientId`), which is the application that the realm file registers with Keycloak
 
 The `authentication.client.configuration.list` property names the properties that the web UI can read, so the browser knows which Keycloak server and realm to send users to. The [Web Defaults](../configuration/configure-web.md) guide describes the related `client.configuration.list` property, which works the same way for general web UI settings.
 
