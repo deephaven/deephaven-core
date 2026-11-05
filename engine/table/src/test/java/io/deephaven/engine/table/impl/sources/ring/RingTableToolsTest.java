@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.BlinkTableTools;
+import io.deephaven.engine.table.impl.PrevTableTools;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -24,7 +25,6 @@ import java.time.Instant;
 
 import static io.deephaven.engine.testutil.TstUtils.assertEqualsByElements;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
-import static io.deephaven.engine.testutil.TstUtils.prevTableColumnSources;
 import static io.deephaven.engine.testutil.TstUtils.subset;
 import static io.deephaven.engine.util.TableTools.booleanCol;
 import static io.deephaven.engine.util.TableTools.byteCol;
@@ -125,11 +125,11 @@ public class RingTableToolsTest {
     private static void checkEquals(Table tail, Table ring) {
         // Bulk equals
         assertTableEquals(tail, ring);
-        assertTableEquals(prevTableColumnSources(tail), prevTableColumnSources(ring));
+        assertTableEquals(PrevTableTools.prevTable(tail), PrevTableTools.prevTable(ring));
 
         // Element equals
         assertEqualsByElements(ring, tail);
-        assertEqualsByElements(prevTableColumnSources(ring), prevTableColumnSources(tail));
+        assertEqualsByElements(PrevTableTools.prevTable(ring), PrevTableTools.prevTable(tail));
 
         // Dense indices
         assertTableEquals(subset(tail, 8, 1), subset(ring, 8, 1));
