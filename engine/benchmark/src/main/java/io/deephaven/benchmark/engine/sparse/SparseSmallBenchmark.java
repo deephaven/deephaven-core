@@ -30,7 +30,7 @@ public class SparseSmallBenchmark {
     @Param({"Sparse", "Redirected", "Adaptive"})
     private String storage;
 
-    @Param({"Dense", "Stride64", "High", "Spread"})
+    @Param({"Dense", "Stride64", "High", "Spread", "Level2s", "Regions"})
     private String shape;
 
     @Param({"3000", "30000"})

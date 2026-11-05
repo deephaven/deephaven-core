@@ -23,11 +23,15 @@ import java.lang.management.MemoryMXBean;
  * <li>Stride64: every 64th row key from 0</li>
  * <li>High: n consecutive row keys from 3 * 2^23, in the upper quarter of a bottom page table level</li>
  * <li>Spread: every 8192nd row key from 0, one leaf in every eight</li>
+ * <li>Level2s: every 2^25th row key from 0, one in each bottom page table level</li>
+ * <li>Regions: n / 8 consecutive row keys at the start of each of eight regions 2^43 row keys apart, as a regioned
+ * source numbers its rows</li>
  * </ul>
+ * Shapes over many page table levels retain far more in some storages, so fewer sources of them are measured.
  */
 public final class SparseSmallMemory {
     private static final String[] STORAGES = {"Sparse", "Redirected", "Adaptive"};
-    private static final String[] SHAPES = {"Dense", "Stride64", "High", "Spread"};
+    private static final String[] SHAPES = {"Dense", "Stride64", "High", "Spread", "Level2s", "Regions"};
     private static final int[] SIZES = {10, 100, 1000, 3000, 10000, 100000};
     private static final MemoryMXBean MEMORY = ManagementFactory.getMemoryMXBean();
 
@@ -64,6 +68,20 @@ public final class SparseSmallMemory {
                 return builder.build();
             case "High":
                 return RowSetFactory.fromRange(3L << 23, (3L << 23) + size - 1);
+            case "Level2s":
+                for (long ii = 0; ii < size; ++ii) {
+                    builder.appendKey(ii << 25);
+                }
+                return builder.build();
+            case "Regions":
+                for (long region = 0; region < 8; ++region) {
+                    final long first = region << 43;
+                    final long count = size / 8 + (region < size % 8 ? 1 : 0);
+                    if (count > 0) {
+                        builder.appendRange(first, first + count - 1);
+                    }
+                }
+                return builder.build();
             default:
                 throw new IllegalArgumentException("Unknown shape " + shape);
         }
@@ -77,7 +95,8 @@ public final class SparseSmallMemory {
                     "bytes/source", "bytes/row");
             for (final String shape : SHAPES) {
                 for (final int size : SIZES) {
-                    final int copies = Math.max(1, Math.min(500, 2_000_000 / size));
+                    final int maxCopies = shape.equals("Level2s") || shape.equals("Regions") ? 20 : 500;
+                    final int copies = Math.max(1, Math.min(maxCopies, 2_000_000 / size));
                     try (final RowSet keys = keys(shape, size)) {
                         for (final String storage : storages) {
                             final long before = usedAfterGc();
