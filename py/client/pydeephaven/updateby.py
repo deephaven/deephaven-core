@@ -10,7 +10,7 @@ from typing import Any
 
 from deephaven_core.proto import table_pb2
 
-from ._utils import to_filter_strings, to_list
+from ._utils import to_list
 from .dherror import DHError
 
 _GrpcUpdateByOperation = table_pb2.UpdateByRequest.UpdateByOperation
@@ -200,7 +200,7 @@ def cum_count_where(col: str, filters: str | list[str]) -> UpdateByOperation:
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, list[str]]): the filter condition expression(s). Filter objects are not supported.
+        filters (Union[str, list[str]]): the filter condition expression(s).
 
     Returns:
         an UpdateByOperation
@@ -209,7 +209,7 @@ def cum_count_where(col: str, filters: str | list[str]) -> UpdateByOperation:
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = to_filter_strings(filters)
+    filters = to_list(filters)
 
     ub_spec = _GrpcUpdateBySpec(
         count_where=_GrpcUpdateBySpec.UpdateByCumulativeCountWhere(
@@ -1997,7 +1997,7 @@ def rolling_count_where_tick(
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, list[str]]): the filter condition expression(s). Filter objects are not supported.
+        filters (Union[str, list[str]]): the filter condition expression(s).
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -2011,7 +2011,7 @@ def rolling_count_where_tick(
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = to_filter_strings(filters)
+    filters = to_list(filters)
 
     try:
         rev_window_scale = _GrpcUpdateByWindowScale(
@@ -2064,7 +2064,7 @@ def rolling_count_where_time(
     Args:
         ts_col (str): the timestamp column for determining the window
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, list[str]]): the filter condition expression(s). Filter objects are not supported.
+        filters (Union[str, list[str]]): the filter condition expression(s).
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -2080,7 +2080,7 @@ def rolling_count_where_time(
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = to_filter_strings(filters)
+    filters = to_list(filters)
 
     try:
         if isinstance(rev_time, str):

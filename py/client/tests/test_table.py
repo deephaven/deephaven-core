@@ -24,7 +24,6 @@ from pydeephaven.agg import (
     unique,
     weighted_avg,
 )
-from pydeephaven.filters import ColumnName, eq
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -486,10 +485,6 @@ class TableTestCase(BaseTestCase):
         )
         df = rt.to_arrow().to_pandas()
         self.assertEqual(list(df["U"]), [True, True])
-
-    def test_count_where_rejects_filter_objects(self) -> None:
-        with self.assertRaises(DHError):
-            count_where("n", eq(ColumnName("a"), 1))
 
     def test_agg_by_without_columns_names_the_agg(self) -> None:
         with self.assertRaises(DHError) as cm:

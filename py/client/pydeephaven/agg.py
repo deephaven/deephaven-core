@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from deephaven_core.proto import table_pb2
-from pydeephaven._utils import to_filter_strings, to_list
+from pydeephaven._utils import to_list
 
 _GrpcSelectable = table_pb2.Selectable
 _GrpcAggregation = table_pb2.Aggregation
@@ -162,15 +162,12 @@ def count_where(col: str, filters: str | list[str]) -> Aggregation:
 
     Args:
         col (str): the column to hold the counts of each distinct group
-        filters (Union[str, list[str]]): the filter string(s). Filter objects are not supported.
+        filters (Union[str, list[str]]): the filter string(s)
 
     Returns:
         an aggregation
-
-    Raises:
-        DHError
     """
-    return _AggregationCountWhere(col=col, filters=to_filter_strings(filters))
+    return _AggregationCountWhere(col=col, filters=to_list(filters))
 
 
 def partition(col: str, include_by_columns: bool = True) -> Aggregation:
