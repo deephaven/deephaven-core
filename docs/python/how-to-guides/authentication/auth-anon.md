@@ -11,7 +11,7 @@ This guide shows how to enable anonymous authentication, which replaces [pre-sha
 
 To enable anonymous authentication, set the `AuthHandlers` JVM system property. Pass it as `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`. `AuthHandlers` is a comma-separated list of the authentication handler classes the server accepts. Its default is the pre-shared key handler.
 
-Setting `AuthHandlers` to the anonymous handler replaces pre-shared key authentication rather than adding to it, so clients can connect without credentials. Follow the setup steps for your environment:
+Setting `AuthHandlers` to only the anonymous handler replaces pre-shared key authentication, so clients can connect without credentials. To accept both, list both handlers, separated by a comma. Follow the setup steps for your environment:
 
 - Docker: see [Docker Compose](#docker-compose).
 - pip: see [pip-installed Deephaven](#pip-installed-deephaven).
@@ -38,15 +38,17 @@ The Docker logs show the following message when you enable anonymous authenticat
 
 ## pip-installed Deephaven
 
-The following Python code starts a server on port 10000 by default, with anonymous authentication enabled. Unless you configure a host, the server listens on all network interfaces. The property goes in the `jvm_args` parameter.
+The following Python code starts a server on port 10000, with anonymous authentication enabled. The property goes in the `jvm_args` parameter. Unless you set the `host` parameter, the server binds to `localhost`, so only the local machine can reach it. When you connect to the IDE in your web browser, it doesn't prompt for a password.
 
 ```python skip-test
 from deephaven_server import Server
 
-Server(
+s = Server(
     jvm_args=["-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler"]
 ).start()
 ```
+
+The server logs a warning at startup that anonymous authentication is enabled. The `authentication.anonymous.warn` property controls this warning, which is on by default.
 
 ## Related documentation
 

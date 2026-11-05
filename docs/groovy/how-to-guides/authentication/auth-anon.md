@@ -11,7 +11,7 @@ This guide shows how to enable anonymous authentication, which replaces [pre-sha
 
 To enable anonymous authentication, set the `AuthHandlers` JVM system property. Pass it as `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`. `AuthHandlers` is a comma-separated list of the authentication handler classes the server accepts. Its default is the pre-shared key handler.
 
-Setting `AuthHandlers` to the anonymous handler replaces pre-shared key authentication rather than adding to it, so clients can connect without credentials.
+Setting `AuthHandlers` to only the anonymous handler replaces pre-shared key authentication, so clients can connect without credentials. To accept both, list both handlers, separated by a comma.
 
 ## Docker Compose
 
@@ -31,7 +31,7 @@ services:
       - START_OPTS=-Xmx4g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 ```
 
-The Docker logs show the following message when you enable anonymous authentication.
+The Docker logs show the following message when you enable anonymous authentication. The `authentication.anonymous.warn` property controls this warning, which is on by default.
 
 ![The Docker logs display a warning when anonymous authentication is enabled](../../assets/how-to/anon-auth.png)
 
