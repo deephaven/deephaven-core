@@ -24,6 +24,7 @@ import io.deephaven.proto.backplane.grpc.FlattenRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SliceRequest;
@@ -972,6 +973,66 @@ public interface JsTableOperations extends ServerObject {
         }
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setUpdateBy(builder));
+    }
+
+    @TsInterface
+    @JsType(namespace = "dh")
+    class DownsampleTableOptions {
+        /**
+         * The column to plot along the X axis. Must be an {@code Instant} or {@code long} column.
+         */
+        public Column.ColumnOrName xColumn;
+
+        /**
+         * The columns to plot along the Y axis.
+         */
+        public ReadonlyArray<Column.ColumnOrName> yColumns;
+
+        /**
+         * The width of the plot area in pixels.
+         */
+        public double width;
+
+        /**
+         * The visible X range as {@code [start, end]}, both required. If absent or null, all of the data is used.
+         */
+        @JsNullable
+        public ReadonlyArray<LongWrapper> xRange;
+    }
+
+    /**
+     * Creates a table with fewer rows than this one that draws the same as a line plot at the given width, for plotting
+     * large time series. Each pixel of the width keeps the rows that set its first, last, minimum and maximum values; a
+     * table with fewer rows than that is returned unchanged.
+     *
+     * @param options the columns to plot, the plot width, and optionally the visible X range
+     * @return the downsampled table
+     */
+    @JsMethod
+    default JsPendingTable<JsResolvedTable> downsample(DownsampleTableOptions options) {
+        if (options.width <= 0) {
+            throw new IllegalArgumentException("width must be positive, was " + options.width);
+        }
+        if (options.xRange != null && (options.xRange.getLength() != 2 || options.xRange.getAt(0) == null
+                || options.xRange.getAt(1) == null)) {
+            throw new IllegalArgumentException("xRange must be [start, end] with both set, was " + options.xRange);
+        }
+        Ticket ticket = getConnection().getTickets().newExportTicket();
+
+        RunChartDownsampleRequest.Builder request = RunChartDownsampleRequest.newBuilder()
+                .setResultId(ticket)
+                .setSourceId(TableReference.newBuilder()
+                        .setTicket(typedTicket().getTicket())
+                        .build())
+                .setPixelCount((int) options.width)
+                .setXColumnName(options.xColumn.columnName())
+                .addAllYColumnNames(columnsToNameList(options.yColumns));
+        if (options.xRange != null) {
+            request.setZoomRange(RunChartDownsampleRequest.ZoomRange.newBuilder()
+                    .setMinDateNanos(options.xRange.getAt(0).getWrapped())
+                    .setMaxDateNanos(options.xRange.getAt(1).getWrapped()));
+        }
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setRunChartDownsample(request));
     }
 
     /**

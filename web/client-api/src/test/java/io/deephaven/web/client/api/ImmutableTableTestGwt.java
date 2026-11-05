@@ -36,6 +36,19 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
             // S costs a second to evaluate, so an operation that reads it is slow on the server
             .script("slowsource", "empty_table(1).update_view([\"X = i\", \"S = slow(X)\"])");
 
+    /**
+     * One row a second from SERIES_START, for the downsample test only. Any width rounds up to at least 500 bins of up
+     * to four rows each, so the series needs well over 2000 rows to shrink.
+     */
+    private final TableSourceBuilder seriesTables = new TableSourceBuilder()
+            .script("from deephaven import empty_table")
+            .script("series", "empty_table(10_000).update([\"Timestamp = '2024-01-01T00:00:00 UTC' + i * SECOND\","
+                    + " \"Y = i % 100\"])");
+
+    /** 2024-01-01T00:00:00Z in nanoseconds, the first timestamp of the series table. */
+    private static final long SERIES_START = 1_704_067_200_000_000_000L;
+    private static final long SECOND_NANOS = 1_000_000_000L;
+
     private static final String SLOW = "Z = S + 1";
 
     /**
@@ -659,6 +672,99 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                     return Promise.resolve(session);
                                 });
                     });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    private static JsTableOperations.DownsampleTableOptions downsampleOptions(LongWrapper... xRange) {
+        JsTableOperations.DownsampleTableOptions options = new JsTableOperations.DownsampleTableOptions();
+        options.xColumn = Js.uncheckedCast("Timestamp");
+        options.yColumns = Js.uncheckedCast(JsArray.of("Y"));
+        options.width = 10;
+        options.xRange = xRange.length == 0 ? null : Js.uncheckedCast(JsArray.of(xRange));
+        return options;
+    }
+
+    public void testDownsample() {
+        connect(seriesTables)
+                .then(session -> {
+                    delayTestFinish(10_023);
+                    return session.getTable("series", null).resolve();
+                })
+                .then(series -> {
+                    // The whole series, and its first tenth in full resolution, in one batch
+                    long end = SERIES_START + 1_000 * SECOND_NANOS;
+                    JsPendingTable<JsResolvedTable> whole = series.operations().downsample(downsampleOptions());
+                    JsPendingTable<JsResolvedTable> zoomed = series.operations()
+                            .downsample(downsampleOptions(LongWrapper.of(SERIES_START), LongWrapper.of(end)));
+                    // Both awaited in this task; a pending used later would be rejected
+                    Promise<JsResolvedTable> wholeResult = whole.resolve();
+                    Promise<JsResolvedTable> zoomedResult = zoomed.resolve();
+                    return wholeResult.then(all -> zoomedResult.then(part -> {
+                        JsResolvedTable[] results = {all, part};
+                        for (JsResolvedTable result : results) {
+                            assertTrue("downsampled to " + result.getSize() + " of " + series.getSize() + " rows",
+                                    result.getSize() > 0 && result.getSize() < series.getSize());
+                            assertNotNull(result.findColumn("Timestamp"));
+                            assertNotNull(result.findColumn("Y"));
+                        }
+                        Column timestamp = part.findColumn("Timestamp");
+                        DataOptions.SnapshotOptions opts = new DataOptions.SnapshotOptions();
+                        opts.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, part.getSize() - 1));
+                        opts.columns = Js.cast(JsArray.of(timestamp));
+                        return part.createSnapshot(opts).then(data -> {
+                            // Full resolution inside the range, a few bounding rows outside it
+                            int outside = 0;
+                            for (int i = 0; i < data.getRows().length; i++) {
+                                long nanos = Js.<LongWrapper>uncheckedCast(data.getData(i, timestamp)).getWrapped();
+                                if (nanos < SERIES_START || nanos > end) {
+                                    outside++;
+                                }
+                            }
+                            assertTrue(outside + " of " + data.getRows().length + " rows outside the range",
+                                    outside * 10 <= data.getRows().length);
+                            for (JsResolvedTable result : results) {
+                                result.close();
+                            }
+                            series.close();
+                            return Promise.resolve(series);
+                        });
+                    }));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testDownsampleRejectsBadArguments() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_024);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(table -> {
+                    // Invalid arguments throw when the method is called, before anything reaches the server, as the
+                    // TableOperations docs say
+                    JsTableOperations.DownsampleTableOptions noWidth = downsampleOptions();
+                    noWidth.width = 0;
+                    try {
+                        table.operations().downsample(noWidth);
+                        fail("Expected a zero width to throw");
+                    } catch (IllegalArgumentException expected) {
+                        assertTrue(expected.getMessage(), expected.getMessage().contains("width"));
+                    }
+                    try {
+                        table.operations().downsample(downsampleOptions(LongWrapper.of(SERIES_START)));
+                        fail("Expected a one-element range to throw");
+                    } catch (IllegalArgumentException expected) {
+                        assertTrue(expected.getMessage(), expected.getMessage().contains("xRange"));
+                    }
+                    try {
+                        table.operations().downsample(downsampleOptions(LongWrapper.of(SERIES_START), null));
+                        fail("Expected a range with no end to throw");
+                    } catch (IllegalArgumentException expected) {
+                        assertTrue(expected.getMessage(), expected.getMessage().contains("xRange"));
+                    }
+                    table.close();
+                    return Promise.resolve(table);
                 })
                 .then(this::finish).catch_(this::report);
     }

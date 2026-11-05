@@ -72,6 +72,11 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
         range.rangeEndRule = lit("GREATER_THAN_OR_EQUAL");
         range.leftEndColumn = lit("Y");
 
+        JsTableOperations.DownsampleTableOptions downsample = new JsTableOperations.DownsampleTableOptions();
+        downsample.xColumn = lit("L");
+        downsample.yColumns = arr("Y");
+        downsample.width = 100;
+
         AggByOptions aggBy = new AggByOptions();
         aggBy.aggregations = arr(Aggregation.AggSum(arr("Y")));
         aggBy.groupByColumns = arr("X");
@@ -111,6 +116,9 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
         cases.add(new Case("aggAllBy", (s, r, g) -> s.aggAllBy(Js.uncheckedCast(Aggregation.AggSum(null)), arr("X"))));
         cases.add(new Case("aggBy", (s, r, g) -> s.aggBy(aggBy)));
         cases.add(new Case("updateBy", (s, r, g) -> s.updateBy(updateBy)));
+        // The X axis must be an Instant or long column, spanning more nanoseconds than the plot has bins
+        cases.add(new Case("downsample",
+                (s, r, g) -> s.update(arr("L = (long) X * 1_000_000_000L")).downsample(downsample)));
         cases.add(new Case("selectDistinct", (s, r, g) -> s.selectDistinct(arr("X"))));
         cases.add(new Case("countBy", (s, r, g) -> s.countBy("N", arr("X"))));
         cases.add(new Case("firstBy", (s, r, g) -> s.firstBy(arr("X"))));
