@@ -26,12 +26,14 @@ import java.lang.management.MemoryMXBean;
  * <li>Level2s: every 2^25th row key from 0, one in each bottom page table level</li>
  * <li>Regions: n / 8 consecutive row keys at the start of each of eight regions 2^43 row keys apart, as a regioned
  * source numbers its rows</li>
+ * <li>FarRegions: n / 2 consecutive row keys at the start of region 0 and of region 100000, so that the top page table
+ * level's children are far apart</li>
  * </ul>
  * Shapes over many page table levels retain far more in some storages, so fewer sources of them are measured.
  */
 public final class SparseSmallMemory {
     private static final String[] STORAGES = {"Sparse", "Redirected", "Adaptive"};
-    private static final String[] SHAPES = {"Dense", "Stride64", "High", "Spread", "Level2s", "Regions"};
+    private static final String[] SHAPES = {"Dense", "Stride64", "High", "Spread", "Level2s", "Regions", "FarRegions"};
     private static final int[] SIZES = {10, 100, 1000, 3000, 10000, 100000};
     private static final MemoryMXBean MEMORY = ManagementFactory.getMemoryMXBean();
 
@@ -73,6 +75,12 @@ public final class SparseSmallMemory {
                     builder.appendKey(ii << 25);
                 }
                 return builder.build();
+            case "FarRegions":
+                builder.appendRange(0, (size + 1) / 2 - 1);
+                if (size / 2 > 0) {
+                    builder.appendRange(100_000L << 43, (100_000L << 43) + size / 2 - 1);
+                }
+                return builder.build();
             case "Regions":
                 for (long region = 0; region < 8; ++region) {
                     final long first = region << 43;
@@ -95,8 +103,8 @@ public final class SparseSmallMemory {
                     "bytes/source", "bytes/row");
             for (final String shape : SHAPES) {
                 for (final int size : SIZES) {
-                    final int maxCopies = shape.equals("Level2s") || shape.equals("Regions") ? 20 : 500;
-                    final int copies = Math.max(1, Math.min(maxCopies, 2_000_000 / size));
+                    final int maxCopies = shape.equals("Level2s") || shape.endsWith("Regions") ? 20 : 500;
+                    final int copies = Math.max(1, Math.min(maxCopies, 1_000_000 / size));
                     try (final RowSet keys = keys(shape, size)) {
                         for (final String storage : storages) {
                             final long before = usedAfterGc();
