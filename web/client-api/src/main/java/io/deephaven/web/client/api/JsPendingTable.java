@@ -24,11 +24,16 @@ import jsinterop.annotations.JsOptional;
  * resulting table must be closed to indicate that it will no longer be used and server resources can be freed. A future
  * version of this API could provide "liveness scopes" to claim/release batches of tables at a time automatically.
  * <p>
- * A pending table that is not awaited only lasts long enough for methods to be synchronously called on it, then is
- * freed automatically as soon as possible: once its response arrives and nothing chained on it still needs it. Any
- * instance that is {@code await}ed will be retained until {@code close()} is called on it to free it. To optionally
- * chain more calls to an instance in a later event loop, it must be awaited first. This holds for a fetch as much as
- * for an operation: {@code getTable(name)} that is neither awaited nor chained on is released when the fetch completes.
+ * A pending table may only be used in the task that created it, before control returns to the event loop: awaited,
+ * {@code then()} or {@code resolve()} called on it, chained on, passed as an operand, or passed to
+ * {@code Promise.resolve} or {@code Promise.all}. What lasts is the result: the table an await produces, which is
+ * retained until {@code close()} is called on it and has the same operations, or the promise from
+ * {@code Promise.resolve}. A pending table that is not awaited is freed automatically as soon as possible: once its
+ * response arrives and nothing chained on it still needs it. Used in a later task, awaited or not, the operation
+ * chained on it, or the await, is rejected, and a warning names where the pending table was created; a use the client
+ * cannot yet tell is in a later task behaves as it would by timing alone. In particular, awaiting two pending tables
+ * one after the other, {@code await a; await b;}, rejects {@code b}: await both at once with
+ * {@code Promise.all([a, b])}, or each as it is created. This holds for a fetch as much as for an operation.
  *
  * @param <T> the table this resolves to
  */
@@ -37,9 +42,10 @@ import jsinterop.annotations.JsOptional;
 public interface JsPendingTable<T extends JsITable> extends JsTableOperations, PromiseLike<T> {
     /**
      * The promise this pending table stands for: the same thing as awaiting it, with the resulting table's type spelled
-     * out. Retains the table. Awaiting or resolving the same pending table more than once yields the same promise and
-     * the same table, so closing it closes it for every awaiter; {@code copy()} on the result is how to get a second,
-     * independently closeable owner.
+     * out. Retains the table. Awaiting or resolving the same pending table more than once in the task that created it
+     * yields the same promise and the same table, so closing it closes it for every awaiter; {@code copy()} on the
+     * result is how to get a second, independently closeable owner. A pending table that was canceled, or is resolved
+     * after the task that created it, rejects instead; keep the promise or the table to use it later.
      *
      * @param options optionally, an {@code AbortSignal} that cancels this pending table when aborted
      * @return a promise of the retained table
@@ -57,9 +63,9 @@ public interface JsPendingTable<T extends JsITable> extends JsTableOperations, P
     /**
      * Releases everything this pending table produced, whichever stage it is at. If the operation is still pending, it
      * is canceled: the promise from {@link #resolve()} rejects with "Operation canceled" and the ticket is released. If
-     * the table was already delivered, it is closed, for every awaiter. Operations chained on it afterward throw. The
-     * server cancels work it has not started, but work it has already begun runs to completion there, so callers that
-     * cancel often should debounce.
+     * the table was already delivered, it is closed, for every awaiter. Operations chained on it afterward are never
+     * sent, and reject with "Cannot use source table: " and the cancel message. The server cancels work it has not
+     * started, but work it has already begun runs to completion there, so callers that cancel often should debounce.
      */
     // also happens to be a workaround for a javadoc -> ts bug
     @JsMethod

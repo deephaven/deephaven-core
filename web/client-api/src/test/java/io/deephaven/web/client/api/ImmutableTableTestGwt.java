@@ -338,11 +338,12 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     // Both go out in one batch, on one stream
                     JsPendingTable<JsResolvedTable> slow = table.operations().update(cols(SLOW));
                     JsPendingTable<JsResolvedTable> quick = table.operations().head(Js.uncheckedCast(1.0));
+                    Promise<JsResolvedTable> quickResult = quick.resolve();
                     return delay(0)
                             .then(ignore -> {
                                 // Canceling one must not cut off the other's response
                                 slow.cancel();
-                                return quick.resolve();
+                                return quickResult;
                             })
                             .then(head -> {
                                 assertEquals(1., head.getSize(), 0);
@@ -373,13 +374,10 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     JsPendingTable<JsResolvedTable> pending = table.operations().update(cols("Z = X + Y"));
                     Promise<JsResolvedTable> resolved = pending.resolve(withSignal(controller));
                     controller.abort();
-                    try {
-                        pending.sort(sorts("Z"));
-                        fail("Expected chaining on an aborted operation to throw");
-                    } catch (IllegalStateException expected) {
-                        // as for cancel()
-                    }
+                    // As for cancel(), chaining on it fails through the result
+                    JsPendingTable<JsResolvedTable> chained = pending.sort(sorts("Z"));
                     return expectRejection(resolved, "Abort")
+                            .then(ignore -> expectRejection(chained.resolve(), "Abort"))
                             .then(ignore -> delay(200))
                             .then(ignore -> {
                                 assertEquals(0, batchStates(connection));

@@ -43,6 +43,7 @@ import io.deephaven.web.client.api.updateby.*;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
+import org.jspecify.annotations.Nullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -152,9 +153,16 @@ public interface JsTableOperations extends ServerObject {
      *
      * @param resultId the ticket that the server will populate with this result
      * @param operation the operation to perform
+     * @param operand the other table the operation reads, if any; a pending one is checked and held as the source is
      * @return a table operations instance that more calls can be chained on, or can be awaited
      */
-    JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation);
+    JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation,
+            @Nullable JsTableReference operand);
+
+    /** As {@link #call(Ticket, BatchTableRequest.Operation.Builder, JsTableReference)}, with no other table. */
+    default JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
+        return call(resultId, operation, null);
+    }
 
     @JsMethod
     default JsPendingTable<JsResolvedTable> head(TableData.RowPositionUnion size) {
@@ -276,7 +284,8 @@ public interface JsTableOperations extends ServerObject {
                 .setIncremental(options.incremental != null && options.incremental)
                 .setHistory(options.history != null && options.history)
                 .addAllStampColumns(
-                        options.stampColumns != null ? options.stampColumns.asList() : Collections.emptyList())));
+                        options.stampColumns != null ? options.stampColumns.asList() : Collections.emptyList())),
+                trigger);
     }
 
     /**
@@ -340,7 +349,7 @@ public interface JsTableOperations extends ServerObject {
                         .setTicket(rightTable.typedTicket().getTicket()))
                 .addAllColumnsToMatch(columnsToNameList(columnsToMatch))
                 .setInverted(false)
-                .build()));
+                .build()), rightTable);
     }
 
     /**
@@ -366,7 +375,7 @@ public interface JsTableOperations extends ServerObject {
                         .setTicket(rightTable.typedTicket().getTicket()))
                 .addAllColumnsToMatch(columnsToNameList(columnsToMatch))
                 .setInverted(true)
-                .build()));
+                .build()), rightTable);
     }
 
     /**
@@ -588,7 +597,7 @@ public interface JsTableOperations extends ServerObject {
                     break;
             }
         }
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setNaturalJoin(join));
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setNaturalJoin(join), rightTable);
     }
 
     /**
@@ -616,7 +625,7 @@ public interface JsTableOperations extends ServerObject {
                 .addAllColumnsToMatch(JsTable.MatchPairUnion.toStringArray(columnsToMatch))
                 .addAllColumnsToAdd(columnsToAdd != null ? JsTable.MatchPairUnion.toStringArray(columnsToAdd)
                         : Collections.emptyList());
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setExactJoin(request));
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setExactJoin(request), rightTable);
     }
 
     /**
@@ -649,7 +658,7 @@ public interface JsTableOperations extends ServerObject {
         if (reserveBits != null) {
             request.setReserveBits((int) (double) reserveBits);
         }
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setCrossJoin(request));
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setCrossJoin(request), rightTable);
     }
 
     /**
@@ -670,7 +679,7 @@ public interface JsTableOperations extends ServerObject {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setAj(builder));
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setAj(builder), rightTable);
     }
 
     /**
@@ -691,7 +700,7 @@ public interface JsTableOperations extends ServerObject {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setRaj(builder));
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setRaj(builder), rightTable);
     }
 
     private AjRajTablesRequest.Builder makeAjReq(JsTableReference table,
@@ -808,7 +817,7 @@ public interface JsTableOperations extends ServerObject {
             request.addAggregations(agg);
         }
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setRangeJoin(request));
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setRangeJoin(request), rightTable);
     }
 
     /**
@@ -890,7 +899,7 @@ public interface JsTableOperations extends ServerObject {
         if (options.groupByColumns != null) {
             aggBuilder.addAllGroupByColumns(columnsToNameList(options.groupByColumns));
         }
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder));
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder), options.initialGroups);
     }
 
     @JsMethod

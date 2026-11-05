@@ -111,7 +111,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             }
 
             // The partitioned table's one exported object is its base table
-            return w.getExportedObjects()[0].fetch().asPendingTable().resolve();
+            return Js.<Promise<JsTable>>uncheckedCast(w.getExportedObjects()[0].fetch());
         }).then(result -> {
             baseTable = result;
             keyColumnTypes = new ArrayList<>();

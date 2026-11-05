@@ -11,14 +11,11 @@ import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.ExportRequest;
 import io.deephaven.proto.backplane.grpc.ExportResponse;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsLazy;
-import io.deephaven.web.client.api.JsPendingObject;
 import io.deephaven.web.client.api.JsTable;
-import io.deephaven.web.client.api.MicrotaskBatchImpl;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableType;
@@ -40,26 +37,28 @@ public class JsWidgetExportedObject implements ServerObject {
 
     private final TypedTicket ticket;
 
-    private final JsLazy<JsPendingObject> fetched;
+    private final JsLazy<Promise<?>> fetched;
 
     public JsWidgetExportedObject(WorkerConnection connection, TypedTicket ticket) {
         this.connection = connection;
         this.ticket = ticket;
         this.fetched = JsLazy.of(() -> {
             if (getType() == null) {
-                return JsPendingObject.of(Promise.reject("Exported object has no type, can't be fetched"));
+                return Promise.reject("Exported object has no type, can't be fetched");
             }
             if (getType().equals(JsVariableType.TABLE)) {
-                // The ticket is already known, so the table can be chained on before its schema arrives
                 ClientTableState state = connection.newState(
                         (c, cts) -> connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
                                 c),
                         "table for widget", new TableTicket(ticket.getTicket()));
-                return JsPendingObject.of(connection.pendingTable(state,
+                // Awaited at once: every call returns this one table, so it must be held from the first, not lapse
+                // with an unawaited pending
+                return connection.pendingTable(state,
                         // never attempt a reconnect, since we might have a different widget schema entirely
-                        table -> table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close())));
+                        table -> table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close()))
+                        .resolve();
             } else {
-                return JsPendingObject.of(this.connection.getObject(ticket));
+                return this.connection.getObject(ticket);
             }
         });
     }
@@ -125,12 +124,11 @@ public class JsWidgetExportedObject implements ServerObject {
      * @return a promise that will resolve to a client side object that represents the reference on the server.
      */
     @JsMethod
-    public JsPendingObject fetch() {
+    public Promise<?> fetch() {
         if (getType() != null) {
             return fetched.get();
         }
-        return JsPendingObject
-                .of(Promise.reject("Can't fetch an object with no type (i.e. no server plugin implementation)"));
+        return Promise.reject("Can't fetch an object with no type (i.e. no server plugin implementation)");
     }
 
     /**

@@ -31,9 +31,12 @@ async function filterNamed() {
 async function joins() {
     const left = session.getObject({ type: "Table", name: "left" }) as dh.PendingTable<dh.Table>;
     const right = session.getObject({ type: "Table", name: "right" }) as dh.PendingTable<dh.Table>;
-    const joined = await left.naturalJoin(right, ["Key"], ["Value"]);
-    const asOf = await left.aj(right, ["Key", "Ts"]);
-    const exact = await left.exactJoin(right, ["Key"]);
+    // left and right are never awaited, so every use of them belongs in this task: one batch, one await
+    const [joined, asOf, exact] = await Promise.all([
+        left.naturalJoin(right, ["Key"], ["Value"]),
+        left.aj(right, ["Key", "Ts"]),
+        left.exactJoin(right, ["Key"]),
+    ]);
     joined.close();
     asOf.close();
     exact.close();
@@ -42,15 +45,17 @@ async function joins() {
 // py: t.agg_by([agg.sum_(["SumX = X"]), agg.count_("N")], by=["Key"])
 async function aggregate() {
     const t = session.timeTable(1e9).update(["Key = i % 3", "X = i"]);
-    const viaFactories = await t.aggBy({
-        aggregations: [dh.agg.Aggregation.AggSum(["SumX = X"]), dh.agg.Aggregation.AggCount("N")],
-        groupByColumns: ["Key"],
-    });
-    const viaLiterals = await t.aggBy({
-        aggregations: [{ type: "Sum", columns: ["SumX = X"] }, { type: "Count", col: "N" }],
-        groupByColumns: ["Key"],
-    });
-    const sumBy = await t.sumBy(["Key"]);
+    const [viaFactories, viaLiterals, sumBy] = await Promise.all([
+        t.aggBy({
+            aggregations: [dh.agg.Aggregation.AggSum(["SumX = X"]), dh.agg.Aggregation.AggCount("N")],
+            groupByColumns: ["Key"],
+        }),
+        t.aggBy({
+            aggregations: [{ type: "Sum", columns: ["SumX = X"] }, { type: "Count", col: "N" }],
+            groupByColumns: ["Key"],
+        }),
+        t.sumBy(["Key"]),
+    ]);
     viaFactories.close();
     viaLiterals.close();
     sumBy.close();
@@ -68,10 +73,12 @@ async function updateBy() {
 // py: t.head(5); t.select_distinct(["Key"]); t.snapshot(); t.snapshot_when(trigger, initial=True)
 async function misc() {
     const t = session.timeTable(1e9).update(["Key = i % 3"]);
-    const head = await t.head(5);
-    const distinct = await t.selectDistinct(["Key"]);
-    const snap = await t.snapshot();
-    const when = await t.snapshotWhen(session.timeTable(5e9), { initial: true });
+    const [head, distinct, snap, when] = await Promise.all([
+        t.head(5),
+        t.selectDistinct(["Key"]),
+        t.snapshot(),
+        t.snapshotWhen(session.timeTable(5e9), { initial: true }),
+    ]);
     head.close();
     distinct.close();
     snap.close();

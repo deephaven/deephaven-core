@@ -25,7 +25,6 @@ import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
-import io.deephaven.io.streams.ByteBufferOutputStream;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc;
@@ -107,6 +106,7 @@ import io.grpc.stub.StreamObserver;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsNullable;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -115,7 +115,6 @@ import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jspecify.annotations.Nullable;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -793,7 +792,7 @@ public class WorkerConnection {
                     .then(widget -> {
                         widget.close();
                         // A pandas widget exports exactly one object, its table
-                        return widget.getExportedObjects()[0].fetch().asPendingTable().resolve();
+                        return Js.<Promise<JsTable>>uncheckedCast(widget.getExportedObjects()[0].fetch());
                     });
         } else if (JsVariableType.PARTITIONEDTABLE.equalsIgnoreCase(definition.getType())) {
             return getPartitionedTable(definition);
@@ -854,7 +853,7 @@ public class WorkerConnection {
                     .then(widget -> {
                         widget.close();
                         // A pandas widget exports exactly one object, its table
-                        return widget.getExportedObjects()[0].fetch().asPendingTable().resolve();
+                        return Js.<Promise<JsTable>>uncheckedCast(widget.getExportedObjects()[0].fetch());
                     });
         } else if (JsVariableType.PARTITIONEDTABLE.equalsIgnoreCase(typedTicket.getType())) {
             return new JsPartitionedTable(this, new JsWidget(this, typedTicket)).refetch();
