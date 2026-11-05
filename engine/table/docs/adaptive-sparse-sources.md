@@ -15,7 +15,7 @@ leaf a full block, as before, and is kept as an escape hatch. Every other sparse
 | **Base class** | `SparseArrayColumnSource`: `clearBlocks`, `clearBlocksWithoutLiveRows`, `clearVacatedBlocks`, `estimateSize`, `getSparseMemoryColumnSource` |
 | **Configuration** | `SparseMemoryColumnSourceFactory.adaptive` (default true) selects the default thresholds for the sources `select` and `update` create; false makes their leaves all full blocks; every other source has only full blocks |
 | **Parallel population** | `WritableSourceWithPrepareForParallelPopulation.parallelPopulationAlignment` and `prepareForParallelPopulation(rows, alignedDivisions)`; `SelectColumnLayer.divideAligned` |
-| **Benchmarks** | `SparseStorageBenchmark` (`jmhRunSparseStorage`), `SparseStorageMemory` (`sparseStorageMemory`), `SparseUpdateBenchmark` (`jmhRunSparseUpdate`), all in `io.deephaven.benchmark.engine.sparse` |
+| **Benchmarks** | `SparseStorageBenchmark` (`jmhRunSparseStorage`), `SparseStorageMemory` (`sparseStorageMemory`), `SparseUpdateBenchmark` (`jmhRunSparseUpdate`), and for results of few leaves `SparseSmallBenchmark` (`jmhRunSparseSmall`) and `SparseSmallMemory` (`sparseSmallMemory`), all in `io.deephaven.benchmark.engine.sparse` |
 | **Tests** | `TestCharCompactLeaf` and `TestCharacterAdaptiveSparseArraySource` and their replicas, checked against reference maps; `TestLeafPositions`; `TestBooleanAdaptiveSparseArraySource`, `TestInstantAdaptiveSparseArraySource`, `TestSparseArraySourceNullBlocks`; the `Abstract*ColumnSourceTest` suites |
 
 ## Why leaves adapt

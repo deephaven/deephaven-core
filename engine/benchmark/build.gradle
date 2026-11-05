@@ -93,6 +93,7 @@ createJmhTask('jmhRunPositionalSelectRead', 'PositionalSelectReadBenchmark', [],
 createJmhTask('jmhRunAggregationKeyMatchFilter', 'AggregationKeyMatchFilterBenchmark', [], '31g')
 createJmhTask('jmhRunSparseStorage', 'SparseStorageBenchmark', [], '16g')
 createJmhTask('jmhRunSparseUpdate', ['SparseUpdateBenchmark', '-prof=gc'], [], '16g')
+createJmhTask('jmhRunSparseSmall', ['SparseSmallBenchmark', '-prof=gc'], [], '16g')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
@@ -126,5 +127,9 @@ createDeephavenTestExecTask('percentileByBenchmark', 'io.deephaven.benchmark.eng
 createDeephavenTestExecTask('lastByBenchmark', 'io.deephaven.benchmark.engine.LastByBenchmark')
 createDeephavenTestExecTask('sparseStorageMemory', 'io.deephaven.benchmark.engine.sparse.SparseStorageMemory')
 tasks.named('sparseStorageMemory') {
+    maxHeapSize = '16g'
+}
+createDeephavenTestExecTask('sparseSmallMemory', 'io.deephaven.benchmark.engine.sparse.SparseSmallMemory')
+tasks.named('sparseSmallMemory') {
     maxHeapSize = '16g'
 }
