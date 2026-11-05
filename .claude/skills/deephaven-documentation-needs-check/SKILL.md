@@ -101,15 +101,19 @@ actually changed.
 
 ### Filter out reverted changes on main
 
-Before triaging, identify commits on `upstream/main` that were subsequently reverted on
-`upstream/main` itself. Reverts typically use the title pattern `Revert "<original title>"` and
-produce a diff that is the exact inverse of the original commit. When a commit and its revert
-are both in the `<tag>..upstream/main` range, exclude both from the triage — the net effect is
-zero and neither needs documentation.
+Identify commits on `upstream/main` that were subsequently reverted on `upstream/main` itself.
+Reverts typically use the title pattern `Revert "<original title>"` and produce a diff that is
+the exact inverse of the original commit.
 
 To detect reverts: scan the first-parent commit list for titles matching `Revert "..."`. For
 each revert, find the original commit by title and verify the revert's diff is the inverse of
-the original's (the added/removed lines are swapped). Exclude both the original and the revert.
+the original's (the added/removed lines are swapped).
+
+**Before excluding a revert pair, check whether the original commit was cherry-picked onto the
+RC branch or a release branch.** If the feature was cherry-picked to RC before being reverted
+on main, it will still ship in the next release — exclude only the revert from the triage and
+keep the original commit so it flows through to RC classification. Only exclude both the
+original and the revert when neither was cherry-picked to RC or a release branch.
 
 ### Filter out superseded changes on main
 
@@ -117,6 +121,13 @@ When a feature lands on `upstream/main` and a later commit on `upstream/main` co
 replaces or rewrites it (same files, same feature area, the later commit's changes fully
 overlap the earlier one's), only the latest version needs triage. The earlier commit is
 superseded — its documentation would be immediately outdated by the replacement.
+
+**Branch-specific versions must be preserved.** If the earlier commit (implementation A) was
+cherry-picked onto the RC branch but its replacement (implementation B) is still main-only,
+do not drop A — it is the version shipping in the next release and still needs documentation.
+Only consolidate two commits when they have the same release status (both main-only, or both
+RC-confirmed) and the later one fully replaces the earlier. When their release status differs,
+triage each version for its own branch.
 
 If the later commit only partially overlaps (extends or modifies the feature without fully
 replacing the earlier work), both commits are relevant and should be triaged together as a
@@ -141,10 +152,16 @@ git tag --sort=v:refname | grep -E '^v<major>\.[0-9]+$'
 For each commit in `<tag>..upstream/main`, get its first-parent diff (`git diff <sha>^..<sha>`) — not
 `git show`, which produces an empty combined diff for clean merges and would falsely match other
 empty diffs. Only compare commits whose first-parent diff is non-empty; a commit with an empty
-first-parent diff has no changes to exclude. If a non-empty first-parent diff matches the
-first-parent diff of any commit reachable from a release tag (including the selected base tag
-and any later minor releases), exclude it from the triage — it was already released and any
-documentation for it belongs to that earlier release.
+first-parent diff has no changes to exclude.
+
+If a non-empty first-parent diff matches the first-parent diff of any commit reachable from a
+release tag (including the selected base tag and any later minor releases), **verify the change
+is still effective in that release tag before excluding it.** A release branch can contain a
+cherry-pick followed by its revert before the tag is cut, so reachability of a matching patch
+does not prove the change actually shipped. Check that the files touched by the commit still
+reflect its changes at the tag (e.g., compare `git show <tag>:<file>` against the expected
+state). Only exclude the commit when the change is confirmed present in at least one released
+tag — otherwise it is still unreleased and needs triage.
 
 Cherry-picks sometimes have minor differences from the original commit due to conflict
 resolution or context-line drift. When an exact diff match is not found, also check for
