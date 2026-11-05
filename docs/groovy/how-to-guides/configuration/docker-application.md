@@ -4,17 +4,17 @@ title: Configure the Deephaven Docker application
 
 This guide covers best practices for configuring the Deephaven Docker application. Deephaven can be run from [Docker](https://www.docker.com/) alone or with [Docker Compose](https://docs.docker.com/compose/). The latter is recommended for customized applications, as it provides a simpler mechanism for orchestrating complex applications with multiple services.
 
-If you are interested in lower-level details, which may be necessary if you are interested in building your own Docker images from scratch, see the [production application guide](./configure-production-application.md). Some knowledge about [Docker](https://docs.docker.com/) is assumed.
+If you are interested in lower-level details, which may be necessary if you are interested in building your own Docker images from scratch, see the [production application guide](./configure-production-application.md). This guide assumes some knowledge about [Docker](https://docs.docker.com/).
 
 This guide shows how to run the Deephaven Docker image with custom JVM options, configuration, and ports. It also covers the following tasks:
 
-- Setting JVM options.
-- Using a configuration file.
-- Changing the port.
-- Building a custom image.
-- Importing custom JARs.
-- Running the image with Docker Compose.
-- Debugging a running container.
+- Setting JVM options
+- Using a configuration file
+- Changing the port
+- Building a custom image
+- Importing custom JARs
+- Running the image with Docker Compose
+- Debugging a running container
 
 The sections on image contents, versioning, and available images come after the task sections.
 
@@ -172,11 +172,11 @@ table = emptyTable(5).update(
 
 Deephaven recommends running with [Docker Compose](https://docs.docker.com/compose/), as it makes it easier to run Deephaven with additional services, such as:
 
-- Kafka brokers.
-- Backend databases.
-- Frontend applications.
+- Kafka brokers
+- Backend databases
+- Frontend applications
 
-Docker Compose files are written in YAML. The most basic Docker Compose file for Deephaven with Groovy is:
+You write Docker Compose files in YAML. The most basic Docker Compose file for Deephaven with Groovy is:
 
 ```yaml
 services:
@@ -216,7 +216,7 @@ With [Docker Compose](https://docs.docker.com/compose/), run `docker compose exe
 
 ## Image contents and startup settings
 
-Deephaven's `server-slim` Docker image is based on the [production application](../../getting-started/production-application.md), which is unpacked into the `/opt/deephaven` directory. The images have two [volumes](https://docs.docker.com/storage/volumes/):
+Deephaven's `server-slim` Docker image is based on the [production application](../../getting-started/production-application.md), which the image unpacks into the `/opt/deephaven` directory. The images have two [volumes](https://docs.docker.com/storage/volumes/):
 
 - `/data`
 - `/cache`
@@ -236,11 +236,11 @@ By default, Deephaven's Docker images set the following environment variables:
 
 The first three are [bootstrap configuration](./configure-production-application.md#deephaven-server-bootstrap-configuration) parameters, which the server reads at startup before it reads any configuration file. The `start` script reads `EXTRA_CLASSPATH`.
 
-The JVM arguments and how to change them are described in [Set JVM options](#set-jvm-options).
+[Set JVM options](#set-jvm-options) describes the JVM arguments and how to change them.
 
 ## Versioning
 
-The examples on this page use the `latest` version for Docker images. Deephaven recommends staying on the `latest` version to get the latest features, bug fixes, and patches. Here is a list of available versions:
+The examples on this page use the `latest` version for Docker images. Here is a list of available versions:
 
 - [`latest`](https://github.com/deephaven/deephaven-core/releases/latest): The latest release of Deephaven.
 - [`edge`](https://github.com/deephaven/deephaven-core/pkgs/container/server-slim): Server code merged to the `main` branch of deephaven-core at the time the image was built, which may include breaking changes.
@@ -256,7 +256,7 @@ The `edge` image is rebuilt nightly, and whenever the `main` branch of the [deep
 
 - `ghcr.io/deephaven/server-slim`: Deephaven's server-side Groovy API.
 
-For the Python image, `ghcr.io/deephaven/server`, see the Python version of this guide.
+For the Python image, `ghcr.io/deephaven/server`, see the [Python version of this guide](/core/python/docs/how-to-guides/configuration/docker-application).
 
 ## Related documentation
 
