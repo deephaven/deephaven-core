@@ -2,16 +2,22 @@
 title: Enable anonymous authentication
 ---
 
-This guide will show you how to disable authentication for Deephaven run from Docker. This is also known as anonymous authentication. **Anonymous authentication allows anyone to connect to a Deephaven instance if they can reach it**.
+This guide shows how to enable anonymous authentication, which replaces [pre-shared key authentication](./auth-psk.md) for Deephaven run from Docker. Anonymous authentication lets anyone who can reach a Deephaven instance connect to it.
 
 > [!WARNING]
 > Anonymous authentication provides no application security.
 
-## Deephaven run from Docker
+## Configuration
 
-### Docker compose
+To enable anonymous authentication, set the `AuthHandlers` JVM system property. Pass it as `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`. `AuthHandlers` is a comma-separated list of the authentication handler classes the server accepts. Its default is the pre-shared key handler.
 
-To enable anonymous authentication, the `AuthHandlers` property must be set to `io.deephaven.auth.AnonymousAuthenticationHandler` by appending `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` to the `START_OPTS` environment variable:
+Setting `AuthHandlers` to only the anonymous handler replaces pre-shared key authentication, so clients can connect without credentials. To accept both, list both handlers, separated by a comma.
+
+## Docker Compose
+
+Set the `START_OPTS` environment variable in the service's `environment` list, as shown below. `START_OPTS` holds additional JVM options that the server appends to its defaults.
+
+This example uses the `server-slim` image, which runs the Groovy console.
 
 ```yaml
 services:
@@ -25,7 +31,7 @@ services:
       - START_OPTS=-Xmx4g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 ```
 
-The Docker logs will show the following message when anonymous authentication is enabled.
+The Docker logs show the following message when you enable anonymous authentication. The `authentication.anonymous.warn` property controls this warning, which is on by default.
 
 ![The Docker logs display a warning when anonymous authentication is enabled](../../assets/how-to/anon-auth.png)
 
