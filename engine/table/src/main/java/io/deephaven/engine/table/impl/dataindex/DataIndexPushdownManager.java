@@ -3,8 +3,6 @@
 //
 package io.deephaven.engine.table.impl.dataindex;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -30,7 +28,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import java.util.stream.Collectors;
 
 /**
  * A {@link PushdownPredicateManager} that supports pushdown against a {@link DataIndex}. This manager can wrap an
@@ -276,15 +273,9 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                     // Extract the fundamental filter, ignoring barriers.
                     final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
                     final String rowSetColumnName = dataIndex.rowSetColumnName();
-                    Table toFilter = dataIndex.table();
-                    if (!renameMap.isEmpty()) {
-                        final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                                .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
-                                        ColumnName.of(entry.getKey())))
-                                .collect(Collectors.toList());
-                        toFilter = toFilter.renameColumns(renamePairs);
-                    }
                     try {
+                        Table toFilter = DataIndexUtils.indexTableForFilter(
+                                dataIndex.table(), rowSetColumnName, filter.getColumns(), renameMap);
                         if (barrierActive) {
                             // Keep only the index rows whose row sets overlap the rows in question.
                             final QueryScope scope = new StandaloneQueryScope();

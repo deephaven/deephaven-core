@@ -1944,11 +1944,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         final Set<ColumnSource<?>> usedOutputColumns = new HashSet<>();
 
-        // Maintain a list of unique old to new mappings.
-        // NOTE: this is complex because select() may return multiple aliases for the same source column. Until/unless
-        // we have a guarantee that only a single alias is created, we must create a new data index for each alias and
-        // this requires generating all unique mappings for these columns.
-        final List<Map<ColumnSource<?>, ColumnSource<?>>> oldToNewMaps = new ArrayList<>();
+        // Map each indexed source to every result source that copies the indexed source.
+        // NOTE: select() may return multiple aliases for the same source column. Until/unless select() guarantees that
+        // only a single alias is created, each alias needs a new data index.
+        final Map<ColumnSource<?>, List<ColumnSource<?>>> oldToNewSources = new HashMap<>();
 
         for (SelectColumn selectColumn : selectColumns) {
             if (selectColumn instanceof SwitchColumn) {
@@ -1977,49 +1976,44 @@ public class QueryTable extends BaseTable<QueryTable> {
                 continue;
             }
 
-            if (oldToNewMaps.isEmpty()) {
-                oldToNewMaps.add(new HashMap<>());
-            }
-
-            // Map original source to the new source.
-            final Map<ColumnSource<?>, ColumnSource<?>> firstMap = oldToNewMaps.get(0);
-            if (firstMap.containsKey(originalSource)) {
-                // We have a collision, which means our mapping won't be unique. We need to clone
-                // conflicting mappings with a new map containing our updated target.
-                final ColumnSource<?> previousResultSource = firstMap.get(originalSource);
-                final List<Map<ColumnSource<?>, ColumnSource<?>>> newMaps = new ArrayList<>();
-                oldToNewMaps.stream()
-                        .filter(map -> map.get(originalSource) == previousResultSource)
-                        .forEach(map -> {
-                            final Map<ColumnSource<?>, ColumnSource<?>> newMap = new HashMap<>(map);
-                            newMap.put(originalSource, resultSource);
-                            newMaps.add(newMap);
-                        });
-                oldToNewMaps.addAll(newMaps);
-            } else {
-                oldToNewMaps.forEach(map -> map.put(originalSource, resultSource));
-            }
+            oldToNewSources.computeIfAbsent(originalSource, k -> new ArrayList<>()).add(resultSource);
         }
 
-        if (oldToNewMaps.isEmpty()) {
+        if (oldToNewSources.isEmpty()) {
             return;
         }
 
         // Add new DataIndex entries to the DataIndexer with the remapped column sources.
         for (final DataIndex dataIndex : dataIndexes) {
-            // Create a new data index for each unique mapping.
-            oldToNewMaps.forEach(map -> {
-                if (Collections.disjoint(dataIndex.keyColumnNamesByIndexedColumn().keySet(), map.keySet())) {
-                    // The index contains no remapped original sources, no work needed.
-                    return;
+            // Make one old to new mapping per combination of result sources for this index's own key columns. A
+            // mapping that also covered other columns would make the same remapped index more than once whenever those
+            // columns have several aliases, since a remapped index ignores the mappings for every other column.
+            List<Map<ColumnSource<?>, ColumnSource<?>>> oldToNewMaps = List.of(Map.of());
+            for (final ColumnSource<?> keySource : dataIndex.keyColumnNamesByIndexedColumn().keySet()) {
+                final List<ColumnSource<?>> newSources = oldToNewSources.get(keySource);
+                if (newSources == null) {
+                    // This key column was not remapped, so the remapped index keeps the original source.
+                    continue;
                 }
+                final List<Map<ColumnSource<?>, ColumnSource<?>>> expandedMaps =
+                        new ArrayList<>(oldToNewMaps.size() * newSources.size());
+                for (final Map<ColumnSource<?>, ColumnSource<?>> map : oldToNewMaps) {
+                    for (final ColumnSource<?> newSource : newSources) {
+                        final Map<ColumnSource<?>, ColumnSource<?>> expandedMap = new HashMap<>(map);
+                        expandedMap.put(keySource, newSource);
+                        expandedMaps.add(expandedMap);
+                    }
+                }
+                oldToNewMaps = expandedMaps;
+            }
 
-                // Create a new DataIndex using the new column sources as keys.
-                final DataIndex remappedIndex = dataIndex.remapKeyColumns(map);
+            if (oldToNewMaps.get(0).isEmpty()) {
+                // The index contains no remapped original sources, no work needed.
+                continue;
+            }
 
-                // Add the new index to the DataIndexer.
-                dataIndexer.addDataIndex(remappedIndex);
-            });
+            // Create a new data index for each unique mapping, using the new column sources as keys.
+            oldToNewMaps.forEach(map -> dataIndexer.addDataIndex(dataIndex.remapKeyColumns(map)));
         }
     }
 
