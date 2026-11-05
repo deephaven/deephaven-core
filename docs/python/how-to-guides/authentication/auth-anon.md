@@ -46,7 +46,8 @@ from deephaven_server import Server
 s = Server(
     host="localhost",
     jvm_args=["-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler"],
-).start()
+)
+s.start()
 ```
 
 The server logs a warning at startup that anonymous authentication is enabled. The `authentication.anonymous.warn` property controls this warning, which is on by default.
