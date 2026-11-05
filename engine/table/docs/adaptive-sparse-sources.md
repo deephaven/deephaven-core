@@ -34,19 +34,19 @@ than kilobytes per leaf.
 A source finds a row key's value by splitting the key into four fields, defined in `SparseConstants`, and using each
 field as an index at one level:
 
-| Row key bits | Indexes into | To find | Which covers |
-|---|---|---|---|
-| 40 to 62 | the source's `Level0` | a `Level1` | 2^40 row keys |
-| 25 to 39 | that `Level1` | a `Level2` | 2^25 row keys |
-| 10 to 24 | that `Level2` | a leaf | 1024 (`BLOCK_SIZE`) row keys |
-| 0 to 9 | that leaf | the value | one row key |
+| Row key bits | Indexes into | To find | Which covers | Size if indexed by child index |
+|---|---|---|---|---|
+| 40 to 62 | the source's `Level0` | a `Level1` | 2^40 row keys | 32,768 KB (2^23 references) |
+| 25 to 39 | that `Level1` | a `Level2` | 2^25 row keys | 128 KB (2^15 references) |
+| 10 to 24 | that `Level2` | a leaf | 1024 (`BLOCK_SIZE`) row keys | 256 KB (two arrays of 2^15 references) |
+| 0 to 9 | that leaf | the value | one row key | 1 to 8 KB (a full block of 1024 values) |
 
-So a read walks three page table levels and then looks up its offset in the leaf. An array indexed by child index would
-have 2^23 entries at `Level0` (32 MB, or 64 MB without compressed references) and 32,768 at `Level1` and `Level2`
-(128 KB), however few children it held. Row keys spread across levels are common: a regioned source numbers the rows of
-region `r` from `r << 43`, so an `update` of a partitioned table writes under one `Level0` child per region. Each level
-therefore holds its children densely, at ranked positions (below), and only a `Level1` or `Level2` holding many children
-indexes an array by child index.
+So a read walks three page table levels and then looks up its offset in the leaf. The last column is what an array
+indexed by child index occupies however few children it holds, with compressed references (the default for heaps under
+32 GB); without them, the references take twice as much. Row keys spread across levels are common: a regioned source
+numbers the rows of region `r` from `r << 43`, so an `update` of a partitioned table writes under one `Level0` child per
+region. Each level therefore holds its children densely, at ranked positions (below), and only a `Level1` or `Level2`
+holding many children indexes an array by child index.
 
 `Level0`, `Level1` and `Level2` are nested classes of each source, typed per type. Each level is held directly by its
 parent's array, and `Level0` by the source's `root` field, so a read follows one reference per level. `Level2` keeps full blocks and
