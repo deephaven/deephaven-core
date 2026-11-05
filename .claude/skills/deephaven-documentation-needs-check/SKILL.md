@@ -123,10 +123,21 @@ each revert, find the original commit by title and verify the revert's diff is t
 the original's (the added/removed lines are swapped).
 
 **Before excluding a revert pair, check whether the original commit was cherry-picked onto the
-RC branch or a release branch.** If the feature was cherry-picked to RC before being reverted
-on main, it will still ship in the next release — exclude only the revert from the triage and
-keep the original commit so it flows through to RC classification. Only exclude both the
-original and the revert when neither was cherry-picked to RC or a release branch.
+RC branch or a release branch:**
+
+- **Cherry-picked to RC, not reverted on RC:** the feature will still ship — exclude only the
+  revert from the triage and keep the original commit so it flows through to RC classification.
+- **Cherry-picked to RC and also reverted on RC:** the feature is absent from both branches.
+  Do not exclude silently — include both the original and the revert in the report as an
+  informational item (e.g., "Added then removed") so a human can assess whether the situation
+  warrants documentation (e.g., a feature that was announced, shipped briefly, then pulled).
+- **Not cherry-picked to RC or any release branch:** the net effect on main is zero — exclude
+  both the original and the revert from the triage.
+
+For reverts where the original commit is **not in the range** (it predates the base), the
+revert is a standalone change — a removal of a previously shipped feature. Keep it in the
+triage; removing a shipped feature is user-facing and typically needs documentation (deprecation
+notice, migration guidance).
 
 ### Filter out superseded changes on main
 
