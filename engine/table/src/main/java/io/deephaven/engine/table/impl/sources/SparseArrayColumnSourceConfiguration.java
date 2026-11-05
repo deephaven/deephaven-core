@@ -49,15 +49,6 @@ public abstract class SparseArrayColumnSourceConfiguration {
     public static final int SHORT_RECYCLER_CAPACITY1 = getRecyclerCapacity("short.1", SHORT_RECYCLER_CAPACITY);
     public static final int LONG_RECYCLER_CAPACITY1 = getRecyclerCapacity("long.1", LONG_RECYCLER_CAPACITY);
 
-    // The 'CAPACITY0' options set the type-specific default capacity of the recycler for blocks of blocks of that type.
-    public static final int BYTE_RECYCLER_CAPACITY0 = getRecyclerCapacity("byte.0", BYTE_RECYCLER_CAPACITY);
-    public static final int CHAR_RECYCLER_CAPACITY0 = getRecyclerCapacity("char.0", CHAR_RECYCLER_CAPACITY);
-    public static final int DOUBLE_RECYCLER_CAPACITY0 = getRecyclerCapacity("double.0", DOUBLE_RECYCLER_CAPACITY);
-    public static final int FLOAT_RECYCLER_CAPACITY0 = getRecyclerCapacity("float.0", FLOAT_RECYCLER_CAPACITY);
-    public static final int INT_RECYCLER_CAPACITY0 = getRecyclerCapacity("int.0", INT_RECYCLER_CAPACITY);
-    public static final int OBJECT_RECYCLER_CAPACITY0 = getRecyclerCapacity("object.0", OBJECT_RECYCLER_CAPACITY);
-    public static final int SHORT_RECYCLER_CAPACITY0 = getRecyclerCapacity("short.0", SHORT_RECYCLER_CAPACITY);
-    public static final int LONG_RECYCLER_CAPACITY0 = getRecyclerCapacity("long.0", LONG_RECYCLER_CAPACITY);
 
     private static final String RECYCLER_MAXIMUM_CAPACITY_PROPERTY_PREFIX = "sparsearray.recycler.maximumCapacity.";
     /**
@@ -120,22 +111,6 @@ public abstract class SparseArrayColumnSourceConfiguration {
     public static final int LONG_RECYCLER_MAXIMUM_CAPACITY1 =
             getRecyclerMaximumCapacity("long.1", LONG_RECYCLER_MAXIMUM_CAPACITY, LONG_RECYCLER_CAPACITY1);
 
-    public static final int BYTE_RECYCLER_MAXIMUM_CAPACITY0 =
-            getRecyclerMaximumCapacity("byte.0", BYTE_RECYCLER_MAXIMUM_CAPACITY, BYTE_RECYCLER_CAPACITY0);
-    public static final int CHAR_RECYCLER_MAXIMUM_CAPACITY0 =
-            getRecyclerMaximumCapacity("char.0", CHAR_RECYCLER_MAXIMUM_CAPACITY, CHAR_RECYCLER_CAPACITY0);
-    public static final int DOUBLE_RECYCLER_MAXIMUM_CAPACITY0 =
-            getRecyclerMaximumCapacity("double.0", DOUBLE_RECYCLER_MAXIMUM_CAPACITY, DOUBLE_RECYCLER_CAPACITY0);
-    public static final int FLOAT_RECYCLER_MAXIMUM_CAPACITY0 =
-            getRecyclerMaximumCapacity("float.0", FLOAT_RECYCLER_MAXIMUM_CAPACITY, FLOAT_RECYCLER_CAPACITY0);
-    public static final int INT_RECYCLER_MAXIMUM_CAPACITY0 =
-            getRecyclerMaximumCapacity("int.0", INT_RECYCLER_MAXIMUM_CAPACITY, INT_RECYCLER_CAPACITY0);
-    public static final int OBJECT_RECYCLER_MAXIMUM_CAPACITY0 =
-            getRecyclerMaximumCapacity("object.0", OBJECT_RECYCLER_MAXIMUM_CAPACITY, OBJECT_RECYCLER_CAPACITY0);
-    public static final int SHORT_RECYCLER_MAXIMUM_CAPACITY0 =
-            getRecyclerMaximumCapacity("short.0", SHORT_RECYCLER_MAXIMUM_CAPACITY, SHORT_RECYCLER_CAPACITY0);
-    public static final int LONG_RECYCLER_MAXIMUM_CAPACITY0 =
-            getRecyclerMaximumCapacity("long.0", LONG_RECYCLER_MAXIMUM_CAPACITY, LONG_RECYCLER_CAPACITY0);
 
     private static int getRecyclerCapacity(final String thisType, final int defaultValue) {
         return Configuration.getInstance().getIntegerWithDefault(RECYCLER_CAPACITY_PROPERTY_PREFIX + thisType,

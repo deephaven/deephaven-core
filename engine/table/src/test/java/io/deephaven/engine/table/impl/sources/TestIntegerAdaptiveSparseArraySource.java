@@ -37,7 +37,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK0_SHIFT;
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK0_SIZE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK1_SHIFT;
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK1_SIZE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK2_SIZE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -434,17 +436,53 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
      */
     @Test
     public void testManyLeavesInOneBottomLevel() {
+        final List<Long> leafStarts = new ArrayList<>();
+        for (int leaf = 0; leaf < BLOCK2_SIZE / 4; ++leaf) {
+            leafStarts.add((long) leaf * BLOCK_SIZE);
+        }
+        checkManyChildren(leafStarts);
+    }
+
+    /**
+     * Write a leaf in each of a quarter of the bottom levels of one middle page table level, as
+     * {@link #testManyLeavesInOneBottomLevel()} writes the leaves of one bottom level.
+     */
+    @Test
+    public void testManyBottomLevelsInOneMiddleLevel() {
+        final Random random = new Random(1);
+        final List<Long> leafStarts = new ArrayList<>();
+        for (int level2 = 0; level2 < BLOCK1_SIZE / 4; ++level2) {
+            leafStarts.add(((long) level2 << BLOCK1_SHIFT) + (long) random.nextInt(BLOCK2_SIZE) * BLOCK_SIZE);
+        }
+        checkManyChildren(leafStarts);
+    }
+
+    /**
+     * Write a leaf under each of many middle page table levels spread across the top level, as
+     * {@link #testManyLeavesInOneBottomLevel()} writes the leaves of one bottom level.
+     */
+    @Test
+    public void testManyMiddleLevels() {
+        final Random random = new Random(2);
+        final List<Long> leafStarts = new ArrayList<>();
+        random.ints(0, BLOCK0_SIZE).distinct().limit(600).forEach(level1 -> leafStarts.add(
+                ((long) level1 << BLOCK0_SHIFT) + ((long) random.nextInt(BLOCK1_SIZE) << BLOCK1_SHIFT)));
+        checkManyChildren(leafStarts);
+    }
+
+    /**
+     * Write the leaves starting at {@code leafStarts} in a shuffled order, release some, and write the rest, changing
+     * the leaves already held, then release some of those, checking current and previous values throughout.
+     */
+    private void checkManyChildren(final List<Long> leafStarts) {
         final IntegerSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         final Long2IntOpenHashMap expected = new Long2IntOpenHashMap();
         expected.defaultReturnValue(NULL_INT);
-        final List<Integer> leaves = new ArrayList<>();
-        for (int leaf = 0; leaf < BLOCK2_SIZE / 4; ++leaf) {
-            leaves.add(leaf);
-        }
+        final List<Long> leaves = new ArrayList<>(leafStarts);
         Collections.shuffle(leaves, random);
-        final List<Integer> firstLeaves = leaves.subList(0, leaves.size() / 3);
-        final List<Integer> laterLeaves = leaves.subList(leaves.size() / 3, leaves.size());
+        final List<Long> firstLeaves = leaves.subList(0, leaves.size() / 3);
+        final List<Long> laterLeaves = leaves.subList(leaves.size() / 3, leaves.size());
 
         writeLeavesInChunks(source, expected, random, firstLeaves);
         checkLeaves(source, expected, expected);
@@ -455,24 +493,13 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
         updateGraph.runWithinUnitTestCycle(() -> {
             final Long2IntOpenHashMap previous = new Long2IntOpenHashMap(expected);
             previous.defaultReturnValue(NULL_INT);
-            final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
-            for (int ii = 0; ii < firstLeaves.size(); ii += 2) {
-                final long leafStart = (long) firstLeaves.get(ii) * BLOCK_SIZE;
-                removedBuilder.addRange(leafStart, leafStart + BLOCK_SIZE - 1);
-            }
-            try (final RowSet removed = removedBuilder.build()) {
-                removed.forAllRowKeys(expected::remove);
-                try (final RowSet live = RowSetFactory.fromKeys(expected.keySet().toLongArray())) {
-                    source.setNull(removed);
-                    SparseArrayColumnSource.clearBlocksWithoutLiveRows(removed, live, source);
-                }
-            }
+            releaseLeaves(source, expected, firstLeaves, 2);
             checkLeaves(source, expected, previous);
         });
         checkLeaves(source, expected, expected);
 
-        // write the remaining leaves, past the number at which the level indexes its leaves by leaf index, and change a
-        // value in each leaf already held
+        // write the remaining leaves, past the number at which a level indexes its children by child index, and change
+        // a value in each leaf already held
         updateGraph.runWithinUnitTestCycle(() -> {
             final Long2IntOpenHashMap previous = new Long2IntOpenHashMap(expected);
             previous.defaultReturnValue(NULL_INT);
@@ -488,42 +515,53 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
         });
         checkLeaves(source, expected, expected);
 
-        // release some leaves of the level that indexes its leaves by leaf index
+        // release some of the later leaves
         updateGraph.runWithinUnitTestCycle(() -> {
             final Long2IntOpenHashMap previous = new Long2IntOpenHashMap(expected);
             previous.defaultReturnValue(NULL_INT);
-            final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
-            for (int ii = 0; ii < laterLeaves.size(); ii += 3) {
-                final long leafStart = (long) laterLeaves.get(ii) * BLOCK_SIZE;
-                removedBuilder.addRange(leafStart, leafStart + BLOCK_SIZE - 1);
-            }
-            try (final RowSet removed = removedBuilder.build()) {
-                removed.forAllRowKeys(expected::remove);
-                try (final RowSet live = RowSetFactory.fromKeys(expected.keySet().toLongArray())) {
-                    source.setNull(removed);
-                    SparseArrayColumnSource.clearBlocksWithoutLiveRows(removed, live, source);
-                }
-            }
+            releaseLeaves(source, expected, laterLeaves, 3);
             checkLeaves(source, expected, previous);
         });
         checkLeaves(source, expected, expected);
     }
 
     /**
-     * Write {@code leaves}, a chunk of them at a time, each chunk in ascending order: a few values in most leaves, more
-     * in some, and every value in a few.
+     * Remove every row of every {@code step}th leaf of {@code leafStarts} from {@code source} and {@code expected}, and
+     * release the structures that hold no remaining row.
+     */
+    private static void releaseLeaves(
+            final IntegerSparseArraySource source,
+            final Long2IntOpenHashMap expected,
+            final List<Long> leafStarts,
+            final int step) {
+        final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+        for (int ii = 0; ii < leafStarts.size(); ii += step) {
+            final long leafStart = leafStarts.get(ii);
+            removedBuilder.addRange(leafStart, leafStart + BLOCK_SIZE - 1);
+        }
+        try (final RowSet removed = removedBuilder.build()) {
+            removed.forAllRowKeys(expected::remove);
+            try (final RowSet live = RowSetFactory.fromKeys(expected.keySet().toLongArray())) {
+                source.setNull(removed);
+                SparseArrayColumnSource.clearBlocksWithoutLiveRows(removed, live, source);
+            }
+        }
+    }
+
+    /**
+     * Write the leaves starting at {@code leafStarts}, a chunk of them at a time, each chunk in ascending order: a few
+     * values in most leaves, more in some, and every value in a few.
      */
     private static void writeLeavesInChunks(
             final IntegerSparseArraySource source,
             final Long2IntOpenHashMap expected,
             final Random random,
-            final List<Integer> leaves) {
+            final List<Long> leafStarts) {
         int next = 0;
-        while (next < leaves.size()) {
-            final int end = Math.min(leaves.size(), next + 1 + random.nextInt(200));
+        while (next < leafStarts.size()) {
+            final int end = Math.min(leafStarts.size(), next + 1 + random.nextInt(200));
             final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-            for (final int leaf : leaves.subList(next, end)) {
-                final long leafStart = (long) leaf * BLOCK_SIZE;
+            for (final long leafStart : leafStarts.subList(next, end)) {
                 final int kind = random.nextInt(50);
                 final int count = kind == 0 ? BLOCK_SIZE : kind < 10 ? 40 : 1 + random.nextInt(3);
                 for (int ii = 0; ii < count; ++ii) {

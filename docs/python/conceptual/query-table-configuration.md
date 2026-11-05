@@ -201,19 +201,10 @@ Sparse array column sources use a multi-level hierarchical structure and maintai
 | `sparsearray.recycler.capacity.long.1`          | 1024          | Level 1 recycler capacity for long sparse arrays                                                                                                  |
 | `sparsearray.recycler.capacity.short.1`         | 1024          | Level 1 recycler capacity for short sparse arrays                                                                                                 |
 | `sparsearray.recycler.capacity.object.1`        | 1024          | Level 1 recycler capacity for object sparse arrays                                                                                                |
-| `sparsearray.recycler.capacity.byte.0`          | 1024          | Level 0 (top) recycler capacity for byte sparse arrays                                                                                            |
-| `sparsearray.recycler.capacity.char.0`          | 1024          | Level 0 (top) recycler capacity for character sparse arrays                                                                                       |
-| `sparsearray.recycler.capacity.double.0`        | 1024          | Level 0 (top) recycler capacity for double sparse arrays                                                                                          |
-| `sparsearray.recycler.capacity.float.0`         | 1024          | Level 0 (top) recycler capacity for float sparse arrays                                                                                           |
-| `sparsearray.recycler.capacity.int.0`           | 1024          | Level 0 (top) recycler capacity for integer sparse arrays                                                                                         |
-| `sparsearray.recycler.capacity.long.0`          | 1024          | Level 0 (top) recycler capacity for long sparse arrays                                                                                            |
-| `sparsearray.recycler.capacity.short.0`         | 1024          | Level 0 (top) recycler capacity for short sparse arrays                                                                                           |
-| `sparsearray.recycler.capacity.object.0`        | 1024          | Level 0 (top) recycler capacity for object sparse arrays                                                                                          |
 | `sparsearray.recycler.maximumCapacity.default`  | unlimited     | Default maximum recycler capacity for all sparse array types                                                                                      |
 | `sparsearray.recycler.maximumCapacity.<type>`   | unlimited     | Maximum base recycler capacity for `<type>` sparse arrays, and the default maximum for its other levels; never less than the type's base capacity |
 | `sparsearray.recycler.maximumCapacity.<type>.2` | unlimited     | Maximum level 2 recycler capacity for `<type>` sparse arrays; never less than its level 2 capacity                                                |
 | `sparsearray.recycler.maximumCapacity.<type>.1` | unlimited     | Maximum level 1 recycler capacity for `<type>` sparse arrays; never less than its level 1 capacity                                                |
-| `sparsearray.recycler.maximumCapacity.<type>.0` | unlimited     | Maximum level 0 (top) recycler capacity for `<type>` sparse arrays; never less than its level 0 capacity                                          |
 
 Boolean sparse array column sources store their values as bytes, so they use the `byte` properties.
 

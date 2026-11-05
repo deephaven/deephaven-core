@@ -11,12 +11,12 @@ leaf a full block, as before, and is kept as an escape hatch. Every other sparse
 |---|---|
 | **Sources** | `CharacterSparseArraySource`, replicated to Byte, Short, Integer, Long, Float, Double and Object; `BooleanSparseArraySource` over Byte; `InstantSparseArraySource` and `ZonedDateTimeSparseArraySource` over Long, through `NanosBasedTimeSparseArraySource` |
 | **Compact leaves** | `sparse/CharCompactLeaf`, with `CharSortedLeaf` (at most 16 values) and `CharBitmapLeaf` (at most 128 values), replicated per type |
-| **Bottom level positions** | `sparse/LeafPositions`, with a sorted tier (at most 16 leaves) and a ranked bitmap tier, shared by every type |
+| **Level positions** | `sparse/ChildPositions`, with a sorted tier (at most 16 children) and a ranked bitmap tier, shared by every type and by the middle and bottom levels |
 | **Base class** | `SparseArrayColumnSource`: `clearBlocks`, `clearBlocksWithoutLiveRows`, `clearVacatedBlocks`, `estimateSize`, `getSparseMemoryColumnSource` |
 | **Configuration** | `SparseMemoryColumnSourceFactory.adaptive` (default true) selects the default thresholds for the sources `select` and `update` create; false makes their leaves all full blocks; every other source has only full blocks |
 | **Parallel population** | `WritableSourceWithPrepareForParallelPopulation.parallelPopulationAlignment` and `prepareForParallelPopulation(rows, alignedDivisions)`; `SelectColumnLayer.divideAligned` |
 | **Benchmarks** | `SparseStorageBenchmark` (`jmhRunSparseStorage`), `SparseStorageMemory` (`sparseStorageMemory`), `SparseUpdateBenchmark` (`jmhRunSparseUpdate`), and for results of few leaves `SparseSmallBenchmark` (`jmhRunSparseSmall`) and `SparseSmallMemory` (`sparseSmallMemory`), all in `io.deephaven.benchmark.engine.sparse` |
-| **Tests** | `TestCharCompactLeaf` and `TestCharacterAdaptiveSparseArraySource` and their replicas, checked against reference maps; `TestLeafPositions`; `TestBooleanAdaptiveSparseArraySource`, `TestInstantAdaptiveSparseArraySource`, `TestSparseArraySourceNullBlocks`; the `Abstract*ColumnSourceTest` suites |
+| **Tests** | `TestCharCompactLeaf` and `TestCharacterAdaptiveSparseArraySource` and their replicas, checked against reference maps; `TestChildPositions`; `TestBooleanAdaptiveSparseArraySource`, `TestInstantAdaptiveSparseArraySource`, `TestSparseArraySourceNullBlocks`; the `Abstract*ColumnSourceTest` suites |
 
 ## Why leaves adapt
 
@@ -41,35 +41,45 @@ field as an index at one level:
 | 10 to 24 | that `Level2` | a leaf | 1024 (`BLOCK_SIZE`) row keys |
 | 0 to 9 | that leaf | the value | one row key |
 
-So a read walks three page table levels and then looks up its offset in the leaf. `Level0` and `Level1` each hold
-their first child in a field and allocate an array of children only for a second one, so a source whose rows all lie
-within one `Level2`'s 2^25 row keys allocates no arrays in `Level0` or `Level1`.
+So a read walks three page table levels and then looks up its offset in the leaf. An array indexed by child index would
+have 2^23 entries at `Level0` (32 MB, or 64 MB without compressed references) and 32,768 at `Level1` and `Level2`
+(128 KB), however few children it held. Row keys spread across levels are common: a regioned source numbers the rows of
+region `r` from `r << 43`, so an `update` of a partitioned table writes under one `Level0` child per region. Each level
+therefore holds its children densely, at ranked positions (below), and only a `Level1` or `Level2` holding many children
+indexes an array by child index.
 
-`Level0`, `Level1` and `Level2` are nested classes of each source, typed per type. `Level2` keeps full blocks and
+`Level0`, `Level1` and `Level2` are nested classes of each source, typed per type. Each level is held directly by its
+parent's array, and `Level0` by the source's `root` field, so a read follows one reference per level. `Level2` keeps full blocks and
 compact leaves in separate arrays (`char[][] blocks` and `CharCompactLeaf[] compacts`), so reading a full block is a
 load from a `char[][]` with no type test, as it would be with no compact leaves at all. A leaf is a full block, a
 compact leaf, or absent, which reads as null.
 
-### Bottom level positions
+### Level positions
 
-A `Level2` covers 32,768 leaves, so an array indexed by leaf index has 32,768 entries, 128 KB, even when the level
-holds a single leaf. A small result would spend more on those arrays than on its values. A `Level2` therefore holds its
-leaves densely, in leaf index order, and finds a leaf's position with a `LeafPositions`, which follows the leaves' own
-tiers:
+A small result would spend more on arrays indexed by child index than on its values. A `Level1` or `Level2` therefore
+holds its children densely, in child index order, and finds a child's position with a `ChildPositions`, which follows
+the leaves' own tiers:
 
-- a sorted tier for up to 16 leaves: leaf indices packed four 16-bit lanes to a `long` in four words, counted
+- a sorted tier for up to 16 children: child indices packed four 16-bit lanes to a `long` in four fields, counted
   branch-free as in `CharSortedLeaf`;
-- a ranked bitmap tier for more: a bit per leaf and the number of leaves before each word, as in `CharBitmapLeaf`, about
-  5 KB;
-- past `DIRECT_THRESHOLD`, an eighth of the level (4,096 leaves), no positions at all: the arrays are indexed by leaf
-  index, and hold at most eight entries per leaf held.
+- a ranked bitmap tier for more: a bit per child and the number of children before each word, as in `CharBitmapLeaf`,
+  about 5 KB;
+- past `DIRECT_THRESHOLD`, an eighth of the level (4,096 children), no positions at all: the arrays are indexed by child
+  index, and hold at most eight entries per child held.
 
-The positions and both arrays are held together in an immutable `Leaves`, which the level replaces whenever a leaf it
-holds would move or an array would grow. Reads load the `Leaves` once and use its positions and arrays together. A
-concurrent reader, such as a snapshot reading a row that this cycle has not changed, therefore never pairs new
-positions with old arrays. Appending leaf indices past the last one changes the positions in place, since an append
-moves no position already held and writes only unused lanes or clear bits of arrays allocated once; the level grows
-the arrays first, and a read checks a position against the length of the array it reads.
+`Level0` is indexed by 23 bits, which fit neither a 16-bit lane nor a bitmap of reasonable size, and it rarely holds
+more than a few children, so it keeps their indices in a sorted `int[]`, searched by binary search, and is never indexed
+directly.
+
+A level's positions and arrays are fixed for the level, with two exceptions: a child is set at its position, and
+appending child indices past the last one changes the positions in place, since an append moves no position already
+held and writes only unused lanes, clear bits or unused entries of arrays allocated once. The level grows its arrays
+before appending, and a read checks a position against the length of the array it reads. Any other change, such as
+merging indices among those held, growing an array, removing children or switching to direct indexing, makes a new
+level, which the writer publishes in place of the old one in its parent's array or in `root`. A concurrent reader, such
+as a snapshot reading a row that this cycle has not changed, loads each level once and reads its positions and arrays
+together, so it never pairs new positions with old arrays. A writer, in turn, uses the level that its last change
+returned (`setBlock`, `setCompact`), or reads the page table again after `prepareCompactLeaf`, which may have changed it.
 
 A serial `fillFromChunk` reserves the positions of every leaf of the chunk before writing, the leaves of each `Level2`
 together (`reserveLeaves`, `Level2.reserve`). A level then grows once per chunk rather than once per new leaf: indices
@@ -160,12 +170,13 @@ There is no in-use bitmap. A compact leaf is its own record of which rows it hol
 first write to a leaf in a cycle looks up the previous leaf, and later writes find it there; a bulk write records all of
 a leaf's offsets with one `putSorted` (`recordPrevious` with `PrevScratch`).
 
-Snapshot blocks and the arrays of the previous page table that are indexed by leaf index come from per-type
-`SoftRecycler`s. A previous value `Level2` of up to 4,096 leaves holds them at ranked positions in arrays of its own,
-which are discarded with it when the cycle completes. The leaves and `Level2`s created in a cycle are listed in
-`prevLeafKeys` and `prevLevel2Keys`, so `commitUpdates` returns each snapshot block and clears exactly the entries it
-set in the recycled arrays, returning each to its recycler with every entry null, without walking the page table. A
-snapshot block is not null-filled when borrowed, because taking a snapshot overwrites all of it.
+Snapshot blocks and the arrays of the previous page table that are indexed by child index come from per-type
+`SoftRecycler`s. A previous value `Level1` or `Level2` of up to 4,096 children holds them at ranked positions in arrays
+of its own, which are discarded with it when the cycle completes, as is the previous value `Level0`. The leaves and
+`Level2`s created in a cycle are listed in `prevLeafKeys` and `prevLevel2Keys`, so `commitUpdates` returns each
+snapshot block and clears exactly the entries it set in the recycled arrays, returning each to its recycler with every
+entry null, without walking the page table. A snapshot block is not null-filled when borrowed, because taking a
+snapshot overwrites all of it.
 
 ### Why per-row recording, not per-leaf snapshots
 
@@ -190,7 +201,7 @@ there.
 change no shared structure, so `prepareForParallelPopulation` allocates, before the threads start, the page table
 entries above every leaf to be written and reserves each leaf's position in its `Level2`, for current and previous
 values (`prepareLeafIndices`). It reserves the leaves of each `Level2` together, as a serial write does, and allocates
-the arrays of the `Level2` that its leaves may need (`Level2.prepareArrays`).
+the arrays of the `Level2` that its leaves may need (`Level2.withArrays`).
 
 The sources report `parallelPopulationAlignment() == BLOCK_SIZE`. `SelectColumnLayer` then divides the rows with
 `divideAligned`, ending each division at a leaf boundary, and passes `alignedDivisions = true`. Each writer then owns
@@ -215,16 +226,16 @@ writers start once every division is prepared.
 
 `prevLeafKeys` and `prevLevel2Keys` are the only shared state writers add to, under the lock of `prevLeafKeys`. A
 writer sets only the entries of its own leaves, at reserved positions in arrays the preparation allocated, so no
-writer replaces a `Leaves`.
+writer replaces a level.
 
 ## Releasing memory
 
 `SelectOrUpdateListener` calls `SparseArrayColumnSource.clearBlocksWithoutLiveRows` with the rows a cycle removed or
 vacated, and each source frees, at the end of the cycle, the leaves, `Level2`s and `Level1`s that no longer hold a live
-row. A Boolean or Instant result is released through the primitive source it reinterprets to. `Level0` and `Level1` keep
-a single child in a field, so clearing a child they never had allocates nothing. A `Level2` with ranked positions
-releases the leaves of a cycle together (`clearLeaves`): it builds new positions and arrays of the remaining leaves
-once, rather than moving them under a reader, and a `Level2` indexed by leaf index nulls the released entries.
+row. A Boolean or Instant result is released through the primitive source it reinterprets to. Each level releases the
+children of a cycle together (`clearLeaves`, `clearLevel2s`, `clearLevel1s`): a level with ranked positions builds new
+positions and arrays of the remaining children once, rather than moving them under a reader, and a level indexed by
+child index nulls the released entries. Clearing a child a level never had changes nothing.
 
 `setNull(RowSequence)` nulls a range of a block with `Arrays.fill` and removes a range of a compact leaf with
 `removeRange`. A compact leaf is not shrunk when values are removed, and a full block is not demoted; only releasing a
@@ -321,6 +332,12 @@ that writers never needed an array of compact leaves, moved the allocation and n
 thread that prepares: a parallel Dense initial update over 2^23 rows took 7.6 ms instead of 3.5. The writers allocate
 their own blocks; the preparation leaves no room for a compact leaf where none is needed, and the writer makes such a
 leaf a full block from its first chunk.
+
+**An immutable holder between a level and its arrays.** Holding a `Level2`'s positions and arrays in a separate
+immutable object, which the `Level2` replaced, kept readers consistent but added a dependent load to every read and
+write: random `get` on a small Dense result took 1.66 ns against 1.03, and random `set` over 2^23 row keys 0.9 to 1.4 ns
+more per row even where the level was indexed by leaf index. Each level is now itself that immutable object, held by its
+parent.
 
 **Comparing across builds.** Layout and inlining differences between builds moved results by more than the effects
 measured here. Every comparison above ran the storages being compared in one build, selected by a parameter.

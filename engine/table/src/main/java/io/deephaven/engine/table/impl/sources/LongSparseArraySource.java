@@ -37,7 +37,7 @@ import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.sparse.LongBitmapLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.LongCompactLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.LongSortedLeaf;
-import io.deephaven.engine.table.impl.sources.sparse.LeafPositions;
+import io.deephaven.engine.table.impl.sources.sparse.ChildPositions;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.SoftRecyclerWindow;
@@ -67,10 +67,14 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * A leaf takes the next representation when a write would take it past its threshold, and never returns to a smaller
  * one.
  * <p>
- * The bottom page table level holds its leaves densely, at positions ranked among the leaf indices it holds: sorted
- * indices for a few leaves, then a bitmap with the number of indices before each word, following the leaves' own tiers.
- * A level of more than an eighth of its leaves indexes its arrays by leaf index instead. A level publishes new arrays
- * rather than move a leaf it holds, so that a concurrent reader finds each leaf where its positions say.
+ * The middle and bottom page table levels hold their children densely, at positions ranked among the child indices they
+ * hold: sorted indices for a few children, then a bitmap with the number of indices before each word, following the
+ * leaves' own tiers. A level of more than an eighth of its children indexes its arrays by child index instead. The top
+ * level holds its children at the positions of their indices in a sorted array, since it is indexed by the high bits of
+ * a row key and rarely holds more than a few. Each level is held directly by its parent, or by the source for the top
+ * level, so that a read follows one reference per level. A level's positions and arrays are fixed but for appending
+ * positions and setting children at them; any other change makes a new level, which replaces the old one in its parent,
+ * so that a concurrent reader finds each child where the positions it read say.
  * <p>
  * When tracking previous values, the first write to a row in a cycle records the row's value in a second page table of
  * previous values. Each leaf of that table holds the recorded offsets of its leaf as a sorted or bitmap leaf, following
@@ -123,15 +127,12 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.LONG_RECYCLER_CAPACITY1,
                     SparseArrayColumnSourceConfiguration.LONG_RECYCLER_MAXIMUM_CAPACITY1,
                     () -> new Level2[BLOCK1_SIZE], null));
-    private static final SoftRecycler<Level1[]> level1ArrayRecycler =
-            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.LONG_RECYCLER_CAPACITY0,
-                    SparseArrayColumnSourceConfiguration.LONG_RECYCLER_MAXIMUM_CAPACITY0,
-                    () -> new Level1[BLOCK0_SIZE], null));
 
     private final int sortedThreshold;
     private final int compactThreshold;
     private final int recordThreshold;
-    private final Level0 root = new Level0(false);
+    /** The current values; a change that a level cannot make in place publishes a new level here. */
+    private Level0 root = new Level0(1);
 
     /**
      * Commits the previous values at the end of each cycle in which a value changed; null when not tracking previous
@@ -206,156 +207,307 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
     }
 
     // region page table
-    // Each page table level holds its first child without allocating an
-    // array of children.
-    private static final int NO_CHILD = -1;
-    private static final int MANY_CHILDREN = -2;
-
-    /** The top page table level, holding {@link Level1} children. */
-    private static final class Level0 {
-        /** Whether the array of children is borrowed from a recycler, as for previous values. */
-        private final boolean recycled;
-        private int oneIndex = NO_CHILD;
-        private Level1 oneChild;
-        private Level1[] children;
-
-        private Level0(final boolean recycled) {
-            this.recycled = recycled;
-        }
-
-        private Level1 get(final int index) {
-            if (oneIndex == index) {
-                return oneChild;
-            }
-            return children == null ? null : children[index];
-        }
-
-        private void set(final int index, final Level1 child) {
-            if (oneIndex == index || oneIndex == NO_CHILD) {
-                oneIndex = index;
-                oneChild = child;
-                return;
-            }
-            if (children == null) {
-                if (child == null) {
-                    // a level with one child holds no other child to clear
-                    return;
-                }
-                children = recycled ? level1ArrayRecycler.borrowItem() : new Level1[BLOCK0_SIZE];
-                children[oneIndex] = oneChild;
-                oneChild = null;
-                oneIndex = MANY_CHILDREN;
-            }
-            children[index] = child;
-        }
-
-        /** Return the array of children, whose entries must all be null, to its recycler. */
-        private void recycleArray() {
-            if (children != null) {
-                level1ArrayRecycler.returnItem(children);
-                children = null;
-            }
-        }
-
-        private void clear() {
-            oneIndex = NO_CHILD;
-            oneChild = null;
-            children = null;
-        }
-
-        private long estimateSize() {
-            if (children == null) {
-                return oneChild == null ? 0 : oneChild.estimateSize();
-            }
-            long size = (long) children.length * Long.BYTES;
-            for (final Level1 child : children) {
-                if (child != null) {
-                    size += child.estimateSize();
-                }
-            }
-            return size;
-        }
-    }
-
-    /** The middle page table level, holding {@link Level2} children. */
-    private static final class Level1 {
-        /** Whether the array of children is borrowed from a recycler, as for previous values. */
-        private final boolean recycled;
-        private int oneIndex = NO_CHILD;
-        private Level2 oneChild;
-        private Level2[] children;
-
-        private Level1(final boolean recycled) {
-            this.recycled = recycled;
-        }
-
-        private Level2 get(final int index) {
-            if (oneIndex == index) {
-                return oneChild;
-            }
-            return children == null ? null : children[index];
-        }
-
-        private void set(final int index, final Level2 child) {
-            if (oneIndex == index || oneIndex == NO_CHILD) {
-                oneIndex = index;
-                oneChild = child;
-                return;
-            }
-            if (children == null) {
-                if (child == null) {
-                    // a level with one child holds no other child to clear
-                    return;
-                }
-                children = recycled ? level2ArrayRecycler.borrowItem() : new Level2[BLOCK1_SIZE];
-                children[oneIndex] = oneChild;
-                oneChild = null;
-                oneIndex = MANY_CHILDREN;
-            }
-            children[index] = child;
-        }
-
-        /** Return the array of children, whose entries must all be null, to its recycler. */
-        private void recycleArray() {
-            if (children != null) {
-                level2ArrayRecycler.returnItem(children);
-                children = null;
-            }
-        }
-
-        private long estimateSize() {
-            if (children == null) {
-                return oneChild == null ? 0 : oneChild.estimateSize();
-            }
-            long size = (long) children.length * Long.BYTES;
-            for (final Level2 child : children) {
-                if (child != null) {
-                    size += child.estimateSize();
-                }
-            }
-            return size;
-        }
-    }
-
     /**
-     * The number of leaves past which a bottom page table level indexes its arrays of leaves by leaf index. Up to an
-     * eighth of the level, ranked positions keep the arrays small; past it, an array indexed by leaf index holds at
-     * most eight entries for each leaf it holds.
+     * The number of children past which a middle or bottom page table level indexes its arrays of children by child
+     * index. Up to an eighth of the level, ranked positions keep the arrays small; past it, an array indexed by child
+     * index holds at most eight entries for each child it holds.
      */
     private static final int DIRECT_THRESHOLD = BLOCK2_SIZE / 8;
 
     /**
-     * The leaves of a bottom page table level. A leaf is either a full block or a compact leaf, kept in separate arrays
+     * @return the length of the arrays for {@code size} children of a ranked level whose arrays have length
+     *         {@code capacity}: the same if they fit, else at least double, so that a level that grows a few children at
+     *         a time is copied a logarithmic number of times
+     */
+    private static int grownCapacity(final int capacity, final int size) {
+        return size <= capacity ? capacity : Math.max(size, Math.min(DIRECT_THRESHOLD, capacity * 2));
+    }
+
+    /**
+     * Copy the entry at each position {@code pp} below {@code count} of {@code from} to position {@code positions[pp]}
+     * of {@code to}.
+     *
+     * @return {@code to}
+     */
+    private static <T> T[] scatter(final T[] from, final T[] to, final int[] positions, final int count) {
+        for (int pp = 0; pp < count; ++pp) {
+            to[positions[pp]] = from[pp];
+        }
+        return to;
+    }
+
+    /**
+     * Copy the entry at position {@code positions[pp]} of {@code from} to each position {@code pp} below {@code count}
+     * of {@code to}.
+     *
+     * @return {@code to}
+     */
+    private static <T> T[] gather(final T[] from, final T[] to, final int[] positions, final int count) {
+        for (int pp = 0; pp < count; ++pp) {
+            to[pp] = from[positions[pp]];
+        }
+        return to;
+    }
+
+    /**
+     * The top page table level: the {@link Level1} children it holds, at the positions of their indices in a sorted
+     * array. A row key's index at this level is its bits from {@code BLOCK0_SHIFT} up, so that an array indexed by
+     * child index would have {@code BLOCK0_SIZE} entries; this level is never indexed directly, and usually holds one
+     * child.
+     * <p>
+     * Appending an index past the last one writes an unused entry and then the size. Anything else that changes the
+     * indices makes a new level, which the source publishes as its root, so that a reader that loaded a level finds
+     * each child where its indices say. A child is replaced at its position.
+     */
+    private static final class Level0 {
+        private final int[] indices;
+        private final Level1[] children;
+        private int size;
+
+        private Level0(final int capacity) {
+            indices = new int[capacity];
+            children = new Level1[capacity];
+        }
+
+        /**
+         * @return the position of {@code index}, or -1 if it has none
+         */
+        private int find(final int index) {
+            int low = 0;
+            int high = size - 1;
+            while (low <= high) {
+                final int mid = (low + high) >>> 1;
+                final int midIndex = indices[mid];
+                if (midIndex < index) {
+                    low = mid + 1;
+                } else if (midIndex > index) {
+                    high = mid - 1;
+                } else {
+                    return mid;
+                }
+            }
+            return -1;
+        }
+
+        private Level1 get(final int index) {
+            final int position = find(index);
+            return position < 0 ? null : children[position];
+        }
+
+        /**
+         * @return this level, or a new level holding the same children, with a position for {@code index}, which has
+         *         none
+         */
+        private Level0 reserve(final int index) {
+            final int oldSize = size;
+            if ((oldSize == 0 || index > indices[oldSize - 1]) && oldSize < indices.length) {
+                indices[oldSize] = index;
+                size = oldSize + 1;
+                return this;
+            }
+            final Level0 grown = new Level0(oldSize < indices.length ? indices.length : indices.length * 2);
+            int gi = 0;
+            for (int ii = 0; ii < oldSize; ++ii) {
+                if (gi == ii && index < indices[ii]) {
+                    grown.indices[gi++] = index;
+                }
+                grown.indices[gi] = indices[ii];
+                grown.children[gi++] = children[ii];
+            }
+            if (gi == oldSize) {
+                grown.indices[gi] = index;
+            }
+            grown.size = oldSize + 1;
+            return grown;
+        }
+
+        /**
+         * @return this level, or a new level, without the children at {@code removed[0, count)}, ascending
+         */
+        private Level0 clear(final int[] removed, final int count) {
+            final int[] held = Arrays.copyOf(indices, size);
+            final int[] kept = new int[held.length];
+            final int[] keptFrom = new int[held.length];
+            final int keptCount = ChildPositions.keep(held, removed, count, kept, keptFrom);
+            if (keptCount == held.length) {
+                return this;
+            }
+            final Level0 result = new Level0(Math.max(1, keptCount));
+            System.arraycopy(kept, 0, result.indices, 0, keptCount);
+            gather(children, result.children, keptFrom, keptCount);
+            result.size = keptCount;
+            return result;
+        }
+
+        private long estimateSize() {
+            if (size == 0) {
+                return 0;
+            }
+            long estimate = (long) indices.length * (Integer.BYTES + Long.BYTES);
+            for (int ii = 0; ii < size; ++ii) {
+                if (children[ii] != null) {
+                    estimate += children[ii].estimateSize();
+                }
+            }
+            return estimate;
+        }
+    }
+
+    /**
+     * The middle page table level: the {@link Level2} children it holds. A level of up to {@link #DIRECT_THRESHOLD}
+     * children holds them densely, in child index order, at the positions its {@link ChildPositions} report; a level of
+     * more indexes its array by child index.
+     * <p>
+     * The positions and the array of a level are fixed, except that appending positions past the last one changes the
+     * positions in place, once the array has room for them, and a child is replaced at its position. Anything else
+     * makes a new level, which the source publishes in its parent, so that a reader that loaded a level finds each
+     * child where its positions say.
+     */
+    private static final class Level1 {
+        /**
+         * Whether this level holds previous values, whose array indexed by child index is borrowed from a recycler and
+         * returned when the cycle completes.
+         */
+        private final boolean recycled;
+        /** The positions of the children, or null when the array is indexed by child index. */
+        private final ChildPositions positions;
+        private final Level2[] children;
+
+        private Level1(final boolean recycled, final ChildPositions positions, final Level2[] children) {
+            this.recycled = recycled;
+            this.positions = positions;
+            this.children = children;
+        }
+
+        private static Level1 empty(final boolean recycled) {
+            return new Level1(recycled, ChildPositions.empty(), new Level2[1]);
+        }
+
+        /**
+         * @return the position of the child at {@code index}, or -1 if it has none
+         */
+        private int slot(final int index) {
+            return positions == null ? index : positions.find(index);
+        }
+
+        private Level2 get(final int index) {
+            final int slot = slot(index);
+            // a position appended after this level was replaced may be past its array
+            return slot < 0 || slot >= children.length ? null : children[slot];
+        }
+
+        /** Make {@code child} the child at {@code index}, which has a position. */
+        private void set(final int index, final Level2 child) {
+            children[slot(index)] = child;
+        }
+
+        /**
+         * @return this level, or a new level holding the same children, with a position for {@code index}
+         */
+        private Level1 reserve(final int index) {
+            if (positions == null || positions.find(index) >= 0) {
+                return this;
+            }
+            final int newSize = positions.size() + 1;
+            if (newSize > DIRECT_THRESHOLD) {
+                final Level2[] direct = recycled ? level2ArrayRecycler.borrowItem() : new Level2[BLOCK1_SIZE];
+                final int[] held = positions.indices();
+                return new Level1(recycled, null, scatter(children, direct, held, held.length));
+            }
+            final int[] added = {index};
+            if (index > positions.lastIndex()) {
+                Level1 level = this;
+                if (newSize > children.length) {
+                    // grow the array first, so that a position appended in place is within the array readers find
+                    level = new Level1(recycled, positions,
+                            Arrays.copyOf(children, grownCapacity(children.length, newSize)));
+                }
+                final ChildPositions appended = level.positions.append(added, 1);
+                return appended == level.positions ? level : new Level1(recycled, appended, level.children);
+            }
+            final int[] held = positions.indices();
+            final int[] movedTo = new int[held.length];
+            final int[] merged = ChildPositions.merge(held, added, 1, movedTo);
+            return new Level1(recycled, ChildPositions.of(merged, newSize),
+                    scatter(children, new Level2[grownCapacity(children.length, newSize)], movedTo, held.length));
+        }
+
+        /**
+         * @return this level, or a new level, without the children at {@code removed[0, count)}, ascending
+         */
+        private Level1 clear(final int[] removed, final int count) {
+            if (positions == null) {
+                for (int ii = 0; ii < count; ++ii) {
+                    children[removed[ii]] = null;
+                }
+                return this;
+            }
+            final int[] held = positions.indices();
+            final int[] kept = new int[held.length];
+            final int[] keptFrom = new int[held.length];
+            final int keptCount = ChildPositions.keep(held, removed, count, kept, keptFrom);
+            if (keptCount == held.length) {
+                return this;
+            }
+            if (keptCount == 0) {
+                return empty(recycled);
+            }
+            return new Level1(recycled, ChildPositions.of(kept, keptCount),
+                    gather(children, new Level2[keptCount], keptFrom, keptCount));
+        }
+
+        /**
+         * Release the child at {@code index} of a previous value level when the cycle completes. Only an array indexed
+         * by child index is reused, so only its entries need clearing; the level is discarded with any other array.
+         */
+        private void clearPrevious(final int index) {
+            if (positions == null) {
+                children[index] = null;
+            }
+        }
+
+        /** Return the array indexed by child index, whose entries must all be null, to its recycler. */
+        private void recycleArray() {
+            if (positions == null) {
+                level2ArrayRecycler.returnItem(children);
+            }
+        }
+
+        private long estimateSize() {
+            long estimate = positions == null ? 0 : positions.estimateSize();
+            estimate += (long) children.length * Long.BYTES;
+            for (final Level2 child : children) {
+                if (child != null) {
+                    estimate += child.estimateSize();
+                }
+            }
+            return estimate;
+        }
+    }
+
+    /**
+     * The bottom page table level: its leaves. A leaf is either a full block or a compact leaf, kept in separate arrays
      * so that reading a full block needs no test of the leaf's type. A level of up to {@link #DIRECT_THRESHOLD} leaves
-     * holds them densely, in leaf index order, at the positions that its {@link LeafPositions} report; a level of more
+     * holds them densely, in leaf index order, at the positions its {@link ChildPositions} report; a level of more
      * indexes its arrays by leaf index.
      * <p>
-     * A level publishes new leaves whenever a leaf already held would move or an array would grow, so that a reader
-     * that reads the leaves once finds each leaf it holds at the same position in the arrays it holds.
+     * The positions and the arrays of a level are fixed, except that appending positions past the last one changes the
+     * positions in place, once the arrays have room for them, and a leaf is set at its position. Anything else, such as
+     * moving a leaf or growing an array, makes a new level, which the source publishes in its parent, so that a reader
+     * that loaded a level finds each leaf where its positions say. A writer therefore uses the level that its last
+     * change returned.
+     * <p>
+     * Only one thread changes which leaves a level holds at a time; a parallel population sets only the leaves at
+     * positions its preparation reserved, in arrays it allocated.
      */
-    private static final class Leaves {
+    private static final class Level2 {
+        /**
+         * Whether this level holds previous values, whose arrays indexed by leaf index are borrowed from recyclers and
+         * returned when the cycle completes.
+         */
+        private final boolean recycled;
         /** The positions of the leaves, or null when the arrays are indexed by leaf index. */
-        private final LeafPositions positions;
+        private final ChildPositions positions;
         /** The length of the arrays of leaves, which holds every position. */
         private final int capacity;
         /** The full blocks, or null if no leaf may be one. */
@@ -363,23 +515,28 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         /** The compact leaves, or null if no leaf may be one. */
         private final LongCompactLeaf[] compacts;
 
-        private Leaves(
-                final LeafPositions positions,
+        private Level2(
+                final boolean recycled,
+                final ChildPositions positions,
                 final int capacity,
                 final long[][] blocks,
                 final LongCompactLeaf[] compacts) {
+            this.recycled = recycled;
             this.positions = positions;
             this.capacity = capacity;
             this.blocks = blocks;
             this.compacts = compacts;
         }
 
+        private static Level2 empty(final boolean recycled) {
+            return new Level2(recycled, ChildPositions.empty(), 0, null, null);
+        }
+
         /**
          * @return the position of the leaf at {@code index}, or -1 if it has none
          */
         private int slot(final int index) {
-            final LeafPositions localPositions = positions;
-            return localPositions == null ? index : localPositions.find(index);
+            return positions == null ? index : positions.find(index);
         }
 
         /**
@@ -387,7 +544,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
          */
         private long[] blockAt(final int slot) {
             final long[][] localBlocks = blocks;
-            // a position appended after these leaves were read may be past their arrays
+            // a position appended after this level was replaced may be past its arrays
             return localBlocks == null || slot < 0 || slot >= localBlocks.length ? null : localBlocks[slot];
         }
 
@@ -398,32 +555,13 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             final LongCompactLeaf[] localCompacts = compacts;
             return localCompacts == null || slot < 0 || slot >= localCompacts.length ? null : localCompacts[slot];
         }
-    }
-
-    /**
-     * The bottom page table level, holding {@link Leaves}. Only one thread changes which leaves a level holds at a
-     * time; a parallel population changes only the leaves at positions its preparation reserved.
-     */
-    private static final class Level2 {
-        /**
-         * Whether this level holds previous values, whose arrays indexed by leaf index are borrowed from recyclers and
-         * returned when the cycle completes.
-         */
-        private final boolean recycled;
-        private Leaves leaves = new Leaves(LeafPositions.empty(), 0, null, null);
-
-        private Level2(final boolean recycled) {
-            this.recycled = recycled;
-        }
 
         private long[] getBlock(final int index) {
-            final Leaves localLeaves = leaves;
-            return localLeaves.blockAt(localLeaves.slot(index));
+            return blockAt(slot(index));
         }
 
         private LongCompactLeaf getCompact(final int index) {
-            final Leaves localLeaves = leaves;
-            return localLeaves.compactAt(localLeaves.slot(index));
+            return compactAt(slot(index));
         }
 
         private long[][] newDirectBlocks() {
@@ -438,12 +576,12 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
          * Give each of {@code indices[0, count)}, ascending and distinct, a position, so that setting its leaf writes
          * only its own entry. Positions after the existing ones are appended; otherwise the leaves are moved once, into
          * new arrays.
+         *
+         * @return this level, or a new level holding the same leaves, with the positions
          */
-        private void reserve(final int[] indices, final int count) {
-            final Leaves localLeaves = leaves;
-            final LeafPositions positions = localLeaves.positions;
+        private Level2 reserve(final int[] indices, final int count) {
             if (positions == null) {
-                return;
+                return this;
             }
             int absent = 0;
             for (int ii = 0; ii < count; ++ii) {
@@ -452,7 +590,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
                 }
             }
             if (absent == 0) {
-                return;
+                return this;
             }
             final int[] absentIndices;
             if (absent == count) {
@@ -468,226 +606,135 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             }
             final int newSize = positions.size() + absent;
             if (newSize > DIRECT_THRESHOLD) {
-                makeDirect();
-            } else if (absentIndices[0] > positions.lastIndex()) {
-                append(absentIndices, absent, newSize);
-            } else {
-                merge(absentIndices, absent, newSize);
+                return makeDirect();
             }
+            if (absentIndices[0] > positions.lastIndex()) {
+                return append(absentIndices, absent, newSize);
+            }
+            return merge(absentIndices, absent, newSize);
         }
 
         /**
-         * @return the length of the arrays for {@code size} leaves, doubling the current length so that a level that
-         *         grows a few leaves at a time is copied a logarithmic number of times
+         * @return this level, or a new level, holding {@code indices[0, count)}, each past the last index held, for
+         *         {@code newSize} leaves in all
          */
-        private static int grownCapacity(final int capacity, final int size) {
-            return Math.max(size, Math.min(DIRECT_THRESHOLD, capacity * 2));
-        }
-
-        /**
-         * Append {@code indices[0, count)}, each past the last index held, making the level hold {@code newSize}
-         * leaves.
-         */
-        private void append(final int[] indices, final int count, final int newSize) {
-            Leaves localLeaves = leaves;
-            if (newSize > localLeaves.capacity) {
+        private Level2 append(final int[] indices, final int count, final int newSize) {
+            Level2 level = this;
+            if (newSize > capacity) {
                 // grow the arrays first, so that a position appended in place is within the arrays readers find
-                final int newCapacity = grownCapacity(localLeaves.capacity, newSize);
-                localLeaves = leaves = new Leaves(localLeaves.positions, newCapacity,
-                        localLeaves.blocks == null ? null : Arrays.copyOf(localLeaves.blocks, newCapacity),
-                        localLeaves.compacts == null ? null : Arrays.copyOf(localLeaves.compacts, newCapacity));
+                final int newCapacity = grownCapacity(capacity, newSize);
+                level = new Level2(recycled, positions, newCapacity,
+                        blocks == null ? null : Arrays.copyOf(blocks, newCapacity),
+                        compacts == null ? null : Arrays.copyOf(compacts, newCapacity));
             }
-            final LeafPositions appended = localLeaves.positions.append(indices, count);
-            if (appended != localLeaves.positions) {
-                leaves = new Leaves(appended, localLeaves.capacity, localLeaves.blocks, localLeaves.compacts);
-            }
+            final ChildPositions appended = level.positions.append(indices, count);
+            return appended == level.positions
+                    ? level
+                    : new Level2(recycled, appended, level.capacity, level.blocks, level.compacts);
         }
 
         /**
-         * Add {@code indices[0, count)}, none held, among the indices held, making the level hold {@code newSize}
-         * leaves, and move each leaf held once into new arrays.
+         * @return a new level holding {@code indices[0, count)}, none held, among the indices held, for {@code newSize}
+         *         leaves in all, with each leaf held moved once into new arrays
          */
-        private void merge(final int[] indices, final int count, final int newSize) {
-            final Leaves oldLeaves = leaves;
-            final int[] oldIndices = oldLeaves.positions.indices();
-            final int oldSize = oldIndices.length;
-            final int newCapacity = grownCapacity(oldLeaves.capacity, newSize);
-            final long[][] oldBlocks = oldLeaves.blocks;
-            final LongCompactLeaf[] oldCompacts = oldLeaves.compacts;
-            final long[][] newBlocks = oldBlocks == null ? null : new long[newCapacity][];
-            final LongCompactLeaf[] newCompacts = oldCompacts == null ? null : new LongCompactLeaf[newCapacity];
-            final int[] merged = new int[newSize];
-            int oi = 0;
-            int ni = 0;
-            for (int mi = 0; mi < newSize; ++mi) {
-                if (ni == count || (oi < oldSize && oldIndices[oi] < indices[ni])) {
-                    merged[mi] = oldIndices[oi];
-                    if (newBlocks != null) {
-                        newBlocks[mi] = oldBlocks[oi];
-                    }
-                    if (newCompacts != null) {
-                        newCompacts[mi] = oldCompacts[oi];
-                    }
-                    ++oi;
-                } else {
-                    merged[mi] = indices[ni++];
-                }
-            }
-            leaves = new Leaves(LeafPositions.of(merged, newSize), newCapacity, newBlocks, newCompacts);
-        }
-
-        /** Index the arrays of leaves by leaf index. */
-        private void makeDirect() {
-            final Leaves oldLeaves = leaves;
-            final int[] indices = oldLeaves.positions.indices();
-            long[][] directBlocks = null;
-            if (oldLeaves.blocks != null) {
-                directBlocks = newDirectBlocks();
-                for (int ii = 0; ii < indices.length; ++ii) {
-                    directBlocks[indices[ii]] = oldLeaves.blocks[ii];
-                }
-            }
-            LongCompactLeaf[] directCompacts = null;
-            if (oldLeaves.compacts != null) {
-                directCompacts = newDirectCompacts();
-                for (int ii = 0; ii < indices.length; ++ii) {
-                    directCompacts[indices[ii]] = oldLeaves.compacts[ii];
-                }
-            }
-            leaves = new Leaves(null, BLOCK2_SIZE, directBlocks, directCompacts);
+        private Level2 merge(final int[] indices, final int count, final int newSize) {
+            final int[] held = positions.indices();
+            final int[] movedTo = new int[held.length];
+            final int[] merged = ChildPositions.merge(held, indices, count, movedTo);
+            final int newCapacity = grownCapacity(capacity, newSize);
+            return new Level2(recycled, ChildPositions.of(merged, newSize), newCapacity,
+                    blocks == null ? null : scatter(blocks, new long[newCapacity][], movedTo, held.length),
+                    compacts == null
+                            ? null
+                            : scatter(compacts, new LongCompactLeaf[newCapacity], movedTo, held.length));
         }
 
         /**
-         * @return the position of {@code index}, giving it one if it has none
+         * @return a new level holding the same leaves, in arrays indexed by leaf index
          */
-        private int reserveOne(final int index) {
-            final int found = leaves.slot(index);
-            if (found >= 0) {
-                return found;
-            }
-            reserve(new int[] {index}, 1);
-            return leaves.slot(index);
+        private Level2 makeDirect() {
+            final int[] held = positions.indices();
+            return new Level2(recycled, null, BLOCK2_SIZE,
+                    blocks == null ? null : scatter(blocks, newDirectBlocks(), held, held.length),
+                    compacts == null ? null : scatter(compacts, newDirectCompacts(), held, held.length));
         }
 
         /**
-         * @return the array of full blocks, allocating it if none
+         * @return this level, or a new level holding the same leaves, with a position for {@code index}
          */
-        private long[][] blocksArray() {
-            final Leaves localLeaves = leaves;
-            if (localLeaves.blocks != null) {
-                return localLeaves.blocks;
-            }
-            final long[][] blocks = localLeaves.positions == null
-                    ? newDirectBlocks()
-                    : new long[localLeaves.capacity][];
-            leaves = new Leaves(localLeaves.positions, localLeaves.capacity, blocks, localLeaves.compacts);
-            return blocks;
+        private Level2 reserveOne(final int index) {
+            return slot(index) >= 0 ? this : reserve(new int[] {index}, 1);
         }
 
         /**
-         * @return the array of compact leaves, allocating it if none
+         * @return this level, or a new level holding the same leaves, with an array of full blocks
          */
-        private LongCompactLeaf[] compactsArray() {
-            final Leaves localLeaves = leaves;
-            if (localLeaves.compacts != null) {
-                return localLeaves.compacts;
+        private Level2 withBlocks() {
+            if (blocks != null) {
+                return this;
             }
-            final LongCompactLeaf[] compacts = localLeaves.positions == null
-                    ? newDirectCompacts()
-                    : new LongCompactLeaf[localLeaves.capacity];
-            leaves = new Leaves(localLeaves.positions, localLeaves.capacity, localLeaves.blocks, compacts);
-            return compacts;
+            return new Level2(recycled, positions, capacity,
+                    positions == null ? newDirectBlocks() : new long[capacity][], compacts);
         }
 
-        /** Make {@code block} the leaf at {@code index}, replacing any compact leaf there. */
-        private void setBlock(final int index, final long[] block) {
-            final int slot = reserveOne(index);
-            blocksArray()[slot] = block;
-            final LongCompactLeaf[] compacts = leaves.compacts;
+        /**
+         * @return this level, or a new level holding the same leaves, with an array of compact leaves
+         */
+        private Level2 withCompacts() {
             if (compacts != null) {
-                compacts[slot] = null;
+                return this;
             }
-        }
-
-        /** Make {@code compact} the leaf at {@code index}, which must not hold a full block. */
-        private void setCompact(final int index, final LongCompactLeaf compact) {
-            final int slot = reserveOne(index);
-            compactsArray()[slot] = compact;
+            return new Level2(recycled, positions, capacity, blocks,
+                    positions == null ? newDirectCompacts() : new LongCompactLeaf[capacity]);
         }
 
         /**
-         * Allocate the arrays that setting the leaves at the reserved positions may need, so that doing so writes only
-         * their own entries.
-         *
          * @param mayHoldBlocks whether a leaf may become a full block
          * @param mayHoldCompacts whether a leaf may become a compact leaf
+         * @return this level, or a new level holding the same leaves, with the arrays that setting the leaves at the
+         *         reserved positions may need, so that doing so writes only their own entries
          */
-        private void prepareArrays(final boolean mayHoldBlocks, final boolean mayHoldCompacts) {
-            if (mayHoldBlocks) {
-                blocksArray();
-            }
-            if (mayHoldCompacts) {
-                compactsArray();
-            }
+        private Level2 withArrays(final boolean mayHoldBlocks, final boolean mayHoldCompacts) {
+            final Level2 level = mayHoldBlocks ? withBlocks() : this;
+            return mayHoldCompacts ? level.withCompacts() : level;
         }
 
         /**
          * @return whether making a leaf at a reserved position a compact leaf writes only its own entry
          */
         private boolean hasRoomForCompact() {
-            return leaves.compacts != null;
+            return compacts != null;
         }
 
         /**
-         * Release the leaves at {@code indices[0, count)}, ascending, if held.
+         * @return this level, or a new level, without the leaves at {@code indices[0, count)}, ascending
          */
-        private void clear(final int[] indices, final int count) {
-            final Leaves oldLeaves = leaves;
-            if (oldLeaves.positions == null) {
+        private Level2 clear(final int[] indices, final int count) {
+            if (positions == null) {
                 for (int ii = 0; ii < count; ++ii) {
-                    if (oldLeaves.blocks != null) {
-                        oldLeaves.blocks[indices[ii]] = null;
+                    if (blocks != null) {
+                        blocks[indices[ii]] = null;
                     }
-                    if (oldLeaves.compacts != null) {
-                        oldLeaves.compacts[indices[ii]] = null;
+                    if (compacts != null) {
+                        compacts[indices[ii]] = null;
                     }
                 }
-                return;
+                return this;
             }
-            final int[] oldIndices = oldLeaves.positions.indices();
-            final int[] kept = new int[oldIndices.length];
-            final int[] keptSlots = new int[oldIndices.length];
-            int keptCount = 0;
-            int ci = 0;
-            for (int oi = 0; oi < oldIndices.length; ++oi) {
-                while (ci < count && indices[ci] < oldIndices[oi]) {
-                    ++ci;
-                }
-                if (ci < count && indices[ci] == oldIndices[oi]) {
-                    continue;
-                }
-                kept[keptCount] = oldIndices[oi];
-                keptSlots[keptCount++] = oi;
-            }
-            if (keptCount == oldIndices.length) {
-                return;
+            final int[] held = positions.indices();
+            final int[] kept = new int[held.length];
+            final int[] keptFrom = new int[held.length];
+            final int keptCount = ChildPositions.keep(held, indices, count, kept, keptFrom);
+            if (keptCount == held.length) {
+                return this;
             }
             if (keptCount == 0) {
-                leaves = new Leaves(LeafPositions.empty(), 0, null, null);
-                return;
+                return empty(recycled);
             }
-            // the remaining leaves move into new arrays, so that a reader of the old leaves finds each where it was
-            final long[][] newBlocks = oldLeaves.blocks == null ? null : new long[keptCount][];
-            final LongCompactLeaf[] newCompacts = oldLeaves.compacts == null ? null : new LongCompactLeaf[keptCount];
-            for (int ki = 0; ki < keptCount; ++ki) {
-                if (newBlocks != null) {
-                    newBlocks[ki] = oldLeaves.blocks[keptSlots[ki]];
-                }
-                if (newCompacts != null) {
-                    newCompacts[ki] = oldLeaves.compacts[keptSlots[ki]];
-                }
-            }
-            leaves = new Leaves(LeafPositions.of(kept, keptCount), keptCount, newBlocks, newCompacts);
+            // the remaining leaves move into new arrays, so that a reader of this level finds each where it was
+            return new Level2(recycled, ChildPositions.of(kept, keptCount), keptCount,
+                    blocks == null ? null : gather(blocks, new long[keptCount][], keptFrom, keptCount),
+                    compacts == null ? null : gather(compacts, new LongCompactLeaf[keptCount], keptFrom, keptCount));
         }
 
         /**
@@ -695,52 +742,49 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
          * leaf index are reused, so only their entries need clearing; the level is discarded with any other arrays.
          */
         private void clearPrevious(final int index) {
-            final Leaves localLeaves = leaves;
-            if (localLeaves.positions != null) {
+            if (positions != null) {
                 return;
             }
-            if (localLeaves.blocks != null) {
-                localLeaves.blocks[index] = null;
+            if (blocks != null) {
+                blocks[index] = null;
             }
-            if (localLeaves.compacts != null) {
-                localLeaves.compacts[index] = null;
+            if (compacts != null) {
+                compacts[index] = null;
             }
         }
 
         /** Return the arrays indexed by leaf index, whose entries must all be null, to their recyclers. */
         private void recycleArrays() {
-            final Leaves localLeaves = leaves;
-            if (localLeaves.positions == null) {
-                if (localLeaves.blocks != null) {
-                    blocksArrayRecycler.returnItem(localLeaves.blocks);
-                }
-                if (localLeaves.compacts != null) {
-                    compactsArrayRecycler.returnItem(localLeaves.compacts);
-                }
+            if (positions != null) {
+                return;
             }
-            leaves = new Leaves(LeafPositions.empty(), 0, null, null);
+            if (blocks != null) {
+                blocksArrayRecycler.returnItem(blocks);
+            }
+            if (compacts != null) {
+                compactsArrayRecycler.returnItem(compacts);
+            }
         }
 
         private long estimateSize() {
-            final Leaves localLeaves = leaves;
-            long size = localLeaves.positions == null ? 0 : localLeaves.positions.estimateSize();
-            if (localLeaves.blocks != null) {
-                size += (long) localLeaves.blocks.length * Long.BYTES;
-                for (final long[] block : localLeaves.blocks) {
+            long estimate = positions == null ? 0 : positions.estimateSize();
+            if (blocks != null) {
+                estimate += (long) blocks.length * Long.BYTES;
+                for (final long[] block : blocks) {
                     if (block != null) {
-                        size += (long) BLOCK_SIZE * Long.BYTES;
+                        estimate += (long) BLOCK_SIZE * Long.BYTES;
                     }
                 }
             }
-            if (localLeaves.compacts != null) {
-                size += (long) localLeaves.compacts.length * Long.BYTES;
-                for (final LongCompactLeaf compact : localLeaves.compacts) {
+            if (compacts != null) {
+                estimate += (long) compacts.length * Long.BYTES;
+                for (final LongCompactLeaf compact : compacts) {
                     if (compact != null) {
-                        size += compact.estimateSize();
+                        estimate += compact.estimateSize();
                     }
                 }
             }
-            return size;
+            return estimate;
         }
     }
 
@@ -775,24 +819,108 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
      * @return the bottom page table level covering {@code key}, allocating the levels as needed
      */
     private Level2 ensureLevel2(final long key) {
-        return ensureLevel2(root, key);
+        return ensureLevel2(false, key);
     }
 
     /**
-     * @return the bottom page table level of {@code root} covering {@code key}, allocating the levels as needed
+     * @return the bottom level of the previous value page table covering {@code key}, allocating as needed
      */
-    private static Level2 ensureLevel2(final Level0 root, final long key) {
-        final int block0 = block0(key);
-        Level1 level1 = root.get(block0);
-        if (level1 == null) {
-            root.set(block0, level1 = new Level1(false));
+    private Level2 ensurePrevLevel2(final long key) {
+        if (prevRoot == null) {
+            prevRoot = new Level0(1);
+            prevFlusher.maybeActivate();
         }
+        return ensureLevel2(true, key);
+    }
+
+    /**
+     * @return the bottom level of the previous value page table if {@code prev}, else the current one, covering
+     *         {@code key}, allocating the levels as needed
+     */
+    private Level2 ensureLevel2(final boolean prev, final long key) {
+        Level0 level0 = prev ? prevRoot : root;
+        final int block0 = block0(key);
+        int position0 = level0.find(block0);
+        if (position0 < 0) {
+            final Level0 reserved = level0.reserve(block0);
+            if (reserved != level0) {
+                level0 = reserved;
+                if (prev) {
+                    prevRoot = reserved;
+                } else {
+                    root = reserved;
+                }
+            }
+            position0 = level0.find(block0);
+            level0.children[position0] = Level1.empty(prev);
+        }
+        Level1 level1 = level0.children[position0];
         final int block1 = block1(key);
         Level2 level2 = level1.get(block1);
-        if (level2 == null) {
-            level1.set(block1, level2 = new Level2(false));
+        if (level2 != null) {
+            return level2;
+        }
+        final Level1 reserved = level1.reserve(block1);
+        if (reserved != level1) {
+            level1 = reserved;
+            level0.children[position0] = reserved;
+        }
+        level2 = Level2.empty(prev);
+        level1.set(block1, level2);
+        if (prev) {
+            synchronized (prevLeafKeys) {
+                prevLevel2Keys.add(key >> BLOCK1_SHIFT);
+            }
         }
         return level2;
+    }
+
+    /**
+     * Make {@code level2} the bottom level covering {@code key} of the previous value page table if {@code prev}, else
+     * of the current one, in place of the level that it changes.
+     */
+    private void publishLevel2(final boolean prev, final long key, final Level2 level2) {
+        (prev ? prevRoot : root).get(block0(key)).set(block1(key), level2);
+    }
+
+    /**
+     * Make {@code block} the leaf covering {@code key}, replacing any compact leaf there, in the previous value page
+     * table if {@code prev}, else in the current one, whose bottom level covering {@code key} is {@code level2}.
+     *
+     * @return the bottom level covering {@code key}, which replaces {@code level2} if that had no room for the block
+     */
+    private Level2 setBlock(final boolean prev, final long key, final Level2 level2, final long[] block) {
+        final int index = block2(key);
+        final Level2 updated = level2.reserveOne(index).withBlocks();
+        if (updated != level2) {
+            publishLevel2(prev, key, updated);
+        }
+        final int slot = updated.slot(index);
+        updated.blocks[slot] = block;
+        if (updated.compacts != null) {
+            updated.compacts[slot] = null;
+        }
+        return updated;
+    }
+
+    /**
+     * Make {@code compact} the leaf covering {@code key}, which must not be a full block, in the previous value page
+     * table if {@code prev}, else in the current one, whose bottom level covering {@code key} is {@code level2}.
+     *
+     * @return the bottom level covering {@code key}, which replaces {@code level2} if that had no room for the leaf
+     */
+    private Level2 setCompact(
+            final boolean prev,
+            final long key,
+            final Level2 level2,
+            final LongCompactLeaf compact) {
+        final int index = block2(key);
+        final Level2 updated = level2.reserveOne(index).withCompacts();
+        if (updated != level2) {
+            publishLevel2(prev, key, updated);
+        }
+        updated.compacts[updated.slot(index)] = compact;
+        return updated;
     }
     // endregion page table
 
@@ -804,31 +932,32 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
     }
 
     /**
-     * Make the leaf at {@code block2} of {@code level2}, whose current compact leaf is {@code compact} (or null if the
-     * leaf is absent), ready for {@code count} more offsets.
+     * Make the leaf covering {@code key} in {@code level2}, the current bottom level covering it, whose compact leaf is
+     * {@code compact} (or null if the leaf is absent), ready for {@code count} more offsets. The leaf may move to a new
+     * bottom level, so a caller that writes the leaf again reads the bottom level again.
      *
      * @return the compact leaf to write, or null if the leaf is now a full block
      */
     private LongCompactLeaf prepareCompactLeaf(
+            final long key,
             final Level2 level2,
-            final int block2,
             final LongCompactLeaf compact,
             final int count) {
         if (compact == null) {
             if (count > compactThreshold) {
-                level2.setBlock(block2, newBlock());
+                setBlock(false, key, level2, newBlock());
                 return null;
             }
             final LongCompactLeaf newCompact = newCompactLeaf(count);
-            level2.setCompact(block2, newCompact);
+            setCompact(false, key, level2, newCompact);
             return newCompact;
         }
         final int newSize = compact.size() + count;
         if (newSize > compactThreshold) {
-            level2.setBlock(block2, toBlock(compact));
+            setBlock(false, key, level2, toBlock(compact));
             return null;
         }
-        return maybeLeaveSortedTier(level2, block2, compact, newSize);
+        return maybeLeaveSortedTier(false, key, level2, compact, newSize);
     }
 
     /**
@@ -1038,12 +1167,14 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
     }
 
     /**
-     * @return {@code compact}, or a bitmap leaf with its values that replaces it in {@code level2} if it is a sorted
-     *         leaf and {@code newSize} is more than a sorted leaf holds
+     * @return {@code compact}, the leaf covering {@code key} in {@code level2}, the bottom level covering it in the
+     *         previous value page table if {@code prev}, else in the current one; or a bitmap leaf with its values that
+     *         replaces it if it is a sorted leaf and {@code newSize} is more than a sorted leaf holds
      */
     private LongCompactLeaf maybeLeaveSortedTier(
+            final boolean prev,
+            final long key,
             final Level2 level2,
-            final int block2,
             final LongCompactLeaf compact,
             final int newSize) {
         if (newSize <= sortedThreshold || !(compact instanceof LongSortedLeaf)) {
@@ -1051,7 +1182,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         }
         final LongBitmapLeaf bitmap = new LongBitmapLeaf(newSize);
         ((LongSortedLeaf) compact).copyTo(bitmap);
-        level2.setCompact(block2, bitmap);
+        setCompact(prev, key, level2, bitmap);
         return bitmap;
     }
 
@@ -1131,8 +1262,8 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
                 final int keyCount = it.getNextRowSequenceThrough(firstKey | INDEX_MASK).intSize();
                 if (firstKey >> BLOCK1_SHIFT != level2Key) {
                     if (level2 != null) {
-                        prepareLevel2(level2, prevLevel2, indices, count, mayHoldBlocks, mayHoldCompacts,
-                                mayHoldSnapshots);
+                        prepareLevel2(level2Key << BLOCK1_SHIFT, level2, prevLevel2, indices, count, mayHoldBlocks,
+                                mayHoldCompacts, mayHoldSnapshots);
                     }
                     level2Key = firstKey >> BLOCK1_SHIFT;
                     level2 = ensureLevel2(firstKey);
@@ -1161,15 +1292,17 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             }
         }
         if (level2 != null) {
-            prepareLevel2(level2, prevLevel2, indices, count, mayHoldBlocks, mayHoldCompacts, mayHoldSnapshots);
+            prepareLevel2(level2Key << BLOCK1_SHIFT, level2, prevLevel2, indices, count, mayHoldBlocks,
+                    mayHoldCompacts, mayHoldSnapshots);
         }
     }
 
     /**
-     * Reserve the leaves at {@code indices[0, count)} of {@code level2}, and of {@code prevLevel2} if not null, and
-     * allocate the arrays that writing them may need.
+     * Reserve the leaves at {@code indices[0, count)} of {@code level2}, the bottom level covering {@code key}, and of
+     * {@code prevLevel2}, its previous values, if not null, and allocate the arrays that writing them may need.
      */
-    private static void prepareLevel2(
+    private void prepareLevel2(
+            final long key,
             final Level2 level2,
             final Level2 prevLevel2,
             final int[] indices,
@@ -1177,12 +1310,16 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             final boolean mayHoldBlocks,
             final boolean mayHoldCompacts,
             final boolean mayHoldSnapshots) {
-        level2.reserve(indices, count);
-        level2.prepareArrays(mayHoldBlocks, mayHoldCompacts);
+        final Level2 prepared = level2.reserve(indices, count).withArrays(mayHoldBlocks, mayHoldCompacts);
+        if (prepared != level2) {
+            publishLevel2(false, key, prepared);
+        }
         if (prevLevel2 != null) {
-            prevLevel2.reserve(indices, count);
             // a snapshot may still be a compact leaf in between, when the rows are written in pieces
-            prevLevel2.prepareArrays(mayHoldSnapshots, true);
+            final Level2 preparedPrev = prevLevel2.reserve(indices, count).withArrays(mayHoldSnapshots, true);
+            if (preparedPrev != prevLevel2) {
+                publishLevel2(true, key, preparedPrev);
+            }
         }
     }
 
@@ -1249,35 +1386,11 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         if (level2.getBlock(block2) == null) {
             final LongCompactLeaf compact = level2.getCompact(block2);
             final int absent = compact == null ? count : compact.countAbsent(offsets, count);
-            final LongCompactLeaf prepared = prepareCompactLeaf(level2, block2, compact, absent);
+            final LongCompactLeaf prepared = prepareCompactLeaf(firstKey, level2, compact, absent);
             if (prepared != null) {
                 prepared.insertAbsent(offsets, count);
             }
         }
-    }
-
-    /**
-     * @return the bottom level of the previous value page table covering {@code key}, allocating as needed
-     */
-    private Level2 ensurePrevLevel2(final long key) {
-        if (prevRoot == null) {
-            prevRoot = new Level0(true);
-            prevFlusher.maybeActivate();
-        }
-        final int block0 = block0(key);
-        Level1 level1 = prevRoot.get(block0);
-        if (level1 == null) {
-            prevRoot.set(block0, level1 = new Level1(true));
-        }
-        final int block1 = block1(key);
-        Level2 level2 = level1.get(block1);
-        if (level2 == null) {
-            level1.set(block1, level2 = new Level2(true));
-            synchronized (prevLeafKeys) {
-                prevLevel2Keys.add(key >> BLOCK1_SHIFT);
-            }
-        }
-        return level2;
     }
 
     /**
@@ -1286,12 +1399,11 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
      */
     private void recordPrevious(final long key, final Level2 level2, final int block2, final int offset) {
         final Level2 prevLevel2 = ensurePrevLevel2(key);
-        final Leaves prevLeaves = prevLevel2.leaves;
-        final int slot = prevLeaves.slot(block2);
-        if (prevLeaves.blockAt(slot) != null) {
+        final int slot = prevLevel2.slot(block2);
+        if (prevLevel2.blockAt(slot) != null) {
             return;
         }
-        LongCompactLeaf recorded = prevLeaves.compactAt(slot);
+        LongCompactLeaf recorded = prevLevel2.compactAt(slot);
         if (recorded != null && recorded.contains(offset)) {
             return;
         }
@@ -1317,12 +1429,11 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             final int count,
             final PrevScratch scratch) {
         final Level2 prevLevel2 = ensurePrevLevel2(key);
-        final Leaves prevLeaves = prevLevel2.leaves;
-        final int slot = prevLeaves.slot(block2);
-        if (prevLeaves.blockAt(slot) != null) {
+        final int slot = prevLevel2.slot(block2);
+        if (prevLevel2.blockAt(slot) != null) {
             return;
         }
-        final LongCompactLeaf alreadyRecorded = prevLeaves.compactAt(slot);
+        final LongCompactLeaf alreadyRecorded = prevLevel2.compactAt(slot);
         final int absent = alreadyRecorded == null ? count : alreadyRecorded.countAbsent(offsets, count);
         if (absent == 0) {
             return;
@@ -1331,10 +1442,9 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         if (recorded == null) {
             return;
         }
-        final Leaves leaves = level2 == null ? null : level2.leaves;
-        final int leafSlot = leaves == null ? -1 : leaves.slot(block2);
-        final long[] block = leaves == null ? null : leaves.blockAt(leafSlot);
-        final LongCompactLeaf compact = leaves == null || block != null ? null : leaves.compactAt(leafSlot);
+        final int leafSlot = level2 == null ? -1 : level2.slot(block2);
+        final long[] block = level2 == null ? null : level2.blockAt(leafSlot);
+        final LongCompactLeaf compact = level2 == null || block != null ? null : level2.compactAt(leafSlot);
         int next = 0;
         for (int ii = 0; ii < count; ++ii) {
             final int offset = offsets[ii];
@@ -1387,15 +1497,15 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             if (recorded != null) {
                 recorded.copyTo(snapshot);
             }
-            prevLevel2.setBlock(block2, snapshot);
+            setBlock(true, key, prevLevel2, snapshot);
             return null;
         }
         if (recorded == null) {
             final LongCompactLeaf newRecorded = newCompactLeaf(count);
-            prevLevel2.setCompact(block2, newRecorded);
+            setCompact(true, key, prevLevel2, newRecorded);
             return newRecorded;
         }
-        return maybeLeaveSortedTier(prevLevel2, block2, recorded, newSize);
+        return maybeLeaveSortedTier(true, key, prevLevel2, recorded, newSize);
     }
 
     /**
@@ -1405,13 +1515,12 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         if (level2 == null) {
             return NULL_LONG;
         }
-        final Leaves leaves = level2.leaves;
-        final int slot = leaves.slot(block2);
-        final long[] block = leaves.blockAt(slot);
+        final int slot = level2.slot(block2);
+        final long[] block = level2.blockAt(slot);
         if (block != null) {
             return block[offset];
         }
-        final LongCompactLeaf compact = leaves.compactAt(slot);
+        final LongCompactLeaf compact = level2.compactAt(slot);
         return compact == null ? NULL_LONG : compact.get(offset);
     }
 
@@ -1423,14 +1532,13 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         if (localPrevRoot != null && rowKey >= 0) {
             final Level2 prevLevel2 = getLevel2(localPrevRoot, rowKey);
             if (prevLevel2 != null) {
-                final Leaves prevLeaves = prevLevel2.leaves;
-                final int slot = prevLeaves.slot(block2(rowKey));
+                final int slot = prevLevel2.slot(block2(rowKey));
                 final int offset = (int) (rowKey & INDEX_MASK);
-                final long[] snapshot = prevLeaves.blockAt(slot);
+                final long[] snapshot = prevLevel2.blockAt(slot);
                 if (snapshot != null) {
                     return snapshot[offset];
                 }
-                final LongCompactLeaf recorded = prevLeaves.compactAt(slot);
+                final LongCompactLeaf recorded = prevLevel2.compactAt(slot);
                 if (recorded != null && recorded.contains(offset)) {
                     return recorded.get(offset);
                 }
@@ -1463,14 +1571,13 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         if (level2 == null) {
             return NULL_LONG;
         }
-        final Leaves leaves = level2.leaves;
-        final int slot = leaves.slot(block2(rowKey));
+        final int slot = level2.slot(block2(rowKey));
         final int offset = (int) (rowKey & INDEX_MASK);
-        final long[] block = leaves.blockAt(slot);
+        final long[] block = level2.blockAt(slot);
         if (block != null) {
             return block[offset];
         }
-        final LongCompactLeaf compact = leaves.compactAt(slot);
+        final LongCompactLeaf compact = level2.compactAt(slot);
         return compact == null ? NULL_LONG : compact.get(offset);
     }
 
@@ -1502,19 +1609,12 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
                 final RowSet ignored2 = blocks2ToClear;
                 final RowSet ignored3 = blocks1ToClear) {
             if (emptyResult) {
-                root.clear();
+                root = new Level0(1);
                 return;
             }
             clearLeaves(blocksToClear);
-            blocks2ToClear.forAllRowKeys((final long blockIndex2) -> {
-                final long key = blockIndex2 << BLOCK1_SHIFT;
-                final Level1 level1 = root.get(block0(key));
-                if (level1 != null) {
-                    level1.set(block1(key), null);
-                }
-            });
-            blocks1ToClear
-                    .forAllRowKeys((final long blockIndex1) -> root.set(block0(blockIndex1 << BLOCK0_SHIFT), null));
+            clearLevel2s(blocks2ToClear);
+            clearLevel1s(blocks1ToClear);
         } finally {
             blocksToClear = null;
             blocks2ToClear = null;
@@ -1556,10 +1656,70 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         if (count == 0) {
             return;
         }
-        final Level2 level2 = getLevel2(level2Key << BLOCK1_SHIFT);
+        final long key = level2Key << BLOCK1_SHIFT;
+        final Level2 level2 = getLevel2(key);
         if (level2 != null) {
-            level2.clear(indices, count);
+            final Level2 cleared = level2.clear(indices, count);
+            if (cleared != level2) {
+                publishLevel2(false, key, cleared);
+            }
         }
+    }
+
+    /**
+     * Release the bottom levels of {@code level2Keys}, row keys shifted right by {@code BLOCK1_SHIFT}, the levels of
+     * each middle level together.
+     */
+    private void clearLevel2s(final RowSet level2Keys) {
+        int[] indices = new int[64];
+        int count = 0;
+        long level1Key = -1;
+        try (final RowSet.Iterator it = level2Keys.iterator()) {
+            while (it.hasNext()) {
+                final long key = it.nextLong() << BLOCK1_SHIFT;
+                if (key >> BLOCK0_SHIFT != level1Key) {
+                    clearLevel2s(level1Key, indices, count);
+                    level1Key = key >> BLOCK0_SHIFT;
+                    count = 0;
+                }
+                if (count == indices.length) {
+                    indices = Arrays.copyOf(indices, count * 2);
+                }
+                indices[count++] = block1(key);
+            }
+        }
+        clearLevel2s(level1Key, indices, count);
+    }
+
+    /**
+     * Release the bottom levels at {@code indices[0, count)} of the middle level of {@code level1Key}, a row key
+     * shifted right by {@code BLOCK0_SHIFT}, if any.
+     */
+    private void clearLevel2s(final long level1Key, final int[] indices, final int count) {
+        if (count == 0) {
+            return;
+        }
+        final int position = root.find(block0(level1Key << BLOCK0_SHIFT));
+        if (position >= 0) {
+            root.children[position] = root.children[position].clear(indices, count);
+        }
+    }
+
+    /**
+     * Release the middle levels of {@code level1Keys}, row keys shifted right by {@code BLOCK0_SHIFT}.
+     */
+    private void clearLevel1s(final RowSet level1Keys) {
+        if (level1Keys.isEmpty()) {
+            return;
+        }
+        final int[] indices = new int[level1Keys.intSize()];
+        int count = 0;
+        try (final RowSet.Iterator it = level1Keys.iterator()) {
+            while (it.hasNext()) {
+                indices[count++] = block0(it.nextLong() << BLOCK0_SHIFT);
+            }
+        }
+        root = root.clear(indices, count);
     }
 
     /**
@@ -1593,18 +1753,16 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
                         level1.recycleArray();
                     }
                     level1 = prev.get(block0(key));
-                    prev.set(block0(key), null);
                     lastLevel1Key = level1Key;
                 }
                 final int block1 = block1(key);
                 level1.get(block1).recycleArrays();
-                level1.set(block1, null);
+                level1.clearPrevious(block1);
             }
             if (level1 != null) {
                 level1.recycleArray();
             }
             prevLevel2Keys.clear();
-            prev.recycleArray();
         }
     }
 
@@ -1643,22 +1801,30 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             block[offset] = value;
             return;
         }
-        setInCompactLeaf(level2, block2, offset, value);
+        setInCompactLeaf(key, level2, offset, value);
     }
 
     /**
-     * Set the value at {@code offset} of the leaf at {@code block2} of {@code level2}, which is not a full block.
+     * Set the value of {@code key}, whose leaf in {@code level2}, the bottom level covering it, is not a full block.
+     *
+     * @return the bottom level covering {@code key}, which replaces {@code level2} if the write changed the leaves it
+     *         holds
      */
-    private void setInCompactLeaf(final Level2 level2, final int block2, final int offset, final long value) {
+    private Level2 setInCompactLeaf(final long key, final Level2 level2, final int offset, final long value) {
+        final int block2 = block2(key);
         LongCompactLeaf compact = level2.getCompact(block2);
-        if (compact == null || !compact.contains(offset)) {
-            compact = prepareCompactLeaf(level2, block2, compact, 1);
-            if (compact == null) {
-                level2.getBlock(block2)[offset] = value;
-                return;
-            }
+        if (compact != null && compact.contains(offset)) {
+            compact.put(offset, value);
+            return level2;
         }
-        compact.put(offset, value);
+        compact = prepareCompactLeaf(key, level2, compact, 1);
+        final Level2 current = getLevel2(key);
+        if (compact == null) {
+            current.getBlock(block2)[offset] = value;
+        } else {
+            compact.put(offset, value);
+        }
+        return current;
     }
 
     @Override
@@ -1799,10 +1965,9 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
                 block = null;
                 compact = null;
             } else {
-                final Leaves leaves = level2.leaves;
-                final int slot = leaves.slot(block2);
-                block = leaves.blockAt(slot);
-                compact = block == null ? leaves.compactAt(slot) : null;
+                final int slot = level2.slot(block2);
+                block = level2.blockAt(slot);
+                compact = block == null ? level2.compactAt(slot) : null;
             }
             if (prevRoot != null) {
                 final Level2 prevLevel2 = getLevel2(prevRoot, key);
@@ -1810,10 +1975,9 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
                     prevSnapshot = null;
                     prevRecorded = null;
                 } else {
-                    final Leaves prevLeaves = prevLevel2.leaves;
-                    final int slot = prevLeaves.slot(block2);
-                    prevSnapshot = prevLeaves.blockAt(slot);
-                    prevRecorded = prevSnapshot == null ? prevLeaves.compactAt(slot) : null;
+                    final int slot = prevLevel2.slot(block2);
+                    prevSnapshot = prevLevel2.blockAt(slot);
+                    prevRecorded = prevSnapshot == null ? prevLevel2.compactAt(slot) : null;
                 }
             }
         }
@@ -1976,11 +2140,10 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             // a contiguous range within one leaf can alias the leaf when it is a full block, or read as nulls when
             // there is no leaf
             final Level2 level2 = getLevel2(firstKey);
-            final Leaves leaves = level2 == null ? null : level2.leaves;
-            final int slot = leaves == null ? -1 : leaves.slot(block2(firstKey));
-            if (leaves == null || leaves.compactAt(slot) == null) {
+            final int slot = level2 == null ? -1 : level2.slot(block2(firstKey));
+            if (level2 == null || level2.compactAt(slot) == null) {
                 return DefaultGetContext.resetChunkFromArray(context,
-                        leaves == null ? null : leaves.blockAt(slot),
+                        level2 == null ? null : level2.blockAt(slot),
                         (int) (firstKey & INDEX_MASK),
                         (int) rowSequence.size());
             }
@@ -2092,10 +2255,9 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             final int count = leaves.count;
             final Level2 level2 = ensureLevel2(firstKey);
             final int block2 = block2(firstKey);
-            final Leaves current = level2.leaves;
-            final int slot = current.slot(block2);
-            long[] block = current.blockAt(slot);
-            final LongCompactLeaf existing = block == null ? current.compactAt(slot) : null;
+            final int slot = level2.slot(block2);
+            long[] block = level2.blockAt(slot);
+            final LongCompactLeaf existing = block == null ? level2.compactAt(slot) : null;
             // a new leaf of more values than a compact leaf holds becomes a full block, which needs no offsets, and
             // previous values need them only when they may be recorded in a compact leaf
             if (trackPrevious
@@ -2109,17 +2271,17 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
                 // the preparation left room only for a full block, because the leaf will hold more values than a
                 // compact leaf holds
                 block = newBlock();
-                level2.setBlock(block2, block);
+                setBlock(false, firstKey, level2, block);
             }
             if (block == null) {
                 final int absent = existing == null ? count : existing.countAbsent(offsets, count);
-                final LongCompactLeaf compact = prepareCompactLeaf(level2, block2, existing, absent);
+                final LongCompactLeaf compact = prepareCompactLeaf(firstKey, level2, existing, absent);
                 if (compact != null) {
                     compact.putSorted(offsets, values, srcOffset, count);
                     srcOffset += count;
                     continue;
                 }
-                block = level2.getBlock(block2);
+                block = getLevel2(firstKey).getBlock(block2);
             }
             if (values.isAlias(block)) {
                 throw new UnsupportedOperationException("Source chunk is an alias for target data");
@@ -2143,7 +2305,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             final long key = leaves.firstKey;
             if (key >> BLOCK1_SHIFT != level2Key) {
                 if (level2 != null) {
-                    level2.reserve(indices, count);
+                    reserveLeaves(level2Key << BLOCK1_SHIFT, level2, indices, count);
                 }
                 level2Key = key >> BLOCK1_SHIFT;
                 level2 = ensureLevel2(key);
@@ -2155,7 +2317,17 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             indices[count++] = block2(key);
         }
         if (level2 != null) {
-            level2.reserve(indices, count);
+            reserveLeaves(level2Key << BLOCK1_SHIFT, level2, indices, count);
+        }
+    }
+
+    /**
+     * Give the leaves at {@code indices[0, count)} of {@code level2}, the bottom level covering {@code key}, positions.
+     */
+    private void reserveLeaves(final long key, final Level2 level2, final int[] indices, final int count) {
+        final Level2 reserved = level2.reserve(indices, count);
+        if (reserved != level2) {
+            publishLevel2(false, key, reserved);
         }
     }
 
@@ -2190,7 +2362,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             if (block != null) {
                 block[offset] = values.get(ki);
             } else {
-                setInCompactLeaf(level2, block2, offset, values.get(ki));
+                level2 = setInCompactLeaf(key, level2, offset, values.get(ki));
             }
         }
     }

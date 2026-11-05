@@ -12,11 +12,11 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class TestLeafPositions {
+public class TestChildPositions {
 
     @Test
     public void testEmpty() {
-        final LeafPositions positions = LeafPositions.empty();
+        final ChildPositions positions = ChildPositions.empty();
         assertEquals(0, positions.size());
         assertEquals(-1, positions.lastIndex());
         assertEquals(-1, positions.find(0));
@@ -27,11 +27,11 @@ public class TestLeafPositions {
     @Test
     public void testHighestIndex() {
         // the highest leaf index is also the value of an unused sorted lane
-        final LeafPositions positions = LeafPositions.of(new int[] {3, BLOCK2_SIZE - 1}, 2);
+        final ChildPositions positions = ChildPositions.of(new int[] {3, BLOCK2_SIZE - 1}, 2);
         assertEquals(1, positions.find(BLOCK2_SIZE - 1));
         assertEquals(-1, positions.find(BLOCK2_SIZE - 2));
         assertEquals(BLOCK2_SIZE - 1, positions.lastIndex());
-        final LeafPositions without = LeafPositions.of(new int[] {3}, 1);
+        final ChildPositions without = ChildPositions.of(new int[] {3}, 1);
         assertEquals(-1, without.find(BLOCK2_SIZE - 1));
     }
 
@@ -41,7 +41,7 @@ public class TestLeafPositions {
         for (final int count : new int[] {1, 2, 4, 5, 15, 16, 17, 63, 64, 65, 1000, 4096}) {
             for (int trial = 0; trial < 5; ++trial) {
                 final int[] indices = randomIndices(random, count, 0);
-                check(LeafPositions.of(indices, count), indices);
+                check(ChildPositions.of(indices, count), indices);
             }
         }
     }
@@ -51,7 +51,7 @@ public class TestLeafPositions {
         final Random random = new Random(1);
         for (int trial = 0; trial < 20; ++trial) {
             int[] expected = new int[0];
-            LeafPositions positions = LeafPositions.empty();
+            ChildPositions positions = ChildPositions.empty();
             while (expected.length < 2000) {
                 // appends of one leaf at a time cross each tier boundary in place, and larger ones cross several
                 final int count = random.nextBoolean() ? 1 : 1 + random.nextInt(100);
@@ -63,7 +63,7 @@ public class TestLeafPositions {
                 final int[] previous = expected;
                 expected = Arrays.copyOf(expected, expected.length + count);
                 System.arraycopy(appended, 0, expected, previous.length, count);
-                final LeafPositions before = positions;
+                final ChildPositions before = positions;
                 positions = positions.append(appended, count);
                 check(positions, expected);
                 if (positions == before) {
@@ -73,6 +73,42 @@ public class TestLeafPositions {
                     }
                 }
             }
+        }
+    }
+
+    @Test
+    public void testMergeAndKeep() {
+        final Random random = new Random(2);
+        for (int trial = 0; trial < 50; ++trial) {
+            final int[] all = randomIndices(random, 1 + random.nextInt(200), 0);
+            final boolean[] isHeld = new boolean[all.length];
+            final int[] heldPositions = new int[all.length];
+            int heldCount = 0;
+            for (int ii = 0; ii < all.length; ++ii) {
+                isHeld[ii] = random.nextBoolean();
+                if (isHeld[ii]) {
+                    heldPositions[heldCount++] = ii;
+                }
+            }
+            final int[] held = new int[heldCount];
+            final int[] added = new int[all.length - heldCount];
+            int addedCount = 0;
+            for (int ii = 0, hi = 0; ii < all.length; ++ii) {
+                if (isHeld[ii]) {
+                    held[hi++] = all[ii];
+                } else {
+                    added[addedCount++] = all[ii];
+                }
+            }
+            final int[] movedTo = new int[heldCount];
+            assertArrayEquals(all, ChildPositions.merge(held, added, addedCount, movedTo));
+            assertArrayEquals(Arrays.copyOf(heldPositions, heldCount), movedTo);
+
+            final int[] kept = new int[all.length];
+            final int[] keptFrom = new int[all.length];
+            final int keptCount = ChildPositions.keep(all, added, addedCount, kept, keptFrom);
+            assertArrayEquals(held, Arrays.copyOf(kept, keptCount));
+            assertArrayEquals(Arrays.copyOf(heldPositions, heldCount), Arrays.copyOf(keptFrom, keptCount));
         }
     }
 
@@ -103,7 +139,7 @@ public class TestLeafPositions {
         return indices;
     }
 
-    private static void check(final LeafPositions positions, final int[] expected) {
+    private static void check(final ChildPositions positions, final int[] expected) {
         assertEquals(expected.length, positions.size());
         assertEquals(expected.length == 0 ? -1 : expected[expected.length - 1], positions.lastIndex());
         assertArrayEquals(expected, positions.indices());
