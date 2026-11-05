@@ -68,10 +68,6 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
             .script("ticking", "time_table(\"PT0.5S\", start_time=datetime.now() - timedelta(seconds=10))"
                     + ".update([\"X = i\", \"Y = 0\"]).last_by(by=\"Y\")");
 
-    private static Promise<Object> delay(int millis) {
-        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
-    }
-
     public void testViewportResumesAfterTransportCut() {
         CuttingTransportFactory transport = new CuttingTransportFactory();
         ConnectOptions options = new ConnectOptions();

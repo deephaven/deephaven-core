@@ -19,6 +19,7 @@ import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.client.ide.IdeSession;
+import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
 import javaemul.internal.annotations.DoNotAutobox;
@@ -34,6 +35,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.StreamSupport;
 
 import static elemental2.dom.DomGlobal.console;
 
@@ -273,6 +275,19 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     protected Promise<?> finish(Object input) {
         finishTest();
         return Promise.resolve(input);
+    }
+
+    /** Resolves after {@code millis}, in a later task. */
+    protected static Promise<Object> delay(int millis) {
+        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
+    }
+
+    /** How many states made by batched table operations the connection still holds, unreleased. */
+    protected static long batchStates(WorkerConnection connection) {
+        return StreamSupport.stream(connection.getCache().getAllStates().spliterator(), false)
+                .filter(s -> "batch operation".equals(s.getFetchSummary()))
+                .filter(s -> s.getResolution() != ClientTableState.ResolutionState.RELEASED)
+                .count();
     }
 
     /**

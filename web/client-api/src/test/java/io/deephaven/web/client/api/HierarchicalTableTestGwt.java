@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
-import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.tree.JsRollupConfig;
 import io.deephaven.web.client.api.event.Event;
@@ -269,10 +268,6 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                             });
                 })
                 .then(this::finish).catch_(this::report);
-    }
-
-    private static Promise<Object> delay(int millis) {
-        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
     }
 
     public void testTreeViewportResumesAfterTransportCut() {

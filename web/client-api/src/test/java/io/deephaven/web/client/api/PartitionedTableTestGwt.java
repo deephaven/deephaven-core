@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
-import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.fu.JsItr;
@@ -54,10 +53,6 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                     + ".update(['MyKey = i % 2 == 0 ? LocalDate.ofEpochDay(0) : LocalDate.ofEpochDay((int)(i/6) + 1)',"
                     + " 'Slot = i % 4', 'x = i'])"
                     + ".last_by(by=['MyKey', 'Slot']).partition_by(by=['MyKey'])");
-
-    private static Promise<Object> delay(int millis) {
-        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
-    }
 
     /**
      * When the server ends the key subscription's stream with an error, the partitioned table reports requestfailed.

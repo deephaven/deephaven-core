@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.StreamSupport;
 
 import static elemental2.dom.DomGlobal.console;
 
@@ -44,10 +43,6 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
 
     private static ReadonlyArray<JsTable.CustomColumnArgUnionType> cols(String... exprs) {
         return Js.uncheckedCast(JsArray.of(exprs));
-    }
-
-    private static Promise<Object> delay(int millis) {
-        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
     }
 
     /**
@@ -199,13 +194,6 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
 
     private static ReadonlyArray<Column.ColumnOrName> names(String... names) {
         return Js.uncheckedCast(JsArray.of(names));
-    }
-
-    private static long batchStates(WorkerConnection connection) {
-        return StreamSupport.stream(connection.getCache().getAllStates().spliterator(), false)
-                .filter(s -> "batch operation".equals(s.getFetchSummary()))
-                .filter(s -> s.getResolution() != ClientTableState.ResolutionState.RELEASED)
-                .count();
     }
 
     /**

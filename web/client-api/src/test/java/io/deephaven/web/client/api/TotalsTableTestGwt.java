@@ -5,7 +5,6 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsString;
-import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.event.Event;
@@ -54,10 +53,6 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     "time_table(\"PT0.5S\", start_time=datetime.now() - timedelta(seconds=10))"
                             + ".update_view([\"I = (double)i\", \"J = (double) i * i\", \"K = (double) i % 2\"])"
                             + ".with_attributes({'TotalsTable':'false,false,Count;J=Min:Avg,K=Skip,;'})");
-
-    private static Promise<Object> delay(int millis) {
-        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
-    }
 
     // This will need to be updated to reflect values from JsTotalsTableConfig.knownAggTypes
     // These are the values calculated for each Agg for column I of the "hasTotals" table

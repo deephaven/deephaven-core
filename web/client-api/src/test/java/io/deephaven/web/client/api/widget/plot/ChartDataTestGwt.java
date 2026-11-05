@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
-import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
@@ -105,10 +104,6 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
                     });
                 })
                 .then(this::finish).catch_(this::report);
-    }
-
-    private static Promise<Object> delay(int millis) {
-        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
     }
 
     /**

@@ -17,7 +17,6 @@ import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
-import java.util.stream.StreamSupport;
 
 /**
  * Exercises the immutable, chainable table API end to end: chain before awaiting, read data from the result, close it,
@@ -83,17 +82,6 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
 
     private static ReadonlyArray<Sort.SortUnion> sorts(String... columns) {
         return Js.uncheckedCast(JsArray.of(columns));
-    }
-
-    private static Promise<Object> delay(int millis) {
-        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
-    }
-
-    private static long batchStates(WorkerConnection connection) {
-        return StreamSupport.stream(connection.getCache().getAllStates().spliterator(), false)
-                .filter(s -> "batch operation".equals(s.getFetchSummary()))
-                .filter(s -> s.getResolution() != ClientTableState.ResolutionState.RELEASED)
-                .count();
     }
 
     public void testChainBeforeAwait() {

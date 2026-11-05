@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.subscription;
 
-import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.ConnectOptions;
@@ -27,10 +26,6 @@ public class TableSubscriptionTestGwt extends AbstractAsyncGwtTestCase {
             // One row from the start, replaced twice a second, so updates carry data continuously
             .script("ticking", "time_table(\"PT0.5S\", start_time=datetime.now() - timedelta(seconds=10))"
                     + ".update([\"X = i\", \"Y = 0\"]).last_by(by=\"Y\")");
-
-    private static Promise<Object> delay(int millis) {
-        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
-    }
 
     public void testSubscriptionResumesAfterTransportCut() {
         CuttingTransportFactory transport = new CuttingTransportFactory();
