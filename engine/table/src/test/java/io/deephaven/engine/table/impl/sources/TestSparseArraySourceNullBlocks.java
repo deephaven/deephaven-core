@@ -141,7 +141,7 @@ public class TestSparseArraySourceNullBlocks {
         });
 
         // the removed and vacated blocks are released, and the shifted block is allocated at its new position
-        assertEquals(sizeBefore - intBlockBytes, source.estimateSize());
+        assertEquals(blocks(sizeBefore, intBlockBytes) - 1, blocks(source.estimateSize(), intBlockBytes));
         for (long key = 0; key < BLOCK_SIZE; ++key) {
             assertEquals(RowSet.NULL_ROW_KEY, redirection.get(key));
             assertEquals(RowSet.NULL_ROW_KEY, redirection.get(key + 2L * BLOCK_SIZE));
@@ -288,7 +288,7 @@ public class TestSparseArraySourceNullBlocks {
                 assertEquals(sizeBefore, fixture.source.estimateSize());
             });
 
-            assertEquals(sizeBefore - LONG_BLOCK_BYTES, fixture.source.estimateSize());
+            assertEquals(longBlocks(sizeBefore) - 1, longBlocks(fixture.source.estimateSize()));
             assertRedirections(fixture, 0, BLOCK_SIZE - 1, false, NULL_LONG);
             assertRedirections(fixture, 0, BLOCK_SIZE - 1, true, NULL_LONG);
             assertRedirections(fixture, BLOCK_SIZE, 2 * BLOCK_SIZE - 1, false, 0);
@@ -324,7 +324,7 @@ public class TestSparseArraySourceNullBlocks {
                     fixture.update(removed, RowSetShiftData.EMPTY);
                 }
             });
-            assertEquals(sizeBefore - LONG_BLOCK_BYTES, fixture.source.estimateSize());
+            assertEquals(longBlocks(sizeBefore) - 1, longBlocks(fixture.source.estimateSize()));
 
             updateGraph().runWithinUnitTestCycle(() -> {
                 fixture.rowSet.insert(5);
@@ -334,7 +334,7 @@ public class TestSparseArraySourceNullBlocks {
                 assertEquals(RowSet.NULL_ROW_KEY, fixture.redirection.get(6));
             });
 
-            assertEquals(sizeBefore, fixture.source.estimateSize());
+            assertEquals(longBlocks(sizeBefore), longBlocks(fixture.source.estimateSize()));
             assertEquals(50, fixture.redirection.get(5));
             assertEquals(50, fixture.redirection.getPrev(5));
             assertEquals(RowSet.NULL_ROW_KEY, fixture.redirection.get(6));
@@ -363,7 +363,7 @@ public class TestSparseArraySourceNullBlocks {
             });
 
             // the vacated block is released, and the destination holds as many blocks as the source did
-            assertEquals(sizeBefore, fixture.source.estimateSize());
+            assertEquals(longBlocks(sizeBefore), longBlocks(fixture.source.estimateSize()));
             assertRedirections(fixture, 0, BLOCK_SIZE - 1, false, 0);
             assertRedirections(fixture, BLOCK_SIZE, 2 * BLOCK_SIZE - 1, false, NULL_LONG);
             assertRedirections(fixture, BLOCK_SIZE + shiftDelta, 2 * BLOCK_SIZE - 1 + shiftDelta, false,
@@ -417,7 +417,7 @@ public class TestSparseArraySourceNullBlocks {
                 fixture.rowSet.insert(secondBlock1);
                 fixture.redirection.put(secondBlock1, 7);
             });
-            assertEquals(LONG_BLOCK_BYTES, fixture.source.estimateSize());
+            assertEquals(1, longBlocks(fixture.source.estimateSize()));
             assertEquals(7, fixture.redirection.get(secondBlock1));
         }
     }
@@ -453,6 +453,18 @@ public class TestSparseArraySourceNullBlocks {
         return refreshing
                 ? TstUtils.testRefreshingTable(RowSetFactory.flat(RIGHT_KEYS).toTracking(), columns)
                 : TstUtils.testTable(RowSetFactory.flat(RIGHT_KEYS).toTracking(), columns);
+    }
+
+    /**
+     * @return the number of whole blocks of {@code blockBytes} in {@code size}, which leaves out the page table above
+     *         the leaves, far smaller than a block in these tests
+     */
+    private static long blocks(final long size, final long blockBytes) {
+        return size / blockBytes;
+    }
+
+    private static long longBlocks(final long size) {
+        return blocks(size, LONG_BLOCK_BYTES);
     }
 
     private static long redirectionSize(final Table result, final String column) {

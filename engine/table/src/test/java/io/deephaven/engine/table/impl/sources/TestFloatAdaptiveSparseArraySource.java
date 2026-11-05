@@ -28,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -37,6 +38,7 @@ import java.util.concurrent.Future;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK0_SHIFT;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK1_SHIFT;
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK2_SIZE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static org.junit.Assert.assertEquals;
@@ -424,6 +426,154 @@ public class TestFloatAdaptiveSparseArraySource extends AbstractFloatColumnSourc
         });
         assertEquals(sizeBefore, source.estimateSize());
         checkValue("live", value, source.getFloat(0));
+    }
+
+    /**
+     * Write the leaves of one bottom page table level in an order that adds leaves among those it holds, release some,
+     * and write more until it holds a quarter of its leaves, checking current and previous values throughout.
+     */
+    @Test
+    public void testManyLeavesInOneBottomLevel() {
+        final FloatSparseArraySource source = makeTestSource();
+        final Random random = new Random(0);
+        final Long2FloatOpenHashMap expected = new Long2FloatOpenHashMap();
+        expected.defaultReturnValue(NULL_FLOAT);
+        final List<Integer> leaves = new ArrayList<>();
+        for (int leaf = 0; leaf < BLOCK2_SIZE / 4; ++leaf) {
+            leaves.add(leaf);
+        }
+        Collections.shuffle(leaves, random);
+        final List<Integer> firstLeaves = leaves.subList(0, leaves.size() / 3);
+        final List<Integer> laterLeaves = leaves.subList(leaves.size() / 3, leaves.size());
+
+        writeLeavesInChunks(source, expected, random, firstLeaves);
+        checkLeaves(source, expected, expected);
+
+        source.startTrackingPrevValues();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        // release every other leaf written so far
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final Long2FloatOpenHashMap previous = new Long2FloatOpenHashMap(expected);
+            previous.defaultReturnValue(NULL_FLOAT);
+            final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+            for (int ii = 0; ii < firstLeaves.size(); ii += 2) {
+                final long leafStart = (long) firstLeaves.get(ii) * BLOCK_SIZE;
+                removedBuilder.addRange(leafStart, leafStart + BLOCK_SIZE - 1);
+            }
+            try (final RowSet removed = removedBuilder.build()) {
+                removed.forAllRowKeys(expected::remove);
+                try (final RowSet live = RowSetFactory.fromKeys(expected.keySet().toLongArray())) {
+                    source.setNull(removed);
+                    SparseArrayColumnSource.clearBlocksWithoutLiveRows(removed, live, source);
+                }
+            }
+            checkLeaves(source, expected, previous);
+        });
+        checkLeaves(source, expected, expected);
+
+        // write the remaining leaves, past the number at which the level indexes its leaves by leaf index, and change a
+        // value in each leaf already held
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final Long2FloatOpenHashMap previous = new Long2FloatOpenHashMap(expected);
+            previous.defaultReturnValue(NULL_FLOAT);
+            for (final long key : previous.keySet().toLongArray()) {
+                if ((key & (BLOCK_SIZE - 1)) == 0) {
+                    final float value = randomValue(random);
+                    source.set(key, value);
+                    expected.put(key, value);
+                }
+            }
+            writeLeavesInChunks(source, expected, random, laterLeaves);
+            checkLeaves(source, expected, previous);
+        });
+        checkLeaves(source, expected, expected);
+
+        // release some leaves of the level that indexes its leaves by leaf index
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final Long2FloatOpenHashMap previous = new Long2FloatOpenHashMap(expected);
+            previous.defaultReturnValue(NULL_FLOAT);
+            final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+            for (int ii = 0; ii < laterLeaves.size(); ii += 3) {
+                final long leafStart = (long) laterLeaves.get(ii) * BLOCK_SIZE;
+                removedBuilder.addRange(leafStart, leafStart + BLOCK_SIZE - 1);
+            }
+            try (final RowSet removed = removedBuilder.build()) {
+                removed.forAllRowKeys(expected::remove);
+                try (final RowSet live = RowSetFactory.fromKeys(expected.keySet().toLongArray())) {
+                    source.setNull(removed);
+                    SparseArrayColumnSource.clearBlocksWithoutLiveRows(removed, live, source);
+                }
+            }
+            checkLeaves(source, expected, previous);
+        });
+        checkLeaves(source, expected, expected);
+    }
+
+    /**
+     * Write {@code leaves}, a chunk of them at a time, each chunk in ascending order: a few values in most leaves, more
+     * in some, and every value in a few.
+     */
+    private static void writeLeavesInChunks(
+            final FloatSparseArraySource source,
+            final Long2FloatOpenHashMap expected,
+            final Random random,
+            final List<Integer> leaves) {
+        int next = 0;
+        while (next < leaves.size()) {
+            final int end = Math.min(leaves.size(), next + 1 + random.nextInt(200));
+            final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+            for (final int leaf : leaves.subList(next, end)) {
+                final long leafStart = (long) leaf * BLOCK_SIZE;
+                final int kind = random.nextInt(50);
+                final int count = kind == 0 ? BLOCK_SIZE : kind < 10 ? 40 : 1 + random.nextInt(3);
+                for (int ii = 0; ii < count; ++ii) {
+                    builder.addKey(leafStart + (count == BLOCK_SIZE ? ii : random.nextInt(BLOCK_SIZE)));
+                }
+                // the first key of each leaf is always written, so that each leaf can be changed by its first key
+                builder.addKey(leafStart);
+            }
+            try (final RowSet keys = builder.build();
+                    final WritableFloatChunk<Values> values = WritableFloatChunk.makeWritableChunk(keys.intSize());
+                    final ChunkSink.FillFromContext context = source.makeFillFromContext(keys.intSize())) {
+                final MutableInt position = new MutableInt(0);
+                keys.forAllRowKeys(key -> {
+                    final float value = randomValue(random);
+                    values.set(position.getAndIncrement(), value);
+                    expected.put(key, value);
+                });
+                source.fillFromChunk(context, values, keys);
+            }
+            next = end;
+        }
+    }
+
+    /**
+     * Check every row key of {@code current} and {@code previous} against the current and previous values of
+     * {@code source}, one at a time and in a chunk.
+     */
+    private static void checkLeaves(
+            final FloatSparseArraySource source,
+            final Long2FloatOpenHashMap current,
+            final Long2FloatOpenHashMap previous) {
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+        current.keySet().forEach(builder::addKey);
+        previous.keySet().forEach(builder::addKey);
+        try (final RowSet keys = builder.build();
+                final WritableFloatChunk<Values> values = WritableFloatChunk.makeWritableChunk(keys.intSize());
+                final ChunkSource.FillContext context = source.makeFillContext(keys.intSize())) {
+            keys.forAllRowKeys(key -> {
+                checkValue("key " + key, current.get(key), source.getFloat(key));
+                checkValue("prev key " + key, previous.get(key), source.getPrevFloat(key));
+            });
+            source.fillChunk(context, values, keys);
+            final MutableInt position = new MutableInt(0);
+            keys.forAllRowKeys(
+                    key -> checkValue("key " + key, current.get(key), values.get(position.getAndIncrement())));
+            source.fillPrevChunk(context, values, keys);
+            position.set(0);
+            keys.forAllRowKeys(
+                    key -> checkValue("prev key " + key, previous.get(key), values.get(position.getAndIncrement())));
+        }
     }
 
     private static void applyRandomOperation(
