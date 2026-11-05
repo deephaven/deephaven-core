@@ -57,8 +57,8 @@ holds a single leaf. A small result would spend more on those arrays than on its
 leaves densely, in leaf index order, and finds a leaf's position with a `LeafPositions`, which follows the leaves' own
 tiers:
 
-- a sorted tier for up to 16 leaves: leaf indices packed four 16-bit lanes to a `long`, one word for up to four and four
-  words otherwise, counted branch-free as in `CharSortedLeaf`;
+- a sorted tier for up to 16 leaves: leaf indices packed four 16-bit lanes to a `long` in four words, counted
+  branch-free as in `CharSortedLeaf`;
 - a ranked bitmap tier for more: a bit per leaf and the number of leaves before each word, as in `CharBitmapLeaf`, about
   5 KB;
 - past `DIRECT_THRESHOLD`, an eighth of the level (4,096 leaves), no positions at all: the arrays are indexed by leaf
@@ -68,8 +68,8 @@ The positions and both arrays are held together in an immutable `Leaves`, which 
 holds would move or an array would grow. Reads load the `Leaves` once and use its positions and arrays together. A
 concurrent reader, such as a snapshot reading a row that this cycle has not changed, therefore never pairs new
 positions with old arrays. Appending leaf indices past the last one changes the positions in place, since an append
-moves no position already held; the level grows the arrays first, and a read checks a position against the length of
-the array it reads.
+moves no position already held and writes only unused lanes or clear bits of arrays allocated once; the level grows
+the arrays first, and a read checks a position against the length of the array it reads.
 
 A serial `fillFromChunk` reserves the positions of every leaf of the chunk before writing, the leaves of each `Level2`
 together (`reserveLeaves`, `Level2.reserve`). A level then grows once per chunk rather than once per new leaf: indices

@@ -66,10 +66,11 @@ public abstract class LeafPositions {
     }
 
     /**
-     * Up to {@link #CAPACITY} leaf indices, sorted, packed four 16-bit lanes to a long: one word for up to four
-     * indices, four words for more. A lookup counts the indices less than its target a word at a time, with no branch
-     * that depends on the indices, as {@link CharSortedLeaf} does. Unused lanes hold {@link #UNUSED}, which no lookup
-     * counts, because no target exceeds it.
+     * Up to {@link #CAPACITY} leaf indices, sorted, packed four 16-bit lanes to a long in four words. A lookup counts
+     * the indices less than its target a word at a time, with no branch that depends on the indices, as
+     * {@link CharSortedLeaf} does. Unused lanes hold {@link #UNUSED}, which no lookup counts, because no target exceeds
+     * it. The words are allocated once, so an append in place writes only unused lanes of the array a concurrent reader
+     * holds.
      */
     private static final class Sorted extends LeafPositions {
         private static final int CAPACITY = 16;
@@ -77,20 +78,15 @@ public abstract class LeafPositions {
         private static final long LANE_ONES = 0x0001_0001_0001_0001L;
         private static final long GUARD_BITS = 0x8000_8000_8000_8000L;
 
-        private long[] words;
+        private final long[] words = new long[CAPACITY / 4];
         private int size;
 
         private Sorted(final int[] indices, final int count) {
-            words = new long[wordsFor(count)];
             Arrays.fill(words, UNUSED * LANE_ONES);
             for (int ii = 0; ii < count; ++ii) {
                 setIndexAt(ii, indices[ii]);
             }
             size = count;
-        }
-
-        private static int wordsFor(final int count) {
-            return count <= 4 ? 1 : CAPACITY / 4;
         }
 
         @Override
@@ -119,15 +115,9 @@ public abstract class LeafPositions {
 
         @Override
         public int find(final int index) {
-            final long[] localWords = words;
             final long target = index * LANE_ONES;
-            final int position;
-            if (localWords.length == 1) {
-                position = lessThan(localWords[0], target);
-            } else {
-                position = lessThan(localWords[0], target) + lessThan(localWords[1], target)
-                        + lessThan(localWords[2], target) + lessThan(localWords[3], target);
-            }
+            final int position = lessThan(words[0], target) + lessThan(words[1], target)
+                    + lessThan(words[2], target) + lessThan(words[3], target);
             return position < size && indexAt(position) == index ? position : -1;
         }
 
@@ -138,11 +128,6 @@ public abstract class LeafPositions {
                 final int[] all = Arrays.copyOf(indices(), newSize);
                 System.arraycopy(indices, 0, all, size, count);
                 return new Bitmap(all, newSize);
-            }
-            if (wordsFor(newSize) > words.length) {
-                final int oldLength = words.length;
-                words = Arrays.copyOf(words, wordsFor(newSize));
-                Arrays.fill(words, oldLength, words.length, UNUSED * LANE_ONES);
             }
             for (int ii = 0; ii < count; ++ii) {
                 setIndexAt(size + ii, indices[ii]);
