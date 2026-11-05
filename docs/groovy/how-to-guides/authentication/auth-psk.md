@@ -94,7 +94,7 @@ If `DEEPHAVEN_PSK` is unset or empty, the server ignores the empty value and gen
 
 ## Connect from Java or Groovy
 
-For connecting a Java or Groovy client to a server that requires the key, see the [Java client guide](../java-client.md).
+A Java or Groovy client passes the key in its session configuration. Set `authenticationTypeAndValue` on the `SessionConfig` builder to the handler class name, a space, and the key: `io.deephaven.authentication.psk.PskAuthenticationHandler <key>`. For a complete example of connecting a Java client, see the [Java client guide](../java-client.md).
 
 ## Other ways to set the key
 

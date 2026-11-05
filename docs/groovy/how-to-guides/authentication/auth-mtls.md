@@ -12,7 +12,7 @@ Configuring mTLS takes a few extra steps on top of a basic [Deephaven Docker set
 - A Dockerfile that adds the required JAR file to the Deephaven classpath. The classpath is the list of JAR files the server loads.
 - A docker-compose YAML file that sets the mTLS server properties.
 
-`MTlsAuthenticationHandler` is an example provider. It accepts any client that presented a certificate when it connected, and it identifies the user by the certificate's subject (the name the certificate was issued to). It doesn't check which CA signed the certificate. The TLS layer already rejects certificates that `ca.crt` doesn't sign.
+`MTlsAuthenticationHandler` is an example provider. It accepts any client that presented a certificate when it connected, and it uses the certificate's subject (the name the certificate was issued to) only to label the user in log output. It doesn't check which CA signed the certificate. The TLS layer already rejects certificates that `ca.crt` doesn't sign.
 
 ## Set up mTLS with Docker
 
@@ -99,7 +99,7 @@ If the browser warns about the server's certificate, it may not trust the CA tha
 
 If the browser reports a TLS or client certificate error, it may not have presented a certificate that `ca.crt` signed. Check that you imported the client certificate and that `ca.crt` is the CA that signed it.
 
-With this configuration, the browser-based Deephaven editor (the IDE) at `/ide` has no login for mTLS, so it shows a "No login plugins found" error instead of loading.
+The test page uses the JS API's mTLS login. This guide doesn't cover logging in to the browser-based Deephaven editor (the IDE) with mTLS.
 
 ## Related documentation
 
