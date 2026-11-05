@@ -2,6 +2,10 @@
 title: Configure the Deephaven Docker application
 ---
 
+This guide covers best practices for configuring the Deephaven Docker application. Deephaven can be run from [Docker](https://www.docker.com/) alone or with [Docker Compose](https://docs.docker.com/compose/). The latter is recommended for customized applications, as it provides a simpler mechanism for orchestrating complex applications with multiple services.
+
+If you are interested in lower-level details, which may be necessary if you are interested in building your own Docker images from scratch, see the [production application guide](./configure-production-application.md). Some knowledge about [Docker](https://docs.docker.com/) is assumed.
+
 This guide shows how to run the Deephaven Docker image with custom JVM options, configuration, and ports. It also covers the following tasks:
 
 - Setting JVM options.
@@ -13,10 +17,6 @@ This guide shows how to run the Deephaven Docker image with custom JVM options, 
 - Debugging a running container.
 
 The sections on image contents, versioning, and available images come after the task sections.
-
-Deephaven can be run from [Docker](https://www.docker.com/) alone or with [Docker Compose](https://docs.docker.com/compose/). Deephaven recommends Docker Compose for customized applications, because it provides a simpler way to orchestrate complex applications with multiple services.
-
-This guide assumes some knowledge of [Docker](https://docs.docker.com/). For lower-level details, such as the `start` script, JVM options, and the directories the images use, see [Configure the production application](./configure-production-application.md).
 
 The image build logic is in the [deephaven-server-docker](https://github.com/deephaven/deephaven-server-docker) repository.
 
@@ -32,6 +32,9 @@ The image accepts configuration through these main mechanisms:
 | Docker Compose `environment` and `ports` | Compose file or shell                                                               | Setting values for one service in a Compose application.                         |
 
 ## Run with Docker
+
+> [!NOTE]
+> Deephaven recommends running with the `latest` image to stay up-to-date with the latest features, bug fixes, and patches. See [Versioning](#versioning).
 
 The quickest way to get up and running with the Deephaven Docker application is to run it with the default configuration:
 
