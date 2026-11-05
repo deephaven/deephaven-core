@@ -172,11 +172,11 @@ a leaf's offsets with one `putSorted` (`recordPrevious` with `PrevScratch`).
 
 Snapshot blocks and the arrays of the previous page table that are indexed by child index come from per-type
 `SoftRecycler`s. A previous value `Level1` or `Level2` of up to 4,096 children holds them at ranked positions in arrays
-of its own, which are discarded with it when the cycle completes, as is the previous value `Level0`. The leaves and
-`Level2`s created in a cycle are listed in `prevLeafKeys` and `prevLevel2Keys`, so `commitUpdates` returns each
-snapshot block and clears exactly the entries it set in the recycled arrays, returning each to its recycler with every
-entry null, without walking the page table. A snapshot block is not null-filled when borrowed, because taking a
-snapshot overwrites all of it.
+of its own, which are discarded with it when the cycle completes, as is the previous value `Level0`. `commitUpdates`
+walks the previous page table (`recyclePrevious`), returning each snapshot block, and each recycled array with every
+entry null. A ranked level holds only its children, and a level indexed by child index holds more than 4,096 of them,
+so the walk reads at most eight entries for each child the cycle recorded; no list of the recorded leaves is needed. A
+snapshot block is not null-filled when borrowed, because taking a snapshot overwrites all of it.
 
 ### Why per-row recording, not per-leaf snapshots
 
@@ -224,9 +224,10 @@ leaves, as for aligned divisions, and `SelectColumnLayer` then calls `prepareDiv
 parallel jobs, each on a division of whole leaves, to build the leaves and record their previous values. The single-row
 writers start once every division is prepared.
 
-`prevLeafKeys` and `prevLevel2Keys` are the only shared state writers add to, under the lock of `prevLeafKeys`. A
-writer sets only the entries of its own leaves, at reserved positions in arrays the preparation allocated, so no
-writer replaces a level.
+Writers share no state but the arrays the preparation allocated, and take no lock: a writer sets only the entries of
+its own leaves, current and previous, at reserved positions in those arrays, so no writer replaces a level. The
+preparation creates every previous value `Level2` to be written, and the end of the cycle finds the previous value
+leaves by walking the previous page table.
 
 ## Releasing memory
 

@@ -30,7 +30,6 @@ import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.SoftRecyclerWindow;
 import io.deephaven.util.annotations.TestUseOnly;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -69,9 +68,10 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * the same thresholds, or, once more offsets are recorded than a compact leaf holds, a full block that snapshots the
  * whole leaf. A row without a recorded value has not changed this cycle, so its previous value is its current value.
  * The previous values are discarded when the cycle completes. The snapshot blocks and the arrays of the previous value
- * page table come from recyclers shared by the sources of this type; the leaves and page table levels created in a
- * cycle are listed, so that completing it clears exactly the entries set and returns each array indexed by leaf index
- * with every entry null.
+ * page table come from recyclers shared by the sources of this type; completing the cycle walks that page table,
+ * returning each snapshot block, and each array indexed by child index with every entry null. A ranked level holds only
+ * its children and a level indexed by child index holds more than an eighth of them, so the walk costs at most eight
+ * entries for each child the cycle recorded.
  * <p>
  * For parallel population, {@link #prepareForParallelPopulation(RowSequence, boolean)} allocates the page table above
  * each leaf to be written and reserves the leaf's position, for current and previous values, so that writers of
@@ -131,17 +131,6 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
      * The previous values recorded this cycle, or null if none have been recorded.
      */
     private transient Level0 prevRoot;
-    /**
-     * The leaves of {@link #prevRoot}, as row keys shifted right by {@code LOG_BLOCK_SIZE}, so that completing the
-     * cycle clears their entries and returns their snapshot blocks without reading through the page table. Writers of
-     * different leaves may add to it concurrently, so it and {@link #prevLevel2Keys} are guarded by its lock.
-     */
-    private transient final LongArrayList prevLeafKeys = new LongArrayList();
-    /**
-     * The bottom page table levels of {@link #prevRoot}, as row keys shifted right by {@code BLOCK1_SHIFT}, so that
-     * completing the cycle returns their arrays and clears their entries in the levels above.
-     */
-    private transient final LongArrayList prevLevel2Keys = new LongArrayList();
 
     /**
      * The blocks, block2 structures and block1 structures to release at the end of this cycle, as passed to
@@ -445,18 +434,18 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         }
 
         /**
-         * Release the child at {@code index} of a previous value level when the cycle completes. Only an array indexed
-         * by child index is reused, so only its entries need clearing; the level is discarded with any other array.
+         * Release this previous value level and its children when the cycle completes: return their snapshot blocks,
+         * and their arrays indexed by child index, with every entry null, to the recyclers. The level is discarded with
+         * any other array.
          */
-        private void clearPrevious(final int index) {
-            if (positions == null) {
-                children[index] = null;
+        private void recyclePrevious() {
+            for (int ii = 0; ii < children.length; ++ii) {
+                if (children[ii] != null) {
+                    children[ii].recyclePrevious();
+                }
             }
-        }
-
-        /** Return the array indexed by child index, whose entries must all be null, to its recycler. */
-        private void recycleArray() {
             if (positions == null) {
+                Arrays.fill(children, null);
                 level2ArrayRecycler.returnItem(children);
             }
         }
@@ -726,30 +715,27 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         }
 
         /**
-         * Release the leaf at {@code index} of a previous value level when the cycle completes. Only arrays indexed by
-         * leaf index are reused, so only their entries need clearing; the level is discarded with any other arrays.
+         * Release this previous value level when the cycle completes: return its snapshot blocks, and its arrays
+         * indexed by leaf index, with every entry null, to their recyclers. The level is discarded with any other
+         * arrays.
          */
-        private void clearPrevious(final int index) {
+        private void recyclePrevious() {
+            if (blocks != null) {
+                for (final char[] snapshot : blocks) {
+                    if (snapshot != null) {
+                        snapshotRecycler.returnItem(snapshot);
+                    }
+                }
+            }
             if (positions != null) {
                 return;
             }
             if (blocks != null) {
-                blocks[index] = null;
-            }
-            if (compacts != null) {
-                compacts[index] = null;
-            }
-        }
-
-        /** Return the arrays indexed by leaf index, whose entries must all be null, to their recyclers. */
-        private void recycleArrays() {
-            if (positions != null) {
-                return;
-            }
-            if (blocks != null) {
+                Arrays.fill(blocks, null);
                 blocksArrayRecycler.returnItem(blocks);
             }
             if (compacts != null) {
+                Arrays.fill(compacts, null);
                 compactsArrayRecycler.returnItem(compacts);
             }
         }
@@ -855,11 +841,6 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         }
         level2 = Level2.empty(prev);
         level1.set(block1, level2);
-        if (prev) {
-            synchronized (prevLeafKeys) {
-                prevLevel2Keys.add(key >> BLOCK1_SHIFT);
-            }
-        }
         return level2;
     }
 
@@ -1463,11 +1444,6 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             final CharCompactLeaf recorded,
             final int count,
             final Level2 level2) {
-        if (recorded == null) {
-            synchronized (prevLeafKeys) {
-                prevLeafKeys.add(key >> LOG_BLOCK_SIZE);
-            }
-        }
         final int newSize = (recorded == null ? 0 : recorded.size()) + count;
         if (newSize > recordThreshold) {
             // the offsets not yet recorded have not changed this cycle, so their current values are previous values
@@ -1711,46 +1687,12 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
 
     /**
-     * Clear each entry this cycle set in {@code prev}, the previous value page table, returning the snapshot blocks and
-     * the arrays of entries to their recyclers.
+     * Release {@code prev}, the previous value page table, returning its snapshot blocks and its arrays indexed by
+     * child index, with every entry null, to their recyclers.
      */
-    private void recyclePrevious(final Level0 prev) {
-        synchronized (prevLeafKeys) {
-            for (int ii = 0; ii < prevLeafKeys.size(); ++ii) {
-                final long key = prevLeafKeys.getLong(ii) << LOG_BLOCK_SIZE;
-                final Level2 level2 = getLevel2(prev, key);
-                final int block2 = block2(key);
-                final char[] snapshot = level2.getBlock(block2);
-                if (snapshot != null) {
-                    snapshotRecycler.returnItem(snapshot);
-                }
-                level2.clearPrevious(block2);
-            }
-            prevLeafKeys.clear();
-
-            // each level1 was created with a level2, so the sorted level2 keys visit every level1, one at a time
-            prevLevel2Keys.sort(null);
-            long lastLevel1Key = -1;
-            Level1 level1 = null;
-            for (int ii = 0; ii < prevLevel2Keys.size(); ++ii) {
-                final long level2Key = prevLevel2Keys.getLong(ii);
-                final long key = level2Key << BLOCK1_SHIFT;
-                final long level1Key = level2Key >> LOG_BLOCK1_SIZE;
-                if (level1Key != lastLevel1Key) {
-                    if (level1 != null) {
-                        level1.recycleArray();
-                    }
-                    level1 = prev.get(block0(key));
-                    lastLevel1Key = level1Key;
-                }
-                final int block1 = block1(key);
-                level1.get(block1).recycleArrays();
-                level1.clearPrevious(block1);
-            }
-            if (level1 != null) {
-                level1.recycleArray();
-            }
-            prevLevel2Keys.clear();
+    private static void recyclePrevious(final Level0 prev) {
+        for (int ii = 0; ii < prev.size; ++ii) {
+            prev.children[ii].recyclePrevious();
         }
     }
 
