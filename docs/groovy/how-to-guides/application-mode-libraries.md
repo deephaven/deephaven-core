@@ -76,7 +76,7 @@ if (field != null) {
 
 ## List fields
 
-Call [`listFields()`](/core/javadoc/io/deephaven/appmode/ApplicationState.html) to get every field as a list of `Field` objects. Each `Field` has `name()`, `value()`, and `description()` methods. `description()` returns an `Optional<String>`, so the example uses `orElse` for fields without one.
+Call [`listFields`](/core/javadoc/io/deephaven/appmode/ApplicationState.html) to get every field as a list of `Field` objects. Each `Field` has `name`, `value`, and `description` methods. `description` returns an `Optional<String>`, so the example uses `orElse` for fields without one.
 
 ```groovy skip-test
 import io.deephaven.appmode.ApplicationContext
