@@ -6,7 +6,7 @@ title: Protocol Buffers and remote procedure calls
 
 Protobuf serializes data to a compact binary format, which is faster to encode and decode than text-based formats like JSON or XML. That efficiency matters for Deephaven, which is designed to handle large amounts of data in real time. The requests and responses that drive a client's session stay small and fast. The table data itself travels in Arrow's columnar format, as described [below](#protobuf-and-grpc-in-deephaven).
 
-Deephaven's client APIs talk to the server through [gRPC](https://grpc.io/), Google's open-source remote procedure call (RPC) framework. gRPC services are defined in Protobuf, so this guide covers both. Protobuf is one of several options for users who wish to build their own Deephaven client API. If you build your own client, these service definitions are what you program against.
+Deephaven's client APIs talk to the server through [gRPC](https://grpc.io/), Google's open-source remote procedure call (RPC) framework. gRPC services are defined in Protobuf, so this guide covers both. Every Deephaven client API is built on these Protobuf service definitions, so a client you build yourself programs against them too.
 
 This guide explains what Protobuf and RPC are and what they do. It walks through two Deephaven `.proto` (Protobuf) files and shows how to generate Java code from them. Then it uses Deephaven's published generated classes to authenticate with a Deephaven server and run code there.
 

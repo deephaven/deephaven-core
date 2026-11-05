@@ -329,6 +329,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                     false);
 
     /**
+     * Disable probing an aggregation's hash table during push-down filtering of its single key column.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_AGGREGATION_KEY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownAggregationKey",
+                    false);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =
@@ -1582,12 +1589,24 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                         usePrev);
                                         final TrackingWritableRowSet currentMapping;
                                         initialFilterExecution.scheduleCompletion((adds, mods) -> {
-                                            currentMappingFuture.complete(adds.writableCast().toTracking());
+                                            final TrackingWritableRowSet mapping = adds.writableCast().toTracking();
+                                            if (!currentMappingFuture.complete(mapping)) {
+                                                // an interrupt cancelled the filter, and nothing will use the mapping
+                                                mapping.close();
+                                            }
                                         }, currentMappingFuture::completeExceptionally);
 
                                         try {
-                                            currentMapping = currentMappingFuture.get();
+                                            currentMapping = initialFilterExecution.jobScheduler()
+                                                    .awaitCompletion(currentMappingFuture);
                                         } catch (ExecutionException | InterruptedException e) {
+                                            if (e instanceof InterruptedException
+                                                    && !currentMappingFuture.cancel(false)
+                                                    && !currentMappingFuture.isCompletedExceptionally()) {
+                                                // the filter finished before the interrupt, which abandons its mapping;
+                                                // a filter still running finds the future cancelled, and closes its own
+                                                currentMappingFuture.join().close();
+                                            }
                                             final Throwable cause = (e instanceof InterruptedException)
                                                     ? new CancellationException("interrupted while filtering")
                                                     : e.getCause();
@@ -1848,6 +1867,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                                         new SelectAndViewAnalyzer.UpdateHelper(rowSet, fakeUpdate)) {
 
+                            // rethrown once the wait below has finished the jobs the analyzer submitted before it
+                            // threw
+                            Error applyError = null;
                             try {
                                 try {
                                     analyzer.applyUpdate(
@@ -1856,12 +1878,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                                             waitForResult::completeExceptionally);
                                 } catch (Exception e) {
                                     waitForResult.completeExceptionally(e);
+                                } catch (Error e) {
+                                    applyError = e;
+                                    waitForResult.completeExceptionally(e);
                                 }
 
-                                waitForResult.get();
+                                jobScheduler.awaitCompletion(waitForResult);
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
                             } catch (ExecutionException e) {
+                                if (applyError != null) {
+                                    throw applyError;
+                                }
                                 throw new TableInitializationException(updateDescription,
                                         "an exception occurred while performing the initial select or update",
                                         e.getCause());

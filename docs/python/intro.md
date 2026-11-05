@@ -85,7 +85,7 @@ Important concepts
 - [Deephaven's architectural design](./conceptual/deephaven-design.md)
 - [Core API features](./conceptual/deephaven-core-api.md)
 - [Table update model](./conceptual/table-update-model.md)
-- [Docker data volumes](./conceptual/docker-data-volumes.md)
+- [Docker bind mounts](./conceptual/docker-data-volumes.md)
 
 </div>
 </div>

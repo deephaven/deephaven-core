@@ -16,6 +16,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.ColumnSnapshotUnsuccessfulException;
 import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
 import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
+import io.deephaven.engine.table.impl.by.AggregationKeyColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.updategraph.*;
@@ -1437,17 +1438,21 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Check if the column source is in-memory or redirected to an in-memory column source.
+     * Check if the column source is in-memory, or redirected to or the key column of an aggregation over an in-memory
+     * column source.
      */
     private static boolean isColumnSourceInMemory(ColumnSource<?> columnSource) {
         do {
-            if (columnSource instanceof InMemoryColumnSource) {
-                return ((InMemoryColumnSource) columnSource).isInMemory();
+            if (InMemoryColumnSource.isInMemory(columnSource)) {
+                return true;
             }
-            if (!(columnSource instanceof RedirectedColumnSource)) {
+            if (columnSource instanceof RedirectedColumnSource) {
+                columnSource = ((RedirectedColumnSource<?>) columnSource).getInnerSource();
+            } else if (columnSource instanceof AggregationKeyColumnSource) {
+                columnSource = ((AggregationKeyColumnSource<?>) columnSource).getKeySource();
+            } else {
                 return false;
             }
-            columnSource = ((RedirectedColumnSource<?>) columnSource).getInnerSource();
         } while (true);
     }
 

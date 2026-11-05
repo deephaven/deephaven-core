@@ -292,25 +292,26 @@ public class TestInvokeParallel {
     }
 
     /**
-     * An executor that refuses every job leaves all the work to the calling thread, which runs every task exactly once:
-     * its own invoker's, and the refused ones, which run inline as they are submitted. The order then differs from the
-     * index order, since the caller reserves its own task before submitting the others; a scheduler of one thread
-     * submits nothing and runs the tasks in order.
+     * An executor that refuses every job, as a pool does once shut down, fails the invocation with the refusal; no task
+     * runs off the calling thread, and none runs twice.
      */
     @Test
-    public void testRefusingExecutorRunsEverythingOnTheCallingThread() {
+    public void testRefusingExecutorFailsTheInvocation() {
+        final RejectedExecutionException refusal = new RejectedExecutionException("shut down");
         final Executor refusing = command -> {
-            throw new RejectedExecutionException("no threads to spare");
+            throw refusal;
         };
         final Set<Thread> threads = ConcurrentHashMap.newKeySet();
         final List<Integer> order = Collections.synchronizedList(new ArrayList<>());
-        invoke(new ExecutorJobScheduler(refusing, 8), 20, (context, idx, nec) -> {
-            threads.add(Thread.currentThread());
-            order.add(idx);
-        });
+        final Throwable thrown = catchThrowable(() -> invoke(new ExecutorJobScheduler(refusing, 8), 20,
+                (context, idx, nec) -> {
+                    threads.add(Thread.currentThread());
+                    order.add(idx);
+                }));
 
-        assertThat(threads).containsExactly(Thread.currentThread());
-        assertThat(order).containsExactlyInAnyOrderElementsOf(items(20));
+        assertThat(thrown).isSameAs(refusal);
+        assertThat(threads).isSubsetOf(Thread.currentThread());
+        assertThat(order).doesNotHaveDuplicates();
     }
 
     /** A task may invoke a nested iteration on the same pool even when the pool has no thread left. */
@@ -1070,8 +1071,7 @@ public class TestInvokeParallel {
     /** The scheduler's outstanding job count, which nothing else exposes. */
     private static AtomicInteger outstandingJobs(final OperationInitializerJobScheduler scheduler) {
         try {
-            final java.lang.reflect.Field field =
-                    OperationInitializerJobScheduler.class.getDeclaredField("outstandingJobs");
+            final java.lang.reflect.Field field = ExecutorJobScheduler.class.getDeclaredField("outstandingJobs");
             field.setAccessible(true);
             return (AtomicInteger) field.get(scheduler);
         } catch (ReflectiveOperationException e) {

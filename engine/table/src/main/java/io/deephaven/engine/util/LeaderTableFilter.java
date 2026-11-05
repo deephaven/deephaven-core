@@ -302,7 +302,7 @@ public class LeaderTableFilter {
         if (tableCount > MAX_FOLLOWERS) {
             throw new IllegalArgumentException("Only " + MAX_FOLLOWERS + " follower tables are supported!");
         }
-        this.completelySatisfiedMask = ((1 << tableCount) - 1);
+        this.completelySatisfiedMask = -1 >>> (MAX_FOLLOWERS - tableCount);
         this.followerKeyStateMap = new ArrayList<>(tableCount);
         this.followerKeySources = new TupleSource[tableCount];
         // noinspection unchecked

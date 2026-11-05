@@ -19,6 +19,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.SoftRecyclerWindow;
 import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.mutable.MutableInt;
@@ -41,8 +42,8 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class ShortArraySource extends ArraySourceHelper<Short, short[]>
         implements MutableColumnSourceGetDefaults.ForShort /* MIXIN_IMPLS */ {
-    private static final SoftRecycler<short[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY,
-            () -> new short[BLOCK_SIZE], null);
+    private static final SoftRecycler<short[]> recycler = SoftRecyclerWindow.register(new SoftRecycler<>(ArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY,
+            ArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY, () -> new short[BLOCK_SIZE], null));
 
     private short[][] blocks;
     private transient short[][] prevBlocks;

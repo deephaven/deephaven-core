@@ -1,49 +1,43 @@
 ---
-title: Access your file system with Docker data volumes
+title: Access your file system with Docker bind mounts
 ---
 
-This guide discusses accessing your file system within your Deephaven Docker container using [data volumes](https://docs.docker.com/storage/volumes/). Before we dive into the mount points, let's cover the basics of Docker and how Deephaven uses it.
+Deephaven reads and writes files on your computer through [Docker bind mounts](https://docs.docker.com/storage/bind-mounts/). A bind mount maps a directory on your computer to a directory inside the Deephaven container. A mount point is the directory inside the container where a directory from your local file system appears.
 
-## What is Docker?
+This guide covers only bind mounts. The [Docker Compose](https://docs.docker.com/compose/) files that Deephaven publishes use `volumes` entries that map local directories, which are bind mounts.
 
-Docker is an open platform for developing, shipping, and running applications. In Docker, applications are packaged into containers -- standardized executable components containing application code, operating system libraries, and dependencies required to run the application. Docker containers can be run on any operating system that supports Docker.
+Docker also has a separate volume type, which Docker manages. This guide does not cover it. See [Docker volumes](https://docs.docker.com/engine/storage/volumes/) if you want one, for example a named volume for data that doesn't need to appear on your computer.
 
-Deephaven is one of many applications that leverages Docker for build and deployment. Each Deephaven deployment is composed of multiple containers. These containers are managed by [Docker Compose](https://docs.docker.com/compose/). A YAML (`.yml`) file configures a Docker Compose deployment.
+## Why mounts are needed
 
-By design, Docker containers do not store persistent data. To persist data, storage volumes are mounted into the file system of a running container. For example, directory `./abc` on your local file system may be mounted as `/xyz` volume in a running container. For a Deephaven deployment, these volumes are configured in the Docker Compose YAML file.
+The Deephaven server runs in its own Docker container. You can start it with [Docker Compose](https://docs.docker.com/compose/), which reads its configuration from a YAML (`.yml`) file, or with `docker create` and `docker start`.
+
+Docker containers do not store persistent data by design. To persist data, you mount a directory from your local file system into the container. For example, you can mount directory `./abc` on your local file system at `/xyz` when you start a container. For Deephaven, the Docker Compose YAML file configures these mounts.
 
 ## The `/data` mount point
 
-By default, all Deephaven deployments mount `./data` in the local deployment directory to the `/data` volume in the running Deephaven container. This means that if the Deephaven console is used to write data to `/data/abc/file.csv`, that file will be visible at `./data/abc/file.csv` on the local file system of your computer. Similarly, if the local file `abc.parquet` is copied to `./data/abc.parquet`, then the file can be accessed at `/data/abc.parquet` on the Deephaven server.
+Your deployment directory is the local directory that holds your Compose YAML file and that you launch Deephaven from. Deephaven maps the `./data` directory in your deployment directory to `/data` in the container by default.
 
-If the `./data` directory does not exist when Deephaven is launched, it will be created.
+If you [launch Deephaven from pre-built images](../getting-started/docker-install.md), that file is named `docker-compose.yml`.
 
-## Modify mount points
+The [Docker Compose](https://docs.docker.com/compose/) files that Deephaven publishes set this mapping with a `volumes` entry in the Compose YAML file:
 
-Your Docker-Compose YAML file is located in your Deephaven deployment directory and contains all of the information needed to launch Deephaven.
-
-The Docker-Compose YAML file your installation uses depends on how you launch Deephaven:
-
-- If you [launch Deephaven from pre-built images](../getting-started/docker-install.md), your Docker Compose file is called `docker-compose.yml`.
-
-- If you [build and launch Deephaven from source code](../getting-started/launch-build.md), your Docker Compose file is called `docker-compose-common.yml`.
-
-The `/data` mount point is configured using the `volumes` keyword in the Docker Compose YAML file.
-
-```
+```yaml
 volumes:
   - ./data:/data
 ```
 
-This mounts the `./data` directory on your file system as `/data` in Deephaven. If you decide to change the mount point, make the change consistently for all services in the deployment.
+If you write data to `/data/abc/file.csv` from the Deephaven console, that file appears at `./data/abc/file.csv` on your computer.
+
+If you copy the local file `abc.parquet` to `./data/abc.parquet`, you can read it at `/data/abc.parquet` on the Deephaven server.
 
 ## Add mount points
 
-While `/data` is the default place for external data to reside, you have the option of creating other mount points. To create a mount point, you must add the volumes to the `server` and `web` services in your Docker Compose YAML file.
+You can also create other mount points. A service is a container definition in the [Docker Compose](https://docs.docker.com/compose/) file. To create a mount point, add an entry to the `volumes` list of the Deephaven service in your Compose YAML file. The pre-built Compose files name this service `deephaven`.
 
-Say we're working on a machine learning application and want separate volumes to store training, testing, and validation data sets. These volumes can be added by modifying the `volumes` section of the Docker Compose YAML file for both the `server` and `web` services:
+Say we're working on a machine learning application and want separate mount points to store training, testing, and validation data sets. Add these mount points by modifying the `volumes` section of the Docker Compose YAML file for the Deephaven service. Keep the `- ./data:/data` entry and add the three new ones:
 
-```
+```yaml
 volumes:
   - ./data:/data
   - ./ML_Train:/ML_Train
@@ -51,9 +45,17 @@ volumes:
   - ./ML_Validate:/ML_Validate
 ```
 
-When Deephaven is re-launched, the new volumes will be available.
+After you edit the file, run `docker compose up` again so Docker recreates the container with the new mount points. Running `docker compose restart` doesn't apply changes to the `volumes` list.
+
+If a local directory in the `volumes` list doesn't exist when Deephaven starts, Docker creates it.
+
+## Using `docker create`
+
+If you start Deephaven without [Docker Compose](https://docs.docker.com/compose/), add a `-v` flag to `docker create` for each mount point, then start the container with `docker start`. To map `/data` to your local `./data` directory, add `-v "$(pwd)/data:/data"`. Without that flag, the image's `/data` directory is a Docker-managed anonymous volume, and files written there don't appear in your local `./data` directory. The image's `/cache` directory is also an anonymous volume unless you map it. Docker-managed volumes are outside this guide.
+
+For an example of `docker create` with an extra mount point, see [Add a second volume](../getting-started/docker-install.md#add-a-second-volume). That example omits the `/data` flag, so add `-v "$(pwd)/data:/data"` to it as well to keep the `/data` mapping.
 
 ## Related documentation
 
+- [Read Parquet files into Deephaven tables](../how-to-guides/data-import-export/parquet-import.md)
 - [Launch Deephaven from pre-built images](../getting-started/docker-install.md)
-- [Launch Deephaven from source code](../getting-started/launch-build.md)
