@@ -162,11 +162,11 @@ browser, since GitHub shows only its source.
 
 The columns:
 
-- **Baseline:** main at eb84801525 with the adaptive `SoftRecycler` of
-  [#8698](https://github.com/deephaven/deephaven-core/pull/8698), which is not part of this branch's reclaiming but
-  speeds up every aggregation. Main already has two other changes from this work: not recording previous values for
-  blocks allocated during an update cycle, from [#8713](https://github.com/deephaven/deephaven-core/pull/8713), and
-  releasing the drained alternate hash table's keys once a rehash completes, from
+- **Baseline:** main at 6c262d0501, which has three changes from this work that are not part of reclaiming but
+  speed up every aggregation: the adaptive `SoftRecycler` of
+  [#8698](https://github.com/deephaven/deephaven-core/pull/8698), not recording previous values for blocks allocated
+  during an update cycle, from [#8713](https://github.com/deephaven/deephaven-core/pull/8713), and releasing the
+  drained alternate hash table's keys once a rehash completes, from
   [#9000](https://github.com/deephaven/deephaven-core/pull/9000). Every percentage is the change against this column.
 - **`none`:** this branch without reclaiming, which isolates its other improvements to the update cycle.
 - **Blocks:** `releaseBlocks(1)`, the default, which releases blocks and never moves a state.
@@ -174,19 +174,24 @@ The columns:
   sparse blocks.
 - **Baseline again:** the baseline once more, after every other configuration, to show any drift over the run.
 
-The branch was measured at 615ff26e7e, which merges the same main, with #8698 merged into it. Both builds therefore
-have all three changes, and the columns differ only by this branch's own work.
+The branch was measured at 08a37a50c1, which merges the same main, so the columns differ only by this branch's own
+work.
 
-The numbers come from an Intel i9-14900KS (hybrid performance and efficiency cores) in an LXC container with 24 logical
-CPUs and 128 GB, with the performance governor and turbo boost enabled. Nothing else ran on it except idle Gradle
-daemons from another session, holding about 25 GB, which exited at some point during the run. Each configuration ran
-two JVM forks of three warmup and five measured batches; the error bounds are JMH's 99.9% intervals over the ten
-measured batches.
+The numbers come from an Intel i9-14900KS (hybrid performance and efficiency cores) in an LXC container with 32 logical
+CPUs and 128 GB, with the performance governor and turbo boost enabled. The machine was not idle: a remote IDE server,
+idle Gradle daemons, and other sessions were present, and the one-minute load average was about 2.5 to 3.5 for most of
+the run, against about 1.2 for the benchmark itself. A burst of load from another session, to a load average of about
+55, disturbed two configurations at one million rows: Blocks for the sliding window and random churn, and Collapse 0.75
+for add only. Those two were rerun the next morning with the load average under 2.1, and the tables use the rerun.
+Each configuration ran two JVM forks of three warmup and five measured batches; the error bounds are JMH's 99.9%
+intervals over the ten measured batches.
 
 Baseline and Baseline again are within the error of each other in every workload at one million rows. At ten million
-rows, Baseline again was 5% to 6% faster than Baseline for the sliding window and for random churn with returning
-groups, in both forks of each. Baseline and `none` ran while the one-minute load average was at times around 3; the
-cause was not identified. The findings give the ten million row changes against both.
+rows, Baseline again was 4% to 9% slower than Baseline in every workload, beyond the error for the sliding window
+without returning groups and for both random churn workloads. A short compile by another session overlapped one fork
+of random churn without returning groups there, where one batch took 50.5 seconds against 46 to 47 for the others, but
+the slowdown is in every workload, including add only, which ran before it. The findings give the ten million row
+changes against both.
 
 ### Time
 
@@ -194,16 +199,16 @@ Milliseconds per batch of 900 cycles; lower is better.
 
 | Workload | Rows per group | Groups return | Baseline | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Baseline again |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | 1 | — | 1410 ± 82 | 1337 ± 83 (−5%) | 1307 ± 73 (−7%) | 1278 ± 115 (−9%) | 1338 ± 105 (−5%) | 1356 ± 56 (−4%) |
-| Sliding window | 1 | No | 2047 ± 83 | 1928 ± 87 (−6%) | 1327 ± 67 (−35%) | 1366 ± 30 (−33%) | 1325 ± 34 (−35%) | 2076 ± 77 (+1%) |
-| Sliding window | 1 | Yes | 1116 ± 59 | 1051 ± 30 (−6%) | 1236 ± 77 (+11%) | 1242 ± 55 (+11%) | 1288 ± 39 (+15%) | 1128 ± 65 (+1%) |
-| Random churn | 1 | No | 3934 ± 46 | 3465 ± 106 (−12%) | 3294 ± 86 (−16%) | 3503 ± 101 (−11%) | 3596 ± 88 (−9%) | 3856 ± 69 (−2%) |
-| Random churn | 1 | Yes | 2957 ± 80 | 2630 ± 69 (−11%) | 3309 ± 91 (+12%) | 3344 ± 52 (+13%) | 3403 ± 77 (+15%) | 2945 ± 110 (−0%) |
-| Add only | 100 | — | 187 ± 27 | 164 ± 20 (−12%) | 184 ± 27 (−1%) | 174 ± 26 (−7%) | 204 ± 29 (+9%) | 179 ± 25 (−4%) |
-| Sliding window | 100 | No | 304 ± 35 | 296 ± 39 (−3%) | 283 ± 36 (−7%) | 284 ± 35 (−7%) | 285 ± 30 (−6%) | 313 ± 38 (+3%) |
-| Sliding window | 100 | Yes | 319 ± 37 | 298 ± 34 (−7%) | 342 ± 52 (+7%) | 329 ± 32 (+3%) | 324 ± 37 (+1%) | 325 ± 36 (+2%) |
-| Random churn | 100 | No | 838 ± 70 | 796 ± 39 (−5%) | 814 ± 57 (−3%) | 813 ± 68 (−3%) | 847 ± 53 (+1%) | 797 ± 52 (−5%) |
-| Random churn | 100 | Yes | 765 ± 48 | 792 ± 62 (+3%) | 795 ± 61 (+4%) | 780 ± 53 (+2%) | 779 ± 45 (+2%) | 776 ± 70 (+1%) |
+| Add only | 1 | — | 1420 ± 59 | 1352 ± 138 (−5%) | 1363 ± 58 (−4%) | 1272 ± 90 (−10%) | 1347 ± 125 (−5%) | 1472 ± 68 (+4%) |
+| Sliding window | 1 | No | 2102 ± 90 | 1944 ± 87 (−8%) | 1339 ± 65 (−36%) | 1404 ± 48 (−33%) | 1367 ± 58 (−35%) | 2091 ± 105 (−1%) |
+| Sliding window | 1 | Yes | 1095 ± 60 | 1123 ± 67 (+3%) | 1303 ± 108 (+19%) | 1292 ± 58 (+18%) | 1278 ± 49 (+17%) | 1097 ± 46 (+0%) |
+| Random churn | 1 | No | 3925 ± 72 | 3486 ± 70 (−11%) | 3334 ± 54 (−15%) | 3559 ± 133 (−9%) | 3624 ± 136 (−8%) | 3943 ± 69 (+0%) |
+| Random churn | 1 | Yes | 2989 ± 46 | 2538 ± 80 (−15%) | 3332 ± 94 (+11%) | 3389 ± 101 (+13%) | 3436 ± 68 (+15%) | 2948 ± 115 (−1%) |
+| Add only | 100 | — | 181 ± 16 | 174 ± 15 (−4%) | 178 ± 15 (−2%) | 181 ± 23 (+0%) | 222 ± 41 (+22%) | 201 ± 29 (+11%) |
+| Sliding window | 100 | No | 299 ± 31 | 309 ± 25 (+4%) | 306 ± 33 (+2%) | 310 ± 37 (+4%) | 301 ± 46 (+1%) | 309 ± 35 (+3%) |
+| Sliding window | 100 | Yes | 313 ± 20 | 314 ± 26 (+0%) | 314 ± 16 (+0%) | 338 ± 31 (+8%) | 327 ± 52 (+5%) | 304 ± 31 (−3%) |
+| Random churn | 100 | No | 842 ± 99 | 836 ± 63 (−1%) | 817 ± 45 (−3%) | 871 ± 63 (+3%) | 845 ± 83 (+0%) | 848 ± 71 (+1%) |
+| Random churn | 100 | Yes | 773 ± 46 | 764 ± 49 (−1%) | 780 ± 53 (+1%) | 775 ± 54 (+0%) | 771 ± 58 (−0%) | 788 ± 62 (+2%) |
 
 ### Memory
 
@@ -213,16 +218,16 @@ modes with each other rather than reading the values as the aggregation's size.
 
 | Workload | Rows per group | Groups return | Baseline | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Baseline again |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | 1 | — | 675 | 571 (−15%) | 572 (−15%) | 578 (−14%) | 579 (−14%) | 674 (−0%) |
-| Sliding window | 1 | No | 680 | 579 (−15%) | 186 (−73%) | 186 (−73%) | 186 (−73%) | 679 (−0%) |
-| Sliding window | 1 | Yes | 149 | 149 (−0%) | 130 (−13%) | 130 (−13%) | 130 (−13%) | 149 (+0%) |
-| Random churn | 1 | No | 728 | 627 (−14%) | 484 (−34%) | 274 (−62%) | 246 (−66%) | 729 (+0%) |
-| Random churn | 1 | Yes | 188 | 188 (+0%) | 453 (+141%) | 218 (+16%) | 194 (+3%) | 188 (+0%) |
-| Add only | 100 | — | 28 | 28 (+2%) | 28 (+0%) | 32 (+12%) | 32 (+14%) | 28 (+0%) |
-| Sliding window | 100 | No | 29 | 29 (−1%) | 26 (−12%) | 26 (−10%) | 26 (−10%) | 29 (+0%) |
-| Sliding window | 100 | Yes | 21 | 21 (+0%) | 25 (+19%) | 25 (+19%) | 25 (+19%) | 21 (+2%) |
-| Random churn | 100 | No | 51 | 52 (+2%) | 48 (−6%) | 54 (+5%) | 54 (+6%) | 52 (+1%) |
-| Random churn | 100 | Yes | 43 | 42 (−2%) | 43 (+0%) | 47 (+10%) | 47 (+10%) | 43 (−0%) |
+| Add only | 1 | — | 675 | 571 (−15%) | 572 (−15%) | 578 (−14%) | 578 (−14%) | 675 (−0%) |
+| Sliding window | 1 | No | 680 | 579 (−15%) | 186 (−73%) | 186 (−73%) | 186 (−73%) | 681 (+0%) |
+| Sliding window | 1 | Yes | 150 | 150 (+0%) | 130 (−13%) | 130 (−13%) | 130 (−13%) | 149 (−0%) |
+| Random churn | 1 | No | 729 | 628 (−14%) | 485 (−33%) | 274 (−62%) | 246 (−66%) | 730 (+0%) |
+| Random churn | 1 | Yes | 189 | 188 (−0%) | 453 (+139%) | 217 (+15%) | 194 (+3%) | 187 (−1%) |
+| Add only | 100 | — | 28 | 28 (−1%) | 28 (−1%) | 32 (+13%) | 32 (+12%) | 29 (+1%) |
+| Sliding window | 100 | No | 30 | 29 (−3%) | 26 (−12%) | 26 (−12%) | 26 (−12%) | 29 (−2%) |
+| Sliding window | 100 | Yes | 21 | 22 (+2%) | 25 (+17%) | 25 (+17%) | 25 (+17%) | 21 (−1%) |
+| Random churn | 100 | No | 52 | 52 (+1%) | 49 (−5%) | 54 (+4%) | 54 (+5%) | 52 (+0%) |
+| Random churn | 100 | Yes | 43 | 43 (−1%) | 44 (+1%) | 47 (+9%) | 47 (+9%) | 43 (+0%) |
 
 ### Longest cycle
 
@@ -233,16 +238,16 @@ milliseconds, where one slow sample swings the percentage widely.
 
 | Workload | Rows per group | Groups return | Baseline | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Baseline again |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | 1 | — | 69.5 | 62.3 (−10%) | 61.8 (−11%) | 61.9 (−11%) | 71.0 (+2%) | 61.0 (−12%) |
-| Sliding window | 1 | No | 62.6 | 62.3 (−0%) | 21.1 (−66%) | 19.9 (−68%) | 17.2 (−72%) | 63.6 (+2%) |
-| Sliding window | 1 | Yes | 14.0 | 19.0 (+35%) | 18.8 (+34%) | 14.7 (+5%) | 14.3 (+2%) | 15.8 (+13%) |
-| Random churn | 1 | No | 51.0 | 39.6 (−22%) | 22.1 (−57%) | 23.9 (−53%) | 10.7 (−79%) | 51.0 (−0%) |
-| Random churn | 1 | Yes | 12.6 | 16.5 (+30%) | 13.7 (+8%) | 14.0 (+11%) | 13.3 (+5%) | 15.4 (+22%) |
-| Add only | 100 | — | 1.5 | 1.1 (−25%) | 1.3 (−13%) | 1.1 (−25%) | 1.5 (−2%) | 1.0 (−36%) |
-| Sliding window | 100 | No | 1.6 | 1.4 (−10%) | 0.9 (−42%) | 1.9 (+21%) | 1.1 (−33%) | 1.4 (−9%) |
-| Sliding window | 100 | Yes | 1.5 | 1.0 (−30%) | 0.9 (−38%) | 1.3 (−12%) | 1.5 (+1%) | 2.9 (+100%) |
-| Random churn | 100 | No | 3.4 | 3.5 (+2%) | 3.5 (+2%) | 3.0 (−12%) | 3.1 (−8%) | 2.7 (−20%) |
-| Random churn | 100 | Yes | 2.6 | 2.4 (−5%) | 2.8 (+8%) | 2.6 (+1%) | 2.6 (+1%) | 2.8 (+9%) |
+| Add only | 1 | — | 63.8 | 76.5 (+20%) | 62.5 (−2%) | 62.2 (−3%) | 64.1 (+0%) | 62.2 (−3%) |
+| Sliding window | 1 | No | 68.1 | 62.6 (−8%) | 19.4 (−72%) | 21.2 (−69%) | 20.2 (−70%) | 63.6 (−7%) |
+| Sliding window | 1 | Yes | 14.6 | 15.0 (+2%) | 17.5 (+20%) | 14.4 (−2%) | 17.0 (+17%) | 14.1 (−4%) |
+| Random churn | 1 | No | 68.4 | 48.2 (−30%) | 21.4 (−69%) | 24.2 (−65%) | 14.7 (−79%) | 63.5 (−7%) |
+| Random churn | 1 | Yes | 15.1 | 18.6 (+23%) | 13.3 (−12%) | 13.4 (−11%) | 16.4 (+9%) | 15.1 (−0%) |
+| Add only | 100 | — | 1.7 | 0.9 (−45%) | 2.9 (+72%) | 1.0 (−41%) | 1.2 (−30%) | 1.1 (−37%) |
+| Sliding window | 100 | No | 1.1 | 2.5 (+139%) | 2.7 (+159%) | 1.6 (+48%) | 2.1 (+100%) | 2.5 (+134%) |
+| Sliding window | 100 | Yes | 2.5 | 2.0 (−19%) | 2.2 (−10%) | 2.7 (+11%) | 2.9 (+19%) | 1.2 (−52%) |
+| Random churn | 100 | No | 2.8 | 2.4 (−11%) | 2.9 (+5%) | 10.3 (+274%) | 3.4 (+25%) | 3.8 (+39%) |
+| Random churn | 100 | Yes | 4.1 | 3.1 (−23%) | 2.9 (−28%) | 2.8 (−32%) | 3.0 (−26%) | 3.1 (−25%) |
 
 ### Ten million rows
 
@@ -253,70 +258,70 @@ Milliseconds per batch of 900 cycles:
 
 | Workload | Groups return | Baseline | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Baseline again |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | — | 15911 ± 437 | 15008 ± 187 (−6%) | 14809 ± 288 (−7%) | 14340 ± 145 (−10%) | 14408 ± 411 (−9%) | 16022 ± 562 (+1%) |
-| Sliding window | No | 23552 ± 842 | 22639 ± 244 (−4%) | 16387 ± 111 (−30%) | 16423 ± 199 (−30%) | 16379 ± 205 (−30%) | 22251 ± 313 (−6%) |
-| Sliding window | Yes | 13252 ± 147 | 12279 ± 111 (−7%) | 13904 ± 443 (+5%) | 14293 ± 104 (+8%) | 14029 ± 134 (+6%) | 12647 ± 207 (−5%) |
-| Random churn | No | 43856 ± 341 | 40289 ± 384 (−8%) | 36974 ± 549 (−16%) | 37117 ± 283 (−15%) | 37937 ± 734 (−13%) | 43475 ± 560 (−1%) |
-| Random churn | Yes | 32486 ± 322 | 27401 ± 262 (−16%) | 35360 ± 628 (+9%) | 34773 ± 332 (+7%) | 35552 ± 467 (+9%) | 30422 ± 397 (−6%) |
+| Add only | — | 16226 ± 408 | 14218 ± 240 (−12%) | 14984 ± 175 (−8%) | 14394 ± 248 (−11%) | 15017 ± 245 (−7%) | 17702 ± 1337 (+9%) |
+| Sliding window | No | 22701 ± 482 | 22018 ± 137 (−3%) | 16375 ± 122 (−28%) | 17028 ± 290 (−25%) | 17073 ± 211 (−25%) | 24531 ± 472 (+8%) |
+| Sliding window | Yes | 12837 ± 232 | 12539 ± 323 (−2%) | 13926 ± 160 (+8%) | 14615 ± 344 (+14%) | 14926 ± 248 (+16%) | 13408 ± 391 (+4%) |
+| Random churn | No | 43999 ± 254 | 38626 ± 264 (−12%) | 37769 ± 999 (−14%) | 36909 ± 467 (−16%) | 40283 ± 400 (−8%) | 47321 ± 1731 (+8%) |
+| Random churn | Yes | 31330 ± 429 | 26269 ± 336 (−16%) | 35843 ± 564 (+14%) | 36066 ± 811 (+15%) | 37386 ± 317 (+19%) | 33003 ± 292 (+5%) |
 
 Retained heap, in megabytes:
 
 | Workload | Groups return | Baseline | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Baseline again |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | — | 5079 | 5079 (−0%) | 5078 (−0%) | 5089 (+0%) | 5091 (+0%) | 5077 (−0%) |
-| Sliding window | No | 5116 | 5145 (+1%) | 898 (−82%) | 899 (−82%) | 899 (−82%) | 5113 (−0%) |
-| Sliding window | Yes | 1170 | 1180 (+1%) | 898 (−23%) | 898 (−23%) | 898 (−23%) | 1171 (+0%) |
-| Random churn | No | 5620 | 5647 (+0%) | 4326 (−23%) | 2208 (−61%) | 1927 (−66%) | 5621 (+0%) |
-| Random churn | Yes | 1547 | 1552 (+0%) | 4116 (+166%) | 1752 (+13%) | 1510 (−2%) | 1545 (−0%) |
+| Add only | — | 5081 | 5080 (−0%) | 5080 (−0%) | 5091 (+0%) | 5088 (+0%) | 5081 (+0%) |
+| Sliding window | No | 5116 | 5145 (+1%) | 898 (−82%) | 899 (−82%) | 898 (−82%) | 5116 (+0%) |
+| Sliding window | Yes | 1169 | 1178 (+1%) | 898 (−23%) | 899 (−23%) | 898 (−23%) | 1170 (+0%) |
+| Random churn | No | 5621 | 5647 (+0%) | 4327 (−23%) | 2207 (−61%) | 1925 (−66%) | 5622 (+0%) |
+| Random churn | Yes | 1546 | 1552 (+0%) | 4112 (+166%) | 1753 (+13%) | 1512 (−2%) | 1544 (−0%) |
 
 Longest cycle, in milliseconds:
 
 | Workload | Groups return | Baseline | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Baseline again |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | — | 496.3 | 505.0 (+2%) | 518.6 (+4%) | 507.6 (+2%) | 479.4 (−3%) | 502.9 (+1%) |
-| Sliding window | No | 512.9 | 526.0 (+3%) | 100.2 (−80%) | 96.6 (−81%) | 87.1 (−83%) | 523.8 (+2%) |
-| Sliding window | Yes | 144.8 | 96.6 (−33%) | 138.6 (−4%) | 92.5 (−36%) | 114.8 (−21%) | 119.6 (−17%) |
-| Random churn | No | 523.8 | 403.7 (−23%) | 135.1 (−74%) | 88.8 (−83%) | 91.3 (−83%) | 524.4 (+0%) |
-| Random churn | Yes | 131.9 | 79.4 (−40%) | 80.4 (−39%) | 86.0 (−35%) | 75.6 (−43%) | 130.0 (−1%) |
+| Add only | — | 512.1 | 518.1 (+1%) | 519.2 (+1%) | 493.3 (−4%) | 509.6 (−0%) | 513.8 (+0%) |
+| Sliding window | No | 517.9 | 514.9 (−1%) | 93.5 (−82%) | 121.5 (−77%) | 93.3 (−82%) | 603.9 (+17%) |
+| Sliding window | Yes | 139.2 | 135.5 (−3%) | 140.3 (+1%) | 118.6 (−15%) | 125.0 (−10%) | 148.9 (+7%) |
+| Random churn | No | 405.1 | 413.8 (+2%) | 139.8 (−65%) | 87.8 (−78%) | 117.0 (−71%) | 597.9 (+48%) |
+| Random churn | Yes | 131.3 | 79.5 (−39%) | 99.7 (−24%) | 89.2 (−32%) | 79.7 (−39%) | 106.0 (−19%) |
 
 ### Findings
 
-- This branch without reclaiming (`none`) is 12% faster than the baseline for random churn with one row per group when
-  groups do not return, and 11% faster when they do. At ten million rows those are 7% to 8% and 10% to 16%, the ranges
-  spanning Baseline and Baseline again, and `none` is also 6% faster for add only and 3% to 7% faster for the sliding
-  window with returning groups. The baseline already has #8698, #8713, and #9000, so this comes from the branch's other
-  changes to the update cycle and the state manager; which one has not been isolated. Elsewhere it is within the error.
+- This branch without reclaiming (`none`) is 11% faster than the baseline for random churn with one row per group when
+  groups do not return, and 15% faster when they do. At ten million rows those are 12% to 18% and 16% to 20%, the
+  ranges spanning Baseline and Baseline again, and `none` is also 12% to 20% faster for add only. The baseline already
+  has #8698, #8713, and #9000, so this comes from the branch's other changes to the update cycle and the state manager;
+  which one has not been isolated. Elsewhere it is within the error, or within the drift at ten million rows.
 - At one million rows, `none` retains about 100 MB less heap than the baseline (14% to 15%) in the three workloads
   whose groups do not return, because its rehash has already released the old hash table when the heap is measured (see
   [A separate state manager for reclaiming](#a-separate-state-manager-for-reclaiming)). At ten million rows the two are
   the same.
-- When groups do not return, every reclaiming mode is faster than the baseline for the sliding window, by 33% to 35%,
-  and retains about a quarter of its heap; at ten million rows, 26% to 30% faster with a sixth of the heap. For random
-  churn, releasing blocks alone is 16% faster and retains a third less heap; collapsing is 9% to 11% faster and retains
-  34% to 38% of the heap. At ten million rows, releasing blocks alone is 15% to 16% faster and collapsing 13% to 15%,
-  and add only is 7% to 10% faster with reclaiming, most of which `none` shares.
+- When groups do not return, every reclaiming mode is faster than the baseline for the sliding window, by 33% to 36%,
+  and retains about a quarter of its heap; at ten million rows, 25% to 33% faster with a sixth of the heap. For random
+  churn, releasing blocks alone is 15% faster and retains a third less heap; collapsing is 8% to 9% faster and retains
+  34% to 38% of the heap. At ten million rows, releasing blocks alone is 14% to 20% faster and collapsing 8% to 22%,
+  and add only is 7% to 19% faster with reclaiming, which `none` shares.
 - When groups return, every reclaiming mode is slower, since returning groups are new states rather than reused ones.
-  The sliding window is 11% slower releasing blocks alone, within the error, and 11% to 15% slower collapsing; at ten
-  million rows, 5% to 8% slower against Baseline and 10% to 13% against Baseline again. Random churn with returning
-  groups is 12% slower releasing blocks alone and 13% to 15% slower collapsing; at ten million rows, 7% to 9% slower
-  against Baseline and 14% to 17% against Baseline again. Against this branch's own `none`, which also reuses states,
-  the reclaiming modes cost 26% to 30% there, at both sizes.
+  The sliding window is 17% to 19% slower; at ten million rows, 8% to 16% slower against Baseline and 4% to 11% against
+  Baseline again. Random churn with returning groups is 11% slower releasing blocks alone and 13% to 15% slower
+  collapsing; at ten million rows, 14% to 19% slower against Baseline and 9% to 13% against Baseline again. Against
+  this branch's own `none`, which also reuses states, the reclaiming modes cost 14% to 16% for the sliding window and
+  31% to 35% for random churn, and 11% to 19% and 36% to 42% at ten million rows.
 - With returning groups, releasing blocks alone retains 2.4 times the heap of the baseline for random churn (2.7 times
-  at ten million rows), and collapsing 3% to 16% more (at ten million rows, 2% less to 13% more). For the sliding
+  at ten million rows), and collapsing 3% to 15% more (at ten million rows, 2% less to 13% more). For the sliding
   window, every reclaiming mode retains 13% less (23% less at ten million rows).
 - An earlier run measured against main without #8698 and #8713, and there random churn with returning groups at ten
   million rows was 8% to 10% faster with reclaiming. That gain was the two changes', not reclaiming's.
-- For random churn, releasing blocks alone is 6% to 9% faster than collapsing when groups do not return, and 1% to 3%
-  faster when they do; at ten million rows, they are within 3% of each other either way. Collapsing retains far less
+- For random churn, releasing blocks alone is 6% to 8% faster than collapsing when groups do not return, and 2% to 3%
+  faster when they do; at ten million rows, they are within 6% of each other either way. Collapsing retains far less
   heap.
 - No mode gives output positions back, so every reclaiming mode assigns the same positions: with one row per group,
   10 million when groups do not return, and 8.71 to 10 million when they do, where the baseline reuses 2 million; with
   100 rows per group, 100,000, or 20,000 for random churn with returning groups.
 - With 100 rows per group, every configuration is within the error of the baseline for time.
-- Reclaiming shortens the longest cycles when groups do not return: 17 to 21 ms for the sliding window and 11 to 24 ms
-  for random churn, against 51 to 64 ms for the baseline and baseline again; at ten million rows, 87 to 100 ms and 89
-  to 135 ms, against 513 to 524 ms. When groups return, the longest cycles are 13 to 19 ms for the baseline and every
-  mode, and 76 to 145 ms at ten million rows.
+- Reclaiming shortens the longest cycles when groups do not return: 19 to 21 ms for the sliding window and 15 to 24 ms
+  for random churn, against 63 to 68 ms for the baseline and baseline again; at ten million rows, 93 to 121 ms and 88
+  to 140 ms, against 405 to 604 ms. When groups return, the longest cycles are 13 to 19 ms for the baseline and every
+  mode, and 80 to 149 ms at ten million rows.
 
 ## Long output positions
 
