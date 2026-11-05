@@ -168,6 +168,12 @@ public interface JsTableOperations extends ServerObject {
         return call(resultId, operation, null);
     }
 
+    /**
+     * Creates a table with the given number of rows from the beginning of this table.
+     *
+     * @param size the number of rows to keep from the beginning of this table
+     * @return a new table with at most that many rows
+     */
     @JsMethod
     default JsPendingTable<JsResolvedTable> head(TableData.RowPositionUnion size) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
@@ -181,6 +187,12 @@ public interface JsTableOperations extends ServerObject {
                         .setNumRows(size.asInt())));
     }
 
+    /**
+     * Creates a table with the given number of rows from the end of this table.
+     *
+     * @param size the number of rows to keep from the end of this table
+     * @return a new table with at most that many rows
+     */
     @JsMethod
     default JsPendingTable<JsResolvedTable> tail(TableData.RowPositionUnion size) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
