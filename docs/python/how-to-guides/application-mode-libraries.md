@@ -69,6 +69,17 @@ for name, value in app.fields.items():
     print(name, type(value))
 ```
 
+## Remove a field
+
+Use `del` with the field name to remove a field. If no field has that name, the statement raises a `KeyError`.
+
+```python skip-test
+from deephaven.appmode import get_app_state
+
+app = get_app_state()
+del app["hello"]
+```
+
 ## Known issues
 
 - The Python API doesn't accept a description for a field. To set one, use Groovy; see [add or replace a field in Groovy](/core/groovy/docs/how-to-guides/application-mode-libraries#add-or-replace-a-field).

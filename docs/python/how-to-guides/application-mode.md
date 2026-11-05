@@ -159,7 +159,7 @@ The following flags are available for configuration:
 
 Deephaven expects the following keys to be in an `*.app` file:
 
-- `type` — Required. One of `script`, `static`, or `dynamic`.
+- `type` — Required. One of `script`, `static`, `dynamic`, or `qst`. This guide covers `script`, `static`, and `dynamic`.
 - `scriptType` — Required for `script` applications: `python` or `groovy`.
 - `enabled` — Set to `true` or `false` to run or skip the scripts in the application file. The default is `true`.
 - `id` — Required for `script` applications. An identifier shown only to API clients, which refer to an application by `id`.

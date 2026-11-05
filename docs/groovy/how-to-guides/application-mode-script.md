@@ -104,7 +104,7 @@ my-project
     config.app
 ```
 
-Build and tag the image with `docker build --tag my-app/deephaven-app .`, then run `docker compose up` to launch the application. When the server is up, open the Deephaven web IDE at `localhost:10000` in a browser. `result` and `source` are available in the query scope, each with five rows.
+Build and tag the image with `docker build --tag my-app/deephaven-app .`, then run `docker compose up` to launch the application. When the server is up, open the Deephaven web IDE at `localhost:10000` in a browser. `source` and `result` are available in the query scope, each with five rows, along with the `hello` closure.
 
 ## Related documentation
 
