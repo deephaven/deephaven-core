@@ -471,6 +471,38 @@ public class TestFloatAdaptiveSparseArraySource extends AbstractFloatColumnSourc
     }
 
     /**
+     * Write leaves under top level children that are first too sparse for a window and then dense enough for one, so
+     * that the top level moves between a window and ranked children in both directions.
+     */
+    @Test
+    public void testTopLevelWindowAndRanks() {
+        final List<Long> leafStarts = new ArrayList<>();
+        for (int level1 = 0; level1 < 200; ++level1) {
+            leafStarts.add((long) level1 << BLOCK0_SHIFT);
+        }
+        for (int level1 = 1000; level1 < 1010; ++level1) {
+            leafStarts.add((long) level1 << BLOCK0_SHIFT);
+        }
+        checkManyChildren(leafStarts);
+    }
+
+    /**
+     * Write bottom levels of a middle level that are first too sparse for a window and then dense enough for one, as
+     * {@link #testTopLevelWindowAndRanks()} does for the top level.
+     */
+    @Test
+    public void testMiddleLevelWindowAndRanks() {
+        final List<Long> leafStarts = new ArrayList<>();
+        for (int level2 = 0; level2 < 300; ++level2) {
+            leafStarts.add((long) level2 << BLOCK1_SHIFT);
+        }
+        for (int level2 = 2000; level2 < 2010; ++level2) {
+            leafStarts.add((long) level2 << BLOCK1_SHIFT);
+        }
+        checkManyChildren(leafStarts);
+    }
+
+    /**
      * Write the leaves starting at {@code leafStarts} in a shuffled order, release some, and write the rest, changing
      * the leaves already held, then release some of those, checking current and previous values throughout.
      */
