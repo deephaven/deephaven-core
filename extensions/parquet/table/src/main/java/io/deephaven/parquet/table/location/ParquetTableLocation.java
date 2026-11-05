@@ -37,6 +37,7 @@ import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
+import io.deephaven.engine.table.impl.PrevTableTools;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.internal.log.LoggerFactory;
@@ -732,7 +733,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex == null) {
                 return input.copy();
             }
-            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
+            return pushdownDataIndex(selection, filter, usePrev, filterCtx.filterColumnToManagerColumnName(),
+                    dataIndex, input);
         }
         if (action == PARQUET_DICTIONARY) {
             if (!hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
@@ -746,7 +748,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex == null) {
                 return input.copy();
             }
-            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
+            return pushdownDataIndex(selection, filter, usePrev, filterCtx.filterColumnToManagerColumnName(),
+                    dataIndex, input);
         }
         throw new IllegalStateException("Unexpected value: " + action);
     }
@@ -1171,12 +1174,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * be complete and current for the rows it covers (see {@link #hasDataIndex}). When the selection is too small for
      * the index, or filtering the index fails for a reason other than cancellation, the result is a copy of
      * {@code result}. A filter that respects a barrier is shown only the keys of rows in {@code result}'s maybe
-     * matches.
+     * matches. With {@code usePrev}, the filter reads the previous state of a refreshing index, as a snapshot that uses
+     * previous values must; the index a location reads from its own files is static, and reads the same either way.
      */
     @NotNull
     public PushdownResult pushdownDataIndex(
             final RowSet selection,
             final WhereFilter filter,
+            final boolean usePrev,
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
             final PushdownResult result) {
@@ -1205,7 +1210,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         matching = locationRowSet.subSetForPositions(matchingPositions);
                     }
                 } else {
-                    matching = executeFilterDataIndex(dataIndex.table(), rowSetColumnName, renameMap, copiedFilter,
+                    final Table indexTable =
+                            usePrev ? PrevTableTools.prevTable(dataIndex.table()) : dataIndex.table();
+                    matching = executeFilterDataIndex(indexTable, rowSetColumnName, renameMap, copiedFilter,
                             barrierActive, result.maybeMatch());
                 }
             } catch (final Exception e) {

@@ -133,6 +133,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                             onComplete.accept(pushdownDataIndex(
                                     selection,
                                     filter,
+                                    usePrev,
                                     ctx.renameMap,
                                     dataIndex,
                                     result));
@@ -188,6 +189,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             onComplete.accept(pushdownDataIndex(
                     selection,
                     filter,
+                    usePrev,
                     ctx.renameMap,
                     dataIndex,
                     PushdownResult.allMaybeMatch(selection)));
@@ -254,12 +256,15 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
     /**
      * Apply the filter to the data index table and return the result.
      *
+     * @param usePrev whether to filter the previous state of the index table, as a snapshot that uses previous values
+     *        must; the index may update the index table's row sets in place before the filtered table notifies
      * @param result the result of any pushdown so far, whose maybe rows the index filters; this method closes it
      */
     @NotNull
     private PushdownResult pushdownDataIndex(
             final RowSet selection,
             final WhereFilter filter,
+            final boolean usePrev,
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
             final PushdownResult result) {
@@ -276,7 +281,10 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                     // Extract the fundamental filter, ignoring barriers.
                     final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
                     final String rowSetColumnName = dataIndex.rowSetColumnName();
-                    Table toFilter = dataIndex.table();
+                    // The selection holds previous row keys when usePrev is set, so the index keys and row sets must
+                    // be previous values too. Filtering a static view of the previous state reads both consistently,
+                    // however far the index has updated during the cycle.
+                    Table toFilter = usePrev ? PrevTableTools.prevTable(dataIndex.table()) : dataIndex.table();
                     if (!renameMap.isEmpty()) {
                         final Collection<Pair> renamePairs = renameMap.entrySet().stream()
                                 .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
