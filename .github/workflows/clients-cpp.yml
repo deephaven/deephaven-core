@@ -9,7 +9,15 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded runs for pull requests and check/** branches only. Runs
+  # on main and release branches publish (the nuget binary cache, the deps
+  # image) and must finish: a cancelled cold build loses the package it was
+  # building, and grpc alone takes over an hour on the Windows runner, longer
+  # than the usual gap between merges, so cancelling would keep the cache
+  # cold and the deps image unpublished for as long as merges keep coming.
+  # Without cancellation GitHub keeps one pending run per group, replaced by
+  # each newer one, so a burst of merges costs one full run plus one warm run.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/check/') }}
 
 #===============================================================================
 # Background: in this workflow there are three different kinds of caching
@@ -193,9 +201,24 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Pulls the deps image when it exists; on a miss (deps inputs changed)
-      # builds it with vcpkg, using the nuget binary cache so only changed
-      # packages are rebuilt (readwrite on push, read on PRs).
+      # On pushes, get the deps image first and publish it before the client
+      # is built: pulled when its tag exists, otherwise built with vcpkg, which
+      # writes every newly built package to the nuget binary cache. The image
+      # does not depend on client sources, and it is the only cache tier
+      # developers can use (the nuget cache needs credentials), so neither a
+      # client build failure nor a cancellation during the client build may
+      # withhold it.
+      - name: Publish C++ deps image
+        if: github.event_name == 'push'
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VCPKG_NUGET_MODE: readwrite
+        run: ./gradlew :cpp-client:cppDepsImagePublish
+
+      # On pushes the deps image is already here. On pull requests this is
+      # where it is pulled or, on a miss (deps inputs changed), built with
+      # vcpkg reading the nuget binary cache, so only changed packages are
+      # rebuilt; PR runs cannot write to that cache.
       - name: Build C++ client
         env:
           GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -211,10 +234,6 @@ jobs:
           name: cpp-deps-build-log-${{ github.run_id }}
           path: cpp-client/build/cppDepsImage-build.log
           if-no-files-found: ignore
-
-      - name: Publish C++ deps image
-        if: github.event_name == 'push'
-        run: ./gradlew :cpp-client:cppDepsImagePublish
 
       # Export the install tree from the image as a build artifact (a future
       # PR adds a Python ticking-client job that consumes it).
