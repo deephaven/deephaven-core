@@ -38,7 +38,7 @@ The Docker logs show the following message when you enable anonymous authenticat
 
 ## pip-installed Deephaven
 
-The following Python code starts a server on port 10000, with anonymous authentication enabled. The property goes in the `jvm_args` parameter. If you don't set the `host` parameter or the `http.host` property, the server binds to all network interfaces, so other machines can reach it without credentials. This example sets `host="localhost"` so that only the local machine can connect. When you connect to the IDE in your web browser, it doesn't prompt for a password.
+The following Python code starts a server on the default port, 10000, with anonymous authentication enabled. The property goes in the `jvm_args` parameter. If you don't set the `host` parameter or the `http.host` property, the server binds to all network interfaces, so other machines can reach it without credentials. This example sets `host="localhost"` so that only the local machine can connect. When you connect to the IDE in your web browser, it doesn't prompt for a password.
 
 ```python skip-test
 from deephaven_server import Server
