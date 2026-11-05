@@ -10,7 +10,9 @@ import elemental2.dom.DomGlobal;
 import elemental2.dom.EventListener;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
@@ -567,6 +569,31 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         public Promise<TableData> createSnapshot(Object options) {
             checkOpen();
             return AbstractTableSubscription.createSnapshot(connection, state, options);
+        }
+
+        @Override
+        public Promise<JsColumnStatistics> getColumnStatistics(Column.ColumnOrName column) {
+            checkOpen();
+            Ticket ticket = connection.getTickets().newExportTicket();
+            // Awaited in this task, so the one-row statistics table is held until it is read, then closed
+            Promise<JsResolvedTable> statistics = call(ticket, BatchTableRequest.Operation.newBuilder()
+                    .setColumnStatistics(ColumnStatisticsRequest.newBuilder()
+                            .setResultId(ticket)
+                            .setSourceId(TableReference.newBuilder().setTicket(typedTicket().getTicket()))
+                            .setColumnName(column.columnName())))
+                    .resolve();
+            return statistics.then(table -> {
+                DataOptions.SnapshotOptions options = new DataOptions.SnapshotOptions();
+                options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 0));
+                options.columns = Js.cast(table.getColumns());
+                return table.createSnapshot(options).then(data -> {
+                    table.close();
+                    return Promise.resolve(new JsColumnStatistics(data));
+                }, failure -> {
+                    table.close();
+                    return Promise.reject(failure);
+                });
+            });
         }
 
         @Override

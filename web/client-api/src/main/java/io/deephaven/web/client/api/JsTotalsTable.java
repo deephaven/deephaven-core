@@ -132,6 +132,19 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
     }
 
     /**
+     * Computes statistics for one column of this totals table, such as its count, sum and average for a numeric column,
+     * or its most common values for other types.
+     *
+     * @param column the column, or the name of the column, to compute statistics for
+     * @return a promise of the {@link JsColumnStatistics ColumnStatistics} for that column
+     */
+    @Override
+    @JsMethod
+    public Promise<JsColumnStatistics> getColumnStatistics(Column.ColumnOrName column) {
+        return wrappedTable.getColumnStatistics(column);
+    }
+
+    /**
      * Gets the configuration used when creating this Totals Table.
      *
      * @return {@link JsTotalsTableConfig dh.TotalsTableConfig}

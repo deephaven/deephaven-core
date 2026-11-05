@@ -1623,17 +1623,19 @@ public class JsTable extends HasLifecycle
     }
 
     /**
-     * A promise that will resolve to {@link JsColumnStatistics ColumnStatistics} for the column of this table.
+     * Computes statistics for one column of this table, such as its count, sum and average for a numeric column, or its
+     * most common values for other types.
      *
-     * @param column
-     * @return Promise of {@link JsColumnStatistics ColumnStatistics}
+     * @param column the column, or the name of the column, to compute statistics for
+     * @return a promise of the {@link JsColumnStatistics ColumnStatistics} for that column
      */
+    @Override
     @JsMethod
-    public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
+    public Promise<JsColumnStatistics> getColumnStatistics(Column.ColumnOrName column) {
         List<Runnable> toRelease = new ArrayList<>();
         return workerConnection.newState((c, state) -> {
             ColumnStatisticsRequest req = ColumnStatisticsRequest.newBuilder()
-                    .setColumnName(column.getName())
+                    .setColumnName(column.columnName())
                     .setSourceId(state().getHandle().makeTableReference())
                     .setResultId(state.getHandle().makeTicket())
                     .build();
