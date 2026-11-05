@@ -138,9 +138,9 @@ def barrage_session(
     """Creates a new Deephaven gRPC session to a remote server. Each call returns a new session.
 
     Note: this function has no arguments for a TLS client certificate or private key. For mutual TLS, set the
-    server's outbound SSL identity with the "outbound.ssl.identity.*" configuration properties (or "ssl.identity.*"
-    when no outbound SSL configuration is set) and pass use_tls=True without tls_root_certs. Passing tls_root_certs
-    replaces the server's outbound SSL configuration, including its client identity.
+    server's outbound SSL identity with the "outbound.ssl.identity.*" configuration properties and pass
+    use_tls=True without tls_root_certs. Passing tls_root_certs replaces the server's outbound SSL configuration,
+    including its client identity.
 
     Args:
         host (str): the host name or IP address of the Deephaven server.
