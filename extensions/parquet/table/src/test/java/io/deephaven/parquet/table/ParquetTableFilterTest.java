@@ -2929,6 +2929,10 @@ public final class ParquetTableFilterTest {
         // Two aliases, neither of which is the indexed column's name.
         checkLocationDataIndexFilter(location, dataIndex, table.updateView("Col1 = A", "dup0_Col1 = A"),
                 "Col1 == 5 && dup0_Col1 == Col1", Map.of("Col1", "A", "dup0_Col1", "A"));
+        // An alias by the name of the index table's row set column.
+        final String rowSetColumnName = dataIndex.rowSetColumnName();
+        checkLocationDataIndexFilter(location, dataIndex, table.updateView(rowSetColumnName + " = A"),
+                rowSetColumnName + " == 5", Map.of(rowSetColumnName, "A"));
     }
 
     private static void checkLocationDataIndexFilter(
@@ -2942,9 +2946,12 @@ public final class ParquetTableFilterTest {
         try (final RowSet selection = aliased.getRowSet().copy();
                 final PushdownResult input = PushdownResult.allMaybeMatch(selection);
                 final PushdownResult result =
-                        location.pushdownDataIndex(selection, filter, renameMap, dataIndex, input)) {
+                        location.pushdownDataIndex(selection, filter, renameMap, dataIndex, input);
+                // Apply the filter itself, since aliased.where could push down to the same index.
+                final RowSet expected = filter.filter(selection, selection, aliased, false)) {
             assertEquals(0, result.maybeMatch().size());
-            assertEquals(aliased.where(expression).getRowSet(), result.match());
+            assertFalse(expected.isEmpty());
+            assertEquals(expected, result.match());
         }
     }
 

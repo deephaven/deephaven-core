@@ -273,9 +273,13 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                     // Extract the fundamental filter, ignoring barriers.
                     final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
                     final String rowSetColumnName = dataIndex.rowSetColumnName();
+                    final List<String> filterColumns = filter.getColumns();
                     try {
                         Table toFilter = DataIndexUtils.indexTableForFilter(
-                                dataIndex.table(), rowSetColumnName, filter.getColumns(), renameMap);
+                                dataIndex.table(), rowSetColumnName, filterColumns, renameMap);
+                        // The name of the row set column in the table the filter is applied to.
+                        final String filterRowSetColumnName =
+                                DataIndexUtils.rowSetColumnNameForFilter(rowSetColumnName, filterColumns);
                         if (barrierActive) {
                             // Keep only the index rows whose row sets overlap the rows in question.
                             final QueryScope scope = new StandaloneQueryScope();
@@ -283,12 +287,12 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                             try (final SafeCloseable ignoredScope =
                                     ExecutionContext.getContext().withQueryScope(scope).open()) {
                                 toFilter = toFilter.where(
-                                        rowSetColumnName + ".overlaps(" + MAYBE_MATCH_ROWS_PARAM + ")");
+                                        filterRowSetColumnName + ".overlaps(" + MAYBE_MATCH_ROWS_PARAM + ")");
                             }
                         }
                         final Table filteredTable = toFilter.where(copiedFilter);
                         try (final CloseableIterator<RowSet> it =
-                                ColumnVectors.ofObject(filteredTable, rowSetColumnName, RowSet.class)
+                                ColumnVectors.ofObject(filteredTable, filterRowSetColumnName, RowSet.class)
                                         .iterator()) {
                             it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(result.maybeMatch())));
                         }

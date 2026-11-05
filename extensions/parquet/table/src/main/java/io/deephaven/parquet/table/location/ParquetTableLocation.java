@@ -1247,12 +1247,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // closes it.
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             Table toFilter = DataIndexUtils.indexTableForFilter(indexTable, rowSetColumnName, filterColumns, renameMap);
+            // The name of the row set column in the table the filter is applied to.
+            final String filterRowSetColumnName =
+                    DataIndexUtils.rowSetColumnNameForFilter(rowSetColumnName, filterColumns);
             if (barrierActive) {
                 // Keep only the index rows whose row sets overlap the rows in question.
                 final QueryScope scope = new StandaloneQueryScope();
                 scope.putParam(MAYBE_MATCH_ROWS_PARAM, rows);
                 try (final SafeCloseable ignoredScope = ExecutionContext.getContext().withQueryScope(scope).open()) {
-                    toFilter = toFilter.where(rowSetColumnName + ".overlaps(" + MAYBE_MATCH_ROWS_PARAM + ")");
+                    toFilter = toFilter.where(filterRowSetColumnName + ".overlaps(" + MAYBE_MATCH_ROWS_PARAM + ")");
                 }
             }
             final Table filteredTable = toFilter.where(filter);
@@ -1261,7 +1264,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // the iterator is closed leaves nothing that can throw between building and returning the result.
             try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(filteredTable.size())) {
                 try (final CloseableIterator<RowSet> it =
-                        ColumnVectors.ofObject(filteredTable, rowSetColumnName, RowSet.class).iterator()) {
+                        ColumnVectors.ofObject(filteredTable, filterRowSetColumnName, RowSet.class).iterator()) {
                     it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(rows)));
                 }
                 return batcher.build();
