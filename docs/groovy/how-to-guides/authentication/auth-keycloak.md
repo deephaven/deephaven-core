@@ -71,7 +71,7 @@ services:
       - dh_auth_ntw
 
   keycloak:
-    image: quay.io/keycloak/keycloak:19.0.1
+    image: quay.io/keycloak/keycloak:19.0.3
     container_name: keycloak
     environment:
       - KEYCLOAK_LOGLEVEL=ALL

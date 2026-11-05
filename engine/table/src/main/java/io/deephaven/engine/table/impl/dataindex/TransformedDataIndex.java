@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.dataindex;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
@@ -83,12 +82,8 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
             if ((localIndexTable = indexTable) != null) {
                 return localIndexTable;
             }
-            // Initialization threads may be waiting for this index's lock, so the transformation runs on the common
-            // pool rather than on those threads.
             indexTable = localIndexTable = QueryPerformanceRecorder.withNugget("Transform Data Index",
-                    () -> ExecutionContext.getContext()
-                            .withOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool())
-                            .apply(this::buildTable));
+                    ForkJoinPoolOperationInitializer.ensureParallelizable(this::buildTable));
             // Don't hold onto the transformer after the index table is computed, we don't need to maintain
             // reachability for its RowSets anymore.
             transformer = null;

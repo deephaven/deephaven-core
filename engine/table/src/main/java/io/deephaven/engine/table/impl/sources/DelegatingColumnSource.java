@@ -4,11 +4,13 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.SharedContext;
@@ -17,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
-public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
+public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> implements FillUnordered<Values> {
     final ColumnSource<R> delegate;
 
     public DelegatingColumnSource(Class<T> type, Class<?> componentType, ColumnSource<R> delegate) {
@@ -91,6 +93,33 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence rowSequence) {
         delegate.fillPrevChunk(context, destination, rowSequence);
+    }
+
+    /**
+     * Whether the delegate fills unordered row keys. A subclass that changes what {@link #makeFillContext} or
+     * {@link #fillChunk} produce returns {@code false}, unless it also overrides the unordered fills.
+     */
+    @Override
+    public boolean providesFillUnordered() {
+        return FillUnordered.providesFillUnordered(delegate);
+    }
+
+    @Override
+    public void fillChunkUnordered(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys) {
+        // noinspection unchecked
+        ((FillUnordered<Values>) delegate).fillChunkUnordered(context, dest, keys);
+    }
+
+    @Override
+    public void fillPrevChunkUnordered(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys) {
+        // noinspection unchecked
+        ((FillUnordered<Values>) delegate).fillPrevChunkUnordered(context, dest, keys);
     }
 
     @Override

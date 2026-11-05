@@ -52,7 +52,7 @@ public class CapturingUpdateGraph implements UpdateGraph {
         sources.add(updateSource);
     }
 
-    void refreshSources() {
+    public void refreshSources() {
         sources.forEach(Runnable::run);
     }
 

@@ -60,7 +60,7 @@ The User Guide contains both conceptual information and how-to guides.
 
 ## Reference section
 
-The **Reference** section is essentially a more comprehensive version of the API documentation that provides examples. It is purely informative; its purpose is to describe. There is no extraneous information—it is very pointed, without advice or general tips.
+The **Reference** section is essentially a more comprehensive version of the API documentation that provides examples. It describes the thing it documents, without extraneous information or general tips. A reference page may say when to use the documented item, in its own labeled section ("When to use ...") scoped to that item. Guidance about combining several features belongs in a concept guide or how-to guide, linked from the reference page.
 
 - Tone: dry and formal - avoid "you" and contractions.
 - Include one example for each syntax version presented.
