@@ -705,7 +705,7 @@ public class WorkerConnection {
      */
     public Promise<JsTable> getTable(JsVariableDefinition varDef, @Nullable Boolean applyPreviewColumns,
             TableTicket handle) {
-        return pendingTable(fetchTableState(Promise.resolve(varDef), applyPreviewColumns, handle)).resolve();
+        return pendingTable(fetchTableState(Promise.resolve(varDef), applyPreviewColumns, handle)).asPromise();
     }
 
     /**

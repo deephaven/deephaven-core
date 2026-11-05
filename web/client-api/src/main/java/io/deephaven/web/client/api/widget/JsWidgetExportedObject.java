@@ -56,7 +56,7 @@ public class JsWidgetExportedObject implements ServerObject {
                 return connection.pendingTable(state,
                         // never attempt a reconnect, since we might have a different widget schema entirely
                         table -> table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close()))
-                        .resolve();
+                        .asPromise();
             } else {
                 return this.connection.getObject(ticket);
             }

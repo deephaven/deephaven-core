@@ -68,20 +68,19 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  *
  * <pre>
  * async function process(table: dh.TableOperations) {
- *   // llm generated strawman syntax for where/sort
  *   const result = await table
- *       .where([{column: "A", op: ">", value: 5}])
+ *       .where([dh.FilterValue.ofColumn("A").greaterThan(dh.FilterValue.ofNumber(5))])
  *       .sort([{column: "B", direction: "DESC"}])
  *       .head(10);
  *   // Any use of methods on table after this point would be potentially invalid, we didn't retain it ourselves,
  *   // and don't know if the caller did either.
  *   try {
- *       const a = result.findColumn('A');
+ *       const a = result.findColumn("A");
  *       const data = await result.createSnapshot({
- *           rows:{first:0, last:10},
- *           columns:[a, 'B']
+ *           rows: {first: 0, last: 9},
+ *           columns: [a, "B"]
  *       });
- *       return data.get(0, a);
+ *       return data.getData(0, a);
  *   } finally {
  *       result.close();
  *   }
@@ -94,27 +93,26 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * Each retained table must be released when being replaced, or when the entire instance will no longer be used.
  * 
  * <pre>
- * class SwapFilters() {
+ * class SwapFilters {
+ *     private readonly table: Promise&lt;dh.ResolvedTable>;
+ *     private filteredTable: Promise&lt;dh.ResolvedTable> | null = null;
  *     constructor(table: dh.TableOperations) {
- *         this.filters: ReadonlyArray&lt;dh.FilterCondition> = [];
- *         this.table: Promise&lt;dh.ITable> = table.resolve();
- *         this.filteredTable: null|Promise&lt;dh.ResolvedTable> = null;
+ *         this.table = table.resolve();
  *     }
  *     changeFilters(filters: ReadonlyArray&lt;dh.FilterCondition>) {
- *         if (filteredTable) {
- *             filteredTable.then(t => t.close());
+ *         if (this.filteredTable) {
+ *             this.filteredTable.then(t => t.close());
  *         }
- *         this.filters = filters;
  *         // Note that this can be a surprise - returning a Thenable or PromiseLike as the result
  *         // of a resolved callback will invoke `then()` on it, which will retain the table.
  *         // In this case, this is what we want, but it could still be a surprise in some cases.
  *         this.filteredTable = this.table.then(t => t.where(filters));
  *     }
- *     async loadData():dh.TableData {
+ *     async loadData(): Promise&lt;dh.TableData> {
  *         if (!this.filteredTable) {
  *             throw new Error("no filters set");
  *         }
- *         const t = await this.filteredTable!;
+ *         const t = await this.filteredTable;
  *         return t.createSnapshot({
  *             rows: {first:0, last:1_000_000},
  *             columns: t.columns
@@ -134,22 +132,25 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
 public interface JsTableOperations extends ServerObject {
 
     /**
-     * The one consistent way to get from any table operations, pending or already resolved, to a retained table whose
-     * data and metadata can be read. A {@link JsPendingTable} yields the table it was going to resolve to; an already
-     * resolved table yields an independently closeable copy of itself. The caller owns the result and must close it.
-     * {@code await} on a pending table gives the same thing; this is the spelling that works on either.
+     * The one consistent way to get from any table operations, pending or already resolved, to a retained
+     * {@link JsResolvedTable} whose data can be read and on which more operations can be chained. A
+     * {@link JsPendingTable} yields the table it creates, whatever awaiting it would give; an already resolved table
+     * yields an independently closeable copy of itself; the operations of a {@link JsTable} yield a new owner of its
+     * current state. The caller owns the result and must close it. Resolving the same pending table again yields the
+     * same promise and the same table; a pending table that was canceled, already awaited, or is resolved after the
+     * task that created it rejects instead.
      *
-     * @param options optionally, an {@code AbortSignal} that cancels a pending operation when aborted
-     * @return a promise of a retained, readable table
+     * @param options optionally, an {@code AbortSignal} that cancels a pending table when aborted
+     * @return a promise of a retained resolved table
      */
     @JsMethod
-    Promise<? extends JsITable> resolve(@JsOptional @JsNullable @TsTypeRef(ResolveOptions.class) Object options);
+    Promise<JsResolvedTable> resolve(@JsOptional @JsNullable @TsTypeRef(ResolveOptions.class) Object options);
 
     /**
      * As {@link #resolve(Object)} with no options.
      */
     @JsIgnore
-    default Promise<? extends JsITable> resolve() {
+    default Promise<JsResolvedTable> resolve() {
         return resolve(null);
     }
 

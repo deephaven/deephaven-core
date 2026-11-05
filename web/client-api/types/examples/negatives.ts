@@ -48,4 +48,10 @@ async function acceptedButWrong() {
 
     // Awaited and never closed: the table and its server export are held until the session ends.
     const leaked = await session.getTable("t");
+
+    // Resolved and awaited: a pending table produces one table, so the second to take it rejects; here, the await.
+    // Promise.resolve(p) calls then() a microtask later, so p.resolve() wins even when written after it.
+    const p = session.getTable("t");
+    const resolved = p.resolve();
+    const table = await p;
 }

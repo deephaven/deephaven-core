@@ -68,8 +68,10 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        public Promise<? extends JsITable> resolve(@JsOptional @Nullable Object options) {
-            return source.copy().resolve(options);
+        public Promise<JsResolvedTable> resolve(@JsOptional @Nullable Object options) {
+            // The table's current state, which an applyFilter or applySort in flight may not have created yet
+            ClientTableState state = source.state();
+            return whenRunning(new Resolved(source.getConnection(), state), state).asPromise();
         }
 
         @Override
@@ -180,11 +182,14 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                     operand);
         }
 
+        /** What awaiting this pending table gives: a promise of the table it produces, retained for the caller. */
+        protected abstract Promise<T> awaitResult();
+
         @Override
         public <V> PromiseLike<V> then(
                 @Nullable ThenOnFulfilledCallbackFn<? super T, ? extends V> onFulfilled,
                 @Nullable ThenOnRejectedCallbackFn<? extends V> onRejected) {
-            return Js.cast(resolve().then(Js.cast(onFulfilled), Js.cast(onRejected)));
+            return Js.cast(awaitResult().then(Js.cast(onFulfilled), Js.cast(onRejected)));
         }
 
         @Override
@@ -325,20 +330,17 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             }
             if (resolved == null) {
                 // The Resolved retains the state from now on; the caller owns it and must close it, or cancel() does
-                Resolved owner = new Resolved(connection, state);
-                this.owner = owner;
-                LazyPromise<JsResolvedTable> promise = new LazyPromise<>();
-                state.onRunning(cts -> promise.succeed(owner), failure -> {
-                    owner.close();
-                    promise.fail(failure);
-                }, () -> {
-                    owner.close();
-                    promise.fail("Table was released before it was created");
-                });
-                resolved = promise.asPromise();
+                owner = new Resolved(connection, state);
+                resolved = whenRunning(owner, state).asPromise();
             }
             cancelOnAbort(options, resolved);
             return resolved;
+        }
+
+        @Override
+        protected Promise<JsResolvedTable> awaitResult() {
+            // An operation produces a ResolvedTable either way, so awaiting and resolving share one owner
+            return resolve(null);
         }
 
         @Override
@@ -375,6 +377,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
      * fetch is already issued, and a way to build the table over it once the fetch has completed. The table is built on
      * the first await only, so a pending that is merely chained on holds nothing past its dependents; one that is
      * neither awaited nor chained on is released when its fetch completes, as an unawaited operation is.
+     * {@link #resolve()} instead retains the state in a {@link Resolved}, and no table is built.
      */
     private static class Fetched<T extends JsITable> extends Pending<T> {
         private final ClientTableState state;
@@ -384,6 +387,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         private @Nullable Object fetchFailure;
         private @Nullable LazyPromise<T> result;
         private @Nullable T delivered;
+        /** Set by resolve(), which produces a ResolvedTable instead; a pending is awaited or resolved, never both. */
+        private @Nullable LazyPromise<JsResolvedTable> resolving;
+        private @Nullable Resolved owner;
         private boolean cancelled;
         private @Nullable String cancelMessage;
 
@@ -467,11 +473,19 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             return state.getFetchSummary();
         }
 
+        private String alreadyTaken(String how) {
+            return "A pending table (" + describe() + ") was already " + how
+                    + "; await it or call resolve(), not both.";
+        }
+
         @Override
-        public Promise<T> resolve(@JsOptional @Nullable Object options) {
+        protected Promise<T> awaitResult() {
             String misuse = misuse();
             if (misuse != null) {
                 return Promise.reject(misuse);
+            }
+            if (resolving != null) {
+                return Promise.reject(alreadyTaken("resolved"));
             }
             if (result == null) {
                 // The pending owns the promise it hands out, so a cancel can reject it for every awaiter
@@ -483,7 +497,28 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 }
                 // Otherwise the fetch is still in flight and delivers when it completes
             }
-            Promise<T> promise = result.asPromise();
+            return result.asPromise();
+        }
+
+        @Override
+        public Promise<JsResolvedTable> resolve(@JsOptional @Nullable Object options) {
+            String misuse = misuse();
+            if (misuse != null) {
+                return Promise.reject(misuse);
+            }
+            if (result != null) {
+                return Promise.reject(alreadyTaken("awaited"));
+            }
+            if (resolving == null) {
+                if (state.getResolution() == ClientTableState.ResolutionState.RELEASED) {
+                    // Nobody awaited or chained on it in time; it was released when the fetch completed
+                    return Promise.reject("Table was released before it was awaited");
+                }
+                // The Resolved retains the state from now on, past the fetch; the caller owns it, or cancel() does
+                owner = new Resolved(connection, state);
+                resolving = whenRunning(owner, state);
+            }
+            Promise<JsResolvedTable> promise = resolving.asPromise();
             cancelOnAbort(options, promise);
             return promise;
         }
@@ -499,6 +534,11 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 // Already delivered: nothing to cancel, but the table this pending handed out is released
                 delivered.close();
                 return;
+            }
+            if (owner != null) {
+                // Delivered or not, the resolved table is closed; if not yet delivered, its promise rejects
+                owner.closeFromCancel();
+                resolving.fail(message);
             }
             // TODO the underlying fetch is not withdrawn: the entry points' unary calls carry no cancellation context.
             // The state is let go now, so it is released once any dependents are done with it.
@@ -788,6 +828,22 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         failed.failedAtBirth = true;
         failed.cancel(message);
         return failed;
+    }
+
+    /**
+     * Delivers {@code owner}, which already retains {@code state}, once the state is running. If the state fails or is
+     * released first, the owner is closed and the promise rejects.
+     */
+    private static LazyPromise<JsResolvedTable> whenRunning(Resolved owner, ClientTableState state) {
+        LazyPromise<JsResolvedTable> promise = new LazyPromise<>();
+        state.onRunning(cts -> promise.succeed(owner), failure -> {
+            owner.close();
+            promise.fail(failure);
+        }, () -> {
+            owner.close();
+            promise.fail("Table was released before it was created");
+        });
+        return promise;
     }
 
     /**

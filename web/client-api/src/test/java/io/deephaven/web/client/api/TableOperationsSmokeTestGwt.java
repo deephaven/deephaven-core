@@ -143,9 +143,9 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(20_099);
-                    return session.getTable("source", null).resolve()
-                            .then(source -> session.getTable("right", null).resolve()
-                                    .then(right -> session.getTable("grouped", null).resolve()
+                    return session.getTable("source", null).asPromise()
+                            .then(source -> session.getTable("right", null).asPromise()
+                                    .then(right -> session.getTable("grouped", null).asPromise()
                                             .then(grouped -> {
                                                 List<String> failures = new ArrayList<>();
                                                 return runFrom(cases(), 0, source.operations(), right,

@@ -210,7 +210,7 @@ public final class FigureSubscription {
                         tablePromise.then(t -> t
                                 .downsample(zoomRange, downsampleParams.getPixelCount(), downsampleAxisRange.getxCol(),
                                         downsampleParams.getyCols())
-                                .resolve()
+                                .asPromise()
                                 .then(resultTable -> Promise.resolve(resultTable), err -> {
                                     figure.downsampleFailed(err.toString(), includedSeries, table.getSize());
 

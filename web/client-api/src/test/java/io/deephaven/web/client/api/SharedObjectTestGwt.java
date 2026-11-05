@@ -64,7 +64,7 @@ public class SharedObjectTestGwt extends AbstractAsyncGwtTestCase {
      */
     private static Promise<SharedExportBytesUnion> fetchAndShare(IdeSession client1, String tableToFetchAndShare,
             String sharedTicketBytes) {
-        return client1.getTable(tableToFetchAndShare, true).resolve()
+        return client1.getTable(tableToFetchAndShare, true).asPromise()
                 .then(t1 -> {
                     // start with a sample table owned by the first client
                     return client1.shareObject(ServerObject.Union.of(t1), SharedExportBytesUnion.of(sharedTicketBytes));
@@ -77,7 +77,7 @@ public class SharedObjectTestGwt extends AbstractAsyncGwtTestCase {
     private static Promise<JsTable> getShared(IdeSession client2, String sharedTicketBytes, int cellValue) {
         // fetch the shared object from the second client
         return client2.getSharedObject(SharedExportBytesUnion.of(sharedTicketBytes), JsVariableType.TABLE)
-                .asPendingTable().resolve()
+                .asPendingTable().asPromise()
                 .then(table -> {
                     // make sure we got the correct table instance
                     table.setViewport(0, 0);

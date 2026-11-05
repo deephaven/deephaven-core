@@ -7,6 +7,7 @@ import elemental2.core.JsArray;
 import elemental2.core.ReadonlyArray;
 import elemental2.dom.AbortController;
 import elemental2.dom.DomGlobal;
+import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
@@ -65,11 +66,12 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
 
     /** Resolves once {@code promise} has rejected with a message containing {@code fragment}, fails otherwise. */
     private static Promise<Object> expectRejection(Promise<?> promise, String fragment) {
-        return promise.then(ignore -> Promise.reject("Expected the promise to reject"), err -> {
-            String message = String.valueOf(err);
-            assertTrue(message, message.contains(fragment));
-            return Promise.resolve((Object) null);
-        });
+        return promise.then(ignore -> Promise.reject("Expected the promise to reject with \"" + fragment + "\""),
+                err -> {
+                    String message = String.valueOf(err);
+                    assertTrue(message, message.contains(fragment));
+                    return Promise.resolve((Object) null);
+                });
     }
 
     private static Object withSignal(AbortController controller) {
@@ -131,11 +133,90 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testViewResolveIsAResolvedTable() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_026);
+                    return Promise.resolve(Js.<IThenable<JsTable>>uncheckedCast(session.getTable("source", null)));
+                })
+                .then(table -> table.operations().resolve().then(resolved -> {
+                    assertTrue("operations().resolve() gives a ResolvedTable, got " + resolved,
+                            resolved instanceof JsResolvedTable);
+                    // Its own owner: closing it leaves the table open
+                    resolved.close();
+                    assertFalse(table.isClosed());
+                    table.close();
+                    return Promise.resolve(table);
+                }))
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testFetchedResolveIsAResolvedTable() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_027);
+                    JsPendingTable<JsTable> pending = session.getTable("source", null);
+                    return pending.resolve().then(resolved -> {
+                        assertTrue("resolve() gives a ResolvedTable, got " + resolved,
+                                resolved instanceof JsResolvedTable);
+                        assertEquals(5., resolved.getSize(), 0);
+                        // cancel() after delivery closes what the pending produced
+                        pending.cancel();
+                        try {
+                            ((JsResolvedTable) resolved).head(Js.uncheckedCast(1.0));
+                            fail("Expected the resolved table to be closed by cancel()");
+                        } catch (IllegalStateException expected) {
+                            assertTrue(expected.getMessage(), expected.getMessage().contains("closed"));
+                        }
+                        return Promise.resolve(session);
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testFetchedPendingHasOneOwner() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_028);
+                    // Awaited first: it produces a Table, and resolve() is then refused
+                    JsPendingTable<JsTable> awaitedFirst = session.getTable("source", null);
+                    Promise<JsTable> table = Promise.resolve(Js.<IThenable<JsTable>>uncheckedCast(
+                            awaitedFirst.then(t -> Promise.resolve(t))));
+                    // Awaiting again is fine, and gives the same table
+                    Promise<JsTable> again = Promise.resolve(Js.<IThenable<JsTable>>uncheckedCast(
+                            awaitedFirst.then(t -> Promise.resolve(t))));
+                    Promise<Object> resolveRefused = expectRejection(awaitedFirst.resolve(), "already awaited");
+
+                    // Resolved first: it produces a ResolvedTable, and awaiting is then refused
+                    JsPendingTable<JsTable> resolvedFirst = session.getTable("source", null);
+                    Promise<?> resolved = resolvedFirst.resolve();
+                    Promise<Object> awaitRefused = expectRejection(
+                            Promise.resolve(Js.<IThenable<Object>>uncheckedCast(resolvedFirst)), "already resolved");
+
+                    return resolveRefused
+                            .then(ignore -> awaitRefused)
+                            .then(ignore -> table)
+                            .then(t -> again.then(t2 -> {
+                                // Generics are unchecked at runtime, so check what arrived
+                                assertTrue("awaiting gives a Table, got " + t, (Object) t instanceof JsTable);
+                                assertSame(t, t2);
+                                t.close();
+                                return Js.<Promise<Object>>uncheckedCast(resolved);
+                            }))
+                            .then(r -> {
+                                assertTrue("resolve() gives a ResolvedTable, got " + r, r instanceof JsResolvedTable);
+                                ((JsResolvedTable) r).close();
+                                return Promise.resolve(session);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testIntermediatesAreReleased() {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_003);
-                    return session.getTable("source", null).resolve();
+                    return session.getTable("source", null).asPromise();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
@@ -259,7 +340,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_007);
-                    return session.getTable("source", null).resolve();
+                    return session.getTable("source", null).asPromise();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
@@ -280,7 +361,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(15_008);
-                    return session.getTable("slowsource", null).resolve();
+                    return session.getTable("slowsource", null).asPromise();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
@@ -307,7 +388,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(15_009);
-                    return session.getTable("slowsource", null).resolve();
+                    return session.getTable("slowsource", null).asPromise();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
@@ -332,7 +413,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(15_010);
-                    return session.getTable("slowsource", null).resolve();
+                    return session.getTable("slowsource", null).asPromise();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
@@ -367,7 +448,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_011);
-                    return session.getTable("source", null).resolve();
+                    return session.getTable("source", null).asPromise();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
@@ -393,7 +474,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(15_012);
-                    return session.getTable("slowsource", null).resolve();
+                    return session.getTable("slowsource", null).asPromise();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
@@ -419,7 +500,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_013);
-                    return session.getTable("source", null).resolve();
+                    return session.getTable("source", null).asPromise();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
@@ -442,7 +523,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_014);
-                    return session.getTable("source", null).resolve();
+                    return session.getTable("source", null).asPromise();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
@@ -468,7 +549,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_015);
-                    return session.getTable("source", null).resolve();
+                    return session.getTable("source", null).asPromise();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
@@ -523,9 +604,9 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     delayTestFinish(10_017);
                     AbortController controller = new AbortController();
                     JsPendingTable<JsTable> pending = session.getTable("source", null);
-                    Promise<JsTable> fetched = pending.resolve(withSignal(controller));
+                    Promise<JsResolvedTable> fetched = pending.resolve(withSignal(controller));
                     controller.abort();
-                    // The fetch itself is not withdrawn, but the table it produces is closed on arrival
+                    // The fetch itself is not withdrawn, but the state it fetches is released
                     return expectRejection(fetched, "Abort")
                             .then(ignore -> delay(500))
                             .then(ignore -> {
@@ -542,7 +623,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_018);
-                    return session.getTable("source", null).resolve();
+                    return session.getTable("source", null).asPromise();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
@@ -642,7 +723,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_022);
-                    return session.getTable("source", null).resolve().then(source -> {
+                    return session.getTable("source", null).asPromise().then(source -> {
                         // A merge that is only chained on holds nothing once its dependent is done. Through the
                         // session, as a caller would, not the connection: the session layer is what is under test.
                         JsPendingTable<JsTable> merged = session.mergeTables(
@@ -677,7 +758,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(seriesTables)
                 .then(session -> {
                     delayTestFinish(10_023);
-                    return session.getTable("series", null).resolve();
+                    return session.getTable("series", null).asPromise();
                 })
                 .then(series -> {
                     // The whole series, and its first tenth in full resolution, in one batch
@@ -734,7 +815,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_025);
-                    return session.getTable("source", null).resolve();
+                    return session.getTable("source", null).asPromise();
                 })
                 .then(table -> {
                     Column.ColumnOrName s = Column.ColumnOrName.of("S");
@@ -772,7 +853,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_024);
-                    return session.getTable("source", null).resolve();
+                    return session.getTable("source", null).asPromise();
                 })
                 .then(table -> {
                     // Invalid arguments throw when the method is called, before anything reaches the server, as the

@@ -238,7 +238,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsTable> table(String tableName) {
-        return session -> session.getTable(tableName, null).resolve();
+        return session -> session.getTable(tableName, null).asPromise();
     }
 
     public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsTreeTable> treeTable(String tableName) {

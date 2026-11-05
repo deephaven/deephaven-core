@@ -62,7 +62,7 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(timeout);
-                    return session.getTable("source", null).resolve()
+                    return session.getTable("source", null).asPromise()
                             .then(table -> {
                                 source = table;
                                 return forEachKind(session, table, scenario);

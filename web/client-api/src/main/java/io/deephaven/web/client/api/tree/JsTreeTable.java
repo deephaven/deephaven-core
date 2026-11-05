@@ -502,7 +502,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getName())),
                 Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getType())),
                 keyTableData,
-                null).resolve();
+                null).asPromise();
         return keyTable;
     }
 

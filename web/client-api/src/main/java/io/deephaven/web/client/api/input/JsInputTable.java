@@ -154,7 +154,7 @@ public class JsInputTable {
         }
 
         // TODO deephaven-core#2529 parallelize this
-        return table.getConnection().newTable(names, types, data, userTimeZone).resolve()
+        return table.getConnection().newTable(names, types, data, userTimeZone).asPromise()
                 .then(created -> addTable(JsTableReference.of(created)));
     }
 
@@ -197,7 +197,7 @@ public class JsInputTable {
             return addTicket(ticketOf(tablesToAdd[0]), null);
         }
         // Merge first; the merged table is an intermediate to close once the add has settled
-        return table.getConnection().mergeTables(tablesToAdd, this.table).resolve()
+        return table.getConnection().mergeTables(tablesToAdd, this.table).asPromise()
                 .then(merged -> addTicket(merged.getHeadHandle().makeTicket(), merged));
     }
 

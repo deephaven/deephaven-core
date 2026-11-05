@@ -167,7 +167,7 @@ public class OneClick {
 
     private Promise<JsTable> doFetchTable(Object[] keys) {
         if (keys == null || keys.length == 0) {
-            return partitionedTable.getMergedTable().resolve();
+            return partitionedTable.getMergedTable().asPromise();
         } else if (keys.length == 1) {
             return partitionedTable.getTable(keys[0]);
         } else {
@@ -179,7 +179,7 @@ public class OneClick {
                                 Arrays.stream(resolved).filter(table -> table != null).toArray(JsTable[]::new);
                         if (tables.length > 1) {
                             return tables[0].getConnection().mergeTables(Js.uncheckedCast(tables), partitionedTable)
-                                    .resolve();
+                                    .asPromise();
                         } else if (tables.length == 1) {
                             return Promise.resolve(tables[0]);
                         } else {

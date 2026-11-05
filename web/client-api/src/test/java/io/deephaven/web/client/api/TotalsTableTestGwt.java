@@ -71,7 +71,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     public void testQueryDefinedConfigs() {
         connect(tables)
                 .then(session -> {
-                    return session.getTable("strings", true).resolve()
+                    return session.getTable("strings", true).asPromise()
                             .then(table1 -> {
                                 // make sure the config is null, since it wasn't defined in the config
                                 assertNull(table1.getTotalsTableConfig());
@@ -1030,7 +1030,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayFinish(2000);
-                    return session.getTable("hasTotals", true).resolve();
+                    return session.getTable("hasTotals", true).asPromise();
                 })
                 .then(table -> {
                     // take the existing config and group by K

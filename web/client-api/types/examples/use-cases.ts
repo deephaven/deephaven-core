@@ -96,10 +96,12 @@ async function mergeTwo() {
     b.close();
 }
 
-// A function that accepts any operations and reads the result
+// A function that accepts any operations, reads the result, and chains on it later
 async function readAny(ops: dh.TableOperations) {
     const t = await ops.resolve();
     const n: number = t.size;
+    const top = await t.head(10);
+    top.close();
     t.close();
 }
 

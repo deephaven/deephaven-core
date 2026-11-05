@@ -1031,7 +1031,7 @@ public class JsTable extends HasLifecycle
             return promise.asPromise(MAX_BATCH_TIME)
                     .then(s -> Promise.resolve(new JsTable(this)));
         }
-        return copy().resolve();
+        return copy().asPromise();
     }
 
     /**

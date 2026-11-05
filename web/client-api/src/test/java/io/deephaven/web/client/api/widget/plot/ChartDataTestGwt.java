@@ -196,8 +196,8 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
         connect(tickingData)
                 .then(ideSession -> {
                     delayTestFinish(9870);
-                    Promise<JsTable> inputPromise = ideSession.getTable("input1", false).resolve();
-                    Promise<JsTable> resultPromise = ideSession.getTable("result1", false).resolve();
+                    Promise<JsTable> inputPromise = ideSession.getTable("input1", false).asPromise();
+                    Promise<JsTable> resultPromise = ideSession.getTable("result1", false).asPromise();
                     return inputPromise.then(JsTable::inputTable).then(delayFinish(9871)).then(input -> {
                         delayTestFinish(9872);
                         return resultPromise.then(result -> {
@@ -276,8 +276,8 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
         connect(tickingData)
                 .then(ideSession -> {
                     delayTestFinish(9870);
-                    Promise<JsTable> inputPromise = ideSession.getTable("input2", false).resolve();
-                    Promise<JsTable> resultPromise = ideSession.getTable("result2", false).resolve();
+                    Promise<JsTable> inputPromise = ideSession.getTable("input2", false).asPromise();
+                    Promise<JsTable> resultPromise = ideSession.getTable("result2", false).asPromise();
                     return inputPromise.then(JsTable::inputTable).then(delayFinish(9871)).then(input -> {
                         delayTestFinish(9872);
                         return resultPromise.then(result -> {
