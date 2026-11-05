@@ -27,6 +27,7 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
+import jsinterop.base.Any;
 import jsinterop.base.Js;
 
 /**
@@ -142,6 +143,29 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
     @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column.ColumnOrName column) {
         return wrappedTable.getColumnStatistics(column);
+    }
+
+    /**
+     * Finds the next row, after {@code startingRow} and wrapping around, whose value in {@code column} matches
+     * {@code seekValue}.
+     *
+     * @param startingRow the position of the row to search after
+     * @param column the column, or the name of the column, to search
+     * @param valueType the type to compare {@code seekValue} as
+     * @param seekValue the value to find
+     * @param insensitive optionally, {@code true} to ignore case. Defaults to {@code false}.
+     * @param contains optionally, {@code true} to match values that contain {@code seekValue} rather than equal it.
+     *        Defaults to {@code false}.
+     * @param isBackwards optionally, {@code true} to search backward. Defaults to {@code false}.
+     * @return a promise of the position of the matching row, or -1 if no row matches
+     */
+    @Override
+    @JsMethod
+    public Promise<Double> seekRow(double startingRow, Column.ColumnOrName column,
+            @TsTypeRef(ValueType.class) String valueType, Any seekValue,
+            @JsOptional @JsNullable Boolean insensitive, @JsOptional @JsNullable Boolean contains,
+            @JsOptional @JsNullable Boolean isBackwards) {
+        return wrappedTable.seekRow(startingRow, column, valueType, seekValue, insensitive, contains, isBackwards);
     }
 
     /**

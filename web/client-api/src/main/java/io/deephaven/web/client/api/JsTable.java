@@ -91,6 +91,7 @@ import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 import org.apache.arrow.flight.impl.Flight;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.*;
@@ -1656,7 +1657,7 @@ public class JsTable extends HasLifecycle
                 });
     }
 
-    private Literal objectToLiteral(String valueType, Object value) {
+    private static Literal objectToLiteral(String valueType, Object value) {
         Literal.Builder literal = Literal.newBuilder();
         if (value instanceof DateWrapper) {
             literal.setNanoTimeValue(((DateWrapper) value).getWrapped());
@@ -1691,32 +1692,44 @@ public class JsTable extends HasLifecycle
     }
 
     /**
-     * Seek the row matching the data provided
+     * Finds the next row, after {@code startingRow} and wrapping around, whose value in {@code column} matches
+     * {@code seekValue}.
      *
-     * @param startingRow Row to start the seek from
-     * @param column Column to seek for value on
-     * @param valueType Type of value provided
-     * @param seekValue Value to seek
-     * @param insensitive Optional value to flag a search as case-insensitive. Defaults to {@code false}.
-     * @param contains Optional value to have the seek value do a contains search instead of exact equality. Defaults to
-     *        {@code false}.
-     * @param isBackwards Optional value to seek backwards through the table instead of forwards. Defaults to
-     *        {@code false}.
-     * @return A promise that resolves to the row value found.
+     * @param startingRow the position of the row to search after
+     * @param column the column, or the name of the column, to search
+     * @param valueType the type to compare {@code seekValue} as
+     * @param seekValue the value to find
+     * @param insensitive optionally, {@code true} to ignore case. Defaults to {@code false}.
+     * @param contains optionally, {@code true} to match values that contain {@code seekValue} rather than equal it.
+     *        Defaults to {@code false}.
+     * @param isBackwards optionally, {@code true} to search backward. Defaults to {@code false}.
+     * @return a promise of the position of the matching row, or -1 if no row matches
      */
+    @Override
     @JsMethod
     public Promise<Double> seekRow(
             double startingRow,
-            Column column,
+            Column.ColumnOrName column,
             @TsTypeRef(ValueType.class) String valueType,
             Any seekValue,
             @JsOptional @JsNullable Boolean insensitive,
             @JsOptional @JsNullable Boolean contains,
             @JsOptional @JsNullable Boolean isBackwards) {
+        return seekRow(workerConnection, state().getHandle().makeTicket(), startingRow, column, valueType, seekValue,
+                insensitive, contains, isBackwards);
+    }
+
+    /**
+     * Sends a seek-row request for the table on {@code source}, shared by this class and resolved tables; the arguments
+     * are as for the instance method.
+     */
+    static Promise<Double> seekRow(WorkerConnection connection, Ticket source, double startingRow,
+            Column.ColumnOrName column, String valueType, Any seekValue, @Nullable Boolean insensitive,
+            @Nullable Boolean contains, @Nullable Boolean isBackwards) {
         SeekRowRequest.Builder seekRowRequest = SeekRowRequest.newBuilder();
-        seekRowRequest.setSourceId(state().getHandle().makeTicket());
+        seekRowRequest.setSourceId(source);
         seekRowRequest.setStartingRow((long) startingRow);
-        seekRowRequest.setColumnName(column.getName());
+        seekRowRequest.setColumnName(column.columnName());
         seekRowRequest.setSeekValue(objectToLiteral(valueType, seekValue));
         if (insensitive != null) {
             seekRowRequest.setInsensitive(insensitive);
@@ -1729,7 +1742,7 @@ public class JsTable extends HasLifecycle
         }
 
         return Callbacks
-                .<SeekRowResponse>grpcUnaryPromise(c -> workerConnection.tableServiceClient()
+                .<SeekRowResponse>grpcUnaryPromise(c -> connection.tableServiceClient()
                         .seekRow(seekRowRequest.build(), c))
                 .then(seekRowResponse -> Promise.resolve((double) seekRowResponse.getResultRow()));
     }

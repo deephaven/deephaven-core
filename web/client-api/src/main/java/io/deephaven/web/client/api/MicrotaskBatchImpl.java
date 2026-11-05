@@ -27,6 +27,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.fu.PromiseLike;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsOptional;
+import jsinterop.base.Any;
 import jsinterop.base.Js;
 import org.jspecify.annotations.Nullable;
 
@@ -594,6 +595,15 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                     return Promise.reject(failure);
                 });
             });
+        }
+
+        @Override
+        public Promise<Double> seekRow(double startingRow, Column.ColumnOrName column, String valueType, Any seekValue,
+                @JsOptional @Nullable Boolean insensitive, @JsOptional @Nullable Boolean contains,
+                @JsOptional @Nullable Boolean isBackwards) {
+            checkOpen();
+            return JsTable.seekRow(connection, typedTicket().getTicket(), startingRow, column, valueType, seekValue,
+                    insensitive, contains, isBackwards);
         }
 
         @Override

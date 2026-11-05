@@ -722,6 +722,52 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    /** Asserts that {@code seek} finds the row at {@code expected}, or none for -1. */
+    private static Promise<Object> expectRow(String what, Promise<Double> seek, int expected) {
+        return seek.then(row -> {
+            assertEquals(what, expected, row.intValue());
+            return Promise.resolve((Object) null);
+        });
+    }
+
+    public void testSeekRow() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_025);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(table -> {
+                    Column.ColumnOrName s = Column.ColumnOrName.of("S");
+                    // A table: X is 0 to 4
+                    return expectRow("Table, X = 3", table.seekRow(0, Column.ColumnOrName.of("X"), ValueType.NUMBER,
+                            Js.asAny(3.0), null, null, null), 3)
+                            .then(ignore -> expectRow("Table, no X = 9", table.seekRow(0,
+                                    Column.ColumnOrName.of("X"), ValueType.NUMBER, Js.asAny(9.0), null, null, null),
+                                    -1))
+                            // A resolved table: S is "v0" to "v4"
+                            .then(ignore -> table.operations().update(cols("S = `v` + X")).resolve())
+                            .then(resolved -> expectRow("resolved, S = v3",
+                                    resolved.seekRow(0, s, ValueType.STRING, Js.asAny("v3"), null, null, null), 3)
+                                    .then(ignore -> expectRow("resolved, S = V2 ignoring case", resolved.seekRow(0, s,
+                                            ValueType.STRING, Js.asAny("V2"), true, null, null), 2))
+                                    .then(ignore -> expectRow("resolved, next S containing v after row 3",
+                                            resolved.seekRow(3, s, ValueType.STRING, Js.asAny("v"), null, true, null),
+                                            4))
+                                    .then(ignore -> expectRow("resolved, S = v1 searching back from row 3",
+                                            resolved.seekRow(3, s, ValueType.STRING, Js.asAny("v1"), null, null,
+                                                    true),
+                                            1))
+                                    .then(ignore -> expectRow("resolved, no S = nope", resolved.seekRow(0, s,
+                                            ValueType.STRING, Js.asAny("nope"), null, null, null), -1))
+                                    .then(ignore -> {
+                                        resolved.close();
+                                        table.close();
+                                        return Promise.resolve((Object) null);
+                                    }));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testDownsampleRejectsBadArguments() {
         connect(tables)
                 .then(session -> {
