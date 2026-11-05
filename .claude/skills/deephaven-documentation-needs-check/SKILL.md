@@ -12,7 +12,7 @@ description: >
   for an upcoming release, or reviewing what's undocumented since the last release. **Do NOT
   use for:** reviewing existing documentation (use deephaven-docs-review-full), writing
   documentation, checking a single PR (just read the PR diff), or Enterprise/deephaven-ent code.
-allowed-tools: Read, Grep, Glob, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git tag *), Bash(git fetch *), Bash(git grep *), Bash(find *), Bash(wc *)
+allowed-tools: Read, Grep, Glob, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git tag *), Bash(git fetch *), Bash(git grep *), Bash(git branch *), Bash(git merge-base *), Bash(git cherry *), Bash(git patch-id *), Bash(find *), Bash(wc *), Bash(grep *), Bash(sort *), Bash(head *)
 ---
 
 # Release documentation needs check
@@ -61,35 +61,48 @@ git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+$' | head -1
 ### Find the RC branch for the upcoming release
 
 RC (release candidate) branches follow the pattern `rc/vNN.x` (e.g., `upstream/rc/v42.x`,
-`upstream/rc/v0.33.x`). Find the one for the next release — the RC branch whose major version
-is higher than the latest release tag's, or, if there is no newer major, the one matching the
-current major series:
+`upstream/rc/v0.33.x`). Find the one for the **next** release — this is the RC branch whose
+version is strictly newer than the latest release tag, not the one the tag was cut from.
 
 ```bash
-git branch -r | grep 'upstream/rc/v' | sort -V
+# List only upstream RC branches (excludes contributor forks), version-sorted
+git branch -r | grep '^  upstream/rc/v' | sort -V
 ```
+
+**Disambiguation:** filter to `upstream/rc/` only (not contributor remotes like
+`dgodinez-dh/rc/...`). If the latest release tag is `v42.7`, the RC branch `upstream/rc/v42.x`
+is the one v42.7 was **already cut from** — it is not the next release's RC. Look for
+`upstream/rc/v43.x` or a higher major. If no RC branch exists with a version strictly newer
+than the latest tag, take the last entry from the version-sorted list (the highest version).
+If no RC branches exist at all, note this in the report and treat all changes as unconfirmed.
 
 Not every commit on `upstream/main` gets cherry-picked onto the RC branch. The RC branch
 determines what ships in the next release, so use it to partition the report: changes that
 have been cherry-picked onto the RC branch are **confirmed for the next release**, while
 changes only on `upstream/main` are **not yet picked** and may or may not ship.
 
-If no RC branch exists yet, note this in the report and treat all changes as unconfirmed.
-
 ### Build the change set
 
-Get the full picture of what's changed since the latest release tag:
+Release tags sit on release branches, not on `upstream/main` directly (minor releases branch
+off the previous tag — see `RELEASE.md`). Using `<tag>..upstream/main` would include reverse
+diffs from release-branch-only changes and everything since the older fork point. Instead, find
+the merge-base and diff from there:
 
 ```bash
+# Find the common ancestor between the tag and upstream/main
+BASE=$(git merge-base <tag> upstream/main)
+
 # Total commit count for context
-git log <tag>..upstream/main --oneline --first-parent | wc -l
+git log $BASE..upstream/main --oneline --first-parent | wc -l
 
 # All changed files, grouped
-git diff --name-status <tag>..upstream/main
+git diff --name-status $BASE..upstream/main
 
 # All first-parent commits (one per PR, including squash-merged and rebased PRs)
-git log <tag>..upstream/main --oneline --first-parent
+git log $BASE..upstream/main --oneline --first-parent
 ```
+
+Use `$BASE..upstream/main` (not `<tag>..upstream/main`) throughout the rest of the triage.
 
 Use `--first-parent` — not `--merges` — so squash-merged PRs, rebased PRs, and direct commits
 are included. `--merges` would silently skip any PR that was squash-merged or rebased onto main.
@@ -137,46 +150,45 @@ single documentation item.
 
 Minor releases cherry-pick fixes from `main` onto a release branch (see `RELEASE.md`). These
 cherry-picks create new SHAs on the release branch, so the original commits on `main` still
-appear in `<tag>..upstream/main` even though their changes already shipped. This applies to fixes
-cherry-picked into the selected tag itself as well as any later minor releases.
+appear in `$BASE..upstream/main` even though their changes already shipped.
 
-Check for patch-equivalent commits by comparing diff content (not SHAs) between `main` commits
-and what shipped in each release. Use `--sort=v:refname` for correct version ordering — lexical
-comparison treats `v42.9` as newer than `v42.10`:
+Compare against **all release tags in the same major series** — both the selected base tag and
+any tags cut after it (e.g., if the base is `v42.5`, also check `v42.6`, `v42.7`, etc.). A fix
+cherry-picked into any of these tags has already shipped.
+
+Use `git cherry` or `git log --cherry-mark` to efficiently identify patch-equivalent commits
+between `upstream/main` and release branches. These commands use `git patch-id` internally,
+which normalizes whitespace and line numbers, handling the minor differences that arise from
+cherry-pick conflict resolution or context-line drift:
 
 ```bash
 # List all release tags in the same major series, version-sorted
 git tag --sort=v:refname | grep -E '^v<major>\.[0-9]+$'
+
+# For each release tag, find commits on upstream/main that are patch-equivalent
+# to commits reachable from that tag. '+' marks unmatched (not cherry-picked),
+# '-' marks matched (already shipped).
+git cherry <release-tag> upstream/main $BASE
 ```
 
-For each commit in `<tag>..upstream/main`, get its first-parent diff (`git diff <sha>^..<sha>`) — not
-`git show`, which produces an empty combined diff for clean merges and would falsely match other
-empty diffs. Only compare commits whose first-parent diff is non-empty; a commit with an empty
-first-parent diff has no changes to exclude.
-
-If a non-empty first-parent diff matches the first-parent diff of any commit reachable from a
-release tag (including the selected base tag and any later minor releases), **verify the change
-is still effective in that release tag before excluding it.** A release branch can contain a
-cherry-pick followed by its revert before the tag is cut, so reachability of a matching patch
-does not prove the change actually shipped. Check that the files touched by the commit still
-reflect its changes at the tag (e.g., compare `git show <tag>:<file>` against the expected
-state). Only exclude the commit when the change is confirmed present in at least one released
-tag — otherwise it is still unreleased and needs triage.
-
-Cherry-picks sometimes have minor differences from the original commit due to conflict
-resolution or context-line drift. When an exact diff match is not found, also check for
-near-matches: compare the changed file paths and the added/removed lines (ignoring context
-lines and line numbers). If the same files are touched with substantially the same additions
-and removals, treat it as a match — the cherry-pick shipped the same change with minor
-adaptation.
+Commits marked with `-` by `git cherry` have patch-equivalent counterparts on the release
+branch. **Before excluding them, verify the change is still effective in that release tag.**
+A release branch can contain a cherry-pick followed by its revert before the tag is cut, so
+a patch-id match does not prove the change actually shipped. Check that the files touched by
+the commit still reflect its changes at the tag (e.g., compare `git show <tag>:<file>` against
+the expected state). Only exclude the commit when the change is confirmed present in at least
+one released tag — otherwise it is still unreleased and needs triage.
 
 ### Classify each commit as RC-confirmed or main-only
 
 For each remaining commit (after filtering out reverted, superseded, and already-shipped
-changes), determine whether it has been cherry-picked onto the RC branch. Cherry-picks produce
-different SHAs, so compare by patch content (first-parent diff), not by SHA. Apply the same
-near-match tolerance as the release cherry-pick filter (same files, substantially same
-additions/removals, ignoring context lines and line numbers):
+changes), determine whether it has been cherry-picked onto the RC branch using `git cherry`:
+
+```bash
+git cherry upstream/rc/vNN.x upstream/main $BASE
+```
+
+Commits marked `-` have patch-equivalent counterparts on the RC branch:
 
 - **RC-confirmed**: the commit's first-parent diff matches a commit on the RC branch **and**
   the change is still effective at the RC tip (see verification below). This change is confirmed
@@ -184,12 +196,20 @@ additions/removals, ignoring context lines and line numbers):
 - **Main-only**: the commit's first-parent diff has no match on the RC branch. This change is
   on `upstream/main` but has not been picked for the next release and may be held back.
 
-**Verify the change is still effective at the RC tip.** A matching patch alone does not prove
+**Verify the change is still effective at the RC tip.** A patch-id match alone does not prove
 the feature will ship — if the cherry-pick was subsequently reverted on the RC branch, the
-original patch still matches but the change is no longer present. For each RC-confirmed commit,
-check whether the files it touched still contain its changes at the RC branch tip (e.g., compare
-`git show upstream/rc/vNN.x:<file>` against the expected state). If the change has been reverted
-or superseded on RC, reclassify it as main-only and note the revert.
+original patch still matches but the change is no longer present. To check concretely:
+
+```bash
+# Look for reverts on the RC branch that mention the commit's title
+git log upstream/rc/vNN.x --grep='Revert' --oneline
+
+# Or search for the removal of a key symbol/function added by the commit
+git log upstream/rc/vNN.x -S 'functionOrSymbolName' --oneline
+```
+
+If the change has been reverted or superseded on RC, reclassify it as main-only and note the
+revert.
 
 This classification carries through to the report — every documentation item is tagged as
 RC-confirmed or main-only so the reader knows which items are urgent (shipping soon) vs which
@@ -242,9 +262,9 @@ it can be excluded from the report.
 
 | Change type | Where to look | Documentation impact |
 |---|---|---|
-| **New or changed public Java API** | `engine/api/`, `engine/table/`, `table-api/`, `qst/`, classes without `@InternalUse` or package-private | New methods, changed signatures, changed semantics, new classes |
+| **New or changed public Java API** | `engine/api/`, `engine/table/`, `table-api/`, `qst/`, classes without `@InternalUseOnly` or package-private; also check for `@ScriptApi` (marks methods exposed to script sessions) | New methods, changed signatures, changed semantics, new classes |
 | **New or changed Python API** | `py/server/deephaven/`, public functions/classes in `__init__.py` or exported modules | New functions, changed parameters, changed behavior |
-| **New or changed Groovy API** | `Integrations/src/.../groovy/`, server console wiring | New bindings, changed script-session behavior |
+| **New or changed Groovy API** | `engine/table/src/main/java/.../GroovyDeephavenSession.java`, `engine/table/src/main/resources/groovy/`, `@ScriptApi`-annotated methods, server console wiring | New bindings, changed script-session behavior |
 | **New or changed gRPC services** | `proto/proto-backplane-grpc/`, `server/src/.../server/` | New RPCs, changed request/response shapes, new services |
 | **New or changed configuration properties** | `props/`, `Configuration/`, `*Configuration.java`, system properties parsed from `-D` flags | New properties, changed defaults, removed properties |
 | **New or changed server behavior** | `server/`, `server-jetty-app/`, authentication/authorization changes | Startup behavior, auth flows, deployment changes |
@@ -260,19 +280,27 @@ it can be excluded from the report.
 | Change type | Where to look | Why no docs |
 |---|---|---|
 | **Test-only changes** | `**/src/test/**`, `*Test.java`, `*TestBase.java` | Not user-facing |
-| **Build/CI changes** | `buildSrc/`, `*.gradle`, `.github/workflows/`, `settings.gradle` | Build infrastructure |
+| **Build/CI changes** | `buildSrc/`, `.github/workflows/`, `settings.gradle`, `*.gradle` (build scripts only — see tie-break below) | Build infrastructure |
 | **Code style/formatting** | Spotless changes, whitespace, import ordering | No behavioral change |
-| **Internal refactoring** | Package-private classes, `@InternalUse` classes, unchanged public API | No user-visible change |
+| **Internal refactoring** | Package-private classes, `@InternalUseOnly` classes, unchanged public API | No user-visible change |
 | **Performance-only** | Same API, same behavior, faster execution | No docs unless new config knobs or changed defaults |
 | **Dependency updates** | `gradle/libs.versions.toml`, version bumps | Unless a user-facing dependency changed its API |
 | **Liveness/ref-counting internals** | `engine/liveness/`, `ReferenceCounted` changes | Engine internal |
 | **UpdateGraph internals** | Notification ordering, cycle mechanics | Engine internal unless new user-facing config |
 | **Documentation-only changes** | `docs/`, `.devin/rules/`, `.claude/skills/` | Already documentation or tooling |
 
+**Tie-break rule:** some paths appear in both tables (e.g., `*.gradle` files, `server-jetty-app/`,
+dependency updates). When a commit touches files that match both user-facing and internal-only
+rows, **the user-facing classification wins** — inspect the diff. A Gradle change that modifies
+application startup flags or deployment behavior is user-facing even though `*.gradle` is listed
+as build infrastructure. A dependency bump that changes a user-visible runtime dependency needs
+docs even though version bumps are listed as internal. The internal-only table describes the
+*default* expectation; the diff determines the actual classification.
+
 ### For each user-facing change, determine:
 
 **Public API changes:**
-- Is the class/method/function public? Check access modifiers, `__init__.py` exports, `@InternalUse`.
+- Is the class/method/function public? Check access modifiers, `__init__.py` exports, `@InternalUseOnly`, `@ScriptApi`.
 - Is it new, modified, or removed?
   - New: needs documentation of what it does, parameters, return type, and at least one example.
   - Modified signature: needs updated parameter docs.
@@ -342,7 +370,7 @@ Classify each item:
 Structure the output as:
 
 ```
-## Release documentation triage: <tag>..upstream/main
+## Release documentation triage: <tag> → upstream/main
 
 **Latest release tag:** <tag>
 **RC branch:** <upstream/rc/vNN.x, or "none">
