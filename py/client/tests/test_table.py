@@ -24,6 +24,7 @@ from pydeephaven.agg import (
     unique,
     weighted_avg,
 )
+from pydeephaven.filters import ColumnName, eq
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -111,6 +112,17 @@ class TableTestCase(BaseTestCase):
         test_table = self.session.import_table(pa_table)
         filtered_table = test_table.where(["a > 10", "b < 100"])
         self.assertLessEqual(filtered_table.size, pa_table.num_rows)
+
+    def test_where_mixed_filters_raises(self) -> None:
+        test_table = self.session.empty_table(1).update(["a = i"])
+        for filters in (
+            ["a > 0", eq(ColumnName("a"), 0)],
+            [eq(ColumnName("a"), 0), "a > 0"],
+        ):
+            with self.subTest(first=type(filters[0]).__name__):
+                with self.assertRaises(DHError) as cm:
+                    test_table.where(filters)
+                self.assertIn("not a mix", str(cm.exception))
 
     def test_sort(self):
         pa_table = csv.read_csv(self.csv_file)
@@ -252,6 +264,15 @@ class TableTestCase(BaseTestCase):
         result_table = left_table.raj(right_table, on=["Col1", "Timestamp"])
         self.assertGreater(result_table.size, 0)
         self.assertLessEqual(result_table.size, left_table.size)
+
+    def test_aj_raj_empty_on_raises(self) -> None:
+        left_table = self.session.empty_table(1).update(["a = i"])
+        right_table = self.session.empty_table(1).update(["a = i", "b = i"])
+        for name in ("aj", "raj"):
+            with self.subTest(name):
+                with self.assertRaises(DHError) as cm:
+                    getattr(left_table, name)(right_table, on=[])
+                self.assertIn("on must name at least one column", str(cm.exception))
 
     def test_head_tail_by(self):
         ops = [Table.head_by, Table.tail_by]
