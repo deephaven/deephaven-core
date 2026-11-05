@@ -87,7 +87,6 @@ public class TableBuilder {
      * @return the table
      */
     public Table build() {
-        def.checkHasValidColumnNames();
         Map<String, WritableColumnSource<Object>> map = new LinkedHashMap<>();
         for (ColumnDefinition<?> columnDefinition : def.getColumns()) {
             WritableColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
