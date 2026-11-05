@@ -409,10 +409,30 @@ public interface WhereFilter extends Filter {
     }
 
     /**
-     * Returns true if this filter uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
+     * Returns true if this filter uses row virtual offset columns of {@code i}, {@code ii} or {@code k}, or selects
+     * rows by position as those variables do, as a release filter does.
      */
     default boolean hasVirtualRowVariables() {
         return false;
+    }
+
+    /**
+     * Whether this filter's result for a row depends on other rows, through a {@link #hasVirtualRowVariables() virtual
+     * row variable} ({@code i}, {@code ii} or {@code k}) or a {@link #getColumnArrays() column array} such as
+     * {@code A_}; a shift such as {@code A_[i - 1]} uses both. Such a filter must see every row its where receives, as
+     * on a {@link io.deephaven.engine.table.impl.QueryTable QueryTable}, so a table that defers, merges or reorders
+     * filters runs the whole where on the coalesced table.
+     * <p>
+     * A release filter, which selects rows by position, reports a virtual row variable. A downsampling filter, which
+     * depends on the rows that the filters before the downsampling filter pass, {@link #isSerial() is serial} instead.
+     * <p>
+     * This filter must already be initialized.
+     *
+     * @return whether this filter has cross-row dependencies
+     */
+    @FinalDefault
+    default boolean hasCrossRowDependencies() {
+        return hasVirtualRowVariables() || !getColumnArrays().isEmpty();
     }
 
     /**

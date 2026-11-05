@@ -178,7 +178,7 @@ result = assigned.exact_join(table=departments, on=["DeptID"])
 result = employees.natural_join(table=departments, on=["DeptID"])
 ```
 
-By default, `natural_join` fails if a left-table row matches more than one right-table row. Duplicate right-table keys that no left-table row matches don't cause an error. To keep one of the matching rows instead, set `type` to [`NaturalJoinType`](/core/pydoc/code/deephaven.table.html#deephaven.table.NaturalJoinType) `.FIRST_MATCH` or `NaturalJoinType.LAST_MATCH`. The following example swaps the tables, using `departments` as the left table, and adds the first matching employee to each department. Departments 33 and 34 each have two employees, so the default join type would fail. Marketing has no employees, so its employee columns are null:
+By default, `natural_join` fails if a left-table row matches more than one right-table row. Duplicate right-table keys that no left-table row matches don't cause an error. To keep one of the matching rows instead, set `type` to [`NaturalJoinType.FIRST_MATCH`](/core/pydoc/code/deephaven.table.html#deephaven.table.NaturalJoinType) or [`NaturalJoinType.LAST_MATCH`](/core/pydoc/code/deephaven.table.html#deephaven.table.NaturalJoinType). The following example swaps the tables, using `departments` as the left table, and adds the first matching employee to each department. Departments 33 and 34 each have two employees, so the default join type would fail. Marketing has no employees, so its employee columns are null:
 
 ```python test-set=1 order=result
 from deephaven.table import NaturalJoinType

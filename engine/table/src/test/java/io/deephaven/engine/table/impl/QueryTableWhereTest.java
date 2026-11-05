@@ -384,10 +384,9 @@ public abstract class QueryTableWhereTest {
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> filteredTable.where("boolCol")),
                 EvalNugget.from(() -> filteredTable.where("!boolCol")),
-                EvalNugget.from(() -> SparseSelect.sparseSelect(filteredTable).where("boolCol")),
-                EvalNugget.from(() -> SparseSelect.sparseSelect(filteredTable).sort("Sentinel").where("boolCol")),
-                EvalNugget.from(
-                        () -> SparseSelect.sparseSelect(filteredTable).sort("Sentinel").reverse().where("boolCol")),
+                EvalNugget.from(() -> filteredTable.select().where("boolCol")),
+                EvalNugget.from(() -> filteredTable.select().sort("Sentinel").where("boolCol")),
+                EvalNugget.from(() -> filteredTable.select().sort("Sentinel").reverse().where("boolCol")),
                 EvalNugget.from(() -> filteredTable.updateView("boolCol2=!!boolCol").where("boolCol2")),
         };
 

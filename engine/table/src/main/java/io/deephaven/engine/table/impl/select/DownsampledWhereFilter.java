@@ -162,4 +162,11 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
     public boolean permitParallelization() {
         return false;
     }
+
+    @Override
+    public boolean isSerial() {
+        // keeps one row per time bin of the rows that the filters before this filter pass, in order, so no filter
+        // written after this filter may run first
+        return true;
+    }
 }

@@ -43,7 +43,7 @@ public class TestIncrementalAggregationRehash {
                 initialTableSize, 0.75, 0.70);
         // the result's key columns hold the alternating sources
         final ColumnSource<?>[] resultKeySources = manager.getKeyHashTableSources();
-        manager.beginUpdateCycle();
+        manager.beginUpdateCycle(1);
 
         final MutableInt nextOutputPosition = new MutableInt(0);
         try (final RowSet first = RowSetFactory.fromRange(0, beforeRehash - 1);
@@ -58,7 +58,7 @@ public class TestIncrementalAggregationRehash {
         final WeakReference<ColumnSource<?>> drainedKeys = new WeakReference<>(manager.alternateKeySources[0]);
 
         // the next cycle's rehash work moves the rest of the entries
-        manager.beginUpdateCycle();
+        manager.beginUpdateCycle(2);
         assertEquals(0, manager.rehashPointer);
         assertEquals(2 * initialTableSize, manager.tableSize);
 

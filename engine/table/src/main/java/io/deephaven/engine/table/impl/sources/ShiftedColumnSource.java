@@ -48,7 +48,7 @@ public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
 
     @Override
     public boolean isInMemory() {
-        return innerSource instanceof InMemoryColumnSource && ((InMemoryColumnSource) innerSource).isInMemory();
+        return InMemoryColumnSource.isInMemory(innerSource);
     }
 
     long getColumnIndex(long outerKey) {
