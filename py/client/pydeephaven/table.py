@@ -852,7 +852,7 @@ class Table(TableInterface["Table"], ServerObject):
 
         Args:
             start (int): the first row position to include in the result
-            stop (int): the last row position to include in the result
+            stop (int): the row position to stop before, exclusive
 
         Returns:
             a new Table
