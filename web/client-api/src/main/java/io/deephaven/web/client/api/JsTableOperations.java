@@ -60,6 +60,10 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * Describes operations that can be performed on a table without retrieving data or metadata, allowing these operations
  * to potentially be chained with no direct interaction with a promise.
  * <p>
+ * Each method checks its arguments when called and throws for invalid ones. A failure of the operation itself, on the
+ * server or because a table it uses was canceled, failed, or used too late, is reported by rejecting the pending table
+ * it returns; see {@link JsPendingTable} for how long a pending table may be used.
+ * <p>
  *
  * <pre>
  * async function process(table: dh.TableOperations) {
@@ -190,6 +194,11 @@ public interface JsTableOperations extends ServerObject {
                         .setNumRows(size.asInt())));
     }
 
+    /**
+     * Creates a table with all the rows of this table in reverse order.
+     *
+     * @return a new table with the rows in reverse order
+     */
     @JsMethod
     default JsPendingTable<JsResolvedTable> reverse() {
         Ticket ticket = getConnection().getTickets().newExportTicket();

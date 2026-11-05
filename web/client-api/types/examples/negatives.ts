@@ -4,8 +4,11 @@ declare const session: dh.IdeSession;
 
 async function negatives() {
     const t = session.timeTable(1e9);
-    // direction is a plain string for now (follow-up: literal union), so a bad direction still type-checks:
+    // Expected to be rejected: direction is "ASC" | "DESC"; reversing is reverse(), not a direction
+    // @ts-expect-error
     const badSort = await t.sort([{ column: "X", direction: "DOWN" }]);
+    // @ts-expect-error
+    const reversed = await t.sort([{ column: "X", direction: "REVERSE" }]);
     // Expected to be rejected: not a sort at all
     // @ts-expect-error
     const nonsense = await t.sort([{ banana: 1 }]);
@@ -19,5 +22,6 @@ async function negatives() {
     // @ts-expect-error
     const badWhere = await t.where(["X > 2"]);
     badSort.close();
+    reversed.close();
     nonsense.close();
 }

@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsLiteral;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
@@ -41,17 +42,31 @@ public class Sort {
         /**
          * The direction to sort this column. If absent/null, sort is ascending.
          */
-        // TODO follow-up: make this a literal union ("ASC" | "DESC" | "REVERSE") rather than a string. Sort.direction
-        // is a plain string on the existing Sort object and is read back by web-client-ui, so changing it there needs
-        // its own look; this struct is new and could take the literal type on its own.
         @JsNullable
-        public String direction;
+        public SortDirection direction;
 
         /**
          * True to take the absolute value before sorting. Defaults to false if absent/null.
          */
         @JsNullable
         public Boolean isAbs;
+    }
+
+    /**
+     * The direction of a {@link SimpleSort}. To reverse a table's order, use {@code reverse()} instead: the server
+     * applies a reverse to the whole sort, not to a column.
+     */
+    @TsUnion(anonymous = false, name = "SortDirection", namespace = "dh")
+    @JsType(namespace = JsPackage.GLOBAL, name = "String", isNative = true)
+    public interface SortDirection {
+        @TsLiteral
+        @TsUnionMember
+        @JsOverlay
+        String ASC = ASCENDING;
+        @TsLiteral
+        @TsUnionMember
+        @JsOverlay
+        String DESC = DESCENDING;
     }
 
     @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
@@ -114,7 +129,7 @@ public class Sort {
                 SimpleSort s = asSimpleSort();
                 return SortDescriptor.newBuilder()
                         .setColumnName(s.column.columnName())
-                        .setDirection(directionFromString(s.direction))
+                        .setDirection(directionFromString(Js.uncheckedCast(s.direction)))
                         .setIsAbsolute(s.isAbs != null && s.isAbs)
                         .build();
             }
