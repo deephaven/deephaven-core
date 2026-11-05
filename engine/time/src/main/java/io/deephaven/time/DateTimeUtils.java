@@ -5090,7 +5090,8 @@ public class DateTimeUtils {
      * Parses the string argument as a local time, which is the time that would be read from a clock and does not have a
      * date or timezone.
      * <p>
-     * Local time strings can be formatted as {@code h[h]:m[m][:s[s][.nnnnnnnnn]]}.
+     * Local time strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]}. Hours, minutes, and seconds can have one or
+     * two digits, and the seconds are optional.
      *
      * @param s string to be converted
      * @return a {@link LocalTime} represented by the input string.
@@ -5116,7 +5117,8 @@ public class DateTimeUtils {
      * Parses the string argument as a local time, which is the time that would be read from a clock and does not have a
      * date or timezone.
      * <p>
-     * Local time strings can be formatted as {@code h[h]:m[m][:s[s][.nnnnnnnnn]]}.
+     * Local time strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]}. Hours, minutes, and seconds can have one or
+     * two digits, and the seconds are optional.
      *
      * @param s string to be converted
      * @return a {@link LocalTime} represented by the input string, or {@code null} if the string can not be parsed

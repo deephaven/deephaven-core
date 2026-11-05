@@ -45,9 +45,9 @@ public class ComparatorRegistry {
      * </p>
      *
      * <p>
-     * The default set of Comparators includes lexicographical comparators for primitive (except boolean), String,
-     * BigInteger, BigDecimal, and Comparable arrays; for Instant, Date, ZonedDateTime, LocalDate, LocalDateTime, and
-     * LocalTime arrays; and for Duration arrays.
+     * The default set of Comparators includes lexicographical comparators for arrays of the following types: primitives
+     * (except boolean), String, BigInteger, BigDecimal, Comparable, Instant, Date, ZonedDateTime, LocalDate,
+     * LocalDateTime, LocalTime and Duration.
      * </p>
      */
     public void reset() {
