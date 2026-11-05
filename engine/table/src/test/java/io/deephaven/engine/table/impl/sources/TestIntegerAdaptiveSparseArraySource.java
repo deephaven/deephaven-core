@@ -431,13 +431,14 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
     }
 
     /**
-     * Write the leaves of one bottom page table level in an order that adds leaves among those it holds, release some,
-     * and write more until it holds a quarter of its leaves, checking current and previous values throughout.
+     * Write every fourth leaf of one bottom page table level in an order that adds leaves among those it holds, release
+     * some, and write more until it holds a quarter of its leaves, spread across the whole level, checking current and
+     * previous values throughout.
      */
     @Test
     public void testManyLeavesInOneBottomLevel() {
         final List<Long> leafStarts = new ArrayList<>();
-        for (int leaf = 0; leaf < BLOCK2_SIZE / 4; ++leaf) {
+        for (int leaf = 0; leaf < BLOCK2_SIZE; leaf += 4) {
             leafStarts.add((long) leaf * BLOCK_SIZE);
         }
         checkManyChildren(leafStarts);
@@ -498,6 +499,22 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
         }
         for (int level2 = 2000; level2 < 2010; ++level2) {
             leafStarts.add((long) level2 << BLOCK1_SHIFT);
+        }
+        checkManyChildren(leafStarts);
+    }
+
+    /**
+     * Write leaves of a bottom level that are first too sparse for a window and then dense enough for one, as
+     * {@link #testTopLevelWindowAndRanks()} does for the top level.
+     */
+    @Test
+    public void testBottomLevelWindowAndRanks() {
+        final List<Long> leafStarts = new ArrayList<>();
+        for (int leaf = 0; leaf < 300; ++leaf) {
+            leafStarts.add((long) leaf * BLOCK_SIZE);
+        }
+        for (int leaf = 2000; leaf < 2010; ++leaf) {
+            leafStarts.add((long) leaf * BLOCK_SIZE);
         }
         checkManyChildren(leafStarts);
     }

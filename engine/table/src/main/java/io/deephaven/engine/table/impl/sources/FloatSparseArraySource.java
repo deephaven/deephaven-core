@@ -63,12 +63,12 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * window has at most eight entries for each child or 64 in all, and rank them otherwise: the top level by a sorted
  * array of their indices, and the middle level by positions ranked among the indices it holds, sorted indices for a few
  * children and then a bitmap with the number of indices before each word, following the leaves' own tiers. The bottom
- * level holds one leaf in its own fields, ranks up to an eighth of its leaves the same way, and indexes its arrays by
- * leaf index when it holds more. A window of one entry and a bottom level of one leaf record the child's index, so that
- * finding the child is one comparison. Each level is held directly by its parent, or by the source for the top level,
- * so that a read follows one reference per level. A level's window or positions and its arrays are fixed but for
- * appending positions and setting children; any other change makes a new level, which replaces the old one in its
- * parent, so that a concurrent reader finds each child where the level it read says.
+ * level holds one leaf in its own fields, and more the same way as the middle level, in a window or ranked. A window of
+ * one entry and a bottom level of one leaf record the child's index, so that finding the child is one comparison. Each
+ * level is held directly by its parent, or by the source for the top level, so that a read follows one reference per
+ * level. A level's window or positions and its arrays are fixed but for appending positions and setting children; any
+ * other change makes a new level, which replaces the old one in its parent, so that a concurrent reader finds each
+ * child where the level it read says.
  * <p>
  * When tracking previous values, the first write to a row in a cycle records the row's value in a second page table of
  * previous values. Each leaf of that table holds the recorded offsets of its leaf as a sorted or bitmap leaf, following
@@ -77,9 +77,8 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * The previous values are discarded when the cycle completes. The snapshot blocks and the arrays of the previous value
  * page table come from recyclers shared by the sources of this type; completing the cycle walks that page table,
  * returning each snapshot block, and each array indexed by child index with every entry null. A ranked level holds only
- * its children, a window has at most 64 entries or eight for each child, and a bottom level indexed by leaf index holds
- * more than an eighth of its leaves, so the walk costs at most 64 entries for each level and eight for each child the
- * cycle recorded.
+ * its children and a window has at most 64 entries or eight for each child, so the walk costs at most 64 entries for
+ * each level and eight for each child the cycle recorded.
  * <p>
  * For parallel population, {@link #prepareForParallelPopulation(RowSequence, boolean)} allocates the page table above
  * each leaf to be written and reserves the leaf's position, for current and previous values, so that writers of
@@ -192,12 +191,6 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
     }
 
     // region page table
-    /**
-     * The number of children past which a middle or bottom page table level indexes its arrays of children by child
-     * index. Up to an eighth of the level, ranked positions keep the arrays small; past it, an array indexed by child
-     * index holds at most eight entries for each child it holds.
-     */
-    private static final int DIRECT_THRESHOLD = BLOCK2_SIZE / 8;
 
     /**
      * @return the length of the arrays for {@code size} children of a ranked level whose arrays have length
@@ -205,7 +198,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
      *         at a time is copied a logarithmic number of times
      */
     private static int grownCapacity(final int capacity, final int size) {
-        return size <= capacity ? capacity : Math.max(size, Math.min(DIRECT_THRESHOLD, capacity * 2));
+        return size <= capacity ? capacity : Math.max(size, Math.min(MAX_RANKED, capacity * 2));
     }
 
     /**
@@ -239,6 +232,11 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
     private static final int MIN_WINDOW = 64;
     /** The most entries a window holds for each child it holds, when that is more than {@link #MIN_WINDOW}. */
     private static final int WINDOW_ENTRIES_PER_CHILD = 8;
+    /**
+     * The most children a ranked middle or bottom page table level holds. More children span at most
+     * {@link #WINDOW_ENTRIES_PER_CHILD} entries each, so a window always holds them.
+     */
+    private static final int MAX_RANKED = BLOCK2_SIZE / WINDOW_ENTRIES_PER_CHILD;
 
     /**
      * @return the most entries a window holding {@code count} children may have; a level whose children span more ranks
@@ -666,29 +664,32 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
 
     /**
      * The bottom page table level: its leaves. A leaf is either a full block or a compact leaf, kept in separate arrays
-     * so that reading a full block needs no test of the leaf's type. A level holds its leaves by how many it has: one
-     * leaf in its own fields, with no arrays, so that reading it follows no reference beyond the level; up to
-     * {@link #DIRECT_THRESHOLD} leaves densely, in leaf index order, at the positions its {@link ChildPositions}
-     * report; and more in arrays indexed by leaf index.
+     * so that reading a full block needs no test of the leaf's type. A level adapts how it holds its leaves to how many
+     * it has and how far apart they are: one leaf in its own fields, with no arrays, so that reading it follows no
+     * reference beyond the level; leaves dense enough for a window, as {@link #maxWindow(int)} allows, in arrays
+     * indexed by leaf index less the index of their first entry, up to a window of every leaf index of the level; and
+     * sparser leaves densely, in leaf index order, at the positions its {@link ChildPositions} report.
      * <p>
-     * The positions and the arrays of a level are fixed, except that appending positions past the last one changes the
-     * positions in place, once the arrays have room for them, and a leaf is set at its position. Anything else, such as
-     * moving a leaf or growing an array, makes a new level, which the source publishes in its parent, so that a reader
-     * that loaded a level finds each leaf where its positions say. A writer therefore uses the level that its last
-     * change returned.
+     * The window or positions and the arrays of a level are fixed, except that appending positions past the last one
+     * changes the positions in place, once the arrays have room for them, and a leaf is set at its entry. Anything
+     * else, such as widening a window, moving a leaf or growing an array, makes a new level, which the source publishes
+     * in its parent, so that a reader that loaded a level finds each leaf where the level says. A writer therefore uses
+     * the level that its last change returned.
      * <p>
      * Only one thread changes which leaves a level holds at a time; a parallel population sets only the leaves at
-     * positions its preparation reserved, in arrays it allocated.
+     * entries its preparation reserved, in arrays it allocated.
      */
     private static final class Level2 {
         /**
-         * Whether this level holds previous values, whose arrays indexed by leaf index are borrowed from recyclers and
-         * returned when the cycle completes.
+         * Whether this level holds previous values, whose arrays covering every leaf index are borrowed from recyclers
+         * and returned when the cycle completes.
          */
         private final boolean recycled;
-        /** The positions of the leaves, or null when the arrays are indexed by leaf index. */
+        /** The positions of the leaves, when ranked; null when the arrays are a window. */
         private final ChildPositions positions;
-        /** The length of the arrays of leaves, which holds every position. */
+        /** The leaf index of the first entry of a window; 0 when ranked. */
+        private final int base;
+        /** The length of the arrays of leaves, or of the window of a level of one leaf. */
         private final int capacity;
         /** The full blocks, or null if no leaf may be one. */
         private final float[][] blocks;
@@ -704,11 +705,13 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
         private Level2(
                 final boolean recycled,
                 final ChildPositions positions,
+                final int base,
                 final int capacity,
                 final float[][] blocks,
                 final FloatCompactLeaf[] compacts) {
             this.recycled = recycled;
             this.positions = positions;
+            this.base = base;
             this.capacity = capacity;
             this.blocks = blocks;
             this.compacts = compacts;
@@ -718,7 +721,8 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
         /** Make a level holding only the leaf at {@code index}, which is not yet set, in its own fields. */
         private Level2(final boolean recycled, final int index) {
             this.recycled = recycled;
-            this.positions = ChildPositions.of(new int[] {index}, 1);
+            this.positions = null;
+            this.base = index;
             this.capacity = 1;
             this.blocks = null;
             this.compacts = null;
@@ -726,7 +730,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
         }
 
         private static Level2 empty(final boolean recycled) {
-            return new Level2(recycled, ChildPositions.empty(), 0, null, null);
+            return new Level2(recycled, null, 0, 0, null, null);
         }
 
         /**
@@ -736,7 +740,11 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
             if (index == onlyIndex) {
                 return 0;
             }
-            return positions == null ? index : positions.find(index);
+            if (positions == null) {
+                final int slot = index - base;
+                return slot >= 0 && slot < capacity ? slot : -1;
+            }
+            return positions.find(index);
         }
 
         /**
@@ -762,6 +770,14 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
                 return slot == 0 ? onlyCompact : null;
             }
             return slot < 0 || slot >= localCompacts.length ? null : localCompacts[slot];
+        }
+
+        private float[] getBlock(final int index) {
+            return blockAt(slot(index));
+        }
+
+        private FloatCompactLeaf getCompact(final int index) {
+            return compactAt(slot(index));
         }
 
         /**
@@ -793,45 +809,43 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
             compacts[slot(index)] = compact;
         }
 
+        private boolean isDirect() {
+            return positions == null && capacity == BLOCK2_SIZE;
+        }
+
+        private float[][] newBlocks(final boolean window, final int length) {
+            return recycled && window && length == BLOCK2_SIZE ? blocksArrayRecycler.borrowItem() : new float[length][];
+        }
+
+        private FloatCompactLeaf[] newCompacts(final boolean window, final int length) {
+            return recycled && window && length == BLOCK2_SIZE
+                    ? compactsArrayRecycler.borrowItem()
+                    : new FloatCompactLeaf[length];
+        }
+
         /**
-         * @return a new level holding the leaf of this level of one leaf in arrays
+         * @return a new level holding the leaf of this level of one leaf in a window of one entry with arrays
          */
         private Level2 toArrays() {
-            return new Level2(recycled, ChildPositions.of(new int[] {onlyIndex}, 1), 1,
+            return new Level2(recycled, null, onlyIndex, 1,
                     onlyBlock == null ? null : new float[][] {onlyBlock},
                     onlyCompact == null ? null : new FloatCompactLeaf[] {onlyCompact});
         }
 
-        private float[] getBlock(final int index) {
-            return blockAt(slot(index));
-        }
-
-        private FloatCompactLeaf getCompact(final int index) {
-            return compactAt(slot(index));
-        }
-
-        private float[][] newDirectBlocks() {
-            return recycled ? blocksArrayRecycler.borrowItem() : new float[BLOCK2_SIZE][];
-        }
-
-        private FloatCompactLeaf[] newDirectCompacts() {
-            return recycled ? compactsArrayRecycler.borrowItem() : new FloatCompactLeaf[BLOCK2_SIZE];
-        }
-
         /**
          * Give each of {@code indices[0, count)}, ascending and distinct, a position, so that setting its leaf writes
-         * only its own entry. Positions after the existing ones are appended; otherwise the leaves are moved once, into
-         * new arrays.
+         * only its own entry. Positions after the existing ones of a ranked level are appended; otherwise the leaves
+         * are moved once, into new arrays.
          *
          * @return this level, or a new level holding the same leaves, with the positions
          */
         private Level2 reserve(final int[] indices, final int count) {
-            if (positions == null) {
+            if (isDirect()) {
                 return this;
             }
             int absent = 0;
             for (int ii = 0; ii < count; ++ii) {
-                if (positions.find(indices[ii]) < 0) {
+                if (slot(indices[ii]) < 0) {
                     ++absent;
                 }
             }
@@ -841,13 +855,6 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
             if (onlyIndex != NO_CHILD) {
                 return toArrays().reserve(indices, count);
             }
-            if (absent == 1 && positions.size() == 0) {
-                for (int ii = 0; ii < count; ++ii) {
-                    if (positions.find(indices[ii]) < 0) {
-                        return new Level2(recycled, indices[ii]);
-                    }
-                }
-            }
             final int[] absentIndices;
             if (absent == count) {
                 absentIndices = indices;
@@ -855,19 +862,119 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
                 absentIndices = new int[absent];
                 int next = 0;
                 for (int ii = 0; ii < count; ++ii) {
-                    if (positions.find(indices[ii]) < 0) {
+                    if (slot(indices[ii]) < 0) {
                         absentIndices[next++] = indices[ii];
                     }
                 }
             }
-            final int newSize = positions.size() + absent;
-            if (newSize > DIRECT_THRESHOLD) {
-                return makeDirect();
+            return positions == null ? reserveInWindow(absentIndices, absent) : reserveRanked(absentIndices, absent);
+        }
+
+        /**
+         * @return whether the window entry at {@code slot} holds a leaf
+         */
+        private boolean holds(final int slot) {
+            return (blocks != null && blocks[slot] != null) || (compacts != null && compacts[slot] != null);
+        }
+
+        /**
+         * @return a new level holding the leaves of this window and positions for {@code indices[0, count)}, ascending
+         *         and outside the window
+         */
+        private Level2 reserveInWindow(final int[] indices, final int count) {
+            int first = -1;
+            int last = -1;
+            int held = 0;
+            for (int ii = 0; ii < capacity; ++ii) {
+                if (holds(ii)) {
+                    if (first < 0) {
+                        first = ii;
+                    }
+                    last = ii;
+                    ++held;
+                }
             }
-            if (absentIndices[0] > positions.lastIndex()) {
-                return append(absentIndices, absent, newSize);
+            if (held == 0 && count == 1) {
+                return new Level2(recycled, indices[0]);
             }
-            return merge(absentIndices, absent, newSize);
+            final int newCount = held + count;
+            final int low = first < 0 ? indices[0] : Math.min(base + first, indices[0]);
+            final int high = first < 0 ? indices[count - 1] + 1 : Math.max(base + last + 1, indices[count - 1] + 1);
+            if (high - low <= maxWindow(newCount)) {
+                final int newLength = windowLength(high - low, capacity, newCount, BLOCK2_SIZE);
+                final boolean down = first >= 0 && indices[0] < base + first;
+                final int newBase = windowBase(low, high, down, newLength, BLOCK2_SIZE);
+                final float[][] newBlocks = blocks == null ? null : newBlocks(true, newLength);
+                final FloatCompactLeaf[] newCompacts = compacts == null ? null : newCompacts(true, newLength);
+                if (first >= 0) {
+                    if (newBlocks != null) {
+                        System.arraycopy(blocks, first, newBlocks, base + first - newBase, last - first + 1);
+                    }
+                    if (newCompacts != null) {
+                        System.arraycopy(compacts, first, newCompacts, base + first - newBase, last - first + 1);
+                    }
+                }
+                return new Level2(recycled, null, newBase, newLength, newBlocks, newCompacts);
+            }
+            // rank the leaves held and the new ones
+            final int[] heldIndices = new int[held];
+            final int[] heldSlots = new int[held];
+            int hi = 0;
+            for (int ii = first; hi < held; ++ii) {
+                if (holds(ii)) {
+                    heldIndices[hi] = base + ii;
+                    heldSlots[hi++] = ii;
+                }
+            }
+            final int[] movedTo = new int[held];
+            final int[] merged = ChildPositions.merge(heldIndices, indices, count, movedTo);
+            final int newCapacity = grownCapacity(newCount, newCount);
+            final float[][] newBlocks = blocks == null ? null : new float[newCapacity][];
+            final FloatCompactLeaf[] newCompacts = compacts == null ? null : new FloatCompactLeaf[newCapacity];
+            for (int ii = 0; ii < held; ++ii) {
+                if (newBlocks != null) {
+                    newBlocks[movedTo[ii]] = blocks[heldSlots[ii]];
+                }
+                if (newCompacts != null) {
+                    newCompacts[movedTo[ii]] = compacts[heldSlots[ii]];
+                }
+            }
+            return new Level2(recycled, ChildPositions.of(merged, newCount), 0, newCapacity, newBlocks,
+                    newCompacts);
+        }
+
+        /**
+         * @return this level, or a new level holding the same leaves, with positions for {@code indices[0, count)},
+         *         ascending and none held
+         */
+        private Level2 reserveRanked(final int[] indices, final int count) {
+            final int[] held = positions.indices();
+            final int newSize = held.length + count;
+            final int low = held.length == 0 ? indices[0] : Math.min(held[0], indices[0]);
+            final int high = held.length == 0
+                    ? indices[count - 1] + 1
+                    : Math.max(held[held.length - 1], indices[count - 1]) + 1;
+            if (held.length == 0 && count == 1) {
+                return new Level2(recycled, indices[0]);
+            }
+            if (high - low <= maxWindow(newSize)) {
+                final int newLength = high - low;
+                final float[][] newBlocks = blocks == null ? null : newBlocks(true, newLength);
+                final FloatCompactLeaf[] newCompacts = compacts == null ? null : newCompacts(true, newLength);
+                for (int ii = 0; ii < held.length; ++ii) {
+                    if (newBlocks != null && ii < blocks.length) {
+                        newBlocks[held[ii] - low] = blocks[ii];
+                    }
+                    if (newCompacts != null && ii < compacts.length) {
+                        newCompacts[held[ii] - low] = compacts[ii];
+                    }
+                }
+                return new Level2(recycled, null, low, newLength, newBlocks, newCompacts);
+            }
+            if (held.length > 0 && indices[0] > held[held.length - 1]) {
+                return append(indices, count, newSize);
+            }
+            return merge(held, indices, count, newSize);
         }
 
         /**
@@ -879,40 +986,29 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
             if (newSize > capacity) {
                 // grow the arrays first, so that a position appended in place is within the arrays readers find
                 final int newCapacity = grownCapacity(capacity, newSize);
-                level = new Level2(recycled, positions, newCapacity,
+                level = new Level2(recycled, positions, 0, newCapacity,
                         blocks == null ? null : Arrays.copyOf(blocks, newCapacity),
                         compacts == null ? null : Arrays.copyOf(compacts, newCapacity));
             }
             final ChildPositions appended = level.positions.append(indices, count);
             return appended == level.positions
                     ? level
-                    : new Level2(recycled, appended, level.capacity, level.blocks, level.compacts);
+                    : new Level2(recycled, appended, 0, level.capacity, level.blocks, level.compacts);
         }
 
         /**
-         * @return a new level holding {@code indices[0, count)}, none held, among the indices held, for {@code newSize}
-         *         leaves in all, with each leaf held moved once into new arrays
+         * @return a new level holding {@code indices[0, count)}, none held, among {@code held}, the indices held, for
+         *         {@code newSize} leaves in all, with each leaf held moved once into new arrays
          */
-        private Level2 merge(final int[] indices, final int count, final int newSize) {
-            final int[] held = positions.indices();
+        private Level2 merge(final int[] held, final int[] indices, final int count, final int newSize) {
             final int[] movedTo = new int[held.length];
             final int[] merged = ChildPositions.merge(held, indices, count, movedTo);
             final int newCapacity = grownCapacity(capacity, newSize);
-            return new Level2(recycled, ChildPositions.of(merged, newSize), newCapacity,
+            return new Level2(recycled, ChildPositions.of(merged, newSize), 0, newCapacity,
                     blocks == null ? null : scatter(blocks, new float[newCapacity][], movedTo, held.length),
                     compacts == null
                             ? null
                             : scatter(compacts, new FloatCompactLeaf[newCapacity], movedTo, held.length));
-        }
-
-        /**
-         * @return a new level holding the same leaves, in arrays indexed by leaf index
-         */
-        private Level2 makeDirect() {
-            final int[] held = positions.indices();
-            return new Level2(recycled, null, BLOCK2_SIZE,
-                    blocks == null ? null : scatter(blocks, newDirectBlocks(), held, held.length),
-                    compacts == null ? null : scatter(compacts, newDirectCompacts(), held, held.length));
         }
 
         /**
@@ -929,8 +1025,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
             if (blocks != null || onlyIndex != NO_CHILD) {
                 return this;
             }
-            return new Level2(recycled, positions, capacity,
-                    positions == null ? newDirectBlocks() : new float[capacity][], compacts);
+            return new Level2(recycled, positions, base, capacity, newBlocks(positions == null, capacity), compacts);
         }
 
         /**
@@ -940,8 +1035,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
             if (compacts != null || onlyIndex != NO_CHILD) {
                 return this;
             }
-            return new Level2(recycled, positions, capacity, blocks,
-                    positions == null ? newDirectCompacts() : new FloatCompactLeaf[capacity]);
+            return new Level2(recycled, positions, base, capacity, blocks, newCompacts(positions == null, capacity));
         }
 
         /**
@@ -966,13 +1060,25 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
          * @return this level, or a new level, without the leaves at {@code indices[0, count)}, ascending
          */
         private Level2 clear(final int[] indices, final int count) {
+            if (onlyIndex != NO_CHILD) {
+                for (int ii = 0; ii < count; ++ii) {
+                    if (indices[ii] == onlyIndex) {
+                        return empty(recycled);
+                    }
+                }
+                return this;
+            }
             if (positions == null) {
                 for (int ii = 0; ii < count; ++ii) {
+                    final int slot = indices[ii] - base;
+                    if (slot < 0 || slot >= capacity) {
+                        continue;
+                    }
                     if (blocks != null) {
-                        blocks[indices[ii]] = null;
+                        blocks[slot] = null;
                     }
                     if (compacts != null) {
-                        compacts[indices[ii]] = null;
+                        compacts[slot] = null;
                     }
                 }
                 return this;
@@ -988,14 +1094,14 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
                 return empty(recycled);
             }
             // the remaining leaves move into new arrays, so that a reader of this level finds each where it was
-            return new Level2(recycled, ChildPositions.of(kept, keptCount), keptCount,
+            return new Level2(recycled, ChildPositions.of(kept, keptCount), 0, keptCount,
                     blocks == null ? null : gather(blocks, new float[keptCount][], keptFrom, keptCount),
                     compacts == null ? null : gather(compacts, new FloatCompactLeaf[keptCount], keptFrom, keptCount));
         }
 
         /**
          * Release this previous value level when the cycle completes: return its snapshot blocks, and its arrays
-         * indexed by leaf index, with every entry null, to their recyclers. The level is discarded with any other
+         * covering every leaf index, with every entry null, to their recyclers. The level is discarded with any other
          * arrays.
          */
         private void recyclePrevious() {
@@ -1009,7 +1115,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
                     }
                 }
             }
-            if (positions != null) {
+            if (!isDirect()) {
                 return;
             }
             if (blocks != null) {
