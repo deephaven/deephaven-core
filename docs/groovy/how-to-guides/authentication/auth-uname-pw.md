@@ -11,14 +11,12 @@ Username/password is a common authentication method in which each user of an app
 
 ## Overview
 
-Username/password authentication requires some extra configuration on top of a [Docker deployment of Deephaven](../../getting-started/docker-install.md). A PostgreSQL database that runs in Docker alongside Deephaven stores usernames and passwords. The database stores each password as a bcrypt hash. Bcrypt is a one-way hashing algorithm.
+Username/password authentication needs three extra files on top of a [Docker deployment of Deephaven](../../getting-started/docker-install.md). A PostgreSQL database that runs in Docker alongside Deephaven stores usernames and passwords. The database stores each password as a bcrypt hash, which is a one-way hashing algorithm.
 
-The Dockerfile adds a JAR (Java archive) file to the Deephaven classpath. The classpath is the list of libraries that the Deephaven server loads at startup. That JAR file handles the authentication.
-
-For a basic setup, there are three required files:
+This guide covers the server setup and logging in from the [JS API](../use-jsapi.md). For a basic setup, there are three required files:
 
 - A SQL file to create a schema and a table of usernames and bcrypt-hashed passwords.
-- A Dockerfile that builds the Deephaven image and adds the required JAR to the Deephaven classpath.
+- A Dockerfile that builds the Deephaven image and adds the authentication JAR (a Java archive) to the Deephaven classpath, which is the list of libraries that the server loads at startup.
 - A Docker Compose file that defines the PostgreSQL and Deephaven services.
 
 ## Set up username/password authentication
@@ -27,7 +25,7 @@ For a basic setup, there are three required files:
 
 Save the following as `init-users.sql` in the same directory as your Dockerfile and `docker-compose.yml`. It creates a schema, `deephaven_username_password_auth`, with a single table (`users`). The table has a single entry for a user named `admin` with the password `p@ssw0rd`.
 
-The `rounds` column records the bcrypt cost factor of each hash. This example uses 10, which the `$2a$10$` prefix of the hash records. The handler doesn't check `rounds` against the hash, so keep the two equal. See [Add more users after startup](#add-more-users-after-startup) for the value to use with a new hash.
+The `rounds` column records the bcrypt cost factor of each hash. The cost factor is the exponent of a power of two that sets how many hashing rounds bcrypt runs. For example, a cost of 10 means 2^10 rounds. This example uses 10, which the `$2a$10$` prefix of the hash records. The handler doesn't check `rounds` against the hash, so keep the two equal. See [Add more users after startup](#add-more-users-after-startup) for the value to use with a new hash.
 
 ```sql
 CREATE SCHEMA deephaven_username_password_auth;
@@ -47,18 +45,18 @@ VALUES ('admin', '$2a$10$kjbt1Fq4k4W6EB67GDhAauuIWeI8ppx2gsi6.zLL2R5UYokek8nqO',
 The Dockerfile adds the JAR file from the Overview to the Deephaven classpath. The Groovy example uses the `server-slim` image, which starts a Groovy console.
 
 > [!NOTE]
-> Make sure that the version in the `FROM` image tag matches the version of the authentication-provider JAR in the `ADD` URL. Both use version 42.7 in this example.
+> Make sure that the version in the `FROM` image tag matches the version of the authentication-provider JAR in the `ADD` URL. Both use version 42.8 in this example.
 
 ```Dockerfile
-FROM ghcr.io/deephaven/server-slim:42.7
-ADD https://repo1.maven.org/maven2/io/deephaven/deephaven-sql-username-password-authentication-provider/42.7/deephaven-sql-username-password-authentication-provider-42.7.jar /apps/libs/
+FROM ghcr.io/deephaven/server-slim:42.8
+ADD https://repo1.maven.org/maven2/io/deephaven/deephaven-sql-username-password-authentication-provider/42.8/deephaven-sql-username-password-authentication-provider-42.8.jar /apps/libs/
 ```
 
 ### docker-compose.yml
 
 Create `docker-compose.yml` in the same directory as the Dockerfile. The `build: .` line builds the Deephaven image from that Dockerfile. The file defines two services: `postgres` and `deephaven`.
 
-The `deephaven` service's host port is configurable. The settings after the file explain how to change it.
+The `deephaven` service's host port is configurable. The `ports` bullet below the Compose file explains how to change it.
 
 > [!WARNING]
 > The file below turns [fsync](https://man7.org/linux/man-pages/man2/fsync.2.html) off, which is not recommended. It also sets the `postgres` service's admin password to `password` in plaintext. See [How to use secrets in Docker Compose](https://docs.docker.com/compose/use-secrets/) to learn more about security best practices with Docker.
@@ -98,16 +96,37 @@ The JDBC URL uses `postgres`, the Compose service name, because containers reach
 
 The `deephaven` service also defines these settings:
 
-- `ports`: Maps the host port named by the `DEEPHAVEN_PORT` environment variable (default 10000) to port 10000 in the container.
+- `ports`: Maps the host port to port 10000 in the container. The host port comes from the `DEEPHAVEN_PORT` environment variable, which defaults to 10000. To change it, set `DEEPHAVEN_PORT` in your shell, or in a `.env` file next to `docker-compose.yml`, before you run `docker compose up`.
 - `volumes`: Mounts `./data` on the host to `/data` in the container.
+
+The `postgres` service keeps its data across restarts. See [Add more users after startup](#add-more-users-after-startup) before you reset it.
 
 ### Start Deephaven
 
-Start Deephaven with `docker compose up --build`. Then open `http://localhost:10000/ide` and sign in with the username `admin` and the password `p@ssw0rd` that the [SQL file](#sql) created. If you set `DEEPHAVEN_PORT`, replace `10000` in the URL with that host port.
+Start Deephaven with `docker compose up --build`. Then open `http://localhost:10000/jsapi/authentication/basic.html`. The sample page fills in the `admin` username and the `p@ssw0rd` password from the [SQL file](#sql). Click **Go** to log in. The web IDE at `/ide` has no username/password login form, so it can't sign in with this handler. If you set `DEEPHAVEN_PORT`, replace `10000` in the URL with that host port.
+
+## Log in from the JS API
+
+Applications that use the [Deephaven JS API](/core/client-api/javascript/modules/dh.html) log in with a username and password from the `users` table, such as the `admin` login from [Start Deephaven](#start-deephaven). Call [`login`](/core/client-api/javascript/classes/dh.CoreClient.html#login) with `type: dh.CoreClient.LOGIN_TYPE_PASSWORD`, the `username`, and the password in `token`. The code below shows the call. [Use the JS API](../use-jsapi.md) shows how to load the API into a web page.
+
+```javascript
+async function main() {
+  const client = new dh.CoreClient("http://localhost:10000");
+  await client.login({
+    type: dh.CoreClient.LOGIN_TYPE_PASSWORD,
+    username: "admin",
+    token: "p@ssw0rd",
+  });
+}
+
+main().catch((err) => console.error("Login failed:", err));
+```
+
+Replace `http://localhost:10000` with the address of your server.
 
 ## Add more users after startup
 
-Each row in the `users` table stores a username, a bcrypt hash of the password, and the `rounds` value. The `rounds` value is the bcrypt cost factor, as a power of two: a cost of 10 runs 2^10 hashing rounds. Set `rounds` to the value in the hash's `$2a$...$` prefix. The examples in this guide use 10.
+Each row in the `users` table stores a username, a bcrypt hash of the password, and the `rounds` value. Set `rounds` to the value in the hash's `$2a$...$` prefix, as described in [the SQL step](#sql). The examples in this guide use 10.
 
 This step needs git and a Java Development Kit (JDK) on your machine, not only Docker.
 
@@ -117,25 +136,29 @@ To generate a hash, clone the [Deephaven source repository](https://github.com/d
 ./gradlew :authentication:example-providers:sql-username-password:generatePassword --args='"newPasswordGoesHere"'
 ```
 
-Keep both layers of quotes. The outer single quotes stop the shell from expanding a `$` in the password. The inner double quotes keep a password that contains spaces together as one argument when Gradle parses `--args`. Without them, the hash doesn't match the password you intended.
+Keep both layers of quotes. The outer single quotes stop the shell from expanding a `$` in the password. The inner double quotes keep a password that contains spaces together as one argument when Gradle parses `--args`. Without the inner double quotes, Gradle splits a password that contains spaces into several arguments, so the hash doesn't match the password you intended.
 
 By default, the `generatePassword` task prints a hash that starts with `$2a$10$`.
 
+The `postgres` service doesn't mount a volume at its data directory, so Docker stores its data in an anonymous volume that a new container doesn't reattach. `docker compose down` removes the container, so the next `docker compose up` starts an empty database and runs `init-users.sql` again. To keep your users across restarts, use `docker compose stop` and `docker compose start` instead.
+
 PostgreSQL runs `init-users.sql` only when the container starts with an empty data directory, which happens on its first start. To add users, insert new rows into the running database instead of editing the file.
 
-The Compose file above doesn't define a named volume or bind mount for database data, so PostgreSQL stores its data in a Docker-managed anonymous volume. `docker compose down` leaves that volume and its rows on disk, but a subsequent `docker compose up` doesn't automatically reattach it. Add the additional users again in the recreated database.
-
-Open a PostgreSQL command-line shell (`psql`) with `docker compose exec postgres psql -U postgres`. Then run an `INSERT` statement with the hash that the `generatePassword` task printed and the matching `rounds` value:
+Open a PostgreSQL command-line shell (`psql`) by running `docker compose exec postgres psql -U postgres`. Then run an `INSERT` statement with the hash that the `generatePassword` task printed and the matching `rounds` value:
 
 ```sql
 INSERT INTO deephaven_username_password_auth.users (username, password_hash, rounds)
 VALUES ('newuser', '<hash from generatePassword>', 10);
 ```
 
+After `docker compose down`, add any users you inserted earlier again.
+
 ## Related documentation
 
-- [Install guide for Docker](../../getting-started/docker-install.md)
+- [Use the JS API](../use-jsapi.md)
 - [Pre-shared key authentication](./auth-psk.md)
 - [Anonymous authentication](./auth-anon.md)
 - [Keycloak authentication](./auth-keycloak.md)
 - [mTLS authentication](./auth-mtls.md)
+- [`login` JS API reference](/core/client-api/javascript/classes/dh.CoreClient.html#login)
+- [Install guide for Docker](../../getting-started/docker-install.md)
