@@ -25,3 +25,27 @@ async function negatives() {
     reversed.close();
     nonsense.close();
 }
+
+declare const def: dh.ide.VariableDescriptor;
+
+async function wrongCasts() {
+    // Expected to be rejected: a bare PendingTable is PendingTable<ResolvedTable>, but a fetched table is a
+    // PendingTable<Table>; narrow with PendingTable<Table> or a property test instead
+    // @ts-expect-error
+    const fetched = session.getObject(def) as dh.PendingTable;
+    // Expected to be rejected: the other direction, an operation's result as a PendingTable<Table>
+    // @ts-expect-error
+    const resolved = session.timeTable(1e9).update(["X = i"]) as dh.PendingTable<dh.Table>;
+}
+
+// Accepted by the types, wrong at runtime. Each line type-checks; the comment says what goes wrong.
+async function acceptedButWrong() {
+    // Awaiting two pendings one after the other: b was not used in the task that created it, so its await rejects.
+    const a = session.timeTable(1e9);
+    const b = session.timeTable(1e9);
+    await a;
+    await b;
+
+    // Awaited and never closed: the table and its server export are held until the session ends.
+    const leaked = await session.getTable("t");
+}

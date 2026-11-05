@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsDefault;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
@@ -35,11 +36,15 @@ import jsinterop.annotations.JsOptional;
  * one after the other, {@code await a; await b;}, rejects {@code b}: await both at once with
  * {@code Promise.all([a, b])}, or each as it is created. This holds for a fetch as much as for an operation.
  *
- * @param <T> the table this resolves to
+ * @param <T> the table this resolves to. In TypeScript it defaults to {@code ResolvedTable}, what every operation
+ *        produces. A fetched table resolves to a {@code Table} instead: narrow what {@code getObject} returns with a
+ *        property test such as {@code "where" in result}, or with a cast to {@code PendingTable<Table>}; TypeScript
+ *        rejects a cast to a bare {@code PendingTable}.
  */
 @TsName(namespace = "dh", name = "PendingTable")
 @TsInterface
-public interface JsPendingTable<T extends JsITable> extends JsTableOperations, PromiseLike<T> {
+public interface JsPendingTable<@TsDefault(JsResolvedTable.class) T extends JsITable>
+        extends JsTableOperations, PromiseLike<T> {
     /**
      * The promise this pending table stands for: the same thing as awaiting it, with the resulting table's type spelled
      * out. Retains the table. Awaiting or resolving the same pending table more than once in the task that created it

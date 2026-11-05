@@ -19,10 +19,12 @@ async function probe() {
     // @ts-expect-error -- the union has no `where`
     session.getObject(def).where([]);
 
-    // 4. chaining with a cast
+    // 4. chaining with a cast; a fetched table is PendingTable<Table>, so name the type argument (a bare
+    // PendingTable means PendingTable<ResolvedTable>, what operations produce)
     const pending = session.getObject(def) as dh.PendingTable<dh.Table>;
     const r = await pending.where([]).sort([]);
     const rType: dh.ResolvedTable = r;
+    r.close();
 
     // 5. Promise.all with the union
     const [x, y] = await Promise.all([session.getObject(def), session.getObject(def)]);
