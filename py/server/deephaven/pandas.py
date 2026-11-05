@@ -241,12 +241,13 @@ def to_table(
 ) -> Table:
     """Creates a new table from a pandas DataFrame.
 
-    Column names are converted in one of two ways. When the DataFrame has a pyarrow-backed column, the table is
-    created through pyarrow, which removes characters that aren't allowed in column names: "Shades.1" becomes
-    "Shades1". Otherwise, or if that conversion fails, each run of characters other than letters, digits, and
-    underscores becomes a single underscore, and such characters at the start or end of a name are removed:
-    "Shades.1" becomes "Shades_1". This second conversion changes nothing else, so a name such as "123" or the
-    reserved word "in" is still rejected.
+    Column names are converted in one of two ways. With pandas 2.0.0 or later, when a selected column has a
+    pd.ArrowDtype, the table is created through pyarrow, which removes characters that aren't allowed in column
+    names: "Shades.1" becomes "Shades1". Otherwise, including when the only pyarrow-backed columns are
+    pd.StringDtype("pyarrow") columns, or if that conversion fails, each run of characters other than letters,
+    digits, and underscores becomes a single underscore, and such characters at the start or end of a name are
+    removed: "Shades.1" becomes "Shades_1". This second conversion changes nothing else, so a name such as "123" or
+    the reserved word "in" is still rejected.
 
     Args:
         df (DataFrame): the pandas DataFrame instance

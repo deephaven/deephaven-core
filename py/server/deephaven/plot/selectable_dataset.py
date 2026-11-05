@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-"""This module defines the SelectableDataSet which is used to provides a view of a selectable subset of a table.
+"""This module defines the SelectableDataSet which is used to provide a view of a selectable subset of a table.
 For example, in some selectable data sets, a GUI click can be used to select a portion of a table."""
 
 import jpy
