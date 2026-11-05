@@ -211,8 +211,13 @@ class TableInterface(ABC, Generic[T]):
         if not filters_list:
             raise DHError("filters cannot be empty")
 
-        # Check if we have Filter objects or strings based on the first element
-        if isinstance(filters_list[0], Filter):
+        # The request carries either Filter objects or strings, not both.
+        n_filters = sum(isinstance(f, Filter) for f in filters_list)
+        if 0 < n_filters < len(filters_list):
+            raise DHError(
+                "filters must be all strings or all Filter objects, not a mix of both."
+            )
+        if n_filters:
             table_op: TableOp = FilterOp(filters=filters_list)
         else:
             table_op = UnstructuredFilterOp(filters=filters_list)
@@ -373,7 +378,11 @@ class TableInterface(ABC, Generic[T]):
         Raises:
             DHError
         """
-        table_op = AjOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
+        keys = to_list(on)
+        # The last 'on' column is the as-of match, which the request requires.
+        if not keys:
+            raise DHError("on must name at least one column.")
+        table_op = AjOp(table=table, keys=keys, columns_to_add=to_list(joins))
         return self.table_op_handler(table_op)
 
     def raj(
@@ -404,7 +413,11 @@ class TableInterface(ABC, Generic[T]):
         Raises:
             DHError
         """
-        table_op = RajOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
+        keys = to_list(on)
+        # The last 'on' column is the as-of match, which the request requires.
+        if not keys:
+            raise DHError("on must name at least one column.")
+        table_op = RajOp(table=table, keys=keys, columns_to_add=to_list(joins))
         return self.table_op_handler(table_op)
 
     def head_by(self, num_rows: int, by: str | list[str]) -> T:
@@ -835,7 +848,7 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             start (int): the first row position to include in the result
-            stop (int): the last row position to include in the result
+            stop (int): the row position to stop before, exclusive
 
         Returns:
             a new Table
