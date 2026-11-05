@@ -17,7 +17,6 @@ Setting `AuthHandlers` to only the anonymous handler replaces pre-shared key aut
 - pip: see [pip-installed Deephaven](#pip-installed-deephaven).
 - Production application: add the property to `START_OPTS` when you run the `start` script. See [Authentication](../../getting-started/production-application.md#authentication) in the production application guide.
 - Build from source: run `./gradlew server-jetty-app:run -Panonymous`. The `anonymous` Gradle property sets `AuthHandlers` to the anonymous handler.
-- Configuration file: instead of passing `-DAuthHandlers`, add `AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` to the server's [configuration file](../configuration/config-file.md).
 
 ## Docker Compose
 

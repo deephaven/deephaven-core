@@ -18,7 +18,6 @@ Follow the setup steps for your environment:
 - Docker: see [Docker Compose](#docker-compose).
 - Production application: add the property to `START_OPTS`, along with `-Ddeephaven.console.type=groovy`, when you run the `start` script. See [Authentication](../../getting-started/production-application.md#authentication) in the production application guide.
 - Build from source: run `./gradlew server-jetty-app:run -Panonymous -Pgroovy`. The `anonymous` Gradle property sets `AuthHandlers` to the anonymous handler.
-- Configuration file: instead of passing `-DAuthHandlers`, add `AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` to the server's [configuration file](../configuration/config-file.md).
 
 ## Docker Compose
 

@@ -34,8 +34,6 @@ The image accepts configuration through these main mechanisms:
 
 ## Available images
 
-### Standard images
-
 - `ghcr.io/deephaven/server-slim`: Deephaven's server-side Groovy API.
 
 For the Python image, `ghcr.io/deephaven/server`, see the [Python version of this guide](/core/python/docs/how-to-guides/configuration/docker-application).
