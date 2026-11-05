@@ -77,7 +77,9 @@ ranked level whose children become dense enough becomes a window.
   reference past the level;
 - up to `DIRECT_THRESHOLD`, an eighth of the level (4,096 leaves), in arrays with an entry per leaf, at positions from a
   `ChildPositions`;
-- more, in arrays indexed by leaf index, which then hold at most eight entries per leaf.
+- more, in arrays with an entry for each of the level's 32,768 leaf indices, indexed directly by leaf index. Since the
+  level then holds more than an eighth of its leaf indices, the arrays have fewer than eight entries for each leaf it
+  holds.
 
 `ChildPositions` follows the leaves' own tiers:
 
