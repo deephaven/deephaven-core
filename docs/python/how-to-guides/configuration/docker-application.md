@@ -4,19 +4,21 @@ title: Configure the Deephaven Docker application
 
 This guide covers best practices for configuring the Deephaven Docker application. Deephaven can be run from [Docker](https://www.docker.com/) alone or with [Docker Compose](https://docs.docker.com/compose/). The latter is recommended for customized applications, as it provides a simpler mechanism for orchestrating complex applications with multiple services.
 
-If you are interested in lower-level details, which may be necessary if you are interested in building your own Docker images from scratch, see the [production application guide](./configure-production-application.md). This guide assumes some knowledge about [Docker](https://docs.docker.com/).
+For lower-level details, such as building your own Docker images from scratch, see the [production application guide](./configure-production-application.md). This guide assumes some knowledge about [Docker](https://docs.docker.com/).
 
-This guide shows how to run the Deephaven Docker image with custom JVM options, configuration, and ports. It also covers the following tasks:
+This guide shows how to run the Deephaven Docker image with custom JVM options, configuration, and ports. It covers the following tasks:
 
+- Running the image with Docker
 - Setting JVM options
 - Using a configuration file
 - Changing the port
-- Building a custom image
-- Importing custom JARs
+- Customizing the image
+- Adding Python packages
 - Running the image with Docker Compose
+- Importing custom JARs
 - Debugging a running container
 
-The sections on image contents, versioning, and available images come after the task sections.
+The [available images](#available-images) section comes right after the configuration mechanisms. The sections on image contents and versioning come after the task sections.
 
 The image build logic is in the [deephaven-server-docker](https://github.com/deephaven/deephaven-server-docker) repository.
 
@@ -30,6 +32,27 @@ The image accepts configuration through these main mechanisms:
 | `JAVA_OPTS`                              | Environment variable                                                                | Replacing the default JVM options file, such as to change the garbage collector. |
 | [Configuration file](./config-file.md)   | `/opt/deephaven/config/deephaven.prop`, mounted with `-v` or copied in a Dockerfile | Setting many Deephaven properties.                                               |
 | Docker Compose `environment` and `ports` | Compose file or shell                                                               | Setting values for one service in a Compose application.                         |
+
+## Available images
+
+### Standard images
+
+- `ghcr.io/deephaven/server`: Deephaven's server-side Python API with jpy, `deephaven-plugin`, numpy, pandas, pyarrow, and the `deephaven.ui`, Deephaven Express (`deephaven-plugin-plotly-express`), and Matplotlib plugins.
+- `ghcr.io/deephaven/server-ui`: The same image as `ghcr.io/deephaven/server`, under a separate name.
+
+The [`edge`](#versioning) image includes [Numba](../use-numba.md). The images for releases 41.3 through 42.x don't, so install Numba yourself if you use one of those releases.
+
+For the Groovy image, `ghcr.io/deephaven/server-slim`, see the [Groovy version of this guide](/core/groovy/docs/how-to-guides/configuration/docker-application).
+
+### Extended Python images
+
+These images include the core Python API (`deephaven-core`) plus the listed libraries. They do not include the plugins bundled in `ghcr.io/deephaven/server`, such as `deephaven.ui`, Deephaven Express (`deephaven-plugin-plotly-express`), and Matplotlib.
+
+- `ghcr.io/deephaven/server-all-ai`: Deephaven's server-side API with NLTK, TensorFlow, PyTorch, and scikit-learn.
+- `ghcr.io/deephaven/server-nltk`: Deephaven's server-side API with NLTK.
+- `ghcr.io/deephaven/server-pytorch`: Deephaven's server-side API with PyTorch and TensorBoard.
+- `ghcr.io/deephaven/server-sklearn`: Deephaven's server-side API with scikit-learn.
+- `ghcr.io/deephaven/server-tensorflow`: Deephaven's server-side API with TensorFlow and TensorBoard.
 
 ## Run with Docker
 
@@ -90,7 +113,7 @@ The images expose port `10000` by default. To change the host port, use a port m
 
 To serve on a different port inside the container, set the `http.port` property in a [configuration file](./config-file.md). The image's health check probes port `10000`, so the container reports as unhealthy after you change `http.port`.
 
-With [Docker Compose](https://docs.docker.com/compose/), set the `DEEPHAVEN_PORT` shell variable to change the host port. Compose reads it when it substitutes values into the Compose file:
+With [Docker Compose](https://docs.docker.com/compose/), set the `DEEPHAVEN_PORT` shell variable to change the host port. Compose substitutes it into the `ports` entry of the [Compose file](#run-with-docker-compose):
 
 ```bash
 export DEEPHAVEN_PORT=10001
@@ -116,7 +139,7 @@ ENV EXTRA_CLASSPATH="/apps/libs/*:/opt/more_java_libs/*"
 
 The `COPY` instruction replaces the image's configuration file. Start your `deephaven.prop` with `includefiles=dh-defaults.prop`, as described in [Use a configuration file](#use-a-configuration-file), and then add your own properties.
 
-The second classpath entry, `/opt/more_java_libs`, is an example. Replace it with the directory where your Dockerfile places your JARs.
+`EXTRA_CLASSPATH` lists the directories whose JARs join the classpath. `/apps/libs/*` is the image default (see [Import custom JARs](#import-custom-jars)). The second entry, `/opt/more_java_libs`, is an example. Replace it with the directory where your Dockerfile places your JARs.
 
 ```bash
 # Build the image from the Dockerfile
@@ -132,47 +155,6 @@ Deephaven's Python Docker images include a [virtual environment](https://docs.py
 ```docker title="Dockerfile"
 FROM ghcr.io/deephaven/server:latest
 RUN pip install some-awesome-package
-```
-
-## Import custom JARs
-
-You can make your own Java classes (and third-party libraries) available to queries by placing JARs under `/apps/libs`. The images add that directory to the classpath (see [Image contents and startup settings](#image-contents-and-startup-settings)).
-
-<details>
-<summary>Option A: bind mount</summary>
-
-```bash
-mkdir -p jars
-cp /path/to/<custom>.jar jars/
-docker run --rm -p 10000:10000 -v "$(pwd)/jars:/apps/libs" ghcr.io/deephaven/server:latest
-```
-
-</details>
-
-<details>
-<summary>Option B: Docker Compose</summary>
-
-If you run with [Docker Compose](#run-with-docker-compose), mount the folder in the service definition:
-
-```yaml title="docker-compose.yml"
-services:
-  deephaven:
-    image: ghcr.io/deephaven/server:latest
-    ports:
-      - "10000:10000"
-    volumes:
-      - ./jars:/apps/libs
-```
-
-</details>
-
-You can run queries that use your custom JARs. For example, if you have a class `org.example.MathFns` with a static method `square(long x)`, you can run the following query:
-
-```python skip-test
-# Example usage (requires custom JAR with org.example.MathFns class)
-from deephaven import empty_table
-
-table = empty_table(5).update(["Squares = org.example.MathFns.square(i)"])
 ```
 
 ## Run with Docker Compose
@@ -210,6 +192,47 @@ docker compose up
 ```
 
 Deephaven offers a variety of pre-built [Docker Compose files](https://github.com/deephaven/deephaven-core/tree/main/containers) that can be used to quickly get up and running with Deephaven. They cover both the Python and Groovy APIs. They also add services, such as example data and [Redpanda](https://redpanda.com/), and extended Python images.
+
+## Import custom JARs
+
+You can make your own Java classes (and third-party libraries) available to queries by placing JARs under `/apps/libs`. The images add that directory to the classpath (see [Image contents and startup settings](#image-contents-and-startup-settings)).
+
+<details>
+<summary>Option A: bind mount</summary>
+
+```bash
+mkdir -p jars
+cp /path/to/<custom>.jar jars/
+docker run --rm -p 10000:10000 -v "$(pwd)/jars:/apps/libs" ghcr.io/deephaven/server:latest
+```
+
+</details>
+
+<details>
+<summary>Option B: Docker Compose</summary>
+
+In a [Docker Compose](#run-with-docker-compose) file, mount the folder in the service definition:
+
+```yaml title="docker-compose.yml"
+services:
+  deephaven:
+    image: ghcr.io/deephaven/server:latest
+    ports:
+      - "10000:10000"
+    volumes:
+      - ./jars:/apps/libs
+```
+
+</details>
+
+You can run queries that use your custom JARs. For example, if you have a class `org.example.MathFns` with a static method `square(long x)`, you can run the following query:
+
+```python skip-test
+# Example usage (requires custom JAR with org.example.MathFns class)
+from deephaven import empty_table
+
+table = empty_table(5).update(["Squares = org.example.MathFns.square(i)"])
+```
 
 ## Debug a running container
 
@@ -257,30 +280,13 @@ Older versions of Deephaven are likely to be incompatible with code found in doc
 
 The `edge` image is rebuilt nightly, and whenever the `main` branch of the [deephaven-server-docker](https://github.com/deephaven/deephaven-server-docker) repository changes. It is not rebuilt on every push to deephaven-core `main`. Use it only to try an unreleased feature or develop against the latest code.
 
-## Available images
-
-### Standard images
-
-- `ghcr.io/deephaven/server`: Deephaven's server-side Python API with jpy, `deephaven-plugin`, numpy, pandas, pyarrow, and the `deephaven.ui`, Deephaven Express (`deephaven-plugin-plotly-express`), and Matplotlib plugins.
-- `ghcr.io/deephaven/server-ui`: The same image as `ghcr.io/deephaven/server`, under a separate name.
-
-The `edge` image bundles Numba. Release `42.7` does not, so install Numba separately if you use that release.
-
-For the Groovy image, `ghcr.io/deephaven/server-slim`, see the [Groovy version of this guide](/core/groovy/docs/how-to-guides/configuration/docker-application).
-
-### Extended Python images
-
-These images include the core Python API (`deephaven-core`) plus the listed libraries. They do not include the plugins bundled in `ghcr.io/deephaven/server`, such as `deephaven.ui`, Deephaven Express (`deephaven-plugin-plotly-express`), and Matplotlib.
-
-- `ghcr.io/deephaven/server-all-ai`: Deephaven's server-side API with NLTK, TensorFlow, PyTorch, and scikit-learn.
-- `ghcr.io/deephaven/server-nltk`: Deephaven's server-side API with NLTK.
-- `ghcr.io/deephaven/server-pytorch`: Deephaven's server-side API with PyTorch and TensorBoard.
-- `ghcr.io/deephaven/server-sklearn`: Deephaven's server-side API with scikit-learn.
-- `ghcr.io/deephaven/server-tensorflow`: Deephaven's server-side API with TensorFlow and TensorBoard.
-
 ## Related documentation
 
 - [Production application](../../getting-started/production-application.md)
 - [Configure the production application](./configure-production-application.md)
 - [Deephaven configuration files](./config-file.md)
 - [Build from source](../../getting-started/launch-build.md)
+- [Install guide for Docker](../../getting-started/docker-install.md)
+- [Update Deephaven](./updating-deephaven.md)
+- [`empty_table`](../../reference/table-operations/create/emptyTable.md)
+- [`update`](../../reference/table-operations/select/update.md)

@@ -2,19 +2,22 @@
 title: Enable anonymous authentication
 ---
 
-This guide shows how to enable anonymous authentication, which replaces [pre-shared key authentication](./auth-psk.md) for Deephaven. It covers Docker and pip-installed Deephaven. Anonymous authentication lets anyone who can reach a Deephaven instance connect to it.
+This guide shows how to enable anonymous authentication, which replaces [pre-shared key authentication](./auth-psk.md) for Deephaven. It covers Docker, pip, the production application, and builds from source. Anonymous authentication lets anyone who can reach a Deephaven instance connect to it.
 
 > [!WARNING]
 > Anonymous authentication provides no application security.
 
 ## Configuration
 
-To enable anonymous authentication, set the `AuthHandlers` JVM system property. Pass it as `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`. `AuthHandlers` is a comma-separated list of the authentication handler classes the server accepts. Its default is the pre-shared key handler.
+To enable anonymous authentication, set the `AuthHandlers` property to `io.deephaven.auth.AnonymousAuthenticationHandler`. Pass it as a JVM system property, `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`, or set it in the server's [configuration file](../configuration/config-file.md). `AuthHandlers` is a comma-separated list of the authentication handler classes the server accepts. Its default is the pre-shared key handler.
 
 Setting `AuthHandlers` to only the anonymous handler replaces pre-shared key authentication, so clients can connect without credentials. To accept both, list both handlers, separated by a comma. Follow the setup steps for your environment:
 
 - Docker: see [Docker Compose](#docker-compose).
 - pip: see [pip-installed Deephaven](#pip-installed-deephaven).
+- Production application: add the property to `START_OPTS` when you run the `start` script. See [Authentication](../../getting-started/production-application.md#authentication) in the production application guide.
+- Build from source: run `./gradlew server-jetty-app:run -Panonymous`. The `anonymous` Gradle property sets `AuthHandlers` to the anonymous handler.
+- Configuration file: instead of passing `-DAuthHandlers`, add `AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` to the server's [configuration file](../configuration/config-file.md).
 
 ## Docker Compose
 
@@ -56,6 +59,9 @@ The server logs a warning at startup that anonymous authentication is enabled. T
 
 - [Install guide for Docker](../../getting-started/docker-install.md)
 - [Install and run Deephaven with pip](../../getting-started/pip-install.md)
+- [Production application](../../getting-started/production-application.md)
+- [Build from source](../../getting-started/launch-build.md)
+- [Deephaven configuration files](../configuration/config-file.md)
 - [How to configure pre-shared key authentication](./auth-psk.md)
 - [How to configure the Docker application](../configuration/docker-application.md)
 - [Pydoc](/core/pydoc/code/deephaven_server.html#deephaven_server.Server)
