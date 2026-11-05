@@ -45,8 +45,7 @@ So a read walks three page table levels and then looks up its offset in the leaf
 indexed by child index occupies however few children it holds, with compressed references (the default for heaps under
 32 GB); without them, the references take twice as much. Row keys spread across levels are common: a regioned source
 numbers the rows of region `r` from `r << 43`, so an `update` of a partitioned table writes under one `Level0` child per
-region. So `Level0` and `Level1` hold their children in a window covering only the child indices in use, ranking them
-instead when they are too sparse for one, and `Level2` ranks its leaves until it holds many (below).
+region. So each level adapts how it holds its children to how many it has and how far apart they are (below).
 
 `Level0`, `Level1` and `Level2` are nested classes of each source, typed per type. Each level is held directly by its
 parent's array, and `Level0` by the source's `root` field, so a read follows one reference per level. `Level2` keeps
@@ -56,22 +55,29 @@ one leaf holds it in its own fields instead. A leaf is a full block, a compact l
 
 ### Holding children
 
-A small result would spend more on arrays indexed by child index than on its values, so each level holds only what its
-children need.
+A small result would spend more on arrays indexed by child index than on its values, so each level adapts how it holds
+its children to how many it has and how far apart they are.
 
-`Level0` and `Level1` hold their children in a window: an array indexed by child index less `base`, the index of its
-first entry. A window may have at most 64 entries, or eight for each child it holds (`maxWindow`); a level whose
-children would span more ranks them instead. A ranked `Level0` keeps the indices of its children in a sorted `int[]`,
-searched without a data-dependent branch, since its 23-bit indices fit neither a 16-bit lane nor a bitmap of reasonable
-size. A ranked `Level1` finds a child's position with a `ChildPositions`. A ranked level returns to a window when its
-children become dense enough, and a full window of a `Level1` is the old array indexed by child index. A window of one
-entry also records its index (`onlyIndex`), so that finding the only child of a level is one comparison against a field
-that does not change, which the JIT can move out of a loop over one source.
+`Level0` and `Level1` hold their children in one of two forms, chosen by the span of the child indices they hold:
 
-`Level2` holds one leaf in its own fields (`onlyIndex`, `onlyBlock`, `onlyCompact`), with no arrays, so that reading it
-follows no reference past the level. It holds more in arrays of its own size, at positions from a `ChildPositions`, and
-past `DIRECT_THRESHOLD`, an eighth of the level (4,096 leaves), in arrays indexed by leaf index, which then hold at most
-eight entries per leaf.
+- a window, while the span is at most 64 entries, or eight for each child (`maxWindow`): an array indexed by child index
+  less `base`, the index of its first entry. A window of one entry also records its index (`onlyIndex`), so that finding
+  the only child of a level is one comparison against a field that does not change, which the JIT can move out of a loop
+  over one source. A full window of a `Level1` is an array over its entire sub-address space of 32,768 children.
+- ranked, when the span is wider: the children are held densely, in child index order. `Level0` keeps their indices in a
+  sorted `int[]`, searched without a data-dependent branch, since its 23-bit indices fit neither a 16-bit lane nor a
+  bitmap of reasonable size; `Level1` finds a child's position with a `ChildPositions`.
+
+A level moves between the forms as children are added: a window that would grow past its limit becomes ranked, and a
+ranked level whose children become dense enough becomes a window.
+
+`Level2` holds its leaves in one of three forms, chosen by how many it holds:
+
+- one leaf, in its own fields (`onlyIndex`, `onlyBlock`, `onlyCompact`), with no arrays, so that reading it follows no
+  reference past the level;
+- up to `DIRECT_THRESHOLD`, an eighth of the level (4,096 leaves), in arrays with an entry per leaf, at positions from a
+  `ChildPositions`;
+- more, in arrays indexed by leaf index, which then hold at most eight entries per leaf.
 
 `ChildPositions` follows the leaves' own tiers:
 

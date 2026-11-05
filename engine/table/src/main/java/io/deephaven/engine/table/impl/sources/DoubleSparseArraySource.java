@@ -58,13 +58,13 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * A leaf takes the next representation when a write would take it past its threshold, and never returns to a smaller
  * one.
  * <p>
- * The top and middle page table levels hold their children in a window: an array indexed by child index less the index
- * of its first entry, covering only the indices in use, while it has at most eight entries for each child or 64 in
- * all. A level whose children are sparser ranks them instead: the top level by a sorted array of their indices, and
- * the middle level by positions ranked among the indices it holds, sorted indices for a few children and then a bitmap
- * with the number of indices before each word, following the leaves' own tiers. The bottom level ranks its leaves the
- * same way until it holds more than an eighth of them, when it indexes its arrays by leaf index, and holds a single
- * leaf in its own fields. A window of one entry and a bottom level of one leaf record the child's index, so that
+ * Each page table level adapts how it holds its children to how many it has and how far apart they are. The top and
+ * middle levels hold them in a window, an array indexed by child index less the index of its first entry, while the
+ * window has at most eight entries for each child or 64 in all, and rank them otherwise: the top level by a sorted
+ * array of their indices, and the middle level by positions ranked among the indices it holds, sorted indices for a few
+ * children and then a bitmap with the number of indices before each word, following the leaves' own tiers. The bottom
+ * level holds one leaf in its own fields, ranks up to an eighth of its leaves the same way, and indexes its arrays by
+ * leaf index when it holds more. A window of one entry and a bottom level of one leaf record the child's index, so that
  * finding the child is one comparison. Each level is held directly by its parent, or by the source for the top level,
  * so that a read follows one reference per level. A level's window or positions and its arrays are fixed but for
  * appending positions and setting children; any other change makes a new level, which replaces the old one in its
@@ -666,9 +666,10 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double>
 
     /**
      * The bottom page table level: its leaves. A leaf is either a full block or a compact leaf, kept in separate arrays
-     * so that reading a full block needs no test of the leaf's type. A level of up to {@link #DIRECT_THRESHOLD} leaves
-     * holds them densely, in leaf index order, at the positions its {@link ChildPositions} report; a level of more
-     * indexes its arrays by leaf index.
+     * so that reading a full block needs no test of the leaf's type. A level holds its leaves by how many it has: one
+     * leaf in its own fields, with no arrays, so that reading it follows no reference beyond the level; up to
+     * {@link #DIRECT_THRESHOLD} leaves densely, in leaf index order, at the positions its {@link ChildPositions}
+     * report; and more in arrays indexed by leaf index.
      * <p>
      * The positions and the arrays of a level are fixed, except that appending positions past the last one changes the
      * positions in place, once the arrays have room for them, and a leaf is set at its position. Anything else, such as
@@ -678,9 +679,6 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double>
      * <p>
      * Only one thread changes which leaves a level holds at a time; a parallel population sets only the leaves at
      * positions its preparation reserved, in arrays it allocated.
-     * <p>
-     * A level of one leaf holds it in its own fields, with no arrays, so that reading it follows no reference beyond
-     * the level. Adding a second leaf makes a new level, holding both in arrays.
      */
     private static final class Level2 {
         /**
