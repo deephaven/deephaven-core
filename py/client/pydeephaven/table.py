@@ -267,7 +267,7 @@ class Table(TableInterface["Table"], ServerObject):
             DHError
         """
         order_by = to_list(order_by)
-        order = SortDirection.DESCENDING
+        order = [SortDirection.DESCENDING] * len(order_by)
         return super().sort(order_by, order)
 
     def where(self, filters: str | list[str] | Filter | list[Filter]) -> Table:
@@ -852,7 +852,7 @@ class Table(TableInterface["Table"], ServerObject):
 
         Args:
             start (int): the first row position to include in the result
-            stop (int): the last row position to include in the result
+            stop (int): the row position to stop before, exclusive
 
         Returns:
             a new Table

@@ -52,6 +52,9 @@ class Query(TableInterface["Query"]):
         Raises:
             DHError
         """
+        # The first op is the NoneOp that holds the source table. It cannot be sent as a request on its own.
+        if len(self._ops) < 2:
+            raise DHError("the query has no table operations to execute.")
         return self.session.table_service.batch(self._ops)
 
     def drop_columns(self, cols: str | list[str]) -> Query:
@@ -556,3 +559,15 @@ class Query(TableInterface["Query"]):
             self
         """
         return super().where_not_in(filter_table, cols)
+
+    def slice(self, start: int, stop: int) -> Query:
+        """Adds a slice operation to the query.
+
+        Args:
+            start (int): the first row position to include in the result
+            stop (int): the row position to stop before, exclusive
+
+        Returns:
+            self
+        """
+        return super().slice(start, stop)

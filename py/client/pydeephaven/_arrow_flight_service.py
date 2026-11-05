@@ -25,8 +25,8 @@ class ArrowFlightService:
     def import_table(self, data: pa.Table) -> Table:
         """Uploads a pyarrow table into Deephaven via Flight do_put."""
         try:
-            if not isinstance(data, (pa.Table, pa.RecordBatch)):
-                raise DHError("source data must be either a pa table or RecordBatch.")
+            if not isinstance(data, pa.Table):
+                raise DHError("source data must be a pyarrow Table.")
             ticket = self.session.next_export_ticket_number()
             dh_fields = []
             for f in data.schema:

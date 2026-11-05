@@ -259,7 +259,7 @@ class Session:
         else:
             self._port = port
 
-        self._logpfx = f"pydh.Session {id(self)} {host}:port: "
+        self._logpfx = f"pydh.Session {id(self)} {self._host}:{self._port}"
         self._use_tls = use_tls
         self._tls_root_certs = tls_root_certs
         self._client_cert_chain = client_cert_chain
@@ -398,7 +398,7 @@ class Session:
         )  # ensure it doesn't change while doing multiple reads
         if not header_value_snap or not isinstance(header_value_snap, bytes):
             logger.warning(
-                f"{self._logpfx} internal invariant violated, _auth_header_value={header_value_snap}"
+                f"{self._logpfx}: internal invariant violated, _auth_header_value={header_value_snap}"
             )
             tuple_l = []
         else:
@@ -612,7 +612,7 @@ class Session:
             return True
         except Exception as ex:
             logger.warning(
-                f"{self._logpfx} Caught exception while refreshing auth token: {ex}."
+                f"{self._logpfx}: caught exception while refreshing auth token: {ex}."
             )
             return False
 

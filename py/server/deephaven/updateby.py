@@ -769,8 +769,7 @@ def delta(
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the delta operation on all the applicable
             columns.
-        delta_control (DeltaControl): defines how special cases should behave; when not provided, the default
-            DeltaControl.NULL_DOMINATES is used
+        delta_control (DeltaControl): defines how special cases should behave; defaults to NULL_DOMINATES
 
     Returns:
         an UpdateByOperation
