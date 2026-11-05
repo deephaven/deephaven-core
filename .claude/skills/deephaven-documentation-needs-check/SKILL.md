@@ -171,30 +171,61 @@ git tag --sort=v:refname | grep -E '^v<major>\.[0-9]+$'
 git cherry <release-tag> upstream/main $BASE
 ```
 
-Commits marked with `-` by `git cherry` have patch-equivalent counterparts on the release
-branch. **Before excluding them, verify the change is still effective in that release tag.**
-A release branch can contain a cherry-pick followed by its revert before the tag is cut, so
-a patch-id match does not prove the change actually shipped. Check that the files touched by
-the commit still reflect its changes at the tag (e.g., compare `git show <tag>:<file>` against
-the expected state). Only exclude the commit when the change is confirmed present in at least
-one released tag — otherwise it is still unreleased and needs triage.
+**Merge commits:** `git cherry` skips merge commits because they have no single patch-id. For
+first-parent merge commits (PRs merged with a merge commit rather than squash/rebase), generate
+a first-parent patch-id manually and compare it against release branch commits:
+
+```bash
+# Generate a first-parent patch-id for a merge commit
+git diff <sha>^1..<sha> | git patch-id --stable
+```
+
+Compare these against the first-parent patch-ids of commits on each release tag. A match means
+the PR's changes were cherry-picked (typically with `git cherry-pick -m 1`).
+
+Commits marked with `-` by `git cherry`, or merge commits with matching first-parent patch-ids,
+have patch-equivalent counterparts on the release branch. **Before excluding them, verify the
+change is still effective in that release tag.** A release branch can contain a cherry-pick
+followed by its revert before the tag is cut, so a patch-id match does not prove the change
+actually shipped. Check that the files touched by the commit still reflect its changes at the
+tag (e.g., compare `git show <tag>:<file>` against the expected state). Only exclude the commit
+when the change is confirmed present in at least one released tag — otherwise it is still
+unreleased and needs triage.
 
 ### Classify each commit as RC-confirmed or main-only
 
 For each remaining commit (after filtering out reverted, superseded, and already-shipped
-changes), determine whether it has been cherry-picked onto the RC branch using `git cherry`:
+changes), determine whether it is on the RC branch. There are two ways a commit can be on RC:
+
+**1. Inherited commits (already reachable from RC tip).** When the RC branch was created from
+main, it inherited all commits up to the branch point. These commits are already reachable from
+the RC tip and `git cherry` omits them entirely (neither `+` nor `-`). Check ancestry first:
+
+```bash
+# Check if a commit is an ancestor of the RC branch (inherited, not cherry-picked)
+git merge-base --is-ancestor <sha> upstream/rc/vNN.x
+```
+
+Commits that are ancestors of the RC tip are RC-confirmed without needing patch-id matching.
+
+**2. Cherry-picked commits.** For commits not inherited, use `git cherry` plus merge-commit
+matching (same approach as the release filter):
 
 ```bash
 git cherry upstream/rc/vNN.x upstream/main $BASE
 ```
 
-Commits marked `-` have patch-equivalent counterparts on the RC branch:
+Commits marked `-` have patch-equivalent counterparts on the RC branch. For merge commits
+skipped by `git cherry`, compare first-parent patch-ids as described above.
 
-- **RC-confirmed**: the commit's first-parent diff matches a commit on the RC branch **and**
-  the change is still effective at the RC tip (see verification below). This change is confirmed
-  for the next release.
-- **Main-only**: the commit's first-parent diff has no match on the RC branch. This change is
-  on `upstream/main` but has not been picked for the next release and may be held back.
+Classify each commit:
+
+- **RC-confirmed**: the commit is an ancestor of the RC tip, or has a patch-equivalent
+  counterpart on the RC branch, **and** the change is still effective at the RC tip (see
+  verification below). This change is confirmed for the next release.
+- **Main-only**: the commit is not reachable from the RC branch and has no patch-equivalent
+  match. This change is on `upstream/main` but has not been picked for the next release and may
+  be held back.
 
 **Verify the change is still effective at the RC tip.** A patch-id match alone does not prove
 the feature will ship — if the cherry-pick was subsequently reverted on the RC branch, the
