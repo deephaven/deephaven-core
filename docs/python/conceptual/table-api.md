@@ -15,7 +15,7 @@ This guide explains the core concepts behind the API, helping you write more eff
 > [!NOTE]
 > New to Deephaven? Start with [How Deephaven works: A mental model](./deephaven-mental-model.md) for the conceptual foundation this guide builds on. This page assumes you already know why tables don't copy data and why formulas run in the engine. It focuses on the API itself and the tradeoffs you'll actually choose between.
 
-For a quick-reference index of available operations and where to find full guides for each, see [Table operations overview](./table-operations-overview.md).
+For a quick-reference index of available operations and the reference page for each, see [Table operations overview](./table-operations-overview.md).
 
 ## Tables are immutable
 

@@ -1,0 +1,361 @@
+/*
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+ */
+#include <algorithm>
+#include <chrono>
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <random>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+#include "deephaven/third_party/catch.hpp"
+#include "deephaven/third_party/fmt/core.h"
+#include "deephaven/tests/test_util.h"
+#include "deephaven/client/client.h"
+#include "deephaven/dhcore/chunk/chunk.h"
+#include "deephaven/dhcore/clienttable/client_table.h"
+#include "deephaven/dhcore/ticking/ticking.h"
+
+using deephaven::dhcore::chunk::DoubleChunk;
+using deephaven::dhcore::chunk::Int64Chunk;
+using deephaven::dhcore::clienttable::ClientTable;
+using deephaven::dhcore::ticking::TickingCallback;
+using deephaven::dhcore::ticking::TickingUpdate;
+
+// Subscribes to tables whose initial snapshot the server delivers in several rounds, with a delta
+// arriving in between, and checks that the whole table arrives intact. These run against a real
+// server the message shapes that the BarrageProcessor tests feed in by hand. Each table comes from
+// the bug report that led to the fix.
+//
+// Whether the delta lands between rounds is not left to timing. The part of a table that changes
+// is an input table, empty when the subscription opens, and the test waits for the first round to
+// arrive before adding rows to it with a second script, so that the change is applied while the
+// rest of the snapshot is still being delivered. The helper hands back what the subscription
+// reported for every update from that point on, and each test asserts that its delta was observed,
+// so that it cannot pass without the scenario it describes. The one table that ticks on its own
+// does so on every update graph cycle for as long as the subscription lives.
+//
+// Two things about the tables are deliberate. Each has a column computed by a Python function that
+// sleeps for a few microseconds per row, so that every snapshot round costs the server real time.
+// The server sizes a round to about a quarter of an update graph cycle, so the rounds come out
+// small and the snapshot as a whole spans several cycles, which leaves the delta room to land
+// between rounds. Without that, a table of this size arrives in two back-to-back rounds. Secondly,
+// a column whose value is the same in every row at the moment the table is fetched is advertised
+// by the server as run-end encoded, which this client cannot decode on the subscription path. So
+// the tables avoid constant columns, and in particular the joined table below is seeded with a row
+// so that the joined column is not null everywhere until the first tick.
+namespace deephaven::client::tests {
+namespace {
+constexpr int64_t kBaseRows = 20'000;
+
+// The Python preamble shared by every table: the function that makes a row expensive to snapshot.
+const char *kExpensive = R"xxx(
+from deephaven import empty_table, time_table, merge, input_table
+import time
+
+def expensive(i):
+    time.sleep(0.00002)
+    return i * 3
+)xxx";
+
+// A suffix that makes a test's server-side names its own. The server's script session is shared by
+// every console, so two clients running this test against one server at the same time would
+// otherwise rebind each other's tables between a test's first script and its second.
+std::string RunId() {
+  std::random_device device;
+  return fmt::format("{:08x}", device());
+}
+
+// What the subscription reported for one update: the row count before it, and the sizes of the
+// removed, added and modified sets it carried, the last being the largest over the columns.
+struct Reported {
+  size_t rows_before = 0;
+  size_t removed = 0;
+  size_t added = 0;
+  size_t modified = 0;
+};
+
+// The table as of the completing update, and what the subscription reported for every update from
+// the delta on.
+struct Delivery {
+  std::shared_ptr<ClientTable> table;
+  std::vector<Reported> since_delta;
+};
+
+// Logs each update and completes once 'is_complete' accepts the table, or on error. Keeps the
+// table as of the completing update for the caller to inspect, and what every update reported, so
+// that the caller can look at the ones that followed the delta.
+class SnapshotObserver final : public TickingCallback {
+public:
+  explicit SnapshotObserver(std::function<bool(const ClientTable &)> is_complete) :
+      is_complete_(std::move(is_complete)) {}
+
+  void OnTick(TickingUpdate update) final {
+    std::unique_lock guard(mutex_);
+    if (last_ != nullptr) {
+      // The table keeps ticking after the snapshot; only the completing update is of interest.
+      return;
+    }
+    auto now = std::chrono::steady_clock::now();
+    auto since_start = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_).count();
+    ++update_count_;
+    const auto &current = update.Current();
+    // An update that modifies nothing carries no per-column sets at all.
+    size_t modified = 0;
+    for (const auto &rows : update.ModifiedRows()) {
+      modified = std::max(modified, rows->Size());
+    }
+    Reported reported{update.Prev()->NumRows(), update.RemovedRows()->Size(),
+        update.AddedRows()->Size(), modified};
+    reported_.push_back(reported);
+    if (update_count_ <= kMaxLoggedUpdates) {
+      fmt::print(std::cerr,
+          "  #{:<3} t={:>7}ms  added={:>8}  removed={:>7}  modified={:>7}  rows={:>9}\n",
+          update_count_, since_start, reported.added, reported.removed, reported.modified,
+          current->NumRows());
+    }
+    peak_row_count_ = std::max(peak_row_count_, current->NumRows());
+    if (is_complete_(*current)) {
+      last_ = current;
+    }
+    cond_var_.notify_all();
+  }
+
+  void OnFailure(std::exception_ptr ep) final {
+    std::unique_lock guard(mutex_);
+    exception_ptr_ = std::move(ep);
+    cond_var_.notify_all();
+  }
+
+  // Waits for the first update to arrive; rethrows a subscription failure that arrived instead.
+  void WaitForFirstUpdate(std::chrono::seconds timeout) {
+    std::unique_lock guard(mutex_);
+    auto deadline = std::chrono::steady_clock::now() + timeout;
+    while (update_count_ == 0 && exception_ptr_ == nullptr) {
+      if (cond_var_.wait_until(guard, deadline) == std::cv_status::timeout) {
+        throw std::runtime_error("Timed out waiting for the first update");
+      }
+    }
+    if (exception_ptr_ != nullptr) {
+      std::rethrow_exception(exception_ptr_);
+    }
+  }
+
+  // Marks the point from which updates count as following the delta.
+  void MarkDelta() {
+    std::unique_lock guard(mutex_);
+    delta_mark_ = reported_.size();
+  }
+
+  // Waits for the completing update and returns its table along with what every update from the
+  // delta mark on reported; rethrows a subscription failure.
+  Delivery WaitForCompletion(std::chrono::seconds timeout) {
+    std::unique_lock guard(mutex_);
+    auto deadline = std::chrono::steady_clock::now() + timeout;
+    while (last_ == nullptr && exception_ptr_ == nullptr) {
+      if (cond_var_.wait_until(guard, deadline) == std::cv_status::timeout) {
+        throw std::runtime_error(fmt::format(
+            "Timed out after {} updates, having held at most {} rows", update_count_, peak_row_count_));
+      }
+    }
+    if (exception_ptr_ != nullptr) {
+      std::rethrow_exception(exception_ptr_);
+    }
+    std::vector<Reported> since_delta(reported_.begin() + static_cast<std::ptrdiff_t>(delta_mark_),
+        reported_.end());
+    return {last_, std::move(since_delta)};
+  }
+
+private:
+  static constexpr int kMaxLoggedUpdates = 40;
+
+  std::function<bool(const ClientTable &)> is_complete_;
+  std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
+  std::mutex mutex_;
+  std::condition_variable cond_var_;
+  int update_count_ = 0;
+  size_t peak_row_count_ = 0;
+  std::vector<Reported> reported_;
+  size_t delta_mark_ = 0;
+  std::shared_ptr<ClientTable> last_;
+  std::exception_ptr exception_ptr_;
+};
+
+// Defines the table, subscribes, and once the first snapshot round has arrived runs 'delta', the
+// script that changes the table while the rest of the snapshot is still being delivered. Then
+// waits for the first update that 'is_complete' accepts and returns its table, along with what the
+// subscription reported for each update from the delta on (for a table that ticks on its own, each
+// update after the first), so that the caller can check that the delta was observed.
+Delivery SubscribeUntil(const std::string &script, const std::string &table_name,
+    const std::optional<std::string> &delta, std::function<bool(const ClientTable &)> is_complete) {
+  auto client = TableMakerForTests::CreateClient();
+  auto thm = client.GetManager();
+  thm.RunScript(script);
+  auto table = thm.FetchTable(table_name);
+  fmt::print(std::cerr, "{}: {} rows at open\n", table_name, table.NumRows());
+
+  auto observer = std::make_shared<SnapshotObserver>(std::move(is_complete));
+  auto cookie = table.Subscribe(observer);
+  const auto timeout = std::chrono::seconds(120);
+  observer->WaitForFirstUpdate(timeout);
+  if (delta.has_value()) {
+    // Mark before the script runs so that none of its updates precedes the mark.
+    observer->MarkDelta();
+    thm.RunScript(*delta);
+  }
+  auto result = observer->WaitForCompletion(timeout);
+  table.Unsubscribe(std::move(cookie));
+  return result;
+}
+
+std::vector<int64_t> Longs(const ClientTable &table, size_t column_index) {
+  auto rows = table.GetRowSequence();
+  auto chunk = Int64Chunk::Create(rows->Size());
+  table.GetColumn(column_index)->FillChunk(*rows, &chunk, nullptr);
+  return {chunk.data(), chunk.data() + chunk.Size()};
+}
+
+std::vector<double> Doubles(const ClientTable &table, size_t column_index) {
+  auto rows = table.GetRowSequence();
+  auto chunk = DoubleChunk::Create(rows->Size());
+  table.GetColumn(column_index)->FillChunk(*rows, &chunk, nullptr);
+  return {chunk.data(), chunk.data() + chunk.Size()};
+}
+
+// Returns a description of the first row for which 'check' returns a complaint, or "" if none.
+std::string FirstBadRow(size_t num_rows,
+    const std::function<std::optional<std::string>(size_t)> &check) {
+  for (size_t i = 0; i != num_rows; ++i) {
+    auto complaint = check(i);
+    if (complaint.has_value()) {
+      return fmt::format("row {}: {}", i, *complaint);
+    }
+  }
+  return "";
+}
+}  // namespace
+
+// A table that gains rows at its end while its snapshot is being delivered. The add phase used to
+// be sized from added_rows of the first round, so the rounds that also carried the rows appended
+// meanwhile had more data than it was willing to take: "There is excess data in the chunk".
+TEST_CASE("Growing subscription: large appending table is fully delivered", "[growing]") {
+  constexpr int64_t kAppendedRows = 2'000;
+  auto run = RunId();
+  auto script = std::string(kExpensive) + fmt::format(R"xxx(
+_base = empty_table({0}).update(["K = ii", "Price = ii * 1.5"]).update_view(["Slow = (long) expensive(K)"])
+# The rows appended once the snapshot is under way; empty until then, with the columns of the rows
+# to come.
+appended_{1} = input_table(init_table=empty_table(0).update(["K = ii", "Price = ii * 2.5"]))
+growing_appends_{1} = merge([_base, appended_{1}.update_view(["Slow = (long) expensive(K)"])])
+)xxx", kBaseRows, run);
+  auto delta = fmt::format(R"xxx(
+appended_{1}.add(empty_table({0}).update(["K = 9_000_000 + ii", "Price = ii * 2.5"]))
+)xxx", kAppendedRows, run);
+  auto delivery = SubscribeUntil(script, fmt::format("growing_appends_{}", run), delta,
+      [](const ClientTable &t) {
+        return t.NumRows() == static_cast<size_t>(kBaseRows + kAppendedRows);
+      });
+
+  // The appended rows lie beyond the region the snapshot has delivered, so their delta reaches the
+  // client with no data for them: an update that adds nothing. The rows themselves follow in a
+  // later round.
+  const auto &since = delivery.since_delta;
+  INFO("the delta appending rows beyond the delivered region should arrive as an update that adds "
+      "nothing");
+  CHECK(std::any_of(since.begin(), since.end(),
+      [](const Reported &r) { return r.added == 0 && r.removed == 0; }));
+
+  // The base rows come first, with keys 0, 1, 2, ...; the appended rows follow, with keys from
+  // 9,000,000 up. Every row's other columns are functions of its key, so a misaligned row shows up
+  // as a wrong value.
+  const auto &table = *delivery.table;
+  auto keys = Longs(table, 0);
+  auto prices = Doubles(table, 1);
+  auto slow = Longs(table, 2);
+  CHECK(FirstBadRow(keys.size(), [&](size_t i) -> std::optional<std::string> {
+    auto index = static_cast<int64_t>(i);
+    auto expected_key = index < kBaseRows ? index : 9'000'000 + (index - kBaseRows);
+    if (keys[i] != expected_key) {
+      return fmt::format("K is {}, expected {}", keys[i], expected_key);
+    }
+    auto expected_price = index < kBaseRows ? keys[i] * 1.5 : (keys[i] - 9'000'000) * 2.5;
+    if (prices[i] != expected_price) {
+      return fmt::format("Price is {}, expected {}", prices[i], expected_price);
+    }
+    if (slow[i] != keys[i] * 3) {
+      return fmt::format("Slow is {}, expected {}", slow[i], keys[i] * 3);
+    }
+    return {};
+  }) == "");
+}
+
+// A wide table whose every row is modified on every cycle. The add phase, still waiting for rows
+// the first round had announced but not delivered, used to consume the next message's modify data,
+// which legitimately has data for one column and none for the others: "Chunks have inconsistent
+// sizes".
+TEST_CASE("Growing subscription: wide modified table is fully delivered", "[growing]") {
+  auto run = RunId();
+  auto script = std::string(kExpensive) + fmt::format(R"xxx(
+# A one-row table that ticks, joined to every row of the big table so that every row is modified
+# each cycle.
+_seed = empty_table(1).update(["Beat = (long) 0"])
+_beat = merge([_seed, time_table("PT0.002S").update(["Beat = ii"]).drop_columns("Timestamp")]).last_by()
+_cols = ["C%d = ii * %d" % (i, i + 1) for i in range(30)]
+growing_modifies_{1} = (empty_table({0}).update(["K = ii"] + _cols)
+    .update_view(["Slow = (long) expensive(K)"])
+    .natural_join(_beat, on=[], joins=["Beat"])
+    .update_view(["BeatK = Beat * 1_000_000 + K"])
+    .drop_columns("Beat"))
+)xxx", kBaseRows, run);
+  auto delivery = SubscribeUntil(script, fmt::format("growing_modifies_{}", run), std::nullopt,
+      [](const ClientTable &t) { return t.NumRows() == static_cast<size_t>(kBaseRows); });
+
+  // The beat ticks on every cycle, so the deltas between rounds modify the rows delivered so far.
+  const auto &since = delivery.since_delta;
+  INFO("the rows delivered so far should have been modified between rounds");
+  CHECK(std::any_of(since.begin(), since.end(),
+      [](const Reported &r) { return r.modified != 0; }));
+
+  // Columns are K, C0..C29, Slow, BeatK. BeatK combines the beat the row was last modified with and
+  // the row's own key; every row has seen the same beat, because each round carries the beat as of
+  // that round and the deltas between rounds bring the earlier rows up to date.
+  const auto &table = *delivery.table;
+  std::vector<std::vector<int64_t>> columns;
+  for (size_t c = 0; c != 33; ++c) {
+    columns.push_back(Longs(table, c));
+  }
+  const auto &keys = columns[0];
+  const auto &slow = columns[31];
+  const auto &beat_k = columns[32];
+  auto beat = beat_k[0] / 1'000'000;
+  CHECK(FirstBadRow(keys.size(), [&](size_t i) -> std::optional<std::string> {
+    auto index = static_cast<int64_t>(i);
+    if (keys[i] != index) {
+      return fmt::format("K is {}, expected {}", keys[i], index);
+    }
+    for (size_t c = 0; c != 30; ++c) {
+      auto expected = keys[i] * static_cast<int64_t>(c + 1);
+      if (columns[c + 1][i] != expected) {
+        return fmt::format("C{} is {}, expected {}", c, columns[c + 1][i], expected);
+      }
+    }
+    if (slow[i] != keys[i] * 3) {
+      return fmt::format("Slow is {}, expected {}", slow[i], keys[i] * 3);
+    }
+    auto expected_beat_k = beat * 1'000'000 + keys[i];
+    if (beat_k[i] != expected_beat_k) {
+      return fmt::format("BeatK is {}, expected {}", beat_k[i], expected_beat_k);
+    }
+    return {};
+  }) == "");
+}
+}  // namespace deephaven::client::tests
