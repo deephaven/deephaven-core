@@ -142,15 +142,10 @@ public class EncodingTest {
     reedict_ticking_table = _ticking_src.with_attributes(
         {'BarrageSchema': _encoded_schema(_ticking_src, 'Sym', _to_ree_dict_field)})
 
-    # The same dictionary-encoded data once more, but empty until the client says to start. Its rows
-    # come from a DynamicTableWriter that is not written until the returned start function is called,
-    # so a subscription made before that call gets an empty initial snapshot by construction -- no
-    # matter how slow the machine is -- and with it an empty isDelta=false base dictionary; every
-    # value then arrives by isDelta=true delta. That is the sequence
-    # FlightIpcReader.NormalizeEmptyDictionaries exists for, which the tables above reach only by
-    # timing luck. Once started, a background thread appends num_rows rows at the tick interval of
-    # the tables above. Each caller binds the result to its own names, since concurrently running
-    # tests (and target frameworks) share the server's global scope.
+    # The same dictionary-encoded data, but empty until start() is called, so a subscription's initial
+    # snapshot carries an empty base dictionary and every value arrives by delta -- the sequence
+    # FlightIpcReader.NormalizeEmptyDictionaries handles. Callers bind the result to unique names,
+    # as concurrent tests share the global scope.
     def _make_dict_empty_start_ticking_table(num_rows):
         writer = DynamicTableWriter({'Tick': dtypes.bool_})
         src = writer.table.update(_ticking_columns).drop_columns(['Tick'])
