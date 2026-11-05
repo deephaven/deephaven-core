@@ -115,12 +115,15 @@ def to_pandas(
     Args:
         table (Table): the source table
         cols (Optional[list[str]]): the source column names, default is None which means include all columns
-        dtype_backend (Literal[None, "pyarrow", "numpy_nullable"]): which dtype_backend to use, e.g. whether a DataFrame should have NumPy arrays,
-            nullable dtypes are used for all dtypes that have a nullable implementation when "numpy_nullable" is set,
-            pyarrow is used for all dtypes if "pyarrow" is set. None means Numpy backed DataFrames with no nullable
-            dtypes. Both "numpy_nullable" and "pyarrow" automatically convert Deephaven nulls to Pandas NA and enable
-            Pandas extension types.  Extension types are needed to support types beyond NumPy's type system.  Extension
-            types support operations such as properly mapping Java Strings to Python strings. default is "numpy_nullable".
+        dtype_backend (Literal[None, "pyarrow", "numpy_nullable"]): which dtype backend to use. "numpy_nullable" and
+            "pyarrow" convert the table through pyarrow. "numpy_nullable" uses pandas nullable dtypes for the numeric,
+            boolean, and string types that have one. "pyarrow" uses pd.ArrowDtype for numeric, boolean, string, and
+            timestamp types, and requires pandas 2.0.0 or later. Other types use pyarrow's default conversion.
+            Deephaven nulls become pd.NA in the columns that use these dtypes. Columns that use pyarrow's default
+            conversion get its missing-value marker instead, such as NaT for timestamp columns with "numpy_nullable".
+            None reads the column data into NumPy-backed Series; when conv_null is
+            True, boolean, char, and numeric columns then use pandas nullable dtypes so that Deephaven nulls become
+            pd.NA. Default is "numpy_nullable".
         conv_null (bool): when dtype_backend is set to None, whether to check for Deephaven nulls in the data and
             automatically replace them with pd.NA. default is True.
 
@@ -237,6 +240,14 @@ def to_table(
     df: pd.DataFrame, cols: list[str] | None = None, infer_objects: bool = True
 ) -> Table:
     """Creates a new table from a pandas DataFrame.
+
+    Column names are converted in one of two ways. With pandas 2.0.0 or later, when a selected column has a
+    pd.ArrowDtype, the table is created through pyarrow, which removes characters that aren't allowed in column
+    names: "Shades.1" becomes "Shades1". Otherwise, including when the only pyarrow-backed columns are
+    pd.StringDtype("pyarrow") columns, or if that conversion fails, each run of characters other than letters,
+    digits, and underscores becomes a single underscore, and such characters at the start or end of a name are
+    removed: "Shades.1" becomes "Shades_1". This second conversion changes nothing else, so a name such as "123" or
+    the reserved word "in" is still rejected.
 
     Args:
         df (DataFrame): the pandas DataFrame instance
