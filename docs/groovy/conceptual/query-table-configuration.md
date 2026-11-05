@@ -10,46 +10,46 @@ This guide discusses how to control various [`QueryTable`](https://docs.deephave
 
 The [`QueryTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) has the following user-configurable properties:
 
-| Category                                                            | Property                                                 | Default                                         |
-| ------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------- |
-| [Memoization](#memoization)                                         | `QueryTable.memoizeResults`                              | true                                            |
-| [Memoization](#memoization)                                         | `QueryTable.redirectUpdate`                              | false                                           |
-| [Memoization](#memoization)                                         | `QueryTable.redirectSelect`                              | false                                           |
-| [Memoization](#memoization)                                         | `QueryTable.maximumStaticSelectMemoryOverhead`           | 1.1                                             |
-| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForWhere`                        | true                                            |
-| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForAggregation`                  | true                                            |
-| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForJoins`                        | true                                            |
-| [DataIndex](#dataindex)                                             | `QueryTable.dataIndexForWhereThreshold`                  | 0.0625                                          |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDataIndex`               | false                                           |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false                                           |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownMergedTables`            | false                                           |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDictionary`              | false                                           |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownSortedColumn`            | false                                           |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.dictionaryForWhereThreshold`                 | 0.25                                            |
-| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false                                           |
-| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`                                       |
-| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1                                              |
-| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.forceParallelWhere` (test-focused)           | false                                           |
-| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true                                            |
-| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22`                                      |
-| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false                                           |
-| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSort`                                | true                                            |
-| [Parallel sorting](#parallel-sorting)                               | `QueryTable.minimumParallelSortRows`                     | `1L << 20`                                      |
-| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSortSegmentSize`                     | `1L << 18`                                      |
-| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true                                            |
-| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20`                                      |
-| [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10                                              |
-| [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024                                            |
-| [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024                                            |
-| [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.maximumCapacity.*`                       | unlimited                                       |
-| [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.maximumCapacity.*`                 | unlimited                                       |
-| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.windowMillis`                              | 1000                                            |
-| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.maximumWindowMillis`                       | 60000                                           |
-| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.windowMargin`                              | 1.5                                             |
-| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.shrinkFraction`                            | 0.1                                             |
-| [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | true                                            |
-| [Stateless select by default](#stateless-by-default)                | `QueryTable.statelessSelectByDefault`                    | true                                            |
-| [Stateless select by default](#stateless-by-default)                | `QueryTable.serialSelectImplicitBarriers`                | false                                           |
+| Category                                                            | Property                                                 | Default    |
+| ------------------------------------------------------------------- | -------------------------------------------------------- | ---------- |
+| [Memoization](#memoization)                                         | `QueryTable.memoizeResults`                              | true       |
+| [Memoization](#memoization)                                         | `QueryTable.redirectUpdate`                              | false      |
+| [Memoization](#memoization)                                         | `QueryTable.redirectSelect`                              | false      |
+| [Memoization](#memoization)                                         | `QueryTable.maximumStaticSelectMemoryOverhead`           | 1.1        |
+| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForWhere`                        | true       |
+| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForAggregation`                  | true       |
+| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForJoins`                        | true       |
+| [DataIndex](#dataindex)                                             | `QueryTable.dataIndexForWhereThreshold`                  | 0.0625     |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDataIndex`               | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownMergedTables`            | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDictionary`              | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownSortedColumn`            | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.dictionaryForWhereThreshold`                 | 0.25       |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false      |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`  |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1         |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.forceParallelWhere` (test-focused)           | false      |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true       |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22` |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSort`                                | true       |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.minimumParallelSortRows`                     | `1L << 20` |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSortSegmentSize`                     | `1L << 18` |
+| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
+| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
+| [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.maximumCapacity.*`                       | unlimited  |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.maximumCapacity.*`                 | unlimited  |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.windowMillis`                              | 1000       |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.maximumWindowMillis`                       | 60000      |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.windowMargin`                              | 1.5        |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.shrinkFraction`                            | 0.1        |
+| [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | true       |
+| [Stateless select by default](#stateless-by-default)                | `QueryTable.statelessSelectByDefault`                    | true       |
+| [Stateless select by default](#stateless-by-default)                | `QueryTable.serialSelectImplicitBarriers`                | false      |
 
 Each property is described below, roughly categorized by similarity.
 
