@@ -79,7 +79,12 @@ public abstract class ChildPositions {
     /**
      * Merge {@code added[0, count)}, ascending and none of them held, among {@code held}, ascending.
      *
-     * @param movedTo receives, for each index of {@code held}, its position among the merged indices
+     * @param held the child indices already held, ascending
+     * @param added the child indices to add, ascending, none of them in {@code held}; only the first {@code count} are
+     *        read
+     * @param count the number of indices of {@code added} to merge
+     * @param movedTo receives, for each index of {@code held}, its position among the merged indices; at least
+     *        {@code held.length} long
      * @return the merged indices, ascending
      */
     public static int[] merge(final int[] held, final int[] added, final int count, final int[] movedTo) {
@@ -100,8 +105,12 @@ public abstract class ChildPositions {
     /**
      * Find the indices of {@code held}, ascending, that are not among {@code removed[0, count)}, ascending.
      *
-     * @param kept receives the indices kept, ascending
-     * @param keptFrom receives, for each index kept, its position in {@code held}
+     * @param held the child indices held, ascending
+     * @param removed the child indices to remove, ascending; only the first {@code count} are read, and an index not in
+     *        {@code held} is ignored
+     * @param count the number of indices of {@code removed} to remove
+     * @param kept receives the indices kept, ascending; at least {@code held.length} long
+     * @param keptFrom receives, for each index kept, its position in {@code held}; at least {@code held.length} long
      * @return the number of indices kept
      */
     public static int keep(
@@ -200,6 +209,13 @@ public abstract class ChildPositions {
         }
 
         /**
+         * Mark the lanes of {@code word} equal to their lanes of {@code target}. Subtracting one from each lane of the
+         * difference sets the guard bit of a lane that is zero, and borrows from the lane above it, so a lane above an
+         * equal lane may be marked too. Below the lowest equal lane nothing borrows, so the marks are exact there: the
+         * lowest mark is an equal lane, and there is no mark when no lane is equal. The indices are distinct, so at
+         * most one lane is equal, and the lookups need only the lowest mark; a marking exact in every lane would cost
+         * more operations for nothing they read.
+         *
          * @return the guard bit of each lane of {@code word} equal to its lane of {@code target}, and possibly of lanes
          *         above an equal lane
          */
@@ -222,12 +238,32 @@ public abstract class ChildPositions {
         }
 
         /**
+         * Look up {@code index} in all four words at once. Position {@code p} is lane {@code p & 3} of word
+         * {@code p >>> 2}, so a position is {@code 4 * word + lane}.
+         * <p>
+         * {@link #equalLanes(long, long)} marks lane {@code l} of a word at its guard bit, {@code 16 * l + 15}.
+         * Shifting the marks of word {@code w} right by {@code 15 - 4 * w} moves the mark of lane {@code l} to bit
+         * {@code 16 * l + 4 * w}:
+         *
+         * <pre>
+         * word  shift  bits of the marks of lanes 0, 1, 2, 3
+         * 0     15     0, 16, 32, 48
+         * 1     11     4, 20, 36, 52
+         * 2      7     8, 24, 40, 56
+         * 3      3     12, 28, 44, 60
+         * </pre>
+         *
+         * The words' marks land at different bits modulo 16, so one OR combines them without overlap, and the bit of a
+         * mark holds both its lane, {@code bit >>> 4}, and four times its word, {@code bit & 0xC}. Its position,
+         * {@code 4 * word + lane}, is therefore {@code (bit & 0xC) | (bit >>> 4)}.
+         * <p>
+         * The indices are distinct, so at most one word has an equal lane, and the only other marks are of lanes above
+         * it in the same word, which land at higher bits. The lowest set bit is therefore the equal lane.
+         *
          * @return the position of {@code index}, or -1 if it is not held
          */
         private int findInWords(final int index) {
             final long target = index * LANE_ONES;
-            // lane l of word w lands on bit 16 * l + 4 * w; within a word, only lanes above an equal lane can be
-            // falsely marked, so the lowest bit is an equal lane
             final long equal = equalLanes(word0, target) >>> 15 | equalLanes(word1, target) >>> 11
                     | equalLanes(word2, target) >>> 7 | equalLanes(word3, target) >>> 3;
             if (equal == 0) {
