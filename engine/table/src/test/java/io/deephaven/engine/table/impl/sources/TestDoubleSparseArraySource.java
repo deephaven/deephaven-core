@@ -25,8 +25,8 @@ import static org.junit.Assert.*;
 public class TestDoubleSparseArraySource extends AbstractDoubleColumnSourceTest {
     @NotNull
     @Override
-    DoubleAdaptiveSparseArraySource makeTestSource() {
-        return new DoubleAdaptiveSparseArraySource();
+    DoubleSparseArraySource makeTestSource() {
+        return new DoubleSparseArraySource();
     }
 
     @Test
@@ -35,26 +35,32 @@ public class TestDoubleSparseArraySource extends AbstractDoubleColumnSourceTest 
         final int arraySize = 100;
         final int rangeStart = 20;
         final int rangeEnd = 80;
-        final DoubleAdaptiveSparseArraySource source = makeTestSource();
+        final DoubleSparseArraySource source = makeTestSource();
         source.ensureCapacity(arraySize);
 
         final double[] data = ArrayGenerator.randomDoubles(rng, arraySize);
         for (int ii = 0; ii < data.length; ++ii) {
             source.set(ii, data[ii]);
         }
+        // super hack
+        final double[] peekedBlock = source.ensureBlock(0, 0, 0);
+
         try (RowSet srcKeys = RowSetFactory.fromRange(rangeStart, rangeEnd)) {
             try (RowSet destKeys = RowSetFactory.fromRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (ChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
-                        final Chunk chunk = source.getChunk(srcContext, srcKeys);
-                        // a chunk that aliases the source's data must be refused, and any other must be written intact
-                        try {
-                            source.fillFromChunk(destContext, chunk, destKeys);
-                        } catch (UnsupportedOperationException uoe) {
-                            return;
-                        }
-                        for (int ii = rangeStart; ii <= rangeEnd; ++ii) {
-                            assertEquals(data[ii], source.getDouble(ii + 1));
+                        Chunk chunk = source.getChunk(srcContext, srcKeys);
+                        if (chunk.isAlias(peekedBlock)) {
+                            // If the ArraySource gives out aliases of its blocks, then it should throw when we try to
+                            // fill from that aliased chunk
+                            boolean testFailed;
+                            try {
+                                source.fillFromChunk(destContext, chunk, destKeys);
+                                testFailed = true;
+                            } catch (UnsupportedOperationException uoe) {
+                                testFailed = false;
+                            }
+                            assertFalse(testFailed);
                         }
                     }
                 }

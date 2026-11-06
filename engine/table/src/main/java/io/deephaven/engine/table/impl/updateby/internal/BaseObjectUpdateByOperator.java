@@ -204,7 +204,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
         } else {
             maybeInnerSource = null;
             // region create-sparse
-            outputSource = new ObjectAdaptiveSparseArraySource<>(colType);
+            outputSource = SparseArrayColumnSource.getSparseMemoryColumnSource(colType);
             // endregion create-sparse
         }
     }
@@ -237,7 +237,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((ObjectAdaptiveSparseArraySource) outputSource).shift(subRowSetToShift, delta);
+        ((SparseArrayColumnSource<?>) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 

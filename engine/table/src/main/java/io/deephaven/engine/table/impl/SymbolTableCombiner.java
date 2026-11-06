@@ -12,7 +12,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
-import io.deephaven.engine.table.impl.sources.IntegerAdaptiveSparseArraySource;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
@@ -36,14 +37,14 @@ class SymbolTableCombiner {
         hasher = KeyIdHasherTypedBase.make(tableKeySources, tableSize, MAXIMUM_LOAD_FACTOR);
     }
 
-    void addSymbols(final Table symbolTable, IntegerAdaptiveSparseArraySource symbolMapper) {
+    void addSymbols(final Table symbolTable, WritableColumnSource<Integer> symbolMapper) {
         if (symbolTable.isEmpty()) {
             return;
         }
         addSymbols(symbolTable, symbolTable.getRowSet(), symbolMapper);
     }
 
-    void addSymbols(final Table symbolTable, RowSet rowSet, IntegerAdaptiveSparseArraySource symbolMapper) {
+    void addSymbols(final Table symbolTable, RowSet rowSet, WritableColumnSource<Integer> symbolMapper) {
         if (symbolTable.isEmpty()) {
             return;
         }
@@ -63,7 +64,7 @@ class SymbolTableCombiner {
      * @param symbolMapper receives the unique identifier of each symbol table id
      * @param irrelevantSymbolValue the unique identifier for the ids of symbols that have not been added
      */
-    void lookupSymbols(final Table symbolTable, IntegerAdaptiveSparseArraySource symbolMapper,
+    void lookupSymbols(final Table symbolTable, WritableColumnSource<Integer> symbolMapper,
             @SuppressWarnings("SameParameterValue") int irrelevantSymbolValue) {
         if (symbolTable.isEmpty()) {
             return;
@@ -83,7 +84,7 @@ class SymbolTableCombiner {
             final ColumnSource.GetContext idContext,
             final RowSequence rows,
             final IntChunk<Values> uniqueIds,
-            final IntegerAdaptiveSparseArraySource symbolMapper,
+            final WritableColumnSource<Integer> symbolMapper,
             final int irrelevantSymbolValue) {
         final LongChunk<? extends Values> ids = idSource.getChunk(idContext, rows).asLongChunk();
         for (int ii = 0; ii < ids.size(); ++ii) {

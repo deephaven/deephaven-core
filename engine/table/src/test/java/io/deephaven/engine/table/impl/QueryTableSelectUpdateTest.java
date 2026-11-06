@@ -25,8 +25,10 @@ import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.LongAdaptiveSparseArraySource;
+import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseMemoryColumnSourceFactory;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.InverseWrappedRowSetRowRedirection;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
@@ -1097,7 +1099,10 @@ public class QueryTableSelectUpdateTest {
 
         assertSame(selected.getColumnSource("Value"), selected2.getColumnSource("Value"));
         assertNotSame(withUpdateView.getColumnSource("Value2"), selected2.getColumnSource("Value2"));
-        assertTrue(selected2.<Long>getColumnSource("Value2") instanceof LongAdaptiveSparseArraySource);
+        final Class<?> expectedSourceClass = SparseMemoryColumnSourceFactory.USE_ADAPTIVE
+                ? LongAdaptiveSparseArraySource.class
+                : LongSparseArraySource.class;
+        assertTrue(expectedSourceClass.isInstance(selected2.getColumnSource("Value2")));
 
         assertTableEquals(prevTable(table), prevTable(selected));
 

@@ -11,8 +11,10 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.sources.DoubleAdaptiveSparseArraySource;
+import io.deephaven.engine.table.impl.sources.DoubleArraySource;
+import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.mutable.MutableLong;
@@ -26,11 +28,13 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * <p>
  * Storages:
  * <ul>
- * <li>Sparse: {@link DoubleAdaptiveSparseArraySource} with every leaf a full block</li>
+ * <li>Sparse: {@link DoubleSparseArraySource}, which holds every leaf as a full block</li>
  * <li>Redirected: a {@link DoubleArraySource} of dense positions behind the hash {@link WritableRowRedirection} that
  * {@code QueryTable.redirectUpdate} uses</li>
  * <li>Adaptive: {@link DoubleAdaptiveSparseArraySource} with the default thresholds, whose leaves are sorted, bitmap or
  * full blocks by the number of values they hold</li>
+ * <li>AdaptiveFull: {@link DoubleAdaptiveSparseArraySource} with every leaf a full block, as the factory methods of
+ * {@link SparseArrayColumnSource} create it</li>
  * </ul>
  * Patterns cover a space of {@link #KEY_SPACE} row keys:
  * <ul>
@@ -108,10 +112,12 @@ final class SparseStorage {
     static WritableColumnSource<Double> create(final String storage, final int expectedSize) {
         switch (storage) {
             case "Sparse":
-                return new DoubleAdaptiveSparseArraySource();
+                return new DoubleSparseArraySource();
             case "Adaptive":
                 return new DoubleAdaptiveSparseArraySource(DoubleAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD,
                         DoubleAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD);
+            case "AdaptiveFull":
+                return new DoubleAdaptiveSparseArraySource();
             case "Redirected": {
                 final DoubleArraySource dense = new DoubleArraySource();
                 dense.ensureCapacity(expectedSize);

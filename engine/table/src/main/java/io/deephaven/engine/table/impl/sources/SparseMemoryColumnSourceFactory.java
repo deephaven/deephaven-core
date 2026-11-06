@@ -12,17 +12,20 @@ import java.time.Instant;
 /**
  * Creates the in-memory column sources that select and update write at the row keys of their results.
  * <p>
- * The sources are sparse array sources, such as {@link DoubleAdaptiveSparseArraySource}. When {@link #USE_ADAPTIVE} is
- * set, as it is by default, they hold a leaf with few values in a compact leaf, with the default thresholds; otherwise
- * they are the sources of {@link SparseArrayColumnSource#getSparseMemoryColumnSource(long, Class, Class)}, whose leaves
- * are full blocks.
+ * When {@link #USE_ADAPTIVE} is set, as it is by default, the sources are adaptive sparse array sources, such as
+ * {@link DoubleAdaptiveSparseArraySource}, that hold a leaf with few values in a compact leaf, with the default
+ * thresholds. Otherwise they are sparse array sources, such as {@link DoubleSparseArraySource}, that hold every leaf as
+ * a full block.
  */
 public final class SparseMemoryColumnSourceFactory {
 
     /**
-     * Whether to create sparse sources with compact leaves. Configured by the
-     * {@code SparseMemoryColumnSourceFactory.adaptive} property, which defaults to true; false makes every leaf a full
-     * block.
+     * Whether sparse sources adapt to the row keys they hold. Configured by the
+     * {@code SparseMemoryColumnSourceFactory.adaptive} property, which defaults to true. When true, the sources this
+     * factory creates are adaptive sparse array sources with compact leaves, and the static factory methods of
+     * {@link SparseArrayColumnSource} create adaptive sparse array sources whose leaves are full blocks. When false,
+     * both create sparse array sources, such as {@link DoubleSparseArraySource}, whose page table levels hold one child
+     * in their own fields or every child in an array over every child index, and whose leaves are full blocks.
      */
     public static boolean USE_ADAPTIVE = Configuration.getInstance()
             .getBooleanWithDefault("SparseMemoryColumnSourceFactory.adaptive", true);

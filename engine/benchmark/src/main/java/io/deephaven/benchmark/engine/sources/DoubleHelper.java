@@ -14,7 +14,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
-import io.deephaven.engine.table.impl.sources.DoubleAdaptiveSparseArraySource;
+import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -33,7 +33,7 @@ class DoubleHelper implements FillBenchmarkHelper {
             doubleArray[ii] = makeValue(random);
         }
 
-        doubleSparseArraySource = new DoubleAdaptiveSparseArraySource();
+        doubleSparseArraySource = new DoubleSparseArraySource();
         doubleArraySource = new DoubleArraySource();
         doubleArraySource.ensureCapacity(doubleArray.length);
 

@@ -598,7 +598,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 return new ContiguousWritableRowRedirection(innerIndex);
             }
             case Sparse: {
-                final LongAdaptiveSparseArraySource sparseRedirections = new LongAdaptiveSparseArraySource();
+                final WritableColumnSource<Long> sparseRedirections =
+                        SparseArrayColumnSource.getSparseMemoryColumnSource(long.class);
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
                     if (leftRowSet != null && !leftRowSet.isEmpty()) {
@@ -674,7 +675,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 return new ContiguousWritableRowRedirection(innerIndex);
             }
             case Sparse: {
-                final LongAdaptiveSparseArraySource sparseRedirections = new LongAdaptiveSparseArraySource();
+                final WritableColumnSource<Long> sparseRedirections =
+                        SparseArrayColumnSource.getSparseMemoryColumnSource(long.class);
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
                     if (leftRowSet != null && !leftRowSet.isEmpty()) {

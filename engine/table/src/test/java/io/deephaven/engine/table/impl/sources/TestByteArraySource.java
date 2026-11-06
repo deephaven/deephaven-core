@@ -576,7 +576,7 @@ public class TestByteArraySource {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
-        // NullPointerException in ByteAdaptiveSparseArraySource.commitUpdates()
+        // NullPointerException in ByteSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

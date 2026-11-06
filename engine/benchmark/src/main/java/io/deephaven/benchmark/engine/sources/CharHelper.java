@@ -10,7 +10,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.CharacterArraySource;
-import io.deephaven.engine.table.impl.sources.CharacterAdaptiveSparseArraySource;
+import io.deephaven.engine.table.impl.sources.CharacterSparseArraySource;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -29,7 +29,7 @@ class CharHelper implements FillBenchmarkHelper {
             charArray[ii] = makeValue(random);
         }
 
-        charSparseArraySource = new CharacterAdaptiveSparseArraySource();
+        charSparseArraySource = new CharacterSparseArraySource();
         charArraySource = new CharacterArraySource();
         charArraySource.ensureCapacity(charArray.length);
 

@@ -15,7 +15,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
@@ -313,17 +312,15 @@ public abstract class AbstractByteColumnSourceTest {
     // to do.
     @Test
     public void testFillEmptyChunkWithPrev() {
-        final ByteAdaptiveSparseArraySource src = new ByteAdaptiveSparseArraySource();
+        final ByteSparseArraySource src = new ByteSparseArraySource();
         src.startTrackingPrevValues();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
                 final WritableByteChunk<Values> chunk = WritableByteChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
-            try (final ChunkSink.FillFromContext context = src.makeFillFromContext(0)) {
-                src.fillFromChunk(context, chunk, keys);
-            }
+            src.fillFromChunkByKeys(keys, chunk);
         }
-        // NullPointerException in ByteAdaptiveSparseArraySource.commitUpdates()
+        // NullPointerException in ByteSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

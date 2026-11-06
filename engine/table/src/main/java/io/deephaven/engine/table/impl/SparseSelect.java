@@ -15,6 +15,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectAdaptiveSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectSparseArraySource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseablePair;
@@ -197,10 +198,10 @@ public class SparseSelect {
 
                     if (source.isRefreshing()) {
                         outputSourcesList.forEach(ColumnSource::startTrackingPrevValues);
-                        final ObjectAdaptiveSparseArraySource<?>[] sparseObjectSources =
-                                outputSourcesList.stream().filter(x -> x instanceof ObjectAdaptiveSparseArraySource)
-                                        .map(x -> (ObjectAdaptiveSparseArraySource<?>) x)
-                                        .toArray(ObjectAdaptiveSparseArraySource[]::new);
+                        final WritableColumnSource<?>[] sparseObjectSources = outputSourcesList.stream()
+                                .filter(x -> x instanceof ObjectSparseArraySource
+                                        || x instanceof ObjectAdaptiveSparseArraySource)
+                                .toArray(WritableColumnSource[]::new);
                         source.addUpdateListener(new BaseTable.ListenerImpl(
                                 "sparseSelect(" + Arrays.toString(columnNames) + ")", source, resultTable) {
                             private final ModifiedColumnSet modifiedColumnSetForUpdates =
@@ -215,8 +216,8 @@ public class SparseSelect {
                                         TableUpdateImpl.copy(upstream, modifiedColumnSetForUpdates);
                                 if (sparseObjectSources.length > 0) {
                                     try (final RowSet removedOnly = upstream.removed().minus(upstream.added())) {
-                                        for (final ObjectAdaptiveSparseArraySource<?> objectSparseArraySource : sparseObjectSources) {
-                                            objectSparseArraySource.setNull(removedOnly);
+                                        for (final WritableColumnSource<?> objectSparseSource : sparseObjectSources) {
+                                            objectSparseSource.setNull(removedOnly);
                                         }
                                     }
                                 }

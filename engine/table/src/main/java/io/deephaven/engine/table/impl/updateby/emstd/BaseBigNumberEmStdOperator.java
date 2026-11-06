@@ -15,7 +15,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.table.impl.sources.ObjectAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
@@ -165,7 +164,7 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
             } else {
                 maybeEmaInnerSource = null;
                 // region create-sparse
-                emaSource = new ObjectAdaptiveSparseArraySource<>(BigDecimal.class);
+                emaSource = SparseArrayColumnSource.getSparseMemoryColumnSource(BigDecimal.class);
                 // endregion create-sparse
             }
         } else {
@@ -212,7 +211,7 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
         super.applyOutputShift(subRowSetToShift, delta);
         if (emaSource != null) {
-            ((ObjectAdaptiveSparseArraySource) emaSource).shift(subRowSetToShift, delta);
+            ((SparseArrayColumnSource<?>) emaSource).shift(subRowSetToShift, delta);
         }
     }
     // endregion Shifts

@@ -14,7 +14,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.LongAdaptiveSparseArraySource;
+import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -33,7 +33,7 @@ class LongHelper implements FillBenchmarkHelper {
             longArray[ii] = makeValue(random);
         }
 
-        longSparseArraySource = new LongAdaptiveSparseArraySource();
+        longSparseArraySource = new LongSparseArraySource();
         longArraySource = new LongArraySource();
         longArraySource.ensureCapacity(longArray.length);
 

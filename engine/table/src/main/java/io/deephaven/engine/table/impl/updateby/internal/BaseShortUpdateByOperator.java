@@ -198,7 +198,7 @@ public abstract class BaseShortUpdateByOperator extends UpdateByOperator {
         } else {
             maybeInnerSource = null;
             // region create-sparse
-            outputSource = new ShortAdaptiveSparseArraySource();
+            outputSource = SparseArrayColumnSource.getSparseMemoryColumnSource(short.class);
             // endregion create-sparse
         }
     }
@@ -231,7 +231,7 @@ public abstract class BaseShortUpdateByOperator extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((ShortAdaptiveSparseArraySource) outputSource).shift(subRowSetToShift, delta);
+        ((SparseArrayColumnSource<?>) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 

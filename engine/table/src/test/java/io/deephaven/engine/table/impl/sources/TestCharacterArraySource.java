@@ -572,7 +572,7 @@ public class TestCharacterArraySource {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
-        // NullPointerException in CharacterAdaptiveSparseArraySource.commitUpdates()
+        // NullPointerException in CharacterSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

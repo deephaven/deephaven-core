@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class SparseSmallBenchmark {
     private static final int RANDOM_READS = 100_000;
 
-    @Param({"Sparse", "Redirected", "Adaptive"})
+    @Param({"Sparse", "Redirected", "Adaptive", "AdaptiveFull"})
     private String storage;
 
     @Param({"Dense", "Stride64", "High", "Spread", "Level2s", "Regions", "FarRegions"})

@@ -575,7 +575,7 @@ public class TestObjectArraySource {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
-        // NullPointerException in ObjectAdaptiveSparseArraySource.commitUpdates()
+        // NullPointerException in ObjectSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

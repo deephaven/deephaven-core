@@ -554,6 +554,14 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateSparseArraySources() throws IOException {
+        replicateOneOrN();
+
+        charToAllButBooleanAndLong(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
+        replicateLongSparseArraySource();
+        replicateBooleanSparseArraySource();
+        replicateObjectSparseArraySource();
+
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharCompactLeaf.java");
         charToAllButBoolean(TASK,
@@ -562,12 +570,12 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharBitmapLeaf.java");
         charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterAdaptiveSparseArraySource.java");
-        replicateLongSparseArraySource();
-        replicateByteSparseArraySource();
-        replicateObjectSparseArraySource();
+        replicateLongAdaptiveSparseArraySource();
+        replicateByteAdaptiveSparseArraySource();
+        replicateObjectAdaptiveSparseArraySource();
     }
 
-    private static void replicateByteSparseArraySource() throws IOException {
+    private static void replicateByteAdaptiveSparseArraySource() throws IOException {
         final File classFile = new File(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/ByteAdaptiveSparseArraySource.java");
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
@@ -589,7 +597,7 @@ public class ReplicateSourcesAndChunks {
         FileUtils.writeLines(classFile, lines);
     }
 
-    private static void replicateObjectSparseArraySource() throws IOException {
+    private static void replicateObjectAdaptiveSparseArraySource() throws IOException {
         for (final String leaf : new String[] {"CharCompactLeaf", "CharSortedLeaf", "CharBitmapLeaf"}) {
             final File leafFile = new File(charToObject(TASK,
                     "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/" + leaf + ".java"));
@@ -698,6 +706,470 @@ public class ReplicateSourcesAndChunks {
                 "    }"));
         lines = addReferenceSize(lines);
         FileUtils.writeLines(sourceFile, lines);
+    }
+
+    private static void replicateBooleanSparseArraySource() throws IOException {
+        final String booleanPath = charToBooleanAsByte(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java",
+                Collections.emptyMap());
+        final File booleanFile = new File(booleanPath);
+        List<String> lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
+
+        lines = addImport(lines,
+                "import io.deephaven.engine.table.impl.AbstractColumnSource;",
+                "import io.deephaven.engine.table.WritableColumnSource;",
+                "import io.deephaven.util.BooleanUtils;",
+                "import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;",
+                "import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;");
+        lines = globalReplacements(lines, "BooleanOneOrN", "ByteOneOrN");
+        lines = globalReplacements(lines, "WritableBooleanChunk", "WritableObjectChunk",
+                "asBooleanChunk", "asObjectChunk",
+                "BooleanChunk<Values>", "ObjectChunk<Boolean, Values>",
+                "ObjectChunk<Values>", "ObjectChunk<Boolean, Values>",
+                "BooleanChunk<[?] extends Values>", "ObjectChunk<Boolean, ? extends Values>",
+                "ObjectChunk<[?] extends Values>", "ObjectChunk<Boolean, ? extends Values>",
+                "BooleanChunk<[?] super Values>", "ObjectChunk<Boolean, ? super Values>",
+                "ObjectChunk<[?] super Values>", "ObjectChunk<Boolean, ? super Values>");
+        lines = simpleFixup(lines, "primitive get", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE", "getBoolean", "getByte",
+                "getPrevBoolean", "getPrevByte");
+        lines = simpleFixup(lines, "nullByKeys",
+                "oldValue != NULL_BOOLEAN", "!BooleanUtils.isNull(oldValue)",
+                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "nullByRanges",
+                "block\\[indexWithinBlock\\] != NULL_BOOLEAN", "!BooleanUtils.isNull(block[indexWithinBlock])",
+                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "setNull",
+                "blocks2\\[indexWithinBlock\\] == NULL_BOOLEAN", "BooleanUtils.isNull(blocks2[indexWithinBlock])");
+        lines = simpleFixup(lines, "setNull", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+
+        lines = replaceRegion(lines, "copyFromTypedArray", Arrays.asList(
+                "                    for (int jj = 0; jj < length; ++jj) {",
+                "                         chunk.set(jj + ctx.offset, BooleanUtils.byteAsBoolean(ctx.block[sIndexWithinBlock + jj]));",
+                "                    }"));
+        lines = replaceRegion(lines, "copyToTypedArray", Arrays.asList(
+                "                for (int jj = 0; jj < length; ++jj) {",
+                "                    block[sIndexWithinBlock + jj] = BooleanUtils.booleanAsByte(chunk.get(offset + jj));",
+                "                }"));
+
+        lines = applyFixup(lines, "fillByKeys", "(.*chunk.set\\(.*, )(ctx\\.block.*)(\\);.*)", m -> Collections
+                .singletonList(m.group(1) + "BooleanUtils.byteAsBoolean(" + m.group(2) + ")" + m.group(3)));
+        lines = applyFixup(lines, "fillByUnRowSequence", "(.*chunk.set\\(.*, )(block.*)(\\);.*)", m -> Collections
+                .singletonList(m.group(1) + "BooleanUtils.byteAsBoolean(" + m.group(2) + ")" + m.group(3)));
+        lines = applyFixup(lines, "fillFromChunkByKeys", "(.*)(chunk.get\\(.*\\));",
+                m -> Collections.singletonList(m.group(1) + "BooleanUtils.booleanAsByte(" + m.group(2) + ");"));
+        lines = applyFixup(lines, "fillFromChunkUnordered", "(.*)(chunk.get\\(.*\\));",
+                m -> Collections.singletonList(m.group(1) + "BooleanUtils.booleanAsByte(" + m.group(2) + ");"));
+
+        lines = simpleFixup(lines, "allocateNullFilledBlock", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "boxed methods", "box\\(getBoolean\\(", "BooleanUtils.byteAsBoolean(getByte(",
+                "box\\(getPrevBoolean\\(", "BooleanUtils.byteAsBoolean(getPrevByte(");
+        lines = simpleFixup(lines, "boxed methods", "unbox", "BooleanUtils.booleanAsByte");
+        lines = applyFixup(lines, "constructor", "(.*super\\().*(\\);.*)",
+                m -> Collections.singletonList(m.group(1) + "Boolean.class" + m.group(2)));
+
+        lines = removeRegion(removeRegion(lines, "getChunk"), "getPrevChunk");
+        lines = replaceRegion(lines, "getChunk", Arrays.asList(
+                "    @Override",
+                "    public ObjectChunk<Boolean, Values> getChunk(@NotNull GetContext context, @NotNull RowSequence RowSequence) {",
+                "        return getChunkByFilling(context, RowSequence).asObjectChunk();",
+                "    }"));
+        lines = replaceRegion(lines, "getPrevChunk", Arrays.asList(
+                "    @Override",
+                "    public ObjectChunk<Boolean, Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence RowSequence) {",
+                "        return getPrevChunkByFilling(context, RowSequence).asObjectChunk();",
+                "    }"));
+
+        lines = simpleFixup(lines, "fillByUnRowSequence", "WritableObjectChunk chunk",
+                "WritableObjectChunk<Boolean, ? super Values> chunk");
+        lines = simpleFixup(lines, "fillByUnRowSequence",
+                "BooleanUtils\\.byteAsBoolean\\(blockToUse == null \\? NULL_BOOLEAN : blockToUse\\[indexWithinBlock\\]\\)",
+                "blockToUse == null ? NULL_BOOLEAN : BooleanUtils.byteAsBoolean(blockToUse[indexWithinBlock])");
+
+        // AND SO IT BEGINS
+        lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
+                "    @Override",
+                "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "        return alternateDataType.equals(byte.class);",
+                "    }",
+                "",
+                "    @Override",
+                "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "        //noinspection unchecked",
+                "        return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource.ReinterpretedAsByte(this);",
+                "    }",
+                "",
+                "    public static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered<Values>, WritableColumnSource<Byte>, WritableSourceWithPrepareForParallelPopulation {",
+                "        private final BooleanSparseArraySource wrapped;",
+                "",
+                "        private ReinterpretedAsByte(BooleanSparseArraySource wrapped) {",
+                "            super(byte.class);",
+                "            this.wrapped = wrapped;",
+                "        }",
+                "",
+                "        public void shift(final RowSet keysToShift, final long shiftDelta) {",
+                "            this.wrapped.shift(keysToShift, shiftDelta);",
+                "        }",
+                "",
+                "        @Override",
+                "        public void startTrackingPrevValues() {",
+                "            wrapped.startTrackingPrevValues();",
+                "        }",
+                "",
+                "        @Override",
+                "        public byte getByte(long rowKey) {",
+                "            return wrapped.getByte(rowKey);",
+                "        }",
+                "",
+                "        @Override",
+                "        public byte getPrevByte(long rowKey) {",
+                "            return wrapped.getPrevByte(rowKey);",
+                "        }",
+                "",
+                "        @Override",
+                "        public void setNull(long key) {",
+                "            wrapped.setNull(key);",
+                "        }",
+                "",
+                "        @Override",
+                "        public void set(long key, Byte value) {",
+                "            wrapped.set(key, value);",
+                "        }",
+                "",
+                "        @Override",
+                "        public void set(long key, byte value) {",
+                "            wrapped.set(key, value);",
+                "        }",
+                "",
+                "        @Override",
+                "        public void ensureCapacity(long capacity, boolean nullFilled) {",
+                "            wrapped.ensureCapacity(capacity, nullFilled);",
+                "        }",
+                "",
+                "        @Override",
+                "        public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "            return alternateDataType == Boolean.class;",
+                "        }",
+                "",
+                "        @Override",
+                "        protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "            // noinspection unchecked",
+                "            return (ColumnSource<ALTERNATE_DATA_TYPE>)wrapped;",
+                "        }",
+                "",
+                "        @Override",
+                "        public void fillChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence RowSequence) {",
+                "            fillSparseChunk(destination, RowSequence);",
+                "        }",
+                "",
+                "        @Override",
+                "        public void fillPrevChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence RowSequence) {",
+                "            fillSparsePrevChunk(destination, RowSequence);",
+                "        }",
+                "",
+                "        @Override",
+                "        public void fillChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends RowKeys> keyIndices) {",
+                "            fillSparseChunkUnordered(destination, keyIndices);",
+                "        }",
+                "",
+                "        @Override",
+                "        public void fillPrevChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends RowKeys> keyIndices) {",
+                "            fillSparsePrevChunkUnordered(destination, keyIndices);",
+                "        }",
+                "",
+                "        private void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {",
+                "            if (indices.size() == 0) {",
+                "                destGeneric.setSize(0);",
+                "                return;",
+                "            }",
+                "            // This implementation is in \"key\" style (rather than range style).",
+                "            final WritableByteChunk<? super Values> chunk = destGeneric.asWritableByteChunk();",
+                "            final FillByContext<byte[]> ctx = new FillByContext<>();",
+                "            indices.forEachRowKey((final long v) -> {",
+                "                if (v > ctx.maxKeyInCurrentBlock) {",
+                "                    ctx.block = wrapped.blocks.getInnermostBlockByKeyOrNull(v);",
+                "                    ctx.maxKeyInCurrentBlock = v | INDEX_MASK;",
+                "                }",
+                "                if (ctx.block == null) {",
+                "                    chunk.fillWithNullValue(ctx.offset, 1);",
+                "                } else {",
+                "                    chunk.set(ctx.offset, ctx.block[(int) (v & INDEX_MASK)]);",
+                "                }",
+                "                ++ctx.offset;",
+                "                return true;",
+                "            });",
+                "            destGeneric.setSize(ctx.offset);",
+                "        }",
+                "",
+                "        private void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {",
+                "            final long sz = indices.size();",
+                "            if (sz == 0) {",
+                "                destGeneric.setSize(0);",
+                "                return;",
+                "            }",
+                "",
+                "            if (wrapped.prevFlusher == null) {",
+                "                fillSparseChunk(destGeneric, indices);",
+                "                return;",
+                "            }",
+                "            fillSparsePrevChunkUnordered(destGeneric, indices.asRowKeyChunk());",
+                "        }",
+                "",
+                "        private void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {",
+                "            final WritableByteChunk<? super Values> chunk = destGeneric.asWritableByteChunk();",
+                "            // This implementation is in \"key\" style (rather than range style).",
+                "            for (int ii = 0; ii < indices.size(); ) {",
+                "                final long firstRowKey = indices.get(ii);",
+                "                if (firstRowKey == RowSet.NULL_ROW_KEY) {",
+                "                    chunk.set(ii++, NULL_BOOLEAN_AS_BYTE);",
+                "                    continue;",
+                "                }",
+                "                final long masked = firstRowKey & ~INDEX_MASK;",
+                "                int lastII = ii;",
+                "                while (lastII + 1 < indices.size()) {",
+                "                    final int nextII = lastII + 1;",
+                "                    final long nextKey = indices.get(nextII);",
+                "                    final long nextMasked = nextKey & ~INDEX_MASK;",
+                "                    if (nextMasked != masked) {",
+                "                        break;",
+                "                    }",
+                "                    lastII = nextII;",
+                "                }",
+                "                final byte [] block = wrapped.blocks.getInnermostBlockByKeyOrNull(firstRowKey);",
+                "                if (block == null) {",
+                "                    chunk.fillWithNullValue(ii, lastII - ii + 1);",
+                "                    ii = lastII + 1;",
+                "                    continue;",
+                "                }",
+                "                while (ii <= lastII) {",
+                "                    final int indexWithinBlock = (int) (indices.get(ii) & INDEX_MASK);",
+                "                    chunk.set(ii++, block[indexWithinBlock]);",
+                "                }",
+                "            }",
+                "            destGeneric.setSize(indices.size());",
+                "        }",
+                "",
+                "        private void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {",
+                "            final WritableByteChunk<? super Values> booleanObjectChunk = destGeneric.asWritableByteChunk();",
+                "            for (int ii = 0; ii < indices.size(); ) {",
+                "                final long firstRowKey = indices.get(ii);",
+                "                if (firstRowKey == RowSet.NULL_ROW_KEY) {",
+                "                    booleanObjectChunk.set(ii++, NULL_BOOLEAN_AS_BYTE);",
+                "                    continue;",
+                "                }",
+                "                final long masked = firstRowKey & ~INDEX_MASK;",
+                "                int lastII = ii;",
+                "                while (lastII + 1 < indices.size()) {",
+                "                    final int nextII = lastII + 1;",
+                "                    final long nextKey = indices.get(nextII);",
+                "                    final long nextMasked = nextKey & ~INDEX_MASK;",
+                "                    if (nextMasked != masked) {",
+                "                        break;",
+                "                    }",
+                "                    lastII = nextII;",
+                "                }",
+                "",
+                "                final byte [] block = wrapped.blocks.getInnermostBlockByKeyOrNull(firstRowKey);",
+                "                if (block == null) {",
+                "                    booleanObjectChunk.fillWithNullValue(ii, lastII - ii + 1);",
+                "                    ii = lastII + 1;",
+                "                    continue;",
+                "                }",
+                "",
+                "                final long [] prevInUse = (wrapped.prevFlusher == null || wrapped.prevInUse == null) ? null :",
+                "                        wrapped.prevInUse.getInnermostBlockByKeyOrNull(firstRowKey);",
+                "                final byte [] prevBlock = prevInUse == null ? null : wrapped.prevBlocks.getInnermostBlockByKeyOrNull(firstRowKey);",
+                "                while (ii <= lastII) {",
+                "                    final int indexWithinBlock = (int) (indices.get(ii) & INDEX_MASK);",
+                "                    final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;",
+                "                    final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);",
+                "",
+                "                    final byte[] blockToUse = (prevInUse != null && (prevInUse[indexWithinInUse] & maskWithinInUse) != 0) ? prevBlock : block;",
+                "                    booleanObjectChunk.set(ii++, blockToUse == null ? NULL_BOOLEAN_AS_BYTE : blockToUse[indexWithinBlock]);",
+                "                }",
+                "            }",
+                "            destGeneric.setSize(indices.size());",
+                "        }",
+                "",
+                "        @Override",
+                "        public boolean providesFillUnordered() {",
+                "            return true;",
+                "        }",
+                "",
+                "        @Override",
+                "        public void fillFromChunk(@NotNull FillFromContext context_unused, @NotNull Chunk<? extends Values> src, @NotNull RowSequence RowSequence) {",
+                "            // This implementation is in \"key\" style (rather than range style).",
+                "            if (RowSequence.size() == 0) {",
+                "                return;",
+                "            }",
+                "            final ByteChunk<? extends Values> chunk = src.asByteChunk();",
+                "            final LongChunk<OrderedRowKeys> keys = RowSequence.asRowKeyChunk();",
+                "",
+                "            final boolean trackPrevious = wrapped.shouldTrackPrevious();",
+                "",
+                "            if (trackPrevious) {",
+                "                wrapped.prevFlusher.maybeActivate();",
+                "            }",
+                "",
+                "            for (int ii = 0; ii < keys.size(); ) {",
+                "                final long firstRowKey = keys.get(ii);",
+                "                final long maxKeyInCurrentBlock = firstRowKey | INDEX_MASK;",
+                "                int lastII = ii;",
+                "                while (lastII + 1 < keys.size() && keys.get(lastII + 1) <= maxKeyInCurrentBlock) {",
+                "                    ++lastII;",
+                "                }",
+                "",
+                "                final int block0 = (int) (firstRowKey >> BLOCK0_SHIFT) & BLOCK0_MASK;",
+                "                final int block1 = (int) (firstRowKey >> BLOCK1_SHIFT) & BLOCK1_MASK;",
+                "                final int block2 = (int) (firstRowKey >> BLOCK2_SHIFT) & BLOCK2_MASK;",
+                "                final byte [] block = wrapped.ensureBlock(block0, block1, block2);",
+                "",
+                "                if (chunk.isAlias(block)) {",
+                "                    throw new UnsupportedOperationException(\"Source chunk is an alias for target data\");",
+                "                }",
+                "",
+                "                // This conditional with its constant condition should be very friendly to the branch predictor.",
+                "                final byte[] prevBlock = trackPrevious ? wrapped.ensurePrevBlock(firstRowKey, block0, block1, block2) : null;",
+                "                final long[] inUse = trackPrevious ? wrapped.prevInUse.get(block0).get(block1).get(block2) : null;",
+                "",
+                "                while (ii <= lastII) {",
+                "                    final int indexWithinBlock = (int) (keys.get(ii) & INDEX_MASK);",
+                "                    // This 'if' with its constant condition should be very friendly to the branch predictor.",
+                "                    if (trackPrevious) {",
+                "                        assert inUse != null;",
+                "                        assert prevBlock != null;",
+                "",
+                "                        final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;",
+                "                        final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);",
+                "",
+                "                        if ((inUse[indexWithinInUse] & maskWithinInUse) == 0) {",
+                "                            prevBlock[indexWithinBlock] = block[indexWithinBlock];",
+                "                            inUse[indexWithinInUse] |= maskWithinInUse;",
+                "                        }",
+                "                    }",
+                "                    block[indexWithinBlock] = chunk.get(ii);",
+                "                    ++ii;",
+                "                }",
+                "            }",
+                "        }",
+                "",
+                "        @Override",
+                "        public void prepareForParallelPopulation(RowSequence rowSequence) {",
+                "           wrapped.prepareForParallelPopulation(rowSequence);",
+                "        }",
+                "    }"));
+        FileUtils.writeLines(booleanFile, lines);
+    }
+
+    private static void replicateObjectSparseArraySource() throws IOException {
+        final String objectPath = charToObject(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
+        final File objectFile = new File(objectPath);
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+
+        lines = removeRegion(lines, "boxed methods");
+        lines = removeRegion(lines, "boxing imports");
+
+        lines = globalReplacements(lines, "ObjectOneOrN.Block([0-2])", "ObjectOneOrN.Block$1<T>");
+
+        lines = globalReplacements(lines,
+                "public class ObjectSparseArraySource extends OneOrNSparseArrayColumnSource<Object>",
+                "public class ObjectSparseArraySource<T> extends OneOrNSparseArrayColumnSource<T>",
+                "implements MutableColumnSourceGetDefaults.ForObject",
+                "implements MutableColumnSourceGetDefaults.ForObject<T>",
+                "Object[ ]?\\[\\]", "T []",
+                "NULL_OBJECT", "null",
+                "getObject", "get",
+                "getPrevObject", "getPrev",
+                "ColumnSource<Object>", "ColumnSource<T>",
+                "ObjectChunk<Values>", "ObjectChunk<T, Values>",
+                "ObjectChunk<[?] super Values>", "ObjectChunk<T, ? super Values>",
+                "ObjectChunk<[?] extends Values>", "ObjectChunk<T, ? extends Values>",
+                "Object get", "T get",
+                "recycler.borrowItem\\(\\)", "(T[])recycler.borrowItem()",
+                "recycler2.borrowItem\\(\\)", "(T[][])recycler2.borrowItem()",
+                "recycler1.borrowItem\\(\\)", "(T[][][])recycler1.borrowItem()",
+                "recycler0.borrowItem\\(\\)", "(T[][][][])recycler0.borrowItem()",
+                "public final void set\\(long key, Object value\\) \\{", "public final void set(long key, T value) {",
+                "Object oldValue", "T oldValue");
+
+        lines = replaceRegion(lines, "recyclers", Arrays.asList(
+                "    private static final SoftRecycler recycler = SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,",
+                "            SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY,",
+                "            () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null))); // we'll hold onto previous values, fix that",
+                "    private static final SoftRecycler recycler2 = SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY2,",
+                "            SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY2,",
+                "            () -> new Object[BLOCK2_SIZE][], null));",
+                "    private static final SoftRecycler recycler1 = SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY1,",
+                "            SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY1,",
+                "            () -> new ObjectOneOrN.Block2[BLOCK1_SIZE], null));",
+                "    private static final SoftRecycler recycler0 = SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY0,",
+                "            SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY0,",
+                "            () -> new ObjectOneOrN.Block1[BLOCK0_SIZE], null));"));
+
+        lines = replaceRegion(lines, "constructor", Arrays.asList(
+                "",
+                "    public ObjectSparseArraySource(Class<T> type) {",
+                "        super(type);",
+                "        blocks = new ObjectOneOrN.Block0<>();",
+                "    }",
+                "",
+                "    ObjectSparseArraySource(Class<T> type, Class componentType) {",
+                "        super(type, componentType);",
+                "        blocks = new ObjectOneOrN.Block0<>();",
+                "    }"));
+
+        lines = replaceRegion(lines, "move method", Arrays.asList(
+                "    @Override",
+                "    public void move(long sourceKey, long destKey) {",
+                "        final T value = get(sourceKey);",
+                "        set(destKey, value);",
+                "        if (value != null) {",
+                "            set(sourceKey, null);",
+                "        }",
+                "    }"));
+
+        lines = replaceRegion(lines, "allocateNullFilledBlock", Arrays.asList(
+                "    final T[] allocateNullFilledBlock(int size){",
+                "        //noinspection unchecked",
+                "        return (T[]) new Object[size];",
+                "    }"));
+
+        FileUtils.writeLines(objectFile, lines);
+    }
+
+    private static void replicateOneOrN() throws IOException {
+        charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
+        final String booleanOneOrN = charToBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
+
+        final File booleanFile = new File(booleanOneOrN);
+        List<String> lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
+        lines = globalReplacements(lines, "Boolean.BYTES", "REFERENCE_SIZE");
+        FileUtils.writeLines(booleanFile, lines);
+
+
+        final String objectOneOrNPath = charToObject(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
+        final File oneOrNFile = new File(objectOneOrNPath);
+        lines = FileUtils.readLines(oneOrNFile, Charset.defaultCharset());
+
+        lines = globalReplacements(lines,
+                "class Block([0-2])", "class Block$1<T>",
+                "Object \\[\\]", "T []", "SoftRecycler<Object", "SoftRecycler<T",
+                "QueryConstants.NULL_OBJECT", "null",
+                "new Object\\[BLOCK2_SIZE\\]\\[\\];",
+                "(T[][])new Object[BLOCK2_SIZE][];",
+                "Object.BYTES", "REFERENCE_SIZE");
+
+        lines = simpleFixup(lines, "Block0", "Block1", "Block1<T>", "Block2", "Block2<T>");
+        lines = simpleFixup(lines, "Block1", "Block2", "Block2<T>");
+
+        lines = globalReplacements(lines,
+                "new Block2<T>\\[BLOCK1_SIZE\\]", "new Block2[BLOCK1_SIZE]",
+                "new Block1<T>\\[BLOCK0_SIZE\\]", "new Block1[BLOCK0_SIZE]");
+
+        FileUtils.writeLines(oneOrNFile, lines);
     }
 
     /**
@@ -1143,7 +1615,7 @@ public class ReplicateSourcesAndChunks {
         FileUtils.writeLines(classFile, lines);
     }
 
-    private static void replicateLongSparseArraySource() throws IOException {
+    private static void replicateLongAdaptiveSparseArraySource() throws IOException {
         final String className = charToLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterAdaptiveSparseArraySource.java");
         final File classFile = new File(className);
@@ -1193,6 +1665,80 @@ public class ReplicateSourcesAndChunks {
                 "    @Override",
                 "    public ColumnSource<Instant> toInstant() {",
                 "        return new InstantAdaptiveSparseArraySource(this);",
+                "    }",
+                "",
+                "    @Override",
+                "    public ColumnSource<Long> toEpochNano() {",
+                "        return this;",
+                "    }"));
+        FileUtils.writeLines(classFile, lines);
+    }
+
+    private static void replicateLongSparseArraySource() throws IOException {
+        final String className = charToLong(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
+        final File classFile = new File(className);
+        List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
+        lines = addImport(lines, LongFunction.class, ToLongFunction.class, Instant.class, ZonedDateTime.class,
+                LocalDate.class, LocalTime.class, Require.class, ZoneId.class);
+        lines = standardCleanups(lines);
+        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
+        lines = replaceRegion(lines, "fillByRanges", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
+                "WritableObjectChunk<R, ? super Values>", "asWritableObjectChunk"));
+        lines = replaceRegion(lines, "fillByKeys", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
+                "WritableObjectChunk<R, ? super Values>", "asWritableObjectChunk"));
+        lines = replaceRegion(lines, "fillByUnRowSequence", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
+                "WritableObjectChunk<R, ? super Values>", "asWritableObjectChunk"));
+        lines = replaceRegion(lines, "fillFromChunkByRanges",
+                l -> addLongToBoxedAdapter(l, "ToLongFunction<R>", "ObjectChunk<R, ? extends Values>",
+                        "asObjectChunk"));
+        lines = replaceRegion(lines, "fillFromChunkByKeys",
+                l -> addLongToBoxedAdapter(l, "ToLongFunction<R>", "ObjectChunk<R, ? extends Values>",
+                        "asObjectChunk"));
+        lines = replaceRegion(lines, "fillFromChunkUnordered",
+                l -> addLongToBoxedAdapter(l, "ToLongFunction<R>", "ObjectChunk<R, ? extends Values>",
+                        "asObjectChunk"));
+        lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
+                "    @Override",
+                "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
+                "    }",
+                "",
+                "    @SuppressWarnings(\"unchecked\")",
+                "    @Override",
+                "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "        if (alternateDataType == this.getType()) {",
+                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) this;",
+                "        } else if (alternateDataType == Instant.class) {",
+                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
+                "        }",
+                "",
+                "        throw new IllegalArgumentException(\"Cannot reinterpret `\" + getType().getName() + \"` to `\" + alternateDataType.getName() + \"`\");",
+                "    }",
+                "",
+                "    @Override",
+                "    public boolean supportsTimeConversion() {",
+                "        return true;",
+                "    }",
+                "",
+                "    @Override",
+                "    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {",
+                "        return new ZonedDateTimeSparseArraySource(Require.neqNull(zone, \"zone\"), this);",
+                "    }",
+                "",
+                "    @Override",
+                "    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {",
+                "        return new LongAsLocalDateColumnSource(this, zone);",
+                "    }",
+                "",
+                "    @Override",
+                "    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {",
+                "        return new LongAsLocalTimeColumnSource(this, zone);",
+                "    }",
+                "",
+                "    @Override",
+                "    public ColumnSource<Instant> toInstant() {",
+                "        return new InstantSparseArraySource(this);",
                 "    }",
                 "",
                 "    @Override",

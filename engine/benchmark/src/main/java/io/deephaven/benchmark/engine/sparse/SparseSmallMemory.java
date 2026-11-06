@@ -32,7 +32,7 @@ import java.lang.management.MemoryMXBean;
  * Shapes over many page table levels retain far more in some storages, so fewer sources of them are measured.
  */
 public final class SparseSmallMemory {
-    private static final String[] STORAGES = {"Sparse", "Redirected", "Adaptive"};
+    private static final String[] STORAGES = {"Sparse", "Redirected", "Adaptive", "AdaptiveFull"};
     private static final String[] SHAPES = {"Dense", "Stride64", "High", "Spread", "Level2s", "Regions", "FarRegions"};
     private static final int[] SIZES = {10, 100, 1000, 3000, 10000, 100000};
     private static final MemoryMXBean MEMORY = ManagementFactory.getMemoryMXBean();

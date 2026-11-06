@@ -172,8 +172,10 @@ public class TestSparseArraySourceNullBlocks {
                     .getSparseMemoryColumnSource(1, (Class<?>) typeAndValue[0]);
             source.set(0, typeAndValue[1]);
             source.startTrackingPrevValues();
-            final SparseArrayColumnSource<?> sparseSource =
-                    (SparseArrayColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(source);
+            // as in SelectOrUpdateListener, a Boolean source may hold its values in a sparse byte source
+            final SparseArrayColumnSource<?> sparseSource = source instanceof SparseArrayColumnSource
+                    ? (SparseArrayColumnSource<?>) source
+                    : (SparseArrayColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(source);
             final long sizeBefore = sparseSource.estimateSize();
 
             updateGraph().runWithinUnitTestCycle(() -> {

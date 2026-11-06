@@ -83,6 +83,25 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
         }
     }
 
+    /**
+     * Filling from an empty chunk while tracking previous values must leave nothing that fails when the cycle
+     * completes.
+     */
+    @Override
+    @Test
+    public void testFillEmptyChunkWithPrev() {
+        final CharacterAdaptiveSparseArraySource source = makeTestSource();
+        source.startTrackingPrevValues();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests();
+        try (final RowSet keys = RowSetFactory.empty();
+                final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(0);
+                final ChunkSink.FillFromContext context = source.makeFillFromContext(0)) {
+            source.fillFromChunk(context, chunk, keys);
+        }
+        updateGraph.completeCycleForUnitTests();
+    }
+
     @Test
     public void testDefaultThresholds() {
         checkAgainstMap(makeTestSource(), 0);

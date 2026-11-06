@@ -15,7 +15,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
@@ -313,17 +312,15 @@ public abstract class AbstractLongColumnSourceTest {
     // to do.
     @Test
     public void testFillEmptyChunkWithPrev() {
-        final LongAdaptiveSparseArraySource src = new LongAdaptiveSparseArraySource();
+        final LongSparseArraySource src = new LongSparseArraySource();
         src.startTrackingPrevValues();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
                 final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
-            try (final ChunkSink.FillFromContext context = src.makeFillFromContext(0)) {
-                src.fillFromChunk(context, chunk, keys);
-            }
+            src.fillFromChunkByKeys(keys, chunk);
         }
-        // NullPointerException in LongAdaptiveSparseArraySource.commitUpdates()
+        // NullPointerException in LongSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

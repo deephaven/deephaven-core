@@ -37,7 +37,7 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.IntegerAdaptiveSparseArraySource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
@@ -515,7 +515,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         private WritableColumnSource<Integer> allocateIntOutputSource(final boolean flat) {
             return flat
                     ? getImmutableMemoryColumnSource(leftTable.size(), int.class, null)
-                    : new IntegerAdaptiveSparseArraySource();
+                    : SparseArrayColumnSource.getSparseMemoryColumnSource(int.class);
         }
 
         private void start(@NotNull final Table leftTableGrouped, @NotNull final Table rightTableGrouped) {

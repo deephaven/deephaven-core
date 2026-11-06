@@ -21,52 +21,23 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.engine.table.impl.sources.SparseMemoryColumnSourceFactory.USE_ADAPTIVE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
 
 import java.time.Instant;
 import java.util.Collection;
 
 /**
- * A column source backed by arrays that may not be filled in all blocks.
- *
+ * A column source that holds its values in blocks of consecutive row keys, which it reaches through a page table
+ * indexed by the high bits of the row key.
  * <p>
- * To store the blocks, we use a multi-level page table like structure. Each entry that exists is complete, i.e. we
- * never reallocate partial blocks, we always allocate the complete block. The row key is divided as follows:
+ * The page table and its blocks take one of two forms. {@link OneOrNSparseArrayColumnSource} allocates every block it
+ * reaches in full. The adaptive sources, such as {@link DoubleAdaptiveSparseArraySource}, adapt each page table level
+ * and leaf to the row keys it holds. {@link SparseMemoryColumnSourceFactory#USE_ADAPTIVE} chooses which form the static
+ * factory methods of this class make.
  * </p>
- * <table>
- * <tr>
- * <th>Description</td>
- * <th>Size</th>
- * <th>Bits</th>
- * </tr>
- * <tr>
- * <td>Block 0</td>
- * <td>19</td>
- * <td>62-44</td>
- * </tr>
- * <tr>
- * <td>Block 1</td>
- * <td>18</td>
- * <td>43-26</td>
- * </tr>
- * <tr>
- * <td>Block 2</td>
- * <td>18</td>
- * <td>25-8</td>
- * </tr>
- * <tr>
- * <td>Index Within Block</td>
- * <td>8</td>
- * <td>7-0</td>
- * </tr>
- * </table>
  * <p>
  * Bit 63, the sign bit, is used to indicate null (that is, all negative numbers are defined to be null)
- * </p>
- * <p>
- * Parallel structures are used for previous values and prevInUse. We recycle all levels of the previous blocks, so that
- * the previous structure takes up memory only while it is in use.
- * </p>
  * </p>
  */
 public abstract class SparseArrayColumnSource<T>
@@ -261,7 +232,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Byte> getSparseMemoryColumnSource(byte[] data) {
-        final SparseArrayColumnSource<Byte> result = new ByteAdaptiveSparseArraySource();
+        final SparseArrayColumnSource<Byte> result = USE_ADAPTIVE
+                ? new ByteAdaptiveSparseArraySource()
+                : new ByteSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (byte o : data) {
@@ -271,7 +244,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Character> getSparseMemoryColumnSource(char[] data) {
-        final SparseArrayColumnSource<Character> result = new CharacterAdaptiveSparseArraySource();
+        final SparseArrayColumnSource<Character> result = USE_ADAPTIVE
+                ? new CharacterAdaptiveSparseArraySource()
+                : new CharacterSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (char o : data) {
@@ -281,7 +256,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Double> getSparseMemoryColumnSource(double[] data) {
-        final SparseArrayColumnSource<Double> result = new DoubleAdaptiveSparseArraySource();
+        final SparseArrayColumnSource<Double> result = USE_ADAPTIVE
+                ? new DoubleAdaptiveSparseArraySource()
+                : new DoubleSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (double o : data) {
@@ -291,7 +268,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Float> getSparseMemoryColumnSource(float[] data) {
-        final SparseArrayColumnSource<Float> result = new FloatAdaptiveSparseArraySource();
+        final SparseArrayColumnSource<Float> result = USE_ADAPTIVE
+                ? new FloatAdaptiveSparseArraySource()
+                : new FloatSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (float o : data) {
@@ -301,7 +280,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Integer> getSparseMemoryColumnSource(int[] data) {
-        final SparseArrayColumnSource<Integer> result = new IntegerAdaptiveSparseArraySource();
+        final SparseArrayColumnSource<Integer> result = USE_ADAPTIVE
+                ? new IntegerAdaptiveSparseArraySource()
+                : new IntegerSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (int o : data) {
@@ -311,7 +292,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Long> getSparseMemoryColumnSource(long[] data) {
-        final SparseArrayColumnSource<Long> result = new LongAdaptiveSparseArraySource();
+        final SparseArrayColumnSource<Long> result = USE_ADAPTIVE
+                ? new LongAdaptiveSparseArraySource()
+                : new LongSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (long o : data) {
@@ -321,7 +304,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static WritableColumnSource<Instant> getInstantMemoryColumnSource(long[] data) {
-        final WritableColumnSource<Instant> result = new InstantAdaptiveSparseArraySource();
+        final WritableColumnSource<Instant> result = USE_ADAPTIVE
+                ? new InstantAdaptiveSparseArraySource()
+                : new InstantSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (long o : data) {
@@ -331,7 +316,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Short> getSparseMemoryColumnSource(short[] data) {
-        final SparseArrayColumnSource<Short> result = new ShortAdaptiveSparseArraySource();
+        final SparseArrayColumnSource<Short> result = USE_ADAPTIVE
+                ? new ShortAdaptiveSparseArraySource()
+                : new ShortSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (short o : data) {
@@ -356,28 +343,32 @@ public abstract class SparseArrayColumnSource<T>
             @Nullable Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (type == byte.class || type == Byte.class) {
-            result = new ByteAdaptiveSparseArraySource();
+            result = USE_ADAPTIVE ? new ByteAdaptiveSparseArraySource() : new ByteSparseArraySource();
         } else if (type == char.class || type == Character.class) {
-            result = new CharacterAdaptiveSparseArraySource();
+            result = USE_ADAPTIVE ? new CharacterAdaptiveSparseArraySource() : new CharacterSparseArraySource();
         } else if (type == double.class || type == Double.class) {
-            result = new DoubleAdaptiveSparseArraySource();
+            result = USE_ADAPTIVE ? new DoubleAdaptiveSparseArraySource() : new DoubleSparseArraySource();
         } else if (type == float.class || type == Float.class) {
-            result = new FloatAdaptiveSparseArraySource();
+            result = USE_ADAPTIVE ? new FloatAdaptiveSparseArraySource() : new FloatSparseArraySource();
         } else if (type == int.class || type == Integer.class) {
-            result = new IntegerAdaptiveSparseArraySource();
+            result = USE_ADAPTIVE ? new IntegerAdaptiveSparseArraySource() : new IntegerSparseArraySource();
         } else if (type == long.class || type == Long.class) {
-            result = new LongAdaptiveSparseArraySource();
+            result = USE_ADAPTIVE ? new LongAdaptiveSparseArraySource() : new LongSparseArraySource();
         } else if (type == short.class || type == Short.class) {
-            result = new ShortAdaptiveSparseArraySource();
+            result = USE_ADAPTIVE ? new ShortAdaptiveSparseArraySource() : new ShortSparseArraySource();
         } else if (type == boolean.class || type == Boolean.class) {
-            result = new BooleanAdaptiveSparseArraySource();
+            result = USE_ADAPTIVE ? new BooleanAdaptiveSparseArraySource() : new BooleanSparseArraySource();
         } else if (type == Instant.class) {
-            result = new InstantAdaptiveSparseArraySource();
+            result = USE_ADAPTIVE ? new InstantAdaptiveSparseArraySource() : new InstantSparseArraySource();
         } else {
             if (componentType != null) {
-                result = new ObjectAdaptiveSparseArraySource<>(type, componentType);
+                result = USE_ADAPTIVE
+                        ? new ObjectAdaptiveSparseArraySource<>(type, componentType)
+                        : new ObjectSparseArraySource<>(type, componentType);
             } else {
-                result = new ObjectAdaptiveSparseArraySource<>(type);
+                result = USE_ADAPTIVE
+                        ? new ObjectAdaptiveSparseArraySource<>(type)
+                        : new ObjectSparseArraySource<>(type);
             }
         }
         if (size != 0) {

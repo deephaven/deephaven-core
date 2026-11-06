@@ -109,7 +109,7 @@ public class ReplicateSourceAndChunkTests {
                 "ObjectChunk<[?] extends Values>", "ObjectChunk<?, ? extends Values>",
                 "Map<String, ObjectArraySource>", "Map<String, ObjectArraySource<?>>",
                 "new ObjectArraySource\\(\\)", "new ObjectArraySource<>\\(String.class\\)",
-                "new ObjectAdaptiveSparseArraySource\\(\\)", "new ObjectAdaptiveSparseArraySource<>\\(String.class\\)");
+                "new ObjectSparseArraySource\\(\\)", "new ObjectSparseArraySource<>\\(String.class\\)");
         lines = removeRegion(lines, "boxing imports");
         FileUtils.writeLines(objectFile, lines);
     }
@@ -193,9 +193,6 @@ public class ReplicateSourceAndChunkTests {
         if (!booleanPath.contains("Abstract") && !booleanPath.contains("Sparse")) {
             lines = removeImport(lines, "import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;");
         }
-        lines = globalReplacements(lines,
-                "assertEquals\\(data\\[ii\\], source.getBoolean\\(ii \\+ 1\\)\\)",
-                "assertEquals(BooleanUtils.byteAsBoolean(data[ii]), source.getBoolean(ii + 1))");
         lines = simpleFixup(lines, "elementGet",
                 "getBoolean", "getByte");
         FileUtils.writeLines(booleanFile, lines);

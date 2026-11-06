@@ -1,19 +1,25 @@
 # Adaptive sparse array sources
 
-This document describes how the sparse array sources (`CharacterAdaptiveSparseArraySource` and its replicas) store values,
-record previous values, prepare for parallel population and release memory, and which performance traps shaped them. The
-sources address row keys through a page table, as they always have, but a leaf of the page table is stored according to
-how many values it holds: a leaf with few values is a compact leaf, and a fuller leaf is a full block. The sources that
-`select` and `update` create use compact leaves; setting `SparseMemoryColumnSourceFactory.adaptive` to false makes every
-leaf a full block, as before, and is kept as an escape hatch. Every other sparse source has only full blocks.
+This document describes how the adaptive sparse array sources (`CharacterAdaptiveSparseArraySource` and its replicas)
+store values, record previous values, prepare for parallel population and release memory, and which performance traps
+shaped them. The sources address row keys through a page table whose levels and leaves adapt to the row keys they hold:
+a leaf with few values is a compact leaf, and a fuller leaf is a full block. The sources that `select` and `update`
+create use compact leaves. The sources that other operations create, through the factory methods of
+`SparseArrayColumnSource`, hold every leaf as a full block.
+
+The full block sparse array sources (`CharacterSparseArraySource` and its replicas) remain beside them, unchanged.
+Setting `SparseMemoryColumnSourceFactory.adaptive` to false makes `select`, `update` and the factory methods create
+those sources instead, so that the escape hatch runs exactly the code it ran before the adaptive sources existed, with
+its performance.
 
 | | |
 |---|---|
 | **Sources** | `CharacterAdaptiveSparseArraySource`, replicated to Byte, Short, Integer, Long, Float, Double and Object; `BooleanAdaptiveSparseArraySource` over Byte; `InstantAdaptiveSparseArraySource` and `ZonedDateTimeAdaptiveSparseArraySource` over Long, through `NanosBasedTimeAdaptiveSparseArraySource` |
+| **Full block sources** | `CharacterSparseArraySource` and its replicas, `BooleanSparseArraySource`, and the time sources over `LongSparseArraySource`, on `OneOrNSparseArrayColumnSource` and the page table levels of `sparse/CharOneOrN` and its replicas |
 | **Compact leaves** | `sparse/CharCompactLeaf`, with `CharSortedLeaf` (at most 16 values) and `CharBitmapLeaf` (at most 128 values), replicated per type |
 | **Page table levels** | `Level0`, `Level1` and `Level2`, nested in each source, each holding its children in a window, or ranked when sparse; `sparse/ChildPositions`, with a sorted tier (at most 16 children) and a ranked bitmap tier, ranks the children of `Level1` and `Level2` for every type |
-| **Base class** | `SparseArrayColumnSource`: `clearBlocks`, `clearBlocksWithoutLiveRows`, `clearVacatedBlocks`, `estimateSize`, `getSparseMemoryColumnSource` |
-| **Configuration** | `SparseMemoryColumnSourceFactory.adaptive` (default true) selects the default thresholds for the sources `select` and `update` create; false makes their leaves all full blocks; every other source has only full blocks |
+| **Base class** | `SparseArrayColumnSource`, of both kinds of source: `clearBlocks`, `clearBlocksWithoutLiveRows`, `clearVacatedBlocks`, `estimateSize`, and the factory methods `getSparseMemoryColumnSource`, which update-by operators, joins and row redirections use to make their sources |
+| **Configuration** | `SparseMemoryColumnSourceFactory.adaptive` (default true) makes `select` and `update` create adaptive sources with the default thresholds, and the factory methods create adaptive sources of full blocks; false makes both create the full block sources |
 | **Parallel population** | `WritableSourceWithPrepareForParallelPopulation.parallelPopulationAlignment` and `prepareForParallelPopulation(rows, alignedDivisions)`; `SelectColumnLayer.divideAligned` |
 | **Benchmarks** | `SparseStorageBenchmark` (`jmhRunSparseStorage`), `SparseStorageMemory` (`sparseStorageMemory`), `SparseUpdateBenchmark` (`jmhRunSparseUpdate`), and for results of few leaves `SparseSmallBenchmark` (`jmhRunSparseSmall`) and `SparseSmallMemory` (`sparseSmallMemory`), all in `io.deephaven.benchmark.engine.sparse` |
 | **Tests** | `TestCharCompactLeaf` and `TestCharacterAdaptiveSparseArraySource` and their replicas, checked against reference maps; `TestChildPositions`; `TestBooleanAdaptiveSparseArraySource`, `TestInstantAdaptiveSparseArraySource`, `TestSparseArraySourceNullBlocks`; the `Abstract*ColumnSourceTest` suites |
@@ -261,15 +267,16 @@ leaf with no live rows returns its memory.
 
 ## Boolean and time sources
 
-`BooleanAdaptiveSparseArraySource` stores each value as a byte in a `ByteAdaptiveSparseArraySource` and reinterprets to it, so
-`SelectColumnLayer`, which writes through the primitive source, and the byte source share the same leaves. Likewise the
-time sources store epoch nanoseconds in a `LongAdaptiveSparseArraySource`. These wrappers delegate previous values,
+`BooleanAdaptiveSparseArraySource` stores each value as a byte in a `ByteAdaptiveSparseArraySource` and reinterprets
+to it, so `SelectColumnLayer`, which writes through the primitive source, and the byte source share the same leaves.
+Likewise the adaptive time sources store epoch nanoseconds in a `LongAdaptiveSparseArraySource`. These wrappers delegate previous values,
 immutability, shifts and parallel population to the primitive source.
 
 ## Replication
 
-`CharacterAdaptiveSparseArraySource`, `CharCompactLeaf`, `CharSortedLeaf`, `CharBitmapLeaf` and their tests are the templates;
-`ReplicateSourcesAndChunks` and `ReplicateSourceAndChunkTests` generate the other types. The Object source keeps
+`CharacterAdaptiveSparseArraySource`, `CharCompactLeaf`, `CharSortedLeaf`, `CharBitmapLeaf` and their tests are the
+templates; `ReplicateSourcesAndChunks` and `ReplicateSourceAndChunkTests` generate the other types, and the full block
+sources from `CharacterSparseArraySource` and `CharOneOrN` beside them. The Object source keeps
 references in its leaves and recyclers, and nulls each array slot it releases so that the recyclers retain no values.
 
 ## Row key patterns
@@ -303,83 +310,81 @@ different part of the page table:
 
 ## Measured behaviour
 
-All comparisons are against the sparse array sources before compact leaves, in the same build, with 2 forks, over a
-double column and 2^23 row keys. `SparseUpdateBenchmark` runs `update("X = V * 2.0")` over a refreshing parent whose
-row keys follow the pattern, and its cycles change 2^16 row keys.
+All comparisons are against the full block sparse array sources (`DoubleSparseArraySource`), in the same build, with 2
+forks, over a double column. `SparseUpdateBenchmark` runs `update("X = V * 2.0")` over a refreshing parent whose row
+keys follow the pattern, and its cycles change 2^16 row keys.
 
-With compact leaves (the default):
+### Compact leaves
 
-| Pattern | Bytes per row, full blocks | Bytes per row, compact | Initial update, serial | Initial update, parallel |
+The sources that `select` and `update` create, over 2^23 row keys:
+
+| Pattern | Bytes per row, full block sources | Bytes per row, adaptive | Initial update, serial | Initial update, parallel |
 |---|---|---|---|---|
-| Dense | 8.1 | 8.1 | 0.99x | 0.37x |
-| Stride8 | 64.5 | 10.2 | 0.60x | 0.20x |
-| Stride64 | 515 | 14.5 | 0.17x | 0.15x |
-| Stride512 | 4115 | 48.0 | 0.09x | 0.15x |
-| Random1 | 807 | 18.6 | 0.20x | 0.19x |
-| Clustered | 65.0 | 8.7 | 0.59x | 0.23x |
+| Dense | 8.1 | 8.1 | 1.02x | 0.42x |
+| Stride8 | 64.4 | 9.9 | 0.67x | 0.20x |
+| Stride64 | 517 | 13.8 | 0.19x | 0.14x |
+| Stride512 | 4,113 | 42.0 | 0.10x | 0.14x |
+| Random1 | 809 | 17.6 | 0.22x | 0.20x |
+| Clustered | 64.6 | 8.8 | 0.62x | 0.26x |
 
-March cycles take 0.58 to 0.92x as long and allocate a half to a seventh as much except for Dense; modify cycles take
-0.77 to 0.96x as long.
+An initial update allocates 3 to 18% as much, except for Dense, which allocates the same. March cycles take 0.34 to
+0.92x as long and allocate 15 to 50% as much, except for Dense, which allocates 1 to 3% more. Modify cycles take 0.50 to
+1.02x as long and allocate 5 to 12% more. Stride8 modify cycles allocate 182 KB against 100 KB, for the compact leaves
+that record previous values, and Dense modify cycles allocate 14 KB against 9 KB serially and 36 KB against 17 KB in
+parallel.
 
-A point read in a compact leaf costs a bitmap rank or a sorted-leaf count. Random `get` takes 1.33 to 2.63x as long on
-Stride64, Stride512, Random1, Runs64 and Clustered, and 0.65 to 0.93x on Dense, Stride8 and Random10, whose smaller
-footprint offsets the rank.
+A point read in a compact leaf costs a bitmap rank or a sorted leaf count. Random `get` takes 1.33 to 2.54x as long on
+Stride64, Stride512, Random1, Runs64 and Clustered, and 0.72 to 1.07x on Dense, Stride8 and Random10, whose smaller
+footprint offsets the rank. Random `set` takes 0.91 to 2.59x as long, the most on Random1 and Random10, and
+`sequentialFill` 0.45 to 1.47x, the most on Runs64.
 
-With every leaf a full block (`SparseMemoryColumnSourceFactory.adaptive=false`):
+### Full block leaves
 
-- Memory per row is unchanged.
-- Initial updates take 0.91 to 1.01x as long serially and 0.35 to 0.94x in parallel.
-- March and modify cycles take 0.34 to 1.00x as long, Dense gaining most, except a serial Stride8 modify at 1.05x.
-  Cycles allocate 1 to 5% more, except Stride8, which allocates 782 KB against 703 KB per march cycle and 180 KB
-  against 100 KB per modify cycle, for the compact leaves that record previous values.
-- `fillUnordered` takes 0.56 to 0.65x as long and `randomSet` 0.35 to 0.94x; other storage operations are within 0.89
-  to 1.11x.
+The sources that the factory methods of `SparseArrayColumnSource` create adapt their page table levels and hold every
+leaf as a full block. Over 2^23 row keys their memory per row is within 1% of the full block sources. `fillUnordered`
+takes 0.58 to 0.72x as long, random `set` 0.49 to 0.93x, `randomSubsetFill` 0.54 to 1.23x, `sequentialFill` 0.59 to
+1.12x, `populate` 0.96 to 1.03x and random `get` 1.00 to 1.08x.
 
-### Page table levels
+### Small results
 
-These comparisons are against page table levels that each hold either one child or an array indexed by child index, as
-the sources before compact leaves did, with compact leaves in both, in the same build, with 1 fork. `SparseSmallMemory`
-measures the bytes per row that results of a few rows retain, in the shapes of [Row key patterns](#row-key-patterns):
+`SparseSmallMemory` measures the bytes per row that results of a few rows retain, in the shapes of
+[Row key patterns](#row-key-patterns):
 
-| Shape | Rows | Levels of one child or all, bytes per row | Adaptive levels, bytes per row |
+| Shape | Rows | Full block sources | Adaptive, full block leaves | Adaptive, compact leaves |
+|---|---|---|---|---|
+| Dense | 10 | 861 | 844 | 42.2 |
+| Dense | 3,000 | 52.2 | 8.3 | 8.3 |
+| Stride64 | 100 | 1,898 | 578 | 16.8 |
+| Stride64 | 1,000 | 651 | 519 | 14.1 |
+| Spread | 10 | 21,532 | 8,269 | 127 |
+| Spread | 100,000 | 8,260 | 8,254 | 104 |
+| Level2s | 10 | 21,356 | 8,280 | 144 |
+| Level2s | 10,000 | 8,285 | 8,301 | 127 |
+| Regions | 10 | 4,200,921 | 6,688 | 180 |
+| Regions | 100,000 | 438 | 8.6 | 8.6 |
+| FarRegions | 10 | 4,195,968 | 1,680 | 64 |
+
+A `Level0` of the full block sources with more than one child allocates a 32 MB array, which is why every source spread
+across regions retains megabytes. Spread, a leaf in every eight, is just dense enough for a `Level2` window, which then
+has eight entries per leaf; ranking those leaves instead retained 77 bytes per row.
+
+With 3,000 and 30,000 rows (`SparseSmallBenchmark`), each adaptive source's time divided by the full block sources',
+with compact leaves and then with full block leaves:
+
+| Shape | `randomGet` | `fillUnordered` | `sequentialFill` |
 |---|---|---|---|
-| Dense | 10 | 40.4 | 40.4 |
-| Dense | 3,000 | 54.1 | 8.3 |
-| Stride64 | 100 | 1,336 | 16.8 |
-| Stride64 | 1,000 | 147 | 14.1 |
-| Spread | 10 | 13,260 | 127 |
-| Spread | 100,000 | 106 | 104 |
-| Level2s | 10 | 13,241 | 145 |
-| Level2s | 10,000 | 125 | 127 |
-| Regions | 10 | 4,194,437 | 181 |
-| Regions | 100,000 | 439 | 8.7 |
-| FarRegions | 10 | 4,194,361 | 64 |
+| Dense | 1.02 to 1.10; 1.02 to 1.08 | 0.72 to 0.77; 0.71 to 0.78 | 1.01; 0.97 to 1.00 |
+| Stride64 | 2.19 to 3.25; 1.07 to 1.10 | 1.04 to 1.46; 0.60 to 0.69 | 1.17 to 1.38; 0.78 to 0.83 |
+| Spread | 1.59 to 1.97; 1.13 to 1.29 | 0.92 to 0.95; 0.58 to 0.82 | 1.21 to 1.47; 1.30 to 1.63 |
+| Level2s | 2.10 to 2.16; 1.30 to 1.32 | 1.07 to 1.10; 0.79 to 0.80 | 0.80 to 1.25; 1.04 to 1.21 |
+| Regions | 1.09 to 1.47; 1.07 to 1.48 | 0.78 to 0.89; 0.78 to 0.89 | 0.99 to 1.04; 0.98 to 1.04 |
+| FarRegions | 2.23 to 2.25; 2.23 to 2.26 | 1.08 to 1.16; 1.09 to 1.16 | 1.00 to 1.05; 0.99 to 1.05 |
 
-A `Level0` with more than one child allocated a 32 MB array, which is why every source spread across regions retained
-megabytes. Spread, a leaf in every eight, is just dense enough for a `Level2` window, which then has eight entries per
-leaf; ranking those leaves instead retained 77 bytes per row.
-
-Over 2^23 row keys, random `get` and `set`, `fillUnordered`, `sequentialFill` and `populate` take 0.86 to 1.10x as long
-with full blocks. With compact leaves they take 0.95 to 1.30x: the most for random `set` and `get` on Clustered (1.30
-and 1.26x), and for populating Random1 and Stride512 (1.21 and 1.22x), where each `Level2` grows its positions and
-arrays through the sorted and bitmap tiers.
-
-With 3,000 and 30,000 rows (`SparseSmallBenchmark`), each storage's time divided by the levels of one child or all:
-
-| Shape | `randomGet` | `randomGetAcrossCopies` | `fillUnordered` | `sequentialFill` |
-|---|---|---|---|---|
-| Dense | 1.02 to 1.07 | 1.50 to 1.51 | 1.05 to 1.06 | 0.93 to 1.11 |
-| Stride64 | 0.99 to 1.04 | 1.20 to 1.24 | 1.05 to 1.11 | 0.98 to 1.02 |
-| Spread | 1.05 to 1.14 | 1.20 to 1.29 | 1.00 to 1.15 | 1.10 to 1.15 |
-| Level2s | 1.11 to 1.47 | 1.22 to 2.13 | 1.04 to 1.39 | 1.00 to 1.12 |
-| Regions | 1.11 to 1.42 | 1.18 to 1.26 | 1.13 to 1.30 | 1.00 to 1.02 |
-| FarRegions | 2.08 to 2.09 | 1.74 to 1.84 | 1.42 to 1.69 | 0.96 to 1.05 |
-
-Random reads of a small result pay for finding each child's position, which an array indexed by child index gave for
-free. FarRegions ranks its two `Level0` children, 800,000 indices apart, so every read searches them. Level2s at 30,000
-rows reads a different `Level2` for each row, so a read across copies is bound by memory; it was measured with 2 forks.
-`randomGetAcrossCopies` reads eight copies of the source in turn, so that no level's loads move out of the loop, as for
-a caller that reads many sources.
+Random reads of a small result pay for finding each child's position, which an array indexed by child index gives for
+free. FarRegions ranks its two `Level0` children, 800,000 indices apart, so every read searches them. Compact leaves add
+the rank or count within each leaf, which is why Stride64, Spread and Level2s, with few rows per leaf, read slowest with
+them. With compact leaves, populating a small result takes at most 0.78x as long. With either kind of leaf, populating
+one spread across regions takes less than 1% as long, because no 32 MB array is allocated.
 
 ## Traps this code has already fallen into
 

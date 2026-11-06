@@ -11,22 +11,23 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.sources.IntegerAdaptiveSparseArraySource;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * This column source is used as a wrapper for the original table's symbol sources.
  * <p>
- * The symbol sources are reinterpreted to longs, and then the SymbolCombiner produces an
- * IntegerAdaptiveSparseArraySource for each side. To convert from the symbol table value, we simply look it up in the
- * symbolLookup source and use that as our chunked result.
+ * The symbol sources are reinterpreted to longs, and then the SymbolCombiner produces a sparse integer source for each
+ * side. To convert from the symbol table value, we simply look it up in the symbolLookup source and use that as our
+ * chunked result.
  */
 public class SymbolTableToUniqueIdSource extends AbstractColumnSource<Integer>
         implements ImmutableColumnSourceGetDefaults.ForInt {
     private final ColumnSource<Long> symbolSource;
-    private final IntegerAdaptiveSparseArraySource symbolLookup;
+    private final WritableColumnSource<Integer> symbolLookup;
 
-    SymbolTableToUniqueIdSource(ColumnSource<Long> symbolSource, IntegerAdaptiveSparseArraySource symbolLookup) {
+    SymbolTableToUniqueIdSource(ColumnSource<Long> symbolSource, WritableColumnSource<Integer> symbolLookup) {
         super(int.class);
         this.symbolSource = symbolSource;
         this.symbolLookup = symbolLookup;
@@ -81,7 +82,8 @@ public class SymbolTableToUniqueIdSource extends AbstractColumnSource<Integer>
 
     public static SymbolTableToUniqueIdSource getUniqueIdSource(final Table symbolTable,
             final ColumnSource<?> keySource) {
-        final IntegerAdaptiveSparseArraySource symbolMapper = new IntegerAdaptiveSparseArraySource();
+        final WritableColumnSource<Integer> symbolMapper =
+                SparseArrayColumnSource.getSparseMemoryColumnSource(int.class);
         if (symbolTable.size() > 0) {
             final SymbolTableCombiner stc = new SymbolTableCombiner(new ColumnSource<?>[] {keySource},
                     SymbolTableCombiner.hashTableSize(symbolTable.size()));

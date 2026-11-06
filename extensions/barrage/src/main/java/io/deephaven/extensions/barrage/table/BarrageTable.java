@@ -21,7 +21,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.LongAdaptiveSparseArraySource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.updategraph.*;
@@ -513,7 +513,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             final WritableRowRedirection rowRedirection;
             final boolean isFlat = getAttribute.test(BarrageUtil.TABLE_ATTRIBUTE_IS_FLAT);
             if (getAttribute.test(Table.APPEND_ONLY_TABLE_ATTRIBUTE) || isFlat) {
-                rowRedirection = new LongColumnSourceWritableRowRedirection(new LongAdaptiveSparseArraySource());
+                rowRedirection = new LongColumnSourceWritableRowRedirection(
+                        SparseArrayColumnSource.getSparseMemoryColumnSource(long.class));
             } else {
                 rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(1024);
             }

@@ -573,7 +573,7 @@ public class TestBooleanArraySource {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
-        // NullPointerException in BooleanAdaptiveSparseArraySource.commitUpdates()
+        // NullPointerException in BooleanSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

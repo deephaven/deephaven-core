@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
 public class TestObjectSparseArraySource extends AbstractObjectColumnSourceTest {
     @NotNull
     @Override
-    ObjectAdaptiveSparseArraySource<Object> makeTestSource() {
-        return new ObjectAdaptiveSparseArraySource(String.class);
+    ObjectSparseArraySource<Object> makeTestSource() {
+        return new ObjectSparseArraySource(String.class);
     }
 }

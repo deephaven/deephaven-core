@@ -46,9 +46,9 @@ import java.util.function.Supplier;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 
 /**
- * Measures {@code update()} into sparse array sources with every leaf a full block, or with compact leaves, selected by
- * {@link SparseMemoryColumnSourceFactory#USE_ADAPTIVE}, for a refreshing parent whose row keys follow a pattern over a
- * window of {@code 2^logWindow} row keys:
+ * Measures {@code update()} into sparse array sources that hold every leaf as a full block, or into adaptive sparse
+ * array sources with compact leaves, selected by {@link SparseMemoryColumnSourceFactory#USE_ADAPTIVE}, for a refreshing
+ * parent whose row keys follow a pattern over a window of {@code 2^logWindow} row keys:
  * <ul>
  * <li>Dense: every row key</li>
  * <li>Stride8, Stride64, Stride512: every 8th, 64th or 512th row key</li>

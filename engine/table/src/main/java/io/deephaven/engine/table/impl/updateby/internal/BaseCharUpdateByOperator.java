@@ -194,7 +194,7 @@ public abstract class BaseCharUpdateByOperator extends UpdateByOperator {
         } else {
             maybeInnerSource = null;
             // region create-sparse
-            outputSource = new CharacterAdaptiveSparseArraySource();
+            outputSource = SparseArrayColumnSource.getSparseMemoryColumnSource(char.class);
             // endregion create-sparse
         }
     }
@@ -227,7 +227,7 @@ public abstract class BaseCharUpdateByOperator extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((CharacterAdaptiveSparseArraySource) outputSource).shift(subRowSetToShift, delta);
+        ((SparseArrayColumnSource<?>) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 
