@@ -130,7 +130,7 @@ source = emptyTable(1).update(
 - [Configure the Deephaven production application](./configuration/configure-production-application.md)
 - [Build and launch Deephaven from source code](../getting-started/launch-build.md)
 - [How to use Java classes](./java-classes.md)
-- [Import packages with user-defined functions](./groovy-closures.md#import-packages-with-user-defined-functions)
+- [Import closures from Groovy files](./groovy-closures.md#import-closures-from-groovy-files)
 - [Create an empty table](./new-and-empty-table.md#emptytable)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`update`](../reference/table-operations/select/update.md)
