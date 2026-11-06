@@ -1674,7 +1674,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
             return;
         }
         final double value = getValue(level2, block2, offset);
-        recorded = preparePrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
+        recorded = makeRoomInPrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
         if (recorded != null) {
             recorded.put(offset, value);
         }
@@ -1704,7 +1704,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         if (absent == 0) {
             return;
         }
-        final DoubleCompactLeaf recorded = preparePrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
+        final DoubleCompactLeaf recorded = makeRoomInPrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
         if (recorded == null) {
             return;
         }
@@ -1734,7 +1734,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
      *
      * @return the leaf to record into, or null if the previous value leaf is now a snapshot of the whole leaf
      */
-    private DoubleCompactLeaf preparePrevLeaf(
+    private DoubleCompactLeaf makeRoomInPrevLeaf(
             final long key,
             final Level2 prevLevel2,
             final int block2,

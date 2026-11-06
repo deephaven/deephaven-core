@@ -1670,7 +1670,7 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
             return;
         }
         final char value = getValue(level2, block2, offset);
-        recorded = preparePrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
+        recorded = makeRoomInPrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
         if (recorded != null) {
             recorded.put(offset, value);
         }
@@ -1700,7 +1700,7 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
         if (absent == 0) {
             return;
         }
-        final CharCompactLeaf recorded = preparePrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
+        final CharCompactLeaf recorded = makeRoomInPrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
         if (recorded == null) {
             return;
         }
@@ -1730,7 +1730,7 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
      *
      * @return the leaf to record into, or null if the previous value leaf is now a snapshot of the whole leaf
      */
-    private CharCompactLeaf preparePrevLeaf(
+    private CharCompactLeaf makeRoomInPrevLeaf(
             final long key,
             final Level2 prevLevel2,
             final int block2,

@@ -1674,7 +1674,7 @@ public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<In
             return;
         }
         final int value = getValue(level2, block2, offset);
-        recorded = preparePrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
+        recorded = makeRoomInPrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
         if (recorded != null) {
             recorded.put(offset, value);
         }
@@ -1704,7 +1704,7 @@ public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<In
         if (absent == 0) {
             return;
         }
-        final IntCompactLeaf recorded = preparePrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
+        final IntCompactLeaf recorded = makeRoomInPrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
         if (recorded == null) {
             return;
         }
@@ -1734,7 +1734,7 @@ public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<In
      *
      * @return the leaf to record into, or null if the previous value leaf is now a snapshot of the whole leaf
      */
-    private IntCompactLeaf preparePrevLeaf(
+    private IntCompactLeaf makeRoomInPrevLeaf(
             final long key,
             final Level2 prevLevel2,
             final int block2,

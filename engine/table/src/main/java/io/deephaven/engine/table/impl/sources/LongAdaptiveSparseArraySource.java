@@ -1682,7 +1682,7 @@ public class LongAdaptiveSparseArraySource extends SparseArrayColumnSource<Long>
             return;
         }
         final long value = getValue(level2, block2, offset);
-        recorded = preparePrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
+        recorded = makeRoomInPrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
         if (recorded != null) {
             recorded.put(offset, value);
         }
@@ -1712,7 +1712,7 @@ public class LongAdaptiveSparseArraySource extends SparseArrayColumnSource<Long>
         if (absent == 0) {
             return;
         }
-        final LongCompactLeaf recorded = preparePrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
+        final LongCompactLeaf recorded = makeRoomInPrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
         if (recorded == null) {
             return;
         }
@@ -1742,7 +1742,7 @@ public class LongAdaptiveSparseArraySource extends SparseArrayColumnSource<Long>
      *
      * @return the leaf to record into, or null if the previous value leaf is now a snapshot of the whole leaf
      */
-    private LongCompactLeaf preparePrevLeaf(
+    private LongCompactLeaf makeRoomInPrevLeaf(
             final long key,
             final Level2 prevLevel2,
             final int block2,
