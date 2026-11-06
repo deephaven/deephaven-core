@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
@@ -31,8 +32,11 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.parquet.Version;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.hadoop.metadata.FileMetaData;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
@@ -360,6 +364,57 @@ public class ParquetTableWriter {
         // First, map the TableDefinition to a parquet Schema
         final MappedSchema mappedSchema =
                 MappedSchema.create(computedCache, definition, tableRowSet, columnSourceMap, writeInstructions);
+        final Map<String, String> extraMetaData =
+                getKeyValueMetaData(definition, writeInstructions, tableMeta, tableInfoBuilder);
+        return new ParquetFileWriter(dest, destOutputStream, writeInstructions.getTargetPageSize(),
+                new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
+                writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter,
+                writeInstructions.writeRowGroupStatistics());
+    }
+
+    /**
+     * Get the footer that {@link #write} would write for a table with no rows, without writing any file. The footer
+     * carries the same schema and key-value metadata as the footer of a file written with the same definition and
+     * instructions, and no row groups.
+     *
+     * @param definition The writable definition
+     * @param writeInstructions Write instructions for the file
+     * @return the footer
+     *
+     * @throws IOException For errors serializing the deephaven metadata
+     */
+    static ParquetMetadata getFooterForEmptyTable(
+            @NotNull final TableDefinition definition,
+            @NotNull final ParquetInstructions writeInstructions) throws IOException {
+        // Schema mapping reads column sources only to size BigDecimal columns, so the column sources of an empty table
+        // with the same definition are enough
+        final Table emptyTable = TableTools.newTable(definition);
+        final MappedSchema mappedSchema = MappedSchema.create(new HashMap<>(), definition, emptyTable.getRowSet(),
+                emptyTable.getColumnSourceMap(), writeInstructions);
+        final Map<String, String> keyValueMetaData =
+                getKeyValueMetaData(definition, writeInstructions, Collections.emptyMap(), TableInfo.builder());
+        return new ParquetMetadata(
+                new FileMetaData(mappedSchema.getParquetSchema(), keyValueMetaData, Version.FULL_VERSION),
+                new ArrayList<>());
+    }
+
+    /**
+     * Build the key-value metadata for the footer of a parquet file written with the provided definition, including the
+     * per-column type information in the deephaven metadata.
+     *
+     * @param definition The writable definition
+     * @param writeInstructions Write instructions for the file
+     * @param tableMeta Metadata to include in the parquet metadata
+     * @param tableInfoBuilder Builder for accumulating per-column information to construct the deephaven metadata
+     * @return the key-value metadata
+     *
+     * @throws IOException For errors serializing the deephaven metadata
+     */
+    private static Map<String, String> getKeyValueMetaData(
+            @NotNull final TableDefinition definition,
+            @NotNull final ParquetInstructions writeInstructions,
+            @NotNull final Map<String, String> tableMeta,
+            @NotNull final TableInfo.Builder tableInfoBuilder) throws IOException {
         for (final ColumnDefinition<?> column : definition.getColumns()) {
             final String colName = column.getName();
             final ColumnTypeInfo.Builder columnInfoBuilder = ColumnTypeInfo.builder()
@@ -397,10 +452,7 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(dest, destOutputStream, writeInstructions.getTargetPageSize(),
-                new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
-                writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter,
-                writeInstructions.writeRowGroupStatistics());
+        return extraMetaData;
     }
 
     private static <DATA_TYPE> void writeColumnSource(

@@ -1623,6 +1623,152 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void writeKeyValuePartitionedDataWithNoRows() {
+        // DH-23629: no rows means no partitions and no destinations; this used to throw ArrayIndexOutOfBoundsException.
+        // Writing nothing is the contract: the destination is left untouched, and is not created if it does not exist.
+        final Table inputData = newTable(stringCol("PC1"), intCol("I"));
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNoRows");
+        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), EMPTY);
+        assertFalse(parentDir.exists());
+
+        // The key-value layout records the schema only in its data files, so an empty directory cannot be read back
+        // without a table definition
+        assertTrue(parentDir.mkdirs());
+        assertThrowsWithMessage(() -> readTable(parentDir.getPath()), "Unable to infer schema");
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofString("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("I"));
+        final Table fromDisk = readTable(parentDir.getPath(),
+                ParquetInstructions.builder().setTableDefinition(definition).build());
+        assertEquals(definition, fromDisk.getDefinition());
+        assertEquals(0, fromDisk.size());
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNoRowsAndMetadataFiles() {
+        // DH-23638: with metadata files requested, an empty write records the schema in metadata files with no row
+        // groups, so the destination reads back without a table definition, with the definition a write with data
+        // would produce
+        final Table withData = emptyTable(4).update(
+                "PC1 = (ii % 2 == 0) ? `aa` : `bb`",
+                "PC2 = (int) (ii % 2)",
+                "I = (int) ii",
+                "S = `s` + ii",
+                "BD = java.math.BigDecimal.valueOf(ii, 2)",
+                "V = new io.deephaven.vector.IntVectorDirect((int) ii, 1)");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        final File withDataDir = new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesWithData");
+        writeKeyValuePartitionedTable(withData.partitionBy("PC1", "PC2"), withDataDir.getAbsolutePath(),
+                writeInstructions);
+        final TableDefinition expectedDefinition = readTable(withDataDir.getPath()).getDefinition();
+
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsAndMetadataFiles");
+        writeKeyValuePartitionedTable(withData.head(0).partitionBy("PC1", "PC2"), parentDir.getAbsolutePath(),
+                writeInstructions);
+        assertTrue(new File(parentDir, "_metadata").exists());
+        assertTrue(new File(parentDir, "_common_metadata").exists());
+        final Table fromDisk = readTable(parentDir.getPath());
+        assertEquals(expectedDefinition, fromDisk.getDefinition());
+        assertEquals(0, fromDisk.size());
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesIntoEmptyDirectory() {
+        // An existing empty directory holds no data files for the metadata files to hide
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofString("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("I"));
+        final File parentDir =
+                new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesIntoEmptyDirectory");
+        assertTrue(parentDir.mkdirs());
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeKeyValuePartitionedTable(newTable(definition), parentDir.getAbsolutePath(), writeInstructions);
+        final Table fromDisk = readTable(parentDir.getPath());
+        assertEquals(definition, fromDisk.getDefinition());
+        assertEquals(0, fromDisk.size());
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesOverExistingMetadataFiles() throws IOException {
+        // Metadata files with no row groups would hide the data files already in the directory, so an empty write
+        // leaves the existing metadata files untouched
+        final Table inputData = newTable(stringCol("PC1", "aa", "bb"), intCol("I", 1, 2));
+        final File parentDir =
+                new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesOverExistingMetadataFiles");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), writeInstructions);
+        final File metadataFile = new File(parentDir, "_metadata");
+        final File commonMetadataFile = new File(parentDir, "_common_metadata");
+        final byte[] metadataBytes = Files.readAllBytes(metadataFile.toPath());
+        final byte[] commonMetadataBytes = Files.readAllBytes(commonMetadataFile.toPath());
+
+        writeKeyValuePartitionedTable(inputData.head(0).partitionBy("PC1"), parentDir.getAbsolutePath(),
+                writeInstructions);
+        assertArrayEquals(metadataBytes, Files.readAllBytes(metadataFile.toPath()));
+        assertArrayEquals(commonMetadataBytes, Files.readAllBytes(commonMetadataFile.toPath()));
+        final Table fromDisk = readTable(parentDir.getPath()).select();
+        assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesOverExistingData() {
+        // A directory of data files without metadata files is read by listing the data files, and a metadata file with
+        // no row groups would replace that listing, so an empty write adds no metadata files
+        final Table inputData = newTable(stringCol("PC1", "aa", "bb"), intCol("I", 1, 2));
+        final File parentDir =
+                new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesOverExistingData");
+        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), EMPTY);
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeKeyValuePartitionedTable(inputData.head(0).partitionBy("PC1"), parentDir.getAbsolutePath(),
+                writeInstructions);
+        assertFalse(new File(parentDir, "_metadata").exists());
+        assertFalse(new File(parentDir, "_common_metadata").exists());
+        final Table fromDisk = readTable(parentDir.getPath()).select();
+        assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNoRowsOverExistingData() {
+        // An empty write over a populated directory must leave the existing data intact
+        final Table inputData = newTable(stringCol("PC1", "aa", "bb"), intCol("I", 1, 2));
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsOverExistingData");
+        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), EMPTY);
+        writeKeyValuePartitionedTable(inputData.head(0).partitionBy("PC1"), parentDir.getAbsolutePath(), EMPTY);
+        final Table fromDisk = readTable(parentDir.getPath()).select();
+        assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesThroughSymbolicLink() throws IOException {
+        // A destination that is a symbolic link to a populated directory must count as populated, or the metadata
+        // files written through the link would hide the data files in the target directory
+        final Table inputData = newTable(stringCol("PC1", "aa", "bb"), intCol("I", 1, 2));
+        final File targetDir =
+                new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesThroughSymbolicLinkTarget");
+        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), targetDir.getAbsolutePath(), EMPTY);
+        final File linkDir =
+                new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesThroughSymbolicLink");
+        Files.createSymbolicLink(linkDir.toPath(), targetDir.toPath().toAbsolutePath());
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeKeyValuePartitionedTable(inputData.head(0).partitionBy("PC1"), linkDir.getAbsolutePath(),
+                writeInstructions);
+        assertFalse(new File(targetDir, "_metadata").exists());
+        assertFalse(new File(targetDir, "_common_metadata").exists());
+        final Table fromDisk = readTable(targetDir.getPath()).select();
+        assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
+    }
+
+    @Test
     public void writeKeyValuePartitionedDataWithMixedPartitionsTest() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("PC1").withPartitioning(),

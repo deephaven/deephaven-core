@@ -50,6 +50,7 @@ import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -58,9 +59,11 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.nio.file.NoSuchFileException;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.base.FileUtils.URI_SEPARATOR_CHAR;
 import static io.deephaven.base.FileUtils.convertToURI;
@@ -312,10 +315,21 @@ public class ParquetTools {
      * {@link ParquetInstructions#baseNameForPartitionedParquetData()}. By default, any indexing columns present on the
      * source table will be written as sidecar tables. To write only a subset of the indexes or add additional indexes
      * while writing, use {@link ParquetInstructions.Builder#addIndexColumns}.
+     * <p>
+     * If the table has no rows, there are no partitions and no data files to write. The key-value layout records the
+     * schema only in its data files, so reading such a destination back requires a
+     * {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition) table definition} in the read
+     * instructions, unless {@link ParquetInstructions#generateMetadataFiles()} is set. With metadata files requested,
+     * the write produces {@value ParquetUtils#METADATA_FILE_NAME} and {@value ParquetUtils#COMMON_METADATA_FILE_NAME}
+     * files that carry the schema and no row groups, and a read of the destination infers the table definition from
+     * those files. The metadata files are written only when the destination directory is missing or empty, because a
+     * directory with a {@value ParquetUtils#METADATA_FILE_NAME} file is read through that file alone, and metadata
+     * files with no row groups would hide any data files already in the directory. Otherwise nothing is written, and
+     * the destination directory is not created.
      *
      * @param sourceTable The table to partition and write
      * @param destinationDir The path or URI to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created.
+     *        Non-existing directories are created when there is data or metadata to write.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(
@@ -359,10 +373,21 @@ public class ParquetTools {
      * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}. By default, this
      * method does not write any indexes as sidecar tables to disk. To write such indexes, use
      * {@link ParquetInstructions.Builder#addIndexColumns}.
+     * <p>
+     * If the partitioned table has no constituents, there are no partitions and no data files to write. The key-value
+     * layout records the schema only in its data files, so reading such a destination back requires a
+     * {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition) table definition} in the read
+     * instructions, unless {@link ParquetInstructions#generateMetadataFiles()} is set. With metadata files requested,
+     * the write produces {@value ParquetUtils#METADATA_FILE_NAME} and {@value ParquetUtils#COMMON_METADATA_FILE_NAME}
+     * files that carry the schema and no row groups, and a read of the destination infers the table definition from
+     * those files. The metadata files are written only when the destination directory is missing or empty, because a
+     * directory with a {@value ParquetUtils#METADATA_FILE_NAME} file is read through that file alone, and metadata
+     * files with no row groups would hide any data files already in the directory. Otherwise nothing is written, and
+     * the destination directory is not created.
      *
      * @param partitionedTable The partitioned table to write
      * @param destinationDir The path or URI to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created.
+     *        Non-existing directories are created when there is data or metadata to write.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(
@@ -500,6 +525,16 @@ public class ParquetTools {
                 row++;
             }
         }
+        if (destinations.isEmpty()) {
+            // The partitioned table has no constituents (as for a source table with no rows), so there are no
+            // partitions and no data files to write. The key-value layout records the schema only in the data files, so
+            // only metadata files can carry the schema.
+            if (writeInstructions.generateMetadataFiles()) {
+                writeSchemaOnlyMetadataFiles(partitionedTable, keyTableDefinition, leafDefinition,
+                        convertToURI(destinationRoot, true), writeInstructions);
+            }
+            return;
+        }
         final MessageType partitioningColumnsSchema;
         if (writeInstructions.generateMetadataFiles()) {
             // Generate schema for partitioning columns for _common_metadata file. The schema for remaining columns will
@@ -523,6 +558,105 @@ public class ParquetTools {
                 dataIndexes.clear();
             }
         }
+    }
+
+    /**
+     * Write {@value ParquetUtils#METADATA_FILE_NAME} and {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files that
+     * carry the schema of a key-value partitioned write with no partitions, and no row groups. The files are written
+     * only when the destination root directory is missing or empty: a directory with a
+     * {@value ParquetUtils#METADATA_FILE_NAME} file is read through that file alone, so metadata files with no row
+     * groups would hide any data files already in the directory.
+     *
+     * @param partitionedTable The partitioned table with no constituents
+     * @param keyTableDefinition The definition for the partitioning columns
+     * @param leafDefinition The definition for leaf parquet files that a write with data would produce
+     * @param destinationDir The destination root directory
+     * @param writeInstructions Write instructions for customizations while writing
+     */
+    private static void writeSchemaOnlyMetadataFiles(
+            @NotNull final PartitionedTable partitionedTable,
+            @NotNull final TableDefinition keyTableDefinition,
+            @NotNull final TableDefinition leafDefinition,
+            @NotNull final URI destinationDir,
+            @NotNull final ParquetInstructions writeInstructions) {
+        final SeekableChannelsProvider channelsProvider =
+                writeInstructions.getSeekableChannelsProviderForWriting()
+                        .orElseGet(() -> SeekableChannelsProviderLoader.getInstance()
+                                .load(destinationDir.getScheme(), writeInstructions.getSpecialInstructions()));
+        if (!isMissingOrEmptyDirectory(channelsProvider, destinationDir)) {
+            return;
+        }
+        final MessageType partitioningColumnsSchema =
+                getSchemaForTable(partitionedTable.table(), keyTableDefinition, writeInstructions);
+
+        // List of output streams created, to rollback in case of exceptions
+        final List<CompletableOutputStream> outputStreams = new ArrayList<>(2);
+        try (final SeekableChannelsProvider.WriteContext writeContext = channelsProvider.makeWriteContext();
+                final SafeCloseable ignored = () -> SafeCloseable.closeAll(outputStreams.stream())) {
+            try {
+                final ParquetMetadata footer =
+                        ParquetTableWriter.getFooterForEmptyTable(leafDefinition, writeInstructions);
+                // Complete the common metadata file first: a failure between the two completions then leaves no
+                // metadata file, rather than a metadata file whose schema lacks the partitioning columns
+                final CompletableOutputStream commonMetadataOutputStream = channelsProvider.getOutputStream(
+                        writeContext, destinationDir.resolve(COMMON_METADATA_FILE_NAME), PARQUET_OUTPUT_BUFFER_SIZE);
+                outputStreams.add(commonMetadataOutputStream);
+                final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
+                        writeContext, destinationDir.resolve(METADATA_FILE_NAME), PARQUET_OUTPUT_BUFFER_SIZE);
+                outputStreams.add(metadataOutputStream);
+                ParquetMetadataFileWriterImpl.writeSchemaOnlyMetadataFiles(footer, partitioningColumnsSchema,
+                        metadataOutputStream, commonMetadataOutputStream);
+                for (final CompletableOutputStream outputStream : outputStreams) {
+                    outputStream.complete();
+                }
+            } catch (final Exception e) {
+                // Try to rollback all the output streams in reverse order to undo any writes
+                for (int idx = outputStreams.size() - 1; idx >= 0; idx--) {
+                    try {
+                        outputStreams.get(idx).rollback();
+                    } catch (final IOException | RuntimeException e1) {
+                        log.error().append("Error in rolling back output stream ").append(e1).endl();
+                    }
+                }
+                throw new UncheckedDeephavenException("Error writing parquet metadata files", e);
+            }
+        }
+    }
+
+    /**
+     * Whether the directory does not exist or holds no entries at any depth. Object stores have no directories, so a
+     * prefix with no objects under the prefix counts as empty.
+     */
+    private static boolean isMissingOrEmptyDirectory(
+            @NotNull final SeekableChannelsProvider channelsProvider,
+            @NotNull final URI directory) {
+        // A listing follows a local directory that is a symbolic link, which a walk does not. A listing of an object
+        // store prefix holds only the objects directly under the prefix, while the data files of a key-value
+        // partitioned table sit under nested partition prefixes, so an empty listing is confirmed with a walk.
+        try {
+            try (final Stream<URI> entries = channelsProvider.list(directory)) {
+                if (entries.findAny().isPresent()) {
+                    return false;
+                }
+            }
+            final String directoryPath = withoutTrailingSeparators(directory.getPath());
+            try (final Stream<URI> entries = channelsProvider.walk(directory)) {
+                // A file system walk starts with the directory itself
+                return entries.allMatch(entry -> withoutTrailingSeparators(entry.getPath()).equals(directoryPath));
+            }
+        } catch (final NoSuchFileException e) {
+            return true;
+        } catch (final IOException e) {
+            throw new UncheckedDeephavenException("Error reading directory " + directory, e);
+        }
+    }
+
+    private static String withoutTrailingSeparators(@NotNull final String path) {
+        int end = path.length();
+        while (end > 0 && path.charAt(end - 1) == URI_SEPARATOR_CHAR) {
+            end--;
+        }
+        return path.substring(0, end);
     }
 
     private static String concatenatePartitions(final List<String> partitions) {
@@ -620,6 +754,7 @@ public class ParquetTools {
             @Nullable final URI metadataRootDir,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
+        Require.gtZero(destinations.length, "destinations.length");
         if (writeInstructions.getFileLayout().isPresent()) {
             throw new UnsupportedOperationException("File layout is not supported for writing parquet files, use the " +
                     "appropriate API");
