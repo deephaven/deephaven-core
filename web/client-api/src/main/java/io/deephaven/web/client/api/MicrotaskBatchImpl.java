@@ -25,6 +25,7 @@ import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.fu.PromiseLike;
+import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Any;
@@ -341,6 +342,16 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         protected Promise<JsResolvedTable> awaitResult() {
             // An operation produces a ResolvedTable either way, so awaiting and resolving share one owner
             return resolve(null);
+        }
+
+        /**
+         * As {@link #cancel(String)}, but only while this operation has not settled: once it has its table, a failure
+         * elsewhere must not close a table its caller owns.
+         */
+        void cancelIfUnsettled(String message) {
+            if (state.getResolution() == ClientTableState.ResolutionState.UNRESOLVED) {
+                cancel(message);
+            }
         }
 
         @Override
@@ -873,10 +884,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         // ticket so the server drops that placeholder. When the server did define the source, this merely beats its
         // own dependency failure to the same result.
         source.onRunning(
-                ignore -> {
-                },
-                failure -> dependent.cancel(role + " failed: " + failure),
-                () -> dependent.cancel(role + " was released"));
+                JsConsumer.doNothing(),
+                failure -> dependent.cancelIfUnsettled(role + " failed: " + failure),
+                () -> dependent.cancelIfUnsettled(role + " was released"));
     }
 
     private static void sendBatch(WorkerConnection connection, Batch batch) {
