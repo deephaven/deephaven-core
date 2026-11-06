@@ -203,6 +203,14 @@ tag (e.g., compare `git show <tag>:<file>` against the expected state). Only exc
 when the change is confirmed present in at least one released tag — otherwise it is still
 unreleased and needs triage.
 
+**Do not discard reverts of shipped features.** When excluding a commit as already-shipped,
+check whether a revert of that commit exists in the `$BASE..upstream/main` range (by title
+match: `Revert "<original title>"`). If a revert exists, it means a previously shipped feature
+is being removed on main — that revert **must stay in the triage** as a user-facing change
+that likely needs documentation (deprecation notice, migration guidance, release notes). Never
+silently exclude both a shipped feature and its main-side revert. Prefer a little noise in
+the report over missing a shipped-feature removal.
+
 ### Classify each commit as RC-confirmed or main-only
 
 For each remaining commit (after filtering out reverted, superseded, and already-shipped
