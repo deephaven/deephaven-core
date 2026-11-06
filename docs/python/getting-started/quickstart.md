@@ -381,7 +381,7 @@ time_series_join = (
 
 ## 5. Plot data via query or the UI
 
-Deephaven supports _updating, real-time plots_. [Deephaven Express](/core/plotly/docs/), a plotting plugin, is the recommended plotting library for most tasks. It builds real-time [Plotly Express](https://plotly.com/python/plotly-express/) plots directly from Deephaven tables. See [how to plot real-time data](../how-to-guides/plotting/overview.md) to compare Deephaven's plotting options.
+Deephaven supports _updating, real-time plots_. [Deephaven Express](/core/plotly/docs/), a plotting plugin, is the recommended plotting library for most tasks. It builds real-time [Plotly Express](https://plotly.com/python/plotly-express/) plots directly from Deephaven tables. See the [plotting overview](../how-to-guides/plotting/overview.md) to compare Deephaven's plotting options.
 
 The `ghcr.io/deephaven/server` Docker image includes Deephaven Express. If you installed with pip, you installed it [along with Deephaven](#with-pip). If you run the production application, you installed it [before starting the server](#with-the-production-application).
 
@@ -445,6 +445,6 @@ To go further with the topics in this guide, see:
 - [Read Parquet files](../how-to-guides/data-import-export/parquet-import.md)
 - [Connect to a Kafka stream](../how-to-guides/data-import-export/kafka-stream.md)
 - [Filter table data](../how-to-guides/use-filters.md)
-- [Plot real-time data](../how-to-guides/plotting/overview.md)
+- [Plotting overview](../how-to-guides/plotting/overview.md)
 - [Convert between Deephaven tables and pandas DataFrames](../how-to-guides/use-pandas.md)
-- [Navigate the Deephaven UI](../how-to-guides/user-interface/navigating-the-ui.md)
+- [Navigate the GUI](../how-to-guides/user-interface/navigating-the-ui.md)

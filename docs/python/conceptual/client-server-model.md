@@ -1,8 +1,8 @@
 ---
-title: Servers and Clients
+title: Servers and clients
 ---
 
-Deephaven offers server-side and client-side APIs in multiple languages. These APIs allow you to build applications that distribute workloads across multiple machines, share data, and provide seamless user experiences.
+Deephaven offers server-side and client-side APIs in multiple languages. These APIs let you build applications that distribute workloads across multiple machines and share live data. A client, or another Deephaven server, can subscribe to a ticking table, a table whose rows change as new data arrives, and receive each update as it happens.
 
 When should you use server-side APIs? When should you use client-side APIs? When might you need multiple servers? This guide answers these questions by:
 
@@ -12,87 +12,114 @@ When should you use server-side APIs? When should you use client-side APIs? When
 
 ## Software architecture
 
-Platforms generally support two software architectures: Client-server and peer-to-peer.
+Distributed applications generally follow one of two software architectures. In a client-server architecture, each process is either a client or a server. In a peer-to-peer architecture, a process can be both.
 
 ### Client-server software architecture
 
-Client-server architecture in modern software development follows a model where:
+In a client-server architecture:
 
 - A centralized computer called the server, located on-premises or in the cloud, provides services to users.
 - Decentralized processes, called clients, send requests to the server to access services. Clients may be workstations running on people's desks, or more powerful machines running in the machine room or in the cloud.
 
 ### Peer-to-peer software architecture
 
-Peer-to-peer architecture in software development follows a model where every process is both a client and a server. Multiple instances of Deephaven can act as peers, allowing for distributed processing across machines. In this model:
+In a peer-to-peer architecture, a process can act as both a client and a server. In this model:
 
-- Each Deephaven instance can both provide and access services.
+- Each process can both provide and access services.
 - Data and processing can be distributed across multiple nodes.
-- Communication happens directly between peers rather than through a central server.
+- Processes communicate with each other directly.
 
 ## Deephaven servers and clients
 
-Deephaven servers and clients follow the standard client-server software architecture. When you connect a client to a Deephaven server, you establish a communication channel to that server. The server processes your requests and sends responses back to the client. For ticking tables, Deephaven uses its Barrage protocol to efficiently stream data: the client receives an initial snapshot followed by incremental updates containing only the changes. The heavy lifting is done by the server itself; that's where the processing happens. The client merely sends and receives requests and consumes the responses.
+A Deephaven server and the clients connected to it follow the [client-server](#client-server-software-architecture) architecture. When you connect a client to a server, the client sends requests over that connection. The server runs them and sends back the results. The server does the heavy lifting. That's where the processing happens.
+
+A Deephaven server can also be a client of another Deephaven server. It can pull that server's tables in two ways: by [URI](../how-to-guides/use-uris.md), or by opening a [Barrage session](../reference/data-import-export/barrage/barrage-session.md) to it. In this [peer-to-peer](#peer-to-peer-software-architecture) setup, several servers share tables and split the processing. The [multi-server example](#example-multi-server-application) shows one.
+
+The following snippet shows the URI approach. Running it on one server pulls the `prices` table from the query scope of a second server, `server-a`:
+
+```python syntax
+from deephaven.uri import resolve
+
+prices = resolve("dh+plain://server-a:10000/scope/prices")
+```
+
+The result is a local table on the receiving server. If `prices` ticks on `server-a`, the local copy ticks with it.
+
+> [!NOTE]
+> URI resolution doesn't send credentials, so the server that holds the table must accept [anonymous authentication](../how-to-guides/authentication/auth-anon.md). A server that accepts only [pre-shared key (PSK) authentication](../how-to-guides/authentication/auth-psk.md) rejects the connection.
+>
+> To pull a table from a server that requires PSK, call [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md) on the receiving server and pass the key with `auth_type` and `auth_token`. [Capture Python client tables with Barrage](../how-to-guides/capture-tables.md) shows how.
 
 Key characteristics of Deephaven's client-server model:
 
-- **Server-side processing**: The vast majority of computational work happens on the server, where data is stored and transformed.
-- **Lightweight clients**: Clients do little to no real data processing. They send requests to the server and receive responses with the requested information.
-- **Ticking table support**: Some of Deephaven's client APIs (Python with the `pydeephaven-ticking` package, JavaScript, Java, C++) support subscribing to ticking tables and receiving real-time updates. Other client APIs may receive static snapshots of table data at the time of the request.
-- **Language-agnostic**: Clients are agnostic to the server-side API language being used. A Python client can connect to a server running Groovy code, and vice versa.
+- **Server-side processing**: The vast majority of computational work happens on the server, which stores and transforms the data.
+- **Lightweight clients**: Most clients do little or no data processing. They send requests and receive the results. Two kinds of client run the full engine and can keep processing the tables they receive: the [Java client](../how-to-guides/java-client.md) when it subscribes over Barrage, and a Deephaven server that pulls tables from another server. See [What is Barrage?](./what-is-barrage.md).
+- **Ticking table support**: Ticking tables are tables whose rows change as new data arrives (see the [incremental update model](./table-update-model.md)). Clients that support ticking subscribe to a ticking table over Deephaven's [Barrage](./what-is-barrage.md) protocol. They first receive a snapshot of the table, then incremental updates that contain only the changes. [Client APIs](#client-apis) lists which clients support ticking.
+- **Language independence**: A client's table operations work with a server regardless of the server's scripting language. For example, a [Python client](../getting-started/pyclient-quickstart.md) can connect to a server that runs Groovy, and a [Java client](../how-to-guides/java-client.md) can connect to a server that runs Python. Scripts that a client sends to the server must be written in the server's scripting language.
 
 ## Deephaven's language support
 
-Deephaven supports multiple languages for different purposes:
+Deephaven supports languages in two roles: server-side scripting and client APIs.
 
 ### Server-side scripting languages
 
 Server-side scripts run directly on the Deephaven server and have full access to the table API for creating, transforming, and managing tables:
 
-- [Python](https://deephaven.io/core/pydoc/)
-- [Groovy](https://deephaven.io/core/javadoc/)
+- [Python](/core/pydoc/)
+- [Groovy](/core/javadoc/)
 
 ### Client APIs
 
-Client APIs allow applications written in various languages to connect to a Deephaven server, send requests, and receive table data. Client applications can also send server-side scripts to be executed on the server:
+Client APIs allow applications written in various languages to connect to a Deephaven server, send requests, and receive table data. Client applications can also send server-side scripts for the server to run. Deephaven provides client APIs in these languages:
 
-- [Python](https://docs.deephaven.io/core/client-api/python/)
-- [Java](https://deephaven.io/core/javadoc/)
-- [C++](https://docs.deephaven.io/core/client-api/cpp/)
-- [R](https://docs.deephaven.io/core/client-api/r/)
-- [JavaScript](https://docs.deephaven.io/core/client-api/javascript/modules/dh.html)
+- [Python](/core/client-api/python/)
+- [Java](/core/javadoc/)
+- [C++](/core/client-api/cpp/)
+- [R](/core/client-api/r/)
+- [JavaScript](/core/client-api/javascript/modules/dh.html)
 - [Go](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
+- C# (.NET)
+
+The [Java](../how-to-guides/java-client.md), [JavaScript](../how-to-guides/use-jsapi.md), [C++](/core/client-api/cpp/), and C# clients can subscribe to ticking tables. The [Python client](../getting-started/pyclient-quickstart.md) can subscribe too when you install the `pydeephaven-ticking` package. The [R](/core/client-api/r/) and [Go](https://pkg.go.dev/github.com/deephaven/deephaven-core/go) clients receive static snapshots.
+
+The Deephaven web UI is itself a client: it runs in the browser and uses the [JavaScript client API](/core/client-api/javascript/modules/dh.html) to display and subscribe to tables.
 
 ## Server vs client considerations
 
-One of the challenges of building a distributed application is to decide where to perform different aspects of the computation. In the client-server model, you typically want data-intensive operations such as aggregations and streaming joins to be done on the server side. On the other hand, client-side operations are best for visualizations and simple sorting and filtering of already-processed data.
+One of the challenges of building a distributed application is to decide where to perform different aspects of the computation. As described in [Deephaven servers and clients](#deephaven-servers-and-clients), the server does the data-intensive work, such as [aggregations](./aggregations.md) and streaming [joins](../how-to-guides/joins-exact-relational.md). Use the following guidelines to decide between server-side scripts and client applications:
+
+- **Server-side scripts**: Use them for work that creates or transforms tables, such as ingesting data, [filtering](../how-to-guides/use-filters.md), [joining](../how-to-guides/joins-exact-relational.md), and [aggregating](./aggregations.md). The script runs on the server, next to the data.
+- **Client applications**: Use them for work that runs outside the server, such as a separate service, a program written in a language other than Python or Groovy, or a user-facing tool.
+
+Keep heavy table processing on the server where possible. The client decides what to ask for: which [sorts](../how-to-guides/sort.md) and [filters](../how-to-guides/use-filters.md) to apply and which rows are visible. The server runs those operations, whether the client sends them as a script or as calls to its client API.
 
 ## Architecture planning considerations
 
-When designing a Deephaven application, several factors influence whether you need one server or many, and how resources should be allocated. The following subsections cover the most important considerations.
+When you design a Deephaven application, several factors influence whether you need one server or many, and how to allocate resources. The following subsections cover the most important considerations.
 
 ### Data intensity
 
-Data intensity depends on multiple factors that interact in complex ways:
+Data intensity depends on several factors:
 
-- **Row volume**: The number of rows processed per unit of time.
-- **Column count**: Tables with many columns require more memory and processing power.
-- **Data types**: Numeric data (integers, doubles) is compact and fast to process. Strings, especially long strings or those with high cardinality, consumes significantly more memory. Complex types (arrays, nested structures) add further overhead.
-- **Data retention**: How long data needs to be kept in memory affects total capacity requirements.
-- **Query complexity**: Simple aggregations have different performance characteristics than complex joins or window operations.
+- **Row volume**: More rows processed per unit of time require more memory and CPU.
+- **Column count**: Each column that your tables hold in memory, or that your queries read, adds memory and processing cost.
+- **Data types**: Numeric data (integers, doubles) is compact and fast to process. Strings, especially long strings or those with high cardinality, consume significantly more memory. Complex types (arrays, nested structures) add further overhead.
+- **Data retention**: How long you keep data in memory affects total capacity requirements.
+- **Query complexity**: Simple [aggregations](./aggregations.md) have different performance characteristics than complex [joins](../how-to-guides/joins-exact-relational.md) or [rolling (window) operations](../how-to-guides/rolling-aggregations.md).
 - **Update frequency**: High-frequency updates to ticking tables create more work than batch updates.
 
-A single server might easily handle billions of rows of compact numeric data with simple queries, while struggling with millions of rows containing large strings and complex joins. Capacity planning requires analyzing your specific workload rather than relying on general row-count thresholds.
+A single server can handle billions of rows of compact numeric data with simple queries, yet struggle with millions of rows that contain large strings and complex [joins](../how-to-guides/joins-exact-relational.md). Capacity planning requires analyzing your specific workload rather than relying on general row-count thresholds.
 
 ### Computational resources
 
 Your server architecture depends on matching computational resources to workload requirements:
 
-- **Memory (RAM)**: Deephaven keeps active tables in memory for fast access. Your memory needs depend on the size of your tables (rows × columns × data type sizes), the number of concurrent tables, and any intermediate results from queries. Running out of memory forces the JVM to garbage collect more frequently, degrading performance.
-- **CPU cores**: Query operations, joins, aggregations, and formula evaluations benefit from multiple cores. Higher core counts improve throughput for complex queries and allow multiple operations to run in parallel.
-- **Disk I/O**: While Deephaven operates primarily in-memory, disk performance matters for operations like loading historical data, writing logs, or persisting snapshots. SSD storage is preferred for these operations.
+- **Memory (RAM)**: Deephaven holds in-memory tables and materialized query results in RAM, and reads data from disk-backed sources, such as [Parquet files](../how-to-guides/data-import-export/parquet-import.md), as queries need it. Memory needs depend on the size of your tables (rows × columns × data type sizes), the number of concurrent tables, and intermediate query results. As memory use approaches the JVM heap limit, garbage collection runs more often and slows queries. Exceeding the limit causes an out-of-memory error.
+- **CPU cores**: Query operations, [joins](../how-to-guides/joins-exact-relational.md), [aggregations](./aggregations.md), and [formula](../how-to-guides/formulas.md) evaluations benefit from multiple cores. Higher core counts improve throughput for complex queries and allow multiple operations to run in parallel.
+- **Disk I/O**: Disk performance matters for operations like loading historical data, writing logs, or writing tables to disk, such as [Parquet files](../how-to-guides/data-import-export/parquet-export.md). Use SSD storage for these operations.
 - **Network bandwidth**: For applications sharing data between servers or serving many clients, network capacity can become a bottleneck.
 
-When your workload exceeds what a single server can handle efficiently, distributing across multiple servers becomes necessary. The decision point depends on your specific resource constraints and performance requirements, not arbitrary thresholds.
+When your workload exceeds what a single server can handle efficiently, add resources to that server or distribute the workload across multiple servers (see [Scalability](#scalability)).
 
 ### Specialized workloads
 
@@ -102,34 +129,33 @@ Consider using multiple servers when your application has distinct processing re
 - **Resource optimization**: When some workloads are CPU-intensive, while others are memory-intensive.
 - **Specialized processing**: When different parts of your application require different libraries or configurations.
 
-For example, you might dedicate one server to real-time data ingestion and another to complex analytical queries, allowing each to be optimized for its specific task.
+For example, you might dedicate one server to real-time data ingestion and another to complex analytical queries, and tune each server for its task.
 
 ### Scalability
 
-As your application grows, consider how it will scale:
+As your application grows, plan how it scales:
 
 - **Vertical scaling**: Adding more resources (RAM, CPU) to a single server has limits and may become cost-prohibitive.
 - **Horizontal scaling**: Adding more servers distributes the workload and provides more flexibility.
 
-Deephaven's architecture supports horizontal scaling through its peer-to-peer capabilities. This approach typically requires less engineering effort than complex performance tuning of a single server and provides better fault tolerance.
-
-When designing your application, consider future growth patterns and build with scalability in mind from the beginning.
+You can scale horizontally by running more Deephaven servers and sharing tables between them with [URIs](../how-to-guides/use-uris.md) or [Barrage sessions](../reference/data-import-export/barrage/barrage-session.md). Each method has its own authentication requirement. The note in [Deephaven servers and clients](#deephaven-servers-and-clients) explains both.
 
 ### Data security
 
-Your architecture choices have significant implications for data security:
+Your architecture choices have significant implications for data security. In every topology, clients reach the server over the network, so secure the channels between clients and servers.
+
+The number of servers also matters:
 
 - **Single server**: Simplifies security management with a single point of control but creates a single point of failure.
-- **Multiple servers**: Allows for data segregation and compartmentalization but requires careful security configuration between servers.
-- **Client-server model**: Enables fine-grained access control but requires secure communication channels between clients and servers.
+- **Multiple servers**: Lets you keep data sets apart, but the connections between servers need securing too. Which servers must accept anonymous authentication depends on how they share tables. See the note in [Deephaven servers and clients](#deephaven-servers-and-clients).
 
 Common security aspects that require careful thought when designing application architecture include:
 
-- **Authentication**: How users will identify themselves to the system.
-- **Authorization**: What data and operations each user can access.
-- **Data encryption**: Whether data needs to be encrypted at rest and/or in transit.
+- **Authentication**: How users identify themselves to the system. Deephaven supports [anonymous](../how-to-guides/authentication/auth-anon.md), [pre-shared key](../how-to-guides/authentication/auth-psk.md), [username and password](../how-to-guides/authentication/auth-uname-pw.md), [mTLS](../how-to-guides/authentication/auth-mtls.md), and [Keycloak](../how-to-guides/authentication/auth-keycloak.md) authentication.
+- **Authorization**: What data and operations each user can access. By default, Deephaven Community lets every authenticated user perform all operations. Finer-grained access control requires binding a custom [`AuthorizationProvider`](/core/javadoc/io/deephaven/server/auth/AuthorizationProvider.html) when you [run Deephaven from your own Java application](/core/groovy/docs/how-to-guides/configuration/custom-java-application/).
+- **Data encryption**: Whether to encrypt data at rest, [in transit](../how-to-guides/authentication/auth-mtls.md), or both.
 - **Network isolation**: Whether servers should be isolated on separate networks.
-- **Audit logging**: How user actions will be tracked and monitored.
+- **Audit logging**: How you track and monitor user actions.
 
 Address these concerns early in your architecture planning, as they often influence decisions about server topology, network configuration, and client deployment.
 
@@ -143,7 +169,7 @@ Consider a portfolio risk monitoring system for a trading desk. Here's how a Dee
 
 **Server side:**
 
-- A Deephaven server runs on a dedicated machine with access to market data feeds and position data.
+- Runs on a dedicated machine with access to market data feeds and position data.
 - Ingests real-time market data (prices, volumes, volatility measures) and continuously updates position valuations.
 - Performs complex calculations: Greeks for options positions, Value at Risk (VaR), portfolio exposure by sector/geography, and stress testing scenarios.
 - Maintains historical tables of positions, P&L, and risk metrics for compliance and reporting.
@@ -151,30 +177,32 @@ Consider a portfolio risk monitoring system for a trading desk. Here's how a Dee
 
 **Client side:**
 
-- Portfolio managers access risk dashboards from their workstations via Python clients.
+- Portfolio managers can view risk dashboards in the Deephaven web UI from their workstations, or pull the data into their own tools with the [Python client](../getting-started/pyclient-quickstart.md).
 - Traders on the desk can query specific position details and hypothetical scenarios from their terminals.
-- Risk officers can request custom reports and filtered views (e.g., only high-risk positions or specific asset classes).
+- Risk officers can request custom reports and [filtered](../how-to-guides/use-filters.md) views (e.g., only high-risk positions or specific asset classes).
 - Compliance teams can access audit trails and historical snapshots from separate client applications.
-- Multiple users can simultaneously access and analyze the same underlying data without impacting server performance.
 
-This architecture centralizes intensive real-time calculations on the server while allowing diverse users to access the data they need through lightweight clients.
+This architecture centralizes intensive real-time calculations on the server while allowing diverse users to access the data they need through lightweight clients. Multiple users can read the same underlying tables at the same time without each user re-running the server's calculations. This design also follows the advice in [Choosing your architecture](#choosing-your-architecture) to start with one server, and it keeps security under a single point of control (see [Data security](#data-security)).
 
 ### Example: Multi-server application
 
-Multi-server applications distribute workloads across multiple machines to handle high-volume data processing or specialized tasks. This example shows a financial trading application that uses Deephaven's peer-to-peer architecture:
+Multi-server applications distribute workloads across multiple machines to handle high-volume data processing or specialized tasks. This example shows a financial trading application that uses Deephaven's [peer-to-peer](#peer-to-peer-software-architecture) architecture. Servers B and C are clients of Server A, and they are also servers to the client applications. Ingestion and analysis have different resource profiles ([Specialized workloads](#specialized-workloads)), so this design gives each its own server.
 
-**Server A (Data Ingestion & Storage):**
+![Server A ingests market data. Servers B and C resolve its tables by URI with anonymous authentication, and an external load balancer routes client applications to either one](../assets/conceptual/multi-server-application.svg)
 
-- Dedicated to high-speed market data ingestion from multiple sources:
+**Server A (data ingestion and storage):**
+
+- Ingests high-speed market data from multiple sources:
   - Real-time stock market feeds
   - Cryptocurrency exchanges
   - Futures markets
   - Options data
 - Maintains connections to historical databases.
 - Performs initial data cleaning and normalization.
-- Exposes ticking tables via URIs for other servers to access.
+- Exposes ticking tables via [URIs](../how-to-guides/use-uris.md) for other servers to access.
+- Uses [anonymous authentication](../how-to-guides/authentication/auth-anon.md) because it holds the tables that the other servers resolve by [URI](../how-to-guides/use-uris.md).
 
-**Server B (Analysis & Client Services):**
+**Server B (analysis and client services):**
 
 - Connects to Server A using [URIs](../how-to-guides/use-uris.md) to access live market data.
 - Performs complex calculations:
@@ -184,23 +212,21 @@ Multi-server applications distribute workloads across multiple machines to handl
 - Serves processed data to client applications.
 - Executes automated trading strategies based on signals.
 
-**Server C (Load-Balanced Analysis):**
+**Server C (redundant analysis):**
 
-- Configured as a peer to Server B, sharing the same analytical workload.
-- Provides load balancing for high-demand periods when client requests increase.
-- Acts as a fallback if Server B experiences hardware failure or needs maintenance.
-- Allows the system to gracefully degrade performance rather than losing analytical capabilities entirely.
+- Runs the same analysis code as Server B and connects to Server A the same way.
+- Keeps serving clients when Server B fails or is down for maintenance. Server B covers for Server C in the same way.
+- When one of the two goes down, the system loses capacity but keeps running its analysis.
+
+Deephaven doesn't provide load balancing or failover itself. An external load balancer, or the client applications themselves, route requests to either Server B or Server C.
 
 **Benefits of this architecture:**
 
-- Separation of concerns allows each server to be optimized for its specific task.
-- Data ingestion continues uninterrupted even during intensive analysis operations.
-- System can scale by adding specialized servers for specific markets or strategies.
-- Load balancing between Servers B and C distributes client requests and computational workload.
-- Fault tolerance: if one analytical server fails, the other continues serving clients with graceful performance degradation rather than complete service loss.
-- Maintenance can be performed on individual servers without taking the entire system offline.
-
-This implementation demonstrates the [peer-to-peer](#peer-to-peer-software-architecture) software architecture, where each Deephaven instance functions as both a client and a server.
+- Separation of concerns lets you tune each server for its task.
+- Intensive analysis on Servers B and C doesn't compete with ingestion for Server A's CPU and memory.
+- The system can scale by adding specialized servers for specific markets or strategies.
+- With an external load balancer or client-side routing, Servers B and C share the client load and provide failover for each other.
+- You can take Server B or Server C down for maintenance while the other keeps serving clients. Server A has no standby in this design, so taking it down stops the live data for both.
 
 ## Choosing your architecture
 
@@ -220,4 +246,24 @@ The examples and considerations throughout this document provide a framework for
 
 - [What is Barrage?](./what-is-barrage.md)
 - [Core API design](./deephaven-core-api.md)
+- [Incremental update model](./table-update-model.md)
+- [Aggregations](./aggregations.md)
+- [Python client quickstart](../getting-started/pyclient-quickstart.md)
+- [Java client](../how-to-guides/java-client.md)
+- [Use the JS API](../how-to-guides/use-jsapi.md)
+- [Exact and relational joins](../how-to-guides/joins-exact-relational.md)
+- [Formulas](../how-to-guides/formulas.md)
+- [Filters](../how-to-guides/use-filters.md)
+- [Sort](../how-to-guides/sort.md)
+- [Rolling aggregations](../how-to-guides/rolling-aggregations.md)
+- [Import Parquet files](../how-to-guides/data-import-export/parquet-import.md)
+- [Export Parquet files](../how-to-guides/data-import-export/parquet-export.md)
+- [Anonymous authentication](../how-to-guides/authentication/auth-anon.md)
+- [Pre-shared key authentication](../how-to-guides/authentication/auth-psk.md)
+- [Username and password authentication](../how-to-guides/authentication/auth-uname-pw.md)
+- [mTLS authentication](../how-to-guides/authentication/auth-mtls.md)
+- [Keycloak authentication](../how-to-guides/authentication/auth-keycloak.md)
+- [Run Deephaven from your own Java application](/core/groovy/docs/how-to-guides/configuration/custom-java-application/)
 - [URIs in Deephaven](../how-to-guides/use-uris.md)
+- [Capture Python client tables with Barrage](../how-to-guides/capture-tables.md)
+- [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md)

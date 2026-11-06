@@ -2,89 +2,80 @@
 title: Create custom themes
 ---
 
-This guide will show you how to create a custom theme for the Deephaven UI. Themes work by providing a set of [CSS variables](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties) that override either the default dark or light theme. This document creates a custom theme that emulates the look of the [Financial Times](https://www.ft.com/) website.
+This guide shows you how to create a custom theme for the Deephaven web UI. Themes work by providing a set of [CSS variables](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties) that override either the default dark or light theme.
+
+As a worked example, this guide walks through a theme that emulates the look of the [Financial Times](https://www.ft.com/) website. You start from its files and change them into your own theme. You package a theme as a [JS plugin](./create-js-plugins.md), which extends the Deephaven web UI, and install it on your server.
 
 ![An example theme that emulates the look of the Financial Times website](../assets/how-to/example-theme.jpg)
 
+> [!TIP]
+> If you want ready-made themes rather than your own, install the [theme pack](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/theme-pack) plugin with `pip install deephaven-plugin-theme-pack` and restart the server. It includes the Financial Times theme this guide walks through, along with several others.
+
 ## Development setup
 
-To design and preview your theme during development, you will need a running Deephaven server, and to clone and install the [Deephaven plugins](https://github.com/deephaven/deephaven-plugins/tree/main) and [Deephaven web-client-ui](https://github.com/deephaven/web-client-ui) repositories.
+To design and preview your theme, you run three things side by side: a Deephaven server, a plugin development server that serves your theme plugin, and a development build of the Deephaven web UI. This setup is for development only. When your theme is complete, follow [Build and deploy your theme](#build-and-deploy-your-theme) to install it on your server.
 
-> [!NOTE]
-> This setup is for **development only**. Once your theme is complete, you install it like any other JS plugin — see [Install and use plugins](./install-use-plugins.md). The plugin server and web-client-ui dev server described below provide hot-reloading during development so you can iterate quickly.
+You also need [Node.js](https://nodejs.org/) and npm at the versions each repository requires. Both repositories refuse to install on other versions. Each lists its Node.js version in its `.nvmrc` file, which [`nvm use`](https://github.com/nvm-sh/nvm) reads.
+
+Set up the three pieces in order. In step 2, you create your theme plugin by copying the [theme pack](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/theme-pack):
 
 1. A Deephaven server.
-   - Start a deephaven-core server on port 10000. You can follow the instructions here in the [Quickstart](../getting-started/quickstart.md).
+   - Start a Deephaven server on port 10000. Follow the [Quickstart](../getting-started/quickstart.md).
 
-2. A plugin development server. This server proxies your plugins during development, allowing you to iterate on your theme without reinstalling the plugin after every change.
+2. Your theme plugin and a plugin development server. The development server builds your plugins whenever you save a change and serves them to the web UI, so you can iterate quickly without reinstalling the plugin after every change. The plugin development server listens on port 4100.
    - Clone the [deephaven-plugins project](https://github.com/deephaven/deephaven-plugins/tree/main).
-   - Open a separate terminal from where you are running deephaven-core. From the deephaven-plugins project repository root directory, run:
+   - Copy the `plugins/theme-pack` directory to a new directory under `plugins/`, named for your plugin, such as `plugins/my-theme`.
+   - In `plugins/<your-theme>/src/js/package.json` and `plugins/<your-theme>/src/js/src/index.ts`, rename the `theme-pack` references to your plugin name.
+   - In `package.json`, also change the package name from the `@deephaven` scope to your own, such as `@my-org/my-theme`.
+   - In `plugins/<your-theme>/src/js/src/index.ts`, keep the `FT Theme` entry in the `themes` list. It loads `theme.css`, the Financial Times example theme this guide walks through. The copied file imports the stylesheet as `ftStyleContent`. The [minimal version in Inherit a base theme](#inherit-a-base-theme) calls it `styleContent`. Either name works.
+   - Delete the other themes' entries and imports from `index.ts`, and delete their `.css` files.
+   - Set the `name` key of the remaining entry to a unique name. This name appears in the theme selector in the Deephaven web UI.
+   - Add an entry for your plugin to the `plugins/manifest.json` file to enable your plugin in development previews. Copy the `theme-pack` entry and change its `name` to your plugin name.
+   - Open a terminal other than the one running your Deephaven server. From the root directory of your deephaven-plugins clone, run:
 
-   ```
-   npm install
-   npm start
-   ```
-
-   - Once the plugin is installed:
-     - Copy the `example-theme` directory to a new directory and rename it to your plugin name.
-     - Rename the `example-theme` references in the `./<your-theme>/src/js/package.json` and `./<your-theme>/src/js/src/index.ts` to your plugin name in your theme folder.
-     - Add your plugin's name to the `manifest.json` file in the repository root directory to enable your plugin in development previews.
-     - You should also update the `name` key in the `./<your-theme>/src/js/src/index.ts` file with a unique name that will appear in the theme selector in the Deephaven UI.
-
-3. A development version of the web-client-ui server.
-   - Clone the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository.
-   - Add the following line to the file `./packages/code-studio/.env.development.local` in web-client-ui (note: you will need to create this file if it does not already exist):
+     ```bash
+     npm install
+     npm start
      ```
+
+     `npm start` rebuilds every plugin in the repository when you save. To rebuild only your theme plugin, pass its package name with `--scope`, for example `npm start -- --scope @my-org/my-theme`.
+
+3. A development build of the Deephaven web UI, built from the web-client-ui repository.
+   - Clone the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository.
+   - In web-client-ui, create the file `./packages/code-studio/.env.development.local` if it doesn't already exist, and add the following line so the web UI loads plugins from the plugin development server on port 4100:
+
+     ```text
      VITE_JS_PLUGINS_DEV_PORT=4100
      ```
-   - Open a new terminal, and from the web-client-ui project repository root directory, run:
-     ```
+
+   - Open a new terminal. From the root directory of your web-client-ui clone, run:
+
+     ```bash
      npm install
      npm run start
      ```
 
-Visit http://localhost:4000 to preview your theme in the Deephaven UI. You can change the theme in the **Settings** menu:
+The web UI development build runs at `http://localhost:4000/ide/` and connects to the Deephaven server on port 10000. Visit it and, if prompted, log in with the [pre-shared key](./authentication/auth-psk.md) printed in the server log. To preview your theme, open the **Settings** menu and select it from the **Pick a color scheme** list in the **Theme** section:
 
-![The **pick a color scheme** option in the **Settings** menu](../assets/how-to/themes/pick_a_color.png)
+![The Pick a color scheme list in the Settings menu, with FT Theme selected](../assets/how-to/themes/pick_a_color.png)
 
-Alternatively, visit http://localhost:4000/ide/styleguide for a preview of all the components in the web-client-ui library. You can change the theme by clicking on the theme selector in the top right corner of the style guide:
+Alternatively, visit `http://localhost:4000/ide/styleguide` for a preview of all the components in the web-client-ui library. To change the theme, click the theme selector in the top-right corner of the style guide:
 
-![The style guide displays all the components of the theme: headings, menus, etc](../assets/how-to/themes/style_guide_selector.png)
+![The theme selector in the top-right corner of the style guide](../assets/how-to/themes/style_guide_selector.png)
 
 > [!NOTE]
-> If you change your styles, you will need to refresh the page to see the changes.
+> If you change your styles, refresh the page to see the changes.
 
-## Creating your theme
+## Theme file overview
 
-The general steps for creating a theme are as follows:
+You define your theme's styles in `plugins/<your-theme>/src/js/src/theme.css`. The file you copied contains the Financial Times example theme.
 
-1. [Inherit a base theme (either `dark` or `light`)](#inherit-a-base-theme).
-2. [Create your color palette (gray, red, orange, etc)](#use-color-generators-and-define-your-palette)
-3. [Override any semantic colors with colors from your palette as desired (accent, positive, negative, etc)](#use-your-palette-for-semantic-colors)
-4. [Override component-specific colors with semantic colors or colors from your palette as desired (grid colors, plot, etc.)](#use-your-palette-for-component-specific-semantic-colors)
+The file sets CSS variables on `:root`. They override the same variables in the base theme, the default dark or light theme that your theme inherits. [Inherit a base theme](#inherit-a-base-theme) shows how to choose it.
 
-### Inherit a base theme
-
-To create your theme, first decide whether your theme is light or dark. For example, if your desired background color is black or purple, inherit the `dark`. If it's white or yellow, inherit `light`. Inheriting from either `dark` or `light` significantly reduces the amount of work required to create a custom theme. You may choose to override just one variable or all of them.
-
-In the `./<your-theme>/src/js/src/index.ts` file, set the `baseTheme` to either `dark` or `light`:
-
-```typescript
-export const plugin: ThemePlugin = {
-  name: 'example-theme',
-  type: 'ThemePlugin',
-  themes: {
-    ...
-    baseTheme: 'light', // The base theme to extend, either 'light' or 'dark'
-    ...
-  },
-};
-```
-
-Next, you'll want to override colors and other variables to create your custom theme in the `./<your-theme>/src/js/src/theme.css` file. This file already includes variables for the entire theme, and you only need to override the variables you want to change.
+Override only the variables you want to change. Every other variable keeps its base-theme value. Most themes start by overriding a few colors and add more variables as needed.
 
 <details>
-<summary>See the entire example-theme .css file.</summary>
+<summary>See the entire example <code>theme.css</code> file.</summary>
 
 ```css
 /* override the inherited base theme by scoping variables to :root */
@@ -94,7 +85,7 @@ Next, you'll want to override colors and other variables to create your custom t
   GRAY 50, 75, 100, 200, 300, 400, 500, 600, 700, 800, 900
 
   RED, ORANGE, YELLOW, CHARTREUSE, CELERY, GREEN, SEAFOAM,
-  CYAN, BLUE, INDIGO, PURPLE, FUSCIA AND MAGENTA
+  CYAN, BLUE, INDIGO, PURPLE, FUCHSIA AND MAGENTA
   100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400
 
   Use any srgb color space value (hex, rgb, hsl, etc) to define a color.
@@ -201,10 +192,10 @@ Next, you'll want to override colors and other variables to create your custom t
   Override specific colors to components like grid, plots, code editor, etc.
 
   See: 
-  /packages/components/src/theme/theme-light/theme-dark-components.css
-  /packages/components/src/theme/theme-light/theme-dark-semantic-grid.css
-  /packages/components/src/theme/theme-light/theme-dark-semantic-charts.css
-  /packages/components/src/theme/theme-light/theme-dark-editor.css
+  /packages/components/src/theme/theme-light/theme-light-components.css
+  /packages/components/src/theme/theme-light/theme-light-semantic-grid.css
+  /packages/components/src/theme/theme-light/theme-light-semantic-chart.css
+  /packages/components/src/theme/theme-light/theme-light-semantic-editor.css
   */
 
   --dh-color-grid-header-bg: var(--dh-color-gray-100);
@@ -225,7 +216,7 @@ Next, you'll want to override colors and other variables to create your custom t
 
 /*
 ============ CUSTOM CLASS OVERRIDES ===========
-Exampe of overriding specific class color variables for one-off customizations.
+Example of overriding specific class color variables for one-off customizations.
 Use sparingly as these are not guaranteed to be stable across releases.
 */
 
@@ -238,35 +229,74 @@ Use sparingly as these are not guaranteed to be stable across releases.
 
 </details>
 
-The web-client-ui repository includes a list of all the variables you can override in the [Default Dark](https://github.com/deephaven/web-client-ui/tree/main/packages/components/src/theme/theme-dark) or [Default Light](https://github.com/deephaven/web-client-ui/tree/main/packages/components/src/theme/theme-light), organized into files by usage. You can also inspect elements in the browser to discover the class or variable names you may need to override. For example, to create the example theme above, we only need to override a few colors, mostly from the palette files listed above.
+The web-client-ui repository lists the theme variables you can override in the [Default Dark](https://github.com/deephaven/web-client-ui/tree/main/packages/components/src/theme/theme-dark) and [Default Light](https://github.com/deephaven/web-client-ui/tree/main/packages/components/src/theme/theme-light) themes, organized into files by usage. You can also inspect elements in the browser to find the variable a component uses. To override a component's class directly, see [Override individual components with CSS selectors](#override-individual-components-with-css-selectors), which also explains why we don't recommend this approach.
 
-> [!CAUTION]
-> Use selector-based styling sparingly, as these are not guaranteed to be stable across releases. Most themes will start by overriding a few colors and then add additional variables as needed.
+## Create your theme
 
-In the sections below, we'll show you how we modified the .css file to create the example theme. We'll start by overriding the background colors, accent colors, positive and negative colors, and then a few additional colors specific to grids and plots.
+To create a theme:
 
-The web-client-ui theme provider converts your colors to HEX internally via JavaScript for display in some non-traditional dom-elements (canvas-based grids, monaco code editors, svg/webgl plots).
+1. [Inherit a base theme](#inherit-a-base-theme) (`dark` or `light`).
+2. [Use color generators and define your palette](#use-color-generators-and-define-your-palette) (gray, red, orange, etc.).
+3. [Use your palette for semantic colors](#use-your-palette-for-semantic-colors) (accent, positive, negative, etc.).
+4. [Use your palette for component-specific semantic colors](#use-your-palette-for-component-specific-semantic-colors) (grid, plot, etc.).
 
-We also mix in an alpha channel to create transparent colors for you via [color-mix](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/color-mix) in srgb space.
+The sections below show how we built the example theme. It inherits the `light` base theme in `index.ts`. Then, in `theme.css`, it defines `gray`, `red`, `green`, and `seafoam` palettes, points the accent colors at `seafoam`, and overrides a few grid and plot colors.
+
+### Inherit a base theme
+
+To create your theme, first decide whether your theme is light or dark. For example, if your desired background color is black or purple, inherit `dark`. If it's white or yellow, inherit `light`. Inheriting from either `dark` or `light` significantly reduces the amount of work required to create a custom theme.
+
+In the `plugins/<your-theme>/src/js/src/index.ts` file, set the `baseTheme` of your theme to either `dark` or `light`. The theme's `name` is the name that appears in the theme selector, and `styleContent` holds the contents of your `theme.css` file:
+
+```typescript
+import type { ThemePlugin } from "@deephaven/plugin";
+import styleContent from "./theme.css?inline";
+
+const plugin: ThemePlugin = {
+  name: "my-theme", // The plugin name, matching your plugin's folder name
+  type: "ThemePlugin",
+  themes: [
+    {
+      name: "My Theme", // The name shown in the theme selector
+      baseTheme: "light", // The base theme to extend, either 'light' or 'dark'
+      styleContent, // The contents of your theme.css file
+    },
+  ],
+};
+
+export default plugin;
+```
 
 ### Use color generators and define your palette
 
-The Deephaven design system is based on the [Adobe spectrum](https://opensource.adobe.com/spectrum-design-data/tokens/color-palette/) color system. It is set up to use a palette consisting of:
+The Deephaven design system is based on the [Adobe Spectrum](https://opensource.adobe.com/spectrum-design-data/tokens/color-palette/) color system. It uses a palette that consists of:
 
-- 11 shades of a "gray" palette used for background colors
-- 13 shades of each of the 12 colors in the "color" palette: Red, Orange, Yellow, Chartreuse, Celery, Green, Seafoam, Cyan, Blue, Indigo, Purple, Fuschia and Magenta
+- 11 shades (50, 75, and 100-900) of a `gray` palette used for background colors
+- 14 shades (100-1400) of each of 13 hues: `red`, `orange`, `yellow`, `chartreuse`, `celery`, `green`, `seafoam`, `cyan`, `blue`, `indigo`, `purple`, `fuchsia`, and `magenta`
 
-You can create color palettes with shades for each color using tools like Adobe's [Leonardo](https://leonardocolor.io/theme.html) color tool (recommended), or [Coolors](https://coolors.co/gradient-palette/fae7d5-24211d?number=11). You may already have an existing brand guide at your company that gives you full palettes. Leonardo is a great tool for creating color ramps, and has an "Export as CSS" feature to get the HEX values for each color in the ramp.
+The shades of every palette, `gray` and the 13 hues alike, range from light to dark for light themes and from dark to light for dark themes.
+
+The `gray` shades aren't evenly spaced. In the light example theme, shades 50, 75, and 100 are close together in lightness, and shades 100 through 900 are spaced further apart. In the default dark palette, shades 50 through 400 are close together, and the large steps start at 500. Compare your shades with your base theme's palette file, [`theme-light-palette.css`](https://github.com/deephaven/web-client-ui/blob/main/packages/components/src/theme/theme-light/theme-light-palette.css) or [`theme-dark-palette.css`](https://github.com/deephaven/web-client-ui/blob/main/packages/components/src/theme/theme-dark/theme-dark-palette.css). The full palette of the example theme shows this spacing:
+
+![A color palette example for the custom theme](../assets/how-to/example-theme-palette.jpg)
+
+We recommend generating a palette with Adobe's [Leonardo](https://leonardocolor.io/theme.html) color tool. Leonardo is a great tool for building color ramps, the ordered series of shades for one color. Its **Export as CSS** feature gives the hex value of each shade. [Coolors](https://coolors.co/gradient-palette/fae7d5-24211d?number=11) also works. If your company has a brand guide with full palettes, you can use those instead.
 
 > [!NOTE]
-> Colors must be in the [sRGB color space](https://en.wikipedia.org/wiki/SRGB). Here we use HSL values, but you can use any supported color format. These include #HEX, rgb(), rgba(), hsl(), hwb(), color(srgb) or a named color. Other color spaces such as LAB, OKLAB, P3, etc, are not supported.
+> Colors must be in the [sRGB color space](https://en.wikipedia.org/wiki/SRGB). Here we use HSL values, but you can use any supported color format. Supported formats include `#hex`, `rgb()`, `rgba()`, `hsl()`, `hwb()`, `color(srgb ...)`, and named colors. Other color spaces, such as LAB, OKLAB, and P3, are not supported.
+>
+> The web UI converts your colors to hex, because some components read colors in JavaScript rather than CSS:
+>
+> - Canvas-based grids.
+> - Monaco code editors.
+> - SVG and WebGL plots.
+>
+> The conversion handles only sRGB colors, which is why other color spaces aren't supported. The default themes also derive transparent variants of your palette colors with [`color-mix`](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/color-mix) in the sRGB color space.
 
-The background colors are defined using a set of 11 colors, ranging from light to dark for light themes, and inverted from dark to light for dark themes. The 50, 75, and 100 colors are closer together, and 100-900 are a more equal distribution. The other colors are more evenly distributed across lightness. You can see this reflected in the image of our full color palette below.
-
-Our example theme used a background color inspired by the Financial Times site to create a palette using Leonardo. The example theme uses the following palette for the "gray" background colors:
+To build the example theme, we picked a background color inspired by the Financial Times site and generated shades from it in Leonardo. The palette is named `gray`, but it can be any background color. The resulting `gray` background palette, which goes inside the `:root` block of `theme.css`, is:
 
 ```css
-// Background colors, labeled as gray but may be any suitable background color
+/* Create a custom gray palette for background colors */
 --dh-color-gray-50: hsl(30, 100%, 99.22%);
 --dh-color-gray-75: hsl(30, 100%, 97.65%);
 --dh-color-gray-100: hsl(27.69, 100%, 94.9%);
@@ -280,15 +310,13 @@ Our example theme used a background color inspired by the Financial Times site t
 --dh-color-gray-900: hsl(0, 0%, 0%);
 ```
 
-We also override a "red" palette, a "green" palette and a "seafoam" palette based on the colors inspired by the Financial Times site. You will inherit any color from your chosen base theme you do not define.
-
-Here is the full palette we used for our example theme:
-
-![A color palette example for the custom theme](../assets/how-to/example-theme-palette.jpg)
+We also override the `red`, `green`, and `seafoam` palettes with colors inspired by the Financial Times site. Their values are in the [example `theme.css` file](#theme-file-overview).
 
 ### Use your palette for semantic colors
 
-Depending on how much you want to customize, you may choose to stop after just setting the palette and inherit the rest of the theme from the default theme. Or you may choose to override additional variables to customize the theme further. For example, we also override the `accent` variables used for things like buttons from `blue` to `seafoam`. `positive` and `negative` already default to `red` and `green` -- updating `red` and `green` palettes will change these variables. They could also be changed independently if you prefer a different color associated with positive or negative values or actions. Refer to the files labeled as "semantic" in the default theme for exposed variables.
+Semantic colors are variables named for the role a color plays rather than its hue. For example, `accent` sets the color of buttons and other highlighted controls, and `positive` and `negative` set the colors of gains and losses. Each semantic variable points at a palette color, so changing the palette changes every semantic color built on it.
+
+Depending on how much you want to customize, you can stop after setting the palette and inherit the rest of the theme from the base theme. You can also override more variables to customize the theme further. For example, this guide's theme changes the `accent` variables from `blue` to `seafoam`. Like the palette, these declarations go inside the `:root` block:
 
 ```css
 --dh-color-accent-100: var(--dh-color-seafoam-100);
@@ -307,21 +335,80 @@ Depending on how much you want to customize, you may choose to stop after just s
 --dh-color-accent-1400: var(--dh-color-seafoam-1400);
 ```
 
+`positive` defaults to `green`, and `negative` defaults to `red`. Updating the `green` and `red` palettes changes these variables. You can also change them independently if you want a different color for positive or negative values or actions.
+
+For the full list of semantic variables, see the files with `semantic` in their names, such as `theme-light-semantic.css`, in the [Default Dark](https://github.com/deephaven/web-client-ui/tree/main/packages/components/src/theme/theme-dark) and [Default Light](https://github.com/deephaven/web-client-ui/tree/main/packages/components/src/theme/theme-light) themes.
+
 ### Use your palette for component-specific semantic colors
 
-You may find that after overriding the palette and semantic colors, you want even further customization within specific components. In our example, we also override the default grid header color, row stripes, and date colors, as well as the plot colorway.
+Component-specific semantic colors are variables that apply to a single component, such as the grid header background or the chart colorway. The colorway is the ordered list of colors a chart assigns to its series. Override these variables when the palette and semantic colors don't give you the look you want in a specific component.
+
+The example theme overrides these component variables:
+
+- The grid header and row stripe colors. Only the even-row stripe differs from the light theme's default.
+- The grid's date color.
+- The chart colorway.
+
+These declarations also go inside the `:root` block. The overrides refer to variables that the base theme already defines, so you don't define them yourself. `--dh-color-black` and `--dh-color-white` map to shades of the `gray` palette. The semantic files linked in [Use your palette for semantic colors](#use-your-palette-for-semantic-colors) define `--dh-color-accent-bg` and the `--dh-color-visual-*` data-visualization colors.
 
 ```css
 --dh-color-grid-header-bg: var(--dh-color-gray-100);
 --dh-color-grid-row-0-bg: var(--dh-color-gray-200);
 --dh-color-grid-row-1-bg: var(--dh-color-gray-100);
+--dh-color-grid-date: var(--dh-color-black);
+
+/* Chart colorway is special in that it contains a space separated 
+list of colors to assign in order for each series in a chart. 
+Consider including at least 10 colors. */
+--dh-color-chart-colorway: var(--dh-color-accent-bg)
+  var(--dh-color-visual-green) var(--dh-color-visual-yellow)
+  var(--dh-color-visual-purple) var(--dh-color-visual-orange)
+  var(--dh-color-visual-red) var(--dh-color-visual-chartreuse)
+  var(--dh-color-visual-fuchsia) var(--dh-color-visual-blue)
+  var(--dh-color-visual-magenta) var(--dh-color-white);
 ```
 
-## Additional customization
+## Override individual components with CSS selectors
 
-You may also override specific components using CSS selectors and setting your own variables and properties. This is not recommended as it may break in future updates to the web-client-ui library. If you find yourself needing to do this, please consider opening an [issue](https://github.com/deephaven/web-client-ui/issues) to request additional variables to be exposed in the default themes, or contact us in the [Deephaven Community Slack](/slack) #web-client-ui channel.
+You can also override specific components with CSS selectors that set your own variables and properties, as the `.console-input-wrapper` rule at the end of the [example `theme.css` file](#theme-file-overview) does.
+
+> [!CAUTION]
+> We don't recommend overriding components this way, because class names and DOM structure can change in future web-client-ui releases. If you need a variable that the default themes don't expose, open a [web-client-ui GitHub issue](https://github.com/deephaven/web-client-ui/issues) or ask in the `#web-client-ui` channel of the [Deephaven Community Slack](/slack).
+
+## Build and deploy your theme
+
+The development servers only preview your theme. To use it on a Deephaven server, build the plugin and install it on that server:
+
+1. Build the plugin. From the `plugins/<your-theme>/src/js` directory of your deephaven-plugins clone, run:
+
+   ```bash
+   npm run build
+   ```
+
+2. Install the plugin on your server in one of two ways:
+   - **As a Python package**, if you manage the server's Python environment with `pip`, including in a Dockerfile. The `theme-pack` directory you copied includes Python packaging that builds a wheel and registers the theme with the server: `pyproject.toml`, `setup.py`, `setup.cfg`, and the `src/deephaven/theme_pack` package. To use it:
+     1. Rename the `src/deephaven/theme_pack` directory to a module name for your plugin that uses underscores instead of hyphens, such as `my_theme`.
+     2. Update the `theme-pack` and `theme_pack` references in `setup.py`, `setup.cfg`, and `src/deephaven/<your_module>/_register.py` to match.
+     3. From the `plugins/<your-theme>` directory, install the `build` package with `pip install build`, then build a wheel with `python -m build --wheel`.
+     4. Install the wheel with `pip` into the server's Python environment.
+
+     For details, see [Python registration](./create-js-plugins.md#python-registration).
+
+   - **As a JS-only plugin**, if you'd rather ship only the built JS in a server manifest. Package the plugin in a Dockerfile build stage based on the `ghcr.io/deephaven/web-plugin-packager` image:
+     1. Copy your built `plugins/<your-theme>/src/js` directory into the stage at an absolute path, for example `COPY my-theme/src/js /my-theme`.
+     2. Run the packaging script on that directory, for example `RUN ./pack-plugins.sh /my-theme`. Pass an absolute path, because the script runs `npm pack` from a temporary subdirectory, where a relative path such as `./my-theme` doesn't resolve.
+     3. Copy the `js-plugins` directory that the script generates to the `js-plugins` directory in your server's configuration directory (`<configDir>/js-plugins/`).
+
+     For details, see [Configure JS plugins](./configuration/js-plugins.md).
+
+   For other ways to register a JS plugin, such as [pointing the server at the plugin's npm package directory](./create-js-plugins.md#register-an-npm-package-directory-during-development) during development, see [Create a JavaScript plugin](./create-js-plugins.md).
+
+3. Restart the server, then select your theme in the **Settings** menu.
 
 ## Related documentation
 
 - [Navigate the GUI](./user-interface/navigating-the-ui.md)
 - [Install and use plugins](./install-use-plugins.md)
+- [Create a JavaScript plugin](./create-js-plugins.md)
+- [Configure JS plugins](./configuration/js-plugins.md)
+- [Embed tables and charts in an IFrame](./use-iframes.md)
