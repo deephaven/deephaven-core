@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.sources.sparse.DoubleBitmapLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.DoubleCompactLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.DoubleSortedLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.ChildPositions;
+import io.deephaven.engine.table.impl.sources.sparse.PageTableLevels;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.SoftRecyclerWindow;
@@ -38,6 +39,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
+import static io.deephaven.engine.table.impl.sources.sparse.PageTableLevels.*;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 // region boxing imports
@@ -200,87 +202,11 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
     // region page table
 
     /**
-     * @return the length of the arrays for {@code size} children of a ranked level whose arrays have length
-     *         {@code capacity}: the same if they fit, else at least double, so that a level that grows a few children
-     *         at a time is copied a logarithmic number of times
-     */
-    private static int grownCapacity(final int capacity, final int size) {
-        return size <= capacity ? capacity : Math.max(size, Math.min(MAX_RANKED, capacity * 2));
-    }
-
-    /**
-     * Copy the entry at each position {@code pp} below {@code count} of {@code from} to position {@code positions[pp]}
-     * of {@code to}.
-     *
-     * @return {@code to}
-     */
-    private static <T> T[] scatter(final T[] from, final T[] to, final int[] positions, final int count) {
-        for (int pp = 0; pp < count; ++pp) {
-            to[positions[pp]] = from[pp];
-        }
-        return to;
-    }
-
-    /**
-     * Copy the entry at position {@code positions[pp]} of {@code from} to each position {@code pp} below {@code count}
-     * of {@code to}.
-     *
-     * @return {@code to}
-     */
-    private static <T> T[] gather(final T[] from, final T[] to, final int[] positions, final int count) {
-        for (int pp = 0; pp < count; ++pp) {
-            to[pp] = from[positions[pp]];
-        }
-        return to;
-    }
-
-    private static final int NO_CHILD = -1;
-    /**
-     * The fewest entries {@link #maxWindow(int)} allows: a window may always grow to cover this many entries, even when
-     * it holds fewer than {@code MIN_WINDOW / WINDOW_ENTRIES_PER_CHILD} children.
-     */
-    private static final int MIN_WINDOW = 64;
-    /** The most entries a window holds for each child it holds, when that is more than {@link #MIN_WINDOW}. */
-    private static final int WINDOW_ENTRIES_PER_CHILD = 8;
-    /**
-     * The most children a ranked middle or bottom page table level holds. More children span at most
-     * {@link #WINDOW_ENTRIES_PER_CHILD} entries each, so a window always holds them.
-     */
-    private static final int MAX_RANKED = BLOCK2_SIZE / WINDOW_ENTRIES_PER_CHILD;
-
-    /**
-     * @return the most entries a window holding {@code count} children may have; a level whose children span more ranks
-     *         them instead
-     */
-    private static int maxWindow(final int count) {
-        return Math.max(MIN_WINDOW, WINDOW_ENTRIES_PER_CHILD * count);
-    }
-
-    /**
-     * @return the length of a window of at most {@code limit} entries for {@code count} children spanning
-     *         {@code needed} entries, in place of a window of {@code length} entries: at least twice {@code length}
-     *         when the children allow it, so that a window that grows a few entries at a time is copied a logarithmic
-     *         number of times
-     */
-    private static int windowLength(final int needed, final int length, final int count, final int limit) {
-        return Math.min(limit, Math.min(maxWindow(count), Math.max(needed, 2 * length)));
-    }
-
-    /**
-     * @return the first index of a window of {@code newLength} entries, of at most {@code limit}, covering the indices
-     *         from {@code low} to {@code high}, exclusive, extended below them if {@code down}, else above them
-     */
-    private static int windowBase(final int low, final int high, final boolean down, final int newLength,
-            final int limit) {
-        final int newBase = down ? Math.max(0, high - newLength) : low;
-        return Math.min(newBase, limit - newLength);
-    }
-
-    /**
      * The root page table level, containing {@link Level1} children. A row key's index at this level is its bits from
-     * {@code BLOCK0_SHIFT} up. While the children are dense enough, as {@link #maxWindow(int)} allows, the level holds
-     * them in an array indexed by child index less the index of its first entry, so that the array covers only the
-     * window of indices in use; otherwise it holds them densely, at the positions of their indices in a sorted array.
+     * {@code BLOCK0_SHIFT} up. While the children are dense enough, as {@link PageTableLevels#maxWindow(int)} allows,
+     * the level holds them in an array indexed by child index less the index of its first entry, so that the array
+     * covers only the window of indices in use; otherwise it holds them densely, at the positions of their indices in a
+     * sorted array.
      * <p>
      * A window of one entry also records its index, so that finding the only child of a level is one comparison. The
      * window of a level is fixed, and a child is set or cleared in place; a ranked level appends an index past its last
@@ -288,7 +214,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
      * so that a reader that loaded a level finds each child where the level says.
      */
     private static final class Level0 {
-        /** For a window of one entry, its index; otherwise {@link #NO_CHILD}. */
+        /** For a window of one entry, its index; otherwise {@link PageTableLevels#NO_CHILD}. */
         private final int onlyIndex;
         /** The index of the first entry of the window, when the children are indexed by window. */
         private final int base;
@@ -377,18 +303,10 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         }
 
         private Level0 coverOutsideWindow(final int index) {
-            int first = -1;
-            int last = -1;
-            int count = 1;
-            for (int ii = 0; ii < children.length; ++ii) {
-                if (children[ii] != null) {
-                    if (first < 0) {
-                        first = ii;
-                    }
-                    last = ii;
-                    ++count;
-                }
-            }
+            final int first = firstHeld(children);
+            final int last = lastHeld(children);
+            // the children held and the new one
+            final int count = countHeld(children) + 1;
             final int low = first < 0 ? index : Math.min(base + first, index);
             final int high = first < 0 ? index + 1 : Math.max(base + last + 1, index + 1);
             if (high - low <= maxWindow(count)) {
@@ -405,20 +323,8 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
             // new index is outside the window, so it ranks before or after the children held
             final int[] rankedIndices = new int[2 * count];
             final Level1[] rankedChildren = new Level1[2 * count];
-            int ri = 0;
-            if (index < base + first) {
-                rankedIndices[ri++] = index;
-            }
-            for (int ii = first; ii <= last; ++ii) {
-                if (children[ii] != null) {
-                    rankedIndices[ri] = base + ii;
-                    rankedChildren[ri++] = children[ii];
-                }
-            }
-            if (index > base + last) {
-                rankedIndices[ri++] = index;
-            }
-            return new Level0(rankedIndices, rankedChildren, ri);
+            final int ranked = rankWindow(children, base, first, last, index, rankedIndices, rankedChildren);
+            return new Level0(rankedIndices, rankedChildren, ranked);
         }
 
         private Level0 coverRanked(final int index) {
@@ -426,11 +332,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
             final int low = Math.min(indices[0], index);
             final int high = Math.max(indices[oldSize - 1], index) + 1;
             if (high - low <= maxWindow(oldSize + 1)) {
-                final Level1[] window = new Level1[high - low];
-                for (int ii = 0; ii < oldSize; ++ii) {
-                    window[indices[ii] - low] = children[ii];
-                }
-                return new Level0(low, window);
+                return new Level0(low, unrank(children, indices, oldSize, new Level1[high - low], low));
             }
             if (index > indices[oldSize - 1] && oldSize < indices.length) {
                 indices[oldSize] = index;
@@ -493,9 +395,9 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
 
     /**
      * The middle page table level, containing {@link Level2} children. While the children are dense enough, as
-     * {@link #maxWindow(int)} allows, the level holds them in an array indexed by child index less the index of its
-     * first entry, so that the array covers only the window of indices in use; otherwise it holds them densely, in
-     * child index order, at the positions its {@link ChildPositions} report.
+     * {@link PageTableLevels#maxWindow(int)} allows, the level holds them in an array indexed by child index less the
+     * index of its first entry, so that the array covers only the window of indices in use; otherwise it holds them
+     * densely, in child index order, at the positions its {@link ChildPositions} report.
      * <p>
      * A window of one entry also records its index, so that finding the only child of a level is one comparison. The
      * window of a level is fixed, and a child is set or cleared in place; a ranked level appends positions past its
@@ -508,7 +410,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
          * and returned when the cycle completes.
          */
         private final boolean recycled;
-        /** For a window of one entry, its index; otherwise {@link #NO_CHILD}. */
+        /** For a window of one entry, its index; otherwise {@link PageTableLevels#NO_CHILD}. */
         private final int onlyIndex;
         /** The index of the first entry of the window, when the children are indexed by window. */
         private final int base;
@@ -563,18 +465,10 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         }
 
         private Level1 coverOutsideWindow(final int index) {
-            int first = -1;
-            int last = -1;
-            int count = 1;
-            for (int ii = 0; ii < children.length; ++ii) {
-                if (children[ii] != null) {
-                    if (first < 0) {
-                        first = ii;
-                    }
-                    last = ii;
-                    ++count;
-                }
-            }
+            final int first = firstHeld(children);
+            final int last = lastHeld(children);
+            // the children held and the new one
+            final int count = countHeld(children) + 1;
             final int low = first < 0 ? index : Math.min(base + first, index);
             final int high = first < 0 ? index + 1 : Math.max(base + last + 1, index + 1);
             if (high - low <= maxWindow(count)) {
@@ -591,20 +485,8 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
             // new index is outside the window, so it ranks before or after the children held
             final int[] rankedIndices = new int[count];
             final Level2[] rankedChildren = new Level2[grownCapacity(count, count)];
-            int ri = 0;
-            if (index < base + first) {
-                rankedIndices[ri++] = index;
-            }
-            for (int ii = first; ii <= last; ++ii) {
-                if (children[ii] != null) {
-                    rankedIndices[ri] = base + ii;
-                    rankedChildren[ri++] = children[ii];
-                }
-            }
-            if (index > base + last) {
-                rankedIndices[ri++] = index;
-            }
-            return new Level1(recycled, 0, ChildPositions.of(rankedIndices, ri), rankedChildren);
+            final int ranked = rankWindow(children, base, first, last, index, rankedIndices, rankedChildren);
+            return new Level1(recycled, 0, ChildPositions.of(rankedIndices, ranked), rankedChildren);
         }
 
         private Level1 coverRanked(final int index) {
@@ -613,11 +495,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
             final int low = Math.min(held[0], index);
             final int high = Math.max(held[held.length - 1], index) + 1;
             if (high - low <= maxWindow(newSize)) {
-                final Level2[] window = newWindow(high - low);
-                for (int ii = 0; ii < held.length; ++ii) {
-                    window[held[ii] - low] = children[ii];
-                }
-                return new Level1(recycled, low, null, window);
+                return new Level1(recycled, low, null, unrank(children, held, held.length, newWindow(high - low), low));
             }
             final int[] added = {index};
             if (index > held[held.length - 1]) {
@@ -692,12 +570,13 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
     }
 
     /**
-     * The bottom page table level, containing leaves. A leaf is either a full block or a compact leaf, kept in separate arrays
-     * so that reading a full block needs no test of the leaf's type. A level adapts how it holds its leaves to how many
-     * it has and how far apart they are: one leaf in its own fields, with no arrays, so that reading it follows no
-     * reference beyond the level; leaves dense enough for a window, as {@link #maxWindow(int)} allows, in arrays
-     * indexed by leaf index less the index of their first entry, up to a window of every leaf index of the level; and
-     * sparser leaves densely, in leaf index order, at the positions its {@link ChildPositions} report.
+     * The bottom page table level, containing leaves. A leaf is either a full block or a compact leaf, kept in separate
+     * arrays so that reading a full block needs no test of the leaf's type. A level adapts how it holds its leaves to
+     * how many it has and how far apart they are: one leaf in its own fields, with no arrays, so that reading it
+     * follows no reference beyond the level; leaves dense enough for a window, as
+     * {@link PageTableLevels#maxWindow(int)} allows, in arrays indexed by leaf index less the index of their first
+     * entry, up to a window of every leaf index of the level; and sparser leaves densely, in leaf index order, at the
+     * positions its {@link ChildPositions} report.
      * <p>
      * The window or positions and the arrays of a level are fixed, except that appending positions past the last one
      * changes the positions in place, once the arrays have room for them, and a leaf is set at its entry. Anything
@@ -724,7 +603,10 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         private final double[][] blocks;
         /** The compact leaves, or null if no leaf may be one. */
         private final DoubleCompactLeaf[] compacts;
-        /** For a level holding one leaf in its own fields, the index of the leaf; otherwise {@link #NO_CHILD}. */
+        /**
+         * For a level holding one leaf in its own fields, the index of the leaf; otherwise
+         * {@link PageTableLevels#NO_CHILD}.
+         */
         private final int onlyIndex;
         /** The leaf of a level holding one leaf in its own fields, if it is a full block. */
         private double[] onlyBlock;
