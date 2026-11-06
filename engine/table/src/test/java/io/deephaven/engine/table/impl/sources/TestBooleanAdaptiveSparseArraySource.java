@@ -5,12 +5,14 @@ package io.deephaven.engine.table.impl.sources;
 
 import java.util.stream.LongStream;
 
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -73,6 +75,40 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
         assertSame(Boolean.TRUE, source.get(3));
         assertSame(Boolean.FALSE, source.get(5));
         assertSame(null, source.get(4));
+    }
+
+    /**
+     * A source chunk may be longer than the rows or keys written, and only the values for those rows or keys are
+     * written, even through a context sized for them.
+     */
+    @Test
+    public void testFillFromLongerChunk() {
+        final BooleanAdaptiveSparseArraySource source = makeTestSource();
+        try (final WritableObjectChunk<Boolean, Values> values = WritableObjectChunk.makeWritableChunk(4)) {
+            values.set(0, true);
+            values.set(1, false);
+            values.set(2, null);
+            values.set(3, true);
+            try (final ChunkSink.FillFromContext context = source.makeFillFromContext(2);
+                    final RowSet rows = i(10, 20)) {
+                source.fillFromChunk(context, values, rows);
+            }
+            try (final ChunkSink.FillFromContext context = source.makeFillFromContext(1);
+                    final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(1)) {
+                keys.set(0, 30);
+                source.fillFromChunkUnordered(context, values, keys);
+            }
+            try (final ChunkSink.FillFromContext context = source.makeFillFromContext(0);
+                    final RowSet rows = RowSetFactory.empty();
+                    final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(0)) {
+                source.fillFromChunk(context, values, rows);
+                source.fillFromChunkUnordered(context, values, keys);
+            }
+        }
+        assertSame(Boolean.TRUE, source.get(10));
+        assertSame(Boolean.FALSE, source.get(20));
+        assertSame(Boolean.TRUE, source.get(30));
+        assertSame(null, source.get(11));
     }
 
     @Test
