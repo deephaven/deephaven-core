@@ -355,6 +355,88 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testCreateMutableTableReadsTheSameData() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_041);
+                    return session.getTable("source", null).update(arr("Z = X + Y")).resolve();
+                })
+                .then(resolved -> {
+                    JsTable table = resolved.createMutableTable();
+                    assertEquals(5., table.getSize(), 0);
+                    Column z = table.findColumn("Z");
+                    DataOptions.SnapshotOptions opts = new DataOptions.SnapshotOptions();
+                    opts.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 4));
+                    opts.columns = Js.cast(table.getColumns());
+                    return table.createSnapshot(opts).then(data -> {
+                        // Z = X + Y = i + 2i
+                        assertEquals(6, data.getData(2, z).asInt());
+                        table.close();
+                        resolved.close();
+                        return Promise.resolve(resolved);
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testMutableTableFiltersOnItsOwn() {
+        // The Table is mutable; the ResolvedTable it came from is not, and does not see the filter
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_042);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(resolved -> {
+                    JsTable table = resolved.createMutableTable();
+                    table.applyFilter(new FilterCondition[] {
+                            table.findColumn("X").filter().greaterThan(FilterValue.ofNumber(2.0))});
+                    return waitForEvent(table, JsTable.EVENT_SIZECHANGED,
+                            e -> assertEquals(2., table.getSize(), 0), 5_042)
+                            .then(filtered -> {
+                                assertEquals("filtering the mutable table changed the resolved table", 5.,
+                                        resolved.getSize(), 0);
+                                return resolved.head(Js.uncheckedCast(10.0)).resolve();
+                            })
+                            .then(head -> {
+                                assertEquals(5., head.getSize(), 0);
+                                head.close();
+                                table.close();
+                                resolved.close();
+                                return Promise.resolve(head);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testClosingEitherLeavesTheOther() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_043);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(resolved -> {
+                    // The ResolvedTable closed first: the Table it made still works
+                    JsTable table = resolved.createMutableTable();
+                    resolved.close();
+                    return table.operations().resolve().then(fromTable -> {
+                        assertEquals("the table did not outlive the resolved table it came from", 5.,
+                                fromTable.getSize(), 0);
+                        // The Table closed first: the ResolvedTable it came from still works
+                        JsTable other = fromTable.createMutableTable();
+                        other.close();
+                        return fromTable.head(Js.uncheckedCast(1.0)).resolve().then(head -> {
+                            assertEquals("the resolved table did not outlive a table made from it", 1.,
+                                    head.getSize(), 0);
+                            head.close();
+                            fromTable.close();
+                            table.close();
+                            return Promise.resolve(head);
+                        });
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testCopyIsOfTheTableWhenCalled() {
         connect(tables)
                 .then(session -> {

@@ -47,4 +47,15 @@ public interface JsResolvedTable extends JsITable, JsTableOperations {
      */
     @JsMethod
     Promise<JsResolvedTable> copy();
+
+    /**
+     * A new {@link JsTable} over the same server-side table, the inverse of {@link JsTable#operations()}. The
+     * {@code Table} can be changed with {@code applyFilter}, {@code applySort} and the other legacy methods without
+     * affecting this table, and the two are closed independently. Like other tables made by operations, it is not
+     * revived if a reconnect needs a new session.
+     *
+     * @return a new mutable table, which the caller must close
+     */
+    @JsMethod
+    JsTable createMutableTable();
 }

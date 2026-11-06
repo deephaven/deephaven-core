@@ -789,6 +789,13 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             checkOpen();
             return Promise.resolve(new Resolved(connection, state));
         }
+
+        @Override
+        public JsTable createMutableTable() {
+            checkOpen();
+            // The Table binds to the state itself, so each can be closed without the other
+            return new JsTable(connection, state);
+        }
     }
 
     /**
