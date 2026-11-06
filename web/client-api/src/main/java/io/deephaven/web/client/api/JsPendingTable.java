@@ -45,9 +45,11 @@ public interface JsPendingTable<@TsDefault(JsResolvedTable.class) T extends JsIT
     /**
      * Releases everything this pending table produced, whichever stage it is at. If the operation is still pending, it
      * is canceled: the promise from {@link #resolve()} rejects with "Operation canceled" and the ticket is released. If
-     * the table was already delivered, it is closed, for every awaiter. Operations chained on it afterward are never
-     * sent, and reject with "Cannot use source table: " and the cancel message. The server cancels work it has not
-     * started, but work it has already begun runs to completion there, so callers that cancel often should debounce.
+     * the table was already delivered, it is closed, for every awaiter. Operations already chained on it that have not
+     * yet produced their table reject with "Source table failed: " and the cancel message; operations chained on it
+     * afterward are never sent, and reject with "Cannot use source table: " and the cancel message. The server cancels
+     * work it has not started, but work it has already begun runs to completion there, so callers that cancel often
+     * should debounce.
      */
     @JsMethod
     void cancel();

@@ -253,6 +253,19 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testCancelFetchedFailsWhatWasChained() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_031);
+                    JsPendingTable<JsTable> source = session.getTable("source", null);
+                    Promise<JsResolvedTable> chained = source.update(cols("Z = X + 1")).resolve();
+                    // Chained before the cancel, so it fails with the source, as on a canceled operation
+                    source.cancel();
+                    return expectRejection(chained, "Source table failed: Operation canceled");
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testIntermediatesAreReleased() {
         connect(tables)
                 .then(session -> {

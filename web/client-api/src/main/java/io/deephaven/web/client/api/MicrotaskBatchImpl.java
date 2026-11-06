@@ -552,7 +552,11 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 resolving.fail(message);
             }
             // TODO the underlying fetch is not withdrawn: the entry points' unary calls carry no cancellation context.
-            // The state is let go now, so it is released once any dependents are done with it.
+            // Failing the state fails the operations chained on it, as an operation's cancel does, and they let go of
+            // it; once this pending lets go too, nothing holds it, so its late response finds it released.
+            if (state.getResolution() == ClientTableState.ResolutionState.UNRESOLVED) {
+                state.setResolution(ClientTableState.ResolutionState.FAILED, message);
+            }
             if (result != null) {
                 result.fail(message);
             }
