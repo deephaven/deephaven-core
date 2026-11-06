@@ -692,7 +692,7 @@ public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<In
     }
 
     /**
-     * The bottom page table level: its leaves. A leaf is either a full block or a compact leaf, kept in separate arrays
+     * The bottom page table level, containing leaves. A leaf is either a full block or a compact leaf, kept in separate arrays
      * so that reading a full block needs no test of the leaf's type. A level adapts how it holds its leaves to how many
      * it has and how far apart they are: one leaf in its own fields, with no arrays, so that reading it follows no
      * reference beyond the level; leaves dense enough for a window, as {@link #maxWindow(int)} allows, in arrays

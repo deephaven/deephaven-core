@@ -688,12 +688,12 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
     }
 
     /**
-     * The bottom page table level: its leaves. A leaf is either a full block or a compact leaf, kept in separate arrays
-     * so that reading a full block needs no test of the leaf's type. A level adapts how it holds its leaves to how many
-     * it has and how far apart they are: one leaf in its own fields, with no arrays, so that reading it follows no
-     * reference beyond the level; leaves dense enough for a window, as {@link #maxWindow(int)} allows, in arrays
-     * indexed by leaf index less the index of their first entry, up to a window of every leaf index of the level; and
-     * sparser leaves densely, in leaf index order, at the positions its {@link ChildPositions} report.
+     * The bottom page table level, containing leaves. A leaf is either a full block or a compact leaf, kept in separate
+     * arrays so that reading a full block needs no test of the leaf's type. A level adapts how it holds its leaves to
+     * how many it has and how far apart they are: one leaf in its own fields, with no arrays, so that reading it
+     * follows no reference beyond the level; leaves dense enough for a window, as {@link #maxWindow(int)} allows, in
+     * arrays indexed by leaf index less the index of their first entry, up to a window of every leaf index of the
+     * level; and sparser leaves densely, in leaf index order, at the positions its {@link ChildPositions} report.
      * <p>
      * The window or positions and the arrays of a level are fixed, except that appending positions past the last one
      * changes the positions in place, once the arrays have room for them, and a leaf is set at its entry. Anything
