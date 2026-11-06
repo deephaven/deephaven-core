@@ -1452,7 +1452,8 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
     }
 
     /**
-     * @return whether writes must record previous values
+     * @return whether individual writes must record previous values: the source tracks previous values, and
+     *         preparation for parallel population has not already recorded them for the leaves of this cycle
      */
     private boolean shouldTrackPrevious() {
         return prevFlusher != null && !(preparedLeaves && prepareClockStep == updateGraph.clock().currentStep());
