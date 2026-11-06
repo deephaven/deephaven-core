@@ -750,6 +750,25 @@ public final class ClientTableState extends TableConfig {
         }
     }
 
+    /**
+     * Visits each bound table and each retainer that re-establishes its own server-side resources once this state has
+     * been revived, such as a subscription that is not owned by a {@link JsTable}.
+     */
+    public void forRevivables(JsConsumer<Revivable> callback) {
+        JsSet<Revivable> items = new JsSet<>();
+        for (JsTable o : JsItr.iterate(active.keys())) {
+            items.add(o);
+        }
+        for (Object o : JsItr.iterate(retainers.values())) {
+            if (o instanceof Revivable) {
+                items.add((Revivable) o);
+            }
+        }
+        for (Revivable item : JsItr.iterate(items.values())) {
+            callback.apply(item);
+        }
+    }
+
     @Override
     public String toString() {
         return "ClientTableState{" +

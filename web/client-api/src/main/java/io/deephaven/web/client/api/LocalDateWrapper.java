@@ -73,4 +73,21 @@ public class LocalDateWrapper {
                 + "-" + MONTH_DAY_FORMAT.format(getMonthValue())
                 + "-" + MONTH_DAY_FORMAT.format(getDayOfMonth());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof LocalDateWrapper)) {
+            return false;
+        }
+        LocalDateWrapper that = (LocalDateWrapper) o;
+        return year == that.year && monthValue == that.monthValue && dayOfMonth == that.dayOfMonth;
+    }
+
+    @Override
+    public int hashCode() {
+        return (year * 31 + monthValue) * 31 + dayOfMonth;
+    }
 }
