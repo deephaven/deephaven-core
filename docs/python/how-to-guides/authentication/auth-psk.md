@@ -170,6 +170,24 @@ Code that runs in the same Python process as the server doesn't need the key. Fo
 
 A Python client session that connects to a Deephaven server over the network needs the key. Pass `auth_type="io.deephaven.authentication.psk.PskAuthenticationHandler"` and `auth_token=<key>` to [`pydeephaven.Session`](/core/client-api/python/code/pydeephaven.html#pydeephaven.Session). `pydeephaven` is the Python client for a remote Deephaven server.
 
+## Log in from the JS API
+
+Applications that use the [Deephaven JS API](/core/client-api/javascript/modules/dh.html) log in with the pre-shared key. Call [`login`](/core/client-api/javascript/classes/dh.CoreClient.html#login) with `type` set to the pre-shared key handler's class name and `token` set to the key. [Use the JS API](../use-jsapi.md) shows how to load the API into a web page.
+
+```javascript
+async function main() {
+  const client = new dh.CoreClient("http://localhost:10000");
+  await client.login({
+    type: "io.deephaven.authentication.psk.PskAuthenticationHandler",
+    token: "<your key>",
+  });
+}
+
+main().catch((err) => console.error("Login failed:", err));
+```
+
+Replace `http://localhost:10000` with the address of your server, and `<your key>` with the key.
+
 ## Related documentation
 
 - [Install guide for Docker](../../getting-started/docker-install.md)

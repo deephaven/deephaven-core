@@ -103,6 +103,24 @@ Besides the Docker method above, set the key in these ways:
 - For the production application, add `-Dauthentication.psk=YOUR_PASSWORD_HERE` to `START_OPTS` when you run the `start` script. See the [production application guide](../../getting-started/production-application.md).
 - For a source build, pass `-Ppsk=YOUR_PASSWORD_HERE` to the Gradle run task: `./gradlew server-jetty-app:run -Pgroovy -Ppsk=YOUR_PASSWORD_HERE`. See the [source build guide](../../getting-started/launch-build.md).
 
+## Log in from the JS API
+
+Applications that use the [Deephaven JS API](/core/client-api/javascript/modules/dh.html) log in with the pre-shared key. Call [`login`](/core/client-api/javascript/classes/dh.CoreClient.html#login) with `type` set to the pre-shared key handler's class name and `token` set to the key. [Use the JS API](../use-jsapi.md) shows how to load the API into a web page.
+
+```javascript
+async function main() {
+  const client = new dh.CoreClient("http://localhost:10000");
+  await client.login({
+    type: "io.deephaven.authentication.psk.PskAuthenticationHandler",
+    token: "<your key>",
+  });
+}
+
+main().catch((err) => console.error("Login failed:", err));
+```
+
+Replace `http://localhost:10000` with the address of your server, and `<your key>` with the key.
+
 ## Related documentation
 
 - [Install guide for Docker](../../getting-started/docker-install.md)

@@ -35,6 +35,23 @@ The Docker logs show the following message when you enable anonymous authenticat
 
 ![The Docker logs display a warning when anonymous authentication is enabled](../../assets/how-to/anon-auth.png)
 
+## Log in from the JS API
+
+Applications that use the [Deephaven JS API](/core/client-api/javascript/modules/dh.html) log in anonymously. Call [`login`](/core/client-api/javascript/classes/dh.CoreClient.html#login) with `type` set to `dh.CoreClient.LOGIN_TYPE_ANONYMOUS`. No token is needed. [Use the JS API](../use-jsapi.md) shows how to load the API into a web page.
+
+```javascript
+async function main() {
+  const client = new dh.CoreClient("http://localhost:10000");
+  await client.login({
+    type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS,
+  });
+}
+
+main().catch((err) => console.error("Login failed:", err));
+```
+
+Replace `http://localhost:10000` with the address of your server.
+
 ## Related documentation
 
 - [Install guide for Docker](../../getting-started/docker-install.md)
