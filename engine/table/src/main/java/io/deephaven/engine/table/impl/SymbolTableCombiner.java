@@ -13,7 +13,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
