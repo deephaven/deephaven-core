@@ -270,6 +270,11 @@ public final class ClientTableState extends TableConfig {
         setResolution(resolution, null);
     }
 
+    /** Why this state failed, or {@code null} if it has not. */
+    public String getFailure() {
+        return resolution == ResolutionState.FAILED ? failMsg : null;
+    }
+
     public void setResolution(ResolutionState resolution, String failMsg) {
         if (this.resolution == ResolutionState.RELEASED) {
             assert resolution == ResolutionState.RELEASED : "Trying to unrelease CTS " + this + " to " + resolution;

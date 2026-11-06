@@ -594,6 +594,32 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         return counts;
     }
 
+    public void testLateViewReportsItsTableFailure() {
+        // A view's table can fail after the view is taken; used late, the view reports that failure, not the lateness
+        errorLogsDontFail();
+        connect(failingTables)
+                .then(session -> {
+                    delayTestFinish(15_018);
+                    return session.getTable("failing", null).asPromise().then(failing -> {
+                        ClientTableState state = failing.state();
+                        JsPendingTable<JsResolvedTable> view = failing.operations();
+                        String what = "a view used after its table failed";
+                        return Promise.resolve(waitFor(
+                                () -> state.getResolution() == ClientTableState.ResolutionState.FAILED, 100, 5_000,
+                                (Object) null))
+                                .then(ignore -> expectRejection(what + " (chained on)",
+                                        view.head(Js.uncheckedCast(1.0)).resolve(), "INVALID_ARGUMENT"))
+                                .then(ignore -> expectRejection(what + " (resolved)", view.resolve(),
+                                        "INVALID_ARGUMENT"))
+                                .then(ignore -> {
+                                    failing.close();
+                                    return Promise.resolve(session);
+                                });
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testCallsRacingAnOperandFailureSettle() {
         // Calls made before, during and after the operand fails: whichever of client and server notices first, each
         // call must settle, and none may hold anything afterwards
@@ -650,7 +676,7 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
     public void testLateUseReportsTheEarlierFailure() {
         runForEachKind(15_012, (kind, make) -> {
             if (kind.equals("view")) {
-                // A view cannot fail on its own: the state it stands for is its table's
+                // A view fails only with its table's state; testLateViewReportsItsTableFailure covers that
                 return Promise.resolve((Object) null);
             }
             JsPendingTable<?> failing;

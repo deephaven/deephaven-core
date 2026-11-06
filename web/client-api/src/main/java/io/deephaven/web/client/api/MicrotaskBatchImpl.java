@@ -332,7 +332,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
         @Override
         protected @Nullable String failure() {
-            return null;
+            // The table's state can fail after the view was taken
+            return state.getFailure();
         }
 
         @Override
