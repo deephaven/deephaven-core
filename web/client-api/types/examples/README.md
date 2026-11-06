@@ -15,7 +15,7 @@ To type-check them against the definitions generated from the current sources:
 ```
 ./gradlew :web-client-api:typescriptDefinitions
 cd web/client-api/types/examples
-npx -p typescript tsc -p tsconfig.json
+npx -p typescript@5.9.3 tsc -p tsconfig.json
 ```
 
 `tsconfig.json` maps `@deephaven/jsapi-types` to the generated `build/ts-types/types.d.ts`, so the

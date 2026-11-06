@@ -70,6 +70,72 @@ async function updateBy() {
     t.close();
 }
 
+// py: t.update_by(ops=[rolling_sum_tick(["SumX = X"], rev_ticks=5)], by=["Key"])
+async function rollingUpdateBy() {
+    const t = await session.timeTable(1e9).update(["Key = i % 3", "X = i"]).updateBy({
+        operations: [{
+            spec: { type: "UpdateByRollingSum", reverseWindowScale: { type: "ticks", ticks: 5 } },
+            matchPairs: ["SumX = X"],
+        }],
+        groupByColumns: ["Key"],
+    });
+    t.close();
+}
+
+// py: t.where_in(keys, ["Key"]); windows.range_join(t, on=["Key", "LStart <= Ts <= LEnd"], aggs=[agg.group(["Ts"])])
+async function whereInAndRangeJoin() {
+    const t = session.timeTable(1e9).update(["Key = i % 3", "Ts = i"]);
+    const keys = session.emptyTable(2).update(["Key = i"]);
+    const windows = session.emptyTable(3).update(["Key = i % 3", "LStart = i * 10", "LEnd = LStart + 5"]);
+    const [inKeys, ranged] = await Promise.all([
+        t.whereIn(keys, ["Key"]),
+        windows.rangeJoin(t, ["Key"], {
+            leftStartColumn: "LStart",
+            rangeStartRule: "LESS_THAN_OR_EQUAL",
+            rightRangeColumn: "Ts",
+            rangeEndRule: "GREATER_THAN_OR_EQUAL",
+            leftEndColumn: "LEnd",
+        }, [dh.agg.Aggregation.AggGroup(["Ts"])]),
+    ]);
+    inKeys.close();
+    ranged.close();
+}
+
+// Abandoning work that is no longer wanted: cancel() a pending table, or abort the signal given to resolve()
+async function cancelAndAbort(signal: AbortSignal) {
+    const unwanted = session.timeTable(1e9).update(["X = i"]).sumBy([]);
+    // Not sent if it has not been yet; awaiting it now rejects with "Operation canceled"
+    unwanted.cancel();
+    // If the signal aborts before the table arrives, the await rejects and nothing is left to close
+    const t = await session.timeTable(1e9).update(["X = i"]).resolve({ signal });
+    t.close();
+}
+
+// A pending table has no catch(): use try/await, or wrap it with Promise.resolve in the task that made it
+async function handleFailure() {
+    try {
+        const t = await session.emptyTable(1).update(["X = NoSuchColumn"]);
+        t.close();
+    } catch (e) {
+        console.warn("update failed", e);
+    }
+    const orNull = await Promise.resolve(session.emptyTable(1).update(["X = NoSuchColumn"]))
+        .catch(() => null);
+    orNull?.close();
+}
+
+// Reading any table, legacy or new: Table, TotalsTable and ResolvedTable are all an ITable
+function describe(t: dh.ITable): string {
+    return `${t.size} rows: ${t.columns.map(c => c.name).join(", ")}`;
+}
+async function readEither() {
+    const table = (await session.getObject({ type: "Table", name: "source" })) as dh.Table;
+    const resolved = await table.operations();
+    console.log(describe(table), describe(resolved));
+    resolved.close();
+    table.close();
+}
+
 // py: t.head(5); t.select_distinct(["Key"]); t.snapshot(); t.snapshot_when(trigger, initial=True)
 async function misc() {
     const t = session.timeTable(1e9).update(["Key = i % 3"]);
