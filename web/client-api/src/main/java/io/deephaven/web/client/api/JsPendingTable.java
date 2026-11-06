@@ -36,8 +36,8 @@ import jsinterop.annotations.JsMethod;
  *
  * @param <T> the table awaiting this gives. In TypeScript it defaults to {@code ResolvedTable}, what every operation
  *        produces. A fetched table resolves to a {@code Table} instead: narrow what {@code getObject} returns with a
- *        property test such as {@code "where" in result}, or with a cast to {@code PendingTable<Table>}; TypeScript
- *        rejects a cast to a bare {@code PendingTable}.
+ *        property test such as {@code "where" in result}, or with a cast to <code>PendingTable&lt;Table&gt;</code>;
+ *        TypeScript rejects a cast to a bare {@code PendingTable}.
  */
 @TsName(namespace = "dh", name = "PendingTable")
 @TsInterface

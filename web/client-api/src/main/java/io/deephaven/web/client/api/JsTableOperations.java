@@ -712,7 +712,7 @@ public interface JsTableOperations extends ServerObject {
      * @param rightTable the table to join with
      * @param columnsToMatch the columns to match on. All but the last are exact matches ({@code "LeftCol=RightCol"} or
      *        a name in both tables). The last is the as-of match: {@code "LeftCol<=RightCol"},
-     *        {@code "LeftCol<RightCol"}, or a name in both tables, which means {@code <=}.
+     *        <code>"LeftCol&lt;RightCol"</code>, or a name in both tables, which means {@code <=}.
      * @param columnsToAdd the columns to add from the right table; if omitted, all non-match columns are added
      * @return a new table with the joined columns
      */
