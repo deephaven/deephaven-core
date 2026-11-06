@@ -3,10 +3,8 @@
 //
 package io.deephaven.web.client.api;
 
-import elemental2.core.JsArray;
 import elemental2.core.JsMap;
 import elemental2.promise.Promise;
-import jsinterop.base.Js;
 
 public class ColumnStatisticsTestGwt extends AbstractAsyncGwtTestCase {
     private final TableSourceBuilder tables = new TableSourceBuilder()
@@ -98,7 +96,7 @@ public class ColumnStatisticsTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table("staticTable"))
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
-                    return table.operations().view(Js.uncheckedCast(JsArray.of("A", "B"))).resolve()
+                    return table.operations().view(arr("A", "B")).resolve()
                             // By name: a resolved table has columns, but callers need not look one up
                             .then(resolved -> resolved.getColumnStatistics(Column.ColumnOrName.of("A"))
                                     .then(stats -> {

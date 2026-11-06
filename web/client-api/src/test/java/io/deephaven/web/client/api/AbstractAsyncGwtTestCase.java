@@ -8,6 +8,7 @@ import com.google.gwt.junit.client.GWTTestCase;
 import elemental2.core.JsArray;
 import elemental2.core.JsError;
 import elemental2.core.JsString;
+import elemental2.core.ReadonlyArray;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
@@ -280,6 +281,11 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     /** Resolves after {@code millis}, in a later task. */
     protected static Promise<Object> delay(int millis) {
         return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
+    }
+
+    /** A JS array of {@code items}, typed as whichever array the caller needs. */
+    protected static <T> ReadonlyArray<T> arr(Object... items) {
+        return Js.uncheckedCast(JsArray.of(items));
     }
 
     /** How many states made by batched table operations the connection still holds, unreleased. */

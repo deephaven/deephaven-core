@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
-import elemental2.core.ReadonlyArray;
 import elemental2.dom.AbortController;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
@@ -80,21 +79,13 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         return JsPropertyMap.of("signal", controller.signal);
     }
 
-    private static ReadonlyArray<JsTable.CustomColumnArgUnionType> cols(String... exprs) {
-        return Js.uncheckedCast(JsArray.of(exprs));
-    }
-
-    private static ReadonlyArray<Sort.SortUnion> sorts(String... columns) {
-        return Js.uncheckedCast(JsArray.of(columns));
-    }
-
     public void testChainBeforeAwait() {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_001);
                     JsPendingTable<JsTable> source = session.getTable("source", null);
                     // Two operations chained before anything has been awaited, one await for the lot
-                    return source.update(cols("Z = X + Y")).sort(sorts("Z")).resolve();
+                    return source.update(arr("Z = X + Y")).sort(arr("Z")).resolve();
                 })
                 .then(resolved -> {
                     assertEquals(5., resolved.getSize(), 0);
@@ -220,7 +211,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
             JsPendingTable<JsTable> left = first.getTable("source", null);
             JsPendingTable<JsTable> right = second.getTable("source", null);
             try {
-                left.naturalJoin(JsTableReference.of(right), Js.uncheckedCast(JsArray.of("X")), null, null);
+                left.naturalJoin(JsTableReference.of(right), arr("X"), null, null);
                 fail("Expected an operand from another connection to throw");
             } catch (IllegalArgumentException expected) {
                 assertTrue(expected.getMessage(), expected.getMessage().contains("connection"));
@@ -236,9 +227,9 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     return session.getTable("source", null).resolve();
                 })
                 // The operand needs a state of its own, which only it retains; a copy would share the source's
-                .then(source -> source.update(cols("Y2 = Y * 3")).resolve().then(right -> {
+                .then(source -> source.update(arr("Y2 = Y * 3")).resolve().then(right -> {
                     JsPendingTable<JsResolvedTable> joined = source.naturalJoin(JsTableReference.of(right),
-                            Js.uncheckedCast(JsArray.of("X")), Js.uncheckedCast(JsArray.of("Y2")), null);
+                            arr("X"), arr("Y2"), null);
                     // Closed in the same task, before the batch that reads it has been sent
                     right.close();
                     Promise<JsResolvedTable> result = joined.resolve().then(Promise::resolve,
@@ -260,7 +251,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(session -> {
                     delayTestFinish(10_031);
                     JsPendingTable<JsTable> source = session.getTable("source", null);
-                    Promise<JsResolvedTable> chained = source.update(cols("Z = X + 1")).resolve();
+                    Promise<JsResolvedTable> chained = source.update(arr("Z = X + 1")).resolve();
                     // Chained before the cancel, so it fails with the source, as on a canceled operation
                     source.cancel();
                     return expectRejection(chained, "Source table failed: Operation canceled");
@@ -299,7 +290,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     WorkerConnection connection = table.getConnection();
                     // The update is never awaited; only the sort is
                     JsPendingTable<JsResolvedTable> last =
-                            table.operations().update(cols("Z = X + Y")).sort(sorts("Z"));
+                            table.operations().update(arr("Z = X + Y")).sort(arr("Z"));
                     return last.resolve().then(resolved -> delay(200).then(ignore -> {
                         // The intermediate has been released, the awaited result is still held
                         assertEquals(1, batchStates(connection));
@@ -318,7 +309,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_004);
-                    return session.getTable("source", null).sort(sorts("X")).resolve();
+                    return session.getTable("source", null).sort(arr("X")).resolve();
                 })
                 .then(resolved -> {
                     DataOptions.ViewportSubscriptionOptions opts = new DataOptions.ViewportSubscriptionOptions();
@@ -339,7 +330,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(20_005);
-                    return session.getTable("ticking", null).update(cols("Z = X * 2")).resolve();
+                    return session.getTable("ticking", null).update(arr("Z = X * 2")).resolve();
                 })
                 .then(resolved -> {
                     DataOptions.ViewportSubscriptionOptions opts = new DataOptions.ViewportSubscriptionOptions();
@@ -375,7 +366,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables, options)
                 .then(session -> {
                     delayTestFinish(20_023);
-                    return session.getTable("ticking", null).update(cols("Z = X * 2")).resolve();
+                    return session.getTable("ticking", null).update(arr("Z = X * 2")).resolve();
                 })
                 .then(resolved -> {
                     DataOptions.ViewportSubscriptionOptions opts = new DataOptions.ViewportSubscriptionOptions();
@@ -421,7 +412,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
-                    JsPendingTable<JsResolvedTable> pending = table.operations().update(cols("Z = X + Y"));
+                    JsPendingTable<JsResolvedTable> pending = table.operations().update(arr("Z = X + Y"));
                     pending.cancel();
                     return expectCanceled(pending.resolve())
                             .then(ignore -> delay(200))
@@ -442,7 +433,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
-                    JsPendingTable<JsResolvedTable> pending = table.operations().update(cols(SLOW));
+                    JsPendingTable<JsResolvedTable> pending = table.operations().update(arr(SLOW));
                     Promise<JsResolvedTable> resolved = pending.resolve();
                     // Let the batch go out, then cancel while the server is busy with it
                     return delay(0)
@@ -469,7 +460,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
-                    JsPendingTable<JsResolvedTable> pending = table.operations().update(cols(SLOW));
+                    JsPendingTable<JsResolvedTable> pending = table.operations().update(arr(SLOW));
                     return delay(0)
                             .then(ignore -> {
                                 pending.cancel();
@@ -495,7 +486,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
                     // Both go out in one batch, on one stream
-                    JsPendingTable<JsResolvedTable> slow = table.operations().update(cols(SLOW));
+                    JsPendingTable<JsResolvedTable> slow = table.operations().update(arr(SLOW));
                     JsPendingTable<JsResolvedTable> quick = table.operations().head(Js.uncheckedCast(1.0));
                     Promise<JsResolvedTable> quickResult = quick.resolve();
                     return delay(0)
@@ -530,11 +521,11 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
                     AbortController controller = new AbortController();
-                    JsPendingTable<JsResolvedTable> pending = table.operations().update(cols("Z = X + Y"));
+                    JsPendingTable<JsResolvedTable> pending = table.operations().update(arr("Z = X + Y"));
                     Promise<JsResolvedTable> resolved = pending.resolve(withSignal(controller));
                     controller.abort();
                     // As for cancel(), chaining on it fails through the result
-                    JsPendingTable<JsResolvedTable> chained = pending.sort(sorts("Z"));
+                    JsPendingTable<JsResolvedTable> chained = pending.sort(arr("Z"));
                     return expectRejection(resolved, "Abort")
                             .then(ignore -> expectRejection(chained.resolve(), "Abort"))
                             .then(ignore -> delay(200))
@@ -557,7 +548,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     WorkerConnection connection = table.getConnection();
                     AbortController controller = new AbortController();
                     Promise<JsResolvedTable> resolved =
-                            table.operations().update(cols(SLOW)).resolve(withSignal(controller));
+                            table.operations().update(arr(SLOW)).resolve(withSignal(controller));
                     return delay(0)
                             .then(ignore -> {
                                 controller.abort();
@@ -584,7 +575,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     AbortController controller = new AbortController();
                     controller.abort();
                     Promise<JsResolvedTable> resolved =
-                            table.operations().update(cols("Z = X + Y")).resolve(withSignal(controller));
+                            table.operations().update(arr("Z = X + Y")).resolve(withSignal(controller));
                     return expectRejection(resolved, "Abort")
                             .then(ignore -> delay(200))
                             .then(ignore -> {
@@ -825,9 +816,9 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
     private static JsTableOperations.DownsampleTableOptions downsampleOptions(LongWrapper... xRange) {
         JsTableOperations.DownsampleTableOptions options = new JsTableOperations.DownsampleTableOptions();
         options.xColumn = Js.uncheckedCast("Timestamp");
-        options.yColumns = Js.uncheckedCast(JsArray.of("Y"));
+        options.yColumns = arr("Y");
         options.width = 10;
-        options.xRange = xRange.length == 0 ? null : Js.uncheckedCast(JsArray.of(xRange));
+        options.xRange = xRange.length == 0 ? null : arr((Object[]) xRange);
         return options;
     }
 
@@ -903,7 +894,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                     Column.ColumnOrName.of("X"), ValueType.NUMBER, Js.asAny(9.0), null, null, null),
                                     -1))
                             // A resolved table: S is "v0" to "v4"
-                            .then(ignore -> table.operations().update(cols("S = `v` + X")).resolve())
+                            .then(ignore -> table.operations().update(arr("S = `v` + X")).resolve())
                             .then(resolved -> expectRow("resolved, S = v3",
                                     resolved.seekRow(0, s, ValueType.STRING, Js.asAny("v3"), null, null, null), 3)
                                     .then(ignore -> expectRow("resolved, S = V2 ignoring case", resolved.seekRow(0, s,

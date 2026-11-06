@@ -3,8 +3,6 @@
 //
 package io.deephaven.web.client.api;
 
-import elemental2.core.JsArray;
-import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.agg.AggByOptions;
 import io.deephaven.web.client.api.agg.Aggregation;
@@ -45,11 +43,6 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
             this.name = name;
             this.call = call;
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> ReadonlyArray<T> arr(Object... items) {
-        return Js.uncheckedCast(JsArray.of(items));
     }
 
     private static TableData.RowPositionUnion row(double position) {

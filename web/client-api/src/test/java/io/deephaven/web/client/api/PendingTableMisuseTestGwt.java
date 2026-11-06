@@ -3,22 +3,24 @@
 //
 package io.deephaven.web.client.api;
 
-import elemental2.core.JsArray;
 import elemental2.core.JsError;
-import elemental2.core.ReadonlyArray;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsFunction;
 import jsinterop.base.Js;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static elemental2.dom.DomGlobal.console;
@@ -30,8 +32,9 @@ import static elemental2.dom.DomGlobal.console;
  */
 public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
     private final TableSourceBuilder tables = new TableSourceBuilder()
-            .script("from deephaven import empty_table")
-            .script("source", "empty_table(5).update([\"X = i\", \"Y = i * 2\"])");
+            .script("from deephaven import empty_table, input_table")
+            .script("source", "empty_table(5).update([\"X = i\", \"Y = i * 2\"])")
+            .script("input", "input_table(init_table=source, key_cols=[\"X\"])");
 
     /** What a pending used after the task that created it must say, in its rejection and its warning. */
     private static final String LATE = "after the task that created it";
@@ -41,16 +44,12 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         Promise<Object> run(String kind, Supplier<JsPendingTable<?>> make);
     }
 
-    private static ReadonlyArray<JsTable.CustomColumnArgUnionType> cols(String... exprs) {
-        return Js.uncheckedCast(JsArray.of(exprs));
-    }
-
     /**
      * Runs {@code scenario} against each kind of pending table: an operation, sent in a batch, and an entry-point
      * fetch.
      */
     private static Promise<Object> forEachKind(IdeSession session, JsTable table, PendingScenario scenario) {
-        return scenario.run("operation", () -> table.operations().update(cols("Z = X + Y")))
+        return scenario.run("operation", () -> table.operations().update(arr("Z = X + Y")))
                 .then(ignore -> scenario.run("fetch", () -> session.getTable("source", null)));
     }
 
@@ -190,10 +189,6 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
 
     private static JsTableReference operand(JsPendingTable<?> pending) {
         return Js.uncheckedCast(pending);
-    }
-
-    private static ReadonlyArray<Column.ColumnOrName> names(String... names) {
-        return Js.uncheckedCast(JsArray.of(names));
     }
 
     /**
@@ -366,7 +361,7 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
             JsPendingTable<?> pending = made(make);
             String what = "an operation taking an unawaited " + kind + " as its operand 500ms later";
             return withWarnings(() -> delay(500).then(ignore -> expectRejectionWithin(what,
-                    source.operations().whereIn(operand(pending), names("X")).resolve(), LATE)), warnedLate(what));
+                    source.operations().whereIn(operand(pending), arr("X")).resolve(), LATE)), warnedLate(what));
         });
     }
 
@@ -377,7 +372,7 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
             return delay(0).then(ignore -> {
                 JsPendingTable<JsResolvedTable> failed = pending.head(Js.uncheckedCast(1.0));
                 return expectRejectionWithin("an operation taking a failed chain on a " + kind + " as its operand",
-                        source.operations().whereIn(operand(failed), names("X")).resolve(), LATE);
+                        source.operations().whereIn(operand(failed), arr("X")).resolve(), LATE);
             });
         });
     }
@@ -387,8 +382,105 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
             JsPendingTable<?> pending = make.get();
             pending.cancel();
             return expectRejectionWithin("an operation taking a canceled " + kind + " as its operand",
-                    source.operations().whereIn(operand(pending), names("X")).resolve(), "Operation canceled");
+                    source.operations().whereIn(operand(pending), arr("X")).resolve(), "Operation canceled");
         });
+    }
+
+    /**
+     * Every method outside the batch that takes another table: the legacy joins and snapshot, merges, and input tables.
+     * Each reads only the operand's ticket.
+     */
+    private Map<String, Function<JsTableReference, Promise<?>>> unbatched(IdeSession session, JsInputTable input) {
+        Map<String, Function<JsTableReference, Promise<?>>> consumers = new LinkedHashMap<>();
+        consumers.put("Table.naturalJoin", op -> source.naturalJoin(op, arr("X"), arr("Y2=Y")).resolve());
+        consumers.put("Table.exactJoin", op -> source.exactJoin(op, arr("X"), arr("Y2=Y")).resolve());
+        consumers.put("Table.crossJoin", op -> source.crossJoin(op, arr("X"), arr("Y2=Y"), null).resolve());
+        consumers.put("Table.asOfJoin", op -> source.asOfJoin(op, arr("X"), arr("Y2=Y"), null).resolve());
+        consumers.put("Table.snapshot", op -> source.snapshot(op, true, null).resolve());
+        consumers.put("mergeTables",
+                op -> session.mergeTables(new JsTableReference[] {JsTableReference.of(source), op}).resolve());
+        consumers.put("InputTable.addTable", input::addTable);
+        consumers.put("InputTable.deleteTable", input::deleteTable);
+        return consumers;
+    }
+
+    /** Waits for every check, then fails listing each one that failed, so one hang does not hide another. */
+    private static Promise<Object> allOf(List<Promise<Object>> checks) {
+        Promise<?>[] outcomes = checks.stream()
+                .map(check -> check.then(ignore -> Promise.resolve((Object) null),
+                        err -> Promise.resolve((Object) String.valueOf(err))))
+                .toArray(Promise[]::new);
+        return Promise.all(outcomes).then(results -> {
+            List<String> failures = new ArrayList<>();
+            for (Object result : results) {
+                if (result != null) {
+                    failures.add((String) result);
+                }
+            }
+            return failures.isEmpty() ? Promise.resolve((Object) null)
+                    : Promise.reject(failures.size() + " failed:\n" + String.join("\n", failures));
+        });
+    }
+
+    /**
+     * For each kind of pending, spoils a fresh one per method outside the batch, passes it as that method's operand,
+     * and expects a rejection with {@code fragment} within 3s instead of a wait on a ticket nothing will define. The
+     * operand comes in a {@code Supplier}, since a promise would adopt it.
+     */
+    private void runUnbatched(int timeout, String spoiled,
+            Function<JsPendingTable<?>, Promise<Supplier<JsTableReference>>> spoil, String fragment) {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(timeout);
+                    return session.getTable("source", null).asPromise()
+                            .then(table -> {
+                                source = table;
+                                return session.getTable("input", null).asPromise();
+                            })
+                            .then(inputTable -> inputTable.inputTable().then(input -> {
+                                Map<String, Function<JsTableReference, Promise<?>>> consumers =
+                                        unbatched(session, input);
+                                return forEachKind(session, source, (kind, make) -> {
+                                    List<Promise<Object>> checks = new ArrayList<>();
+                                    consumers.forEach((name, consumer) -> {
+                                        String what = name + " taking a " + spoiled + " " + kind + " as its operand";
+                                        checks.add(spoil.apply(make.get()).then(op -> {
+                                            Promise<?> result;
+                                            try {
+                                                result = consumer.apply(op.get());
+                                            } catch (RuntimeException e) {
+                                                return Promise.reject(what + " threw instead of rejecting: " + e);
+                                            }
+                                            return expectRejectionWithin(what, result, fragment);
+                                        }));
+                                    });
+                                    return allOf(checks);
+                                }).then(ignore -> {
+                                    inputTable.close();
+                                    return Promise.resolve((Object) null);
+                                });
+                            }))
+                            .then(ignore -> {
+                                source.close();
+                                return Promise.resolve(session);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCanceledOperandOutsideTheBatchRejects() {
+        runUnbatched(15_013, "canceled", pending -> {
+            pending.cancel();
+            return Promise.resolve((Supplier<JsTableReference>) () -> operand(pending));
+        }, "Operation canceled");
+    }
+
+    public void testFailedOperandOutsideTheBatchRejects() {
+        // A chain that failed for late use was never sent, so nothing on the server will ever define its ticket
+        runUnbatched(15_014, "failed chain on a", pending -> delay(0).then(ignore -> {
+            JsPendingTable<JsResolvedTable> failed = pending.head(Js.uncheckedCast(1.0));
+            return Promise.resolve((Supplier<JsTableReference>) () -> operand(failed));
+        }), LATE);
     }
 
     /**
@@ -400,7 +492,7 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
             JsPendingTable<?> failing;
             String fragment;
             if (kind.equals("operation")) {
-                failing = source.operations().update(cols("Z = NoSuchColumn + 1"));
+                failing = source.operations().update(arr("Z = NoSuchColumn + 1"));
                 // The server logs the details and sends only the status
                 fragment = "INVALID_ARGUMENT";
             } else {
