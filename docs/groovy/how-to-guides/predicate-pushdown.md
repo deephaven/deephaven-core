@@ -12,6 +12,8 @@ Storage systems often divide tables into multiple regions. For instance, multipl
 
 Predicate pushdown enhances row elimination by leveraging these underlying data structures. For example, match and range filters may use storage file metadata (such as min/max statistics) to eliminate entire row groups or files. Consequently, the engine avoids loading unnecessary data from storage — a massive advantage for large datasets in formats like Parquet and Iceberg. Although the engine generally processes filters sequentially, the pushdown mechanism may reorder them to maximize efficiency based on the capabilities of the data sources. Therefore, you cannot guarantee the final execution order of pushed-down filters. To enforce a specific order, use [barriers and serial execution](https://deephaven.io/core/docs/conceptual/query-engine/parallelization/#controlling-concurrency-for-select-update-and-where).
 
+Pushdown works on ticking data too. Each time a refreshing table updates, the engine filters the rows added in that update cycle and the modified rows whose filtered columns changed. Pushdown applies to those rows just as it does to a static table.
+
 ## Filter Priority
 
 Filters are prioritized for pushdown in the following order (from highest to lowest):
@@ -37,6 +39,8 @@ Internally, Deephaven often creates single-value column sources to represent con
 source = emptyTable(1_000).updateView("X = i", "Value = 42")
 result = source.where("Value = 42")
 ```
+
+The result is the same as filtering without pushdown. Pushdown changes only how many rows the engine reads and tests, which you see as a faster query on large tables.
 
 When working with partitioned data, such as Parquet files, regions of the overall table will have a constant value. The engine will also filter these regions efficiently with a single comparison of the constant value.
 
@@ -105,7 +109,7 @@ If desired, you can [disable](#disabling-predicate-pushdown-features) the use of
 
 Deephaven allows users to create data indexes for any table. These indexes can be retained in memory or written to storage and can speed up filtering operations significantly by applying the filter to the index instead of the larger table.
 
-Starting in Deephaven v0.40.0, the predicate pushdown framework enables data indexes to be used with most filter types (not just exact matches). When a materialized (in-memory) data index for a table exists, the engine can leverage it during `where` operations. To avoid unexpected memory usage, filter operations do not automatically materialize table-level data indexes. However, if an individual file-level data index is available on disk, the engine will use it to filter data without loading the entire index into memory.
+When a materialized (in-memory) data index for a table exists, the engine can leverage it during `where` operations. To avoid unexpected memory usage, filter operations do not automatically materialize table-level data indexes. However, if an individual file-level data index is available on disk, the engine will use it to filter data without loading the entire index into memory.
 
 This technique is effective even if only a subset of the data files are indexed. The engine will filter non-indexed files using the standard method.
 
@@ -131,7 +135,10 @@ filtered_1 = disk_table.where("X = 5")
 filtered_2 = disk_table.where("X <= 3 && Y > 10")
 ```
 
-If desired, you can [disable](#disabling-predicate-pushdown-features) the use of these file-level data indexes during pushdown operations:
+> [!NOTE]
+> Predicate pushdown can use data indexes with most filter types, not only exact matches. File-level data indexes support this starting in Deephaven 0.40.0, and table-level data indexes starting in Deephaven 41.0.
+
+If desired, you can [disable](#disabling-predicate-pushdown-features) the use of these file-level data indexes during pushdown operations.
 
 ## Parquet row group metadata
 

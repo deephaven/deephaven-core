@@ -12,26 +12,24 @@ Deephaven makes several performance log tables available.
 > circumstances will be populated with raw performance data
 > pertaining to your running queries and server state.
 
-```groovy order=upl,qopl,qpl,pml,pil,ssl,qptt,qoptt
+```groovy order=upl,upal,qopl,qpl,pml,pil,ssl,qptt,qoptt
 import io.deephaven.engine.table.impl.util.PerformanceQueries
 
 upl = updatePerformanceLog()
+upal = updatePerformanceAncestorsLog()
 qopl = queryOperationPerformanceLog()
 qpl = queryPerformanceLog()
 pml = processMetricsLog()
 pil = processInfoLog()
 ssl = serverStateLog()
 
-qoptt = PerformanceQueries.queryPerformanceAsTreeTable()
-qptt = PerformanceQueries.queryOperationPerformanceAsTreeTable()
+qptt = PerformanceQueries.queryPerformanceAsTreeTable()
+qoptt = PerformanceQueries.queryOperationPerformanceAsTreeTable()
 ```
 
-Several derived tables are defined on top of them, typically by removing the suffix `Log` from the name; these derived tables
-accumulate data and present it in more user-friendly column types (e.g., time units in fractional seconds instead of nanoseconds for
-CPU time metrics), and as such are more useful for dashboards, where the `Log` tables are more useful as sources of raw data
-for user-defined computation of performance statistics. For the derived tables in the list below that are related to query performance,
-the functions that create them take one query evaluation number id as a parameter to show results for a particular query (where the `Log`
-tables show data for all queries).
+Several derived tables are defined on top of them. Their names typically drop the `Log` suffix. These derived tables add computed columns, such as the elapsed time in seconds (`TimeSecs`) and memory use as a fraction of the heap. This makes them more useful for dashboards, while the `Log` tables are more useful as sources of raw data for your own performance statistics.
+
+The functions that create the query-related derived tables take a query evaluation number as a parameter. Each of these tables shows results for that one query, where the `Log` tables show data for all queries.
 
 ```groovy order=qup,qp,qop,ss
 import io.deephaven.engine.table.impl.util.PerformanceQueries
