@@ -274,7 +274,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             if (resolved == null) {
                 // The Resolved retains the state from now on; the caller owns it and must close it, or cancel() does
                 owner = new Resolved(connection, state);
-                resolving = whenRunning(owner, state);
+                resolving = whenRunning(owner, state, describe());
                 resolved = resolving.asPromise();
             }
             cancelOnAbort(options, resolved);
@@ -522,7 +522,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             }
             if (state.getResolution() == ClientTableState.ResolutionState.RELEASED) {
                 // Nobody awaited or chained on it in time; it was released when the fetch completed
-                result.fail("Table was released before it was awaited");
+                result.fail(releasedBefore(describe(), "awaited"));
                 return;
             }
             delivered = build.apply(fetchedState);
@@ -601,11 +601,11 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             if (resolving == null) {
                 if (state.getResolution() == ClientTableState.ResolutionState.RELEASED) {
                     // Nobody awaited or chained on it in time; it was released when the fetch completed
-                    return Promise.reject("Table was released before it was awaited");
+                    return Promise.reject(releasedBefore(describe(), "awaited"));
                 }
                 // The Resolved retains the state from now on, past the fetch; the caller owns it, or cancel() does
                 owner = new Resolved(connection, state);
-                resolving = whenRunning(owner, state);
+                resolving = whenRunning(owner, state, describe());
             }
             Promise<JsResolvedTable> promise = resolving.asPromise();
             cancelOnAbort(options, promise);
@@ -1067,16 +1067,25 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
      * Delivers {@code owner}, which already retains {@code state}, once the state is running. If the state fails or is
      * released first, the owner is closed and the promise rejects.
      */
-    private static LazyPromise<JsResolvedTable> whenRunning(Resolved owner, ClientTableState state) {
+    private static LazyPromise<JsResolvedTable> whenRunning(Resolved owner, ClientTableState state, String what) {
         LazyPromise<JsResolvedTable> promise = new LazyPromise<>();
         state.onRunning(cts -> promise.succeed(owner), failure -> {
             owner.close();
             promise.fail(failure);
         }, () -> {
             owner.close();
-            promise.fail("Table was released before it was created");
+            promise.fail(releasedBefore(what, "created"));
         });
         return promise;
+    }
+
+    /**
+     * Why a pending table described as {@code what} was found released at the {@code step} it was used for. Nothing in
+     * the task that creates it releases it, so this is a late use the task check did not catch.
+     */
+    private static String releasedBefore(String what, String step) {
+        return "A pending table (" + what + ") was released before it was " + step
+                + ": await it or chain on it in the task that creates it";
     }
 
     /**
