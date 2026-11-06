@@ -12,10 +12,6 @@ import org.junit.Test;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.tree.JavaType;
 
 public class TestMethodListCaching {
     @Rule
@@ -31,14 +27,11 @@ public class TestMethodListCaching {
         final MutableInt nullMethodCount = new MutableInt(0);
 
         final MethodListInvocationValidator validator = new MethodListInvocationValidator(allowedMethods) {
-            final List<MethodMatcher> disallowedMatchers =
-                    disallowedMethods.stream().map(MethodMatcher::new).collect(Collectors.toUnmodifiableList());
+            final MethodListInvocationValidator disallowed = new MethodListInvocationValidator(disallowedMethods);
 
             @Override
             public Boolean permitMethod(Method method) {
-                final JavaType.Method jtm = toJavaType(method);
-
-                if (disallowedMatchers.stream().anyMatch(mm -> mm.matches(jtm))) {
+                if (disallowed.permitMethod(method) != null) {
                     disallowedMethodCount.increment();
                     return false;
                 }
