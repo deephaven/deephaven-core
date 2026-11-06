@@ -1437,7 +1437,7 @@ public class JsTable extends HasLifecycle
             }
 
             workerConnection.tableServiceClient().snapshotWhen(request.build(), c);
-        }, fetchSummary);
+        }, fetchSummary, baseTable);
     }
 
     // inheritDoc lets us implement the inherited method, but still keep docs for TS
@@ -1487,7 +1487,8 @@ public class JsTable extends HasLifecycle
                 request.setAsOfMatchRule(AsOfJoinTablesRequest.MatchRule.valueOf(asOfMatchRule));
             }
             workerConnection.tableServiceClient().asOfJoinTables(request.build(), c);
-        }, "asOfJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")");
+        }, "asOfJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")",
+                rightTable);
     }
 
     @Override
@@ -1513,7 +1514,7 @@ public class JsTable extends HasLifecycle
                 request.setReserveBits((int) (double) reserveBits);
             }
             workerConnection.tableServiceClient().crossJoinTables(request.build(), c);
-        }, "join(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + reserveBits + ")");
+        }, "join(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + reserveBits + ")", rightTable);
     }
 
     @Override
@@ -1535,7 +1536,7 @@ public class JsTable extends HasLifecycle
                 request.addAllColumnsToAdd(MatchPairUnion.toStringArray(columnsToAdd));
             }
             workerConnection.tableServiceClient().exactJoinTables(request.build(), c);
-        }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")");
+        }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")", rightTable);
     }
 
     @Override
@@ -1557,7 +1558,7 @@ public class JsTable extends HasLifecycle
                 request.addAllColumnsToAdd(MatchPairUnion.toStringArray(columnsToAdd));
             }
             workerConnection.tableServiceClient().naturalJoinTables(request.build(), c);
-        }, "naturalJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")");
+        }, "naturalJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")", rightTable);
     }
 
     /**

@@ -1465,7 +1465,7 @@ public class WorkerConnection {
                     .addAllSourceIds(tableHandles)
                     .build();
             tableServiceClient.mergeTables(requestMessage, c);
-        }, "merging tables");
+        }, "merging tables", tables);
     }
 
     /**
@@ -1533,6 +1533,16 @@ public class WorkerConnection {
      */
     public JsPendingTable<JsTable> pendingTable(JsTableFetch fetcher, String fetchSummary) {
         return pendingTable(newState(fetcher, fetchSummary, tickets.newTableTicket()));
+    }
+
+    /**
+     * As {@link #pendingTable(JsTableFetch, String)}, for a fetch whose request names {@code operands}' tickets. The
+     * operands are checked and held as a batch operation's are; see {@link MicrotaskBatchImpl#wrapWithOperands}.
+     */
+    public JsPendingTable<JsTable> pendingTable(JsTableFetch fetcher, String fetchSummary,
+            JsTableReference... operands) {
+        ClientTableState state = newState(fetcher, fetchSummary, tickets.newTableTicket());
+        return MicrotaskBatchImpl.wrapWithOperands(this, state, operands, cts -> new JsTable(this, cts));
     }
 
     /**

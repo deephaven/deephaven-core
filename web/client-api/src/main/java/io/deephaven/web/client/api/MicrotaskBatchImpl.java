@@ -111,11 +111,11 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         protected boolean failedAtBirth;
 
         /**
-         * Has {@code dependent} retain the state this pending table occupies until the dependent has settled, or fails
-         * the dependent if this pending table never produces a state. {@code role} names this table in that failure,
-         * "Source table" or "Operand table".
+         * Has the {@code dependent} state retain the state this pending table occupies until the dependent has settled,
+         * or fails the dependent through {@code fail} if this pending table never produces a state. {@code role} names
+         * this table in that failure, "Source table" or "Operand table".
          */
-        protected abstract void retainUntilSettled(Operation dependent, String role);
+        protected abstract void retainUntilSettled(ClientTableState dependent, Consumer<String> fail, String role);
 
         protected abstract boolean cancelled();
 
@@ -179,7 +179,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             if (failure != null) {
                 return failed(connection, resultId, operation, failure);
             }
-            return enqueue(connection, resultId, operation, dependent -> retainUntilSettled(dependent, "Source table"),
+            return enqueue(connection, resultId, operation,
+                    dependent -> retainUntilSettled(dependent.state, dependent::cancelIfUnsettled, "Source table"),
                     operand);
         }
 
@@ -288,8 +289,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        protected void retainUntilSettled(Operation dependent, String role) {
-            MicrotaskBatchImpl.retainUntilSettled(state, dependent, role);
+        protected void retainUntilSettled(ClientTableState dependent, Consumer<String> fail, String role) {
+            MicrotaskBatchImpl.retainUntilSettled(state, dependent, fail, role);
         }
 
         @Override
@@ -460,8 +461,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        protected void retainUntilSettled(Operation dependent, String role) {
-            MicrotaskBatchImpl.retainUntilSettled(state, dependent, role);
+        protected void retainUntilSettled(ClientTableState dependent, Consumer<String> fail, String role) {
+            MicrotaskBatchImpl.retainUntilSettled(state, dependent, fail, role);
         }
 
         @Override
@@ -477,6 +478,13 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         @Override
         protected @Nullable String failure() {
             return fetchFailure == null ? null : String.valueOf(fetchFailure);
+        }
+
+        /** As {@link Operation#cancelIfUnsettled(String)}. */
+        void cancelIfUnsettled(String message) {
+            if (state.getResolution() == ClientTableState.ResolutionState.UNRESOLVED) {
+                cancel(message);
+            }
         }
 
         @Override
@@ -784,6 +792,78 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
+     * As {@link #wrap}, for a state not yet fetched whose request names {@code operands}' tickets outside the batch.
+     * The operands are checked and held as a batch operation's are: if one cannot be used, the pending fails and
+     * nothing is sent; otherwise each is held until the state settles, and one that fails first fails the pending.
+     */
+    public static <T extends JsITable> JsPendingTable<T> wrapWithOperands(WorkerConnection connection,
+            ClientTableState state, JsTableReference[] operands, Function<ClientTableState, T> build) {
+        String failure = operandFailure(operands);
+        if (failure != null) {
+            // Never fetched, so there is no ticket to release on the server
+            state.getHandle().setConnected(false);
+            state.setResolution(ClientTableState.ResolutionState.FAILED, failure);
+            Fetched<T> failed = new Fetched<>(connection, state, Promise.reject(failure), build);
+            failed.fetchFailure = failure;
+            failed.failedAtBirth = true;
+            return failed;
+        }
+        LazyPromise<ClientTableState> fetched = new LazyPromise<>();
+        Fetched<T> pending = new Fetched<>(connection, state, fetched.asPromise(), build);
+        // Held before the request is sent, so no operand is released before the server sees it named
+        for (JsTableReference operand : operands) {
+            holdOperand(connection, operand, state, pending::cancelIfUnsettled);
+        }
+        if (state.getResolution() == ClientTableState.ResolutionState.UNRESOLVED) {
+            state.refetch().then(cts -> {
+                fetched.succeed(cts);
+                return null;
+            }, err -> {
+                fetched.fail(err);
+                return null;
+            });
+        }
+        return pending;
+    }
+
+    /**
+     * Why a request naming {@code operands}' tickets outside the batch must fail now, or {@code null} if it may be
+     * sent. A pending operand that was canceled, failed, or used after its task may never define its ticket on the
+     * server, so the request would wait forever.
+     */
+    public static @Nullable String operandFailure(JsTableReference... operands) {
+        for (JsTableReference operand : operands) {
+            Pending<?> pending = asPending(operand);
+            String failure = pending == null ? null : pending.dependentFailure("Operand table");
+            if (failure != null) {
+                return failure;
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable Pending<?> asPending(JsTableReference operand) {
+        Object object = operand;
+        return object instanceof Pending ? (Pending<?>) object : null;
+    }
+
+    /**
+     * Has the {@code dependent} state hold {@code operand} until it settles, and fails it through {@code fail} if the
+     * operand fails first. A table or resolved table contributes its current state, which its owner may otherwise
+     * release before the dependent's request is sent.
+     */
+    private static void holdOperand(WorkerConnection connection, JsTableReference operand, ClientTableState dependent,
+            Consumer<String> fail) {
+        Pending<?> pending = asPending(operand);
+        if (pending != null) {
+            pending.retainUntilSettled(dependent, fail, "Operand table");
+        } else {
+            connection.getCache().get(new TableTicket(operand.typedTicket().getTicket()))
+                    .ifPresent(state -> retainUntilSettled(state, dependent, fail, "Operand table"));
+        }
+    }
+
+    /**
      * Queues an operation whose source state exists; the new state retains it until it has been created or has failed,
      * so the source is not released out from under it.
      */
@@ -791,7 +871,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             BatchTableRequest.Operation.Builder operation, ClientTableState sourceState,
             @Nullable JsTableReference operand) {
         return enqueue(connection, resultId, operation,
-                dependent -> retainUntilSettled(sourceState, dependent, "Source table"), operand);
+                dependent -> retainUntilSettled(sourceState, dependent.state, dependent::cancelIfUnsettled,
+                        "Source table"),
+                operand);
     }
 
     /**
@@ -805,22 +887,16 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         if (operand != null && operand.getConnection() != connection) {
             throw new IllegalArgumentException("Operand table is not from the same connection as the source table");
         }
-        Object operandObject = operand;
-        Pending<?> pendingOperand = operandObject instanceof Pending ? (Pending<?>) operandObject : null;
-        if (pendingOperand != null) {
-            String failure = pendingOperand.dependentFailure("Operand table");
+        if (operand != null) {
+            String failure = operandFailure(operand);
             if (failure != null) {
                 return failed(connection, resultId, operation, failure);
             }
         }
         Operation pending = new Operation(connection, new TableTicket(resultId), operation);
         retainSource.accept(pending);
-        if (pendingOperand != null) {
-            pendingOperand.retainUntilSettled(pending, "Operand table");
-        } else if (operand != null) {
-            // A table or resolved table: hold its current state, which its owner may release before the batch is sent
-            connection.getCache().get(new TableTicket(operand.typedTicket().getTicket()))
-                    .ifPresent(state -> retainUntilSettled(state, pending, "Operand table"));
+        if (operand != null) {
+            holdOperand(connection, operand, pending.state, pending::cancelIfUnsettled);
         }
 
         Batch batch = enqueued.get(connection);
@@ -869,12 +945,12 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
-     * Has {@code dependent} retain {@code source} until the dependent is running, failed, or released, and fails the
-     * dependent if the source fails first. A dependent that has already settled retains nothing. {@code role} names the
-     * source in that failure, "Source table" or "Operand table".
+     * Has the {@code dependent} state retain {@code source} until the dependent is running, failed, or released, and
+     * fails the dependent through {@code fail} if the source fails first. A dependent that has already settled retains
+     * nothing. {@code role} names the source in that failure, "Source table" or "Operand table".
      */
-    private static void retainUntilSettled(ClientTableState source, Operation dependent, String role) {
-        ClientTableState state = dependent.state;
+    private static void retainUntilSettled(ClientTableState source, ClientTableState state, Consumer<String> fail,
+            String role) {
         if (state.getResolution() != ClientTableState.ResolutionState.UNRESOLVED) {
             return;
         }
@@ -889,8 +965,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         // own dependency failure to the same result.
         source.onRunning(
                 JsConsumer.doNothing(),
-                failure -> dependent.cancelIfUnsettled(role + " failed: " + failure),
-                () -> dependent.cancelIfUnsettled(role + " was released"));
+                failure -> fail.accept(role + " failed: " + failure),
+                () -> fail.accept(role + " was released"));
     }
 
     private static void sendBatch(WorkerConnection connection, Batch batch) {

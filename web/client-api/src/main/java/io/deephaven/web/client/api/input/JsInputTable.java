@@ -20,6 +20,7 @@ import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsLazy;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.JsTableReference;
+import io.deephaven.web.client.api.MicrotaskBatchImpl;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsIgnore;
@@ -193,6 +194,10 @@ public class JsInputTable {
             // noinspection unchecked,rawtypes
             return (Promise) Promise.reject("Must provide at least one table");
         }
+        String failure = MicrotaskBatchImpl.operandFailure(tablesToAdd);
+        if (failure != null) {
+            return Promise.reject(failure);
+        }
         if (tablesToAdd.length == 1) {
             return addTicket(ticketOf(tablesToAdd[0]), null);
         }
@@ -240,6 +245,10 @@ public class JsInputTable {
     public Promise<JsInputTable> deleteTables(JsTableReference[] tablesToDelete) {
         if (tablesToDelete.length == 0) {
             return Promise.resolve(this);
+        }
+        String failure = MicrotaskBatchImpl.operandFailure(tablesToDelete);
+        if (failure != null) {
+            return Promise.reject(failure);
         }
 
         // for each table, make a view on that table of only key columns, then union the tables and drop together

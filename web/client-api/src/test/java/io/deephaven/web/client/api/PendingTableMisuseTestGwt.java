@@ -422,13 +422,17 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         });
     }
 
+    /** Passes {@code pending} to {@code consumer} as its operand, spoiled before or after; gives the call's result. */
+    private interface Pass {
+        Promise<?> run(JsPendingTable<?> pending, Function<JsTableReference, Promise<?>> consumer);
+    }
+
     /**
-     * For each kind of pending, spoils a fresh one per method outside the batch, passes it as that method's operand,
-     * and expects a rejection with {@code fragment} within 3s instead of a wait on a ticket nothing will define. The
-     * operand comes in a {@code Supplier}, since a promise would adopt it.
+     * For each kind of pending, passes a fresh one per method outside the batch as that method's operand, spoiled by
+     * {@code pass}, and expects a rejection with {@code fragment} within 3s instead of a wait on a ticket nothing will
+     * define.
      */
-    private void runUnbatched(int timeout, String spoiled,
-            Function<JsPendingTable<?>, Promise<Supplier<JsTableReference>>> spoil, String fragment) {
+    private void runUnbatched(int timeout, String spoiled, Pass pass, String fragment) {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(timeout);
@@ -444,15 +448,14 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
                                     List<Promise<Object>> checks = new ArrayList<>();
                                     consumers.forEach((name, consumer) -> {
                                         String what = name + " taking a " + spoiled + " " + kind + " as its operand";
-                                        checks.add(spoil.apply(make.get()).then(op -> {
-                                            Promise<?> result;
-                                            try {
-                                                result = consumer.apply(op.get());
-                                            } catch (RuntimeException e) {
-                                                return Promise.reject(what + " threw instead of rejecting: " + e);
-                                            }
-                                            return expectRejectionWithin(what, result, fragment);
-                                        }));
+                                        Promise<?> result;
+                                        try {
+                                            result = pass.run(make.get(), consumer);
+                                        } catch (RuntimeException e) {
+                                            checks.add(Promise.reject(what + " threw instead of rejecting: " + e));
+                                            return;
+                                        }
+                                        checks.add(expectRejectionWithin(what, result, fragment));
                                     });
                                     return allOf(checks);
                                 }).then(ignore -> {
@@ -469,18 +472,111 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     public void testCanceledOperandOutsideTheBatchRejects() {
-        runUnbatched(15_013, "canceled", pending -> {
+        runUnbatched(15_013, "canceled", (pending, consumer) -> {
             pending.cancel();
-            return Promise.resolve((Supplier<JsTableReference>) () -> operand(pending));
+            return consumer.apply(operand(pending));
         }, "Operation canceled");
     }
 
     public void testFailedOperandOutsideTheBatchRejects() {
         // A chain that failed for late use was never sent, so nothing on the server will ever define its ticket
-        runUnbatched(15_014, "failed chain on a", pending -> delay(0).then(ignore -> {
-            JsPendingTable<JsResolvedTable> failed = pending.head(Js.uncheckedCast(1.0));
-            return Promise.resolve((Supplier<JsTableReference>) () -> operand(failed));
-        }), LATE);
+        runUnbatched(15_014, "failed chain on a", (pending, consumer) -> delay(0).then(
+                ignore -> Js.uncheckedCast(consumer.apply(operand(pending.head(Js.uncheckedCast(1.0)))))), LATE);
+    }
+
+    public void testOperandCanceledAfterTheCallRejects() {
+        // Canceled before its batch is sent, so the ticket the call already named is never defined on the server
+        runUnbatched(15_015, "later canceled", (pending, consumer) -> {
+            Promise<?> result = consumer.apply(operand(pending));
+            pending.cancel();
+            return result;
+        }, "Operation canceled");
+    }
+
+    /** A ticking table that fails on the server about a second after it starts, and an input table it fits. */
+    private final TableSourceBuilder failingTables = new TableSourceBuilder()
+            .script("from deephaven import time_table, input_table, dtypes")
+            .script("def boom(i) -> int:\n    if i >= 5:\n        raise Exception('boom')\n    return i")
+            .script("failing", "time_table('PT0.2S').update(['X = boom(ii)'])")
+            .script("failing_input",
+                    "input_table(col_defs={'Timestamp': dtypes.Instant, 'X': dtypes.int64})");
+
+    /** Resolves to whether {@code promise} succeeded once it settles; rejects naming {@code what} after 5s. */
+    private static Promise<Boolean> settles(String what, Promise<?> promise) {
+        Promise<Boolean> settled = promise.then(ignore -> Promise.resolve(true), err -> Promise.resolve(false));
+        Promise<Boolean> hung = delay(5_000).then(ignore -> Promise.reject(what + " did not settle within 5s"));
+        return Promise.race(settled, hung);
+    }
+
+    /** Starts {@code round} every 50ms, {@code left} more times, collecting what each start returns. */
+    private static Promise<Object> everyFiftyMs(int left, Supplier<List<Promise<Boolean>>> round,
+            List<Promise<Boolean>> started) {
+        started.addAll(round.get());
+        if (left == 0) {
+            return Promise.resolve((Object) null);
+        }
+        return delay(50).then(ignore -> everyFiftyMs(left - 1, round, started));
+    }
+
+    /** Waits for every call; resolves to {succeeded, failed}, or rejects with the first that did not settle. */
+    private static Promise<int[]> countSucceeded(List<Promise<Boolean>> calls) {
+        Promise<int[]> counts = Promise.resolve(new int[2]);
+        for (Promise<Boolean> call : calls) {
+            counts = counts.then(c -> call.then(ok -> {
+                c[ok ? 0 : 1]++;
+                return Promise.resolve(c);
+            }));
+        }
+        return counts;
+    }
+
+    public void testCallsRacingAnOperandFailureSettle() {
+        // Calls made before, during and after the operand fails: whichever of client and server notices first, each
+        // call must settle, and none may hold anything afterwards
+        errorLogsDontFail();
+        connect(failingTables)
+                .then(session -> {
+                    delayTestFinish(30_016);
+                    return session.getTable("failing", null).asPromise().then(failing -> session
+                            .getTable("failing_input", null).asPromise()
+                            .then(inputTable -> inputTable.inputTable().then(input -> {
+                                List<Promise<Boolean>> started = new ArrayList<>();
+                                Supplier<List<Promise<Boolean>>> round = () -> {
+                                    List<Promise<Boolean>> calls = new ArrayList<>();
+                                    calls.add(settles("InputTable.addTable",
+                                            input.addTable(JsTableReference.of(failing))));
+                                    calls.add(settles("mergeTables", session
+                                            .mergeTables(new JsTableReference[] {JsTableReference.of(failing)})
+                                            .resolve().then(merged -> {
+                                                merged.close();
+                                                return Promise.resolve(merged);
+                                            })));
+                                    calls.add(settles("update", failing.operations().update(arr("Y = X")).resolve()
+                                            .then(updated -> {
+                                                updated.close();
+                                                return Promise.resolve(updated);
+                                            })));
+                                    return calls;
+                                };
+                                return everyFiftyMs(60, round, started)
+                                        .then(ignore -> countSucceeded(started))
+                                        .then(counts -> {
+                                            // The rounds must span the failure for the race to have been run
+                                            assertTrue("calls did not span the failure: " + counts[0]
+                                                    + " succeeded, " + counts[1] + " failed",
+                                                    counts[0] > 0 && counts[1] > 0);
+                                            return delay(500);
+                                        })
+                                        .then(ignore -> {
+                                            assertEquals("batch states left after the race", 0,
+                                                    batchStates(failing.getConnection()));
+                                            inputTable.close();
+                                            failing.close();
+                                            return Promise.resolve(session);
+                                        });
+                            })));
+                })
+                .then(this::finish).catch_(this::report);
     }
 
     /**
