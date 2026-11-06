@@ -29,7 +29,7 @@ public interface JoinableTable {
      * @param baseTable The table to snapshot.
      * @param doInitialSnapshot Whether to create an initial snapshot immediately.
      * @param stampColumns Optional list of stamp column match pairs to include in the result.
-     * @return A promise that resolves to the snapshot table.
+     * @return the snapshot table, as a pending table
      */
     @JsMethod
     JsPendingTable<JsTable> snapshot(JsTableReference baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
@@ -58,7 +58,7 @@ public interface JoinableTable {
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result - empty/null/absent to add all columns.
      * @param asOfMatchRule If joinType is {@code AJ}/{@code RAJ}/{@code ReverseAJ}, the match rule to use.
-     * @return A promise that will resolve to the joined table.
+     * @return the joined table, as a pending table
      */
     @JsMethod
     @Deprecated
@@ -84,7 +84,7 @@ public interface JoinableTable {
      * @param columnsToAdd Columns from the right table to add to the resulting table, empty/null/absent to add all
      *        columns.
      * @param asOfMatchRule The match rule to use, see above.
-     * @return A promise that will resolve to the joined table.
+     * @return the joined table, as a pending table
      */
     @JsMethod
     JsPendingTable<JsTable> asOfJoin(JsTableReference rightTable,
@@ -104,7 +104,7 @@ public interface JoinableTable {
      *        columns.
      * @param reserveBits The number of bits of key-space to initially reserve per group, null/absent will let the
      *        server select a value.
-     * @return A promise that will resolve to the joined table.
+     * @return the joined table, as a pending table
      */
     @JsMethod
     JsPendingTable<JsTable> crossJoin(JsTableReference rightTable,
@@ -121,7 +121,7 @@ public interface JoinableTable {
      * @param columnsToMatch The columns that should match exactly.
      * @param columnsToAdd Columns from the right table to add to the resulting table, empty/null/absent to add all
      *        columns.
-     * @return A promise that will resolve to the joined table.
+     * @return the joined table, as a pending table
      */
     @JsMethod
     JsPendingTable<JsTable> exactJoin(JsTableReference rightTable,
@@ -137,7 +137,7 @@ public interface JoinableTable {
      * @param columnsToMatch The columns that should match exactly.
      * @param columnsToAdd Columns from the right table to add to the resulting table. Empty/null/absent to add all
      *        columns.
-     * @return A promise that will resolve to the joined table.
+     * @return the joined table, as a pending table
      */
     @JsMethod
     JsPendingTable<JsTable> naturalJoin(JsTableReference rightTable,

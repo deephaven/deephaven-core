@@ -137,10 +137,10 @@ public interface JsTableOperations extends ServerObject {
      * {@link JsPendingTable} yields the table it creates, whatever awaiting it would give; an already resolved table
      * yields an independently closeable copy of itself; the operations of a {@link JsTable} yield a new owner of its
      * current state. The caller owns the result and must close it. Resolving the same pending table again yields the
-     * same promise and the same table; a pending table that was canceled, already awaited, or is resolved after the
-     * task that created it rejects instead.
+     * same promise and the same table; a pending table that was canceled, or is resolved after the task that created
+     * it, rejects instead, as does a fetched one that was already awaited.
      *
-     * @param options optionally, an {@code AbortSignal} that cancels a pending table when aborted
+     * @param options optionally, a {@code signal} that cancels a pending table when aborted
      * @return a promise of a retained resolved table
      */
     @JsMethod
@@ -424,7 +424,7 @@ public interface JsTableOperations extends ServerObject {
      * rows between these positions, the function will return an empty table.
      *
      * @param firstPositionInclusive the first position to include in the result
-     * @param lastPositionExclusive tthe last position to include in the result
+     * @param lastPositionExclusive the last position to include in the result
      * @return a new table with the subset of rows from the original table
      */
     @JsMethod
@@ -788,16 +788,36 @@ public interface JsTableOperations extends ServerObject {
 
 
 
+    /**
+     * The range part of a {@link #rangeJoin}: a right row matches a left row when its {@code rightRangeColumn} value
+     * lies between the left row's {@code leftStartColumn} and {@code leftEndColumn} values, as the two rules say.
+     */
     @JsType(namespace = "dh")
     @TsInterface
     class RangeJoinMatch {
+        /** The left column that starts each row's range. */
         public Column.ColumnOrName leftStartColumn;
+        /** How the right values compare to the start of the range. */
         public RangeStartRule rangeStartRule;
+        /** The right column whose values are matched against each range. */
         public Column.ColumnOrName rightRangeColumn;
+        /** How the right values compare to the end of the range. */
         public RangeEndRule rangeEndRule;
+        /** The left column that ends each row's range. */
         public Column.ColumnOrName leftEndColumn;
     }
 
+    /**
+     * Joins each row of this table to the rows of {@code rightTable} that match it exactly on {@code exactMatches} and
+     * fall in its range, and aggregates those right rows into columns of the result. The result has one row per row of
+     * this table.
+     *
+     * @param rightTable the table to join to
+     * @param exactMatches columns that must be equal in both tables, as {@code "Col"} or {@code "LeftCol=RightCol"}
+     * @param rangeMatch the columns and rules of the range match
+     * @param aggregations the aggregations to apply to each row's matching right rows
+     * @return a table with one row per row of this table, and a column for each aggregation
+     */
     @JsMethod
     default JsPendingTable<JsResolvedTable> rangeJoin(JsTableReference rightTable,
             ReadonlyArray<String> exactMatches,
@@ -890,9 +910,9 @@ public interface JsTableOperations extends ServerObject {
 
     /**
      * Aggregates the contents of this table into a new table.
-     * 
-     * @param options
-     * @return
+     *
+     * @param options the aggregations, and optionally the columns to group by and the groups to start with
+     * @return a table with one row per group, and a column for each aggregation
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> aggBy(AggByOptions options) {
@@ -925,6 +945,13 @@ public interface JsTableOperations extends ServerObject {
         return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder), options.initialGroups);
     }
 
+    /**
+     * Adds columns computed over each row's preceding (and, for windowed operations, following) rows, such as
+     * cumulative sums, moving averages, and exponential moving statistics, optionally per group.
+     *
+     * @param options the operations to apply, and optionally the columns to group by and control settings
+     * @return a table with this table's rows and columns, plus a column for each operation's output
+     */
     @JsMethod
     default JsPendingTable<JsResolvedTable> updateBy(UpdateByOptions options) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
@@ -1254,7 +1281,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Ungroups a table by expanding columns of arrays or vectors into columns of singular values, creating one row in
      * the output table for each value in the columns to be ungrouped. Columns that are not ungrouped have their values
-     * duplicatd in each output row corresponding to a given input row.
+     * duplicated in each output row corresponding to a given input row.
      *
      * @param options options to specify the behavior of the ungroup operation
      * @return an ungrouped table

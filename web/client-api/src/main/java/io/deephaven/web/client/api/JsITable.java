@@ -18,13 +18,9 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
 /**
- * Strawman name, common supertype for all table-like things. Exposed to JS as part of PendingTable's own generics and
- * the resolve() method.
- * <p>
  * A server-side table that the client has retained: its data and metadata can be read, and it must be closed when no
- * longer needed. This is what every table-producing API hands back, whatever its flavor. A {@link JsTable} is one, with
- * its own client-side filter/sort state on top; an {@link JsResolvedTable} is one that additionally offers the
- * chainable {@link JsTableOperations}. Code that only reads a table can accept this type and take either.
+ * longer needed. A {@link JsTable} is one, with its own client-side filter/sort state on top; a {@link JsResolvedTable}
+ * is one that additionally offers the chainable {@link JsTableOperations}; a {@link JsTotalsTable} is one too.
  */
 // TODO once the doclet honors @TsTypeRef on a type-parameter bound: make this @TsIgnore (the doclet already flattens an
 // ignored supertype's members into its subtypes), add a nested Union of Table | TotalsTable | ResolvedTable, and point

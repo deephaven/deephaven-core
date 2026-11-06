@@ -982,7 +982,7 @@ public class JsTable extends HasLifecycle
      * order of appearance of values from the original table.
      * 
      * @param columns
-     * @return Promise of dh.Table
+     * @return the distinct table, as a pending table
      */
     @JsMethod
     public JsPendingTable<JsTable> selectDistinct(Column[] columns) {
@@ -1009,8 +1009,8 @@ public class JsTable extends HasLifecycle
 
     /**
      * Creates a new copy of this table, so it can be sorted and filtered separately, and maintain a different viewport.
-     * 
-     * @return Promise of dh.Table
+     *
+     * @return the copy, as a pending table
      *
      */
     @JsMethod
@@ -1400,7 +1400,7 @@ public class JsTable extends HasLifecycle
      * table will not update. This does not change the original table, and the new table will not have any of the client
      * side sorts/filters/columns. New client side sorts/filters/columns can be added to the frozen copy.
      *
-     * @return Promise of {@link JsTable dh.Table}
+     * @return the frozen table, as a pending table
      */
     @JsMethod
     public JsPendingTable<JsTable> freeze() {

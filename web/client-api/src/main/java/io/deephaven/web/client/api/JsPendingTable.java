@@ -17,10 +17,11 @@ import jsinterop.annotations.JsMethod;
  * resolve into a table with metadata that can have data fetched from it. What awaiting gives depends on where the
  * pending table came from: an operation on {@link JsTableOperations} yields a {@link JsResolvedTable}, while the APIs
  * that have always produced a {@link JsTable}, such as fetching a named table, yield a {@link JsTable}.
- * {@link #resolve()} always yields a {@link JsResolvedTable}. A pending table produces one table: await it or call
- * {@code resolve()} on it, not both; either may be repeated and gives the same table. The resulting table must be
- * closed to indicate that it will no longer be used and server resources can be freed. A future version of this API
- * could provide "liveness scopes" to claim/release batches of tables at a time automatically.
+ * {@link #resolve()} always yields a {@link JsResolvedTable}. For an operation the two are the same table; a fetched
+ * pending table produces one or the other, so await it or call {@code resolve()} on it, not both. Either may be
+ * repeated and gives the same table. The resulting table must be closed to indicate that it will no longer be used and
+ * server resources can be freed. A future version of this API could provide "liveness scopes" to claim/release batches
+ * of tables at a time automatically.
  * <p>
  * A pending table may only be used in the task that created it, before control returns to the event loop: awaited,
  * {@code then()} or {@code resolve()} called on it, chained on, passed as an operand, or passed to

@@ -132,7 +132,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      *
      * @param name the name of the table to fetch.
      * @param applyPreviewColumns {@code false} to disable previews. Defaults to {@code true}.
-     * @return a {@link Promise} that will resolve to the table, or reject with an error if it cannot be loaded.
+     * @return the table, as a pending table that rejects with an error if it cannot be loaded
      * @deprecated Added to resolve a specific issue, in the future preview will be applied as part of the subscription.
      */
     @Deprecated
@@ -152,6 +152,12 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
                 table -> fireEvent(EVENT_TABLE_OPENED, table));
     }
 
+    /**
+     * Fetches the object a variable descriptor names.
+     *
+     * @param definitionObject the variable descriptor
+     * @return a pending table if the object is a table, otherwise a promise of the object
+     */
     public JsPendingObject getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
         WorkerConnection conn = connection.get();
         String type;
@@ -216,7 +222,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * @param sharedTicketBytes The value provided by another client/user to obtain the object. It may be a unicode
      *        string (will be encoded as utf8 bytes), or a {@link elemental2.core.Uint8Array} value.
      * @param type The type of the object, so it can be correctly read from the server.
-     * @return A promise that will resolve to the shared object, or will reject with an error if it cannot be read.
+     * @return the shared object, as a pending object that rejects with an error if it cannot be read
      */
     public JsPendingObject getSharedObject(SharedExportBytesUnion sharedTicketBytes, String type) {
         return connection.get().getSharedObject(sharedTicketBytes, type);
@@ -262,6 +268,15 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         notifyConnectionError(new StatusRuntimeException(Status.UNAVAILABLE.withDescription(details)));
     }
 
+    /**
+     * Creates a table on the server from the given column data.
+     *
+     * @param columnNames the name of each column
+     * @param types the type of each column
+     * @param data the values of each column, as strings
+     * @param userTimeZone the time zone to read date-time values in
+     * @return the new table, as a pending table
+     */
     public JsPendingTable<JsTable> newTable(String[] columnNames, String[] types, String[][] data,
             String userTimeZone) {
         return connection.get().newTable(columnNames, types, data, userTimeZone);
@@ -271,7 +286,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * Merges the given tables into a single table. Assumes all tables have the same structure.
      * 
      * @param tables
-     * @return {@link Promise} of {@link JsTable}
+     * @return the merged table, as a pending table
      */
     public JsPendingTable<JsTable> mergeTables(JsTableReference[] tables) {
         return connection.get().mergeTables(tables, this);

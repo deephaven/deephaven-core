@@ -17,8 +17,8 @@ import jsinterop.base.JsPropertyMap;
 public class ResolveOptions {
     /**
      * Aborting this signal while the operation is pending cancels it as {@code cancel()} would: the promise rejects
-     * with the signal's reason, and the table it would have produced is released. Every awaiter of the same pending
-     * table is affected, since they share one operation. Unlike {@code cancel()}, aborting after the table was
+     * with the signal's reason as a string, and the table it would have produced is released. Every awaiter of the same
+     * pending table is affected, since they share one operation. Unlike {@code cancel()}, aborting after the table was
      * delivered does nothing: the signal means "stop waiting", so a timeout signal cannot close a table already in use.
      */
     @JsNullable

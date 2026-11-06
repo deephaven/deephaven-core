@@ -17,6 +17,9 @@ public final class SortedLast extends ColumnAggregation {
     @TsLiteral
     public final String type = "SortedLast";
 
-    /** The columns to sort by when determining which row is "last" within each group. */
+    /**
+     * The columns to sort by when determining which row is "last" within each group. Sort can only be ascending, and
+     * absolute value is not supported.
+     */
     public ReadonlyArray<Sort.SortUnion> sortedColumns;
 }

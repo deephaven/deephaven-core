@@ -15,7 +15,7 @@ import jsinterop.annotations.JsType;
  * may include renaming expressions (e.g. {@code "OutputCol = InputCol"}).
  *
  * <p>
- * If {@code columns} is null or empty in an {@code aggBy} call, the aggregation applies to all non-key columns.
+ * In an {@code aggBy} call, {@code columns} must name at least one column; the server rejects a null or empty list.
  */
 @JsType(namespace = "dh.agg")
 public sealed class ColumnAggregation extends Aggregation
@@ -23,8 +23,8 @@ public sealed class ColumnAggregation extends Aggregation
         Median, Min, Percentile, SortedFirst, SortedLast, Std, Sum, TDigest, Unique, Var, WAvg, WSum {
 
     /**
-     * The column(s) to aggregate, which can be renaming expressions (e.g. {@code "new_col = col"}). When null or empty,
-     * the aggregation applies to all non-key columns (valid only in {@code aggAllBy}).
+     * The column(s) to aggregate, which can be renaming expressions (e.g. {@code "new_col = col"}). Required, and
+     * non-empty, in {@code aggBy}; ignored in {@code aggAllBy}.
      */
     @JsNullable
     public ReadonlyArray<MatchPairUnion> columns;
