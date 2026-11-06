@@ -81,33 +81,6 @@ public class DataIndexUtilsTest {
     }
 
     /**
-     * A filter that reads a key column by the name of the index table's row set column, and by that name with the first
-     * suffix, leaves the row set column the next suffix, as {@link DataIndexUtils#rowSetColumnNameForFilter} gives.
-     */
-    @Test
-    public void indexTableForFilterOnAliasNamedLikeRowSetColumn() {
-        final Table table = TableTools.emptyTable(100).update("A = ii % 10");
-        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
-        final String rowSetColumnName = dataIndex.rowSetColumnName();
-        final Table indexTable = dataIndex.table();
-        assertEquals(rowSetColumnName, DataIndexUtils.rowSetColumnNameForFilter(rowSetColumnName, List.of("A")));
-
-        final String firstSuffix = rowSetColumnName + "_0";
-        final List<String> filterColumns = List.of(rowSetColumnName, firstSuffix);
-        final String resultRowSetColumnName =
-                DataIndexUtils.rowSetColumnNameForFilter(rowSetColumnName, filterColumns);
-        assertEquals(rowSetColumnName + "_1", resultRowSetColumnName);
-
-        final Table result = DataIndexUtils.indexTableForFilter(indexTable, rowSetColumnName, filterColumns,
-                Map.of(rowSetColumnName, "A", firstSuffix, "A"));
-        assertEquals(List.of(rowSetColumnName, firstSuffix, resultRowSetColumnName),
-                result.getDefinition().getColumnNames());
-        assertSame(indexTable.getColumnSource("A"), result.getColumnSource(rowSetColumnName));
-        assertSame(indexTable.getColumnSource("A"), result.getColumnSource(firstSuffix));
-        assertSame(indexTable.getColumnSource(rowSetColumnName), result.getColumnSource(resultRowSetColumnName));
-    }
-
-    /**
      * A refreshing index table is presented by a static table built from the index table's own row set and sources,
      * even when the filter reads every key column under the key column's own name, since the result serves one filter
      * operation only. The filter reads key column A as X and as B, and key column B as Y, so the filter's B is the

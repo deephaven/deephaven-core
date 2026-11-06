@@ -170,13 +170,13 @@ public class DataIndexUtils {
      * values passes a view of the index table's previous state in place of the index table.
      *
      * @param indexTable The index table
-     * @param rowSetColumnName The name of the index table's row set column
+     * @param rowSetColumnName The name of the index table's row set column, which the result keeps
      * @param filterColumns The names of the columns the filter reads
      * @param renameMap A map from filter column name to key column name, for each filter column whose name differs from
      *        the name of the key column
      * @return {@code indexTable} itself if {@code indexTable} is static and the filter reads every key column under the
      *         key column's own name; otherwise a static view that holds each filter column under the filter's name, and
-     *         the row set column under the name {@link #rowSetColumnNameForFilter} gives
+     *         the row set column
      */
     public static Table indexTableForFilter(
             @NotNull final Table indexTable,
@@ -193,8 +193,7 @@ public class DataIndexUtils {
         for (final String filterColumn : filterColumns) {
             columns.put(filterColumn, source.getColumnSource(renameMap.getOrDefault(filterColumn, filterColumn)));
         }
-        columns.put(rowSetColumnNameForFilter(rowSetColumnName, filterColumns),
-                source.getColumnSource(rowSetColumnName));
+        columns.put(rowSetColumnName, source.getColumnSource(rowSetColumnName));
         final QueryTable result =
                 new QueryTable(TableDefinition.inferFrom(source, columns), source.getRowSet(), columns);
         // The table carries no other attribute. A filter reads only the sort order, and the attribute copy rules key
@@ -205,26 +204,6 @@ public class DataIndexUtils {
                     .ifPresent(order -> SortedColumnsAttribute.setOrderForColumn(result, filterColumn, order));
         }
         return result;
-    }
-
-    /**
-     * Name the row set column of the table {@link #indexTableForFilter} returns. A filter column may take the name of
-     * the index table's row set column, as when the filter reads an alias of a key column by that name, so the row set
-     * column takes a name that no filter column takes.
-     *
-     * @param rowSetColumnName The name of the index table's row set column
-     * @param filterColumns The names of the columns the filter reads
-     * @return {@code rowSetColumnName} if no filter column takes that name; otherwise {@code rowSetColumnName} with the
-     *         first numeric suffix that no filter column takes
-     */
-    public static String rowSetColumnNameForFilter(
-            @NotNull final String rowSetColumnName,
-            @NotNull final List<String> filterColumns) {
-        String name = rowSetColumnName;
-        for (int suffix = 0; filterColumns.contains(name); ++suffix) {
-            name = rowSetColumnName + '_' + suffix;
-        }
-        return name;
     }
 
     /**

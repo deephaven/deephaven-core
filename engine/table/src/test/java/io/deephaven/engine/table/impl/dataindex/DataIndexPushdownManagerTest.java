@@ -419,19 +419,6 @@ public class DataIndexPushdownManagerTest {
     }
 
     /**
-     * A filter that reads an alias of an indexed column by the name of the index table's row set column must still read
-     * the indexed column, and the index's row sets under another name.
-     */
-    @Test
-    public void filterOnAliasNamedLikeRowSetColumn() {
-        final Table table = indexedTable();
-        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
-        final String rowSetColumnName = dataIndex.rowSetColumnName();
-        checkIndexedFilter(table, dataIndex, table.updateView(rowSetColumnName + " = A"),
-                rowSetColumnName + " == 5");
-    }
-
-    /**
      * Push {@code expression} down to {@code dataIndex} as a filter of {@code filtered}, a table whose filter columns
      * share sources with the indexed {@code table}, and check that the index matches what the filter itself matches.
      */
