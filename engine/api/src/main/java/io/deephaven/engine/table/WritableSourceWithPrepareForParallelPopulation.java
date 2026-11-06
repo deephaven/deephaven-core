@@ -44,9 +44,7 @@ public interface WritableSourceWithPrepareForParallelPopulation {
      *
      * @return the alignment of the divisions this source can prepare for more cheaply, or 1 if any division is as cheap
      */
-    default int parallelPopulationAlignment() {
-        return 1;
-    }
+    int parallelPopulationAlignment();
 
     /**
      * Prepare this column source as {@link #prepareForParallelPopulation(RowSequence)} does, for a caller whose
@@ -56,9 +54,7 @@ public interface WritableSourceWithPrepareForParallelPopulation {
      * @param alignedDivisions whether every row key from {@code k * alignment} through {@code (k + 1) * alignment - 1}
      *        that is written in this cycle is written by the same thread
      */
-    default void prepareForParallelPopulation(final RowSequence rowSequence, final boolean alignedDivisions) {
-        prepareForParallelPopulation(rowSequence);
-    }
+    void prepareForParallelPopulation(RowSequence rowSequence, boolean alignedDivisions);
 
     /**
      * Prepare this column source as {@link #prepareForParallelPopulation(RowSequence)} does, for writers whose
@@ -67,13 +63,11 @@ public interface WritableSourceWithPrepareForParallelPopulation {
      * concurrently, once for each of a set of divisions of {@code rowSequence} that are aligned to
      * {@link #parallelPopulationAlignment()} and together cover it, before any writer starts.
      * <p>
-     * The default prepares every row here and leaves nothing to the divisions.
+     * A source may prepare every row here and leave nothing to the divisions.
      *
      * @param rowSequence the row sequence of values that will change on this cycle
      */
-    default void prepareForParallelPopulationInDivisions(final RowSequence rowSequence) {
-        prepareForParallelPopulation(rowSequence);
-    }
+    void prepareForParallelPopulationInDivisions(RowSequence rowSequence);
 
     /**
      * Do the preparation that {@link #prepareForParallelPopulationInDivisions(RowSequence)} left for the rows of
@@ -82,7 +76,7 @@ public interface WritableSourceWithPrepareForParallelPopulation {
      *
      * @param division the rows of whole aligned blocks of the prepared row sequence
      */
-    default void prepareDivisionForParallelPopulation(final RowSequence division) {}
+    void prepareDivisionForParallelPopulation(RowSequence division);
 
     /**
      * Test if all {@code sources} support parallel parallel population.

@@ -1331,6 +1331,26 @@ public class BooleanSparseArraySource extends OneOrNSparseArrayColumnSource<Bool
         public void prepareForParallelPopulation(RowSequence rowSequence) {
            wrapped.prepareForParallelPopulation(rowSequence);
         }
+
+        @Override
+        public int parallelPopulationAlignment() {
+            return wrapped.parallelPopulationAlignment();
+        }
+
+        @Override
+        public void prepareForParallelPopulation(final RowSequence rowSequence, final boolean alignedDivisions) {
+            wrapped.prepareForParallelPopulation(rowSequence, alignedDivisions);
+        }
+
+        @Override
+        public void prepareForParallelPopulationInDivisions(final RowSequence rowSequence) {
+            wrapped.prepareForParallelPopulationInDivisions(rowSequence);
+        }
+
+        @Override
+        public void prepareDivisionForParallelPopulation(final RowSequence division) {
+            wrapped.prepareDivisionForParallelPopulation(division);
+        }
     }
     // endregion reinterpretation
 

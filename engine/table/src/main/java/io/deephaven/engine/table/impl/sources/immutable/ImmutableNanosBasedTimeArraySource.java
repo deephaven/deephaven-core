@@ -173,6 +173,26 @@ public abstract class ImmutableNanosBasedTimeArraySource<TIME_TYPE>
         nanoSource.prepareForParallelPopulation(rowSequence);
     }
 
+    @Override
+    public int parallelPopulationAlignment() {
+        return nanoSource.parallelPopulationAlignment();
+    }
+
+    @Override
+    public void prepareForParallelPopulation(final RowSequence rowSequence, final boolean alignedDivisions) {
+        nanoSource.prepareForParallelPopulation(rowSequence, alignedDivisions);
+    }
+
+    @Override
+    public void prepareForParallelPopulationInDivisions(final RowSequence rowSequence) {
+        nanoSource.prepareForParallelPopulationInDivisions(rowSequence);
+    }
+
+    @Override
+    public void prepareDivisionForParallelPopulation(final RowSequence division) {
+        nanoSource.prepareDivisionForParallelPopulation(division);
+    }
+
     // region reinterpretation
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
