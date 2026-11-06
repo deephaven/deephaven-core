@@ -160,53 +160,8 @@ public class ReplicateSourcesAndChunks {
         lines = replaceRegion(lines, "fillFromChunkUnordered",
                 l -> addLongToBoxedAdapter(l, "ToLongFunction<R>", "ObjectChunk<R, ? extends Values>",
                         "asObjectChunk"));
-        lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
-                "    @Override",
-                "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
-                "    }",
-                "",
-                "    @SuppressWarnings(\"unchecked\")",
-                "    @Override",
-                "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        if (alternateDataType == this.getType()) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) this;",
-                "        } else if (alternateDataType == Instant.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
-                "        }",
-                "",
-                "        throw new IllegalArgumentException(\"Cannot reinterpret `\" + getType().getName() + \"` to `\" + alternateDataType.getName() + \"`\");",
-                "    }",
-                "",
-                "    @Override",
-                "    public boolean supportsTimeConversion() {",
-                "        return true;",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {",
-                "        return new ImmutableZonedDateTimeArraySource(Require.neqNull(zone, \"zone\"), this);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {",
-                "        return new LongAsLocalDateColumnSource(this, zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {",
-                "        return new LongAsLocalTimeColumnSource(this, zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<Instant> toInstant() {",
-                "        return new ImmutableInstantArraySource(this);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<Long> toEpochNano() {",
-                "        return this;",
-                "    }"));
+        lines = replaceRegion(lines, "reinterpretation",
+                longTimeReinterpretation("ImmutableZonedDateTimeArraySource", "ImmutableInstantArraySource"));
         FileUtils.writeLines(resultClassJavaFile, lines);
     }
 
@@ -218,53 +173,8 @@ public class ReplicateSourcesAndChunks {
                 ZoneId.class);
         lines = standardCleanups(lines);
         lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
-        lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
-                "    @Override",
-                "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
-                "    }",
-                "",
-                "    @SuppressWarnings(\"unchecked\")",
-                "    @Override",
-                "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        if (alternateDataType == this.getType()) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) this;",
-                "        } else if (alternateDataType == Instant.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
-                "        }",
-                "",
-                "        throw new IllegalArgumentException(\"Cannot reinterpret `\" + getType().getName() + \"` to `\" + alternateDataType.getName() + \"`\");",
-                "    }",
-                "",
-                "    @Override",
-                "    public boolean supportsTimeConversion() {",
-                "        return true;",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {",
-                "        return new ImmutableConstantZonedDateTimeSource(Require.neqNull(zone, \"zone\"), this);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {",
-                "        return new LongAsLocalDateColumnSource(this, zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {",
-                "        return new LongAsLocalTimeColumnSource(this, zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<Instant> toInstant() {",
-                "        return new ImmutableConstantInstantSource(this);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<Long> toEpochNano() {",
-                "        return this;",
-                "    }"));
+        lines = replaceRegion(lines, "reinterpretation",
+                longTimeReinterpretation("ImmutableConstantZonedDateTimeSource", "ImmutableConstantInstantSource"));
         FileUtils.writeLines(resultClassJavaFile, lines);
     }
 
@@ -291,53 +201,8 @@ public class ReplicateSourcesAndChunks {
         lines = replaceRegion(lines, "fillFromChunkUnordered",
                 l -> addLongToBoxedAdapter(l, "ToLongFunction<R>", "ObjectChunk<R, ? extends Values>",
                         "asObjectChunk"));
-        lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
-                "    @Override",
-                "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
-                "    }",
-                "",
-                "    @SuppressWarnings(\"unchecked\")",
-                "    @Override",
-                "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        if (alternateDataType == this.getType()) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) this;",
-                "        } else if (alternateDataType == Instant.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
-                "        }",
-                "",
-                "        throw new IllegalArgumentException(\"Cannot reinterpret `\" + getType().getName() + \"` to `\" + alternateDataType.getName() + \"`\");",
-                "    }",
-                "",
-                "    @Override",
-                "    public boolean supportsTimeConversion() {",
-                "        return true;",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {",
-                "        return new Immutable2DZonedDateTimeArraySource(Require.neqNull(zone, \"zone\"), this);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {",
-                "        return new LongAsLocalDateColumnSource(this, zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {",
-                "        return new LongAsLocalTimeColumnSource(this, zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<Instant> toInstant() {",
-                "        return new Immutable2DInstantArraySource(this);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<Long> toEpochNano() {",
-                "        return this;",
-                "    }"));
+        lines = replaceRegion(lines, "reinterpretation",
+                longTimeReinterpretation("Immutable2DZonedDateTimeArraySource", "Immutable2DInstantArraySource"));
         FileUtils.writeLines(resultClassJavaFile, lines);
     }
 
@@ -636,74 +501,33 @@ public class ReplicateSourcesAndChunks {
                 "getObject\\(", "get(",
                 "NULL_OBJECT", "null",
                 "Object.BYTES", "REFERENCE_SIZE");
-        lines = replaceRegion(lines, "recycler", Arrays.asList(
-                "    /**",
-                "     * Blocks for previous value snapshots, which are not null-filled when borrowed. A returned block is",
-                "     * cleared, so that the recycler holds no references to previous values.",
-                "     */",
-                "    private static final SoftRecycler<Object[]> snapshotRecycler =",
-                "            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,",
-                "                    SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY,",
-                "                    () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null)));"));
-        lines = replaceRegion(lines, "constructor", Arrays.asList(
-                "    /**",
-                "     * Make a source whose leaves are all full blocks.",
-                "     */",
-                "    public ObjectAdaptiveSparseArraySource(final Class<T> type) {",
-                "        this(type, null);",
-                "    }",
-                "",
-                "    /**",
-                "     * Make a source whose leaves are all full blocks.",
-                "     */",
-                "    public ObjectAdaptiveSparseArraySource(final Class<T> type, final Class<?> componentType) {",
-                "        this(type, componentType, DEFAULT_SORTED_THRESHOLD, 0);",
-                "    }",
-                "",
-                "    /**",
-                "     * @param type the type of the values",
-                "     * @param componentType the component type of the values, if they are arrays or vectors",
-                "     * @param sortedThreshold the largest number of values a sorted leaf holds",
-                "     * @param compactThreshold the largest number of values a sorted or bitmap leaf holds, from 0, when",
-                "     *        every leaf is a full block, to the block size",
-                "     */",
-                "    public ObjectAdaptiveSparseArraySource(",
-                "            final Class<T> type,",
-                "            final Class<?> componentType,",
-                "            final int sortedThreshold,",
-                "            final int compactThreshold) {",
-                "        super(type, componentType);",
-                "        this.sortedThreshold = checkSortedThreshold(sortedThreshold, compactThreshold);",
-                "        this.compactThreshold = compactThreshold;",
-                "        this.recordThreshold = compactThreshold > 0 ? compactThreshold : DEFAULT_COMPACT_THRESHOLD;",
-                "    }"));
-        lines = replaceRegion(lines, "primitive get", Arrays.asList(
-                "    @Override",
-                "    public final T get(final long rowKey) {",
-                "        if (rowKey < 0) {",
-                "            return null;",
-                "        }",
-                "        final Level2 level2 = getLevel2(rowKey);",
-                "        if (level2 == null) {",
-                "            return null;",
-                "        }",
-                "        final int slot = level2.slot(block2(rowKey));",
-                "        final int offset = (int) (rowKey & INDEX_MASK);",
-                "        final Object[] block = level2.blockAt(slot);",
-                "        if (block != null) {",
-                "            // noinspection unchecked",
-                "            return (T) block[offset];",
-                "        }",
-                "        final ObjectCompactLeaf compact = level2.compactAt(slot);",
-                "        // noinspection unchecked",
-                "        return compact == null ? null : (T) compact.get(offset);",
-                "    }",
-                "",
-                "    @Override",
-                "    public final T getPrev(final long rowKey) {",
-                "        // noinspection unchecked",
-                "        return (T) getPrevValue(rowKey);",
-                "    }"));
+        lines = simpleFixup(lines, "recycler",
+                "new Object\\[BLOCK_SIZE\\], null\\)", "new Object[BLOCK_SIZE], block -> Arrays.fill(block, null))");
+        lines = applyFixup(lines, "recycler", "(\\s*)/\\*\\* (.*) \\*/", m -> Arrays.asList(
+                m.group(1) + "/**",
+                m.group(1) + " * " + m.group(2) + " A returned block is cleared, so that",
+                m.group(1) + " * the recycler holds no references to previous values.",
+                m.group(1) + " */"));
+        lines = simpleFixup(lines, "constructor",
+                "ObjectAdaptiveSparseArraySource\\(\\)",
+                "ObjectAdaptiveSparseArraySource(final Class<T> type, final Class<?> componentType)",
+                "this\\(DEFAULT_SORTED_THRESHOLD", "this(type, componentType, DEFAULT_SORTED_THRESHOLD",
+                "\\(final int sortedThreshold",
+                "(final Class<T> type, final Class<?> componentType, final int sortedThreshold",
+                "super\\(Object.class\\)", "super(type, componentType)");
+        lines = applyFixup(lines, "constructor", "(\\s*\\* )@param sortedThreshold(.*)", m -> Arrays.asList(
+                m.group(1) + "@param type the type of the values",
+                m.group(1) + "@param componentType the component type of the values, if they are arrays or vectors",
+                m.group(0)));
+        lines = simpleFixup(lines, "primitive get",
+                "Object get\\(", "T get(",
+                "Object getPrevObject\\(", "T getPrev(",
+                "return block\\[offset\\]", "return (T) block[offset]",
+                "compact.get\\(offset\\)", "(T) compact.get(offset)",
+                "return getPrevValue", "return (T) getPrevValue");
+        lines = applyFixup(lines, "primitive get", "(\\s*)@Override", m -> Arrays.asList(
+                m.group(1) + "@SuppressWarnings(\"unchecked\")",
+                m.group(0)));
         lines = addReferenceSize(lines);
         FileUtils.writeLines(sourceFile, lines);
     }
@@ -1585,53 +1409,8 @@ public class ReplicateSourcesAndChunks {
         lines = replaceRegion(lines, "fillFromChunkUnordered",
                 l -> addLongToBoxedAdapter(l, "ToLongFunction<R>", "ObjectChunk<R, ? extends Values>",
                         "asObjectChunk"));
-        lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
-                "    @Override",
-                "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
-                "    }",
-                "",
-                "    @SuppressWarnings(\"unchecked\")",
-                "    @Override",
-                "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        if (alternateDataType == this.getType()) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) this;",
-                "        } else if (alternateDataType == Instant.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
-                "        }",
-                "",
-                "        throw new IllegalArgumentException(\"Cannot reinterpret `\" + getType().getName() + \"` to `\" + alternateDataType.getName() + \"`\");",
-                "    }",
-                "",
-                "    @Override",
-                "    public boolean supportsTimeConversion() {",
-                "        return true;",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {",
-                "        return new ZonedDateTimeArraySource(Require.neqNull(zone, \"zone\"), this);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {",
-                "        return new LongAsLocalDateColumnSource(this, zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {",
-                "        return new LongAsLocalTimeColumnSource(this, zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<Instant> toInstant() {",
-                "        return new InstantArraySource(this);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<Long> toEpochNano() {",
-                "        return this;",
-                "    }"));
+        lines = replaceRegion(lines, "reinterpretation",
+                longTimeReinterpretation("ZonedDateTimeArraySource", "InstantArraySource"));
         FileUtils.writeLines(classFile, lines);
     }
 
@@ -1644,53 +1423,8 @@ public class ReplicateSourcesAndChunks {
                 ZoneId.class);
         lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;");
         lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
-        lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
-                "    @Override",
-                "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
-                "    }",
-                "",
-                "    @SuppressWarnings(\"unchecked\")",
-                "    @Override",
-                "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        if (alternateDataType == this.getType()) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) this;",
-                "        } else if (alternateDataType == Instant.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
-                "        }",
-                "",
-                "        throw new IllegalArgumentException(\"Cannot reinterpret `\" + getType().getName() + \"` to `\" + alternateDataType.getName() + \"`\");",
-                "    }",
-                "",
-                "    @Override",
-                "    public boolean supportsTimeConversion() {",
-                "        return true;",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {",
-                "        return new ZonedDateTimeAdaptiveSparseArraySource(Require.neqNull(zone, \"zone\"), this);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {",
-                "        return new LongAsLocalDateColumnSource(this, zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {",
-                "        return new LongAsLocalTimeColumnSource(this, zone);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<Instant> toInstant() {",
-                "        return new InstantAdaptiveSparseArraySource(this);",
-                "    }",
-                "",
-                "    @Override",
-                "    public ColumnSource<Long> toEpochNano() {",
-                "        return this;",
-                "    }"));
+        lines = replaceRegion(lines, "reinterpretation",
+                longTimeReinterpretation("ZonedDateTimeAdaptiveSparseArraySource", "InstantAdaptiveSparseArraySource"));
         FileUtils.writeLines(classFile, lines);
     }
 
@@ -1718,7 +1452,18 @@ public class ReplicateSourcesAndChunks {
         lines = replaceRegion(lines, "fillFromChunkUnordered",
                 l -> addLongToBoxedAdapter(l, "ToLongFunction<R>", "ObjectChunk<R, ? extends Values>",
                         "asObjectChunk"));
-        lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
+        lines = replaceRegion(lines, "reinterpretation",
+                longTimeReinterpretation("ZonedDateTimeSparseArraySource", "InstantSparseArraySource"));
+        FileUtils.writeLines(classFile, lines);
+    }
+
+    /**
+     * @param zonedDateTimeSource the class of the ZonedDateTime source over the Long source
+     * @param instantSource the class of the Instant source over the Long source
+     * @return the reinterpretation region of a Long source that converts to times
+     */
+    private static List<String> longTimeReinterpretation(final String zonedDateTimeSource, final String instantSource) {
+        return Arrays.asList(
                 "    @Override",
                 "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "        return alternateDataType == long.class || alternateDataType == Instant.class;",
@@ -1743,7 +1488,7 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    @Override",
                 "    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {",
-                "        return new ZonedDateTimeSparseArraySource(Require.neqNull(zone, \"zone\"), this);",
+                "        return new " + zonedDateTimeSource + "(Require.neqNull(zone, \"zone\"), this);",
                 "    }",
                 "",
                 "    @Override",
@@ -1758,14 +1503,13 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    @Override",
                 "    public ColumnSource<Instant> toInstant() {",
-                "        return new InstantSparseArraySource(this);",
+                "        return new " + instantSource + "(this);",
                 "    }",
                 "",
                 "    @Override",
                 "    public ColumnSource<Long> toEpochNano() {",
                 "        return this;",
-                "    }"));
-        FileUtils.writeLines(classFile, lines);
+                "    }");
     }
 
     private static List<String> addLongToBoxedAdapter(

@@ -360,16 +360,12 @@ public abstract class SparseArrayColumnSource<T>
             result = USE_ADAPTIVE ? new BooleanAdaptiveSparseArraySource() : new BooleanSparseArraySource();
         } else if (type == Instant.class) {
             result = USE_ADAPTIVE ? new InstantAdaptiveSparseArraySource() : new InstantSparseArraySource();
+        } else if (USE_ADAPTIVE) {
+            result = new ObjectAdaptiveSparseArraySource<>(type, componentType);
+        } else if (componentType != null) {
+            result = new ObjectSparseArraySource<>(type, componentType);
         } else {
-            if (componentType != null) {
-                result = USE_ADAPTIVE
-                        ? new ObjectAdaptiveSparseArraySource<>(type, componentType)
-                        : new ObjectSparseArraySource<>(type, componentType);
-            } else {
-                result = USE_ADAPTIVE
-                        ? new ObjectAdaptiveSparseArraySource<>(type)
-                        : new ObjectSparseArraySource<>(type);
-            }
+            result = new ObjectSparseArraySource<>(type);
         }
         if (size != 0) {
             result.ensureCapacity(size);

@@ -77,8 +77,8 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
 
         sparseObjectTable = makeObjectTable(
                 new LongAdaptiveSparseArraySource(),
-                new ObjectAdaptiveSparseArraySource<>(Instant.class),
-                new ObjectAdaptiveSparseArraySource<>(ZonedDateTime.class));
+                new ObjectAdaptiveSparseArraySource<>(Instant.class, null),
+                new ObjectAdaptiveSparseArraySource<>(ZonedDateTime.class, null));
     }
 
     private QueryTable makeObjectTable(

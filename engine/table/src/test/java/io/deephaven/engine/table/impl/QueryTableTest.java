@@ -1517,7 +1517,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final InstantAdaptiveSparseArraySource instants = new InstantAdaptiveSparseArraySource();
         final ZonedDateTimeAdaptiveSparseArraySource zoned = new ZonedDateTimeAdaptiveSparseArraySource(newYork);
         final ObjectAdaptiveSparseArraySource<ZonedDateTime> objectZoned =
-                new ObjectAdaptiveSparseArraySource<>(ZonedDateTime.class);
+                new ObjectAdaptiveSparseArraySource<>(ZonedDateTime.class, null);
         final BooleanAdaptiveSparseArraySource booleans = new BooleanAdaptiveSparseArraySource();
         final WritableColumnSource<?>[] writableSources = {nanos, instants, zoned, objectZoned, booleans};
         final LongConsumer setRow = rowKey -> {

@@ -104,8 +104,8 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
 
     // region recycler
     /**
-     * Blocks for previous value snapshots, which are not null-filled when borrowed. A returned block is
-     * cleared, so that the recycler holds no references to previous values.
+     * Blocks for previous value snapshots, which are not null-filled when borrowed. A returned block is cleared, so that
+     * the recycler holds no references to previous values.
      */
     private static final SoftRecycler<Object[]> snapshotRecycler =
             SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,
@@ -169,13 +169,6 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
     /**
      * Make a source whose leaves are all full blocks.
      */
-    public ObjectAdaptiveSparseArraySource(final Class<T> type) {
-        this(type, null);
-    }
-
-    /**
-     * Make a source whose leaves are all full blocks.
-     */
     public ObjectAdaptiveSparseArraySource(final Class<T> type, final Class<?> componentType) {
         this(type, componentType, DEFAULT_SORTED_THRESHOLD, 0);
     }
@@ -184,14 +177,10 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
      * @param type the type of the values
      * @param componentType the component type of the values, if they are arrays or vectors
      * @param sortedThreshold the largest number of values a sorted leaf holds
-     * @param compactThreshold the largest number of values a sorted or bitmap leaf holds, from 0, when
-     *        every leaf is a full block, to the block size
+     * @param compactThreshold the largest number of values a sorted or bitmap leaf holds, from 0, when every leaf is a
+     *        full block, to the block size
      */
-    public ObjectAdaptiveSparseArraySource(
-            final Class<T> type,
-            final Class<?> componentType,
-            final int sortedThreshold,
-            final int compactThreshold) {
+    public ObjectAdaptiveSparseArraySource(final Class<T> type, final Class<?> componentType, final int sortedThreshold, final int compactThreshold) {
         super(type, componentType);
         this.sortedThreshold = checkSortedThreshold(sortedThreshold, compactThreshold);
         this.compactThreshold = compactThreshold;
@@ -1931,6 +1920,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
     }
 
     // region primitive get
+    @SuppressWarnings("unchecked")
     @Override
     public final T get(final long rowKey) {
         if (rowKey < 0) {
@@ -1944,17 +1934,15 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
         final int offset = (int) (rowKey & INDEX_MASK);
         final Object[] block = level2.blockAt(slot);
         if (block != null) {
-            // noinspection unchecked
             return (T) block[offset];
         }
         final ObjectCompactLeaf compact = level2.compactAt(slot);
-        // noinspection unchecked
         return compact == null ? null : (T) compact.get(offset);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public final T getPrev(final long rowKey) {
-        // noinspection unchecked
         return (T) getPrevValue(rowKey);
     }
     // endregion primitive get
