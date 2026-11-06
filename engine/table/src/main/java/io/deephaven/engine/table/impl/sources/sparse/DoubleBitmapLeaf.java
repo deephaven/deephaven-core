@@ -87,6 +87,17 @@ public final class DoubleBitmapLeaf extends DoubleCompactLeaf {
     }
 
     @Override
+    public int countAbsent(final int[] offsets, final int count) {
+        int absent = 0;
+        for (int ii = 0; ii < count; ++ii) {
+            if (!contains(offsets[ii])) {
+                ++absent;
+            }
+        }
+        return absent;
+    }
+
+    @Override
     public double get(final int offset) {
         if ((bits[offset >>> 6] & (1L << offset)) == 0) {
             return NULL_DOUBLE;

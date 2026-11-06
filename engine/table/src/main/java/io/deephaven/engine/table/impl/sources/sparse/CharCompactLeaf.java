@@ -54,15 +54,7 @@ public abstract class CharCompactLeaf {
     /**
      * @return the number of {@code offsets[0, count)}, ascending and distinct, that hold no value
      */
-    public int countAbsent(final int[] offsets, final int count) {
-        int absent = 0;
-        for (int ii = 0; ii < count; ++ii) {
-            if (!contains(offsets[ii])) {
-                ++absent;
-            }
-        }
-        return absent;
-    }
+    public abstract int countAbsent(int[] offsets, int count);
 
     /**
      * Remove the value at {@code offset}, if it holds one.
@@ -72,11 +64,7 @@ public abstract class CharCompactLeaf {
     /**
      * Remove the values at offsets {@code firstOffset} through {@code lastOffset} inclusive.
      */
-    public void removeRange(final int firstOffset, final int lastOffset) {
-        for (int offset = firstOffset; offset <= lastOffset; ++offset) {
-            remove(offset);
-        }
-    }
+    public abstract void removeRange(int firstOffset, int lastOffset);
 
     /**
      * Copy every value into {@code block} at its offset, leaving the other entries of {@code block} unchanged.
