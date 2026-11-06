@@ -263,6 +263,13 @@ public class WorkerConnection {
      * Once the table has been successfully fetched, after each reconnect until the table is close()d we'll attempt to
      * restore the table by re-fetching the table, then reapplying all operations on it.
      */
+    /** How many sessions this connection has had; a new session has none of the previous one's exports. */
+    private int sessions;
+
+    public int getSessions() {
+        return sessions;
+    }
+
     private void connectToWorker() {
         info.onReady()
                 .then(queryWorkerRunning -> authUpdate()).then(newSession -> {
@@ -276,6 +283,7 @@ public class WorkerConnection {
                     newSessionReconnect.success();
 
                     if (newSession) {
+                        sessions++;
                         // assert false : "Can't yet rebuild connections with new auth, please log in again";
                         // nuke pending callbacks, we'll remake them
                         handleCallbacks = new JsWeakMap<>();

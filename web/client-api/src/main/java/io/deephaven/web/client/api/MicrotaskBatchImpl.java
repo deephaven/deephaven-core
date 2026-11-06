@@ -245,6 +245,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         private final BatchTableRequest.Operation operation;
         private final ClientTableState state;
         private boolean sent;
+        /** The connection's session when the batch sent this operation; only that session can re-issue it. */
+        private int sentInSession;
         private boolean cancelled;
         private @Nullable String cancelMessage;
         private @Nullable String failure;
@@ -260,6 +262,12 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             // server, i.e. a reconnect within the same session; a new session is not supported, as for
             // JsTable.refetch() (deephaven-core#3604).
             this.state = connection.newState((callback, cts) -> {
+                if (connection.getSessions() != sentInSession) {
+                    // The new session would park the request on a source ticket nothing may define, so fail instead
+                    callback.onError(new IllegalStateException(
+                            "A table made by a table operation cannot be revived in a new session"));
+                    return;
+                }
                 sent = true;
                 ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper.of(observer -> {
                     connection.tableServiceClient().batch(BatchTableRequest.newBuilder()
@@ -1027,6 +1035,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                     continue;
                 }
                 task.sent = true;
+                task.sentInSession = connection.getSessions();
                 task.batch = batch;
                 request.addOps(task.operation);
                 batch.outstanding.put(task.ticket, task);
