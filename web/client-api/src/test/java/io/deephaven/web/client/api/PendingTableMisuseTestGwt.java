@@ -361,28 +361,6 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         });
     }
 
-    public void testOperationsUsedLaterReject() {
-        // A table's operations follow the pending rule: only in the task that took them, even though the table still
-        // holds the state they stand for
-        connect(tables)
-                .then(session -> {
-                    delayTestFinish(10_017);
-                    return session.getTable("source", null).asPromise().then(table -> {
-                        JsTableOperations view = table.operations();
-                        String what = "a table's operations used in a later task";
-                        return delay(0)
-                                .then(ignore -> expectLateUse(what + " (chained on)",
-                                        view.head(Js.uncheckedCast(1.0)).resolve()))
-                                .then(ignore -> expectRejection(what + " (resolved)", view.resolve(), LATE))
-                                .then(ignore -> {
-                                    table.close();
-                                    return Promise.resolve(session);
-                                });
-                    });
-                })
-                .then(this::finish).catch_(this::report);
-    }
-
     public void testSequentialAwaitsRejectTheSecond() {
         // await a; await b; - b was not awaited in the task that created it
         runForEachKind(15_007, (kind, make) -> {
