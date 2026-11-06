@@ -850,7 +850,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
     /**
      * Runs {@code action} when {@link #currentTask()} sees the current task end, so that whatever the task check still
-     * lets through has not yet been undone by it.
+     * lets through has not yet been undone by it. Actions must not throw: one that does skips the rest.
      */
     private static void atTaskEnd(Runnable action) {
         currentTask();
