@@ -235,7 +235,10 @@ public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<In
     }
 
     private static final int NO_CHILD = -1;
-    /** The most entries a window holds, however few children it holds. */
+    /**
+     * The fewest entries {@link #maxWindow(int)} allows: a window may always grow to cover this many entries, even when
+     * it holds fewer than {@code MIN_WINDOW / WINDOW_ENTRIES_PER_CHILD} children.
+     */
     private static final int MIN_WINDOW = 64;
     /** The most entries a window holds for each child it holds, when that is more than {@link #MIN_WINDOW}. */
     private static final int WINDOW_ENTRIES_PER_CHILD = 8;
