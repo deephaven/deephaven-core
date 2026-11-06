@@ -746,6 +746,25 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             ),
         )
 
+    def test_agg_by_refreshing_initial_groups(self):
+        # A refreshing table with the same rows as the static test table, so both proxies have the same keys.
+        with update_graph.shared_lock(self.test_update_graph):
+            no_rows = (
+                time_table("PT1h")
+                .view([f"{col} = (int)0" for col in ["a", "b", "c", "d", "e"]])
+                .where("false")
+            )
+            refreshing_table = merge([self.test_table, no_rows])
+        initial_groups = refreshing_table.partition_by("c").proxy()
+        self.assertTrue(initial_groups.is_refreshing)
+        self.assertFalse(self.pt_proxy.is_refreshing)
+
+        # The receiver is static, so the op must take the lock for the refreshing initial_groups.
+        agg_pt_proxy = self.pt_proxy.agg_by(
+            [sum_(cols=["SumB = b"])], by="a", initial_groups=initial_groups
+        )
+        self.assertTrue(agg_pt_proxy.is_refreshing)
+
     def test_weighted_avg_by_without_by(self):
         self.assert_matches_per_constituent(
             self.pt_proxy.weighted_avg_by(wcol="e"),

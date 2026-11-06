@@ -8,6 +8,9 @@ import types
 import unittest
 from pathlib import Path
 
+import pydeephaven._doc_template as client_copy
+
+import deephaven._doc_template as server_copy
 from deephaven.table import PartitionedTableProxy, Table, _TableOperations
 from deephaven.table_factory import InputTable
 from tests.testbase import BaseTestCase
@@ -34,27 +37,13 @@ RIGHT_PARAMS: dict[str, str] = {
 PLACEHOLDER = re.compile(r"\{[a-z_]+\}")
 
 
-def _client_twin() -> Path:
-    """Returns the path of the pydeephaven copy of _doc_template.py.
-
-    The source tree has it at py/client next to py/server. The test container copies py/client into a client folder
-    inside the server's folder.
-    """
-    server_root = Path(__file__).resolve().parents[1]
-    for client_root in (server_root.parent / "client", server_root / "client"):
-        twin = client_root / "pydeephaven" / "_doc_template.py"
-        if twin.exists():
-            return twin
-    raise FileNotFoundError(f"no pydeephaven/_doc_template.py near {server_root}")
-
-
 class TableOperationsDocsTestCase(BaseTestCase):
     def test_doc_template_matches_client_copy(self) -> None:
+        # The Python test matrix copies only the tests into its work folder, so find each copy by import. Both test
+        # environments install both packages: the Docker image installs py/client, and the matrix installs the wheels.
         self.assertEqual(
-            _client_twin().read_text(),
-            (
-                Path(__file__).resolve().parents[1] / "deephaven" / "_doc_template.py"
-            ).read_text(),
+            Path(inspect.getfile(client_copy)).read_text(),
+            Path(inspect.getfile(server_copy)).read_text(),
             "deephaven/_doc_template.py and pydeephaven/_doc_template.py must stay identical; edit both together",
         )
 

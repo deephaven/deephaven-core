@@ -1793,7 +1793,9 @@ class _TableOperations(ABC, Generic[T]):
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
 
             cm = _query_scope_agg_ctx(aggs)
-            with cm, self._op_lock_ctx():
+            # A refreshing initial_groups needs the lock too, even when this table or proxy is static.
+            others = () if initial_groups is None else (initial_groups,)
+            with cm, self._op_lock_ctx(*others):
                 if not by:
                     return self._wrap(self.j_object.aggBy(j_agg_list, preserve_empty))
                 else:
