@@ -70,11 +70,11 @@ public class PrevTableToolsTest {
     }
 
     /**
-     * The previous table keeps what holds of the data in every state, such as sortedness and flatness, and drops the
-     * attributes tied to the live table, such as the merged table attribute.
+     * The previous table keeps every attribute of the table, such as sortedness and the merged table attribute, and
+     * keeps flatness.
      */
     @Test
-    public void prevTableKeepsDataAttributes() {
+    public void prevTableKeepsAttributes() {
         final QueryTable table = testRefreshingTable(i(0, 2, 4).toTracking(), intCol("A", 3, 1, 2));
         final Table sortedFlat = table.sort("A").flatten()
                 .withAttributes(Map.of(Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE));
@@ -88,7 +88,7 @@ public class PrevTableToolsTest {
             final Table prev = PrevTableTools.prevTable(sortedFlat);
             assertTrue(prev.isFlat());
             assertEquals(Optional.of(SortingOrder.Ascending), SortedColumnsAttribute.getOrderForColumn(prev, "A"));
-            assertFalse(prev.hasAttribute(Table.MERGED_TABLE_ATTRIBUTE));
+            assertEquals(Boolean.TRUE, prev.getAttribute(Table.MERGED_TABLE_ATTRIBUTE));
         });
     }
 

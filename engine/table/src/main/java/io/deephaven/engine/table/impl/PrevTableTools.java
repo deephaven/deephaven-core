@@ -24,8 +24,10 @@ public final class PrevTableTools {
      * cycle: the rows of the previous row set, and the previous value of each column.
      * <p>
      * The view drifts once the cycle ends. The view copies the previous row set once, when made, but the columns read
-     * previous values on every access, and those values become the current values when the cycle ends. Previous values
-     * are defined only during the updating phase, so make the view only during that phase, use the view only within the
+     * previous values on every access, and those values become the current values when the cycle ends. The previous row
+     * set and the previous column values agree only during the updating phase: during the idle phase that follows a
+     * cycle, a column's previous values are the current values, but a tracking row set's previous row set can still be
+     * the row set from before the cycle. So make the view only during the updating phase, use the view only within the
      * operation that makes the view, and never publish the view. A snapshot that uses previous values meets these
      * conditions, since the snapshot discards any attempt that a cycle boundary interrupts.
      * <p>
@@ -35,10 +37,9 @@ public final class PrevTableTools {
      * {@link io.deephaven.engine.table.impl.sources.RowSetColumnSourceWrapper} column's are. Those previous row sets
      * are valid only during the updating phase as well.
      * <p>
-     * The view carries the attributes of {@code table} that a {@link Table#coalesce() coalesce} carries: the attributes
-     * that describe the data and hold in every state, such as {@link Table#SORTED_COLUMNS_ATTRIBUTE sortedness}, but
-     * not the attributes tied to the live table, such as {@link Table#INPUT_TABLE_ATTRIBUTE} and
-     * {@link Table#MERGED_TABLE_ATTRIBUTE}. The view is {@link Table#isFlat() flat} if {@code table} is flat.
+     * The view wraps concrete column sources, so {@code prevTable} {@link Table#coalesce() coalesces} {@code table}
+     * first. The view carries every attribute of the coalesced table, and is {@link Table#isFlat() flat} if the
+     * coalesced table is flat.
      *
      * @param table The table
      * @return {@code table} itself if {@code table} is static; otherwise a static table over the previous state of
@@ -48,13 +49,13 @@ public final class PrevTableTools {
         if (!table.isRefreshing()) {
             return table;
         }
-        final LinkedHashMap<String, ColumnSource<?>> columns = new LinkedHashMap<>(table.numColumns());
-        table.getColumnSourceMap().forEach((name, source) -> columns.put(name,
+        final Table coalesced = table.coalesce();
+        final LinkedHashMap<String, ColumnSource<?>> columns = new LinkedHashMap<>(coalesced.numColumns());
+        coalesced.getColumnSourceMap().forEach((name, source) -> columns.put(name,
                 source.isImmutable() ? source : source.getPrevSource()));
-        final QueryTable result = new QueryTable(table.getDefinition(), table.getRowSet().copyPrev().toTracking(),
-                columns, null, table.getAttributes(
-                        name -> BaseTable.shouldCopyAttribute(name, BaseTable.CopyAttributeOperation.Coalesce)));
-        if (table.isFlat()) {
+        final QueryTable result = new QueryTable(coalesced.getDefinition(),
+                coalesced.getRowSet().copyPrev().toTracking(), columns, null, coalesced.getAttributes());
+        if (coalesced.isFlat()) {
             // A flat table stays flat after every update, so the previous row set is flat as well.
             result.setFlat();
         }

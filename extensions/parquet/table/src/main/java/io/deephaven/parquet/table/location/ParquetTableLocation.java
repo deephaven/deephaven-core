@@ -1187,7 +1187,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final PushdownResult result) {
         final WritableRowSet matching;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final long threshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+            // The rows in question are previous row keys when usePrev is set, so compare them with the previous index.
+            final long indexSize = usePrev
+                    ? dataIndex.table().getRowSet().sizePrev()
+                    : dataIndex.table().size();
+            final long threshold = (long) (indexSize / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
             if (result.maybeMatch().size() <= threshold) {
                 return result.copy();
             }

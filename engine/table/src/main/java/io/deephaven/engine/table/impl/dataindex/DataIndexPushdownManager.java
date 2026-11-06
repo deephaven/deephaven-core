@@ -270,10 +270,14 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             final PushdownResult result) {
         try (result) {
             final WritableRowSet matching;
-            // One row set per index row that passes the filter, so the unfiltered index bounds them. The batcher owns
-            // what it gathers, and outliving the liveness scope and the iterator leaves nothing that can throw between
-            // building the result and the caller taking it.
-            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(dataIndex.table().size())) {
+            // One row set per index row that passes the filter, so the unfiltered index bounds them: the previous index
+            // when usePrev is set, which holds the keys removed during the cycle. The batcher owns what it gathers, and
+            // outliving the liveness scope and the iterator leaves nothing that can throw between building the result
+            // and the caller taking it.
+            final long indexSize = usePrev
+                    ? dataIndex.table().getRowSet().sizePrev()
+                    : dataIndex.table().size();
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(indexSize)) {
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     // A filter that respects a barrier may see only the keys of rows in question, or it could observe
                     // keys only in rows its declarers removed; decided before the barriers go.

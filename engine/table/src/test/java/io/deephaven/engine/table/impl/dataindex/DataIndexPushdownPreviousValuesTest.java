@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -104,6 +105,10 @@ public class DataIndexPushdownPreviousValuesTest {
             updateGraph.markSourcesRefreshedForUnitTests();
             sourcesRefreshed = true;
             updateGraph.flushOneNotificationForUnitTests();
+            // The flushed notification must be the index's update. Otherwise the index still holds the previous row
+            // sets, and the where returns the previous matches whether or not the pushdown reads previous values.
+            assertEquals("index row set for Sym 1 after the index's update", currentMatches,
+                    currentRowSet(indexTable, dataIndex.rowSetColumnName(), 1));
             assertFalse(child.satisfied(step));
             state.release.countDown();
 
@@ -136,6 +141,24 @@ public class DataIndexPushdownPreviousValuesTest {
             }
             pool.shutdownNow();
         }
+    }
+
+    /**
+     * Copy the current row set of the index row for Sym {@code key}. The index updates the row sets in place, so the
+     * copy shows how far the index's update has run.
+     */
+    private static RowSet currentRowSet(final Table indexTable, final String rowSetColumnName, final int key) {
+        try (final CloseableIterator<Integer> keys = indexTable.columnIterator("Sym");
+                final CloseableIterator<RowSet> rowSets = indexTable.columnIterator(rowSetColumnName)) {
+            while (keys.hasNext()) {
+                final int sym = keys.next();
+                final RowSet rowSet = rowSets.next();
+                if (sym == key) {
+                    return rowSet.copy();
+                }
+            }
+        }
+        throw new AssertionError("The index has no row for Sym " + key);
     }
 
     private static final class State {
