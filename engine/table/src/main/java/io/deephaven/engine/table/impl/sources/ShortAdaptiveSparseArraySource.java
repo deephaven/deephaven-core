@@ -298,6 +298,12 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
         /** The number of children of a ranked level. */
         private int size;
 
+        /**
+         * Make a level that indexes its children by window.
+         *
+         * @param base the index of the first entry of the window
+         * @param children the window: the child for each index from {@code base}, or null where there is none
+         */
         private Level0(final int base, final Level1[] children) {
             this.onlyIndex = children.length == 1 ? base : NO_CHILD;
             this.base = base;
@@ -305,6 +311,15 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
             this.children = children;
         }
 
+        /**
+         * Make a ranked level, which holds its children densely in the order of their indices.
+         *
+         * @param indices the ascending indices of the children in its first {@code size} entries; the entries past
+         *        them are room to append
+         * @param children the children, each at the position of its index in {@code indices}; the entries past the
+         *        first {@code size} are room to append
+         * @param size the number of children
+         */
         private Level0(final int[] indices, final Level1[] children, final int size) {
             this.onlyIndex = NO_CHILD;
             this.base = 0;
