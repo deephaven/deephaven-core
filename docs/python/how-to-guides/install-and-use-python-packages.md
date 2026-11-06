@@ -25,9 +25,10 @@ You can install Python packages with [`pip`](https://pip.pypa.io/) from within a
 
 ```python order=null
 import os
+import shlex
 import sys
 
-os.system(f"{sys.executable} -m pip install pendulum")
+os.system(f"{shlex.quote(sys.executable)} -m pip install pendulum")
 
 import pendulum
 ```
@@ -106,7 +107,7 @@ docker image ls
 
 ### Start Deephaven from the custom image
 
-If a container named `deephaven` already exists, remove it first with `docker rm -f deephaven`.
+If a container named `deephaven` already exists, you can remove it with `docker rm -f deephaven`, but only if it holds nothing you need. Removing it deletes packages installed in its writable layer. A new container doesn't reattach the existing `/data` and `/cache` volumes, so back up any data you need before you replace the container.
 
 To start Deephaven from `guide/server-pendulum` with Docker, run:
 
