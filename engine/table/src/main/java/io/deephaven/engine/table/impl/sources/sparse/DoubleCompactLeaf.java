@@ -17,7 +17,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
  * than a full block. Values are addressed by their offset within the block, from 0 to
  * {@link SparseConstants#BLOCK_SIZE} - 1; an offset without a value reads as null.
  */
-public abstract class DoubleCompactLeaf {
+public abstract sealed class DoubleCompactLeaf permits DoubleSortedLeaf, DoubleBitmapLeaf {
 
     /**
      * @return the number of offsets that hold a value
