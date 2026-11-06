@@ -76,7 +76,6 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     private List<String> keyColumnTypes;
     private PartitionedTableDescriptor descriptor;
     private Promise<JsTable> keys;
-    private ClientTableState keysState;
     private JsTable baseTable;
     private TableSubscription subscription;
 
@@ -314,25 +313,20 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      * @return Promise of a Table
      */
     @Deprecated
-    public JsPendingTable<JsTable> getKeyTable() {
+    public Promise<JsTable> getKeyTable() {
         if (keys == null) {
-            keysState = connection.newState((c, state) -> {
+            keys = connection.newState((c, state) -> {
                 SelectOrUpdateRequest view = SelectOrUpdateRequest.newBuilder()
                         .setSourceId(baseTable.state().getHandle().makeTableReference())
                         .setResultId(state.getHandle().makeTicket())
                         .addAllColumnSpecs(descriptor.getKeyColumnNamesList())
                         .build();
                 connection.tableServiceClient().view(view, c);
-            }, "view only key columns", connection.getTickets().newTableTicket());
-            keys = keysState.refetch()
+            }, "view only key columns")
+                    .refetch()
                     .then(state -> Promise.resolve(new JsTable(state.getConnection(), state)));
         }
-        // Each caller gets its own table over the one key table's state. Each is a JsTable binding on that state and
-        // chained operations retain it directly, so closing any one leaves the others alive; the state is released
-        // with the last of them and the partitioned table's own hold.
-        ClientTableState state = keysState;
-        return MicrotaskBatchImpl.<JsTable>wrap(connection, state, keys.then(table -> Promise.resolve(state)),
-                cts -> new JsTable(connection, cts));
+        return keys.then(JsTable::copy);
     }
 
     /**
@@ -340,7 +334,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      *
      * @return Promise of a Table
      */
-    public JsPendingTable<JsTable> getBaseTable() {
+    public Promise<JsTable> getBaseTable() {
         return baseTable.copy();
     }
 

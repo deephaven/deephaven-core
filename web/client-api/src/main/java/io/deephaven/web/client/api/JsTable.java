@@ -1009,17 +1009,15 @@ public class JsTable extends HasLifecycle
 
     /**
      * Creates a new copy of this table, so it can be sorted and filtered separately, and maintain a different viewport.
+     * The copy is of this table as it is now, and must be closed when no longer needed. To chain operations on this
+     * table instead, use {@link #operations()}.
      *
-     * @return the copy, as a pending table
+     * @return Promise of dh.Table
      *
      */
     @JsMethod
-    public JsPendingTable<JsTable> copy() {
-        // The copy is only created on await, so a copy that is only chained on binds nothing; operations chained on
-        // it retain the current state directly while they are created.
-        ClientTableState current = state();
-        return MicrotaskBatchImpl.<JsTable>wrap(workerConnection, current, Promise.resolve(current),
-                cts -> new JsTable(this));
+    public Promise<JsTable> copy() {
+        return Promise.resolve(new JsTable(this));
     }
 
     public Promise<JsTable> copy(boolean resolved) {
@@ -1031,7 +1029,7 @@ public class JsTable extends HasLifecycle
             return promise.asPromise(MAX_BATCH_TIME)
                     .then(s -> Promise.resolve(new JsTable(this)));
         }
-        return copy().asPromise();
+        return copy();
     }
 
     /**
@@ -1773,12 +1771,12 @@ public class JsTable extends HasLifecycle
      * @param yCols The names of the Y columns to downsample.
      * @return A promise that resolves to the downsampled table.
      */
-    public JsPendingTable<JsTable> downsample(LongWrapper[] zoomRange, int pixelCount, String xCol,
+    public Promise<JsTable> downsample(LongWrapper[] zoomRange, int pixelCount, String xCol,
             String[] yCols) {
         JsLog.info("downsample", zoomRange, pixelCount, xCol, yCols);
         final String fetchSummary = "downsample(" + Arrays.toString(zoomRange) + ", " + pixelCount + ", " + xCol + ", "
                 + Arrays.toString(yCols) + ")";
-        return workerConnection.pendingTable((c, state) -> {
+        return workerConnection.newState((c, state) -> {
             RunChartDownsampleRequest.Builder downsampleRequest = RunChartDownsampleRequest.newBuilder();
             downsampleRequest.setPixelCount(pixelCount);
             if (zoomRange != null) {
@@ -1791,7 +1789,8 @@ public class JsTable extends HasLifecycle
             downsampleRequest.setSourceId(state().getHandle().makeTableReference());
             downsampleRequest.setResultId(state.getHandle().makeTicket());
             workerConnection.tableServiceClient().runChartDownsample(downsampleRequest.build(), c);
-        }, fetchSummary);
+        }, fetchSummary).refetch()
+                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
     /**

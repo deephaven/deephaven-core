@@ -10,6 +10,8 @@ import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
+import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
@@ -262,6 +264,27 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     // Chained before the cancel, so it fails with the source, as on a canceled operation
                     source.cancel();
                     return expectRejection(chained, "Source table failed: Operation canceled");
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCopyIsOfTheTableWhenCalled() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_032);
+                    return session.getTable("source", null).asPromise();
+                })
+                .then(table -> {
+                    Promise<JsTable> pending = table.copy();
+                    // Filtered after copy() but before the copy is awaited: the copy must not see it
+                    table.applyFilter(new FilterCondition[] {
+                            table.findColumn("X").filter().greaterThan(FilterValue.ofNumber(2.0))});
+                    return pending.then(copy -> {
+                        assertEquals("filters on a copy of the unfiltered table", 0, copy.getFilter().length);
+                        copy.close();
+                        table.close();
+                        return Promise.resolve(copy);
+                    });
                 })
                 .then(this::finish).catch_(this::report);
     }
