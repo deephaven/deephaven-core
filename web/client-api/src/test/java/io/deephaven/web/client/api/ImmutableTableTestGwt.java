@@ -772,6 +772,40 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testCancelingAViewLeavesItsTable() {
+        // Canceling a table's operations ends what came from them, but the table itself stays open and usable
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(15_040);
+                    return session.getTable("slowsource", null).asPromise().then(table -> {
+                        ClientTableState state = table.state();
+                        JsPendingTable<JsResolvedTable> view = table.operations();
+                        // Still running on the server when the view is canceled
+                        Promise<JsResolvedTable> chained = view.update(arr(SLOW)).resolve();
+                        return view.resolve().then(owned -> {
+                            view.cancel();
+                            try {
+                                owned.head(Js.uncheckedCast(1.0));
+                                return Promise.reject("the table the view handed out was still open after cancel");
+                            } catch (IllegalStateException expected) {
+                                // closed, as for a canceled operation
+                            }
+                            return expectSourceCanceled("an operation chained on the canceled view", chained);
+                        }).then(ignore -> {
+                            assertEquals("canceling the view failed its table's state",
+                                    ClientTableState.ResolutionState.RUNNING, state.getResolution());
+                            return table.operations().resolve();
+                        }).then(again -> {
+                            assertEquals(1., again.getSize(), 0);
+                            again.close();
+                            table.close();
+                            return abandonedWorkDone(session);
+                        });
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testCancelAfterDeliveryClosesTable() {
         connect(tables)
                 .then(session -> {
