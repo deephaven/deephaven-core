@@ -781,12 +781,15 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
     /**
      * Queues an operation on the given connection's next batch. {@code retainSource} is called with the new operation
-     * before this returns, so the source is retained before anything else can run. A pending {@code operand} is checked
-     * and held the same way as a pending source; any other operand is its caller's to keep open.
+     * before this returns, so the source is retained before anything else can run. The {@code operand}, if any, is held
+     * the same way, so a caller may close it once the operation is created; a pending one is checked first.
      */
     private static JsPendingTable<JsResolvedTable> enqueue(WorkerConnection connection, Ticket resultId,
             BatchTableRequest.Operation.Builder operation, Consumer<Operation> retainSource,
             @Nullable JsTableReference operand) {
+        if (operand != null && operand.getConnection() != connection) {
+            throw new IllegalArgumentException("Operand table is not from the same connection as the source table");
+        }
         Object operandObject = operand;
         Pending<?> pendingOperand = operandObject instanceof Pending ? (Pending<?>) operandObject : null;
         if (pendingOperand != null) {
@@ -799,6 +802,10 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         retainSource.accept(pending);
         if (pendingOperand != null) {
             pendingOperand.retainUntilSettled(pending, "Operand table");
+        } else if (operand != null) {
+            // A table or resolved table: hold its current state, which its owner may release before the batch is sent
+            connection.getCache().get(new TableTicket(operand.typedTicket().getTicket()))
+                    .ifPresent(state -> retainUntilSettled(state, pending, "Operand table"));
         }
 
         Batch batch = enqueued.get(connection);

@@ -28,9 +28,9 @@ import jsinterop.annotations.JsMethod;
  * retained until {@code close()} is called on it and has the same operations, or the promise from
  * {@code Promise.resolve}. A pending table that is not awaited is freed automatically as soon as possible: once its
  * response arrives and nothing chained on it still needs it. Used in a later task, awaited or not, the operation
- * chained on it, or the {@code await}, is rejected, and a warning names where the pending table was created; a use the client
- * cannot yet tell is in a later task behaves as it would by timing alone. In particular, awaiting two pending tables
- * one after the other, {@code await a; await b;}, rejects {@code b}: await both at once with
+ * chained on it, or the {@code await}, is rejected, and a warning names where the pending table was created; a use the
+ * client cannot yet tell is in a later task behaves as it would by timing alone. In particular, awaiting two pending
+ * tables one after the other, {@code await a; await b;}, rejects {@code b}: await both at once with
  * {@code Promise.all([a, b])}, or each as it is created. This holds for a fetch as much as for an operation.
  *
  * @param <T> the table awaiting this gives. In TypeScript it defaults to {@code ResolvedTable}, what every operation
@@ -49,7 +49,6 @@ public interface JsPendingTable<@TsDefault(JsResolvedTable.class) T extends JsIT
      * sent, and reject with "Cannot use source table: " and the cancel message. The server cancels work it has not
      * started, but work it has already begun runs to completion there, so callers that cancel often should debounce.
      */
-    // also happens to be a workaround for a javadoc -> ts bug
     @JsMethod
     void cancel();
 }

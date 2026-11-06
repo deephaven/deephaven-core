@@ -14,8 +14,9 @@ import jsinterop.base.Js;
 /**
  * Any client object that refers to a table on the server, and so can be the other operand of a table operation: a
  * {@link JsTable}, a {@link JsTotalsTable}, a {@link JsPendingTable} or a {@link JsResolvedTable}. These are the
- * table-shaped members of {@link ServerObject.Union}. Operations only need the table's ticket; they never retain or
- * read the operand.
+ * table-shaped members of {@link ServerObject.Union}. The operand must be on the same connection as the table operated
+ * on. The operations of {@link JsTableOperations} hold the operand until the operation has been created on the server,
+ * so it may be closed as soon as the operation has been called.
  */
 @TsUnion(anonymous = false, name = "TableReference", namespace = "dh")
 @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)

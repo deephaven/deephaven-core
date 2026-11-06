@@ -212,6 +212,47 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testOperandFromAnotherConnectionThrows() {
+        connect(tables).then(first -> connect(tables).then(second -> {
+            delayTestFinish(10_029);
+            JsPendingTable<JsTable> left = first.getTable("source", null);
+            JsPendingTable<JsTable> right = second.getTable("source", null);
+            try {
+                left.naturalJoin(JsTableReference.of(right), Js.uncheckedCast(JsArray.of("X")), null, null);
+                fail("Expected an operand from another connection to throw");
+            } catch (IllegalArgumentException expected) {
+                assertTrue(expected.getMessage(), expected.getMessage().contains("connection"));
+            }
+            return Promise.resolve(first);
+        })).then(this::finish).catch_(this::report);
+    }
+
+    public void testOperandClosedAfterChainingIsKept() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_030);
+                    return session.getTable("source", null).resolve();
+                })
+                // The operand needs a state of its own, which only it retains; a copy would share the source's
+                .then(source -> source.update(cols("Y2 = Y * 3")).resolve().then(right -> {
+                    JsPendingTable<JsResolvedTable> joined = source.naturalJoin(JsTableReference.of(right),
+                            Js.uncheckedCast(JsArray.of("X")), Js.uncheckedCast(JsArray.of("Y2")), null);
+                    // Closed in the same task, before the batch that reads it has been sent
+                    right.close();
+                    Promise<JsResolvedTable> result = joined.resolve().then(Promise::resolve,
+                            err -> Promise.reject("Join failed after its operand was closed: " + err));
+                    Promise<JsResolvedTable> timeout = delay(5_000).then(ignore -> Promise.reject(
+                            "Join did not settle within 5s after its operand was closed"));
+                    return Promise.race(result, timeout).then(t -> {
+                        assertEquals(5., t.getSize(), 0);
+                        t.close();
+                        source.close();
+                        return Promise.resolve(t);
+                    });
+                }))
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testIntermediatesAreReleased() {
         connect(tables)
                 .then(session -> {
