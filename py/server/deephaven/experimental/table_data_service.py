@@ -8,7 +8,7 @@ be used to create Deephaven tables backed by the backend service."""
 
 import traceback
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import jpy
 import pyarrow as pa
@@ -67,7 +67,7 @@ class TableDataServiceBackend(ABC):
     def table_schema(
         self,
         table_key: TableKey,
-        schema_cb: Callable[[pa.Schema, Optional[pa.Schema]], None],
+        schema_cb: Callable[[pa.Schema, pa.Schema | None], None],
         failure_cb: Callable[[Exception], None],
     ) -> None:
         """Provides the table data schema and the partitioning column schema for the table with the given table key via
@@ -92,11 +92,11 @@ class TableDataServiceBackend(ABC):
     def table_locations(
         self,
         table_key: TableKey,
-        location_cb: Callable[[TableLocationKey, Optional[pa.Table]], None],
+        location_cb: Callable[[TableLocationKey, pa.Table | None], None],
         success_cb: Callable[[], None],
         failure_cb: Callable[[Exception], None],
     ) -> None:
-        """Provides the existing table locations for the table with the given table via the location_cb callback.
+        """Provides the existing table locations for the table with the given table key via the location_cb callback.
 
         The location callback should be called with the table location key and an optional pyarrow.Table that contains
         the partitioning values for the location. The schema of the table must match the optional partitioning column
@@ -110,7 +110,8 @@ class TableDataServiceBackend(ABC):
 
         The table_locations caller will block until one of the success or failure callbacks is called.
 
-        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=False
+        This is called for tables created when :meth:`TableDataService.make_table` or
+        :meth:`TableDataService.make_partitioned_table` is called with refreshing=False.
 
         Note that asynchronous calls to any callback may block until this method has returned.
 
@@ -126,7 +127,7 @@ class TableDataServiceBackend(ABC):
     def subscribe_to_table_locations(
         self,
         table_key: TableKey,
-        location_cb: Callable[[TableLocationKey, Optional[pa.Table]], None],
+        location_cb: Callable[[TableLocationKey, pa.Table | None], None],
         success_cb: Callable[[], None],
         failure_cb: Callable[[Exception], None],
     ) -> Callable[[], None]:
@@ -145,7 +146,8 @@ class TableDataServiceBackend(ABC):
         to keep the subscription active (e.g. failure with no reconnection possible, or failure to reconnect/resubscribe
         before a timeout).
 
-        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=True.
+        This is called for tables created when :meth:`TableDataService.make_table` or
+        :meth:`TableDataService.make_partitioned_table` is called with refreshing=True.
 
         Note that asynchronous calls to any callback will block until this method has returned.
 
@@ -176,7 +178,8 @@ class TableDataServiceBackend(ABC):
 
         The table_location_size caller will block until one of the size or failure callbacks is called.
 
-        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=False.
+        This is called for tables created when :meth:`TableDataService.make_table` or
+        :meth:`TableDataService.make_partitioned_table` is called with refreshing=False.
 
         Note that asynchronous calls to any callback may block until this method has returned.
 
@@ -184,6 +187,7 @@ class TableDataServiceBackend(ABC):
             table_key (TableKey): the table key
             table_location_key (TableLocationKey): the table location key
             size_cb (Callable[[int], None]): the callback function
+            failure_cb (Callable[[Exception], None]): the failure callback function
         """
         pass
 
@@ -206,7 +210,8 @@ class TableDataServiceBackend(ABC):
         to keep the subscription active (e.g. failure with no reconnection possible, or failure to reconnect/resubscribe
         before a timeout).
 
-        This is called for tables created when :meth:``TableDataService.make_table` is called with refreshing=True
+        This is called for tables created when :meth:`TableDataService.make_table` or
+        :meth:`TableDataService.make_partitioned_table` is called with refreshing=True.
 
         Note that asynchronous calls to any callback will block until this method has returned.
 
@@ -274,9 +279,9 @@ class TableDataService(JObjectWrapper):
         self,
         backend: TableDataServiceBackend,
         *,
-        chunk_reader_factory: Optional[jpy.JType] = None,
-        stream_reader_options: Optional[jpy.JType] = None,
-        page_size: Optional[int] = None,
+        chunk_reader_factory: jpy.JType | None = None,
+        stream_reader_options: jpy.JType | None = None,
+        page_size: int | None = None,
     ):
         """Creates a new TableDataService with the given user-implemented backend service.
 
@@ -358,12 +363,10 @@ class TableDataService(JObjectWrapper):
             table_key (TableKey): the table key
             schema_cb (jpy.JType): the Java callback function with one argument: an array of byte buffers that contain
                 the serialized table data arrow and partitioning values schemas
-            failure_cb (jpy.JType): the failure Java callback function with one argument: an exception stringyy
+            failure_cb (jpy.JType): the failure Java callback function with one argument: an exception string
         """
 
-        def schema_cb_proxy(
-            dt_schema: pa.Schema, pc_schema: Optional[pa.Schema] = None
-        ):
+        def schema_cb_proxy(dt_schema: pa.Schema, pc_schema: pa.Schema | None = None):
             j_dt_schema_bb = jpy.byte_buffer(dt_schema.serialize())
             pc_schema = pc_schema if pc_schema is not None else pa.schema([])
             j_pc_schema_bb = jpy.byte_buffer(pc_schema.serialize())
@@ -397,7 +400,7 @@ class TableDataService(JObjectWrapper):
         """
 
         def location_cb_proxy(
-            pt_location_key: TableLocationKey, pt_table: Optional[pa.Table] = None
+            pt_location_key: TableLocationKey, pt_table: pa.Table | None = None
         ):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None or pt_table.to_batches() is None:
@@ -453,7 +456,7 @@ class TableDataService(JObjectWrapper):
         """
 
         def location_cb_proxy(
-            pt_location_key: TableLocationKey, pt_table: Optional[pa.Table] = None
+            pt_location_key: TableLocationKey, pt_table: pa.Table | None = None
         ):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None:

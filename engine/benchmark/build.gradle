@@ -70,7 +70,6 @@ createJmhTask('jmhRunNaturalJoinIncrementalUpdate', 'NaturalJoinIncrementalUpdat
 createJmhTask('jmhRunCrossJoin', 'CrossJoin.*Benchmark')
 createJmhTask('jmhRunSymbolTableCombiner', 'SymbolTableCombinerBenchmark')
 createJmhTask('jmhRunCrossJoinZeroKeyIncrementalUpdate', 'CrossJoinZeroKeyIncrementalUpdateBenchmark')
-createJmhTask('jmhRunSparseSelect', 'SparseSelectBenchmark')
 createJmhTask('jmhRunRCS', 'RegionedColumnSourceBenchmark')
 createJmhTask('jmhRunBy', 'ByBenchmark')
 createJmhTask('jmhRunUnion', 'UnionBenchmark', [], '12g')
@@ -86,8 +85,12 @@ createJmhTask('jmhRunRowSetSubsetOf', 'RowSetSubsetOfBench')
 createJmhTask('jmhRunRowSetSmallInsert', 'RowSetSmallInsertBench')
 createJmhTask('jmhRunRowSetSmallRemove', 'RowSetSmallRemoveBench')
 createJmhTask('jmhRunRowSetSubsume', 'RowSetSubsumeBench')
+createJmhTask('jmhRunArrayContainerIor', 'ArrayContainerIorBench')
 createJmhTask('jmhRunNullableLongLongMap', 'NullableLongLongMapBench')
 createJmhTask('jmhRunPercentileBy', 'PercentileByBenchmark', [], '12g')
+createJmhTask('jmhRunPositionalSelect', 'PositionalSelectBenchmark', [], '32g')
+createJmhTask('jmhRunPositionalSelectRead', 'PositionalSelectReadBenchmark', [], '16g')
+createJmhTask('jmhRunAggregationKeyMatchFilter', 'AggregationKeyMatchFilterBenchmark', [], '31g')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->

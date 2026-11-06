@@ -568,7 +568,7 @@ public abstract class BarrageMessageSubscriptionRoundTripTestBase extends Barrag
         // deliver them one at a time, running an update graph cycle in between as a live client would
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         while (client.pendingMessageCount() > 0) {
-            client.flushEventsToReplicatedTable(1);
+            client.flushMessages(1);
             updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         }
 
@@ -624,7 +624,7 @@ public abstract class BarrageMessageSubscriptionRoundTripTestBase extends Barrag
         // Deliver only the first of the growth messages, leaving the subscription unsatisfied.
         flushProducerTable();
         assertTrue(client.pendingMessageCount() > 1);
-        client.flushEventsToReplicatedTable(1);
+        client.flushMessages(1);
         updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         assertNotNull(client.barrageTable.getServerViewport());
 
@@ -637,7 +637,7 @@ public abstract class BarrageMessageSubscriptionRoundTripTestBase extends Barrag
 
         // Once the subscription is satisfied the table may be listened to as usual.
         while (client.pendingMessageCount() > 0) {
-            client.flushEventsToReplicatedTable(1);
+            client.flushMessages(1);
             updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         }
         assertNull(client.barrageTable.getServerViewport());

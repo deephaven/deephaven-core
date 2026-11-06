@@ -94,7 +94,7 @@ public class BasePerformanceEntry implements LogOutputAppendable {
     }
 
     synchronized void baseEntryReset() {
-        Assert.eqZero(startTimeNanos, "startTimeNanos");
+        Assert.assertion(startTimeNanos == 0, "startTimeNanos == 0", this, "entry");
 
         usageNanos = 0;
 

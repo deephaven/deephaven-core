@@ -1,0 +1,1 @@
+{"file":"how-to-guides/use-numpy.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"X","type":"int"}],"rows":[[{"value":""}],[{"value":"1"}],[{"value":""}],[{"value":"3"}]]}},":log":{"type":"Log","data":"[[-2147483648]\n [          1]\n [-2147483648]\n [          3]]\n[[nan]\n [ 1.]\n [nan]\n [ 3.]]\n"}}}

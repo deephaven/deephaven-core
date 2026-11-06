@@ -2,18 +2,19 @@
 title: Built-in query language functions
 ---
 
-Like [constants](./built-in-constants.md) and [variables](./built-in-variables.md), there are many built-in functions that can be called from the query language with no additional imports or setup. These built-in functions should be used over Python or other user-defined functions in query strings for two reasons:
+Like [constants](./built-in-constants.md) and [variables](./built-in-variables.md), the query language has many built-in functions that you can call without any import or setup. Use these built-in functions instead of [Python functions](./python-functions.md) or other user-defined functions in [query strings](./query-string-overview.md) for these reasons:
 
-- They are almost always more performant.
-- They handle null values gracefully.
+- They are faster than [Python functions](./python-functions.md).
+- Most of them return [a null result for null input](../reference/query-language/types/nulls.md) instead of throwing an error.
+- They need no extra code: you call them by name.
 
-For more on why, see [The Python-Java boundary](../conceptual/python-java-boundary.md).
+For more on the performance difference, see [The Python-Java boundary](../conceptual/python-java-boundary.md).
 
-## Built-in functions
+## Use built-in functions in query strings
 
-Built-in functions range from simple mathematical functions to date-time arithmetic, string manipulation, and more.
+Built-in functions range from simple mathematical functions to date-time arithmetic, string parsing, and more. The examples below show a few of them. For the complete list, see [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md).
 
-The following query calculates the absolute value of a column using the built-in [`abs`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#abs(long)) function:
+The following query calculates the absolute value of a column using the built-in [`abs`](/core/javadoc/io/deephaven/function/Numeric.html#abs(long)) function:
 
 ```python order=source
 from deephaven import empty_table
@@ -21,22 +22,16 @@ from deephaven import empty_table
 source = empty_table(10).update(["X = -ii", "AbsX = abs(X)"])
 ```
 
-The following query parses a column of strings containing integers into Java primitive `int` values using [`parseInt`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Parse.html#parseInt(java.lang.String)):
+The following query parses a column of [strings](../reference/query-language/types/strings.md) containing integers into [Java primitive](./data-types.md) `int` values using [`parseInt`](/core/javadoc/io/deephaven/function/Parse.html#parseInt(java.lang.String)):
 
 ```python order=result,source
 from deephaven import empty_table
-from random import choice
 
-
-def rand_string_number() -> str:
-    return choice([str(item) for item in list(range(10))])
-
-
-source = empty_table(10).update("StringColumn = rand_string_number()")
+source = empty_table(10).update("StringColumn = Integer.toString(randomInt(0, 10))")
 result = source.update("IntegerColumn = parseInt(StringColumn)")
 ```
 
-The following query uses the built-in [`and`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Logic.html#and(boolean...)) function to evaluate whether or not three different columns are all `true`:
+The following query uses the built-in [`and`](/core/javadoc/io/deephaven/function/Logic.html#and(java.lang.Boolean...)) function to evaluate whether three columns are all `true`:
 
 ```python order=source,result
 from deephaven import new_table
@@ -52,7 +47,9 @@ source = new_table(
 result = source.update(["IsOk = and(A, B, C)"])
 ```
 
-Built-in functions gracefully handle null values as input. For example, the following example calls the built-in [`sin`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) function on a column that contains null values:
+Unlike most built-in functions, [`and`](/core/javadoc/io/deephaven/function/Logic.html#and(java.lang.Boolean...)) throws an error if any argument is [null](../reference/query-language/types/nulls.md). To treat [nulls](../reference/query-language/types/nulls.md) as a fixed value, use the [`and`](/core/javadoc/io/deephaven/function/Logic.html#and(java.lang.Boolean[],java.lang.Boolean)) overload that takes a replacement value for [nulls](../reference/query-language/types/nulls.md).
+
+Most other built-in functions return [a null result for null input](../reference/query-language/types/nulls.md). For example, the following query calls the built-in [`sin`](/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) function on a column that contains [null values](../reference/query-language/types/nulls.md). `SinX` is [null](../reference/query-language/types/nulls.md) in those rows:
 
 ```python order=source
 from deephaven import empty_table
@@ -62,36 +59,37 @@ source = empty_table(40).update(
 )
 ```
 
-This page does not provide a comprehensive list of all built-ins. For the complete list of functions built into the query language, see [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md).
-
 ## Add Java classes to the query library
 
-To use a non-default Java class in a Deephaven Query Language (DQL) query string, you must first import the class into DQL using Python. For this, Deephaven offers the [`query_library`](https://docs.deephaven.io/core/pydoc/code/deephaven.query_library.html) module.
+Built-in functions cover common needs, and [query strings](./query-string-overview.md) can also use [other Java classes](./java-classes.md). The [query library](./java-classes.md#import-java-classes) holds the imports that [query strings](./query-string-overview.md) can use. By default, it includes:
 
-The following example adds the [`java.net.URL`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/URL.html) class to the query library then uses it in table operations.
+- The `java.lang` and `java.util` packages
+- Specific classes from other packages
+- The static methods of the built-in function classes
 
-```python order=source reset
-from deephaven import empty_table
-from deephaven import query_library
+That is why you can call [`abs`](/core/javadoc/io/deephaven/function/Numeric.html#abs(long)) or [`parseInt`](/core/javadoc/io/deephaven/function/Parse.html#parseInt(java.lang.String)) without a class name, and refer to a class such as `Integer` by its simple name, without its package. For the complete list of default imports, see [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md).
 
-query_library.import_class("java.net.URL")
+To use a class from any other package, you have these options:
 
-source = empty_table(1).update(
-    [
-        "DeephavenUrl = new URL(`https://deephaven.io/`)",
-        "Protocol = DeephavenUrl.getProtocol()",
-        "Host = DeephavenUrl.getHost()",
-        "Path = DeephavenUrl.getPath()",
-    ]
-)
-```
+- Use its fully qualified name, such as `java.net.URI`.
+- Import it with [`import_class`](/core/pydoc/code/deephaven.query_library.html#deephaven.query_library.import_class) from the [`query_library`](/core/pydoc/code/deephaven.query_library.html) module, then use its simple name, such as `URI`.
+- Import its whole package with [`import_package`](/core/pydoc/code/deephaven.query_library.html#deephaven.query_library.import_package), then use the simple name of any public class in it.
 
-You can also import static methods from a class into the query language to use them in table operations. The following example imports static methods from the [`java.lang.StrictMath`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/StrictMath.html) class and uses them in table operations.
+For an example that imports a class, see [Import Java classes](./java-classes.md#import-java-classes).
+
+### Import static methods
+
+You can also import a class's static methods into the [query library](./java-classes.md#import-java-classes) with [`import_static`](/core/pydoc/code/deephaven.query_library.html#deephaven.query_library.import_static), so [query strings](./query-string-overview.md) can call them without the class name. The following example imports the static methods of [`java.lang.StrictMath`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/StrictMath.html) and calls `fma` without a class name.
 
 > [!NOTE]
-> [`import_static`](https://docs.deephaven.io/core/pydoc/code/deephaven.query_library.html#deephaven.query_library.import_static) allows you to call methods without the class name. The class name is included in the examples below because methods of the same name also exist in the [built-in](./built-in-functions.md) [`io.deephaven.function.Numeric`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html) class.
+> [`Numeric`](/core/javadoc/io/deephaven/function/Numeric.html), a built-in class, also defines [`acos`](/core/javadoc/io/deephaven/function/Numeric.html#acos(double)), [`exp`](/core/javadoc/io/deephaven/function/Numeric.html#exp(double)), and [`getExponent`](/core/javadoc/io/deephaven/function/Numeric.html#getExponent(double)). After [`import_static`](/core/pydoc/code/deephaven.query_library.html#deephaven.query_library.import_static) imports `StrictMath`, a call to any of those names without a class name is ambiguous. The example prefixes each one with a class name:
 >
-> In this case, you can no longer use just `acos`, `exp`, or any of the other method names that exist in both classes as it will be an ambiguous reference.
+> - `StrictMath.acos` and `StrictMath.getExponent` work without an import, because the [query library](./java-classes.md#import-java-classes) includes `java.lang` by default.
+> - [`exp`](/core/javadoc/io/deephaven/function/Numeric.html#exp(double)) needs the fully qualified name `io.deephaven.function.Numeric.exp`. The [query library](./java-classes.md#import-java-classes) imports the static methods of [`Numeric`](/core/javadoc/io/deephaven/function/Numeric.html), but not the class name `Numeric`.
+>
+> The import lasts for the rest of the [execution context](../conceptual/execution-context.md), not just this query. After it, a call without a class name to any method that both classes define for the same argument type is ambiguous in every [query string](./query-string-overview.md). That includes the earlier examples on this page, such as [`abs`](/core/javadoc/io/deephaven/function/Numeric.html#abs(long)) on a `long` or [`sin`](/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) on a `double`. Prefix those calls with a class name too.
+>
+> Other names switch to the `StrictMath` method with no error. After the import, `min(A, B)` on two `double` or `int` values calls `StrictMath.min`. That method treats a Deephaven [null](../reference/query-language/types/nulls.md) as an ordinary number, so when `A` is [null](../reference/query-language/types/nulls.md), `min(A, B)` returns [null](../reference/query-language/types/nulls.md) instead of `B`. To keep Deephaven's [null handling](../reference/query-language/types/nulls.md), write `io.deephaven.function.Numeric.min(A, B)`.
 
 ```python order=source reset
 from deephaven import empty_table
@@ -101,7 +99,8 @@ query_library.import_static("java.lang.StrictMath")
 
 source = empty_table(10).update(
     [
-        "X = randomDouble(-1.67, 1.67)",
+        "X = randomDouble(-1.0, 1.0)",
+        "FmaX = fma(X, 2.0, 1.0)",
         "AcosX = StrictMath.acos(X)",
         "ExpX = io.deephaven.function.Numeric.exp(X)",
         "ExponentX = StrictMath.getExponent(X)",
@@ -111,11 +110,23 @@ source = empty_table(10).update(
 
 ## Related documentation
 
+- [The Python-Java boundary](../conceptual/python-java-boundary.md)
+- [Execution context](../conceptual/execution-context.md)
 - [Query string overview](./query-string-overview.md)
 - [Built-in constants](./built-in-constants.md)
 - [Built-in variables](./built-in-variables.md)
 - [Ternary conditional operator](./ternary-if-how-to.md)
+- [Python functions in query strings](./python-functions.md)
+- [Data types in Deephaven and Python](./data-types.md)
 - [Java objects in query strings](./java-classes.md)
 - [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)
+- [Math functions](../reference/query-language/query-library/auto-imported/math.md)
+- [Logic functions](../reference/query-language/query-library/auto-imported/logic.md)
+- [Parse functions](../reference/query-language/query-library/auto-imported/parse.md)
+- [Nulls](../reference/query-language/types/nulls.md)
+- [Strings](../reference/query-language/types/strings.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
+- [`new_table`](../reference/table-operations/create/newTable.md)
+- [`bool_col`](../reference/table-operations/create/boolCol.md)
 - [`update`](../reference/table-operations/select/update.md)
+- [`query_library` Pydoc](/core/pydoc/code/deephaven.query_library.html)

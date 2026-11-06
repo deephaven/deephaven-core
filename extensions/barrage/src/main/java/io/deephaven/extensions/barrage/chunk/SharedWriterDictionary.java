@@ -11,6 +11,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.chunk.writermap.DictionaryWriterValueMap;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 public final class SharedWriterDictionary {
 
     private final long dictId;
+    private final ChunkType valuesChunkType;
     private final DictionaryWriterValueMap map;
     /**
      * Incremented each time {@link #reset()} is called. {@link SharedDictionaryWriterState} instances detect a reset by
@@ -46,11 +48,19 @@ public final class SharedWriterDictionary {
 
     public SharedWriterDictionary(final long dictId, final ChunkType valuesChunkType) {
         this.dictId = dictId;
+        this.valuesChunkType = valuesChunkType;
         this.map = DictionaryWriterValueMap.make(valuesChunkType);
     }
 
     public long getDictId() {
         return dictId;
+    }
+
+    /** The chunk type of the dictionary's values. */
+    @InternalUseOnly
+    @NotNull
+    public ChunkType getValuesChunkType() {
+        return valuesChunkType;
     }
 
     /** Fills {@code out} with the index of each value, registering values as it meets them. */
@@ -76,8 +86,9 @@ public final class SharedWriterDictionary {
      * Builds and returns a typed chunk containing the values in {@code [fromOffset, toOffset)}. The returned chunk is
      * owned by the caller and must be closed when no longer needed.
      */
+    @InternalUseOnly
     @NotNull
-    synchronized WritableChunk<Values> buildDeltaChunk(final int fromOffset, final int toOffset) {
+    public synchronized WritableChunk<Values> buildDeltaChunk(final int fromOffset, final int toOffset) {
         return map.buildChunk(fromOffset, toOffset);
     }
 

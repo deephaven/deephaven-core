@@ -38,7 +38,7 @@ jobs:
       id-token: write
     steps:
       - name: Free Disk Space
-        uses: endersonmenezes/free-disk-space@2a22f8c59cae9cddae7194b33e6b92d023b2b4b8 # v4.0.0
+        uses: endersonmenezes/free-disk-space@8b8cd4e2277836962939a8f3b4ea0ee4bc006156 # v4.0.1
         with:
           remove_haskell: true
           remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
@@ -58,7 +58,7 @@ jobs:
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Setup gradle properties
         run: |
@@ -105,7 +105,7 @@ jobs:
       - name: Publish deephaven-core to PyPi
         id: publish-deephaven-core
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages_dir: py/server/build/wheel/
         continue-on-error: true
@@ -113,7 +113,7 @@ jobs:
       - name: Publish deephaven-server to PyPi
         id: publish-deephaven-server
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages_dir: py/embedded-server/build/wheel/
         continue-on-error: true
@@ -121,7 +121,7 @@ jobs:
       - name: Publish pydeephaven to PyPi
         id: publish-pydeephaven
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages_dir: py/client/build/wheel/
         continue-on-error: true
@@ -129,7 +129,7 @@ jobs:
       - name: Publish pydeephaven-ticking to PyPi
         id: publish-pydeephaven-ticking
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages_dir: py/client-ticking/build/wheel/
         continue-on-error: true

@@ -71,14 +71,17 @@ import java.util.stream.Stream;
  * MySum_INFO)</li>
  * <li>If {@code columnByColumns} > 1: Values for the original columns are separated by an underscore (ex. INFO_OTHER1,
  * WARN_OTHER2)</li>
- * <li>If Illegal Characters: Purge characters that are invalid for Deephaven column names. (ex. "1-2.3/4" becomes
- * "1234")</li>
- * <li>If Starts with Number: Add the prefix "column_" to the column name. (ex. column_123)</li>
+ * <li>If Reserved Word: Add the prefix "column_" to a name that is a Java keyword or a query language reserved name
+ * ({@code in}, {@code not}, {@code i}, {@code ii}, {@code k}). (ex. column_not)</li>
+ * <li>If Illegal Characters: Remove every character other than letters, digits, "_", and "$". (ex. "a-b.c" becomes
+ * "abc")</li>
+ * <li>If Starts with Number: After removing illegal characters, add the prefix "column_" to the column name. (ex.
+ * "1-2.3/4" becomes column_1234)</li>
  * <li>If Duplicate Column Name: Add a suffix to differentiate the columns. (ex. INFO, INFO2)</li>
  * </ul>
  *
  * Given the above contract, and to give you more control over the result, it may be necessary to sanitize data values
- * that may be used as column names before using {code keyedTranspose}. Otherwise, "12.34" could be translated to
+ * that may be used as column names before using {@code keyedTranspose}. Otherwise, "12.34" could be translated to
  * "column_1234" instead of a more meaningful column name.
  * </p>
  */

@@ -8,6 +8,8 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.*;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -133,6 +135,35 @@ public class TestTableTools {
 
         result = TableTools.merge(null, table2);
         tableRangesAreEqual(table2, result, 0, 0, table2.size());
+    }
+
+    @Test
+    public void testMergeSingleTable() {
+        assertSame(table1, TableTools.merge(table1));
+        assertSame(table1, TableTools.merge(null, table1, null));
+        assertSame(table1, TableTools.merge(List.of(table1)));
+
+        final Table staticTable = emptyTable(10).update("X=ii");
+        assertSame(staticTable, TableTools.merge(staticTable));
+
+        final LivenessScope creationScope = new LivenessScope();
+        final QueryTable refreshing;
+        try (final SafeCloseable ignored = LivenessScopeStack.open(creationScope, false)) {
+            refreshing = testRefreshingTable(i(2, 4).toTracking(), intCol("X", 1, 2));
+        }
+
+        final LivenessScope mergeScope = new LivenessScope();
+        try (final SafeCloseable ignored = LivenessScopeStack.open(mergeScope, false)) {
+            assertSame(refreshing, TableTools.merge(refreshing));
+        }
+
+        // the merge scope keeps the table alive after its creation scope is released
+        creationScope.release();
+        assertTrue(refreshing.tryRetainReference());
+        refreshing.dropReference();
+
+        mergeScope.release();
+        assertFalse(refreshing.tryRetainReference());
     }
 
     @Test

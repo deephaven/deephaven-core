@@ -27,20 +27,28 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
     private final ChunkType chunkType;
 
     private long tableSize;
+    /**
+     * The number of rows with a non-null value and weight in each destination, or null when the operator only receives
+     * additions; a null result then means that no such row has been added, and a NaN result never changes.
+     */
     private final LongArraySource normalCount;
     private LongArraySource nanCount;
+    /**
+     * The weighted sum of each destination, or null when the operator only receives additions and accumulates in the
+     * result instead.
+     */
     private final DoubleArraySource weightedSum;
     private final DoubleArraySource resultColumn;
 
     DoubleChunkedWeightedSumOperator(ChunkType chunkType, DoubleWeightRecordingInternalOperator weightOperator,
-            String name) {
+            boolean addOnly, String name) {
         this.chunkType = chunkType;
         this.weightOperator = weightOperator;
         this.resultName = name;
 
         tableSize = 0;
-        normalCount = new LongArraySource();
-        weightedSum = new DoubleArraySource();
+        normalCount = addOnly ? null : new LongArraySource();
+        weightedSum = addOnly ? null : new DoubleArraySource();
         resultColumn = new DoubleArraySource();
     }
 
@@ -175,6 +183,23 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
         final int newNormal = normalOut.get();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
+        if (normalCount == null) {
+            final double existingResult = resultColumn.getUnsafe(destination);
+            if (Double.isNaN(existingResult)) {
+                return false;
+            }
+            if (newNans > 0) {
+                resultColumn.set(destination, Double.NaN);
+                return true;
+            }
+            if (newNormal == 0) {
+                return false;
+            }
+            final double newResult = NullSafeAddition.plusDouble(existingResult, newWeightedSum);
+            resultColumn.set(destination, newResult);
+            return newResult != existingResult;
+        }
+
         final long totalNans;
         if (nanCount == null && newNans > 0) {
             totalNans = allocateNans(destination, newNans);
@@ -232,6 +257,7 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
 
     private boolean removeChunk(DoubleChunk<? extends Values> doubleValues, DoubleChunk<? extends Values> weightValues,
             int start, int length, long destination) {
+        requireCounts();
         final MutableInt nanOut = new MutableInt();
         final MutableInt normalOut = new MutableInt();
         final MutableDouble weightedSumOut = new MutableDouble();
@@ -294,6 +320,7 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
     private boolean modifyChunk(DoubleChunk<? extends Values> prevDoubleValues,
             DoubleChunk<? extends Values> prevWeightValues, DoubleChunk<? extends Values> newDoubleValues,
             DoubleChunk<? extends Values> newWeightValues, int start, int length, long destination) {
+        requireCounts();
         final MutableInt nanOut = new MutableInt();
         final MutableInt normalOut = new MutableInt();
         final MutableDouble weightedSumOut = new MutableDouble();
@@ -369,14 +396,23 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
         }
     }
 
+    private void requireCounts() {
+        if (normalCount == null) {
+            throw new UnsupportedOperationException(
+                    "Add-only weighted sum operators do not support removals or modifications");
+        }
+    }
+
     @Override
     public void ensureCapacity(long tableSize) {
         this.tableSize = tableSize;
         if (nanCount != null) {
             nanCount.ensureCapacity(tableSize);
         }
-        normalCount.ensureCapacity(tableSize);
-        weightedSum.ensureCapacity(tableSize);
+        if (normalCount != null) {
+            normalCount.ensureCapacity(tableSize);
+            weightedSum.ensureCapacity(tableSize);
+        }
         resultColumn.ensureCapacity(tableSize);
     }
 

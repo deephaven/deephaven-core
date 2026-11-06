@@ -1081,6 +1081,10 @@ public class TableTools {
             if (tablesToMerge == null || tablesToMerge.isEmpty()) {
                 throw new IllegalArgumentException("No non-null tables provided to merge");
             }
+            if (tablesToMerge.size() == 1) {
+                // A single table is its own merge; coalesce manages it with the enclosing scope when refreshing.
+                return tablesToMerge.get(0).coalesce();
+            }
             return PartitionedTableFactory.ofTables(tablesToMerge.toArray(ZERO_LENGTH_TABLE_ARRAY)).merge();
         });
     }

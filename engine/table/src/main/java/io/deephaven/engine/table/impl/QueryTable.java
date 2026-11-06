@@ -62,7 +62,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -211,9 +210,9 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForWhere", true);
 
     /**
-     * Before using a data index for a where filter, ensure that the index table size is at most this fraction of the
-     * size of the rows remaining to be filtered. If the fraction is greater than this threshold, then the engine will
-     * ignore the index table and filter the rows directly.
+     * Before using a data index for a where filter, ensure that the index table size is strictly less than this
+     * fraction of the size of the rows remaining to be filtered. If the fraction is at or above this threshold, then
+     * the engine will ignore the index table and filter the rows directly.
      * <p>
      * The default, {@code 1 / 16}, uses an index only when the rows to be filtered average more than 16 per index key:
      * below that, reading and merging a row set per key costs more than matching each row.
@@ -327,6 +326,13 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedColumn",
+                    false);
+
+    /**
+     * Disable probing an aggregation's hash table during push-down filtering of its single key column.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_AGGREGATION_KEY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownAggregationKey",
                     false);
 
     /**
@@ -1541,8 +1547,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(extractedFilters), () -> {
-                        try (final SafeCloseable ignored = Arrays.stream(extractedFilters)
-                                .map(filter -> filter.beginOperation(this)).collect(SafeCloseableList.COLLECTOR)) {
+                        try (final SafeCloseable ignored = WhereFilter.beginOperations(this, extractedFilters)) {
                             // Identify which data indexes we might use during this operation and create a map
                             // from filter to data index.
                             final Map<WhereFilter, DataIndex> filterDataIndexMap = USE_DATA_INDEX_FOR_WHERE
@@ -1584,12 +1589,24 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                         usePrev);
                                         final TrackingWritableRowSet currentMapping;
                                         initialFilterExecution.scheduleCompletion((adds, mods) -> {
-                                            currentMappingFuture.complete(adds.writableCast().toTracking());
+                                            final TrackingWritableRowSet mapping = adds.writableCast().toTracking();
+                                            if (!currentMappingFuture.complete(mapping)) {
+                                                // an interrupt cancelled the filter, and nothing will use the mapping
+                                                mapping.close();
+                                            }
                                         }, currentMappingFuture::completeExceptionally);
 
                                         try {
-                                            currentMapping = currentMappingFuture.get();
+                                            currentMapping = initialFilterExecution.jobScheduler()
+                                                    .awaitCompletion(currentMappingFuture);
                                         } catch (ExecutionException | InterruptedException e) {
+                                            if (e instanceof InterruptedException
+                                                    && !currentMappingFuture.cancel(false)
+                                                    && !currentMappingFuture.isCompletedExceptionally()) {
+                                                // the filter finished before the interrupt, which abandons its mapping;
+                                                // a filter still running finds the future cancelled, and closes its own
+                                                currentMappingFuture.join().close();
+                                            }
                                             final Throwable cause = (e instanceof InterruptedException)
                                                     ? new CancellationException("interrupted while filtering")
                                                     : e.getCause();
@@ -1804,7 +1821,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                     checkInitiateOperation();
                     final SelectAndViewAnalyzer.Mode mode;
                     if (isRefreshing()) {
-                        if (!isFlat() && ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
+                        if (!isFlat() && isAppendOnly()) {
+                            // rows of an append-only table never change position, so the result is stored densely
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_POSITIONAL;
+                        } else if (!isFlat() && ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
                                 || (flavor == Flavor.Select && USE_REDIRECTED_COLUMNS_FOR_SELECT))) {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_REFRESHING;
                         } else {
@@ -1812,7 +1832,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                     } else {
                         if (flavor == Flavor.Update && exceedsMaximumStaticSelectOverhead()) {
-                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_STATIC;
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_POSITIONAL;
                         } else {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_STATIC;
                         }
@@ -1845,8 +1865,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                     try (final SafeCloseable ignored1 = liveResultCapture != null ? liveResultCapture::release : null) {
                         try (final RowSet emptyRowSet = RowSetFactory.empty();
                                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                                        new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
+                                        new SelectAndViewAnalyzer.UpdateHelper(rowSet, fakeUpdate)) {
 
+                            // rethrown once the wait below has finished the jobs the analyzer submitted before it
+                            // threw
+                            Error applyError = null;
                             try {
                                 try {
                                     analyzer.applyUpdate(
@@ -1855,12 +1878,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                                             waitForResult::completeExceptionally);
                                 } catch (Exception e) {
                                     waitForResult.completeExceptionally(e);
+                                } catch (Error e) {
+                                    applyError = e;
+                                    waitForResult.completeExceptionally(e);
                                 }
 
-                                waitForResult.get();
+                                jobScheduler.awaitCompletion(waitForResult);
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
                             } catch (ExecutionException e) {
+                                if (applyError != null) {
+                                    throw applyError;
+                                }
                                 throw new TableInitializationException(updateDescription,
                                         "an exception occurred while performing the initial select or update",
                                         e.getCause());
@@ -1874,13 +1903,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                             }
                         }
 
-                        final TrackingRowSet resultRowSet = analyzer.flatResult() && !rowSet.isFlat()
-                                ? analyzerContext.getFlatResultRowSet()
-                                : rowSet;
+                        // a refreshing flat result grows its own row set, as the parent's may not stay contiguous
+                        final TrackingRowSet resultRowSet =
+                                analyzer.flatResult() && (isRefreshing() || !rowSet.isFlat())
+                                        ? analyzerContext.getFlatResultRowSet()
+                                        : rowSet;
                         final Map<String, ColumnSource<?>> newMap = analyzerContext.getPublishedColumnSources();
                         final TableDefinition resultDef = TableDefinition.inferFrom(this, newMap);
                         resultTable = new QueryTable(resultDef, resultRowSet, newMap);
                         if (liveResultCapture != null) {
+                            if (analyzer.flatResult()) {
+                                resultTable.setFlat();
+                            }
                             analyzer.startTrackingPrev();
                             final Map<String, String[]> effects = analyzerContext.calcEffects();
                             final SelectOrUpdateListener soul = new SelectOrUpdateListener(
@@ -1936,11 +1970,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         final Set<ColumnSource<?>> usedOutputColumns = new HashSet<>();
 
-        // Maintain a list of unique old to new mappings.
-        // NOTE: this is complex because select() may return multiple aliases for the same source column. Until/unless
-        // we have a guarantee that only a single alias is created, we must create a new data index for each alias and
-        // this requires generating all unique mappings for these columns.
-        final List<Map<ColumnSource<?>, ColumnSource<?>>> oldToNewMaps = new ArrayList<>();
+        // Map each indexed source to every result source that copies the indexed source.
+        // NOTE: select() may return multiple aliases for the same source column. Until/unless select() guarantees that
+        // only a single alias is created, each alias needs a new data index.
+        final Map<ColumnSource<?>, List<ColumnSource<?>>> oldToNewSources = new IdentityHashMap<>();
 
         for (SelectColumn selectColumn : selectColumns) {
             if (selectColumn instanceof SwitchColumn) {
@@ -1969,49 +2002,44 @@ public class QueryTable extends BaseTable<QueryTable> {
                 continue;
             }
 
-            if (oldToNewMaps.isEmpty()) {
-                oldToNewMaps.add(new HashMap<>());
-            }
-
-            // Map original source to the new source.
-            final Map<ColumnSource<?>, ColumnSource<?>> firstMap = oldToNewMaps.get(0);
-            if (firstMap.containsKey(originalSource)) {
-                // We have a collision, which means our mapping won't be unique. We need to clone
-                // conflicting mappings with a new map containing our updated target.
-                final ColumnSource<?> previousResultSource = firstMap.get(originalSource);
-                final List<Map<ColumnSource<?>, ColumnSource<?>>> newMaps = new ArrayList<>();
-                oldToNewMaps.stream()
-                        .filter(map -> map.get(originalSource) == previousResultSource)
-                        .forEach(map -> {
-                            final Map<ColumnSource<?>, ColumnSource<?>> newMap = new HashMap<>(map);
-                            newMap.put(originalSource, resultSource);
-                            newMaps.add(newMap);
-                        });
-                oldToNewMaps.addAll(newMaps);
-            } else {
-                oldToNewMaps.forEach(map -> map.put(originalSource, resultSource));
-            }
+            oldToNewSources.computeIfAbsent(originalSource, k -> new ArrayList<>()).add(resultSource);
         }
 
-        if (oldToNewMaps.isEmpty()) {
+        if (oldToNewSources.isEmpty()) {
             return;
         }
 
         // Add new DataIndex entries to the DataIndexer with the remapped column sources.
         for (final DataIndex dataIndex : dataIndexes) {
-            // Create a new data index for each unique mapping.
-            oldToNewMaps.forEach(map -> {
-                if (Collections.disjoint(dataIndex.keyColumnNamesByIndexedColumn().keySet(), map.keySet())) {
-                    // The index contains no remapped original sources, no work needed.
-                    return;
+            // Make one old to new mapping per combination of result sources for this index's own key columns. A
+            // mapping that also covered other columns would make the same remapped index more than once whenever those
+            // columns have several aliases, since a remapped index ignores the mappings for every other column.
+            List<Map<ColumnSource<?>, ColumnSource<?>>> oldToNewMaps = List.of(Map.of());
+            for (final ColumnSource<?> keySource : dataIndex.keyColumnNamesByIndexedColumn().keySet()) {
+                final List<ColumnSource<?>> newSources = oldToNewSources.get(keySource);
+                if (newSources == null) {
+                    // This key column was not remapped, so the remapped index keeps the original source.
+                    continue;
                 }
+                final List<Map<ColumnSource<?>, ColumnSource<?>>> expandedMaps =
+                        new ArrayList<>(oldToNewMaps.size() * newSources.size());
+                for (final Map<ColumnSource<?>, ColumnSource<?>> map : oldToNewMaps) {
+                    for (final ColumnSource<?> newSource : newSources) {
+                        final Map<ColumnSource<?>, ColumnSource<?>> expandedMap = new IdentityHashMap<>(map);
+                        expandedMap.put(keySource, newSource);
+                        expandedMaps.add(expandedMap);
+                    }
+                }
+                oldToNewMaps = expandedMaps;
+            }
 
-                // Create a new DataIndex using the new column sources as keys.
-                final DataIndex remappedIndex = dataIndex.remapKeyColumns(map);
+            if (oldToNewMaps.get(0).isEmpty()) {
+                // The index contains no remapped original sources, no work needed.
+                continue;
+            }
 
-                // Add the new index to the DataIndexer.
-                dataIndexer.addDataIndex(remappedIndex);
-            });
+            // Create a new data index for each unique mapping, using the new column sources as keys.
+            oldToNewMaps.forEach(map -> dataIndexer.addDataIndex(dataIndex.remapKeyColumns(map)));
         }
     }
 
@@ -3397,7 +3425,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         final MemoizedResult<R> cachedResult = getMemoizedResult(memoKey, ensureCachedOperations());
-        return cachedResult.getOrCompute(operation);
+        return cachedResult.getOrCompute(operation, !currentThreadMustNotWaitForOtherThreads());
     }
 
     private Map<MemoizedOperationKey, MemoizedResult<?>> ensureCachedOperations() {

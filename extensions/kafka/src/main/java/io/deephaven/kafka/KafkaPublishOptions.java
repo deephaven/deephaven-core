@@ -121,8 +121,7 @@ public abstract class KafkaPublishOptions {
      * The partition column. When set, uses the the given {@code int} column from {@link #table()} as the first source
      * for setting the Kafka record partition. When not present, or if the column value is null, {@link #partition()}
      * will be used if present. If a valid partition number is specified, that partition will be used when sending the
-     * record. Otherwise, Kafka will choose a partition using a hash of the key if the key is present, or will assign a
-     * partition in a round-robin fashion if the key is not present.
+     * record. Otherwise, the Kafka producer's default partitioner chooses the partition.
      *
      * @return the partition column name
      */

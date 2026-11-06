@@ -19,7 +19,7 @@ def read_sql(
         conn (Any): must either be a connection string for the given driver or a Turbodbc/ADBC DBAPI Connection
             object; when it is a Connection object, the driver argument will be ignored.
         query (str): SQL query statement
-        driver: (str): the driver to use, supported drivers are "odbc", "adbc", "connectorx", default is "connectorx"
+        driver (str): the driver to use, supported drivers are "odbc", "adbc", "connectorx", default is "connectorx"
 
     Returns:
         a new Table
@@ -48,10 +48,12 @@ def read_sql(
 
             from deephaven.dbc.odbc import read_cursor
 
-            with turbodbc.connect(connection_string=conn) as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(query)
-                    return read_cursor(cursor)
+            with (
+                turbodbc.connect(connection_string=conn) as conn,
+                conn.cursor() as cursor,
+            ):
+                cursor.execute(query)
+                return read_cursor(cursor)
         elif driver == "adbc":
             from deephaven.dbc.adbc import read_cursor
 
@@ -62,10 +64,9 @@ def read_sql(
             else:
                 raise DHError(message=f"unsupported ADBC connection string {conn}")
 
-            with dbapi.connect(conn) as dbconn:
-                with dbconn.cursor() as cursor:
-                    cursor.execute(query)
-                    return read_cursor(cursor)
+            with dbapi.connect(conn) as dbconn, dbconn.cursor() as cursor:
+                cursor.execute(query)
+                return read_cursor(cursor)
         else:
             raise DHError(message=f"unsupported driver {driver}")
     else:

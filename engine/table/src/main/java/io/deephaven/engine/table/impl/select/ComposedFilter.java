@@ -11,7 +11,6 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 
@@ -82,9 +81,7 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
 
     @Override
     public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
-        return Arrays.stream(componentFilters)
-                .map((final WhereFilter whereFilter) -> whereFilter.beginOperation(sourceTable))
-                .collect(SafeCloseableList.COLLECTOR);
+        return WhereFilter.beginOperations(sourceTable, componentFilters);
     }
 
     @Override

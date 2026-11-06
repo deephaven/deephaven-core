@@ -20,7 +20,7 @@ import io.deephaven.engine.table.ColumnSource;
 
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
-import static io.deephaven.engine.testutil.TstUtils.prevTable;
+import static io.deephaven.engine.testutil.TstUtils.prevTableCopy;
 
 import io.deephaven.chunk.attributes.Values;
 
@@ -221,9 +221,9 @@ public class TestRedirectedColumnSource {
         System.out.println("C:");
         showWithRowSet(c);
         System.out.println("prev(C):");
-        showWithRowSet(prevTable(c));
+        showWithRowSet(prevTableCopy(c));
 
-        assertTableEquals(captured, prevTable(c));
+        assertTableEquals(captured, prevTableCopy(c));
 
         // checks unchunked
         byteList.clear();

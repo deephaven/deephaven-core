@@ -4,7 +4,7 @@ title: Keyed row selection
 
 This guide shows you how to control what happens when a user selects a row in the Deephaven UI: whether the selection covers just that one row, or every row that shares its key. You control this by marking key columns on the table.
 
-By default, a table carries no metadata that says which columns identify a row, so the UI can't tell when two rows represent the same real-world entity. Marking one or more columns as _key columns_ closes that gap. The UI then tracks a selection by key value, so on a ticking table the selection stays with its rows even as updates move them to new positions in the grid. Key columns are metadata only: setting them doesn't change any data in the table.
+By default, a table carries no metadata that says which columns identify a row, so the UI can't tell when two rows represent the same real-world entity. Without key columns, the UI tracks a selection by row position. When the table ticks and its rows shift, for example when new rows arrive at the top of a sorted table, the selection stays at the same positions and covers different rows. Marking one or more columns as _key columns_ closes that gap. The UI then tracks a selection by key value, so on a ticking table the selection stays with its rows even as updates move them to new positions in the grid. Key columns are metadata only: setting them doesn't change any data in the table.
 
 ## Select every row with a matching key
 
