@@ -7,9 +7,10 @@ import inspect
 import re
 import types
 import unittest
-from typing import Any, TypeVar
+from typing import Any, Optional, TypeVar, Union
 
-from pydeephaven._table_interface import T, TableInterface, _bind_t, _fill_doc
+from pydeephaven._doc_template import T, bind_t, fill_doc, to_pipe_union
+from pydeephaven._table_interface import TableInterface
 from pydeephaven._table_ops import TableOp
 from pydeephaven.query import Query
 from pydeephaven.table import InputTable, Table
@@ -69,6 +70,25 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
                     for param in sig.parameters.values():
                         self.assertNotIsInstance(param.annotation, str)
 
+    def test_signatures_use_pipe_unions(self) -> None:
+        for cls in (Table, Query):
+            for name in OP_NAMES:
+                with self.subTest(cls=cls.__name__, op=name):
+                    sig = str(inspect.signature(vars(cls)[name]))
+                    self.assertNotIn("Union[", sig)
+                    self.assertNotIn("Optional[", sig)
+
+    def test_to_pipe_union(self) -> None:
+        self.assertEqual(int | None, to_pipe_union(Optional[int]))  # noqa: UP045
+        self.assertEqual(
+            str | list[str] | None,
+            to_pipe_union(Union[str, Union[list[str], None]]),  # noqa: UP007
+        )
+        self.assertIs(int, to_pipe_union(int))
+        # An unbound TypeVar cannot be joined with |, so the union stays as it is.
+        R = TypeVar("R")
+        self.assertEqual(Union[int, R], to_pipe_union(Union[int, R]))  # noqa: UP007
+
     def test_raises_placeholder(self) -> None:
         for cls in (Table, Query):
             raises = cls._doc_vars.get("raises", "")
@@ -100,16 +120,16 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
         template = "Summary.\n\n    Returns:\n        {returns}\n\n    {raises}\n    "
         self.assertEqual(
             "Summary.\n\n    Returns:\n        x\n\n    Raises:\n        E\n    ",
-            _fill_doc(template, {"returns": "x", "raises": "Raises:\n    E"}),
+            fill_doc(template, {"returns": "x", "raises": "Raises:\n    E"}),
         )
         self.assertEqual(
             "Intro.\n\n    Summary.\n\n    Returns:\n        x\n    ",
-            _fill_doc(template, {"returns": "x", "intro": "Intro."}),
+            fill_doc(template, {"returns": "x", "raises": "", "intro": "Intro."}),
         )
         # A one-line docstring has no indent to copy.
         self.assertEqual(
             "Intro.\n\nReturns x.",
-            _fill_doc("Returns {returns}.", {"returns": "x", "intro": "Intro."}),
+            fill_doc("Returns {returns}.", {"returns": "x", "intro": "Intro."}),
         )
 
     def test_doc_vars_without_returns(self) -> None:
@@ -190,7 +210,7 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
             self.assertEqual(dict[R, Bound], hints["extra"])
             self.assertIs(bool, hints["return"])
             # On Table, Table | T collapses to Table.
-            self.assertIs(Table, _bind_t(Table | T, Table))
+            self.assertIs(Table, bind_t(Table | T, Table))
         finally:
             TableInterface.head = original
 
