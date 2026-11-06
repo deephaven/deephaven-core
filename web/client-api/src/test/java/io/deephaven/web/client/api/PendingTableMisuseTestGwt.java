@@ -387,7 +387,8 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         // await a; await b; - b was not awaited in the task that created it
         runForEachKind(15_007, (kind, make) -> {
             if (kind.equals("view")) {
-                // A view's table is already there, so the first await does not leave the task and the second is fine
+                // A view whose table is already there does not leave the task on the first await, so the second is in
+                // time; one whose table is still changing would. Which one happens is timing, so neither is asserted.
                 return Promise.resolve((Object) null);
             }
             JsPendingTable<?> first = made(make);

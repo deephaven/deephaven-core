@@ -32,7 +32,9 @@ import jsinterop.annotations.JsMethod;
  * chained on it, or the {@code await}, is rejected, and a warning names where the pending table was created; a use the
  * client cannot yet tell is in a later task behaves as it would by timing alone. In particular, awaiting two pending
  * tables one after the other, {@code await a; await b;}, rejects {@code b}: await both at once with
- * {@code Promise.all([a, b])}, or each as it is created. This holds for a fetch as much as for an operation.
+ * {@code Promise.all([a, b])}, or each as it is created. This holds for a fetch as much as for an operation. A
+ * {@link JsTable#operations()} is often ready at once, so awaiting it may not leave the task and a second await can
+ * happen to work; do not rely on that, since a change still being applied to the table makes it wait like any other.
  *
  * @param <T> the table awaiting this gives. In TypeScript it defaults to {@code ResolvedTable}, what every operation
  *        produces. A fetched table resolves to a {@code Table} instead: narrow what {@code getObject} returns with a
