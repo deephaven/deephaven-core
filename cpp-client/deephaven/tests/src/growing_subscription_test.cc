@@ -358,4 +358,79 @@ growing_modifies_{1} = (empty_table({0}).update(["K = ii"] + _cols)
     return {};
   }) == "");
 }
+
+// A table whose rows are being removed from the top of its key space while the snapshot is
+// delivering it from the bottom. A full subscription receives the server's entire removed set, so
+// a delta between rounds names rows this client has not been given yet. Those used to be converted
+// strictly and throw out of SpaceMapper.
+TEST_CASE("Growing subscription: table losing undelivered rows is fully delivered", "[growing]") {
+  // The delta removes a few rows from the bottom of the key space, which the first round has
+  // delivered, along with many from the top, which the snapshot has not reached. The former make
+  // the delta visible to the client.
+  constexpr int64_t kRemovedFromBottom = 10;
+  constexpr int64_t kRemovedFromTop = 1'000;
+  auto run = RunId();
+  auto script = std::string(kExpensive) + fmt::format(R"xxx(
+# The keys of the rows removed once the snapshot is under way; empty until then.
+blacklist_{1} = input_table(init_table=empty_table(0).update(["K = ii"]))
+_cols = ["C%d = ii * %d" % (i, i + 1) for i in range(30)]
+growing_removes_{1} = (empty_table({0}).update(["K = ii"] + _cols)
+    .update_view(["Slow = (long) expensive(K)"])
+    .where_not_in(blacklist_{1}, "K"))
+)xxx", kBaseRows, run);
+  auto delta = fmt::format(R"xxx(
+blacklist_{2}.add(merge([empty_table({0}).update(["K = ii"]),
+    empty_table({1}).update(["K = {3} + ii"])]))
+)xxx", kRemovedFromBottom, kRemovedFromTop, run, kBaseRows - kRemovedFromTop);
+  auto delivery = SubscribeUntil(script, fmt::format("growing_removes_{}", run), delta,
+      [](const ClientTable &t) {
+        return t.NumRows() == static_cast<size_t>(kBaseRows - kRemovedFromBottom - kRemovedFromTop);
+      });
+
+  // The delta is the one update that removes rows. It must have erased only the rows from the
+  // bottom, and it must have arrived while the client held fewer rows than the first key removed
+  // from the top, so that none of the rows removed from the top was held and the removes naming
+  // them had to be skipped.
+  std::vector<Reported> removes;
+  for (const auto &reported : delivery.since_delta) {
+    if (reported.removed != 0) {
+      removes.push_back(reported);
+    }
+  }
+  {
+    INFO("exactly one update should have removed rows");
+    REQUIRE(removes.size() == 1);
+  }
+  CHECK(removes[0].removed == static_cast<size_t>(kRemovedFromBottom));
+  {
+    INFO("the delta should have arrived before the snapshot reached the rows removed from the top");
+    CHECK(removes[0].rows_before <= static_cast<size_t>(kBaseRows - kRemovedFromTop));
+  }
+
+  // Columns are K, C0..C29, Slow. What survives is the keys between the two removed ranges, in
+  // order.
+  const auto &table = *delivery.table;
+  std::vector<std::vector<int64_t>> columns;
+  for (size_t c = 0; c != 32; ++c) {
+    columns.push_back(Longs(table, c));
+  }
+  const auto &keys = columns[0];
+  const auto &slow = columns[31];
+  CHECK(FirstBadRow(keys.size(), [&](size_t i) -> std::optional<std::string> {
+    auto expected_key = kRemovedFromBottom + static_cast<int64_t>(i);
+    if (keys[i] != expected_key) {
+      return fmt::format("K is {}, expected {}", keys[i], expected_key);
+    }
+    for (size_t c = 0; c != 30; ++c) {
+      auto expected = keys[i] * static_cast<int64_t>(c + 1);
+      if (columns[c + 1][i] != expected) {
+        return fmt::format("C{} is {}, expected {}", c, columns[c + 1][i], expected);
+      }
+    }
+    if (slow[i] != keys[i] * 3) {
+      return fmt::format("Slow is {}, expected {}", slow[i], keys[i] * 3);
+    }
+    return {};
+  }) == "");
+}
 }  // namespace deephaven::client::tests
