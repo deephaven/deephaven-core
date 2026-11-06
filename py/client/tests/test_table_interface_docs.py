@@ -22,6 +22,14 @@ OP_NAMES: list[str] = [
     and name != "table_op_handler"
 ]
 
+# The ops that return T follow the Returns template. An op that returns something else, such as None, writes its
+# own Returns section or none, and only has to fill cleanly. The base hints are strings, from the __future__ import.
+T_OP_NAMES: list[str] = [
+    name
+    for name in OP_NAMES
+    if vars(TableInterface)[name].__annotations__.get("return") == "T"
+]
+
 # A leftover placeholder, such as {returns}. It does not match the {...} of a dict or set literal in an example,
 # because those hold quotes, colons or spaces.
 PLACEHOLDER = re.compile(r"\{[a-z_]+\}")
@@ -29,12 +37,13 @@ PLACEHOLDER = re.compile(r"\{[a-z_]+\}")
 
 class TableInterfaceDocsTestCase(unittest.TestCase):
     def test_base_docstrings_use_the_template(self) -> None:
-        for name in OP_NAMES:
+        for name in T_OP_NAMES:
             with self.subTest(op=name):
                 self.assertIn(
                     "{returns}",
                     vars(TableInterface)[name].__doc__ or "",
-                    "a TableInterface op's docstring needs a {returns} placeholder, filled per class from _doc_vars",
+                    "a TableInterface op that returns T needs a {returns} placeholder, filled per class from "
+                    "_doc_vars",
                 )
 
     def test_ops_are_filled_per_class(self) -> None:
@@ -44,7 +53,8 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
                     op = vars(cls)[name]
                     doc = inspect.getdoc(op) or ""
                     self.assertIsNone(PLACEHOLDER.search(doc))
-                    self.assertIn(f"Returns:\n    {cls._doc_vars['returns']}", doc)
+                    if name in T_OP_NAMES:
+                        self.assertIn(f"Returns:\n    {cls._doc_vars['returns']}", doc)
                     self.assertNotIn("\n\n\n", doc)
                     self.assertEqual(f"{cls.__name__}.{name}", op.__qualname__)
 
@@ -53,7 +63,9 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
             for name in OP_NAMES:
                 with self.subTest(cls=cls.__name__, op=name):
                     sig = inspect.signature(vars(cls)[name])
-                    self.assertIs(cls, sig.return_annotation)
+                    self.assertNotIsInstance(sig.return_annotation, str)
+                    if name in T_OP_NAMES:
+                        self.assertIs(cls, sig.return_annotation)
                     for param in sig.parameters.values():
                         self.assertNotIsInstance(param.annotation, str)
 
@@ -78,7 +90,8 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
                 self.assertTrue(doc.startswith(f"{intro}\n\n"))
                 # The base docstring's first line must land at the same indent as its other lines. If it does not,
                 # getdoc strips no indent and the section headers stay indented.
-                self.assertIn("\nReturns:\n", doc)
+                if name in T_OP_NAMES:
+                    self.assertIn("\nReturns:\n", doc)
                 self.assertFalse(
                     (inspect.getdoc(vars(Table)[name]) or "").startswith(intro)
                 )
@@ -125,6 +138,32 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
                     def table_op_handler(self, table_op: TableOp) -> "Decorated":
                         return self
 
+        finally:
+            TableInterface.head = original
+
+    def test_op_without_t_return(self) -> None:
+        original = TableInterface.head
+
+        def op(self: Any) -> None:
+            """Does a thing.
+
+            {raises}
+            """
+
+        TableInterface.head = op  # type: ignore[assignment]
+        try:
+
+            class NoneOp(TableInterface["NoneOp"]):
+                _doc_vars = {"returns": "self", "intro": "Intro."}
+
+                def table_op_handler(self, table_op: TableOp) -> "NoneOp":
+                    return self
+
+            # getdoc keeps a summary-only docstring's last indent line, so compare without trailing whitespace.
+            self.assertEqual(
+                "Intro.\n\nDoes a thing.", (inspect.getdoc(NoneOp.head) or "").rstrip()
+            )
+            self.assertIs(None, inspect.signature(NoneOp.head).return_annotation)
         finally:
             TableInterface.head = original
 

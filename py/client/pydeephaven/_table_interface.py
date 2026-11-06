@@ -160,7 +160,10 @@ def _copy_op(func: types.FunctionType, cls: type, doc: str) -> types.FunctionTyp
             cls.__name__: cls,
         },
     )
-    op.__annotations__ = {k: _bind_t(v, cls) for k, v in hints.items()}
+    # get_type_hints turns a None hint into NoneType, which help() would show as "-> NoneType".
+    op.__annotations__ = {
+        k: None if v is type(None) else _bind_t(v, cls) for k, v in hints.items()
+    }
     op.__qualname__ = f"{cls.__qualname__}.{func.__name__}"
     op.__module__ = cls.__module__
     op.__doc__ = doc
