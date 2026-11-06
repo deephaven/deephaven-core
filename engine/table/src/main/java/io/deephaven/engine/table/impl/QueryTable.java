@@ -1973,7 +1973,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         // Map each indexed source to every result source that copies the indexed source.
         // NOTE: select() may return multiple aliases for the same source column. Until/unless select() guarantees that
         // only a single alias is created, each alias needs a new data index.
-        final Map<ColumnSource<?>, List<ColumnSource<?>>> oldToNewSources = new HashMap<>();
+        final Map<ColumnSource<?>, List<ColumnSource<?>>> oldToNewSources = new IdentityHashMap<>();
 
         for (SelectColumn selectColumn : selectColumns) {
             if (selectColumn instanceof SwitchColumn) {
@@ -2025,7 +2025,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         new ArrayList<>(oldToNewMaps.size() * newSources.size());
                 for (final Map<ColumnSource<?>, ColumnSource<?>> map : oldToNewMaps) {
                     for (final ColumnSource<?> newSource : newSources) {
-                        final Map<ColumnSource<?>, ColumnSource<?>> expandedMap = new HashMap<>(map);
+                        final Map<ColumnSource<?>, ColumnSource<?>> expandedMap = new IdentityHashMap<>(map);
                         expandedMap.put(keySource, newSource);
                         expandedMaps.add(expandedMap);
                     }

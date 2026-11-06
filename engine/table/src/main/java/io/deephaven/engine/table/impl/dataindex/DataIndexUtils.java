@@ -188,8 +188,7 @@ public class DataIndexUtils {
             return indexTable;
         }
         final QueryTable source = (QueryTable) indexTable.coalesce();
-        // Creating a new table skips the overhead of a table operation, and the new table can hold one key column
-        // under several filter names, which renameColumns cannot.
+        // Creating a new table lets one key column appear under several filter names, which renameColumns cannot do.
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>(filterColumns.size() + 1);
         for (final String filterColumn : filterColumns) {
             columns.put(filterColumn, source.getColumnSource(renameMap.getOrDefault(filterColumn, filterColumn)));
