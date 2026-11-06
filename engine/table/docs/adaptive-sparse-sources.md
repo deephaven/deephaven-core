@@ -102,7 +102,7 @@ new level, which the writer publishes in place of the old one in its parent or i
 concurrent reader, such as a snapshot reading a row that this cycle has not changed, loads each level once and reads its
 window or positions and its arrays together, so it never pairs new positions with old arrays. A writer, in turn, uses
 the level that its last change returned (`setBlock`, `setCompact`), or reads the page table again after
-`prepareCompactLeaf`, which may have changed it.
+`makeRoomInLeaf`, which may have changed it.
 
 A serial `fillFromChunk` reserves the positions of every leaf of the chunk before writing, the leaves of each `Level2`
 together (`reserveLeaves`, `Level2.reserve`). A level then grows once per chunk rather than once per new leaf: indices

@@ -1203,7 +1203,7 @@ public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<In
      *
      * @return the compact leaf to write, or null if the leaf is now a full block
      */
-    private IntCompactLeaf prepareCompactLeaf(
+    private IntCompactLeaf makeRoomInLeaf(
             final long key,
             final Level2 level2,
             final IntCompactLeaf compact,
@@ -1452,8 +1452,8 @@ public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<In
     }
 
     /**
-     * @return whether individual writes must record previous values: the source tracks previous values, and
-     *         preparation for parallel population has not already recorded them for the leaves of this cycle
+     * @return whether individual writes must record previous values: the source tracks previous values, and preparation
+     *         for parallel population has not already recorded them for the leaves of this cycle
      */
     private boolean shouldTrackPrevious() {
         return prevFlusher != null && !(preparedLeaves && prepareClockStep == updateGraph.clock().currentStep());
@@ -1652,7 +1652,7 @@ public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<In
         if (level2.getBlock(block2) == null) {
             final IntCompactLeaf compact = level2.getCompact(block2);
             final int absent = compact == null ? count : compact.countAbsent(offsets, count);
-            final IntCompactLeaf prepared = prepareCompactLeaf(firstKey, level2, compact, absent);
+            final IntCompactLeaf prepared = makeRoomInLeaf(firstKey, level2, compact, absent);
             if (prepared != null) {
                 prepared.insertAbsent(offsets, count);
             }
@@ -2050,7 +2050,7 @@ public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<In
             compact.put(offset, value);
             return level2;
         }
-        compact = prepareCompactLeaf(key, level2, compact, 1);
+        compact = makeRoomInLeaf(key, level2, compact, 1);
         final Level2 current = getLevel2(key);
         if (compact == null) {
             current.getBlock(block2)[offset] = value;
@@ -2508,7 +2508,7 @@ public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<In
             }
             if (block == null) {
                 final int absent = existing == null ? count : existing.countAbsent(offsets, count);
-                final IntCompactLeaf compact = prepareCompactLeaf(firstKey, level2, existing, absent);
+                final IntCompactLeaf compact = makeRoomInLeaf(firstKey, level2, existing, absent);
                 if (compact != null) {
                     compact.putSorted(offsets, values, srcOffset, count);
                     srcOffset += count;

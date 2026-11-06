@@ -1199,7 +1199,7 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
      *
      * @return the compact leaf to write, or null if the leaf is now a full block
      */
-    private CharCompactLeaf prepareCompactLeaf(
+    private CharCompactLeaf makeRoomInLeaf(
             final long key,
             final Level2 level2,
             final CharCompactLeaf compact,
@@ -1648,7 +1648,7 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
         if (level2.getBlock(block2) == null) {
             final CharCompactLeaf compact = level2.getCompact(block2);
             final int absent = compact == null ? count : compact.countAbsent(offsets, count);
-            final CharCompactLeaf prepared = prepareCompactLeaf(firstKey, level2, compact, absent);
+            final CharCompactLeaf prepared = makeRoomInLeaf(firstKey, level2, compact, absent);
             if (prepared != null) {
                 prepared.insertAbsent(offsets, count);
             }
@@ -2046,7 +2046,7 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
             compact.put(offset, value);
             return level2;
         }
-        compact = prepareCompactLeaf(key, level2, compact, 1);
+        compact = makeRoomInLeaf(key, level2, compact, 1);
         final Level2 current = getLevel2(key);
         if (compact == null) {
             current.getBlock(block2)[offset] = value;
@@ -2504,7 +2504,7 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
             }
             if (block == null) {
                 final int absent = existing == null ? count : existing.countAbsent(offsets, count);
-                final CharCompactLeaf compact = prepareCompactLeaf(firstKey, level2, existing, absent);
+                final CharCompactLeaf compact = makeRoomInLeaf(firstKey, level2, existing, absent);
                 if (compact != null) {
                     compact.putSorted(offsets, values, srcOffset, count);
                     srcOffset += count;

@@ -1205,7 +1205,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
      *
      * @return the compact leaf to write, or null if the leaf is now a full block
      */
-    private ByteCompactLeaf prepareCompactLeaf(
+    private ByteCompactLeaf makeRoomInLeaf(
             final long key,
             final Level2 level2,
             final ByteCompactLeaf compact,
@@ -1454,8 +1454,8 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
     }
 
     /**
-     * @return whether individual writes must record previous values: the source tracks previous values, and
-     *         preparation for parallel population has not already recorded them for the leaves of this cycle
+     * @return whether individual writes must record previous values: the source tracks previous values, and preparation
+     *         for parallel population has not already recorded them for the leaves of this cycle
      */
     private boolean shouldTrackPrevious() {
         return prevFlusher != null && !(preparedLeaves && prepareClockStep == updateGraph.clock().currentStep());
@@ -1654,7 +1654,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
         if (level2.getBlock(block2) == null) {
             final ByteCompactLeaf compact = level2.getCompact(block2);
             final int absent = compact == null ? count : compact.countAbsent(offsets, count);
-            final ByteCompactLeaf prepared = prepareCompactLeaf(firstKey, level2, compact, absent);
+            final ByteCompactLeaf prepared = makeRoomInLeaf(firstKey, level2, compact, absent);
             if (prepared != null) {
                 prepared.insertAbsent(offsets, count);
             }
@@ -2052,7 +2052,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             compact.put(offset, value);
             return level2;
         }
-        compact = prepareCompactLeaf(key, level2, compact, 1);
+        compact = makeRoomInLeaf(key, level2, compact, 1);
         final Level2 current = getLevel2(key);
         if (compact == null) {
             current.getBlock(block2)[offset] = value;
@@ -2510,7 +2510,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             }
             if (block == null) {
                 final int absent = existing == null ? count : existing.countAbsent(offsets, count);
-                final ByteCompactLeaf compact = prepareCompactLeaf(firstKey, level2, existing, absent);
+                final ByteCompactLeaf compact = makeRoomInLeaf(firstKey, level2, existing, absent);
                 if (compact != null) {
                     compact.putSorted(offsets, values, srcOffset, count);
                     srcOffset += count;
