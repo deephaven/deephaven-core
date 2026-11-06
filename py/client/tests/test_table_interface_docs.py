@@ -2,12 +2,14 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
+import functools
 import inspect
 import re
 import types
 import unittest
+from typing import Any, TypeVar
 
-from pydeephaven._table_interface import TableInterface
+from pydeephaven._table_interface import T, TableInterface, _bind_t
 from pydeephaven._table_ops import TableOp
 from pydeephaven.query import Query
 from pydeephaven.table import InputTable, Table
@@ -42,7 +44,7 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
                     op = vars(cls)[name]
                     doc = inspect.getdoc(op) or ""
                     self.assertIsNone(PLACEHOLDER.search(doc))
-                    self.assertIn(cls._doc_vars["returns"], doc)
+                    self.assertIn(f"Returns:\n    {cls._doc_vars['returns']}", doc)
                     self.assertNotIn("\n\n\n", doc)
                     self.assertEqual(f"{cls.__name__}.{name}", op.__qualname__)
 
@@ -74,8 +76,9 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
             with self.subTest(op=name):
                 doc = inspect.getdoc(vars(Query)[name]) or ""
                 self.assertTrue(doc.startswith(f"{intro}\n\n"))
-                # The base docstring's first line must land at the same indent as its other lines.
-                self.assertFalse(doc.splitlines()[2].startswith(" "))
+                # The base docstring's first line must land at the same indent as its other lines. If it does not,
+                # getdoc strips no indent and the section headers stay indented.
+                self.assertIn("\nReturns:\n", doc)
                 self.assertFalse(
                     (inspect.getdoc(vars(Table)[name]) or "").startswith(intro)
                 )
@@ -94,6 +97,63 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
             self.assertEqual("Intro.\n\nReturns self.", OneLine.head.__doc__)
         finally:
             TableInterface.head.__doc__ = original
+
+    def test_doc_vars_without_returns(self) -> None:
+        with self.assertRaisesRegex(TypeError, "returns"):
+
+            class NoReturns(TableInterface["NoReturns"]):
+                _doc_vars = {"intro": "Intro."}
+
+                def table_op_handler(self, table_op: TableOp) -> "NoReturns":
+                    return self
+
+    def test_decorated_op_keeps_wrapped(self) -> None:
+        original = TableInterface.head
+
+        @functools.wraps(original)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return original(*args, **kwargs)
+
+        TableInterface.head = wrapper
+        try:
+
+            class Decorated(TableInterface["Decorated"]):
+                _doc_vars = {"returns": "self"}
+
+                def table_op_handler(self, table_op: TableOp) -> "Decorated":
+                    return self
+
+            self.assertIs(original, Decorated.head.__wrapped__)
+            self.assertIn("num_rows", inspect.signature(Decorated.head).parameters)
+        finally:
+            TableInterface.head = original
+
+    def test_t_is_bound_in_every_hint(self) -> None:
+        original = TableInterface.head
+        R = TypeVar("R")
+
+        def op(self: Any, other: Table | T, others: list[T], extra: dict[R, T]) -> bool:
+            """Returns {returns}."""
+            return True
+
+        TableInterface.head = op  # type: ignore[assignment]
+        try:
+
+            class Bound(TableInterface["Bound"]):
+                _doc_vars = {"returns": "self"}
+
+                def table_op_handler(self, table_op: TableOp) -> "Bound":
+                    return self
+
+            hints = Bound.head.__annotations__
+            self.assertEqual(Table | Bound, hints["other"])
+            self.assertEqual(list[Bound], hints["others"])
+            self.assertEqual(dict[R, Bound], hints["extra"])
+            self.assertIs(bool, hints["return"])
+            # On Table, Table | T collapses to Table.
+            self.assertIs(Table, _bind_t(Table | T, Table))
+        finally:
+            TableInterface.head = original
 
     def test_input_table_reuses_table_ops(self) -> None:
         for name in OP_NAMES:

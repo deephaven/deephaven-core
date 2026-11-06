@@ -3,6 +3,7 @@
 #
 from __future__ import annotations
 
+import inspect
 import sys
 import types
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, get_type_hints
@@ -79,15 +80,34 @@ def _fill_raises(doc: str, raises: str) -> str:
     return "\n".join(out)
 
 
+def _bind_t(hint: Any, cls: type) -> Any:
+    """Replaces T in a type hint with the class, such as ``Table | T`` with ``Table``.
+
+    Args:
+        hint (Any): the resolved type hint
+        cls (type): the class that T stands for
+
+    Returns:
+        the hint with T replaced; a hint without T, or with only other TypeVars, comes back unchanged
+    """
+    if hint is T:
+        return cls
+    params = getattr(hint, "__parameters__", ())
+    if T not in params:
+        return hint
+    # Subscripting fills the hint's TypeVars in order, and a union drops the duplicate, so Table | T becomes Table.
+    return hint[tuple(cls if p is T else p for p in params)]
+
+
 class TableInterface(ABC, Generic[T]):
     """TableInterface defines and implements a set of Table operations that eventually are performed on tables in
     the Deephaven server. It is inherited by the Table and Query classes for single table operations on a Table or a
     batch of operations that are defined by a Query.
 
     A subclass that sets ``_doc_vars`` gets its own copy of every public op, with the op's docstring filled in from
-    those values. ``returns`` fills the ``{returns}`` placeholder. ``raises`` fills a ``{raises}`` line, which ops
-    that raise only once the operation runs on the server use. ``intro``, when not empty, becomes the first
-    paragraph of the docstring.
+    those values. ``returns`` is required and fills the ``{returns}`` placeholder. ``raises`` fills a ``{raises}``
+    line, which ops that raise only once the operation runs on the server use. ``intro``, when not empty, becomes the
+    first paragraph of the docstring.
     """
 
     _doc_vars: ClassVar[dict[str, str]] = {}
@@ -97,6 +117,10 @@ class TableInterface(ABC, Generic[T]):
         # A subclass without its own _doc_vars, such as InputTable, inherits its parent's filled-in copies.
         if "_doc_vars" not in vars(cls):
             return
+        if "returns" not in cls._doc_vars:
+            raise TypeError(
+                f"{cls.__qualname__}._doc_vars needs a 'returns' value to fill the {{returns}} placeholder"
+            )
         returns = cls._doc_vars["returns"]
         raises = cls._doc_vars.get("raises", "")
         intro = cls._doc_vars.get("intro", "")
@@ -134,18 +158,22 @@ class TableInterface(ABC, Generic[T]):
                 func.__closure__,
             )
             op.__kwdefaults__ = func.__kwdefaults__
+            # Without this, a decorated op would lose __wrapped__, and its signature would show the wrapper's
+            # (*args, **kwargs).
+            op.__dict__.update(func.__dict__)
             # The copy keeps this module's globals, where Table exists only for type checking and the subclass not at
-            # all. Without resolving the string annotations here, Sphinx cannot resolve 'Table' or 'Query'. The base
-            # op returns T, so the return is set to the subclass, or the docs would show "-> T".
+            # all. Without resolving the string annotations here, Sphinx cannot resolve 'Table' or 'Query'. T is then
+            # bound to the subclass, or the docs would show "-> T".
             hints = get_type_hints(
                 func,
                 globalns={
-                    **func.__globals__,
+                    # A decorator's wrapper lives in the decorator's module, so its globals lack names such as T.
+                    **inspect.unwrap(func).__globals__,
                     **vars(sys.modules[cls.__module__]),
                     cls.__name__: cls,
                 },
             )
-            op.__annotations__ = {**hints, "return": cls}
+            op.__annotations__ = {k: _bind_t(v, cls) for k, v in hints.items()}
             op.__qualname__ = f"{cls.__qualname__}.{name}"
             op.__module__ = cls.__module__
             op.__doc__ = doc
