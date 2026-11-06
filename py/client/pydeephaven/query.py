@@ -559,3 +559,15 @@ class Query(TableInterface["Query"]):
             self
         """
         return super().where_not_in(filter_table, cols)
+
+    def slice(self, start: int, stop: int) -> Query:
+        """Adds a slice operation to the query.
+
+        Args:
+            start (int): the first row position to include in the result
+            stop (int): the row position to stop before, exclusive
+
+        Returns:
+            self
+        """
+        return super().slice(start, stop)

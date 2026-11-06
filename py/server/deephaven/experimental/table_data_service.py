@@ -96,7 +96,7 @@ class TableDataServiceBackend(ABC):
         success_cb: Callable[[], None],
         failure_cb: Callable[[Exception], None],
     ) -> None:
-        """Provides the existing table locations for the table with the given table via the location_cb callback.
+        """Provides the existing table locations for the table with the given table key via the location_cb callback.
 
         The location callback should be called with the table location key and an optional pyarrow.Table that contains
         the partitioning values for the location. The schema of the table must match the optional partitioning column
@@ -110,7 +110,8 @@ class TableDataServiceBackend(ABC):
 
         The table_locations caller will block until one of the success or failure callbacks is called.
 
-        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=False
+        This is called for tables created when :meth:`TableDataService.make_table` or
+        :meth:`TableDataService.make_partitioned_table` is called with refreshing=False.
 
         Note that asynchronous calls to any callback may block until this method has returned.
 
@@ -145,7 +146,8 @@ class TableDataServiceBackend(ABC):
         to keep the subscription active (e.g. failure with no reconnection possible, or failure to reconnect/resubscribe
         before a timeout).
 
-        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=True.
+        This is called for tables created when :meth:`TableDataService.make_table` or
+        :meth:`TableDataService.make_partitioned_table` is called with refreshing=True.
 
         Note that asynchronous calls to any callback will block until this method has returned.
 
@@ -176,7 +178,8 @@ class TableDataServiceBackend(ABC):
 
         The table_location_size caller will block until one of the size or failure callbacks is called.
 
-        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=False.
+        This is called for tables created when :meth:`TableDataService.make_table` or
+        :meth:`TableDataService.make_partitioned_table` is called with refreshing=False.
 
         Note that asynchronous calls to any callback may block until this method has returned.
 
@@ -184,6 +187,7 @@ class TableDataServiceBackend(ABC):
             table_key (TableKey): the table key
             table_location_key (TableLocationKey): the table location key
             size_cb (Callable[[int], None]): the callback function
+            failure_cb (Callable[[Exception], None]): the failure callback function
         """
         pass
 
@@ -206,7 +210,8 @@ class TableDataServiceBackend(ABC):
         to keep the subscription active (e.g. failure with no reconnection possible, or failure to reconnect/resubscribe
         before a timeout).
 
-        This is called for tables created when :meth:``TableDataService.make_table` is called with refreshing=True
+        This is called for tables created when :meth:`TableDataService.make_table` or
+        :meth:`TableDataService.make_partitioned_table` is called with refreshing=True.
 
         Note that asynchronous calls to any callback will block until this method has returned.
 
@@ -358,7 +363,7 @@ class TableDataService(JObjectWrapper):
             table_key (TableKey): the table key
             schema_cb (jpy.JType): the Java callback function with one argument: an array of byte buffers that contain
                 the serialized table data arrow and partitioning values schemas
-            failure_cb (jpy.JType): the failure Java callback function with one argument: an exception stringyy
+            failure_cb (jpy.JType): the failure Java callback function with one argument: an exception string
         """
 
         def schema_cb_proxy(dt_schema: pa.Schema, pc_schema: pa.Schema | None = None):
