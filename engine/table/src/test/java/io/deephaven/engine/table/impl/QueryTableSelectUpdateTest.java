@@ -1031,7 +1031,7 @@ public class QueryTableSelectUpdateTest {
         assertNotSame(withUpdateView.getColumnSource("Value2"), selected2.getColumnSource("Value2"));
         assertTrue(selected2.<Long>getColumnSource("Value2") instanceof LongSparseArraySource);
 
-        assertTableEquals(prevTable(table), prevTable(selected));
+        assertTableEquals(prevTableCopy(table), prevTableCopy(selected));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -1040,7 +1040,7 @@ public class QueryTableSelectUpdateTest {
         });
 
         assertTableEquals(table, selected);
-        assertTableEquals(prevTable(table), prevTable(selected));
+        assertTableEquals(prevTableCopy(table), prevTableCopy(selected));
 
         TableTools.show(table);
         TableTools.show(selected);
@@ -1055,7 +1055,7 @@ public class QueryTableSelectUpdateTest {
         TableTools.show(selected);
 
         assertTableEquals(table, selected);
-        assertTableEquals(prevTable(table), prevTable(selected));
+        assertTableEquals(prevTableCopy(table), prevTableCopy(selected));
     }
 
     @Test
