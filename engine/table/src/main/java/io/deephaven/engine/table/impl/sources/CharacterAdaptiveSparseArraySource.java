@@ -488,7 +488,7 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
     }
 
     /**
-     * The middle page table level: its {@link Level2} children. While the children are dense enough, as
+     * The middle page table level, containing {@link Level2} children. While the children are dense enough, as
      * {@link #maxWindow(int)} allows, the level holds them in an array indexed by child index less the index of its
      * first entry, so that the array covers only the window of indices in use; otherwise it holds them densely, in
      * child index order, at the positions its {@link ChildPositions} report.
