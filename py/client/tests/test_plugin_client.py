@@ -3,6 +3,9 @@
 #
 import unittest
 
+from deephaven_core.proto import ticket_pb2
+from pydeephaven import DHError
+from pydeephaven.experimental.plugin_client import Fetchable
 from pydeephaven.session import Session
 from pydeephaven.ticket import ScopeTicket, ServerObject, SharedTicket
 from tests.testbase import BaseTestCase
@@ -30,6 +33,14 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
 
     """
         self.session.run_script(server_script)
+
+    def test_fetch_untyped_object_raises(self) -> None:
+        typed_ticket = ticket_pb2.TypedTicket(
+            ticket=ticket_pb2.Ticket(ticket=b"e\x01\x00\x00\x00")
+        )
+        with self.assertRaises(DHError) as cm:
+            Fetchable(self.session, typed_ticket).fetch()
+        self.assertIn("no type", str(cm.exception))
 
     def test_create(self):
         plugin_client = self.session.plugin_client(

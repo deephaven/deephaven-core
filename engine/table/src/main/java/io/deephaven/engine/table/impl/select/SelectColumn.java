@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -90,7 +91,7 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
     }
 
     /**
-     * Produce a SelectColumn that {@link #recomputeOnModifiedRow()} recomputes values on any modified row} from
+     * Produce a SelectColumn that {@link #recomputeOnModifiedRow() recomputes values on any modified row} from
      * {@code selectable}.
      *
      * @param selectable The {@link Selectable} to adapt and mark as requiring row-level recomputation
@@ -276,6 +277,25 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
      */
     default boolean hasVirtualRowVariables() {
         return false;
+    }
+
+    /**
+     * Whether this column has cross-row dependencies: whether the column's value for a row depends on rows other than
+     * that row, as for the row variables {@code i}, {@code ii} and {@code k}, or a column array such as {@code A_}. An
+     * operation that evaluates the column against other rows, such as the rows of a partitioned table's location table,
+     * the rows of one bucket, or the rows that a later filter keeps, must not evaluate a column that has cross-row
+     * dependencies there.
+     * <p>
+     * A column reports cross-row dependencies only through {@link #hasVirtualRowVariables()} and
+     * {@link #getColumnArrays()}, which a wrapper answers for the column inside.
+     * <p>
+     * This column must already be initialized.
+     *
+     * @return whether this column has cross-row dependencies
+     */
+    @FinalDefault
+    default boolean hasCrossRowDependencies() {
+        return hasVirtualRowVariables() || !getColumnArrays().isEmpty();
     }
 
     /**

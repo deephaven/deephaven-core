@@ -56,24 +56,24 @@ public class TestConcurrentInstantiationAggregation extends TestConcurrentInstan
         final Table distinct2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(expected1, distinct2);
-        TstUtils.assertTableEquals(expected1, prevTable(distinct2));
+        TstUtils.assertTableEquals(expected1, prevTableCopy(distinct2));
 
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
 
         final Table distinct3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(expected1, prevTable(distinct1));
-        TstUtils.assertTableEquals(expected1, prevTable(distinct2));
+        TstUtils.assertTableEquals(expected1, prevTableCopy(distinct1));
+        TstUtils.assertTableEquals(expected1, prevTableCopy(distinct2));
         TstUtils.assertTableEquals(expected2, distinct3);
-        TstUtils.assertTableEquals(expected2, prevTable(distinct3));
+        TstUtils.assertTableEquals(expected2, prevTableCopy(distinct3));
 
         updateGraph.completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(expected2outOfOrder, distinct1);
         TstUtils.assertTableEquals(expected2outOfOrder, distinct2);
         TstUtils.assertTableEquals(expected2, distinct3);
-        TstUtils.assertTableEquals(expected2, prevTable(distinct3));
+        TstUtils.assertTableEquals(expected2, prevTableCopy(distinct3));
     }
 
     @ReflexiveUse(referrers = "io.deephaven.engine.table.impl.TestConcurrentInstantiationAggregation")
@@ -297,7 +297,7 @@ public class TestConcurrentInstantiationAggregation extends TestConcurrentInstan
             if (allowModifications) {
                 doByConcurrentModifications(table, haveBigNumerics);
             }
-            final Table prevResult1a = prevTable(result1);
+            final Table prevResult1a = prevTableCopy(result1);
 
             System.out.println("PrevResulta 1");
             TableTools.show(prevResult1a);
@@ -319,7 +319,7 @@ public class TestConcurrentInstantiationAggregation extends TestConcurrentInstan
             // indeterminate
             // therefore this assert is not really a valid thing to do.
             // TstUtils.assertTableEquals(expected1, result2);
-            final Table prevResult2a = prevTable(result2);
+            final Table prevResult2a = prevTableCopy(result2);
             System.out.println("Prev Result 2a");
             TableTools.show(prevResult2a);
 
@@ -337,12 +337,12 @@ public class TestConcurrentInstantiationAggregation extends TestConcurrentInstan
             final Table result3 = future3.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
             System.out.println("Prev Result 1");
-            final Table prevResult1b = prevTable(result1);
+            final Table prevResult1b = prevTableCopy(result1);
             TableTools.show(prevResult1b);
             TstUtils.assertTableEquals(expected1, prevResult1b, TableDiff.DiffItems.DoublesExact);
 
             System.out.println("Prev Result 2b");
-            final Table prevResult2b = prevTable(result2);
+            final Table prevResult2b = prevTableCopy(result2);
             TableTools.show(prevResult2b);
             TstUtils.assertTableEquals(expected1, prevResult2b, TableDiff.DiffItems.DoublesExact);
 

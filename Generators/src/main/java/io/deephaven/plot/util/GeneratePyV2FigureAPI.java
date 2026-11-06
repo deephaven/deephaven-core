@@ -348,8 +348,7 @@ public class GeneratePyV2FigureAPI {
          * @return type annotation string
          */
         public String typeAnnotation() {
-            return typeAnnotations.length == 1 ? typeAnnotations[0]
-                    : "Union[" + String.join(", ", typeAnnotations) + "]";
+            return String.join(" | ", typeAnnotations);
         }
 
         /**
@@ -595,7 +594,7 @@ public class GeneratePyV2FigureAPI {
                 sb.append(INDENT).append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation());
 
                 if (!isRequired(arg)) {
-                    sb.append(" = None");
+                    sb.append(" | None = None");
                 }
 
                 sb.append(",\n");
@@ -702,7 +701,7 @@ public class GeneratePyV2FigureAPI {
 
             // non-null params
 
-            sb.append(INDENT).append(INDENT).append("non_null_args = set()\n\n");
+            sb.append(INDENT).append(INDENT).append("non_null_args: set[str] = set()\n\n");
 
             for (final PyArg arg : args) {
                 sb.append(INDENT)
@@ -1053,19 +1052,19 @@ public class GeneratePyV2FigureAPI {
         final Map<String, PyArg> rst = new TreeMap<>();
 
         final String[] taStr = new String[] {"str"};
-        final String[] taStrs = new String[] {"List[str]"};
+        final String[] taStrs = new String[] {"list[str]"};
         final String[] taBool = new String[] {"bool"};
         final String[] taInt = new String[] {"int"};
         final String[] taFloat = new String[] {"float"};
-        final String[] taFloats = new String[] {"List[float]"};
+        final String[] taFloats = new String[] {"list[float]"};
         final String[] taFloatStr = new String[] {"str", "float"};
         final String[] taCallable = new String[] {"Callable"};
         final String[] taTable = new String[] {"Table", "SelectableDataSet"};
 
-        final String[] taDataCategory = new String[] {"str", "List[str]", "List[int]", "List[float]"};
-        final String[] taDataNumeric = new String[] {"str", "List[int]", "List[float]", "List[Instant]"};
-        final String[] taDataTime = new String[] {"str", "List[Instant]"};
-        final String[] taMultiSeriesKey = new String[] {"List[Any]"}; // todo keys are technically Object[]. How to
+        final String[] taDataCategory = new String[] {"str", "list[str]", "list[int]", "list[float]"};
+        final String[] taDataNumeric = new String[] {"str", "list[int]", "list[float]", "list[Instant]"};
+        final String[] taDataTime = new String[] {"str", "list[Instant]"};
+        final String[] taMultiSeriesKey = new String[] {"list[Any]"}; // todo keys are technically Object[]. How to
         // support?
         final String[] taColor = new String[] {"str", "int", "Color"};
         final String[] taAxisFormat = new String[] {"AxisFormat"};
@@ -1074,13 +1073,13 @@ public class GeneratePyV2FigureAPI {
         final String[] taBusinessCalendar = new String[] {"str", "BusinessCalendar"};
         final String[] taPlotStyle = new String[] {"str", "PlotStyle"};
         final String[] taLineStyle = new String[] {"str", "LineStyle"};
-        final String[] taPointColors = new String[] {"str", "int", "Color", "List[str]", "List[int]", "List[Color]",
-                "Callable", "Dict[Any,str]", "Dict[Any,int]", "Dict[Any,Color]"};
-        final String[] taPointLabels = new String[] {"str", "List[str]", "Callable", "Dict[Any,str]"};
-        final String[] taPointShapes = new String[] {"str", "Shape", "List[str]", "List[Shape]", "Callable",
-                "Dict[Any,str]", "Dict[Any,Shape]"};
-        final String[] taPointSizes = new String[] {"int", "float", "List[int]", "List[float]", "Callable",
-                "Dict[Any,int]", "Dict[Any,float]"};
+        final String[] taPointColors = new String[] {"str", "int", "Color", "list[str]", "list[int]", "list[Color]",
+                "Callable", "dict[Any,str]", "dict[Any,int]", "dict[Any,Color]"};
+        final String[] taPointLabels = new String[] {"str", "list[str]", "Callable", "dict[Any,str]"};
+        final String[] taPointShapes = new String[] {"str", "Shape", "list[str]", "list[Shape]", "Callable",
+                "dict[Any,str]", "dict[Any,Shape]"};
+        final String[] taPointSizes = new String[] {"int", "float", "list[int]", "list[float]", "Callable",
+                "dict[Any,int]", "dict[Any,float]"};
 
         ////////////////////////////////////////////////////////////////
 

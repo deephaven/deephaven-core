@@ -693,10 +693,7 @@ public class QueryTableSelectUpdateTest {
     public void testUpdateIncrementalRandomized() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 2, 1);
-        final boolean old = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
-        try {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
-
+        try (final SafeCloseable ignored0 = new ForcedParallelSelect()) {
             for (int seed = 0; seed < 5; ++seed) {
                 System.out.println("Seed: " + seed);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
@@ -706,8 +703,6 @@ public class QueryTableSelectUpdateTest {
                     testUpdateIncrementalRandomized(seed, true, 25);
                 }
             }
-        } finally {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = old;
         }
     }
 
@@ -716,18 +711,13 @@ public class QueryTableSelectUpdateTest {
         // this test has large enough size that we will have individual column updates spread across threads
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 2, 1);
-        final boolean old = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
-        try {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
-
+        try (final SafeCloseable ignored0 = new ForcedParallelSelect()) {
             for (int seed = 0; seed < 1; ++seed) {
                 System.out.println("Seed: " + seed);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     testUpdateIncrementalRandomized(seed, false, 4096);
                 }
             }
-        } finally {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = old;
         }
     }
 
@@ -782,20 +772,13 @@ public class QueryTableSelectUpdateTest {
     public void testAppendOnlySparseIncrementalParallel() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 2, 1);
-        final boolean oldForceParallel = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
-        final long oldMinimumRows = QueryTable.MINIMUM_PARALLEL_SELECT_ROWS;
-        try {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
-            // spread the adds of each column across several jobs
-            QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = 4;
+        // spread the adds of each column across several jobs
+        try (final SafeCloseable ignored0 = new ForcedParallelSelect(4)) {
             for (int seed = 0; seed < 3; ++seed) {
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     testAppendOnlySparseIncremental(seed);
                 }
             }
-        } finally {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = oldForceParallel;
-            QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = oldMinimumRows;
         }
     }
 
@@ -1048,7 +1031,7 @@ public class QueryTableSelectUpdateTest {
         assertNotSame(withUpdateView.getColumnSource("Value2"), selected2.getColumnSource("Value2"));
         assertTrue(selected2.<Long>getColumnSource("Value2") instanceof LongSparseArraySource);
 
-        assertTableEquals(prevTable(table), prevTable(selected));
+        assertTableEquals(prevTableCopy(table), prevTableCopy(selected));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -1057,7 +1040,7 @@ public class QueryTableSelectUpdateTest {
         });
 
         assertTableEquals(table, selected);
-        assertTableEquals(prevTable(table), prevTable(selected));
+        assertTableEquals(prevTableCopy(table), prevTableCopy(selected));
 
         TableTools.show(table);
         TableTools.show(selected);
@@ -1072,7 +1055,7 @@ public class QueryTableSelectUpdateTest {
         TableTools.show(selected);
 
         assertTableEquals(table, selected);
-        assertTableEquals(prevTable(table), prevTable(selected));
+        assertTableEquals(prevTableCopy(table), prevTableCopy(selected));
     }
 
     @Test
@@ -1176,7 +1159,7 @@ public class QueryTableSelectUpdateTest {
         assertTableEquals(updated, fullUpdate.where("C"));
 
         final ColumnSource<?> fcs = fullUpdate.getColumnSource("D");
-        Assert.assertTrue(fcs instanceof InMemoryColumnSource);
+        Assert.assertTrue(InMemoryColumnSource.isInMemory(fcs));
 
         final ColumnSource<?> cs = updated.getColumnSource("D");
         Assert.assertTrue(cs instanceof RedirectedColumnSource);
@@ -1709,17 +1692,18 @@ public class QueryTableSelectUpdateTest {
         final UncheckedTableException ue = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.update(List.of(Selectable.of(ColumnName.of("AWM"), composed))));
         assertTrue(ue.getMessage(), ue.getMessage().startsWith(
-                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView:"));
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays):"));
 
         final UncheckedTableException ve = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.view(List.of(Selectable.of(ColumnName.of("AWM"), composed))));
         assertTrue(ve.getMessage(), ve.getMessage().startsWith(
-                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView:"));
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays):"));
 
         final UncheckedTableException wme = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.wouldMatch(new WouldMatchPair("AWM", composed)));
         assertTrue(wme.getMessage(),
-                wme.getMessage().startsWith("wouldMatch filters cannot use virtual row variables (i, ii, and k):"));
+                wme.getMessage().startsWith(
+                        "wouldMatch filters cannot use cross-row dependencies (virtual row variables or column arrays):"));
     }
 
     @Test
@@ -1733,36 +1717,38 @@ public class QueryTableSelectUpdateTest {
 
         final UncheckedTableException wme = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.wouldMatch(new WouldMatchPair("AWM", filter)));
-        Assert.assertEquals("wouldMatch filters cannot use virtual row variables (i, ii, and k): [A=A_[i-1]]",
+        Assert.assertEquals(
+                "wouldMatch filters cannot use cross-row dependencies (virtual row variables or column arrays): [A=A_[i-1]]",
                 wme.getMessage());
 
         final UncheckedTableException wme2 = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.wouldMatch(new WouldMatchPair("AWM", filterArrayOnly)));
-        Assert.assertEquals("wouldMatch filters cannot use column Vectors (_ syntax): [A=A_.size() = 1]",
+        Assert.assertEquals(
+                "wouldMatch filters cannot use cross-row dependencies (virtual row variables or column arrays): [A=A_.size() = 1]",
                 wme2.getMessage());
 
         final UncheckedTableException upe = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.update(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
         Assert.assertEquals(
-                "Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]",
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays): A=A_[i-1]",
                 upe.getMessage());
 
         final UncheckedTableException uve = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
         Assert.assertEquals(
-                "Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]",
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays): A=A_[i-1]",
                 uve.getMessage());
 
         final UncheckedTableException se = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.select(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
         Assert.assertEquals(
-                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1",
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays): A=k+1",
                 se.getMessage());
 
         final UncheckedTableException ve = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.view(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
         Assert.assertEquals(
-                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1",
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays): A=k+1",
                 ve.getMessage());
 
         final UncheckedTableException dw = Assert.assertThrows(UncheckedTableException.class,

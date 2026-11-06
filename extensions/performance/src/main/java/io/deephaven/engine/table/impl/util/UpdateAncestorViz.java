@@ -100,7 +100,7 @@ public class UpdateAncestorViz {
      * @param entryIds an array of performance entry IDs to traverse and generate a graph for
      * @param updatePerformanceLog a table containing update performance log data
      * @param updateAncestors a table containing update ancestor data
-     * @return a byte array representing the SVG output
+     * @return the Graphviz DOT representation of the graph
      */
     public static String dot(long[] entryIds, Table updatePerformanceLog, Table updateAncestors) {
         UpdateAncestorViz updateAncestorViz = new UpdateAncestorViz(updatePerformanceLog, updateAncestors);

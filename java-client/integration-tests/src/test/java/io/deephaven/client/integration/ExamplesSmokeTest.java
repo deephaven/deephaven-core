@@ -44,6 +44,10 @@ class ExamplesSmokeTest {
 
     private static final String STATIC_TABLE = "smoke_static";
     private static final String TICKING_TABLE = "smoke_ticking";
+    /** {@link #STATIC_TABLE}'s data, allowed to be compressed with zstd or gzip */
+    private static final String COMPRESSED_TABLE = "smoke_compressed";
+    /** a ticking table allowed to be compressed with snappy */
+    private static final String COMPRESSED_TICKING_TABLE = "smoke_compressed_ticking";
     private static final String FIGURE = "smoke_figure";
 
     private static final Path OUTPUT_DIR = Paths.get("build", "example-output");
@@ -116,6 +120,17 @@ class ExamplesSmokeTest {
                 // The same server given twice: copies the table to itself under a new name
                 example(FLIGHT, "do-put-spray", "", "-t", ExampleRunner.target(), "s/" + STATIC_TABLE,
                         "smoke_sprayed"),
+                // compression: the examples cannot report the encoding they received, so these show that each runs
+                // with compression on; CompressionTest checks that the data is actually compressed
+                example(FLIGHT, "get-table", "Table received: 10 rows", "--accept-compression", "zstd",
+                        "--variable", COMPRESSED_TABLE),
+                example(FLIGHT, "do-put-new", "", "--request-compression", "zstd", "smoke_do_put_new_zstd"),
+                example(FLIGHT, "do-put-table", "", "--request-compression", "gzip",
+                        "--variable", "smoke_do_put_table_gzip"),
+                example(BARRAGE, "snapshot-table", "Table info", "--accept-compression", "gzip",
+                        "--variable", COMPRESSED_TABLE),
+                example(BARRAGE, "subscribe-table", "Received table update", "--variable", COMPRESSED_TICKING_TABLE,
+                        "--updates", "1"),
                 // barrage
                 example(BARRAGE, "snapshot-table", "Table info", "--variable", STATIC_TABLE),
                 example(BARRAGE, "subscribe-table", "Received table update", "--variable", TICKING_TABLE, "--updates",
@@ -132,6 +147,8 @@ class ExamplesSmokeTest {
                 "from deephaven.plot.figure import Figure",
                 STATIC_TABLE + " = empty_table(10).update('I = ii')",
                 TICKING_TABLE + " = time_table('PT0.2S')",
+                COMPRESSED_TABLE + " = " + STATIC_TABLE + ".with_transport_compression(['zstd', 'gzip'])",
+                COMPRESSED_TICKING_TABLE + " = time_table('PT0.2S').with_transport_compression('snappy')",
                 // A plugin object the server image supports, which exports exactly one table
                 FIGURE + " = Figure().plot_xy(series_name='smoke', t=" + STATIC_TABLE + ", x='I', y='I').show()"));
         assertThat(result.exitCode).as("fixture setup: " + result.describe()).isZero();

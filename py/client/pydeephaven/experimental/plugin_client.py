@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import threading
 from queue import SimpleQueue
-from typing import TYPE_CHECKING, Any, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 from deephaven_core.proto import object_pb2, ticket_pb2
 from pydeephaven.dherror import DHError
@@ -66,7 +66,7 @@ class Fetchable(ServerObject):
         super().__init__(type=typed_ticket.type, ticket=export_ticket)
         self.session = session
 
-    def fetch(self) -> Union[Table, PluginClient]:
+    def fetch(self) -> Table | PluginClient:
         """
         Returns a client object that can be interacted with, representing an object that actually only exists on the
         server. In contrast to a Fetchable instance, which only serves as a reference to a server object,
@@ -74,7 +74,8 @@ class Fetchable(ServerObject):
         this method will also close the other, take care when signaling that it is safe to release this object on
         the server.
         """
-        if self.pb_typed_ticket.type is None:
+        # An unset proto string is "", never None.
+        if not self.pb_typed_ticket.type:
             raise DHError(
                 "Cannot fetch an object with no type, the server has no ObjectType plugin registered to "
                 "support it."
@@ -134,7 +135,7 @@ class PluginResponseStream:
         self.session = session
         self._rlock = threading.RLock()
 
-    def __next__(self) -> Tuple[bytes, list[Fetchable]]:
+    def __next__(self) -> tuple[bytes, list[Fetchable]]:
         with self._rlock:
             if not self.stream_resp:
                 raise RuntimeError("the response stream is closed.")

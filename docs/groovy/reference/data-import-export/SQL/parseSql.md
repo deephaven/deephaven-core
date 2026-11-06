@@ -27,11 +27,11 @@ The Scope object that defines the catalog of available tables for the SQL query.
 
 ## Returns
 
-A `TableSpec` object representing the parsed SQL query. This can be materialized into a Deephaven table using a `TableCreator` with appropriate ticket mappings.
+A `TableSpec` object representing the parsed SQL query. It refers to the catalog's tables through the `TableSpec` placeholders in the `Scope`. Deephaven has no public API to turn this `TableSpec` into a table; to run a SQL query, use [`evaluate`](./evaluate.md).
 
 ## Examples
 
-```groovy order=result
+```groovy order=:log
 import io.deephaven.engine.table.Table
 import io.deephaven.qst.column.header.ColumnHeader
 import io.deephaven.qst.table.TableHeader
@@ -40,8 +40,7 @@ import io.deephaven.qst.table.TicketTable
 import io.deephaven.sql.ScopeStaticImpl
 import io.deephaven.sql.TableInformation
 import io.deephaven.sql.SqlAdapter
-import io.deephaven.engine.sql.TableCreatorTicketInterceptor
-import io.deephaven.engine.table.impl.TableCreatorImpl
+import io.deephaven.qst.table.Graphviz
 
 // Create tables
 def t1 = emptyTable(10).update("X = i", "Y = i * 2")
@@ -69,10 +68,11 @@ def scope = ScopeStaticImpl.builder()
 // Parse SQL with explicit scope
 def tableSpec = SqlAdapter.parseSql("SELECT t1.X, t2.Y FROM t1 JOIN t2 ON t1.X = t2.X", scope)
 
-// Materialize the TableSpec with TicketTable mapping
-def ticketMap = [(tt1): t1, (tt2): t2]
-result = tableSpec.logic().create(new TableCreatorTicketInterceptor(TableCreatorImpl.INSTANCE, ticketMap))
+// Print the parsed query plan in Graphviz DOT format
+println Graphviz.toDot(tableSpec)
 ```
+
+The output is the parsed query plan in [Graphviz DOT](https://graphviz.org/doc/info/lang.html) format. Each `ticketTable` node is a placeholder from the `Scope`, and the `view` and `join` nodes are the operations that the query applies to those tables.
 
 ## Related documentation
 

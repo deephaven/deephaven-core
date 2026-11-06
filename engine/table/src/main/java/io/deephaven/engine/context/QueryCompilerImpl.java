@@ -175,10 +175,13 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
     }
 
     /**
-     * Creates a new QueryCompilerImpl. Uses the current thread's context classloader as the parent for per-batch
-     * classloaders (as required by {@link QueryCompiler}'s contract).
+     * Creates a new QueryCompilerImpl. Uses {@code classLoader} as the parent for per-batch classloaders. If
+     * {@code classLoader} is null, uses the current thread's context classloader at compile time instead (as required
+     * by {@link QueryCompiler}'s contract).
      *
      * @param additionalClassPathDir optional directory to add to the compiler's classpath (e.g., groovy bytecode dir)
+     * @param classLoader optional parent classloader for per-batch classloaders; if null, the current thread's context
+     *        classloader is used
      */
     public static QueryCompilerImpl create(@Nullable final File additionalClassPathDir,
             @Nullable ClassLoader classLoader) {
@@ -279,7 +282,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         }
     }
 
-    /** The context classloader provided at creation time, or null if none set */
+    /** The parent classloader provided at creation time, or null to use the thread's context classloader */
     @Nullable
     private final ClassLoader parentClassLoader;
 

@@ -56,5 +56,5 @@ deniroHeader = readCsv("https://media.githubusercontent.com/media/deephaven/exam
 - [CSV export via query](../../how-to-guides/data-import-export/csv-export.md)
 - [`readCsv`](../data-import-export/CSV/readCsv.md)
 - [`writeCsv`](../data-import-export/CSV/writeCsv.md)
-- [Docker data volumes](../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/csv/CsvTools.html#readCsv(java.nio.file.Path))

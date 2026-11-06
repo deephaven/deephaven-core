@@ -286,6 +286,24 @@ std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessor
   auto shift_dest_index = IndexDecoder::ReadExternalCompressedDelta(&di_three_shift_indices);
   auto added_rows = IndexDecoder::ReadExternalCompressedDelta(&di_added);
 
+  // added_rows_included is the set of rows this message actually carries data for. The server
+  // omits it when it would be identical to added_rows, which is the case for every message of an
+  // established subscription. The two differ only while the server is still delivering the
+  // initial snapshot of a large table in rounds. A snapshot round announces the table's whole row
+  // set in added_rows but carries data only for its own slice. A delta between rounds can carry
+  // data for rows that added_rows does not mention (rows that moved into the already-delivered
+  // region of the table) and no data for rows that it does (rows beyond that region, which a
+  // later round will deliver). The record batches are sized from this set, so the add phase must
+  // be too. This mirrors the Java client, whose reader defaults rowsIncluded to a copy of
+  // rowsAdded when the field is absent.
+  std::shared_ptr<RowSequence> added_rows_included;
+  if (bmd->added_rows_included() == nullptr) {
+    added_rows_included = added_rows;
+  } else {
+    DataInput di_added_rows_included(*bmd->added_rows_included());
+    added_rows_included = IndexDecoder::ReadExternalCompressedDelta(&di_added_rows_included);
+  }
+
   // Disabled because it's too verbose
   if (false) {
     fmt::print(std::cout, "adds={}, removes={}, ss={}, %se={}, sd={}\n", *added_rows, *removed_rows,
@@ -313,7 +331,12 @@ std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessor
   auto [prev, removedRowsIndexSpace, afterRemoves] = ProcessRemoves(*removed_rows);
   table_state_.ApplyShifts(*shift_start_index, *shift_end_index, *shift_dest_index);
 
-  auto added_rows_index_space = table_state_.AddKeys(*added_rows);
+  // We track only the rows we hold data for, so the keys we add are the ones data is arriving
+  // for. A key that added_rows announces without data will arrive, with data, in a later snapshot
+  // round and is added then. The insertion is strict. During the initial snapshot the server can
+  // legitimately re-send a row we already hold; supporting that is a separate change, so for now
+  // such a row fails loudly inside SpaceMapper rather than being silently inserted a second time.
+  auto added_rows_index_space = table_state_.AddKeys(*added_rows_included);
 
   owner->state_ = State::kAwaitingAdds;
   owner->awaitingAdds_.Init(std::move(per_column_modifies), std::move(prev),
@@ -334,7 +357,11 @@ AwaitingMetadata::ProcessRemoves(const RowSequence &removed_rows) {
     after_removes = prev;
   } else {
     removed_rows_index_space = table_state_.Erase(removed_rows);
-    after_removes = table_state_.Snapshot();
+    // A non-empty removed set can still erase nothing: a full subscription is sent the server's
+    // entire removed set, which while the initial snapshot is still arriving can name only rows
+    // this client has not been given yet. The table is unchanged then, so this takes the
+    // pointer-equality path too.
+    after_removes = removed_rows_index_space->Empty() ? prev : table_state_.Snapshot();
   }
   return {std::move(prev), std::move(removed_rows_index_space), std::move(after_removes)};
 }
