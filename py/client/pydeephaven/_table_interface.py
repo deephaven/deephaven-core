@@ -3,7 +3,6 @@
 #
 from __future__ import annotations
 
-import inspect
 import sys
 import types
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, get_type_hints
@@ -99,6 +98,75 @@ def _bind_t(hint: Any, cls: type) -> Any:
     return hint[tuple(cls if p is T else p for p in params)]
 
 
+def _fill_doc(doc: str, doc_vars: dict[str, str]) -> str:
+    """Fills a docstring template from a class's ``_doc_vars``.
+
+    Args:
+        doc (str): the docstring template
+        doc_vars (dict[str, str]): the values; ``returns`` fills ``{returns}``, ``raises`` fills the ``{raises}``
+            line, and ``intro``, when not empty, becomes the first paragraph
+
+    Returns:
+        the filled docstring
+    """
+    doc = _fill_raises(
+        doc.replace("{returns}", doc_vars["returns"]), doc_vars.get("raises", "")
+    )
+    intro = doc_vars.get("intro", "")
+    if not intro:
+        return doc
+    # The first docstring line has no indent and the rest share one. Without that indent, the original first line
+    # would be the least indented line and the rest would become a quoted block in Sphinx. A one-line docstring has
+    # no other lines, and without the default min() would raise and break the import.
+    indent = min(
+        (
+            len(line) - len(line.lstrip())
+            for line in doc.splitlines()[1:]
+            if line.strip()
+        ),
+        default=0,
+    )
+    return f"{intro}\n\n{' ' * indent}{doc}"
+
+
+def _copy_op(func: types.FunctionType, cls: type, doc: str) -> types.FunctionType:
+    """Copies a TableInterface op onto a subclass, with T bound to the subclass in its type hints.
+
+    Args:
+        func (types.FunctionType): the TableInterface op
+        cls (type): the subclass
+        doc (str): the copy's docstring
+
+    Returns:
+        the copy, named and documented as the subclass's own method
+    """
+    # A copy, not a wrapper, so the signature, defaults and annotations stay the base op's own.
+    op = types.FunctionType(
+        func.__code__,
+        func.__globals__,
+        func.__name__,
+        func.__defaults__,
+        func.__closure__,
+    )
+    op.__kwdefaults__ = func.__kwdefaults__
+    # The copy keeps this module's globals, where Table exists only for type checking and the subclass not at all.
+    # Without resolving the string annotations here, Sphinx cannot resolve 'Table' or 'Query'. T is then bound to the
+    # subclass, or the docs would show "-> T".
+    hints = get_type_hints(
+        func,
+        globalns={
+            **func.__globals__,
+            **vars(sys.modules[cls.__module__]),
+            cls.__name__: cls,
+        },
+    )
+    op.__annotations__ = {k: _bind_t(v, cls) for k, v in hints.items()}
+    op.__qualname__ = f"{cls.__qualname__}.{func.__name__}"
+    op.__module__ = cls.__module__
+    op.__doc__ = doc
+    return op
+
+
 class TableInterface(ABC, Generic[T]):
     """TableInterface defines and implements a set of Table operations that eventually are performed on tables in
     the Deephaven server. It is inherited by the Table and Query classes for single table operations on a Table or a
@@ -121,9 +189,6 @@ class TableInterface(ABC, Generic[T]):
             raise TypeError(
                 f"{cls.__qualname__}._doc_vars needs a 'returns' value to fill the {{returns}} placeholder"
             )
-        returns = cls._doc_vars["returns"]
-        raises = cls._doc_vars.get("raises", "")
-        intro = cls._doc_vars.get("intro", "")
         for name, func in vars(TableInterface).items():
             if (
                 name.startswith("_")
@@ -132,52 +197,14 @@ class TableInterface(ABC, Generic[T]):
                 or name in vars(cls)
             ):
                 continue
-            doc = _fill_raises(
-                (func.__doc__ or "").replace("{returns}", returns), raises
-            )
-            if intro:
-                # The first docstring line has no indent and the rest share one. Without that indent, the original
-                # first line would be the least indented line and the rest would become a quoted block in Sphinx.
-                # A one-line or missing docstring has no other lines, and without the default min() would raise and
-                # break the import.
-                indent = min(
-                    (
-                        len(line) - len(line.lstrip())
-                        for line in doc.splitlines()[1:]
-                        if line.strip()
-                    ),
-                    default=0,
+            # The copy takes the wrapper's code, so a decorated op would show (*args, **kwargs) in its signature and
+            # docs, or fail to resolve its hints in the decorator's module.
+            if hasattr(func, "__wrapped__"):
+                raise TypeError(
+                    f"TableInterface.{name} is decorated; decorated TableInterface ops are not supported"
                 )
-                doc = f"{intro}\n\n{' ' * indent}{doc}"
-            # A copy, not a wrapper, so the signature, defaults and annotations stay the base op's own.
-            op = types.FunctionType(
-                func.__code__,
-                func.__globals__,
-                name,
-                func.__defaults__,
-                func.__closure__,
-            )
-            op.__kwdefaults__ = func.__kwdefaults__
-            # Without this, a decorated op would lose __wrapped__, and its signature would show the wrapper's
-            # (*args, **kwargs).
-            op.__dict__.update(func.__dict__)
-            # The copy keeps this module's globals, where Table exists only for type checking and the subclass not at
-            # all. Without resolving the string annotations here, Sphinx cannot resolve 'Table' or 'Query'. T is then
-            # bound to the subclass, or the docs would show "-> T".
-            hints = get_type_hints(
-                func,
-                globalns={
-                    # A decorator's wrapper lives in the decorator's module, so its globals lack names such as T.
-                    **inspect.unwrap(func).__globals__,
-                    **vars(sys.modules[cls.__module__]),
-                    cls.__name__: cls,
-                },
-            )
-            op.__annotations__ = {k: _bind_t(v, cls) for k, v in hints.items()}
-            op.__qualname__ = f"{cls.__qualname__}.{name}"
-            op.__module__ = cls.__module__
-            op.__doc__ = doc
-            setattr(cls, name, op)
+            doc = _fill_doc(func.__doc__ or "", cls._doc_vars)
+            setattr(cls, name, _copy_op(func, cls, doc))
 
     @abstractmethod
     def table_op_handler(self, table_op: TableOp) -> T: ...

@@ -9,7 +9,7 @@ import types
 import unittest
 from typing import Any, TypeVar
 
-from pydeephaven._table_interface import T, TableInterface, _bind_t
+from pydeephaven._table_interface import T, TableInterface, _bind_t, _fill_doc
 from pydeephaven._table_ops import TableOp
 from pydeephaven.query import Query
 from pydeephaven.table import InputTable, Table
@@ -83,20 +83,21 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
                     (inspect.getdoc(vars(Table)[name]) or "").startswith(intro)
                 )
 
-    def test_one_line_docstring_with_intro(self) -> None:
-        original = TableInterface.head.__doc__
-        TableInterface.head.__doc__ = "Returns {returns}."
-        try:
-
-            class OneLine(TableInterface["OneLine"]):
-                _doc_vars = {"returns": "self", "intro": "Intro."}
-
-                def table_op_handler(self, table_op: TableOp) -> "OneLine":
-                    return self
-
-            self.assertEqual("Intro.\n\nReturns self.", OneLine.head.__doc__)
-        finally:
-            TableInterface.head.__doc__ = original
+    def test_fill_doc(self) -> None:
+        template = "Summary.\n\n    Returns:\n        {returns}\n\n    {raises}\n    "
+        self.assertEqual(
+            "Summary.\n\n    Returns:\n        x\n\n    Raises:\n        E\n    ",
+            _fill_doc(template, {"returns": "x", "raises": "Raises:\n    E"}),
+        )
+        self.assertEqual(
+            "Intro.\n\n    Summary.\n\n    Returns:\n        x\n    ",
+            _fill_doc(template, {"returns": "x", "intro": "Intro."}),
+        )
+        # A one-line docstring has no indent to copy.
+        self.assertEqual(
+            "Intro.\n\nReturns x.",
+            _fill_doc("Returns {returns}.", {"returns": "x", "intro": "Intro."}),
+        )
 
     def test_doc_vars_without_returns(self) -> None:
         with self.assertRaisesRegex(TypeError, "returns"):
@@ -107,7 +108,7 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
                 def table_op_handler(self, table_op: TableOp) -> "NoReturns":
                     return self
 
-    def test_decorated_op_keeps_wrapped(self) -> None:
+    def test_decorated_op_is_rejected(self) -> None:
         original = TableInterface.head
 
         @functools.wraps(original)
@@ -116,15 +117,14 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
 
         TableInterface.head = wrapper
         try:
+            with self.assertRaisesRegex(TypeError, "head is decorated"):
 
-            class Decorated(TableInterface["Decorated"]):
-                _doc_vars = {"returns": "self"}
+                class Decorated(TableInterface["Decorated"]):
+                    _doc_vars = {"returns": "self"}
 
-                def table_op_handler(self, table_op: TableOp) -> "Decorated":
-                    return self
+                    def table_op_handler(self, table_op: TableOp) -> "Decorated":
+                        return self
 
-            self.assertIs(original, Decorated.head.__wrapped__)
-            self.assertIn("num_rows", inspect.signature(Decorated.head).parameters)
         finally:
             TableInterface.head = original
 
