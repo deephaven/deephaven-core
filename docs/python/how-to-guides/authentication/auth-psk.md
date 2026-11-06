@@ -175,6 +175,8 @@ A Python client session that connects to a Deephaven server over the network nee
 Applications that use the [Deephaven JS API](/core/client-api/javascript/modules/dh.html) log in with the pre-shared key. Call [`login`](/core/client-api/javascript/classes/dh.CoreClient.html#login) with `type` set to the pre-shared key handler's class name and `token` set to the key. [Use the JS API](../use-jsapi.md) shows how to load the API into a web page.
 
 ```javascript
+import dh from "http://localhost:10000/jsapi/dh-core.js";
+
 async function main() {
   const client = new dh.CoreClient("http://localhost:10000");
   await client.login({
@@ -186,7 +188,7 @@ async function main() {
 main().catch((err) => console.error("Login failed:", err));
 ```
 
-Replace `http://localhost:10000` with the address of your server, and `<your key>` with the key.
+Replace `http://localhost:10000` with the address of your server, in both the import and the client, and `<your key>` with the key.
 
 ## Related documentation
 

@@ -40,6 +40,8 @@ The Docker logs show the following message when you enable anonymous authenticat
 Applications that use the [Deephaven JS API](/core/client-api/javascript/modules/dh.html) log in anonymously. Call [`login`](/core/client-api/javascript/classes/dh.CoreClient.html#login) with `type` set to `dh.CoreClient.LOGIN_TYPE_ANONYMOUS`. No token is needed. [Use the JS API](../use-jsapi.md) shows how to load the API into a web page.
 
 ```javascript
+import dh from "http://localhost:10000/jsapi/dh-core.js";
+
 async function main() {
   const client = new dh.CoreClient("http://localhost:10000");
   await client.login({
@@ -50,7 +52,7 @@ async function main() {
 main().catch((err) => console.error("Login failed:", err));
 ```
 
-Replace `http://localhost:10000` with the address of your server.
+Replace `http://localhost:10000` with the address of your server, in both the import and the client.
 
 ## Related documentation
 

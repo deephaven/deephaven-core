@@ -11,7 +11,7 @@ Username/password is a common authentication method in which each user of an app
 
 ## Overview
 
-Username/password authentication needs three extra files on top of a [Docker deployment of Deephaven](../../getting-started/docker-install.md). A PostgreSQL database that runs in Docker alongside Deephaven stores usernames and passwords. The database stores each password as a bcrypt hash. Bcrypt is a one-way hashing algorithm.
+Username/password authentication needs some extra configuration on top of a [Docker deployment of Deephaven](../../getting-started/docker-install.md). A PostgreSQL database that runs in Docker alongside Deephaven stores usernames and passwords. The database stores each password as a bcrypt hash, which is a one-way hashing algorithm.
 
 This guide covers the server setup and logging in from the [JS API](../use-jsapi.md). For a basic setup, there are three required files:
 
@@ -45,11 +45,11 @@ VALUES ('admin', '$2a$10$kjbt1Fq4k4W6EB67GDhAauuIWeI8ppx2gsi6.zLL2R5UYokek8nqO',
 The Dockerfile adds the JAR file from the Overview to the Deephaven classpath. The Python example uses the `server` image, which starts a Python console.
 
 > [!NOTE]
-> Make sure that the version in the `FROM` image tag matches the version of the authentication-provider JAR in the `ADD` URL. Both use version 42.8 in this example.
+> Make sure that the version in the `FROM` image tag matches the version of the authentication-provider JAR in the `ADD` URL. Both use version 42.7 in this example.
 
 ```Dockerfile
-FROM ghcr.io/deephaven/server:42.8
-ADD https://repo1.maven.org/maven2/io/deephaven/deephaven-sql-username-password-authentication-provider/42.8/deephaven-sql-username-password-authentication-provider-42.8.jar /apps/libs/
+FROM ghcr.io/deephaven/server:42.7
+ADD https://repo1.maven.org/maven2/io/deephaven/deephaven-sql-username-password-authentication-provider/42.7/deephaven-sql-username-password-authentication-provider-42.7.jar /apps/libs/
 ```
 
 ### docker-compose.yml
@@ -103,13 +103,15 @@ The `postgres` service keeps its data across restarts. See [Add more users after
 
 ### Start Deephaven
 
-Start Deephaven with `docker compose up --build`. Then open `http://localhost:10000/jsapi/authentication/basic.html`. The sample page fills in the `admin` username and the `p@ssw0rd` password from the [SQL file](#sql). Click **Go** to log in. The web IDE at `/ide` has no username/password login form, so it can't sign in with this handler. If you set `DEEPHAVEN_PORT`, replace `10000` in the URL with that host port.
+Start Deephaven with `docker compose up --build`. Then open `http://localhost:10000/jsapi/authentication/basic.html`. The sample page fills in the `admin` username and the `p@ssw0rd` password from the [SQL file](#sql). Click **Go** to log in. If you set `DEEPHAVEN_PORT`, replace `10000` in the URL with that host port.
 
 ## Log in from the JS API
 
 Applications that use the [Deephaven JS API](/core/client-api/javascript/modules/dh.html) log in with a username and password from the `users` table, such as the `admin` login from [Start Deephaven](#start-deephaven). Call [`login`](/core/client-api/javascript/classes/dh.CoreClient.html#login) with `type: dh.CoreClient.LOGIN_TYPE_PASSWORD`, the `username`, and the password in `token`. The code below shows the call. [Use the JS API](../use-jsapi.md) shows how to load the API into a web page.
 
 ```javascript
+import dh from "http://localhost:10000/jsapi/dh-core.js";
+
 async function main() {
   const client = new dh.CoreClient("http://localhost:10000");
   await client.login({
@@ -122,7 +124,7 @@ async function main() {
 main().catch((err) => console.error("Login failed:", err));
 ```
 
-Replace `http://localhost:10000` with the address of your server.
+Replace `http://localhost:10000` with the address of your server, in both the import and the client.
 
 ## Add more users after startup
 
