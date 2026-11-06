@@ -284,7 +284,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
     }
 
     /**
-     * The top page table level: its {@link Level1} children. A row key's index at this level is its bits from
+     * The root page table level, containing {@link Level1} children. A row key's index at this level is its bits from
      * {@code BLOCK0_SHIFT} up. While the children are dense enough, as {@link #maxWindow(int)} allows, the level holds
      * them in an array indexed by child index less the index of its first entry, so that the array covers only the
      * window of indices in use; otherwise it holds them densely, at the positions of their indices in a sorted array.
