@@ -334,7 +334,9 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
             }
             int low = 0;
             int length = size;
-            // narrow to the last position whose index is at most the target, choosing each half without a branch
+            // narrow to the last position whose index is at most the target; the number of steps depends only on the
+            // size, and each step chooses its half with a select of two values, which the JIT can compile to a
+            // conditional move rather than a branch on the comparison
             while (length > 1) {
                 final int half = length >>> 1;
                 low = indices[low + half] <= index ? low + half : low;
