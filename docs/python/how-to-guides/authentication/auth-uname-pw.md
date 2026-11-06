@@ -11,7 +11,7 @@ Username/password is a common authentication method in which each user of an app
 
 ## Overview
 
-Username/password authentication needs three extra files on top of a [Docker deployment of Deephaven](../../getting-started/docker-install.md). A PostgreSQL database that runs in Docker alongside Deephaven stores usernames and passwords. The database stores each password as a bcrypt hash, which is a one-way hashing algorithm.
+Username/password authentication needs three extra files on top of a [Docker deployment of Deephaven](../../getting-started/docker-install.md). A PostgreSQL database that runs in Docker alongside Deephaven stores usernames and passwords. The database stores each password as a bcrypt hash. Bcrypt is a one-way hashing algorithm.
 
 This guide covers the server setup and logging in from the [JS API](../use-jsapi.md). For a basic setup, there are three required files:
 
