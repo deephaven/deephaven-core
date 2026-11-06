@@ -256,7 +256,7 @@ public interface UpdateBySpecUnion {
                 builder.setRollingSum(
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.newBuilder()
                                 .setReverseWindowScale(rs.reverseWindowScale.toProto())
-                                .setForwardWindowScale(rs.forwardWindowScale.toProto()));
+                                .setForwardWindowScale(UpdateByWindowScale.forwardToProto(rs.forwardWindowScale)));
                 break;
             }
             case "UpdateByRollingGroup": {
@@ -264,7 +264,7 @@ public interface UpdateBySpecUnion {
                 builder.setRollingGroup(
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.newBuilder()
                                 .setReverseWindowScale(rg.reverseWindowScale.toProto())
-                                .setForwardWindowScale(rg.forwardWindowScale.toProto()));
+                                .setForwardWindowScale(UpdateByWindowScale.forwardToProto(rg.forwardWindowScale)));
                 break;
             }
             case "UpdateByRollingAvg": {
@@ -272,7 +272,7 @@ public interface UpdateBySpecUnion {
                 builder.setRollingAvg(
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.newBuilder()
                                 .setReverseWindowScale(ra.reverseWindowScale.toProto())
-                                .setForwardWindowScale(ra.forwardWindowScale.toProto()));
+                                .setForwardWindowScale(UpdateByWindowScale.forwardToProto(ra.forwardWindowScale)));
                 break;
             }
             case "UpdateByRollingMin": {
@@ -280,7 +280,7 @@ public interface UpdateBySpecUnion {
                 builder.setRollingMin(
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.newBuilder()
                                 .setReverseWindowScale(rm.reverseWindowScale.toProto())
-                                .setForwardWindowScale(rm.forwardWindowScale.toProto()));
+                                .setForwardWindowScale(UpdateByWindowScale.forwardToProto(rm.forwardWindowScale)));
                 break;
             }
             case "UpdateByRollingMax": {
@@ -288,7 +288,7 @@ public interface UpdateBySpecUnion {
                 builder.setRollingMax(
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.newBuilder()
                                 .setReverseWindowScale(rx.reverseWindowScale.toProto())
-                                .setForwardWindowScale(rx.forwardWindowScale.toProto()));
+                                .setForwardWindowScale(UpdateByWindowScale.forwardToProto(rx.forwardWindowScale)));
                 break;
             }
             case "UpdateByRollingProduct": {
@@ -297,7 +297,7 @@ public interface UpdateBySpecUnion {
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct
                                 .newBuilder()
                                 .setReverseWindowScale(rp.reverseWindowScale.toProto())
-                                .setForwardWindowScale(rp.forwardWindowScale.toProto()));
+                                .setForwardWindowScale(UpdateByWindowScale.forwardToProto(rp.forwardWindowScale)));
                 break;
             }
             case "UpdateByRollingCount": {
@@ -305,7 +305,7 @@ public interface UpdateBySpecUnion {
                 builder.setRollingCount(
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.newBuilder()
                                 .setReverseWindowScale(rc.reverseWindowScale.toProto())
-                                .setForwardWindowScale(rc.forwardWindowScale.toProto()));
+                                .setForwardWindowScale(UpdateByWindowScale.forwardToProto(rc.forwardWindowScale)));
                 break;
             }
             case "UpdateByRollingStd": {
@@ -313,7 +313,7 @@ public interface UpdateBySpecUnion {
                 builder.setRollingStd(
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.newBuilder()
                                 .setReverseWindowScale(rstd.reverseWindowScale.toProto())
-                                .setForwardWindowScale(rstd.forwardWindowScale.toProto()));
+                                .setForwardWindowScale(UpdateByWindowScale.forwardToProto(rstd.forwardWindowScale)));
                 break;
             }
             case "UpdateByRollingWAvg": {
@@ -321,7 +321,7 @@ public interface UpdateBySpecUnion {
                 builder.setRollingWavg(
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.newBuilder()
                                 .setReverseWindowScale(rwavg.reverseWindowScale.toProto())
-                                .setForwardWindowScale(rwavg.forwardWindowScale.toProto())
+                                .setForwardWindowScale(UpdateByWindowScale.forwardToProto(rwavg.forwardWindowScale))
                                 .setWeightColumn(Column.ColumnOrName.COLUMN_NAME.apply(rwavg.weightColumn)));
                 break;
             }
@@ -331,7 +331,7 @@ public interface UpdateBySpecUnion {
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula
                                 .newBuilder()
                                 .setReverseWindowScale(rf.reverseWindowScale.toProto())
-                                .setForwardWindowScale(rf.forwardWindowScale.toProto())
+                                .setForwardWindowScale(UpdateByWindowScale.forwardToProto(rf.forwardWindowScale))
                                 .setFormula(rf.formula);
                 if (rf.paramToken != null) {
                     b.setParamToken(rf.paramToken);
@@ -346,7 +346,7 @@ public interface UpdateBySpecUnion {
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCountWhere
                                 .newBuilder()
                                 .setReverseWindowScale(rcw.reverseWindowScale.toProto())
-                                .setForwardWindowScale(rcw.forwardWindowScale.toProto())
+                                .setForwardWindowScale(UpdateByWindowScale.forwardToProto(rcw.forwardWindowScale))
                                 .setResultColumn(rcw.resultColumn)
                                 .addAllFilters(rcw.filters.asList()));
                 break;

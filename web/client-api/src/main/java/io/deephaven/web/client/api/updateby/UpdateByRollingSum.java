@@ -4,13 +4,14 @@
 package io.deephaven.web.client.api.updateby;
 
 import com.vertispan.tsdefs.annotations.TsLiteral;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 @JsType(namespace = "dh.updateby")
 public class UpdateByRollingSum {
     @TsLiteral
     public final String type = "UpdateByRollingSum";
-    public UpdateByWindowScale windowScale;
+    @JsNullable
     public UpdateByWindowScale forwardWindowScale;
     public UpdateByWindowScale reverseWindowScale;
 }

@@ -11,6 +11,7 @@ import jsinterop.annotations.JsType;
 public class UpdateByRollingFormula {
     @TsLiteral
     public final String type = "UpdateByRollingFormula";
+    @JsNullable
     public UpdateByWindowScale forwardWindowScale;
     public UpdateByWindowScale reverseWindowScale;
 

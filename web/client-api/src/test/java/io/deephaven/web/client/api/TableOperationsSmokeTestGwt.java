@@ -14,6 +14,8 @@ import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.updateby.UpdateByCumulativeSum;
 import io.deephaven.web.client.api.updateby.UpdateByOperation;
 import io.deephaven.web.client.api.updateby.UpdateByOptions;
+import io.deephaven.web.client.api.updateby.UpdateByRollingSum;
+import io.deephaven.web.client.api.updateby.UpdateByWindowTicks;
 import jsinterop.base.Js;
 
 import java.util.ArrayList;
@@ -88,6 +90,17 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
         updateBy.operations = arr(cumSum);
         updateBy.groupByColumns = arr();
 
+        // A rolling operation with no forward window, which then defaults to zero ticks
+        UpdateByWindowTicks threeTicks = new UpdateByWindowTicks();
+        threeTicks.ticks = 3;
+        UpdateByRollingSum rollingSumSpec = new UpdateByRollingSum();
+        rollingSumSpec.reverseWindowScale = Js.uncheckedCast(threeTicks);
+        UpdateByOperation rollingSum = new UpdateByOperation();
+        rollingSum.spec = Js.uncheckedCast(rollingSumSpec);
+        rollingSum.matchPairs = arr("RS = X");
+        UpdateByOptions rollingUpdateBy = new UpdateByOptions();
+        rollingUpdateBy.operations = arr(rollingSum);
+
         List<Case> cases = new ArrayList<>();
         cases.add(new Case("head", (s, r, g) -> s.head(row(2))));
         cases.add(new Case("tail", (s, r, g) -> s.tail(row(2))));
@@ -116,6 +129,7 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
         cases.add(new Case("aggAllBy", (s, r, g) -> s.aggAllBy(Js.uncheckedCast(Aggregation.AggSum(null)), arr("X"))));
         cases.add(new Case("aggBy", (s, r, g) -> s.aggBy(aggBy)));
         cases.add(new Case("updateBy", (s, r, g) -> s.updateBy(updateBy)));
+        cases.add(new Case("updateBy, rolling without a forward window", (s, r, g) -> s.updateBy(rollingUpdateBy)));
         // The X axis must be an Instant or long column, spanning more nanoseconds than the plot has bins
         cases.add(new Case("downsample",
                 (s, r, g) -> s.update(arr("L = (long) X * 1_000_000_000L")).downsample(downsample)));

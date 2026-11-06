@@ -29,6 +29,20 @@ public interface UpdateByWindowScale {
     @JsProperty
     String getType();
 
+    /**
+     * The proto form of a rolling operation's forward window, which may be omitted: zero ticks, as the Java API
+     * defaults it, since the server requires one.
+     */
+    @JsOverlay
+    static io.deephaven.proto.backplane.grpc.UpdateByWindowScale.Builder forwardToProto(UpdateByWindowScale forward) {
+        if (forward == null) {
+            return io.deephaven.proto.backplane.grpc.UpdateByWindowScale.newBuilder()
+                    .setTicks(io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTicks.newBuilder()
+                            .setTicks(0));
+        }
+        return forward.toProto();
+    }
+
     @JsOverlay
     default io.deephaven.proto.backplane.grpc.UpdateByWindowScale.Builder toProto() {
         io.deephaven.proto.backplane.grpc.UpdateByWindowScale.Builder b =

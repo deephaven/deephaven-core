@@ -3,16 +3,26 @@
 //
 package io.deephaven.web.client.api.updateby;
 
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
+/**
+ * Options for the exponential moving operations. Each one is optional; the server's default applies to any not set.
+ */
 @JsType(namespace = "dh.updateby")
 public class UpdateByEmOptions {
+    @JsNullable
     public BadDataBehavior onNullValue;
+    @JsNullable
     public BadDataBehavior onNaNValue;
+    @JsNullable
     public BadDataBehavior onNullTime;
+    @JsNullable
     public BadDataBehavior onNegativeDeltaTime;
+    @JsNullable
     public BadDataBehavior onZeroDeltaTime;
 
+    @JsNullable
     public MathContext bigValueContext;
 
     io.deephaven.proto.backplane.grpc.UpdateByEmOptions.Builder toProto() {

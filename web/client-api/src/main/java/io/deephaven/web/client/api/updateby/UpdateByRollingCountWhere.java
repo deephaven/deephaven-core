@@ -5,12 +5,14 @@ package io.deephaven.web.client.api.updateby;
 
 import com.vertispan.tsdefs.annotations.TsLiteral;
 import elemental2.core.ReadonlyArray;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 @JsType(namespace = "dh.updateby")
 public class UpdateByRollingCountWhere {
     @TsLiteral
     public final String type = "UpdateByRollingCountWhere";
+    @JsNullable
     public UpdateByWindowScale forwardWindowScale;
     public UpdateByWindowScale reverseWindowScale;
 
