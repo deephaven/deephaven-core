@@ -44,7 +44,7 @@ When working with partitioned data, such as Parquet files, regions of the overal
 
 Columns or regions with data stored in sorted order (ascending or descending) can efficiently evaluate range and match filters. Rather than scanning every row to evaluate the filter, the engine performs binary search, drastically reducing the number of values to be examined.
 
-Deephaven detects sorted order for a column or region using table metadata. When the Deephaven engine sorts a table or loads a table from storage, the metadata will automatically be set.
+Deephaven detects sorted order for a column or region using table metadata. When the Deephaven engine sorts a table, it sets the metadata automatically. When it loads a Parquet file or Iceberg table that Deephaven wrote from sorted data, it sets the metadata for the leading sort column, which Deephaven records in each file. Deephaven ignores sort orders that other writers declare in Parquet or Iceberg metadata, because their ordering can differ from Deephaven's.
 
 ```groovy order=source,sorted_source,result_range,result_match
 // create a table with random integer and double data
