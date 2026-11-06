@@ -29,7 +29,6 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
-import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -199,31 +198,22 @@ public class JsInputTable {
             return Promise.reject(failure);
         }
         if (tablesToAdd.length == 1) {
-            return addTicket(ticketOf(tablesToAdd[0]), null);
+            return addTicket(ticketOf(tablesToAdd[0]));
         }
-        // Merge first; the merged table is an intermediate to close once the add has settled
-        return table.getConnection().mergeTables(tablesToAdd, this.table).asPromise()
-                .then(merged -> addTicket(merged.getHeadHandle().makeTicket(), merged));
+        // The merge holds its tables until it exists; the add holds the merge, and the server waits for it, so both
+        // requests go out at once
+        return addTicket(table.getConnection().mergeTables(tablesToAdd, this.table).typedTicket().getTicket());
     }
 
-    private Promise<JsInputTable> addTicket(Ticket tableToAdd, @Nullable JsTable intermediate) {
-        return Callbacks.<AddTableResponse>grpcUnaryPromise(c -> {
-            AddTableRequest addTableRequest = AddTableRequest.newBuilder()
-                    .setInputTable(table.getHeadHandle().makeTicket())
-                    .setTableToAdd(tableToAdd)
-                    .build();
-            table.getConnection().inputTableServiceClient().addTableToInputTable(addTableRequest, c);
-        }).then(success -> {
-            if (intermediate != null) {
-                intermediate.close();
-            }
-            return Promise.resolve(this);
-        }, failure -> {
-            if (intermediate != null) {
-                intermediate.close();
-            }
-            return Promise.reject(failure);
-        });
+    private Promise<JsInputTable> addTicket(Ticket tableToAdd) {
+        return MicrotaskBatchImpl.holdUntil(table.getConnection(), new Ticket[] {tableToAdd},
+                () -> Callbacks.<AddTableResponse>grpcUnaryPromise(c -> {
+                    AddTableRequest addTableRequest = AddTableRequest.newBuilder()
+                            .setInputTable(table.getHeadHandle().makeTicket())
+                            .setTableToAdd(tableToAdd)
+                            .build();
+                    table.getConnection().inputTableServiceClient().addTableToInputTable(addTableRequest, c);
+                })).then(success -> Promise.resolve(this));
     }
 
     /**
@@ -250,7 +240,11 @@ public class JsInputTable {
         if (failure != null) {
             return Promise.reject(failure);
         }
+        Ticket[] tickets = Arrays.stream(tablesToDelete).map(t -> t.typedTicket().getTicket()).toArray(Ticket[]::new);
+        return MicrotaskBatchImpl.holdUntil(table.getConnection(), tickets, () -> deleteHeld(tablesToDelete));
+    }
 
+    private Promise<JsInputTable> deleteHeld(JsTableReference[] tablesToDelete) {
         // for each table, make a view on that table of only key columns, then union the tables and drop together
         final List<JsRunnable> cleanups = new ArrayList<>();
         final Ticket ticketToDelete;

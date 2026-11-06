@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -840,6 +841,54 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             }
         }
         return null;
+    }
+
+    /**
+     * Makes the gRPC call {@code call} returns, holding the tables {@code tickets} name until it settles, for a request
+     * outside the batch that names them. The result is the call's, unless a held table fails or is released first: the
+     * server may then never answer, so the result rejects at once and that table is let go.
+     */
+    public static <T> Promise<T> holdUntil(WorkerConnection connection, Ticket[] tickets, Supplier<Promise<T>> call) {
+        Object retainer = new Object();
+        List<ClientTableState> held = new ArrayList<>();
+        for (Ticket ticket : tickets) {
+            connection.getCache().get(new TableTicket(ticket)).ifPresent(state -> {
+                if (!held.contains(state)) {
+                    state.retain(retainer);
+                    held.add(state);
+                }
+            });
+        }
+        LazyPromise<T> result = new LazyPromise<>();
+        boolean[] lettingGo = {false};
+        Runnable letGo = () -> {
+            if (!lettingGo[0]) {
+                lettingGo[0] = true;
+                held.forEach(state -> state.unretain(retainer));
+            }
+        };
+        for (ClientTableState state : held) {
+            state.onRunning(JsConsumer.doNothing(), failure -> {
+                letGo.run();
+                result.fail("Operand table failed: " + failure);
+            }, () -> {
+                letGo.run();
+                result.fail("Operand table was released");
+            });
+        }
+        if (!lettingGo[0]) {
+            // Nothing failed while being held, so the request names only tables the server has or will have
+            call.get().then(value -> {
+                letGo.run();
+                result.succeed(value);
+                return null;
+            }, err -> {
+                letGo.run();
+                result.fail(err);
+                return null;
+            });
+        }
+        return result.asPromise();
     }
 
     private static @Nullable Pending<?> asPending(JsTableReference operand) {
