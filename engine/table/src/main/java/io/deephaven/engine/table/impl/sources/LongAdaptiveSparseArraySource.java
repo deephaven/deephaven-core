@@ -394,7 +394,8 @@ public class LongAdaptiveSparseArraySource extends SparseArrayColumnSource<Long>
                 }
                 return new Level0(newBase, window);
             }
-            // the index is outside the window, so it goes before or after the children held
+            // the indices span too wide a range to hold efficiently in a window, so switch to ranked children; the
+            // new index is outside the window, so it ranks before or after the children held
             final int[] rankedIndices = new int[2 * count];
             final Level1[] rankedChildren = new Level1[2 * count];
             int ri = 0;
@@ -579,7 +580,8 @@ public class LongAdaptiveSparseArraySource extends SparseArrayColumnSource<Long>
                 }
                 return new Level1(recycled, newBase, null, window);
             }
-            // the index is outside the window, so it goes before or after the children held
+            // the indices span too wide a range to hold efficiently in a window, so switch to ranked children; the
+            // new index is outside the window, so it ranks before or after the children held
             final int[] rankedIndices = new int[count];
             final Level2[] rankedChildren = new Level2[grownCapacity(count, count)];
             int ri = 0;
