@@ -140,12 +140,11 @@ public interface JsTableOperations extends ServerObject {
     /**
      * The one consistent way to get from any table operations, pending or already resolved, to a retained
      * {@link JsResolvedTable} whose data can be read and on which more operations can be chained. A
-     * {@link JsPendingTable} yields the table it creates, whatever awaiting it would give; an already resolved table
-     * yields an independently closeable copy of itself; the operations of a {@link JsTable} yield a new owner of the
-     * state that table had when {@link JsTable#operations()} was called. The caller owns the result and must close it.
-     * Resolving the same pending table again yields the same promise and the same table; a pending table that was
-     * canceled, or is resolved after the task that created it, rejects instead, as does a fetched one that was already
-     * awaited.
+     * {@link JsPendingTable}, including the {@link JsTable#operations()} of a {@link JsTable}, yields the table it
+     * creates or stands for, whatever awaiting it would give; an already resolved table yields an independently
+     * closeable copy of itself. The caller owns the result and must close it. Resolving the same pending table again
+     * yields the same promise and the same table; a pending table that was canceled, or is resolved after the task that
+     * created it, rejects instead, as does a fetched one that was already awaited.
      *
      * @param options optionally, a {@code signal} that cancels a pending table when aborted
      * @return a promise of a retained resolved table

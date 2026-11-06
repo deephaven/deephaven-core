@@ -15,13 +15,13 @@ import jsinterop.annotations.JsMethod;
  * <p>
  * This interface is "Thenable" / "PromiseLike", it can be awaited or have methods chained to it like a promise to
  * resolve into a table with metadata that can have data fetched from it. What awaiting gives depends on where the
- * pending table came from: an operation on {@link JsTableOperations} yields a {@link JsResolvedTable}, while the APIs
- * that have always produced a {@link JsTable}, such as fetching a named table, yield a {@link JsTable}.
- * {@link #resolve()} always yields a {@link JsResolvedTable}. For an operation the two are the same table; a fetched
- * pending table produces one or the other, so await it or call {@code resolve()} on it, not both. Either may be
- * repeated and gives the same table. The resulting table must be closed to indicate that it will no longer be used and
- * server resources can be freed. A future version of this API could provide "liveness scopes" to claim/release batches
- * of tables at a time automatically.
+ * pending table came from: an operation on {@link JsTableOperations}, or the {@link JsTable#operations()} of a
+ * {@link JsTable}, yields a {@link JsResolvedTable}, while the APIs that have always produced a {@link JsTable}, such
+ * as fetching a named table, yield a {@link JsTable}. {@link #resolve()} always yields a {@link JsResolvedTable}. For
+ * these the two are the same table; a fetched pending table produces one or the other, so await it or call
+ * {@code resolve()} on it, not both. Either may be repeated and gives the same table. The resulting table must be
+ * closed to indicate that it will no longer be used and server resources can be freed. A future version of this API
+ * could provide "liveness scopes" to claim/release batches of tables at a time automatically.
  * <p>
  * A pending table may only be used in the task that created it, before control returns to the event loop: awaited,
  * {@code then()} or {@code resolve()} called on it, chained on, passed as an operand, or passed to
@@ -52,7 +52,8 @@ public interface JsPendingTable<@TsDefault(JsResolvedTable.class) T extends JsIT
      * yet produced their table reject with "Source table failed: " and the cancel message; operations chained on it
      * afterward are never sent, and reject with "Cannot use source table: " and the cancel message. The server cancels
      * work it has not started, but work it has already begun runs to completion there, so callers that cancel often
-     * should debounce.
+     * should debounce. Canceling the {@link JsTable#operations()} of a {@link JsTable} works the same way, except that
+     * the {@code Table} and its server-side table are left as they are.
      */
     @JsMethod
     void cancel();
