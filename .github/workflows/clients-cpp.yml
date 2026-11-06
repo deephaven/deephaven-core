@@ -206,7 +206,7 @@ jobs:
       # useful when that build failed.
       - name: Upload deps build log
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cpp-deps-build-log-${{ github.run_id }}
           path: cpp-client/build/cppDepsImage-build.log
@@ -231,7 +231,7 @@ jobs:
             -C /opt deephaven > cpp-client-install.tar.gz
 
       - name: Upload install dir
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cpp-client-install-ubuntu-24.04
           path: cpp-client-install.tar.gz
@@ -340,7 +340,7 @@ jobs:
       # Uploaded even on failure, since that's when it's most useful.
       - name: Upload vcpkg debug log
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: vcpkg-debug-windows-2025-${{ github.run_id }}
           path: configure.log
@@ -358,7 +358,7 @@ jobs:
       # Diagnostic: upload the ABI info we collected in the previous step.
       - name: Upload ABI info
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: abi-info-windows-2025-${{ github.run_id }}
           path: abi-dump/
@@ -382,7 +382,7 @@ jobs:
 
       - name: Upload install dir
         id: upload-install-directory
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cpp-client-install-windows-2025
           path: cpp-client-install.tar.gz
