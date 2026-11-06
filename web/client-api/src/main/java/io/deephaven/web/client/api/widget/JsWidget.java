@@ -332,7 +332,8 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
      * Sends a string/bytes payload to the server, along with references to objects that exist on the server.
      *
      * @param msg string/buffer/view instance that represents data to send
-     * @param references an array of objects that can be safely sent to the server
+     * @param references objects the server may refer to; they are not held for you, so keep each one open until the
+     *        server has definitely received it (by the plugin's acknowledgement, or for the plugin's lifetime)
      */
     @JsMethod
     public void sendMessage(MessageUnion msg, @JsOptional @JsNullable JsArray<ServerObject.Union> references) {
