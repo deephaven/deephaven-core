@@ -880,14 +880,19 @@ public class WorkerConnection {
         if (object.getConnection() != this) {
             return Promise.reject("Cannot share an object that comes from another server instance");
         }
+        String failure = MicrotaskBatchImpl.operandFailure(JsTableReference.of(object));
+        if (failure != null) {
+            return Promise.reject(failure);
+        }
         Ticket ticket = sharedTicketFromStringOrBytes(sharedTicketBytes);
         PublishRequest request = PublishRequest.newBuilder()
                 .setSourceId(object.typedTicket().getTicket())
                 .setResultId(ticket).build();
 
-        return Callbacks.<PublishResponse>grpcUnaryPromise(c -> {
-            sessionServiceClient().publishFromTicket(request, c);
-        }).then(ignore -> Promise.resolve(sharedTicketBytes));
+        return MicrotaskBatchImpl.holdUntil(this, new Ticket[] {request.getSourceId()},
+                () -> Callbacks.<PublishResponse>grpcUnaryPromise(c -> {
+                    sessionServiceClient().publishFromTicket(request, c);
+                })).then(ignore -> Promise.resolve(sharedTicketBytes));
     }
 
     private Ticket sharedTicketFromStringOrBytes(SharedExportBytesUnion sharedTicketBytes) {

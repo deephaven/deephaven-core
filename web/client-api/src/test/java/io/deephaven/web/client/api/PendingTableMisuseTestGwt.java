@@ -401,8 +401,13 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
                 op -> session.mergeTables(new JsTableReference[] {JsTableReference.of(source), op}).resolve());
         consumers.put("InputTable.addTable", input::addTable);
         consumers.put("InputTable.deleteTable", input::deleteTable);
+        consumers.put("shareObject",
+                op -> session.shareObject(Js.uncheckedCast(op), Js.uncheckedCast("misuse-share-" + shares++)));
         return consumers;
     }
+
+    /** Makes each shared ticket in this class distinct. */
+    private static int shares;
 
     /** Waits for every check, then fails listing each one that failed, so one hang does not hide another. */
     private static Promise<Object> allOf(List<Promise<Object>> checks) {

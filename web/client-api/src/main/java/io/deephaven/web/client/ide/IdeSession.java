@@ -216,8 +216,9 @@ public class IdeSession extends HasEventHandling {
                 .setTableId(table.getHandle().makeTicket())
                 .setVariableName(name)
                 .build();
-        return Callbacks.<BindTableToVariableResponse>grpcUnaryPromise(
-                c -> connection.consoleServiceClient().bindTableToVariable(bindRequest, c))
+        return MicrotaskBatchImpl.holdUntil(connection, new Ticket[] {bindRequest.getTableId()},
+                () -> Callbacks.<BindTableToVariableResponse>grpcUnaryPromise(
+                        c -> connection.consoleServiceClient().bindTableToVariable(bindRequest, c)))
                 .then(ignore -> Promise.resolve((Void) null));
     }
 
