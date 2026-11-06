@@ -109,7 +109,7 @@ public class ReplicateSourceAndChunkTests {
                 "ObjectChunk<[?] extends Values>", "ObjectChunk<?, ? extends Values>",
                 "Map<String, ObjectArraySource>", "Map<String, ObjectArraySource<?>>",
                 "new ObjectArraySource\\(\\)", "new ObjectArraySource<>\\(String.class\\)",
-                "new ObjectSparseArraySource\\(\\)", "new ObjectSparseArraySource<>\\(String.class\\)");
+                "new ObjectAdaptiveSparseArraySource\\(\\)", "new ObjectAdaptiveSparseArraySource<>\\(String.class\\)");
         lines = removeRegion(lines, "boxing imports");
         FileUtils.writeLines(objectFile, lines);
     }
@@ -120,12 +120,12 @@ public class ReplicateSourceAndChunkTests {
         lines = removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
         lines = globalReplacements(lines,
                 "NULL_OBJECT", "null",
-                "ObjectSparseArraySource makeTestSource",
-                "ObjectSparseArraySource<Object> makeTestSource",
-                "new ObjectSparseArraySource\\(\\)", "new ObjectSparseArraySource<>(Object.class)",
-                "new ObjectSparseArraySource\\((\\w+), (\\w+)\\)",
-                "new ObjectSparseArraySource<>(Object.class, null, $1, $2)",
-                "final ObjectSparseArraySource source", "final ObjectSparseArraySource<Object> source",
+                "ObjectAdaptiveSparseArraySource makeTestSource",
+                "ObjectAdaptiveSparseArraySource<Object> makeTestSource",
+                "new ObjectAdaptiveSparseArraySource\\(\\)", "new ObjectAdaptiveSparseArraySource<>(Object.class)",
+                "new ObjectAdaptiveSparseArraySource\\((\\w+), (\\w+)\\)",
+                "new ObjectAdaptiveSparseArraySource<>(Object.class, null, $1, $2)",
+                "final ObjectAdaptiveSparseArraySource source", "final ObjectAdaptiveSparseArraySource<Object> source",
                 "Long2ObjectOpenHashMap expected", "Long2ObjectOpenHashMap<Object> expected",
                 "Long2ObjectOpenHashMap shifted", "Long2ObjectOpenHashMap<Object> shifted",
                 "Long2ObjectOpenHashMap expectedPrev", "Long2ObjectOpenHashMap<Object> expectedPrev",

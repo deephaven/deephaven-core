@@ -281,7 +281,7 @@ public class ReplicateUpdateBy {
 
         lines = addImport(lines, "import io.deephaven.util.QueryConstants;",
                 "import io.deephaven.engine.table.impl.sources.ByteArraySource;",
-                "import io.deephaven.engine.table.impl.sources.ByteSparseArraySource;",
+                "import io.deephaven.engine.table.impl.sources.ByteAdaptiveSparseArraySource;",
                 "import io.deephaven.engine.table.WritableColumnSource;");
 
         lines = replaceRegion(lines, "extra-fields", Collections.singletonList("    final byte nullValue;"));
@@ -299,7 +299,7 @@ public class ReplicateUpdateBy {
                                 "\n" +
                                 "    // region extra-methods\n" +
                                 "    protected WritableColumnSource<Byte> makeSparseSource() {\n" +
-                                "        return new ByteSparseArraySource();\n" +
+                                "        return new ByteAdaptiveSparseArraySource();\n" +
                                 "    }\n" +
                                 "\n" +
                                 "    protected WritableColumnSource<Byte> makeDenseSource() {\n" +
@@ -321,7 +321,7 @@ public class ReplicateUpdateBy {
                 "import java.util.Map;",
                 "import java.util.Collections;",
                 "import io.deephaven.engine.table.impl.sources.BooleanArraySource;",
-                "import io.deephaven.engine.table.impl.sources.BooleanSparseArraySource;",
+                "import io.deephaven.engine.table.impl.sources.BooleanAdaptiveSparseArraySource;",
                 "import io.deephaven.engine.table.WritableColumnSource;",
                 "import io.deephaven.util.BooleanUtils;");
 
@@ -344,7 +344,7 @@ public class ReplicateUpdateBy {
                                 "    }\n" +
                                 "    @Override\n" +
                                 "    protected WritableColumnSource<Byte> makeSparseSource() {\n" +
-                                "        return (WritableColumnSource<Byte>) new BooleanSparseArraySource().reinterpret(byte.class);\n"
+                                "        return (WritableColumnSource<Byte>) new BooleanAdaptiveSparseArraySource().reinterpret(byte.class);\n"
                                 +
                                 "    }\n" +
                                 "\n" +
@@ -416,12 +416,12 @@ public class ReplicateUpdateBy {
         lines = ReplicationUtils.globalReplacements(lines,
                 "class " + className, "class " + className + "<T>",
                 "WritableColumnSource<Object>", "WritableColumnSource<T>",
-                " ObjectSparseArraySource ", " ObjectSparseArraySource<T> ",
+                " ObjectAdaptiveSparseArraySource ", " ObjectAdaptiveSparseArraySource<T> ",
                 " ObjectArraySource ", " ObjectArraySource<T> ",
                 "ObjectChunk<Object, Values>", "ObjectChunk<T, Values>",
                 "SizedObjectChunk<Object, >", "SizedObjectChunk<>",
                 "new ObjectArraySource\\(\\);", "new ObjectArraySource<>(colType);",
-                "new ObjectSparseArraySource\\(\\);", "new ObjectSparseArraySource<>(colType);",
+                "new ObjectAdaptiveSparseArraySource\\(\\);", "new ObjectAdaptiveSparseArraySource<>(colType);",
                 "(?:QueryConstants\\.)?NULL_OBJECT", "null",
                 "Object lastValidValue", "T lastValidValue",
                 "Object val", "T val",

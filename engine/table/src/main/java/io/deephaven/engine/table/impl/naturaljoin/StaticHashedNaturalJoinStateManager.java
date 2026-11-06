@@ -106,7 +106,7 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
                 return new ContiguousWritableRowRedirection(innerIndex);
             }
             case Sparse: {
-                final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
+                final LongAdaptiveSparseArraySource sparseRedirections = new LongAdaptiveSparseArraySource();
 
                 try (final RowSet.Iterator indexKeyIt = indexTableRowSet.iterator()) {
                     for (int ii = 0; ii < rowSetCount; ++ii) {

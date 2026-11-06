@@ -48,21 +48,21 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
     /** Row keys near zero, spread over many leaves, and far away, so that each page table level holds many nodes. */
     private static final long[] KEY_REGION_STARTS = {0, 1L << 26, 1L << 41};
     private static final int KEY_REGION_SIZE = 40 * BLOCK_SIZE;
-    private static final int SORTED_THRESHOLD = CharacterSparseArraySource.DEFAULT_SORTED_THRESHOLD;
-    private static final int COMPACT_THRESHOLD = CharacterSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
+    private static final int SORTED_THRESHOLD = CharacterAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD;
+    private static final int COMPACT_THRESHOLD = CharacterAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
 
     /**
      * @return a source with the default thresholds, whose leaves may be compact
      */
     @NotNull
     @Override
-    CharacterSparseArraySource makeTestSource() {
-        return new CharacterSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
+    CharacterAdaptiveSparseArraySource makeTestSource() {
+        return new CharacterAdaptiveSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
     }
 
     @Test
     public void confirmAliasingForbidden() {
-        final CharacterSparseArraySource source = makeTestSource();
+        final CharacterAdaptiveSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         // a full leaf, which getChunk aliases
         for (int ii = 0; ii < BLOCK_SIZE; ++ii) {
@@ -92,7 +92,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
     public void testThresholds() {
         for (final int compactThreshold : new int[] {0, 1, 4, 64, BLOCK_SIZE}) {
             for (final int sortedThreshold : new int[] {1, 4, 16}) {
-                checkAgainstMap(new CharacterSparseArraySource(sortedThreshold, compactThreshold),
+                checkAgainstMap(new CharacterAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -132,7 +132,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
         return builder.build();
     }
 
-    private static void checkAgainstMap(final CharacterSparseArraySource source, final int seed) {
+    private static void checkAgainstMap(final CharacterAdaptiveSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2CharOpenHashMap expected = new Long2CharOpenHashMap();
         expected.defaultReturnValue(NULL_CHAR);
@@ -149,9 +149,9 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
     @Test
     public void testPreviousValues() {
         for (final int compactThreshold : new int[] {0, 4, 64,
-                CharacterSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                CharacterAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
             for (final int sortedThreshold : new int[] {1, 16}) {
-                checkPreviousValues(new CharacterSparseArraySource(sortedThreshold, compactThreshold),
+                checkPreviousValues(new CharacterAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -161,7 +161,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
      * Apply random operations in update cycles, checking that previous values are the values at the start of each
      * cycle.
      */
-    private static void checkPreviousValues(final CharacterSparseArraySource source, final int seed) {
+    private static void checkPreviousValues(final CharacterAdaptiveSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2CharOpenHashMap expected = new Long2CharOpenHashMap();
         expected.defaultReturnValue(NULL_CHAR);
@@ -190,8 +190,8 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
     public void testParallelPopulation() throws Exception {
         for (final Preparation preparation : Preparation.values()) {
             for (final int compactThreshold : new int[] {0, 4,
-                    CharacterSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
-                checkParallelPopulation(new CharacterSparseArraySource(16, compactThreshold), preparation,
+                    CharacterAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                checkParallelPopulation(new CharacterAdaptiveSparseArraySource(16, compactThreshold), preparation,
                         compactThreshold * 3 + preparation.ordinal());
             }
         }
@@ -226,7 +226,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
      * the current and previous values.
      */
     private static void checkParallelPopulation(
-            final CharacterSparseArraySource source,
+            final CharacterAdaptiveSparseArraySource source,
             final Preparation preparation,
             final int seed) throws Exception {
         final boolean aligned = preparation == Preparation.ALIGNED;
@@ -306,13 +306,13 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
     public void testParallelPopulationOfSplitFullLeaves() throws Exception {
         final int threads = 4;
         final int leavesPerThread = 4;
-        final int rowsPerLeaf = CharacterSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
-        final int pieceSize = CharacterSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
+        final int rowsPerLeaf = CharacterAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
+        final int pieceSize = CharacterAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
         final ExecutorService executor = Executors.newFixedThreadPool(threads);
         try {
             for (int trial = 0; trial < 200; ++trial) {
                 final Random random = new Random(trial);
-                final CharacterSparseArraySource source = makeTestSource();
+                final CharacterAdaptiveSparseArraySource source = makeTestSource();
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 for (int leaf = 0; leaf < threads * leavesPerThread; ++leaf) {
                     builder.appendRange((long) leaf * BLOCK_SIZE, (long) leaf * BLOCK_SIZE + rowsPerLeaf - 1);
@@ -358,7 +358,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
      * {@code pieceSize} rows at a time.
      */
     private static void fillDivision(
-            final CharacterSparseArraySource source,
+            final CharacterAdaptiveSparseArraySource source,
             final RowSet rows,
             final char[] values,
             final long start,
@@ -381,7 +381,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
 
     @Test
     public void testClearBlocks() {
-        final CharacterSparseArraySource source = makeTestSource();
+        final CharacterAdaptiveSparseArraySource source = makeTestSource();
         source.startTrackingPrevValues();
         final Random random = new Random(0);
         // a full leaf, a bitmap leaf and a sorted leaf, in that order
@@ -409,7 +409,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
 
     @Test
     public void testClearNeverWrittenStructures() {
-        final CharacterSparseArraySource source = makeTestSource();
+        final CharacterAdaptiveSparseArraySource source = makeTestSource();
         final char value = randomValue(new Random(0));
         source.set(0, value);
         source.startTrackingPrevValues();
@@ -520,7 +520,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
      * the leaves already held, then release some of those, checking current and previous values throughout.
      */
     private void checkManyChildren(final List<Long> leafStarts) {
-        final CharacterSparseArraySource source = makeTestSource();
+        final CharacterAdaptiveSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         final Long2CharOpenHashMap expected = new Long2CharOpenHashMap();
         expected.defaultReturnValue(NULL_CHAR);
@@ -575,7 +575,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
      * release the structures that hold no remaining row.
      */
     private static void releaseLeaves(
-            final CharacterSparseArraySource source,
+            final CharacterAdaptiveSparseArraySource source,
             final Long2CharOpenHashMap expected,
             final List<Long> leafStarts,
             final int step) {
@@ -598,7 +598,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
      * values in most leaves, more in some, and every value in a few.
      */
     private static void writeLeavesInChunks(
-            final CharacterSparseArraySource source,
+            final CharacterAdaptiveSparseArraySource source,
             final Long2CharOpenHashMap expected,
             final Random random,
             final List<Long> leafStarts) {
@@ -635,7 +635,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
      * {@code source}, one at a time and in a chunk.
      */
     private static void checkLeaves(
-            final CharacterSparseArraySource source,
+            final CharacterAdaptiveSparseArraySource source,
             final Long2CharOpenHashMap current,
             final Long2CharOpenHashMap previous) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
@@ -660,7 +660,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
     }
 
     private static void applyRandomOperation(
-            final CharacterSparseArraySource source,
+            final CharacterAdaptiveSparseArraySource source,
             final Long2CharOpenHashMap expected,
             final Random random) {
         switch (random.nextInt(6)) {
@@ -750,7 +750,7 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
      * through each way of reading them.
      */
     private static void assertMatches(
-            final CharacterSparseArraySource source,
+            final CharacterAdaptiveSparseArraySource source,
             final Long2CharOpenHashMap expected,
             final Random random,
             final boolean usePrev) {

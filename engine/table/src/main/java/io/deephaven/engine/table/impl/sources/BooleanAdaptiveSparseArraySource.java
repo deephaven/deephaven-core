@@ -12,23 +12,23 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * A sparse in-memory column source of Booleans, which stores each value as a byte, as
- * {@link io.deephaven.util.BooleanUtils#booleanAsByte(Boolean)} encodes it, in a {@link ByteSparseArraySource}. It may
- * be reinterpreted as that byte source.
+ * {@link io.deephaven.util.BooleanUtils#booleanAsByte(Boolean)} encodes it, in a {@link ByteAdaptiveSparseArraySource}.
+ * It may be reinterpreted as that byte source.
  */
-public class BooleanSparseArraySource extends WritableByteAsBooleanColumnSource
+public class BooleanAdaptiveSparseArraySource extends WritableByteAsBooleanColumnSource
         implements InMemoryColumnSource, PossiblyImmutableColumnSource, RowSetShiftCallback,
         WritableSourceWithPrepareForParallelPopulation {
 
-    private final ByteSparseArraySource byteSource;
+    private final ByteAdaptiveSparseArraySource byteSource;
 
-    public BooleanSparseArraySource() {
-        this(new ByteSparseArraySource());
+    public BooleanAdaptiveSparseArraySource() {
+        this(new ByteAdaptiveSparseArraySource());
     }
 
     /**
      * @param byteSource the source of the byte encodings of the values
      */
-    public BooleanSparseArraySource(@NotNull final ByteSparseArraySource byteSource) {
+    public BooleanAdaptiveSparseArraySource(@NotNull final ByteAdaptiveSparseArraySource byteSource) {
         super(byteSource);
         this.byteSource = byteSource;
     }

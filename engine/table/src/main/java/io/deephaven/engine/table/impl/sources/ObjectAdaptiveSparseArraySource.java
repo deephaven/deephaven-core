@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharacterSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
+// ****** Edit CharacterAdaptiveSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
@@ -86,7 +86,7 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  * also builds each leaf with every offset to be written, holding null, and records the previous values, so that writers
  * only store values.
  */
-public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
+public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<T>
         implements MutableColumnSourceGetDefaults.ForObject<T> /* MIXIN_IMPLS */ {
     private static final int REFERENCE_SIZE = 8;
 
@@ -136,7 +136,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
      * Commits the previous values at the end of each cycle in which a value changed; null when not tracking previous
      * values.
      */
-    private transient UpdateCommitter<ObjectSparseArraySource> prevFlusher;
+    private transient UpdateCommitter<ObjectAdaptiveSparseArraySource> prevFlusher;
     /**
      * The previous values recorded this cycle, or null if none have been recorded.
      */
@@ -169,14 +169,14 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     /**
      * Make a source whose leaves are all full blocks.
      */
-    public ObjectSparseArraySource(final Class<T> type) {
+    public ObjectAdaptiveSparseArraySource(final Class<T> type) {
         this(type, null);
     }
 
     /**
      * Make a source whose leaves are all full blocks.
      */
-    public ObjectSparseArraySource(final Class<T> type, final Class<?> componentType) {
+    public ObjectAdaptiveSparseArraySource(final Class<T> type, final Class<?> componentType) {
         this(type, componentType, DEFAULT_SORTED_THRESHOLD, 0);
     }
 
@@ -187,7 +187,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
      * @param compactThreshold the largest number of values a sorted or bitmap leaf holds, from 0, when
      *        every leaf is a full block, to the block size
      */
-    public ObjectSparseArraySource(
+    public ObjectAdaptiveSparseArraySource(
             final Class<T> type,
             final Class<?> componentType,
             final int sortedThreshold,
@@ -1965,7 +1965,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
             throw new IllegalStateException(
                     "Can't call startTrackingPrevValues() twice: " + getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, updateGraph, ObjectSparseArraySource::commitUpdates);
+        prevFlusher = new UpdateCommitter<>(this, updateGraph, ObjectAdaptiveSparseArraySource::commitUpdates);
     }
 
     private void commitUpdates() {
@@ -2297,7 +2297,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
             this.prevRoot = prevRoot;
         }
 
-        private void readLeaf(final ObjectSparseArraySource source, final long key) {
+        private void readLeaf(final ObjectAdaptiveSparseArraySource source, final long key) {
             maxKeyInCurrentLeaf = key | INDEX_MASK;
             final int block2 = block2(key);
             final Level2 level2 = source.getLevel2(key);

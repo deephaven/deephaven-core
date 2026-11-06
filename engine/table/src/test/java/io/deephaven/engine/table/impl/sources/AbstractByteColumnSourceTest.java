@@ -313,7 +313,7 @@ public abstract class AbstractByteColumnSourceTest {
     // to do.
     @Test
     public void testFillEmptyChunkWithPrev() {
-        final ByteSparseArraySource src = new ByteSparseArraySource();
+        final ByteAdaptiveSparseArraySource src = new ByteAdaptiveSparseArraySource();
         src.startTrackingPrevValues();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
@@ -323,7 +323,7 @@ public abstract class AbstractByteColumnSourceTest {
                 src.fillFromChunk(context, chunk, keys);
             }
         }
-        // NullPointerException in ByteSparseArraySource.commitUpdates()
+        // NullPointerException in ByteAdaptiveSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

@@ -198,7 +198,7 @@ public abstract class BaseIntUpdateByOperator extends UpdateByOperator {
         } else {
             maybeInnerSource = null;
             // region create-sparse
-            outputSource = new IntegerSparseArraySource();
+            outputSource = new IntegerAdaptiveSparseArraySource();
             // endregion create-sparse
         }
     }
@@ -231,7 +231,7 @@ public abstract class BaseIntUpdateByOperator extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((IntegerSparseArraySource) outputSource).shift(subRowSetToShift, delta);
+        ((IntegerAdaptiveSparseArraySource) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 

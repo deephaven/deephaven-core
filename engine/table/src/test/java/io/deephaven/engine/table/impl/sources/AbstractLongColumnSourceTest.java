@@ -313,7 +313,7 @@ public abstract class AbstractLongColumnSourceTest {
     // to do.
     @Test
     public void testFillEmptyChunkWithPrev() {
-        final LongSparseArraySource src = new LongSparseArraySource();
+        final LongAdaptiveSparseArraySource src = new LongAdaptiveSparseArraySource();
         src.startTrackingPrevValues();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
@@ -323,7 +323,7 @@ public abstract class AbstractLongColumnSourceTest {
                 src.fillFromChunk(context, chunk, keys);
             }
         }
-        // NullPointerException in LongSparseArraySource.commitUpdates()
+        // NullPointerException in LongAdaptiveSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

@@ -25,8 +25,8 @@ import static org.junit.Assert.*;
 public class TestIntegerSparseArraySource extends AbstractIntegerColumnSourceTest {
     @NotNull
     @Override
-    IntegerSparseArraySource makeTestSource() {
-        return new IntegerSparseArraySource();
+    IntegerAdaptiveSparseArraySource makeTestSource() {
+        return new IntegerAdaptiveSparseArraySource();
     }
 
     @Test
@@ -35,7 +35,7 @@ public class TestIntegerSparseArraySource extends AbstractIntegerColumnSourceTes
         final int arraySize = 100;
         final int rangeStart = 20;
         final int rangeEnd = 80;
-        final IntegerSparseArraySource source = makeTestSource();
+        final IntegerAdaptiveSparseArraySource source = makeTestSource();
         source.ensureCapacity(arraySize);
 
         final int[] data = ArrayGenerator.randomInts(rng, arraySize);

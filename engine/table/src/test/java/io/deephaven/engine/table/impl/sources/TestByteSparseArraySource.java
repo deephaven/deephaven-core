@@ -25,8 +25,8 @@ import static org.junit.Assert.*;
 public class TestByteSparseArraySource extends AbstractByteColumnSourceTest {
     @NotNull
     @Override
-    ByteSparseArraySource makeTestSource() {
-        return new ByteSparseArraySource();
+    ByteAdaptiveSparseArraySource makeTestSource() {
+        return new ByteAdaptiveSparseArraySource();
     }
 
     @Test
@@ -35,7 +35,7 @@ public class TestByteSparseArraySource extends AbstractByteColumnSourceTest {
         final int arraySize = 100;
         final int rangeStart = 20;
         final int rangeEnd = 80;
-        final ByteSparseArraySource source = makeTestSource();
+        final ByteAdaptiveSparseArraySource source = makeTestSource();
         source.ensureCapacity(arraySize);
 
         final byte[] data = ArrayGenerator.randomBytes(rng, arraySize);

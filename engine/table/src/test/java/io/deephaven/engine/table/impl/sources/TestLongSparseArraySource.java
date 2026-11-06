@@ -25,8 +25,8 @@ import static org.junit.Assert.*;
 public class TestLongSparseArraySource extends AbstractLongColumnSourceTest {
     @NotNull
     @Override
-    LongSparseArraySource makeTestSource() {
-        return new LongSparseArraySource();
+    LongAdaptiveSparseArraySource makeTestSource() {
+        return new LongAdaptiveSparseArraySource();
     }
 
     @Test
@@ -35,7 +35,7 @@ public class TestLongSparseArraySource extends AbstractLongColumnSourceTest {
         final int arraySize = 100;
         final int rangeStart = 20;
         final int rangeEnd = 80;
-        final LongSparseArraySource source = makeTestSource();
+        final LongAdaptiveSparseArraySource source = makeTestSource();
         source.ensureCapacity(arraySize);
 
         final long[] data = ArrayGenerator.randomLongs(rng, arraySize);

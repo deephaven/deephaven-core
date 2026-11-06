@@ -11,22 +11,22 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
+import io.deephaven.engine.table.impl.sources.IntegerAdaptiveSparseArraySource;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * This column source is used as a wrapper for the original table's symbol sources.
  * <p>
- * The symbol sources are reinterpreted to longs, and then the SymbolCombiner produces an IntegerSparseArraySource for
- * each side. To convert from the symbol table value, we simply look it up in the symbolLookup source and use that as
- * our chunked result.
+ * The symbol sources are reinterpreted to longs, and then the SymbolCombiner produces an
+ * IntegerAdaptiveSparseArraySource for each side. To convert from the symbol table value, we simply look it up in the
+ * symbolLookup source and use that as our chunked result.
  */
 public class SymbolTableToUniqueIdSource extends AbstractColumnSource<Integer>
         implements ImmutableColumnSourceGetDefaults.ForInt {
     private final ColumnSource<Long> symbolSource;
-    private final IntegerSparseArraySource symbolLookup;
+    private final IntegerAdaptiveSparseArraySource symbolLookup;
 
-    SymbolTableToUniqueIdSource(ColumnSource<Long> symbolSource, IntegerSparseArraySource symbolLookup) {
+    SymbolTableToUniqueIdSource(ColumnSource<Long> symbolSource, IntegerAdaptiveSparseArraySource symbolLookup) {
         super(int.class);
         this.symbolSource = symbolSource;
         this.symbolLookup = symbolLookup;
@@ -81,7 +81,7 @@ public class SymbolTableToUniqueIdSource extends AbstractColumnSource<Integer>
 
     public static SymbolTableToUniqueIdSource getUniqueIdSource(final Table symbolTable,
             final ColumnSource<?> keySource) {
-        final IntegerSparseArraySource symbolMapper = new IntegerSparseArraySource();
+        final IntegerAdaptiveSparseArraySource symbolMapper = new IntegerAdaptiveSparseArraySource();
         if (symbolTable.size() > 0) {
             final SymbolTableCombiner stc = new SymbolTableCombiner(new ColumnSource<?>[] {keySource},
                     SymbolTableCombiner.hashTableSize(symbolTable.size()));

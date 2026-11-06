@@ -52,21 +52,21 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
     /** Row keys near zero, spread over many leaves, and far away, so that each page table level holds many nodes. */
     private static final long[] KEY_REGION_STARTS = {0, 1L << 26, 1L << 41};
     private static final int KEY_REGION_SIZE = 40 * BLOCK_SIZE;
-    private static final int SORTED_THRESHOLD = ByteSparseArraySource.DEFAULT_SORTED_THRESHOLD;
-    private static final int COMPACT_THRESHOLD = ByteSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
+    private static final int SORTED_THRESHOLD = ByteAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD;
+    private static final int COMPACT_THRESHOLD = ByteAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
 
     /**
      * @return a source with the default thresholds, whose leaves may be compact
      */
     @NotNull
     @Override
-    ByteSparseArraySource makeTestSource() {
-        return new ByteSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
+    ByteAdaptiveSparseArraySource makeTestSource() {
+        return new ByteAdaptiveSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
     }
 
     @Test
     public void confirmAliasingForbidden() {
-        final ByteSparseArraySource source = makeTestSource();
+        final ByteAdaptiveSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         // a full leaf, which getChunk aliases
         for (int ii = 0; ii < BLOCK_SIZE; ++ii) {
@@ -96,7 +96,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
     public void testThresholds() {
         for (final int compactThreshold : new int[] {0, 1, 4, 64, BLOCK_SIZE}) {
             for (final int sortedThreshold : new int[] {1, 4, 16}) {
-                checkAgainstMap(new ByteSparseArraySource(sortedThreshold, compactThreshold),
+                checkAgainstMap(new ByteAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -136,7 +136,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
         return builder.build();
     }
 
-    private static void checkAgainstMap(final ByteSparseArraySource source, final int seed) {
+    private static void checkAgainstMap(final ByteAdaptiveSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2ByteOpenHashMap expected = new Long2ByteOpenHashMap();
         expected.defaultReturnValue(NULL_BYTE);
@@ -153,9 +153,9 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
     @Test
     public void testPreviousValues() {
         for (final int compactThreshold : new int[] {0, 4, 64,
-                ByteSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                ByteAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
             for (final int sortedThreshold : new int[] {1, 16}) {
-                checkPreviousValues(new ByteSparseArraySource(sortedThreshold, compactThreshold),
+                checkPreviousValues(new ByteAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -165,7 +165,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
      * Apply random operations in update cycles, checking that previous values are the values at the start of each
      * cycle.
      */
-    private static void checkPreviousValues(final ByteSparseArraySource source, final int seed) {
+    private static void checkPreviousValues(final ByteAdaptiveSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2ByteOpenHashMap expected = new Long2ByteOpenHashMap();
         expected.defaultReturnValue(NULL_BYTE);
@@ -194,8 +194,8 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
     public void testParallelPopulation() throws Exception {
         for (final Preparation preparation : Preparation.values()) {
             for (final int compactThreshold : new int[] {0, 4,
-                    ByteSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
-                checkParallelPopulation(new ByteSparseArraySource(16, compactThreshold), preparation,
+                    ByteAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                checkParallelPopulation(new ByteAdaptiveSparseArraySource(16, compactThreshold), preparation,
                         compactThreshold * 3 + preparation.ordinal());
             }
         }
@@ -230,7 +230,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
      * the current and previous values.
      */
     private static void checkParallelPopulation(
-            final ByteSparseArraySource source,
+            final ByteAdaptiveSparseArraySource source,
             final Preparation preparation,
             final int seed) throws Exception {
         final boolean aligned = preparation == Preparation.ALIGNED;
@@ -310,13 +310,13 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
     public void testParallelPopulationOfSplitFullLeaves() throws Exception {
         final int threads = 4;
         final int leavesPerThread = 4;
-        final int rowsPerLeaf = ByteSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
-        final int pieceSize = ByteSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
+        final int rowsPerLeaf = ByteAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
+        final int pieceSize = ByteAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
         final ExecutorService executor = Executors.newFixedThreadPool(threads);
         try {
             for (int trial = 0; trial < 200; ++trial) {
                 final Random random = new Random(trial);
-                final ByteSparseArraySource source = makeTestSource();
+                final ByteAdaptiveSparseArraySource source = makeTestSource();
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 for (int leaf = 0; leaf < threads * leavesPerThread; ++leaf) {
                     builder.appendRange((long) leaf * BLOCK_SIZE, (long) leaf * BLOCK_SIZE + rowsPerLeaf - 1);
@@ -362,7 +362,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
      * {@code pieceSize} rows at a time.
      */
     private static void fillDivision(
-            final ByteSparseArraySource source,
+            final ByteAdaptiveSparseArraySource source,
             final RowSet rows,
             final byte[] values,
             final long start,
@@ -385,7 +385,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
 
     @Test
     public void testClearBlocks() {
-        final ByteSparseArraySource source = makeTestSource();
+        final ByteAdaptiveSparseArraySource source = makeTestSource();
         source.startTrackingPrevValues();
         final Random random = new Random(0);
         // a full leaf, a bitmap leaf and a sorted leaf, in that order
@@ -413,7 +413,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
 
     @Test
     public void testClearNeverWrittenStructures() {
-        final ByteSparseArraySource source = makeTestSource();
+        final ByteAdaptiveSparseArraySource source = makeTestSource();
         final byte value = randomValue(new Random(0));
         source.set(0, value);
         source.startTrackingPrevValues();
@@ -524,7 +524,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
      * the leaves already held, then release some of those, checking current and previous values throughout.
      */
     private void checkManyChildren(final List<Long> leafStarts) {
-        final ByteSparseArraySource source = makeTestSource();
+        final ByteAdaptiveSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         final Long2ByteOpenHashMap expected = new Long2ByteOpenHashMap();
         expected.defaultReturnValue(NULL_BYTE);
@@ -579,7 +579,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
      * release the structures that hold no remaining row.
      */
     private static void releaseLeaves(
-            final ByteSparseArraySource source,
+            final ByteAdaptiveSparseArraySource source,
             final Long2ByteOpenHashMap expected,
             final List<Long> leafStarts,
             final int step) {
@@ -602,7 +602,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
      * values in most leaves, more in some, and every value in a few.
      */
     private static void writeLeavesInChunks(
-            final ByteSparseArraySource source,
+            final ByteAdaptiveSparseArraySource source,
             final Long2ByteOpenHashMap expected,
             final Random random,
             final List<Long> leafStarts) {
@@ -639,7 +639,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
      * {@code source}, one at a time and in a chunk.
      */
     private static void checkLeaves(
-            final ByteSparseArraySource source,
+            final ByteAdaptiveSparseArraySource source,
             final Long2ByteOpenHashMap current,
             final Long2ByteOpenHashMap previous) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
@@ -664,7 +664,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
     }
 
     private static void applyRandomOperation(
-            final ByteSparseArraySource source,
+            final ByteAdaptiveSparseArraySource source,
             final Long2ByteOpenHashMap expected,
             final Random random) {
         switch (random.nextInt(6)) {
@@ -754,7 +754,7 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
      * through each way of reading them.
      */
     private static void assertMatches(
-            final ByteSparseArraySource source,
+            final ByteAdaptiveSparseArraySource source,
             final Long2ByteOpenHashMap expected,
             final Random random,
             final boolean usePrev) {

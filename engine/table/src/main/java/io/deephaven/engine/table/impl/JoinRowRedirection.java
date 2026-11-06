@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
+import io.deephaven.engine.table.impl.sources.LongAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -29,7 +29,7 @@ public class JoinRowRedirection {
                 rowRedirection = new ContiguousWritableRowRedirection(leftTable.intSize());
                 break;
             case Sparse:
-                rowRedirection = new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
+                rowRedirection = new LongColumnSourceWritableRowRedirection(new LongAdaptiveSparseArraySource());
                 break;
             case Hash:
                 // the size is only an initial capacity, so a left table of more than Integer.MAX_VALUE rows caps it

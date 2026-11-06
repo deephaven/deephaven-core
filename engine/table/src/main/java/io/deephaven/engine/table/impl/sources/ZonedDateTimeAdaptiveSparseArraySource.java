@@ -14,19 +14,20 @@ import java.time.ZonedDateTime;
 /**
  * Array-backed ColumnSource for {@link ZonedDateTime}s. Allows reinterpretation as long.
  */
-public class ZonedDateTimeSparseArraySource extends NanosBasedTimeSparseArraySource<ZonedDateTime>
+public class ZonedDateTimeAdaptiveSparseArraySource extends NanosBasedTimeAdaptiveSparseArraySource<ZonedDateTime>
         implements MutableColumnSourceGetDefaults.ForObject<ZonedDateTime>, ConvertibleTimeSource.Zoned {
     private final ZoneId zone;
 
-    public ZonedDateTimeSparseArraySource(@NotNull final String zone) {
+    public ZonedDateTimeAdaptiveSparseArraySource(@NotNull final String zone) {
         this(ZoneId.of(zone));
     }
 
-    public ZonedDateTimeSparseArraySource(@NotNull final ZoneId zone) {
-        this(zone, new LongSparseArraySource());
+    public ZonedDateTimeAdaptiveSparseArraySource(@NotNull final ZoneId zone) {
+        this(zone, new LongAdaptiveSparseArraySource());
     }
 
-    public ZonedDateTimeSparseArraySource(@NotNull final ZoneId zone, @NotNull final LongSparseArraySource nanoSource) {
+    public ZonedDateTimeAdaptiveSparseArraySource(@NotNull final ZoneId zone,
+            @NotNull final LongAdaptiveSparseArraySource nanoSource) {
         super(ZonedDateTime.class, nanoSource);
         this.zone = zone;
     }
@@ -47,7 +48,7 @@ public class ZonedDateTimeSparseArraySource extends NanosBasedTimeSparseArraySou
             return this;
         }
 
-        return new ZonedDateTimeSparseArraySource(zone, this.nanoSource);
+        return new ZonedDateTimeAdaptiveSparseArraySource(zone, this.nanoSource);
     }
 
     @Override

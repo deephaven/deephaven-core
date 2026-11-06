@@ -576,7 +576,7 @@ public class TestLongArraySource {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
-        // NullPointerException in LongSparseArraySource.commitUpdates()
+        // NullPointerException in LongAdaptiveSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

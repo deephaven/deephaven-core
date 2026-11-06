@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharacterSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
+// ****** Edit CharacterAdaptiveSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
@@ -90,7 +90,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * also builds each leaf with every offset to be written, holding null, and records the previous values, so that writers
  * only store values.
  */
-public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
+public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
         implements MutableColumnSourceGetDefaults.ForByte /* MIXIN_IMPLS */ {
 
     /** The largest number of values a sorted leaf holds. */
@@ -135,7 +135,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
      * Commits the previous values at the end of each cycle in which a value changed; null when not tracking previous
      * values.
      */
-    private transient UpdateCommitter<ByteSparseArraySource> prevFlusher;
+    private transient UpdateCommitter<ByteAdaptiveSparseArraySource> prevFlusher;
     /**
      * The previous values recorded this cycle, or null if none have been recorded.
      */
@@ -168,7 +168,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
     /**
      * Make a source whose leaves are all full blocks.
      */
-    public ByteSparseArraySource() {
+    public ByteAdaptiveSparseArraySource() {
         this(DEFAULT_SORTED_THRESHOLD, 0);
     }
 
@@ -177,7 +177,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
      * @param compactThreshold the largest number of values a sorted or bitmap leaf holds, from 0, when every leaf is a
      *        full block, to the block size
      */
-    public ByteSparseArraySource(final int sortedThreshold, final int compactThreshold) {
+    public ByteAdaptiveSparseArraySource(final int sortedThreshold, final int compactThreshold) {
         super(byte.class);
         this.sortedThreshold = checkSortedThreshold(sortedThreshold, compactThreshold);
         this.compactThreshold = compactThreshold;
@@ -1948,7 +1948,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
             throw new IllegalStateException(
                     "Can't call startTrackingPrevValues() twice: " + getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, updateGraph, ByteSparseArraySource::commitUpdates);
+        prevFlusher = new UpdateCommitter<>(this, updateGraph, ByteAdaptiveSparseArraySource::commitUpdates);
     }
 
     private void commitUpdates() {
@@ -2284,7 +2284,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
             this.prevRoot = prevRoot;
         }
 
-        private void readLeaf(final ByteSparseArraySource source, final long key) {
+        private void readLeaf(final ByteAdaptiveSparseArraySource source, final long key) {
             maxKeyInCurrentLeaf = key | INDEX_MASK;
             final int block2 = block2(key);
             final Level2 level2 = source.getLevel2(key);
@@ -2710,7 +2710,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
     @Override
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         if (alternateDataType == Boolean.class) {
-            return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource(this);
+            return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanAdaptiveSparseArraySource(this);
         }
         return super.doReinterpret(alternateDataType);
     }

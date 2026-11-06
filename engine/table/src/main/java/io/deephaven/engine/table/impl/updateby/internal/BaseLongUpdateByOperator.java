@@ -198,7 +198,7 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
         } else {
             maybeInnerSource = null;
             // region create-sparse
-            outputSource = new LongSparseArraySource();
+            outputSource = new LongAdaptiveSparseArraySource();
             // endregion create-sparse
         }
     }
@@ -231,7 +231,7 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((LongSparseArraySource) outputSource).shift(subRowSetToShift, delta);
+        ((LongAdaptiveSparseArraySource) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 

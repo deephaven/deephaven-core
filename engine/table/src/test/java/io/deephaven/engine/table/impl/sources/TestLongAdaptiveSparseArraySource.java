@@ -51,21 +51,21 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
     /** Row keys near zero, spread over many leaves, and far away, so that each page table level holds many nodes. */
     private static final long[] KEY_REGION_STARTS = {0, 1L << 26, 1L << 41};
     private static final int KEY_REGION_SIZE = 40 * BLOCK_SIZE;
-    private static final int SORTED_THRESHOLD = LongSparseArraySource.DEFAULT_SORTED_THRESHOLD;
-    private static final int COMPACT_THRESHOLD = LongSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
+    private static final int SORTED_THRESHOLD = LongAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD;
+    private static final int COMPACT_THRESHOLD = LongAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
 
     /**
      * @return a source with the default thresholds, whose leaves may be compact
      */
     @NotNull
     @Override
-    LongSparseArraySource makeTestSource() {
-        return new LongSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
+    LongAdaptiveSparseArraySource makeTestSource() {
+        return new LongAdaptiveSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
     }
 
     @Test
     public void confirmAliasingForbidden() {
-        final LongSparseArraySource source = makeTestSource();
+        final LongAdaptiveSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         // a full leaf, which getChunk aliases
         for (int ii = 0; ii < BLOCK_SIZE; ++ii) {
@@ -95,7 +95,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
     public void testThresholds() {
         for (final int compactThreshold : new int[] {0, 1, 4, 64, BLOCK_SIZE}) {
             for (final int sortedThreshold : new int[] {1, 4, 16}) {
-                checkAgainstMap(new LongSparseArraySource(sortedThreshold, compactThreshold),
+                checkAgainstMap(new LongAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -135,7 +135,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
         return builder.build();
     }
 
-    private static void checkAgainstMap(final LongSparseArraySource source, final int seed) {
+    private static void checkAgainstMap(final LongAdaptiveSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2LongOpenHashMap expected = new Long2LongOpenHashMap();
         expected.defaultReturnValue(NULL_LONG);
@@ -152,9 +152,9 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
     @Test
     public void testPreviousValues() {
         for (final int compactThreshold : new int[] {0, 4, 64,
-                LongSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                LongAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
             for (final int sortedThreshold : new int[] {1, 16}) {
-                checkPreviousValues(new LongSparseArraySource(sortedThreshold, compactThreshold),
+                checkPreviousValues(new LongAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -164,7 +164,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
      * Apply random operations in update cycles, checking that previous values are the values at the start of each
      * cycle.
      */
-    private static void checkPreviousValues(final LongSparseArraySource source, final int seed) {
+    private static void checkPreviousValues(final LongAdaptiveSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2LongOpenHashMap expected = new Long2LongOpenHashMap();
         expected.defaultReturnValue(NULL_LONG);
@@ -193,8 +193,8 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
     public void testParallelPopulation() throws Exception {
         for (final Preparation preparation : Preparation.values()) {
             for (final int compactThreshold : new int[] {0, 4,
-                    LongSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
-                checkParallelPopulation(new LongSparseArraySource(16, compactThreshold), preparation,
+                    LongAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                checkParallelPopulation(new LongAdaptiveSparseArraySource(16, compactThreshold), preparation,
                         compactThreshold * 3 + preparation.ordinal());
             }
         }
@@ -229,7 +229,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
      * the current and previous values.
      */
     private static void checkParallelPopulation(
-            final LongSparseArraySource source,
+            final LongAdaptiveSparseArraySource source,
             final Preparation preparation,
             final int seed) throws Exception {
         final boolean aligned = preparation == Preparation.ALIGNED;
@@ -309,13 +309,13 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
     public void testParallelPopulationOfSplitFullLeaves() throws Exception {
         final int threads = 4;
         final int leavesPerThread = 4;
-        final int rowsPerLeaf = LongSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
-        final int pieceSize = LongSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
+        final int rowsPerLeaf = LongAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
+        final int pieceSize = LongAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
         final ExecutorService executor = Executors.newFixedThreadPool(threads);
         try {
             for (int trial = 0; trial < 200; ++trial) {
                 final Random random = new Random(trial);
-                final LongSparseArraySource source = makeTestSource();
+                final LongAdaptiveSparseArraySource source = makeTestSource();
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 for (int leaf = 0; leaf < threads * leavesPerThread; ++leaf) {
                     builder.appendRange((long) leaf * BLOCK_SIZE, (long) leaf * BLOCK_SIZE + rowsPerLeaf - 1);
@@ -361,7 +361,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
      * {@code pieceSize} rows at a time.
      */
     private static void fillDivision(
-            final LongSparseArraySource source,
+            final LongAdaptiveSparseArraySource source,
             final RowSet rows,
             final long[] values,
             final long start,
@@ -384,7 +384,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
 
     @Test
     public void testClearBlocks() {
-        final LongSparseArraySource source = makeTestSource();
+        final LongAdaptiveSparseArraySource source = makeTestSource();
         source.startTrackingPrevValues();
         final Random random = new Random(0);
         // a full leaf, a bitmap leaf and a sorted leaf, in that order
@@ -412,7 +412,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
 
     @Test
     public void testClearNeverWrittenStructures() {
-        final LongSparseArraySource source = makeTestSource();
+        final LongAdaptiveSparseArraySource source = makeTestSource();
         final long value = randomValue(new Random(0));
         source.set(0, value);
         source.startTrackingPrevValues();
@@ -523,7 +523,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
      * the leaves already held, then release some of those, checking current and previous values throughout.
      */
     private void checkManyChildren(final List<Long> leafStarts) {
-        final LongSparseArraySource source = makeTestSource();
+        final LongAdaptiveSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         final Long2LongOpenHashMap expected = new Long2LongOpenHashMap();
         expected.defaultReturnValue(NULL_LONG);
@@ -578,7 +578,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
      * release the structures that hold no remaining row.
      */
     private static void releaseLeaves(
-            final LongSparseArraySource source,
+            final LongAdaptiveSparseArraySource source,
             final Long2LongOpenHashMap expected,
             final List<Long> leafStarts,
             final int step) {
@@ -601,7 +601,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
      * values in most leaves, more in some, and every value in a few.
      */
     private static void writeLeavesInChunks(
-            final LongSparseArraySource source,
+            final LongAdaptiveSparseArraySource source,
             final Long2LongOpenHashMap expected,
             final Random random,
             final List<Long> leafStarts) {
@@ -638,7 +638,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
      * {@code source}, one at a time and in a chunk.
      */
     private static void checkLeaves(
-            final LongSparseArraySource source,
+            final LongAdaptiveSparseArraySource source,
             final Long2LongOpenHashMap current,
             final Long2LongOpenHashMap previous) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
@@ -663,7 +663,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
     }
 
     private static void applyRandomOperation(
-            final LongSparseArraySource source,
+            final LongAdaptiveSparseArraySource source,
             final Long2LongOpenHashMap expected,
             final Random random) {
         switch (random.nextInt(6)) {
@@ -753,7 +753,7 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
      * through each way of reading them.
      */
     private static void assertMatches(
-            final LongSparseArraySource source,
+            final LongAdaptiveSparseArraySource source,
             final Long2LongOpenHashMap expected,
             final Random random,
             final boolean usePrev) {

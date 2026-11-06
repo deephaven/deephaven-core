@@ -14,7 +14,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.ShortArraySource;
-import io.deephaven.engine.table.impl.sources.ShortSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ShortAdaptiveSparseArraySource;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -33,7 +33,7 @@ class ShortHelper implements FillBenchmarkHelper {
             shortArray[ii] = makeValue(random);
         }
 
-        shortSparseArraySource = new ShortSparseArraySource();
+        shortSparseArraySource = new ShortAdaptiveSparseArraySource();
         shortArraySource = new ShortArraySource();
         shortArraySource.ensureCapacity(shortArray.length);
 

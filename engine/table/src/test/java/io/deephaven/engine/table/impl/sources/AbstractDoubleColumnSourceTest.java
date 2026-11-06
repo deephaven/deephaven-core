@@ -313,7 +313,7 @@ public abstract class AbstractDoubleColumnSourceTest {
     // to do.
     @Test
     public void testFillEmptyChunkWithPrev() {
-        final DoubleSparseArraySource src = new DoubleSparseArraySource();
+        final DoubleAdaptiveSparseArraySource src = new DoubleAdaptiveSparseArraySource();
         src.startTrackingPrevValues();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
@@ -323,7 +323,7 @@ public abstract class AbstractDoubleColumnSourceTest {
                 src.fillFromChunk(context, chunk, keys);
             }
         }
-        // NullPointerException in DoubleSparseArraySource.commitUpdates()
+        // NullPointerException in DoubleAdaptiveSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

@@ -313,7 +313,7 @@ public abstract class AbstractFloatColumnSourceTest {
     // to do.
     @Test
     public void testFillEmptyChunkWithPrev() {
-        final FloatSparseArraySource src = new FloatSparseArraySource();
+        final FloatAdaptiveSparseArraySource src = new FloatAdaptiveSparseArraySource();
         src.startTrackingPrevValues();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
@@ -323,7 +323,7 @@ public abstract class AbstractFloatColumnSourceTest {
                 src.fillFromChunk(context, chunk, keys);
             }
         }
-        // NullPointerException in FloatSparseArraySource.commitUpdates()
+        // NullPointerException in FloatAdaptiveSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

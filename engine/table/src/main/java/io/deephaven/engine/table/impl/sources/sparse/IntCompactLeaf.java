@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 /**
- * A leaf of a {@link io.deephaven.engine.table.impl.sources.IntegerSparseArraySource} that holds fewer values than a
+ * A leaf of a {@link io.deephaven.engine.table.impl.sources.IntegerAdaptiveSparseArraySource} that holds fewer values than a
  * full block. Values are addressed by their offset within the block, from 0 to {@link SparseConstants#BLOCK_SIZE} - 1;
  * an offset without a value reads as null.
  */

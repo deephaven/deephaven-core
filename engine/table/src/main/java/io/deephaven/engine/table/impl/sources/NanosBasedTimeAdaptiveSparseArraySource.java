@@ -31,19 +31,19 @@ import java.time.ZonedDateTime;
 /**
  * Array-backed ColumnSource for TIME_TYPEs. Allows reinterpret as long.
  */
-public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
+public abstract class NanosBasedTimeAdaptiveSparseArraySource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
         implements FillUnordered<Values>, WritableColumnSource<TIME_TYPE>, InMemoryColumnSource,
         PossiblyImmutableColumnSource, WritableSourceWithPrepareForParallelPopulation, RowSetShiftCallback,
         ConvertibleTimeSource {
 
-    protected final LongSparseArraySource nanoSource;
+    protected final LongAdaptiveSparseArraySource nanoSource;
 
-    public NanosBasedTimeSparseArraySource(@NotNull final Class<TIME_TYPE> type) {
-        this(type, new LongSparseArraySource());
+    public NanosBasedTimeAdaptiveSparseArraySource(@NotNull final Class<TIME_TYPE> type) {
+        this(type, new LongAdaptiveSparseArraySource());
     }
 
-    public NanosBasedTimeSparseArraySource(@NotNull final Class<TIME_TYPE> type,
-            @NotNull final LongSparseArraySource nanoSource) {
+    public NanosBasedTimeAdaptiveSparseArraySource(@NotNull final Class<TIME_TYPE> type,
+            @NotNull final LongAdaptiveSparseArraySource nanoSource) {
         super(type);
         this.nanoSource = nanoSource;
     }
@@ -311,7 +311,7 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
 
     @Override
     public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
-        return new ZonedDateTimeSparseArraySource(Require.neqNull(zone, "zone"), nanoSource);
+        return new ZonedDateTimeAdaptiveSparseArraySource(Require.neqNull(zone, "zone"), nanoSource);
     }
 
     @Override
@@ -326,7 +326,7 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
 
     @Override
     public ColumnSource<Instant> toInstant() {
-        return new InstantSparseArraySource(nanoSource);
+        return new InstantAdaptiveSparseArraySource(nanoSource);
     }
 
     @Override

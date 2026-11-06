@@ -313,7 +313,7 @@ public abstract class AbstractIntegerColumnSourceTest {
     // to do.
     @Test
     public void testFillEmptyChunkWithPrev() {
-        final IntegerSparseArraySource src = new IntegerSparseArraySource();
+        final IntegerAdaptiveSparseArraySource src = new IntegerAdaptiveSparseArraySource();
         src.startTrackingPrevValues();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
@@ -323,7 +323,7 @@ public abstract class AbstractIntegerColumnSourceTest {
                 src.fillFromChunk(context, chunk, keys);
             }
         }
-        // NullPointerException in IntegerSparseArraySource.commitUpdates()
+        // NullPointerException in IntegerAdaptiveSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

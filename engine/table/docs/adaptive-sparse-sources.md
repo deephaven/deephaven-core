@@ -1,6 +1,6 @@
 # Adaptive sparse array sources
 
-This document describes how the sparse array sources (`CharacterSparseArraySource` and its replicas) store values,
+This document describes how the sparse array sources (`CharacterAdaptiveSparseArraySource` and its replicas) store values,
 record previous values, prepare for parallel population and release memory, and which performance traps shaped them. The
 sources address row keys through a page table, as they always have, but a leaf of the page table is stored according to
 how many values it holds: a leaf with few values is a compact leaf, and a fuller leaf is a full block. The sources that
@@ -9,7 +9,7 @@ leaf a full block, as before, and is kept as an escape hatch. Every other sparse
 
 | | |
 |---|---|
-| **Sources** | `CharacterSparseArraySource`, replicated to Byte, Short, Integer, Long, Float, Double and Object; `BooleanSparseArraySource` over Byte; `InstantSparseArraySource` and `ZonedDateTimeSparseArraySource` over Long, through `NanosBasedTimeSparseArraySource` |
+| **Sources** | `CharacterAdaptiveSparseArraySource`, replicated to Byte, Short, Integer, Long, Float, Double and Object; `BooleanAdaptiveSparseArraySource` over Byte; `InstantAdaptiveSparseArraySource` and `ZonedDateTimeAdaptiveSparseArraySource` over Long, through `NanosBasedTimeAdaptiveSparseArraySource` |
 | **Compact leaves** | `sparse/CharCompactLeaf`, with `CharSortedLeaf` (at most 16 values) and `CharBitmapLeaf` (at most 128 values), replicated per type |
 | **Page table levels** | `Level0`, `Level1` and `Level2`, nested in each source, each holding its children in a window, or ranked when sparse; `sparse/ChildPositions`, with a sorted tier (at most 16 children) and a ranked bitmap tier, ranks the children of `Level1` and `Level2` for every type |
 | **Base class** | `SparseArrayColumnSource`: `clearBlocks`, `clearBlocksWithoutLiveRows`, `clearVacatedBlocks`, `estimateSize`, `getSparseMemoryColumnSource` |
@@ -261,14 +261,14 @@ leaf with no live rows returns its memory.
 
 ## Boolean and time sources
 
-`BooleanSparseArraySource` stores each value as a byte in a `ByteSparseArraySource` and reinterprets to it, so
+`BooleanAdaptiveSparseArraySource` stores each value as a byte in a `ByteAdaptiveSparseArraySource` and reinterprets to it, so
 `SelectColumnLayer`, which writes through the primitive source, and the byte source share the same leaves. Likewise the
-time sources store epoch nanoseconds in a `LongSparseArraySource`. These wrappers delegate previous values,
+time sources store epoch nanoseconds in a `LongAdaptiveSparseArraySource`. These wrappers delegate previous values,
 immutability, shifts and parallel population to the primitive source.
 
 ## Replication
 
-`CharacterSparseArraySource`, `CharCompactLeaf`, `CharSortedLeaf`, `CharBitmapLeaf` and their tests are the templates;
+`CharacterAdaptiveSparseArraySource`, `CharCompactLeaf`, `CharSortedLeaf`, `CharBitmapLeaf` and their tests are the templates;
 `ReplicateSourcesAndChunks` and `ReplicateSourceAndChunkTests` generate the other types. The Object source keeps
 references in its leaves and recyclers, and nulls each array slot it releases so that the recyclers retain no values.
 

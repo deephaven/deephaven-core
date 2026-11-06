@@ -261,7 +261,7 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Byte> getSparseMemoryColumnSource(byte[] data) {
-        final SparseArrayColumnSource<Byte> result = new ByteSparseArraySource();
+        final SparseArrayColumnSource<Byte> result = new ByteAdaptiveSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (byte o : data) {
@@ -271,7 +271,7 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Character> getSparseMemoryColumnSource(char[] data) {
-        final SparseArrayColumnSource<Character> result = new CharacterSparseArraySource();
+        final SparseArrayColumnSource<Character> result = new CharacterAdaptiveSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (char o : data) {
@@ -281,7 +281,7 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Double> getSparseMemoryColumnSource(double[] data) {
-        final SparseArrayColumnSource<Double> result = new DoubleSparseArraySource();
+        final SparseArrayColumnSource<Double> result = new DoubleAdaptiveSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (double o : data) {
@@ -291,7 +291,7 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Float> getSparseMemoryColumnSource(float[] data) {
-        final SparseArrayColumnSource<Float> result = new FloatSparseArraySource();
+        final SparseArrayColumnSource<Float> result = new FloatAdaptiveSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (float o : data) {
@@ -301,7 +301,7 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Integer> getSparseMemoryColumnSource(int[] data) {
-        final SparseArrayColumnSource<Integer> result = new IntegerSparseArraySource();
+        final SparseArrayColumnSource<Integer> result = new IntegerAdaptiveSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (int o : data) {
@@ -311,7 +311,7 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Long> getSparseMemoryColumnSource(long[] data) {
-        final SparseArrayColumnSource<Long> result = new LongSparseArraySource();
+        final SparseArrayColumnSource<Long> result = new LongAdaptiveSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (long o : data) {
@@ -321,7 +321,7 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static WritableColumnSource<Instant> getInstantMemoryColumnSource(long[] data) {
-        final WritableColumnSource<Instant> result = new InstantSparseArraySource();
+        final WritableColumnSource<Instant> result = new InstantAdaptiveSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (long o : data) {
@@ -331,7 +331,7 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Short> getSparseMemoryColumnSource(short[] data) {
-        final SparseArrayColumnSource<Short> result = new ShortSparseArraySource();
+        final SparseArrayColumnSource<Short> result = new ShortAdaptiveSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (short o : data) {
@@ -356,28 +356,28 @@ public abstract class SparseArrayColumnSource<T>
             @Nullable Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (type == byte.class || type == Byte.class) {
-            result = new ByteSparseArraySource();
+            result = new ByteAdaptiveSparseArraySource();
         } else if (type == char.class || type == Character.class) {
-            result = new CharacterSparseArraySource();
+            result = new CharacterAdaptiveSparseArraySource();
         } else if (type == double.class || type == Double.class) {
-            result = new DoubleSparseArraySource();
+            result = new DoubleAdaptiveSparseArraySource();
         } else if (type == float.class || type == Float.class) {
-            result = new FloatSparseArraySource();
+            result = new FloatAdaptiveSparseArraySource();
         } else if (type == int.class || type == Integer.class) {
-            result = new IntegerSparseArraySource();
+            result = new IntegerAdaptiveSparseArraySource();
         } else if (type == long.class || type == Long.class) {
-            result = new LongSparseArraySource();
+            result = new LongAdaptiveSparseArraySource();
         } else if (type == short.class || type == Short.class) {
-            result = new ShortSparseArraySource();
+            result = new ShortAdaptiveSparseArraySource();
         } else if (type == boolean.class || type == Boolean.class) {
-            result = new BooleanSparseArraySource();
+            result = new BooleanAdaptiveSparseArraySource();
         } else if (type == Instant.class) {
-            result = new InstantSparseArraySource();
+            result = new InstantAdaptiveSparseArraySource();
         } else {
             if (componentType != null) {
-                result = new ObjectSparseArraySource<>(type, componentType);
+                result = new ObjectAdaptiveSparseArraySource<>(type, componentType);
             } else {
-                result = new ObjectSparseArraySource<>(type);
+                result = new ObjectAdaptiveSparseArraySource<>(type);
             }
         }
         if (size != 0) {

@@ -15,13 +15,13 @@ import java.time.Instant;
 /**
  * Sparse Array-backed ColumnSource for {@link Instant}s. Allows reinterpret as long.
  */
-public class InstantSparseArraySource extends NanosBasedTimeSparseArraySource<Instant>
+public class InstantAdaptiveSparseArraySource extends NanosBasedTimeAdaptiveSparseArraySource<Instant>
         implements MutableColumnSourceGetDefaults.ForLongAsInstant, DefaultChunkSource<Values>, ConvertibleTimeSource {
-    public InstantSparseArraySource() {
+    public InstantAdaptiveSparseArraySource() {
         super(Instant.class);
     }
 
-    public InstantSparseArraySource(@NotNull final LongSparseArraySource nanoSource) {
+    public InstantAdaptiveSparseArraySource(@NotNull final LongAdaptiveSparseArraySource nanoSource) {
         super(Instant.class, nanoSource);
     }
 

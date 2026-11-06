@@ -576,7 +576,7 @@ public class TestShortArraySource {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
-        // NullPointerException in ShortSparseArraySource.commitUpdates()
+        // NullPointerException in ShortAdaptiveSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

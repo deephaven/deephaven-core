@@ -52,21 +52,21 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
     /** Row keys near zero, spread over many leaves, and far away, so that each page table level holds many nodes. */
     private static final long[] KEY_REGION_STARTS = {0, 1L << 26, 1L << 41};
     private static final int KEY_REGION_SIZE = 40 * BLOCK_SIZE;
-    private static final int SORTED_THRESHOLD = DoubleSparseArraySource.DEFAULT_SORTED_THRESHOLD;
-    private static final int COMPACT_THRESHOLD = DoubleSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
+    private static final int SORTED_THRESHOLD = DoubleAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD;
+    private static final int COMPACT_THRESHOLD = DoubleAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
 
     /**
      * @return a source with the default thresholds, whose leaves may be compact
      */
     @NotNull
     @Override
-    DoubleSparseArraySource makeTestSource() {
-        return new DoubleSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
+    DoubleAdaptiveSparseArraySource makeTestSource() {
+        return new DoubleAdaptiveSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
     }
 
     @Test
     public void confirmAliasingForbidden() {
-        final DoubleSparseArraySource source = makeTestSource();
+        final DoubleAdaptiveSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         // a full leaf, which getChunk aliases
         for (int ii = 0; ii < BLOCK_SIZE; ++ii) {
@@ -96,7 +96,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
     public void testThresholds() {
         for (final int compactThreshold : new int[] {0, 1, 4, 64, BLOCK_SIZE}) {
             for (final int sortedThreshold : new int[] {1, 4, 16}) {
-                checkAgainstMap(new DoubleSparseArraySource(sortedThreshold, compactThreshold),
+                checkAgainstMap(new DoubleAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -136,7 +136,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
         return builder.build();
     }
 
-    private static void checkAgainstMap(final DoubleSparseArraySource source, final int seed) {
+    private static void checkAgainstMap(final DoubleAdaptiveSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2DoubleOpenHashMap expected = new Long2DoubleOpenHashMap();
         expected.defaultReturnValue(NULL_DOUBLE);
@@ -153,9 +153,9 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
     @Test
     public void testPreviousValues() {
         for (final int compactThreshold : new int[] {0, 4, 64,
-                DoubleSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                DoubleAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
             for (final int sortedThreshold : new int[] {1, 16}) {
-                checkPreviousValues(new DoubleSparseArraySource(sortedThreshold, compactThreshold),
+                checkPreviousValues(new DoubleAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -165,7 +165,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
      * Apply random operations in update cycles, checking that previous values are the values at the start of each
      * cycle.
      */
-    private static void checkPreviousValues(final DoubleSparseArraySource source, final int seed) {
+    private static void checkPreviousValues(final DoubleAdaptiveSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2DoubleOpenHashMap expected = new Long2DoubleOpenHashMap();
         expected.defaultReturnValue(NULL_DOUBLE);
@@ -194,8 +194,8 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
     public void testParallelPopulation() throws Exception {
         for (final Preparation preparation : Preparation.values()) {
             for (final int compactThreshold : new int[] {0, 4,
-                    DoubleSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
-                checkParallelPopulation(new DoubleSparseArraySource(16, compactThreshold), preparation,
+                    DoubleAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                checkParallelPopulation(new DoubleAdaptiveSparseArraySource(16, compactThreshold), preparation,
                         compactThreshold * 3 + preparation.ordinal());
             }
         }
@@ -230,7 +230,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
      * the current and previous values.
      */
     private static void checkParallelPopulation(
-            final DoubleSparseArraySource source,
+            final DoubleAdaptiveSparseArraySource source,
             final Preparation preparation,
             final int seed) throws Exception {
         final boolean aligned = preparation == Preparation.ALIGNED;
@@ -310,13 +310,13 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
     public void testParallelPopulationOfSplitFullLeaves() throws Exception {
         final int threads = 4;
         final int leavesPerThread = 4;
-        final int rowsPerLeaf = DoubleSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
-        final int pieceSize = DoubleSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
+        final int rowsPerLeaf = DoubleAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
+        final int pieceSize = DoubleAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
         final ExecutorService executor = Executors.newFixedThreadPool(threads);
         try {
             for (int trial = 0; trial < 200; ++trial) {
                 final Random random = new Random(trial);
-                final DoubleSparseArraySource source = makeTestSource();
+                final DoubleAdaptiveSparseArraySource source = makeTestSource();
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 for (int leaf = 0; leaf < threads * leavesPerThread; ++leaf) {
                     builder.appendRange((long) leaf * BLOCK_SIZE, (long) leaf * BLOCK_SIZE + rowsPerLeaf - 1);
@@ -362,7 +362,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
      * {@code pieceSize} rows at a time.
      */
     private static void fillDivision(
-            final DoubleSparseArraySource source,
+            final DoubleAdaptiveSparseArraySource source,
             final RowSet rows,
             final double[] values,
             final long start,
@@ -385,7 +385,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
 
     @Test
     public void testClearBlocks() {
-        final DoubleSparseArraySource source = makeTestSource();
+        final DoubleAdaptiveSparseArraySource source = makeTestSource();
         source.startTrackingPrevValues();
         final Random random = new Random(0);
         // a full leaf, a bitmap leaf and a sorted leaf, in that order
@@ -413,7 +413,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
 
     @Test
     public void testClearNeverWrittenStructures() {
-        final DoubleSparseArraySource source = makeTestSource();
+        final DoubleAdaptiveSparseArraySource source = makeTestSource();
         final double value = randomValue(new Random(0));
         source.set(0, value);
         source.startTrackingPrevValues();
@@ -524,7 +524,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
      * the leaves already held, then release some of those, checking current and previous values throughout.
      */
     private void checkManyChildren(final List<Long> leafStarts) {
-        final DoubleSparseArraySource source = makeTestSource();
+        final DoubleAdaptiveSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         final Long2DoubleOpenHashMap expected = new Long2DoubleOpenHashMap();
         expected.defaultReturnValue(NULL_DOUBLE);
@@ -579,7 +579,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
      * release the structures that hold no remaining row.
      */
     private static void releaseLeaves(
-            final DoubleSparseArraySource source,
+            final DoubleAdaptiveSparseArraySource source,
             final Long2DoubleOpenHashMap expected,
             final List<Long> leafStarts,
             final int step) {
@@ -602,7 +602,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
      * values in most leaves, more in some, and every value in a few.
      */
     private static void writeLeavesInChunks(
-            final DoubleSparseArraySource source,
+            final DoubleAdaptiveSparseArraySource source,
             final Long2DoubleOpenHashMap expected,
             final Random random,
             final List<Long> leafStarts) {
@@ -639,7 +639,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
      * {@code source}, one at a time and in a chunk.
      */
     private static void checkLeaves(
-            final DoubleSparseArraySource source,
+            final DoubleAdaptiveSparseArraySource source,
             final Long2DoubleOpenHashMap current,
             final Long2DoubleOpenHashMap previous) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
@@ -664,7 +664,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
     }
 
     private static void applyRandomOperation(
-            final DoubleSparseArraySource source,
+            final DoubleAdaptiveSparseArraySource source,
             final Long2DoubleOpenHashMap expected,
             final Random random) {
         switch (random.nextInt(6)) {
@@ -754,7 +754,7 @@ public class TestDoubleAdaptiveSparseArraySource extends AbstractDoubleColumnSou
      * through each way of reading them.
      */
     private static void assertMatches(
-            final DoubleSparseArraySource source,
+            final DoubleAdaptiveSparseArraySource source,
             final Long2DoubleOpenHashMap expected,
             final Random random,
             final boolean usePrev) {

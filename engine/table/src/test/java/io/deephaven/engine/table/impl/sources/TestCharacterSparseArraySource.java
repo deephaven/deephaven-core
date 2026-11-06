@@ -21,8 +21,8 @@ import static org.junit.Assert.*;
 public class TestCharacterSparseArraySource extends AbstractCharacterColumnSourceTest {
     @NotNull
     @Override
-    CharacterSparseArraySource makeTestSource() {
-        return new CharacterSparseArraySource();
+    CharacterAdaptiveSparseArraySource makeTestSource() {
+        return new CharacterAdaptiveSparseArraySource();
     }
 
     @Test
@@ -31,7 +31,7 @@ public class TestCharacterSparseArraySource extends AbstractCharacterColumnSourc
         final int arraySize = 100;
         final int rangeStart = 20;
         final int rangeEnd = 80;
-        final CharacterSparseArraySource source = makeTestSource();
+        final CharacterAdaptiveSparseArraySource source = makeTestSource();
         source.ensureCapacity(arraySize);
 
         final char[] data = ArrayGenerator.randomChars(rng, arraySize);

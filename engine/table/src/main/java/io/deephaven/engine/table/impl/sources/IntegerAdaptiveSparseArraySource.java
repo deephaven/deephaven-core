@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharacterSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
+// ****** Edit CharacterAdaptiveSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
@@ -88,7 +88,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * also builds each leaf with every offset to be written, holding null, and records the previous values, so that writers
  * only store values.
  */
-public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer>
+public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<Integer>
         implements MutableColumnSourceGetDefaults.ForInt /* MIXIN_IMPLS */ {
 
     /** The largest number of values a sorted leaf holds. */
@@ -133,7 +133,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer>
      * Commits the previous values at the end of each cycle in which a value changed; null when not tracking previous
      * values.
      */
-    private transient UpdateCommitter<IntegerSparseArraySource> prevFlusher;
+    private transient UpdateCommitter<IntegerAdaptiveSparseArraySource> prevFlusher;
     /**
      * The previous values recorded this cycle, or null if none have been recorded.
      */
@@ -166,7 +166,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer>
     /**
      * Make a source whose leaves are all full blocks.
      */
-    public IntegerSparseArraySource() {
+    public IntegerAdaptiveSparseArraySource() {
         this(DEFAULT_SORTED_THRESHOLD, 0);
     }
 
@@ -175,7 +175,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer>
      * @param compactThreshold the largest number of values a sorted or bitmap leaf holds, from 0, when every leaf is a
      *        full block, to the block size
      */
-    public IntegerSparseArraySource(final int sortedThreshold, final int compactThreshold) {
+    public IntegerAdaptiveSparseArraySource(final int sortedThreshold, final int compactThreshold) {
         super(int.class);
         this.sortedThreshold = checkSortedThreshold(sortedThreshold, compactThreshold);
         this.compactThreshold = compactThreshold;
@@ -1946,7 +1946,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer>
             throw new IllegalStateException(
                     "Can't call startTrackingPrevValues() twice: " + getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, updateGraph, IntegerSparseArraySource::commitUpdates);
+        prevFlusher = new UpdateCommitter<>(this, updateGraph, IntegerAdaptiveSparseArraySource::commitUpdates);
     }
 
     private void commitUpdates() {
@@ -2282,7 +2282,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer>
             this.prevRoot = prevRoot;
         }
 
-        private void readLeaf(final IntegerSparseArraySource source, final long key) {
+        private void readLeaf(final IntegerAdaptiveSparseArraySource source, final long key) {
             maxKeyInCurrentLeaf = key | INDEX_MASK;
             final int block2 = block2(key);
             final Level2 level2 = source.getLevel2(key);

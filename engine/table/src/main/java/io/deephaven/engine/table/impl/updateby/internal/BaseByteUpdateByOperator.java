@@ -9,7 +9,7 @@ package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
-import io.deephaven.engine.table.impl.sources.ByteSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ByteAdaptiveSparseArraySource;
 import io.deephaven.engine.table.WritableColumnSource;
 
 import io.deephaven.chunk.Chunk;
@@ -218,7 +218,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
 
     // region extra-methods
     protected WritableColumnSource<Byte> makeSparseSource() {
-        return new ByteSparseArraySource();
+        return new ByteAdaptiveSparseArraySource();
     }
 
     protected WritableColumnSource<Byte> makeDenseSource() {
@@ -250,7 +250,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((ByteSparseArraySource) outputSource).shift(subRowSetToShift, delta);
+        ((ByteAdaptiveSparseArraySource) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 

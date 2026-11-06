@@ -52,21 +52,21 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
     /** Row keys near zero, spread over many leaves, and far away, so that each page table level holds many nodes. */
     private static final long[] KEY_REGION_STARTS = {0, 1L << 26, 1L << 41};
     private static final int KEY_REGION_SIZE = 40 * BLOCK_SIZE;
-    private static final int SORTED_THRESHOLD = IntegerSparseArraySource.DEFAULT_SORTED_THRESHOLD;
-    private static final int COMPACT_THRESHOLD = IntegerSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
+    private static final int SORTED_THRESHOLD = IntegerAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD;
+    private static final int COMPACT_THRESHOLD = IntegerAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
 
     /**
      * @return a source with the default thresholds, whose leaves may be compact
      */
     @NotNull
     @Override
-    IntegerSparseArraySource makeTestSource() {
-        return new IntegerSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
+    IntegerAdaptiveSparseArraySource makeTestSource() {
+        return new IntegerAdaptiveSparseArraySource(SORTED_THRESHOLD, COMPACT_THRESHOLD);
     }
 
     @Test
     public void confirmAliasingForbidden() {
-        final IntegerSparseArraySource source = makeTestSource();
+        final IntegerAdaptiveSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         // a full leaf, which getChunk aliases
         for (int ii = 0; ii < BLOCK_SIZE; ++ii) {
@@ -96,7 +96,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
     public void testThresholds() {
         for (final int compactThreshold : new int[] {0, 1, 4, 64, BLOCK_SIZE}) {
             for (final int sortedThreshold : new int[] {1, 4, 16}) {
-                checkAgainstMap(new IntegerSparseArraySource(sortedThreshold, compactThreshold),
+                checkAgainstMap(new IntegerAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -136,7 +136,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
         return builder.build();
     }
 
-    private static void checkAgainstMap(final IntegerSparseArraySource source, final int seed) {
+    private static void checkAgainstMap(final IntegerAdaptiveSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2IntOpenHashMap expected = new Long2IntOpenHashMap();
         expected.defaultReturnValue(NULL_INT);
@@ -153,9 +153,9 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
     @Test
     public void testPreviousValues() {
         for (final int compactThreshold : new int[] {0, 4, 64,
-                IntegerSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                IntegerAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
             for (final int sortedThreshold : new int[] {1, 16}) {
-                checkPreviousValues(new IntegerSparseArraySource(sortedThreshold, compactThreshold),
+                checkPreviousValues(new IntegerAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
                         compactThreshold * 37 + sortedThreshold);
             }
         }
@@ -165,7 +165,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
      * Apply random operations in update cycles, checking that previous values are the values at the start of each
      * cycle.
      */
-    private static void checkPreviousValues(final IntegerSparseArraySource source, final int seed) {
+    private static void checkPreviousValues(final IntegerAdaptiveSparseArraySource source, final int seed) {
         final Random random = new Random(seed);
         final Long2IntOpenHashMap expected = new Long2IntOpenHashMap();
         expected.defaultReturnValue(NULL_INT);
@@ -194,8 +194,8 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
     public void testParallelPopulation() throws Exception {
         for (final Preparation preparation : Preparation.values()) {
             for (final int compactThreshold : new int[] {0, 4,
-                    IntegerSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
-                checkParallelPopulation(new IntegerSparseArraySource(16, compactThreshold), preparation,
+                    IntegerAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                checkParallelPopulation(new IntegerAdaptiveSparseArraySource(16, compactThreshold), preparation,
                         compactThreshold * 3 + preparation.ordinal());
             }
         }
@@ -230,7 +230,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
      * the current and previous values.
      */
     private static void checkParallelPopulation(
-            final IntegerSparseArraySource source,
+            final IntegerAdaptiveSparseArraySource source,
             final Preparation preparation,
             final int seed) throws Exception {
         final boolean aligned = preparation == Preparation.ALIGNED;
@@ -310,13 +310,13 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
     public void testParallelPopulationOfSplitFullLeaves() throws Exception {
         final int threads = 4;
         final int leavesPerThread = 4;
-        final int rowsPerLeaf = IntegerSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
-        final int pieceSize = IntegerSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
+        final int rowsPerLeaf = IntegerAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
+        final int pieceSize = IntegerAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
         final ExecutorService executor = Executors.newFixedThreadPool(threads);
         try {
             for (int trial = 0; trial < 200; ++trial) {
                 final Random random = new Random(trial);
-                final IntegerSparseArraySource source = makeTestSource();
+                final IntegerAdaptiveSparseArraySource source = makeTestSource();
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 for (int leaf = 0; leaf < threads * leavesPerThread; ++leaf) {
                     builder.appendRange((long) leaf * BLOCK_SIZE, (long) leaf * BLOCK_SIZE + rowsPerLeaf - 1);
@@ -362,7 +362,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
      * {@code pieceSize} rows at a time.
      */
     private static void fillDivision(
-            final IntegerSparseArraySource source,
+            final IntegerAdaptiveSparseArraySource source,
             final RowSet rows,
             final int[] values,
             final long start,
@@ -385,7 +385,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
 
     @Test
     public void testClearBlocks() {
-        final IntegerSparseArraySource source = makeTestSource();
+        final IntegerAdaptiveSparseArraySource source = makeTestSource();
         source.startTrackingPrevValues();
         final Random random = new Random(0);
         // a full leaf, a bitmap leaf and a sorted leaf, in that order
@@ -413,7 +413,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
 
     @Test
     public void testClearNeverWrittenStructures() {
-        final IntegerSparseArraySource source = makeTestSource();
+        final IntegerAdaptiveSparseArraySource source = makeTestSource();
         final int value = randomValue(new Random(0));
         source.set(0, value);
         source.startTrackingPrevValues();
@@ -524,7 +524,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
      * the leaves already held, then release some of those, checking current and previous values throughout.
      */
     private void checkManyChildren(final List<Long> leafStarts) {
-        final IntegerSparseArraySource source = makeTestSource();
+        final IntegerAdaptiveSparseArraySource source = makeTestSource();
         final Random random = new Random(0);
         final Long2IntOpenHashMap expected = new Long2IntOpenHashMap();
         expected.defaultReturnValue(NULL_INT);
@@ -579,7 +579,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
      * release the structures that hold no remaining row.
      */
     private static void releaseLeaves(
-            final IntegerSparseArraySource source,
+            final IntegerAdaptiveSparseArraySource source,
             final Long2IntOpenHashMap expected,
             final List<Long> leafStarts,
             final int step) {
@@ -602,7 +602,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
      * values in most leaves, more in some, and every value in a few.
      */
     private static void writeLeavesInChunks(
-            final IntegerSparseArraySource source,
+            final IntegerAdaptiveSparseArraySource source,
             final Long2IntOpenHashMap expected,
             final Random random,
             final List<Long> leafStarts) {
@@ -639,7 +639,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
      * {@code source}, one at a time and in a chunk.
      */
     private static void checkLeaves(
-            final IntegerSparseArraySource source,
+            final IntegerAdaptiveSparseArraySource source,
             final Long2IntOpenHashMap current,
             final Long2IntOpenHashMap previous) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
@@ -664,7 +664,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
     }
 
     private static void applyRandomOperation(
-            final IntegerSparseArraySource source,
+            final IntegerAdaptiveSparseArraySource source,
             final Long2IntOpenHashMap expected,
             final Random random) {
         switch (random.nextInt(6)) {
@@ -754,7 +754,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
      * through each way of reading them.
      */
     private static void assertMatches(
-            final IntegerSparseArraySource source,
+            final IntegerAdaptiveSparseArraySource source,
             final Long2IntOpenHashMap expected,
             final Random random,
             final boolean usePrev) {

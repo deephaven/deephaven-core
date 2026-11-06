@@ -84,7 +84,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * also builds each leaf with every offset to be written, holding null, and records the previous values, so that writers
  * only store values.
  */
-public class CharacterSparseArraySource extends SparseArrayColumnSource<Character>
+public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<Character>
         implements MutableColumnSourceGetDefaults.ForChar /* MIXIN_IMPLS */ {
 
     /** The largest number of values a sorted leaf holds. */
@@ -129,7 +129,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
      * Commits the previous values at the end of each cycle in which a value changed; null when not tracking previous
      * values.
      */
-    private transient UpdateCommitter<CharacterSparseArraySource> prevFlusher;
+    private transient UpdateCommitter<CharacterAdaptiveSparseArraySource> prevFlusher;
     /**
      * The previous values recorded this cycle, or null if none have been recorded.
      */
@@ -162,7 +162,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     /**
      * Make a source whose leaves are all full blocks.
      */
-    public CharacterSparseArraySource() {
+    public CharacterAdaptiveSparseArraySource() {
         this(DEFAULT_SORTED_THRESHOLD, 0);
     }
 
@@ -171,7 +171,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
      * @param compactThreshold the largest number of values a sorted or bitmap leaf holds, from 0, when every leaf is a
      *        full block, to the block size
      */
-    public CharacterSparseArraySource(final int sortedThreshold, final int compactThreshold) {
+    public CharacterAdaptiveSparseArraySource(final int sortedThreshold, final int compactThreshold) {
         super(char.class);
         this.sortedThreshold = checkSortedThreshold(sortedThreshold, compactThreshold);
         this.compactThreshold = compactThreshold;
@@ -1942,7 +1942,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             throw new IllegalStateException(
                     "Can't call startTrackingPrevValues() twice: " + getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, updateGraph, CharacterSparseArraySource::commitUpdates);
+        prevFlusher = new UpdateCommitter<>(this, updateGraph, CharacterAdaptiveSparseArraySource::commitUpdates);
     }
 
     private void commitUpdates() {
@@ -2278,7 +2278,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             this.prevRoot = prevRoot;
         }
 
-        private void readLeaf(final CharacterSparseArraySource source, final long key) {
+        private void readLeaf(final CharacterAdaptiveSparseArraySource source, final long key) {
             maxKeyInCurrentLeaf = key | INDEX_MASK;
             final int block2 = block2(key);
             final Level2 level2 = source.getLevel2(key);

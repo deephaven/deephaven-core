@@ -312,7 +312,7 @@ public abstract class AbstractObjectColumnSourceTest {
     // to do.
     @Test
     public void testFillEmptyChunkWithPrev() {
-        final ObjectSparseArraySource src = new ObjectSparseArraySource<>(String.class);
+        final ObjectAdaptiveSparseArraySource src = new ObjectAdaptiveSparseArraySource<>(String.class);
         src.startTrackingPrevValues();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
@@ -322,7 +322,7 @@ public abstract class AbstractObjectColumnSourceTest {
                 src.fillFromChunk(context, chunk, keys);
             }
         }
-        // NullPointerException in ObjectSparseArraySource.commitUpdates()
+        // NullPointerException in ObjectAdaptiveSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

@@ -31,8 +31,8 @@ import static org.junit.Assert.*;
 public class TestBooleanSparseArraySource extends AbstractBooleanColumnSourceTest {
     @NotNull
     @Override
-    BooleanSparseArraySource makeTestSource() {
-        return new BooleanSparseArraySource();
+    BooleanAdaptiveSparseArraySource makeTestSource() {
+        return new BooleanAdaptiveSparseArraySource();
     }
 
     @Test
@@ -41,7 +41,7 @@ public class TestBooleanSparseArraySource extends AbstractBooleanColumnSourceTes
         final int arraySize = 100;
         final int rangeStart = 20;
         final int rangeEnd = 80;
-        final BooleanSparseArraySource source = makeTestSource();
+        final BooleanAdaptiveSparseArraySource source = makeTestSource();
         source.ensureCapacity(arraySize);
 
         final byte[] data = ArrayGenerator.randomBooleans(rng, arraySize);

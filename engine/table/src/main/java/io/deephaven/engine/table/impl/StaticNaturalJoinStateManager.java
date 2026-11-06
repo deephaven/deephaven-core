@@ -9,7 +9,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
+import io.deephaven.engine.table.impl.sources.LongAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.util.*;
 
 import java.util.Arrays;
@@ -75,7 +75,7 @@ public abstract class StaticNaturalJoinStateManager {
                 return new ContiguousWritableRowRedirection(innerIndex);
             }
             case Sparse: {
-                final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
+                final LongAdaptiveSparseArraySource sparseRedirections = new LongAdaptiveSparseArraySource();
 
                 long leftPosition = 0;
                 for (final RowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext();) {

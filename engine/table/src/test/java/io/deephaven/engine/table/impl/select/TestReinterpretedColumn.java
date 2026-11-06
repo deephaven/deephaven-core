@@ -18,13 +18,13 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InstantArraySource;
-import io.deephaven.engine.table.impl.sources.InstantSparseArraySource;
+import io.deephaven.engine.table.impl.sources.InstantAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
+import io.deephaven.engine.table.impl.sources.LongAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.table.impl.sources.ObjectSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ZonedDateTimeArraySource;
-import io.deephaven.engine.table.impl.sources.ZonedDateTimeSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ZonedDateTimeAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.util.TableTimeConversions;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -66,9 +66,9 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
                 new ZonedDateTimeArraySource(ZoneId.of("America/New_York")));
 
         sparseBaseTable = makeTable(
-                new LongSparseArraySource(),
-                new InstantSparseArraySource(),
-                new ZonedDateTimeSparseArraySource(ZoneId.of("America/New_York")));
+                new LongAdaptiveSparseArraySource(),
+                new InstantAdaptiveSparseArraySource(),
+                new ZonedDateTimeAdaptiveSparseArraySource(ZoneId.of("America/New_York")));
 
         objectTable = makeObjectTable(
                 new LongArraySource(),
@@ -76,9 +76,9 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
                 new ObjectArraySource<>(ZonedDateTime.class));
 
         sparseObjectTable = makeObjectTable(
-                new LongSparseArraySource(),
-                new ObjectSparseArraySource<>(Instant.class),
-                new ObjectSparseArraySource<>(ZonedDateTime.class));
+                new LongAdaptiveSparseArraySource(),
+                new ObjectAdaptiveSparseArraySource<>(Instant.class),
+                new ObjectAdaptiveSparseArraySource<>(ZonedDateTime.class));
     }
 
     private QueryTable makeObjectTable(
@@ -171,7 +171,7 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
             final long key = it.nextLong();
             final long tOff = computeTimeDiff(ii.getAndIncrement(), isSorted);
             if (table.getColumnSource(lColName) instanceof ObjectArraySource
-                    || table.getColumnSource(lColName) instanceof ObjectSparseArraySource) {
+                    || table.getColumnSource(lColName) instanceof ObjectAdaptiveSparseArraySource) {
                 assertEquals(baseLongTime + tOff, table.getColumnSource(lColName).get(key));
             } else {
                 assertEquals(baseLongTime + tOff, table.getColumnSource(lColName).getLong(key));

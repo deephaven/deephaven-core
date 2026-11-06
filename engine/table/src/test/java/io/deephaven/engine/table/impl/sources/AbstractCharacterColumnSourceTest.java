@@ -309,7 +309,7 @@ public abstract class AbstractCharacterColumnSourceTest {
     // to do.
     @Test
     public void testFillEmptyChunkWithPrev() {
-        final CharacterSparseArraySource src = new CharacterSparseArraySource();
+        final CharacterAdaptiveSparseArraySource src = new CharacterAdaptiveSparseArraySource();
         src.startTrackingPrevValues();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
@@ -319,7 +319,7 @@ public abstract class AbstractCharacterColumnSourceTest {
                 src.fillFromChunk(context, chunk, keys);
             }
         }
-        // NullPointerException in CharacterSparseArraySource.commitUpdates()
+        // NullPointerException in CharacterAdaptiveSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

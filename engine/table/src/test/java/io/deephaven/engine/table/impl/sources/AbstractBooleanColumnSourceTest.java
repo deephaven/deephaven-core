@@ -314,7 +314,7 @@ public abstract class AbstractBooleanColumnSourceTest {
     // to do.
     @Test
     public void testFillEmptyChunkWithPrev() {
-        final BooleanSparseArraySource src = new BooleanSparseArraySource();
+        final BooleanAdaptiveSparseArraySource src = new BooleanAdaptiveSparseArraySource();
         src.startTrackingPrevValues();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
@@ -324,7 +324,7 @@ public abstract class AbstractBooleanColumnSourceTest {
                 src.fillFromChunk(context, chunk, keys);
             }
         }
-        // NullPointerException in BooleanSparseArraySource.commitUpdates()
+        // NullPointerException in BooleanAdaptiveSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

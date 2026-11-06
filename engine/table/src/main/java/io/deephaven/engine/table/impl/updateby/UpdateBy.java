@@ -1475,7 +1475,8 @@ public abstract class UpdateBy {
                 final JoinControl.RedirectionType type = JoinControl.getRedirectionType(source, 4.0, true);
                 switch (type) {
                     case Sparse:
-                        rowRedirection = new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
+                        rowRedirection =
+                                new LongColumnSourceWritableRowRedirection(new LongAdaptiveSparseArraySource());
                         break;
                     case Hash:
                         rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(source.intSize());

@@ -25,8 +25,8 @@ import static org.junit.Assert.*;
 public class TestDoubleSparseArraySource extends AbstractDoubleColumnSourceTest {
     @NotNull
     @Override
-    DoubleSparseArraySource makeTestSource() {
-        return new DoubleSparseArraySource();
+    DoubleAdaptiveSparseArraySource makeTestSource() {
+        return new DoubleAdaptiveSparseArraySource();
     }
 
     @Test
@@ -35,7 +35,7 @@ public class TestDoubleSparseArraySource extends AbstractDoubleColumnSourceTest 
         final int arraySize = 100;
         final int rangeStart = 20;
         final int rangeEnd = 80;
-        final DoubleSparseArraySource source = makeTestSource();
+        final DoubleAdaptiveSparseArraySource source = makeTestSource();
         source.ensureCapacity(arraySize);
 
         final double[] data = ArrayGenerator.randomDoubles(rng, arraySize);

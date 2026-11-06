@@ -14,7 +14,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
-import io.deephaven.engine.table.impl.sources.FloatSparseArraySource;
+import io.deephaven.engine.table.impl.sources.FloatAdaptiveSparseArraySource;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -33,7 +33,7 @@ class FloatHelper implements FillBenchmarkHelper {
             floatArray[ii] = makeValue(random);
         }
 
-        floatSparseArraySource = new FloatSparseArraySource();
+        floatSparseArraySource = new FloatAdaptiveSparseArraySource();
         floatArraySource = new FloatArraySource();
         floatArraySource.ensureCapacity(floatArray.length);
 

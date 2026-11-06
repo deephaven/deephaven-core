@@ -2,18 +2,18 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharacterSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
+// ****** Edit CharacterAdaptiveSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -26,9 +26,9 @@ import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.table.impl.sources.sparse.ShortBitmapLeaf;
-import io.deephaven.engine.table.impl.sources.sparse.ShortCompactLeaf;
-import io.deephaven.engine.table.impl.sources.sparse.ShortSortedLeaf;
+import io.deephaven.engine.table.impl.sources.sparse.DoubleBitmapLeaf;
+import io.deephaven.engine.table.impl.sources.sparse.DoubleCompactLeaf;
+import io.deephaven.engine.table.impl.sources.sparse.DoubleSortedLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.ChildPositions;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
@@ -39,20 +39,20 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 // region boxing imports
 import static io.deephaven.util.type.TypeUtils.unbox;
 // endregion boxing imports
 
 /**
- * A sparse in-memory column source of shorts whose leaves adapt to the number of values they hold.
+ * A sparse in-memory column source of doubles whose leaves adapt to the number of values they hold.
  * <p>
  * Row keys are addressed through three page table levels above leaves that each cover
  * {@link io.deephaven.engine.table.impl.sources.sparse.SparseConstants#BLOCK_SIZE} consecutive row keys. A leaf is one
  * of:
  * <ul>
- * <li>a {@link ShortSortedLeaf}, for at most {@link #DEFAULT_SORTED_THRESHOLD} values</li>
- * <li>a {@link ShortBitmapLeaf}, for at most {@link #DEFAULT_COMPACT_THRESHOLD} values</li>
+ * <li>a {@link DoubleSortedLeaf}, for at most {@link #DEFAULT_SORTED_THRESHOLD} values</li>
+ * <li>a {@link DoubleBitmapLeaf}, for at most {@link #DEFAULT_COMPACT_THRESHOLD} values</li>
  * <li>a full block of {@code BLOCK_SIZE} values</li>
  * </ul>
  * A leaf takes the next representation when a write would take it past its threshold, and never returns to a smaller
@@ -88,8 +88,8 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * also builds each leaf with every offset to be written, holding null, and records the previous values, so that writers
  * only store values.
  */
-public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
-        implements MutableColumnSourceGetDefaults.ForShort /* MIXIN_IMPLS */ {
+public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Double>
+        implements MutableColumnSourceGetDefaults.ForDouble /* MIXIN_IMPLS */ {
 
     /** The largest number of values a sorted leaf holds. */
     public static final int DEFAULT_SORTED_THRESHOLD = 16;
@@ -104,23 +104,23 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
 
     // region recycler
     /** Blocks for previous value snapshots, which are not null-filled when borrowed. */
-    private static final SoftRecycler<short[]> snapshotRecycler =
-            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY,
-                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY,
-                    () -> new short[BLOCK_SIZE], null));
+    private static final SoftRecycler<double[]> snapshotRecycler =
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY,
+                    SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_MAXIMUM_CAPACITY,
+                    () -> new double[BLOCK_SIZE], null));
     // endregion recycler
     // The arrays of the previous value page table, which are returned with every entry null.
-    private static final SoftRecycler<short[][]> blocksArrayRecycler =
-            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY2,
-                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY2,
-                    () -> new short[BLOCK2_SIZE][], null));
-    private static final SoftRecycler<ShortCompactLeaf[]> compactsArrayRecycler =
-            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY2,
-                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY2,
-                    () -> new ShortCompactLeaf[BLOCK2_SIZE], null));
+    private static final SoftRecycler<double[][]> blocksArrayRecycler =
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_MAXIMUM_CAPACITY2,
+                    () -> new double[BLOCK2_SIZE][], null));
+    private static final SoftRecycler<DoubleCompactLeaf[]> compactsArrayRecycler =
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_MAXIMUM_CAPACITY2,
+                    () -> new DoubleCompactLeaf[BLOCK2_SIZE], null));
     private static final SoftRecycler<Level2[]> level2ArrayRecycler =
-            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY1,
-                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY1,
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY1,
+                    SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_MAXIMUM_CAPACITY1,
                     () -> new Level2[BLOCK1_SIZE], null));
 
     private final int sortedThreshold;
@@ -133,7 +133,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
      * Commits the previous values at the end of each cycle in which a value changed; null when not tracking previous
      * values.
      */
-    private transient UpdateCommitter<ShortSparseArraySource> prevFlusher;
+    private transient UpdateCommitter<DoubleAdaptiveSparseArraySource> prevFlusher;
     /**
      * The previous values recorded this cycle, or null if none have been recorded.
      */
@@ -166,7 +166,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
     /**
      * Make a source whose leaves are all full blocks.
      */
-    public ShortSparseArraySource() {
+    public DoubleAdaptiveSparseArraySource() {
         this(DEFAULT_SORTED_THRESHOLD, 0);
     }
 
@@ -175,8 +175,8 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
      * @param compactThreshold the largest number of values a sorted or bitmap leaf holds, from 0, when every leaf is a
      *        full block, to the block size
      */
-    public ShortSparseArraySource(final int sortedThreshold, final int compactThreshold) {
-        super(short.class);
+    public DoubleAdaptiveSparseArraySource(final int sortedThreshold, final int compactThreshold) {
+        super(double.class);
         this.sortedThreshold = checkSortedThreshold(sortedThreshold, compactThreshold);
         this.compactThreshold = compactThreshold;
         this.recordThreshold = compactThreshold > 0 ? compactThreshold : DEFAULT_COMPACT_THRESHOLD;
@@ -692,23 +692,23 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         /** The length of the arrays of leaves, or of the window of a level of one leaf. */
         private final int capacity;
         /** The full blocks, or null if no leaf may be one. */
-        private final short[][] blocks;
+        private final double[][] blocks;
         /** The compact leaves, or null if no leaf may be one. */
-        private final ShortCompactLeaf[] compacts;
+        private final DoubleCompactLeaf[] compacts;
         /** For a level holding one leaf in its own fields, the index of the leaf; otherwise {@link #NO_CHILD}. */
         private final int onlyIndex;
         /** The leaf of a level holding one leaf in its own fields, if it is a full block. */
-        private short[] onlyBlock;
+        private double[] onlyBlock;
         /** The leaf of a level holding one leaf in its own fields, if it is a compact leaf. */
-        private ShortCompactLeaf onlyCompact;
+        private DoubleCompactLeaf onlyCompact;
 
         private Level2(
                 final boolean recycled,
                 final ChildPositions positions,
                 final int base,
                 final int capacity,
-                final short[][] blocks,
-                final ShortCompactLeaf[] compacts) {
+                final double[][] blocks,
+                final DoubleCompactLeaf[] compacts) {
             this.recycled = recycled;
             this.positions = positions;
             this.base = base;
@@ -750,8 +750,8 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         /**
          * @return the full block at position {@code slot}, or null if there is none
          */
-        private short[] blockAt(final int slot) {
-            final short[][] localBlocks = blocks;
+        private double[] blockAt(final int slot) {
+            final double[][] localBlocks = blocks;
             if (localBlocks == null) {
                 // a level of one leaf holds it at position 0; any other level with no array holds no full block
                 return slot == 0 ? onlyBlock : null;
@@ -763,8 +763,8 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         /**
          * @return the compact leaf at position {@code slot}, or null if there is none
          */
-        private ShortCompactLeaf compactAt(final int slot) {
-            final ShortCompactLeaf[] localCompacts = compacts;
+        private DoubleCompactLeaf compactAt(final int slot) {
+            final DoubleCompactLeaf[] localCompacts = compacts;
             if (localCompacts == null) {
                 // a level of one leaf holds it at position 0; any other level with no array holds no compact leaf
                 return slot == 0 ? onlyCompact : null;
@@ -772,11 +772,11 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             return slot < 0 || slot >= localCompacts.length ? null : localCompacts[slot];
         }
 
-        private short[] getBlock(final int index) {
+        private double[] getBlock(final int index) {
             return blockAt(slot(index));
         }
 
-        private ShortCompactLeaf getCompact(final int index) {
+        private DoubleCompactLeaf getCompact(final int index) {
             return compactAt(slot(index));
         }
 
@@ -784,7 +784,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
          * Make {@code block} the leaf at {@code index}, which has a position and room for a full block, replacing any
          * compact leaf there.
          */
-        private void putBlock(final int index, final short[] block) {
+        private void putBlock(final int index, final double[] block) {
             if (index == onlyIndex) {
                 onlyBlock = block;
                 onlyCompact = null;
@@ -801,7 +801,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
          * Make {@code compact} the leaf at {@code index}, which has a position and room for a compact leaf, and is not
          * a full block.
          */
-        private void putCompact(final int index, final ShortCompactLeaf compact) {
+        private void putCompact(final int index, final DoubleCompactLeaf compact) {
             if (index == onlyIndex) {
                 onlyCompact = compact;
                 return;
@@ -813,14 +813,14 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             return positions == null && capacity == BLOCK2_SIZE;
         }
 
-        private short[][] newBlocks(final boolean window, final int length) {
-            return recycled && window && length == BLOCK2_SIZE ? blocksArrayRecycler.borrowItem() : new short[length][];
+        private double[][] newBlocks(final boolean window, final int length) {
+            return recycled && window && length == BLOCK2_SIZE ? blocksArrayRecycler.borrowItem() : new double[length][];
         }
 
-        private ShortCompactLeaf[] newCompacts(final boolean window, final int length) {
+        private DoubleCompactLeaf[] newCompacts(final boolean window, final int length) {
             return recycled && window && length == BLOCK2_SIZE
                     ? compactsArrayRecycler.borrowItem()
-                    : new ShortCompactLeaf[length];
+                    : new DoubleCompactLeaf[length];
         }
 
         /**
@@ -828,8 +828,8 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
          */
         private Level2 toArrays() {
             return new Level2(recycled, null, onlyIndex, 1,
-                    onlyBlock == null ? null : new short[][] {onlyBlock},
-                    onlyCompact == null ? null : new ShortCompactLeaf[] {onlyCompact});
+                    onlyBlock == null ? null : new double[][] {onlyBlock},
+                    onlyCompact == null ? null : new DoubleCompactLeaf[] {onlyCompact});
         }
 
         /**
@@ -904,8 +904,8 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
                 final int newLength = windowLength(high - low, capacity, newCount, BLOCK2_SIZE);
                 final boolean down = first >= 0 && indices[0] < base + first;
                 final int newBase = windowBase(low, high, down, newLength, BLOCK2_SIZE);
-                final short[][] newBlocks = blocks == null ? null : newBlocks(true, newLength);
-                final ShortCompactLeaf[] newCompacts = compacts == null ? null : newCompacts(true, newLength);
+                final double[][] newBlocks = blocks == null ? null : newBlocks(true, newLength);
+                final DoubleCompactLeaf[] newCompacts = compacts == null ? null : newCompacts(true, newLength);
                 if (first >= 0) {
                     if (newBlocks != null) {
                         System.arraycopy(blocks, first, newBlocks, base + first - newBase, last - first + 1);
@@ -929,8 +929,8 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             final int[] movedTo = new int[held];
             final int[] merged = ChildPositions.merge(heldIndices, indices, count, movedTo);
             final int newCapacity = grownCapacity(newCount, newCount);
-            final short[][] newBlocks = blocks == null ? null : new short[newCapacity][];
-            final ShortCompactLeaf[] newCompacts = compacts == null ? null : new ShortCompactLeaf[newCapacity];
+            final double[][] newBlocks = blocks == null ? null : new double[newCapacity][];
+            final DoubleCompactLeaf[] newCompacts = compacts == null ? null : new DoubleCompactLeaf[newCapacity];
             for (int ii = 0; ii < held; ++ii) {
                 if (newBlocks != null) {
                     newBlocks[movedTo[ii]] = blocks[heldSlots[ii]];
@@ -959,8 +959,8 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             }
             if (high - low <= maxWindow(newSize)) {
                 final int newLength = high - low;
-                final short[][] newBlocks = blocks == null ? null : newBlocks(true, newLength);
-                final ShortCompactLeaf[] newCompacts = compacts == null ? null : newCompacts(true, newLength);
+                final double[][] newBlocks = blocks == null ? null : newBlocks(true, newLength);
+                final DoubleCompactLeaf[] newCompacts = compacts == null ? null : newCompacts(true, newLength);
                 for (int ii = 0; ii < held.length; ++ii) {
                     if (newBlocks != null && ii < blocks.length) {
                         newBlocks[held[ii] - low] = blocks[ii];
@@ -1005,10 +1005,10 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             final int[] merged = ChildPositions.merge(held, indices, count, movedTo);
             final int newCapacity = grownCapacity(capacity, newSize);
             return new Level2(recycled, ChildPositions.of(merged, newSize), 0, newCapacity,
-                    blocks == null ? null : scatter(blocks, new short[newCapacity][], movedTo, held.length),
+                    blocks == null ? null : scatter(blocks, new double[newCapacity][], movedTo, held.length),
                     compacts == null
                             ? null
-                            : scatter(compacts, new ShortCompactLeaf[newCapacity], movedTo, held.length));
+                            : scatter(compacts, new DoubleCompactLeaf[newCapacity], movedTo, held.length));
         }
 
         /**
@@ -1095,8 +1095,8 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             }
             // the remaining leaves move into new arrays, so that a reader of this level finds each where it was
             return new Level2(recycled, ChildPositions.of(kept, keptCount), 0, keptCount,
-                    blocks == null ? null : gather(blocks, new short[keptCount][], keptFrom, keptCount),
-                    compacts == null ? null : gather(compacts, new ShortCompactLeaf[keptCount], keptFrom, keptCount));
+                    blocks == null ? null : gather(blocks, new double[keptCount][], keptFrom, keptCount),
+                    compacts == null ? null : gather(compacts, new DoubleCompactLeaf[keptCount], keptFrom, keptCount));
         }
 
         /**
@@ -1109,7 +1109,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
                 snapshotRecycler.returnItem(onlyBlock);
             }
             if (blocks != null) {
-                for (final short[] snapshot : blocks) {
+                for (final double[] snapshot : blocks) {
                     if (snapshot != null) {
                         snapshotRecycler.returnItem(snapshot);
                     }
@@ -1131,22 +1131,22 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         private long estimateSize() {
             long estimate = positions == null ? 0 : positions.estimateSize();
             if (onlyBlock != null) {
-                estimate += (long) BLOCK_SIZE * Short.BYTES;
+                estimate += (long) BLOCK_SIZE * Double.BYTES;
             }
             if (onlyCompact != null) {
                 estimate += onlyCompact.estimateSize();
             }
             if (blocks != null) {
                 estimate += (long) blocks.length * Long.BYTES;
-                for (final short[] block : blocks) {
+                for (final double[] block : blocks) {
                     if (block != null) {
-                        estimate += (long) BLOCK_SIZE * Short.BYTES;
+                        estimate += (long) BLOCK_SIZE * Double.BYTES;
                     }
                 }
             }
             if (compacts != null) {
                 estimate += (long) compacts.length * Long.BYTES;
-                for (final ShortCompactLeaf compact : compacts) {
+                for (final DoubleCompactLeaf compact : compacts) {
                     if (compact != null) {
                         estimate += compact.estimateSize();
                     }
@@ -1251,7 +1251,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
      *
      * @return the bottom level covering {@code key}, which replaces {@code level2} if that had no room for the block
      */
-    private Level2 setBlock(final boolean prev, final long key, final Level2 level2, final short[] block) {
+    private Level2 setBlock(final boolean prev, final long key, final Level2 level2, final double[] block) {
         final int index = block2(key);
         final Level2 updated = level2.reserveOne(index).withBlocks();
         if (updated != level2) {
@@ -1271,7 +1271,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             final boolean prev,
             final long key,
             final Level2 level2,
-            final ShortCompactLeaf compact) {
+            final DoubleCompactLeaf compact) {
         final int index = block2(key);
         final Level2 updated = level2.reserveOne(index).withCompacts();
         if (updated != level2) {
@@ -1285,8 +1285,8 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
     /**
      * @return an empty compact leaf with room for {@code capacity} values
      */
-    private ShortCompactLeaf newCompactLeaf(final int capacity) {
-        return capacity <= sortedThreshold ? new ShortSortedLeaf(capacity) : new ShortBitmapLeaf(capacity);
+    private DoubleCompactLeaf newCompactLeaf(final int capacity) {
+        return capacity <= sortedThreshold ? new DoubleSortedLeaf(capacity) : new DoubleBitmapLeaf(capacity);
     }
 
     /**
@@ -1296,17 +1296,17 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
      *
      * @return the compact leaf to write, or null if the leaf is now a full block
      */
-    private ShortCompactLeaf prepareCompactLeaf(
+    private DoubleCompactLeaf prepareCompactLeaf(
             final long key,
             final Level2 level2,
-            final ShortCompactLeaf compact,
+            final DoubleCompactLeaf compact,
             final int count) {
         if (compact == null) {
             if (count > compactThreshold) {
                 setBlock(false, key, level2, newBlock());
                 return null;
             }
-            final ShortCompactLeaf newCompact = newCompactLeaf(count);
+            final DoubleCompactLeaf newCompact = newCompactLeaf(count);
             setCompact(false, key, level2, newCompact);
             return newCompact;
         }
@@ -1340,7 +1340,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
          * Copy the values of the current leaf's row keys, which start at {@code srcOffset} in {@code values}, into
          * {@code block} at their offsets.
          */
-        abstract void copyTo(ShortChunk<? extends Values> values, int srcOffset, short[] block);
+        abstract void copyTo(DoubleChunk<? extends Values> values, int srcOffset, double[] block);
 
         /** Return to the first leaf. */
         abstract void rewind();
@@ -1404,7 +1404,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         }
 
         @Override
-        void copyTo(final ShortChunk<? extends Values> values, final int srcOffset, final short[] block) {
+        void copyTo(final DoubleChunk<? extends Values> values, final int srcOffset, final double[] block) {
             for (int ii = 0; ii < count; ++ii) {
                 block[(int) (keys.get(firstIndex + ii) & INDEX_MASK)] = values.get(srcOffset + ii);
             }
@@ -1494,7 +1494,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         }
 
         @Override
-        void copyTo(final ShortChunk<? extends Values> values, final int srcOffset, final short[] block) {
+        void copyTo(final DoubleChunk<? extends Values> values, final int srcOffset, final double[] block) {
             int position = srcOffset;
             for (int ri = firstRange; ri < endRange; ri += 2) {
                 final int firstOffset = firstOffset(ri);
@@ -1511,16 +1511,16 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
      */
     private static final class PrevScratch {
         private final int[] offsets;
-        private final short[] values;
-        private final ShortChunk<? extends Values> valuesChunk;
+        private final double[] values;
+        private final DoubleChunk<? extends Values> valuesChunk;
 
         /**
          * @param capacity the most offsets a compact leaf holds
          */
         private PrevScratch(final int capacity) {
             offsets = new int[capacity];
-            values = new short[capacity];
-            valuesChunk = ShortChunk.chunkWrap(values);
+            values = new double[capacity];
+            valuesChunk = DoubleChunk.chunkWrap(values);
         }
     }
 
@@ -1529,17 +1529,17 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
      *         previous value page table if {@code prev}, else in the current one; or a bitmap leaf with its values that
      *         replaces it if it is a sorted leaf and {@code newSize} is more than a sorted leaf holds
      */
-    private ShortCompactLeaf maybeLeaveSortedTier(
+    private DoubleCompactLeaf maybeLeaveSortedTier(
             final boolean prev,
             final long key,
             final Level2 level2,
-            final ShortCompactLeaf compact,
+            final DoubleCompactLeaf compact,
             final int newSize) {
-        if (newSize <= sortedThreshold || !(compact instanceof ShortSortedLeaf)) {
+        if (newSize <= sortedThreshold || !(compact instanceof DoubleSortedLeaf)) {
             return compact;
         }
-        final ShortBitmapLeaf bitmap = new ShortBitmapLeaf(newSize);
-        ((ShortSortedLeaf) compact).copyTo(bitmap);
+        final DoubleBitmapLeaf bitmap = new DoubleBitmapLeaf(newSize);
+        ((DoubleSortedLeaf) compact).copyTo(bitmap);
         setCompact(prev, key, level2, bitmap);
         return bitmap;
     }
@@ -1632,14 +1632,14 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
                     mayHoldSnapshots = false;
                 }
                 final int block2 = block2(firstKey);
-                final ShortCompactLeaf compact = level2.getCompact(block2);
+                final DoubleCompactLeaf compact = level2.getCompact(block2);
                 final boolean isBlock = level2.getBlock(block2) != null;
                 final boolean mayBeBlock =
                         !isBlock && (compact == null ? 0 : compact.size()) + keyCount > compactThreshold;
                 mayHoldBlocks |= mayBeBlock;
                 mayHoldCompacts |= !isBlock && !mayBeBlock;
                 if (trackPrevious) {
-                    final ShortCompactLeaf recorded = prevLevel2.getCompact(block2);
+                    final DoubleCompactLeaf recorded = prevLevel2.getCompact(block2);
                     mayHoldSnapshots |= prevLevel2.getBlock(block2) == null
                             && (recorded == null ? 0 : recorded.size()) + keyCount > recordThreshold;
                 }
@@ -1742,9 +1742,9 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             recordPrevious(firstKey, level2, block2, offsets, count, scratch);
         }
         if (level2.getBlock(block2) == null) {
-            final ShortCompactLeaf compact = level2.getCompact(block2);
+            final DoubleCompactLeaf compact = level2.getCompact(block2);
             final int absent = compact == null ? count : compact.countAbsent(offsets, count);
-            final ShortCompactLeaf prepared = prepareCompactLeaf(firstKey, level2, compact, absent);
+            final DoubleCompactLeaf prepared = prepareCompactLeaf(firstKey, level2, compact, absent);
             if (prepared != null) {
                 prepared.insertAbsent(offsets, count);
             }
@@ -1761,11 +1761,11 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         if (prevLevel2.blockAt(slot) != null) {
             return;
         }
-        ShortCompactLeaf recorded = prevLevel2.compactAt(slot);
+        DoubleCompactLeaf recorded = prevLevel2.compactAt(slot);
         if (recorded != null && recorded.contains(offset)) {
             return;
         }
-        final short value = getValue(level2, block2, offset);
+        final double value = getValue(level2, block2, offset);
         recorded = preparePrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
         if (recorded != null) {
             recorded.put(offset, value);
@@ -1791,18 +1791,18 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         if (prevLevel2.blockAt(slot) != null) {
             return;
         }
-        final ShortCompactLeaf alreadyRecorded = prevLevel2.compactAt(slot);
+        final DoubleCompactLeaf alreadyRecorded = prevLevel2.compactAt(slot);
         final int absent = alreadyRecorded == null ? count : alreadyRecorded.countAbsent(offsets, count);
         if (absent == 0) {
             return;
         }
-        final ShortCompactLeaf recorded = preparePrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
+        final DoubleCompactLeaf recorded = preparePrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
         if (recorded == null) {
             return;
         }
         final int leafSlot = level2 == null ? -1 : level2.slot(block2);
-        final short[] block = level2 == null ? null : level2.blockAt(leafSlot);
-        final ShortCompactLeaf compact = level2 == null || block != null ? null : level2.compactAt(leafSlot);
+        final double[] block = level2 == null ? null : level2.blockAt(leafSlot);
+        final DoubleCompactLeaf compact = level2 == null || block != null ? null : level2.compactAt(leafSlot);
         int next = 0;
         for (int ii = 0; ii < count; ++ii) {
             final int offset = offsets[ii];
@@ -1811,7 +1811,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
                 if (block != null) {
                     scratch.values[next] = block[offset];
                 } else {
-                    scratch.values[next] = compact == null ? NULL_SHORT : compact.get(offset);
+                    scratch.values[next] = compact == null ? NULL_DOUBLE : compact.get(offset);
                 }
                 ++next;
             }
@@ -1826,23 +1826,23 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
      *
      * @return the leaf to record into, or null if the previous value leaf is now a snapshot of the whole leaf
      */
-    private ShortCompactLeaf preparePrevLeaf(
+    private DoubleCompactLeaf preparePrevLeaf(
             final long key,
             final Level2 prevLevel2,
             final int block2,
-            final ShortCompactLeaf recorded,
+            final DoubleCompactLeaf recorded,
             final int count,
             final Level2 level2) {
         final int newSize = (recorded == null ? 0 : recorded.size()) + count;
         if (newSize > recordThreshold) {
             // the offsets not yet recorded have not changed this cycle, so their current values are previous values
-            final short[] snapshot = snapshotRecycler.borrowItem();
-            final short[] block = level2 == null ? null : level2.getBlock(block2);
+            final double[] snapshot = snapshotRecycler.borrowItem();
+            final double[] block = level2 == null ? null : level2.getBlock(block2);
             if (block != null) {
                 System.arraycopy(block, 0, snapshot, 0, BLOCK_SIZE);
             } else {
-                Arrays.fill(snapshot, NULL_SHORT);
-                final ShortCompactLeaf compact = level2 == null ? null : level2.getCompact(block2);
+                Arrays.fill(snapshot, NULL_DOUBLE);
+                final DoubleCompactLeaf compact = level2 == null ? null : level2.getCompact(block2);
                 if (compact != null) {
                     compact.copyTo(snapshot);
                 }
@@ -1854,7 +1854,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             return null;
         }
         if (recorded == null) {
-            final ShortCompactLeaf newRecorded = newCompactLeaf(count);
+            final DoubleCompactLeaf newRecorded = newCompactLeaf(count);
             setCompact(true, key, prevLevel2, newRecorded);
             return newRecorded;
         }
@@ -1864,78 +1864,78 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
     /**
      * @return the current value at {@code offset} of the leaf at {@code block2} of {@code level2}, which may be null
      */
-    private static short getValue(final Level2 level2, final int block2, final int offset) {
+    private static double getValue(final Level2 level2, final int block2, final int offset) {
         if (level2 == null) {
-            return NULL_SHORT;
+            return NULL_DOUBLE;
         }
         final int slot = level2.slot(block2);
-        final short[] block = level2.blockAt(slot);
+        final double[] block = level2.blockAt(slot);
         if (block != null) {
             return block[offset];
         }
-        final ShortCompactLeaf compact = level2.compactAt(slot);
-        return compact == null ? NULL_SHORT : compact.get(offset);
+        final DoubleCompactLeaf compact = level2.compactAt(slot);
+        return compact == null ? NULL_DOUBLE : compact.get(offset);
     }
 
     /**
      * @return the value of {@code rowKey} at the start of this cycle
      */
-    private short getPrevValue(final long rowKey) {
+    private double getPrevValue(final long rowKey) {
         final Level0 localPrevRoot = prevRoot;
         if (localPrevRoot != null && rowKey >= 0) {
             final Level2 prevLevel2 = getLevel2(localPrevRoot, rowKey);
             if (prevLevel2 != null) {
                 final int slot = prevLevel2.slot(block2(rowKey));
                 final int offset = (int) (rowKey & INDEX_MASK);
-                final short[] snapshot = prevLevel2.blockAt(slot);
+                final double[] snapshot = prevLevel2.blockAt(slot);
                 if (snapshot != null) {
                     return snapshot[offset];
                 }
-                final ShortCompactLeaf recorded = prevLevel2.compactAt(slot);
+                final DoubleCompactLeaf recorded = prevLevel2.compactAt(slot);
                 if (recorded != null && recorded.contains(offset)) {
                     return recorded.get(offset);
                 }
             }
         }
-        return getShort(rowKey);
+        return getDouble(rowKey);
     }
 
     // region allocateNullFilledBlock
-    private static short[] newBlock() {
-        final short[] block = new short[BLOCK_SIZE];
-        Arrays.fill(block, NULL_SHORT);
+    private static double[] newBlock() {
+        final double[] block = new double[BLOCK_SIZE];
+        Arrays.fill(block, NULL_DOUBLE);
         return block;
     }
     // endregion allocateNullFilledBlock
 
-    private static short[] toBlock(final ShortCompactLeaf compact) {
-        final short[] block = newBlock();
+    private static double[] toBlock(final DoubleCompactLeaf compact) {
+        final double[] block = newBlock();
         compact.copyTo(block);
         return block;
     }
 
     // region primitive get
     @Override
-    public final short getShort(final long rowKey) {
+    public final double getDouble(final long rowKey) {
         if (rowKey < 0) {
-            return NULL_SHORT;
+            return NULL_DOUBLE;
         }
         final Level2 level2 = getLevel2(rowKey);
         if (level2 == null) {
-            return NULL_SHORT;
+            return NULL_DOUBLE;
         }
         final int slot = level2.slot(block2(rowKey));
         final int offset = (int) (rowKey & INDEX_MASK);
-        final short[] block = level2.blockAt(slot);
+        final double[] block = level2.blockAt(slot);
         if (block != null) {
             return block[offset];
         }
-        final ShortCompactLeaf compact = level2.compactAt(slot);
-        return compact == null ? NULL_SHORT : compact.get(offset);
+        final DoubleCompactLeaf compact = level2.compactAt(slot);
+        return compact == null ? NULL_DOUBLE : compact.get(offset);
     }
 
     @Override
-    public final short getPrevShort(final long rowKey) {
+    public final double getPrevDouble(final long rowKey) {
         return getPrevValue(rowKey);
     }
     // endregion primitive get
@@ -1946,7 +1946,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             throw new IllegalStateException(
                     "Can't call startTrackingPrevValues() twice: " + getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, updateGraph, ShortSparseArraySource::commitUpdates);
+        prevFlusher = new UpdateCommitter<>(this, updateGraph, DoubleAdaptiveSparseArraySource::commitUpdates);
     }
 
     private void commitUpdates() {
@@ -2108,20 +2108,20 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
 
     // region boxed methods
     @Override
-    public void set(final long key, final Short value) {
+    public void set(final long key, final Double value) {
         set(key, unbox(value));
     }
     // endregion boxed methods
 
     @Override
-    public final void set(final long key, final short value) {
+    public final void set(final long key, final double value) {
         final Level2 level2 = ensureLevel2(key);
         final int block2 = block2(key);
         final int offset = (int) (key & INDEX_MASK);
         if (shouldTrackPrevious()) {
             recordPrevious(key, level2, block2, offset);
         }
-        final short[] block = level2.getBlock(block2);
+        final double[] block = level2.getBlock(block2);
         if (block != null) {
             block[offset] = value;
             return;
@@ -2135,9 +2135,9 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
      * @return the bottom level covering {@code key}, which replaces {@code level2} if the write changed the leaves it
      *         holds
      */
-    private Level2 setInCompactLeaf(final long key, final Level2 level2, final int offset, final short value) {
+    private Level2 setInCompactLeaf(final long key, final Level2 level2, final int offset, final double value) {
         final int block2 = block2(key);
-        ShortCompactLeaf compact = level2.getCompact(block2);
+        DoubleCompactLeaf compact = level2.getCompact(block2);
         if (compact != null && compact.contains(offset)) {
             compact.put(offset, value);
             return level2;
@@ -2160,17 +2160,17 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         }
         final int block2 = block2(key);
         final int offset = (int) (key & INDEX_MASK);
-        final short[] block = level2.getBlock(block2);
+        final double[] block = level2.getBlock(block2);
         if (block != null) {
-            if (block[offset] != NULL_SHORT) {
+            if (block[offset] != NULL_DOUBLE) {
                 if (shouldTrackPrevious()) {
                     recordPrevious(key, level2, block2, offset);
                 }
-                block[offset] = NULL_SHORT;
+                block[offset] = NULL_DOUBLE;
             }
             return;
         }
-        final ShortCompactLeaf compact = level2.getCompact(block2);
+        final DoubleCompactLeaf compact = level2.getCompact(block2);
         if (compact != null && compact.contains(offset)) {
             if (shouldTrackPrevious()) {
                 recordPrevious(key, level2, block2, offset);
@@ -2193,13 +2193,13 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
                     final int block2 = block2(key);
                     final int firstOffset = (int) (key & INDEX_MASK);
                     final int lastOffset = (int) (lastKeyInLeaf & INDEX_MASK);
-                    final short[] block = level2.getBlock(block2);
+                    final double[] block = level2.getBlock(block2);
                     if (block != null) {
                         if (trackPrevious) {
                             // the offsets that already hold null are unchanged, so need no previous value
                             int count = 0;
                             for (int offset = firstOffset; offset <= lastOffset; ++offset) {
-                                if (block[offset] != NULL_SHORT) {
+                                if (block[offset] != NULL_DOUBLE) {
                                     offsets[count++] = offset;
                                 }
                             }
@@ -2207,9 +2207,9 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
                                 recordPrevious(key, level2, block2, offsets, count, scratch);
                             }
                         }
-                        Arrays.fill(block, firstOffset, lastOffset + 1, NULL_SHORT);
+                        Arrays.fill(block, firstOffset, lastOffset + 1, NULL_DOUBLE);
                     } else {
-                        final ShortCompactLeaf compact = level2.getCompact(block2);
+                        final DoubleCompactLeaf compact = level2.getCompact(block2);
                         if (compact != null) {
                             if (trackPrevious) {
                                 final int count = compact.copyOffsets(firstOffset, lastOffset, offsets);
@@ -2236,7 +2236,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         try (final RowSet.SearchIterator it =
                 (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator()) {
             it.forEachLong((final long key) -> {
-                set(key + shiftDelta, getShort(key));
+                set(key + shiftDelta, getDouble(key));
                 setNull(key);
                 return true;
             });
@@ -2269,10 +2269,10 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
     private static final class FillState {
         private final Level0 prevRoot;
         private long maxKeyInCurrentLeaf = -1;
-        private short[] block;
-        private ShortCompactLeaf compact;
-        private short[] prevSnapshot;
-        private ShortCompactLeaf prevRecorded;
+        private double[] block;
+        private DoubleCompactLeaf compact;
+        private double[] prevSnapshot;
+        private DoubleCompactLeaf prevRecorded;
         private int destOffset;
 
         /**
@@ -2282,7 +2282,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             this.prevRoot = prevRoot;
         }
 
-        private void readLeaf(final ShortSparseArraySource source, final long key) {
+        private void readLeaf(final DoubleAdaptiveSparseArraySource source, final long key) {
             maxKeyInCurrentLeaf = key | INDEX_MASK;
             final int block2 = block2(key);
             final Level2 level2 = source.getLevel2(key);
@@ -2307,14 +2307,14 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             }
         }
 
-        private short get(final int offset) {
+        private double get(final int offset) {
             if (block != null) {
                 return block[offset];
             }
-            return compact == null ? NULL_SHORT : compact.get(offset);
+            return compact == null ? NULL_DOUBLE : compact.get(offset);
         }
 
-        private short getPrev(final int offset) {
+        private double getPrev(final int offset) {
             if (prevSnapshot != null) {
                 return prevSnapshot[offset];
             }
@@ -2329,11 +2329,11 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
          * ascending order, with their values.
          */
         private void fillKeys(
-                final WritableShortChunk<? super Values> chunk,
+                final WritableDoubleChunk<? super Values> chunk,
                 final LongChunk<OrderedRowKeys> keys,
                 final int start,
                 final int end) {
-            final short[] values = prevSnapshot != null ? prevSnapshot : block;
+            final double[] values = prevSnapshot != null ? prevSnapshot : block;
             if (values != null) {
                 for (int ii = start; ii < end; ++ii) {
                     chunk.set(ii, values[(int) (keys.get(ii) & INDEX_MASK)]);
@@ -2355,7 +2355,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
          * Fill {@code chunk} at {@link #destOffset} with the values of offsets {@code firstOffset} through
          * {@code firstOffset + length - 1}.
          */
-        private void fillRange(final WritableShortChunk<? super Values> chunk, final int firstOffset, final int length) {
+        private void fillRange(final WritableDoubleChunk<? super Values> chunk, final int firstOffset, final int length) {
             if (prevSnapshot != null) {
                 chunk.copyFromTypedArray(prevSnapshot, firstOffset, destOffset, length);
                 return;
@@ -2378,7 +2378,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final RowSequence rowSequence) {
-        fill(dest.asWritableShortChunk(), rowSequence, null);
+        fill(dest.asWritableDoubleChunk(), rowSequence, null);
     }
 
     @Override
@@ -2386,14 +2386,14 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final RowSequence rowSequence) {
-        fill(dest.asWritableShortChunk(), rowSequence, prevRoot);
+        fill(dest.asWritableDoubleChunk(), rowSequence, prevRoot);
     }
 
     /**
      * Fill {@code chunk} with the values of {@code rowSequence}, previous values if {@code prevRoot} is not null.
      */
     private void fill(
-            final WritableShortChunk<? super Values> chunk,
+            final WritableDoubleChunk<? super Values> chunk,
             final RowSequence rowSequence,
             final Level0 prevRoot) {
         if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
@@ -2404,7 +2404,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
     }
 
     private void fillByRanges(
-            final WritableShortChunk<? super Values> chunk,
+            final WritableDoubleChunk<? super Values> chunk,
             final RowSequence rowSequence,
             final Level0 prevRoot) {
         final FillState state = new FillState(prevRoot);
@@ -2432,7 +2432,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
      * is read in one pass over the leaf.
      */
     private void fillByKeys(
-            final WritableShortChunk<? super Values> chunk,
+            final WritableDoubleChunk<? super Values> chunk,
             final RowSequence rowSequence,
             final Level0 prevRoot) {
         final FillState state = new FillState(prevRoot);
@@ -2455,9 +2455,9 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
 
     // region getChunk
     @Override
-    public ShortChunk<Values> getChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
+    public DoubleChunk<Values> getChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
         if (rowSequence.isEmpty()) {
-            return ShortChunk.getEmptyChunk();
+            return DoubleChunk.getEmptyChunk();
         }
         final long firstKey = rowSequence.firstRowKey();
         final long lastKey = rowSequence.lastRowKey();
@@ -2473,15 +2473,15 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
                         (int) rowSequence.size());
             }
         }
-        return getChunkByFilling(context, rowSequence).asShortChunk();
+        return getChunkByFilling(context, rowSequence).asDoubleChunk();
     }
 
     @Override
-    public ShortChunk<Values> getPrevChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
+    public DoubleChunk<Values> getPrevChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
         if (prevRoot == null) {
             return getChunk(context, rowSequence);
         }
-        return getPrevChunkByFilling(context, rowSequence).asShortChunk();
+        return getPrevChunkByFilling(context, rowSequence).asDoubleChunk();
     }
     // endregion getChunk
 
@@ -2490,7 +2490,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final LongChunk<? extends RowKeys> keys) {
-        fillUnordered(dest.asWritableShortChunk(), keys, null);
+        fillUnordered(dest.asWritableDoubleChunk(), keys, null);
     }
 
     @Override
@@ -2498,14 +2498,14 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final LongChunk<? extends RowKeys> keys) {
-        fillUnordered(dest.asWritableShortChunk(), keys, prevRoot);
+        fillUnordered(dest.asWritableDoubleChunk(), keys, prevRoot);
     }
 
     /**
      * Fill {@code chunk} with the values of {@code keys}, previous values if {@code prevRoot} is not null.
      */
     private void fillUnordered(
-            final WritableShortChunk<? super Values> chunk,
+            final WritableDoubleChunk<? super Values> chunk,
             final LongChunk<? extends RowKeys> keys,
             final Level0 prevRoot) {
         final FillState state = new FillState(prevRoot);
@@ -2514,7 +2514,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         for (int ki = 0; ki < size; ++ki) {
             final long key = keys.get(ki);
             if (key == RowSequence.NULL_ROW_KEY) {
-                chunk.set(ki, NULL_SHORT);
+                chunk.set(ki, NULL_DOUBLE);
                 continue;
             }
             final long leafKey = key & ~INDEX_MASK;
@@ -2566,7 +2566,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         final AdaptiveFillFromContext fillFromContext = (AdaptiveFillFromContext) context;
         final LeafCursor leaves = leafCursor(rowSequence, fillFromContext.ranges, fillFromContext.keys);
         final int[] offsets = fillFromContext.offsets;
-        final ShortChunk<? extends Values> values = src.asShortChunk();
+        final DoubleChunk<? extends Values> values = src.asDoubleChunk();
         final boolean trackPrevious = shouldTrackPrevious();
         final boolean alignedDivisions = writesAlignedDivisions();
         if (!writesPreparedRows()) {
@@ -2581,8 +2581,8 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             final Level2 level2 = ensureLevel2(firstKey);
             final int block2 = block2(firstKey);
             final int slot = level2.slot(block2);
-            short[] block = level2.blockAt(slot);
-            final ShortCompactLeaf existing = block == null ? level2.compactAt(slot) : null;
+            double[] block = level2.blockAt(slot);
+            final DoubleCompactLeaf existing = block == null ? level2.compactAt(slot) : null;
             // a new leaf of more values than a compact leaf holds becomes a full block, which needs no offsets, and
             // previous values need them only when they may be recorded in a compact leaf
             if (trackPrevious
@@ -2600,7 +2600,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             }
             if (block == null) {
                 final int absent = existing == null ? count : existing.countAbsent(offsets, count);
-                final ShortCompactLeaf compact = prepareCompactLeaf(firstKey, level2, existing, absent);
+                final DoubleCompactLeaf compact = prepareCompactLeaf(firstKey, level2, existing, absent);
                 if (compact != null) {
                     compact.putSorted(offsets, values, srcOffset, count);
                     srcOffset += count;
@@ -2661,7 +2661,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             @NotNull final FillFromContext context,
             @NotNull final Chunk<? extends Values> src,
             @NotNull final LongChunk<RowKeys> keys) {
-        final ShortChunk<? extends Values> values = src.asShortChunk();
+        final DoubleChunk<? extends Values> values = src.asDoubleChunk();
         final boolean trackPrevious = shouldTrackPrevious();
         final int size = keys.size();
         long currentLeafKey = -1;
@@ -2674,7 +2674,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
                 level2 = ensureLevel2(key);
                 block2 = block2(key);
                 currentLeafKey = leafKey;
-                final short[] block = level2.getBlock(block2);
+                final double[] block = level2.getBlock(block2);
                 if (block != null && values.isAlias(block)) {
                     throw new UnsupportedOperationException("Source chunk is an alias for target data");
                 }
@@ -2683,7 +2683,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             if (trackPrevious) {
                 recordPrevious(key, level2, block2, offset);
             }
-            final short[] block = level2.getBlock(block2);
+            final double[] block = level2.getBlock(block2);
             if (block != null) {
                 block[offset] = values.get(ki);
             } else {

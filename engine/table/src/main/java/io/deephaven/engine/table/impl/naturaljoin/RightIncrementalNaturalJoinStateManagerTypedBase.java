@@ -23,7 +23,7 @@ import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.join.ChangedKeyRows;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
+import io.deephaven.engine.table.impl.sources.LongAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
@@ -351,7 +351,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                 return new ContiguousWritableRowRedirection(innerIndex);
             }
             case Sparse: {
-                final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
+                final LongAdaptiveSparseArraySource sparseRedirections = new LongAdaptiveSparseArraySource();
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {

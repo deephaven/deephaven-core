@@ -204,7 +204,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
         } else {
             maybeInnerSource = null;
             // region create-sparse
-            outputSource = new ObjectSparseArraySource<>(colType);
+            outputSource = new ObjectAdaptiveSparseArraySource<>(colType);
             // endregion create-sparse
         }
     }
@@ -237,7 +237,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((ObjectSparseArraySource) outputSource).shift(subRowSetToShift, delta);
+        ((ObjectAdaptiveSparseArraySource) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 

@@ -12,7 +12,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
+import io.deephaven.engine.table.impl.sources.IntegerAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
@@ -214,8 +214,10 @@ class BucketingContext implements SafeCloseable {
                                 new SymbolTableCombiner(new ColumnSource[] {leftSources[ii]}, SymbolTableCombiner
                                         .hashTableSize(Math.max(leftSymbolTable.size(), rightSymbolTable.size())));
 
-                        final IntegerSparseArraySource leftSymbolMapper = new IntegerSparseArraySource();
-                        final IntegerSparseArraySource rightSymbolMapper = new IntegerSparseArraySource();
+                        final IntegerAdaptiveSparseArraySource leftSymbolMapper =
+                                new IntegerAdaptiveSparseArraySource();
+                        final IntegerAdaptiveSparseArraySource rightSymbolMapper =
+                                new IntegerAdaptiveSparseArraySource();
 
                         if (leftSymbolTable.size() < rightSymbolTable.size()) {
                             symbolTableCombiner.addSymbols(leftSymbolTable, leftSymbolMapper);

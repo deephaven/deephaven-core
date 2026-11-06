@@ -576,7 +576,7 @@ public class TestIntegerArraySource {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
-        // NullPointerException in IntegerSparseArraySource.commitUpdates()
+        // NullPointerException in IntegerAdaptiveSparseArraySource.commitUpdates()
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 

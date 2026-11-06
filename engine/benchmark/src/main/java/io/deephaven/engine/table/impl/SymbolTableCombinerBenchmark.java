@@ -11,7 +11,7 @@ import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
+import io.deephaven.engine.table.impl.sources.IntegerAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
@@ -41,9 +41,9 @@ import java.util.concurrent.TimeUnit;
  * <li>{@link #combiner()} uses {@link SymbolTableCombiner}.</li>
  * <li>{@link #fastutilMap()} does the same with a fastutil {@link Object2IntOpenHashMap}, one symbol at a time.</li>
  * </ul>
- * Both write their results into {@link IntegerSparseArraySource IntegerSparseArraySources}, as the join does. The two
- * tables have {@code symbols} distinct symbols each, of which {@code overlapPercent} percent are shared. The benchmark
- * lives in the combiner's package so that it can use the package-private combiner.
+ * Both write their results into {@link IntegerAdaptiveSparseArraySource IntegerSparseArraySources}, as the join does.
+ * The two tables have {@code symbols} distinct symbols each, of which {@code overlapPercent} percent are shared. The
+ * benchmark lives in the combiner's package so that it can use the package-private combiner.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -101,8 +101,8 @@ public class SymbolTableCombinerBenchmark {
 
     @Benchmark
     public int combiner() {
-        final IntegerSparseArraySource buildMapper = new IntegerSparseArraySource();
-        final IntegerSparseArraySource probeMapper = new IntegerSparseArraySource();
+        final IntegerAdaptiveSparseArraySource buildMapper = new IntegerAdaptiveSparseArraySource();
+        final IntegerAdaptiveSparseArraySource probeMapper = new IntegerAdaptiveSparseArraySource();
         final SymbolTableCombiner combiner = new SymbolTableCombiner(
                 new ColumnSource[] {buildTable.getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME)},
                 SymbolTableCombiner.hashTableSize(symbols));
@@ -113,8 +113,8 @@ public class SymbolTableCombinerBenchmark {
 
     @Benchmark
     public int fastutilMap() {
-        final IntegerSparseArraySource buildMapper = new IntegerSparseArraySource();
-        final IntegerSparseArraySource probeMapper = new IntegerSparseArraySource();
+        final IntegerAdaptiveSparseArraySource buildMapper = new IntegerAdaptiveSparseArraySource();
+        final IntegerAdaptiveSparseArraySource probeMapper = new IntegerAdaptiveSparseArraySource();
         final Object2IntOpenHashMap<String> uniqueIds = new Object2IntOpenHashMap<>(symbols);
         uniqueIds.defaultReturnValue(-1);
         forEachSymbol(buildTable, (id, symbol) -> {

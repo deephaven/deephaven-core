@@ -25,8 +25,8 @@ import static org.junit.Assert.*;
 public class TestFloatSparseArraySource extends AbstractFloatColumnSourceTest {
     @NotNull
     @Override
-    FloatSparseArraySource makeTestSource() {
-        return new FloatSparseArraySource();
+    FloatAdaptiveSparseArraySource makeTestSource() {
+        return new FloatAdaptiveSparseArraySource();
     }
 
     @Test
@@ -35,7 +35,7 @@ public class TestFloatSparseArraySource extends AbstractFloatColumnSourceTest {
         final int arraySize = 100;
         final int rangeStart = 20;
         final int rangeEnd = 80;
-        final FloatSparseArraySource source = makeTestSource();
+        final FloatAdaptiveSparseArraySource source = makeTestSource();
         source.ensureCapacity(arraySize);
 
         final float[] data = ArrayGenerator.randomFloats(rng, arraySize);

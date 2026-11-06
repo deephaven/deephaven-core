@@ -71,7 +71,7 @@ public class TestSparseArraySourceNullBlocks {
      * A redirection over a sparse source whose outer row keys are the rows of a tracking row set.
      */
     private static final class Fixture {
-        final LongSparseArraySource source = new LongSparseArraySource();
+        final LongAdaptiveSparseArraySource source = new LongAdaptiveSparseArraySource();
         final LongColumnSourceWritableRowRedirection redirection = new LongColumnSourceWritableRowRedirection(source);
         final TrackingWritableRowSet rowSet;
 
@@ -111,7 +111,7 @@ public class TestSparseArraySourceNullBlocks {
 
     @Test
     public void testIntRedirectionReleasesRemovedAndShiftedBlocks() {
-        final IntegerSparseArraySource source = new IntegerSparseArraySource();
+        final IntegerAdaptiveSparseArraySource source = new IntegerAdaptiveSparseArraySource();
         final IntColumnSourceWritableRowRedirection redirection = new IntColumnSourceWritableRowRedirection(source);
         final TrackingWritableRowSet rowSet = ir(0, 3 * BLOCK_SIZE - 1).toTracking();
         rowSet.forAllRowKeys(key -> redirection.put(key, key * 10));

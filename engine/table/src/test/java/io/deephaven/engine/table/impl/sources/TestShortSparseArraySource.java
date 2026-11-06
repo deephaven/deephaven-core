@@ -25,8 +25,8 @@ import static org.junit.Assert.*;
 public class TestShortSparseArraySource extends AbstractShortColumnSourceTest {
     @NotNull
     @Override
-    ShortSparseArraySource makeTestSource() {
-        return new ShortSparseArraySource();
+    ShortAdaptiveSparseArraySource makeTestSource() {
+        return new ShortAdaptiveSparseArraySource();
     }
 
     @Test
@@ -35,7 +35,7 @@ public class TestShortSparseArraySource extends AbstractShortColumnSourceTest {
         final int arraySize = 100;
         final int rangeStart = 20;
         final int rangeEnd = 80;
-        final ShortSparseArraySource source = makeTestSource();
+        final ShortAdaptiveSparseArraySource source = makeTestSource();
         source.ensureCapacity(arraySize);
 
         final short[] data = ArrayGenerator.randomShorts(rng, arraySize);

@@ -561,7 +561,7 @@ public class ReplicateSourcesAndChunks {
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharBitmapLeaf.java");
         charToAllButBooleanAndLong(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterAdaptiveSparseArraySource.java");
         replicateLongSparseArraySource();
         replicateByteSparseArraySource();
         replicateObjectSparseArraySource();
@@ -569,7 +569,7 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateByteSparseArraySource() throws IOException {
         final File classFile = new File(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/ByteSparseArraySource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/ByteAdaptiveSparseArraySource.java");
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;");
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
@@ -582,7 +582,7 @@ public class ReplicateSourcesAndChunks {
                 "    @Override",
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "        if (alternateDataType == Boolean.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource(this);",
+                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanAdaptiveSparseArraySource(this);",
                 "        }",
                 "        return super.doReinterpret(alternateDataType);",
                 "    }"));
@@ -608,14 +608,14 @@ public class ReplicateSourcesAndChunks {
         }
 
         final File sourceFile = new File(charToObject(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java"));
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterAdaptiveSparseArraySource.java"));
         List<String> lines = FileUtils.readLines(sourceFile, Charset.defaultCharset());
         lines = removeRegion(lines, "boxed methods");
         lines = removeRegion(lines, "boxing imports");
         lines = removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
         lines = globalReplacements(lines,
-                "public class ObjectSparseArraySource extends SparseArrayColumnSource<Object>",
-                "public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>",
+                "public class ObjectAdaptiveSparseArraySource extends SparseArrayColumnSource<Object>",
+                "public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<T>",
                 "MutableColumnSourceGetDefaults.ForObject ", "MutableColumnSourceGetDefaults.ForObject<T> ",
                 "WritableColumnSource<Object>", "WritableColumnSource<T>",
                 "WritableObjectChunk<\\? super Values>", "WritableObjectChunk<Object, ? super Values>",
@@ -641,14 +641,14 @@ public class ReplicateSourcesAndChunks {
                 "    /**",
                 "     * Make a source whose leaves are all full blocks.",
                 "     */",
-                "    public ObjectSparseArraySource(final Class<T> type) {",
+                "    public ObjectAdaptiveSparseArraySource(final Class<T> type) {",
                 "        this(type, null);",
                 "    }",
                 "",
                 "    /**",
                 "     * Make a source whose leaves are all full blocks.",
                 "     */",
-                "    public ObjectSparseArraySource(final Class<T> type, final Class<?> componentType) {",
+                "    public ObjectAdaptiveSparseArraySource(final Class<T> type, final Class<?> componentType) {",
                 "        this(type, componentType, DEFAULT_SORTED_THRESHOLD, 0);",
                 "    }",
                 "",
@@ -659,7 +659,7 @@ public class ReplicateSourcesAndChunks {
                 "     * @param compactThreshold the largest number of values a sorted or bitmap leaf holds, from 0, when",
                 "     *        every leaf is a full block, to the block size",
                 "     */",
-                "    public ObjectSparseArraySource(",
+                "    public ObjectAdaptiveSparseArraySource(",
                 "            final Class<T> type,",
                 "            final Class<?> componentType,",
                 "            final int sortedThreshold,",
@@ -1145,7 +1145,7 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateLongSparseArraySource() throws IOException {
         final String className = charToLong(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterAdaptiveSparseArraySource.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = addImport(lines, Instant.class, ZonedDateTime.class, LocalDate.class, LocalTime.class, Require.class,
@@ -1177,7 +1177,7 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    @Override",
                 "    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {",
-                "        return new ZonedDateTimeSparseArraySource(Require.neqNull(zone, \"zone\"), this);",
+                "        return new ZonedDateTimeAdaptiveSparseArraySource(Require.neqNull(zone, \"zone\"), this);",
                 "    }",
                 "",
                 "    @Override",
@@ -1192,7 +1192,7 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    @Override",
                 "    public ColumnSource<Instant> toInstant() {",
-                "        return new InstantSparseArraySource(this);",
+                "        return new InstantAdaptiveSparseArraySource(this);",
                 "    }",
                 "",
                 "    @Override",

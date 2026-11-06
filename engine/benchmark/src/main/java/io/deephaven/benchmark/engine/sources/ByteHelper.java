@@ -14,7 +14,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
-import io.deephaven.engine.table.impl.sources.ByteSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ByteAdaptiveSparseArraySource;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -33,7 +33,7 @@ class ByteHelper implements FillBenchmarkHelper {
             byteArray[ii] = makeValue(random);
         }
 
-        byteSparseArraySource = new ByteSparseArraySource();
+        byteSparseArraySource = new ByteAdaptiveSparseArraySource();
         byteArraySource = new ByteArraySource();
         byteArraySource.ensureCapacity(byteArray.length);
 
