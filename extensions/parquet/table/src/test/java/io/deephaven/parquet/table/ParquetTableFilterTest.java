@@ -3017,6 +3017,49 @@ public final class ParquetTableFilterTest {
     }
 
     /**
+     * A filter that reads an indexed column under two names, as when the filter reads the column and an alias of the
+     * column, reaches the location's index with both names mapped to the one index column.
+     */
+    @Test
+    public void testLocationDataIndexFilterOnAliasedColumn() {
+        final Table table = TableTools.emptyTable(1000).update("A = ii % 10");
+        // The index is the engine's, so the location is only the receiver: any location will do.
+        final File file = new File(rootFile, "locationDataIndexFilterOnAliasedColumn.parquet");
+        writeTable(table, file.getPath());
+        final ParquetTableLocation location = new ParquetTableLocation(StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(file.toURI(), 0, null, ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY);
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+
+        // The indexed column's own name and an alias of the column.
+        checkLocationDataIndexFilter(location, dataIndex, table.updateView("A2 = A"),
+                "A == 5 && A2 == A", Map.of("A2", "A"));
+        // Two aliases, neither of which is the indexed column's name.
+        checkLocationDataIndexFilter(location, dataIndex, table.updateView("Col1 = A", "dup0_Col1 = A"),
+                "Col1 == 5 && dup0_Col1 == Col1", Map.of("Col1", "A", "dup0_Col1", "A"));
+    }
+
+    private static void checkLocationDataIndexFilter(
+            final ParquetTableLocation location,
+            final DataIndex dataIndex,
+            final Table aliased,
+            final String expression,
+            final Map<String, String> renameMap) {
+        final WhereFilter filter = getExpression(expression);
+        filter.init(aliased.getDefinition());
+        try (final RowSet selection = aliased.getRowSet().copy();
+                final PushdownResult input = PushdownResult.allMaybeMatch(selection);
+                final PushdownResult result =
+                        location.pushdownDataIndex(selection, filter, false, renameMap, dataIndex, input);
+                // Apply the filter itself, since aliased.where could push down to the same index.
+                final RowSet expected = filter.filter(selection, selection, aliased, false)) {
+            assertEquals(0, result.maybeMatch().size());
+            assertFalse(expected.isEmpty());
+            assertEquals(expected, result.match());
+        }
+    }
+
+    /**
      * Applying a filter to a location's data index can fail on an index whose types do not match the table (see
      * DH-19443), and the pushdown then leaves every row to the filter itself. A cancelled query is not such a failure.
      */
