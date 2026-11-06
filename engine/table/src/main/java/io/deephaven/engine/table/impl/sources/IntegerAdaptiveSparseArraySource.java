@@ -164,10 +164,17 @@ public class IntegerAdaptiveSparseArraySource extends SparseArrayColumnSource<In
 
     // region constructor
     /**
-     * Make a source whose leaves are all full blocks.
+     * Make a source with the default thresholds, whose leaves may be compact.
      */
     public IntegerAdaptiveSparseArraySource() {
-        this(DEFAULT_SORTED_THRESHOLD, 0);
+        this(DEFAULT_SORTED_THRESHOLD, DEFAULT_COMPACT_THRESHOLD);
+    }
+
+    /**
+     * @return a source whose leaves are all full blocks
+     */
+    public static IntegerAdaptiveSparseArraySource fullBlocks() {
+        return new IntegerAdaptiveSparseArraySource(DEFAULT_SORTED_THRESHOLD, 0);
     }
 
     /**

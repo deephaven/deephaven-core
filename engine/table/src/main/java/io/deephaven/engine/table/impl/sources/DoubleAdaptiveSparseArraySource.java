@@ -164,10 +164,17 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
 
     // region constructor
     /**
-     * Make a source whose leaves are all full blocks.
+     * Make a source with the default thresholds, whose leaves may be compact.
      */
     public DoubleAdaptiveSparseArraySource() {
-        this(DEFAULT_SORTED_THRESHOLD, 0);
+        this(DEFAULT_SORTED_THRESHOLD, DEFAULT_COMPACT_THRESHOLD);
+    }
+
+    /**
+     * @return a source whose leaves are all full blocks
+     */
+    public static DoubleAdaptiveSparseArraySource fullBlocks() {
+        return new DoubleAdaptiveSparseArraySource(DEFAULT_SORTED_THRESHOLD, 0);
     }
 
     /**

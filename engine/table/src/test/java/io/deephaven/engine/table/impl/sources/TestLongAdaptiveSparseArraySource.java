@@ -87,7 +87,8 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
     }
 
     /**
-     * Filling from an empty chunk while tracking previous values must leave nothing that fails when the cycle completes.
+     * Filling from an empty chunk while tracking previous values must leave nothing that fails when the cycle
+     * completes.
      */
     @Override
     @Test

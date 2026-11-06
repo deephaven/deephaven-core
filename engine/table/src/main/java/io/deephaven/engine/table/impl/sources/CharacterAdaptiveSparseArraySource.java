@@ -160,10 +160,17 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
 
     // region constructor
     /**
-     * Make a source whose leaves are all full blocks.
+     * Make a source with the default thresholds, whose leaves may be compact.
      */
     public CharacterAdaptiveSparseArraySource() {
-        this(DEFAULT_SORTED_THRESHOLD, 0);
+        this(DEFAULT_SORTED_THRESHOLD, DEFAULT_COMPACT_THRESHOLD);
+    }
+
+    /**
+     * @return a source whose leaves are all full blocks
+     */
+    public static CharacterAdaptiveSparseArraySource fullBlocks() {
+        return new CharacterAdaptiveSparseArraySource(DEFAULT_SORTED_THRESHOLD, 0);
     }
 
     /**

@@ -54,9 +54,7 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
     @NotNull
     @Override
     BooleanAdaptiveSparseArraySource makeTestSource() {
-        return new BooleanAdaptiveSparseArraySource(
-                new ByteAdaptiveSparseArraySource(ByteAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD,
-                        ByteAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD));
+        return new BooleanAdaptiveSparseArraySource();
     }
 
     private static Boolean randomBoolean(final Random random) {

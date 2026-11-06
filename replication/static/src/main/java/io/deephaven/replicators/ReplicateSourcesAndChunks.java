@@ -514,11 +514,17 @@ public class ReplicateSourcesAndChunks {
                 "this\\(DEFAULT_SORTED_THRESHOLD", "this(type, componentType, DEFAULT_SORTED_THRESHOLD",
                 "\\(final int sortedThreshold",
                 "(final Class<T> type, final Class<?> componentType, final int sortedThreshold",
-                "super\\(Object.class\\)", "super(type, componentType)");
-        lines = applyFixup(lines, "constructor", "(\\s*\\* )@param sortedThreshold(.*)", m -> Arrays.asList(
-                m.group(1) + "@param type the type of the values",
-                m.group(1) + "@param componentType the component type of the values, if they are arrays or vectors",
-                m.group(0)));
+                "super\\(Object.class\\)", "super(type, componentType)",
+                "static ObjectAdaptiveSparseArraySource fullBlocks\\(\\)",
+                "static <T> ObjectAdaptiveSparseArraySource<T> fullBlocks(final Class<T> type, final Class<?> componentType)",
+                "new ObjectAdaptiveSparseArraySource\\(DEFAULT_SORTED_THRESHOLD",
+                "new ObjectAdaptiveSparseArraySource<>(type, componentType, DEFAULT_SORTED_THRESHOLD");
+        lines = applyFixup(lines, "constructor", "(\\s*\\* )(@param sortedThreshold|@return a source).*",
+                m -> Arrays.asList(
+                        m.group(1) + "@param type the type of the values",
+                        m.group(1)
+                                + "@param componentType the component type of the values, if they are arrays or vectors",
+                        m.group(0)));
         lines = simpleFixup(lines, "primitive get",
                 "Object get\\(", "T get(",
                 "Object getPrevObject\\(", "T getPrev(",

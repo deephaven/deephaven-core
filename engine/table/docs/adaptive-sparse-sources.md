@@ -113,7 +113,7 @@ Each source has two thresholds:
 
 - `sortedThreshold` (default 16): the most values a sorted leaf holds.
 - `compactThreshold` (default 128): the most values a compact leaf holds. 0 makes every leaf a full block, which is what
-  the no-argument constructor does.
+  `fullBlocks()` does; the no-argument constructor uses the defaults.
 
 The representations, from smallest to largest, are absent, sorted, bitmap and full block. A new leaf starts in the
 smallest one that holds the values of its first write, and a write that takes a leaf past its representation's

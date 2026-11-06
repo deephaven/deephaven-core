@@ -64,9 +64,7 @@ public class TestInstantAdaptiveSparseArraySource {
      * @return a source over a long source with the default thresholds, whose leaves may be compact
      */
     private static InstantAdaptiveSparseArraySource newSource() {
-        return new InstantAdaptiveSparseArraySource(
-                new LongAdaptiveSparseArraySource(LongAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD,
-                        LongAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD));
+        return new InstantAdaptiveSparseArraySource();
     }
 
     private static Instant randomInstant(final Random random) {

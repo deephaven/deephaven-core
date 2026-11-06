@@ -167,10 +167,19 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
 
     // region constructor
     /**
-     * Make a source whose leaves are all full blocks.
+     * Make a source with the default thresholds, whose leaves may be compact.
      */
     public ObjectAdaptiveSparseArraySource(final Class<T> type, final Class<?> componentType) {
-        this(type, componentType, DEFAULT_SORTED_THRESHOLD, 0);
+        this(type, componentType, DEFAULT_SORTED_THRESHOLD, DEFAULT_COMPACT_THRESHOLD);
+    }
+
+    /**
+     * @param type the type of the values
+     * @param componentType the component type of the values, if they are arrays or vectors
+     * @return a source whose leaves are all full blocks
+     */
+    public static <T> ObjectAdaptiveSparseArraySource<T> fullBlocks(final Class<T> type, final Class<?> componentType) {
+        return new ObjectAdaptiveSparseArraySource<>(type, componentType, DEFAULT_SORTED_THRESHOLD, 0);
     }
 
     /**

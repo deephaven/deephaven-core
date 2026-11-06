@@ -45,31 +45,27 @@ public final class SparseMemoryColumnSourceFactory {
         if (!USE_ADAPTIVE) {
             return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type, componentType);
         }
-        final int sortedThreshold = CharacterAdaptiveSparseArraySource.DEFAULT_SORTED_THRESHOLD;
-        final int compactThreshold = CharacterAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD;
         final WritableColumnSource<?> result;
         if (type == byte.class || type == Byte.class) {
-            result = new ByteAdaptiveSparseArraySource(sortedThreshold, compactThreshold);
+            result = new ByteAdaptiveSparseArraySource();
         } else if (type == char.class || type == Character.class) {
-            result = new CharacterAdaptiveSparseArraySource(sortedThreshold, compactThreshold);
+            result = new CharacterAdaptiveSparseArraySource();
         } else if (type == double.class || type == Double.class) {
-            result = new DoubleAdaptiveSparseArraySource(sortedThreshold, compactThreshold);
+            result = new DoubleAdaptiveSparseArraySource();
         } else if (type == float.class || type == Float.class) {
-            result = new FloatAdaptiveSparseArraySource(sortedThreshold, compactThreshold);
+            result = new FloatAdaptiveSparseArraySource();
         } else if (type == int.class || type == Integer.class) {
-            result = new IntegerAdaptiveSparseArraySource(sortedThreshold, compactThreshold);
+            result = new IntegerAdaptiveSparseArraySource();
         } else if (type == long.class || type == Long.class) {
-            result = new LongAdaptiveSparseArraySource(sortedThreshold, compactThreshold);
+            result = new LongAdaptiveSparseArraySource();
         } else if (type == short.class || type == Short.class) {
-            result = new ShortAdaptiveSparseArraySource(sortedThreshold, compactThreshold);
+            result = new ShortAdaptiveSparseArraySource();
         } else if (type == boolean.class || type == Boolean.class) {
-            result = new BooleanAdaptiveSparseArraySource(
-                    new ByteAdaptiveSparseArraySource(sortedThreshold, compactThreshold));
+            result = new BooleanAdaptiveSparseArraySource();
         } else if (type == Instant.class) {
-            result = new InstantAdaptiveSparseArraySource(
-                    new LongAdaptiveSparseArraySource(sortedThreshold, compactThreshold));
+            result = new InstantAdaptiveSparseArraySource();
         } else {
-            result = new ObjectAdaptiveSparseArraySource<>(type, componentType, sortedThreshold, compactThreshold);
+            result = new ObjectAdaptiveSparseArraySource<>(type, componentType);
         }
         // noinspection unchecked
         return (WritableColumnSource<T>) result;
