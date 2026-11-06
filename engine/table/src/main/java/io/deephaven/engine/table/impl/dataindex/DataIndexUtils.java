@@ -167,7 +167,8 @@ public class DataIndexUtils {
      * built over the index table's own row set and column sources. The view does not follow the index table's updates,
      * yet shares the index table's row set and column sources, so the view drifts as the index table updates. Use the
      * view only within the operation that makes the view, and never publish the view. A caller that filters previous
-     * values passes a view of the index table's previous state in place of the index table.
+     * values passes {@link io.deephaven.engine.table.impl.PrevTableTools#prevTable the index table's previous state} in
+     * place of the index table, so the result presents the previous state under the filter's names.
      *
      * @param indexTable The index table
      * @param rowSetColumnName The name of the index table's row set column, which the result keeps
