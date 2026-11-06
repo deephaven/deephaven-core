@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.util.TableLoggers;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
+import io.deephaven.engine.util.remotefilesource.RemoteFileSourceClassLoader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.libs.GroovyStaticImports;
@@ -55,6 +56,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -96,7 +98,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             .getBooleanForClassWithDefault(GroovyDeephavenSession.class, "allowUnknownGroovyPackageImports", false);
 
     private static final ClassLoader STATIC_LOADER =
-            new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()) {
+            new URLClassLoader(new URL[0],
+                    RemoteFileSourceClassLoader.initialize(Thread.currentThread().getContextClassLoader())) {
                 final ConcurrentHashMap<String, Object> mapping = new ConcurrentHashMap<>();
 
                 @Override
@@ -131,6 +134,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     /** Contains imports to be applied to .groovy files loaded from the classpath */
     private final ImportCustomizer loadedGroovyScriptImports;
 
+    private final CompilerConfiguration scriptConfig;
+    private final CompilerConfiguration consoleConfig;
+
     private final Set<String> dynamicClasses;
     private final Map<String, Object> bindingBackingMap;
 
@@ -162,7 +168,14 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    private final DeephavenGroovyShell groovyShell;
+    private DeephavenGroovyShell groovyShell;
+
+    /**
+     * Whether the shell and class cache must be reset before the next evaluation. Stays set until a reset succeeds, so
+     * a failed reset is retried rather than letting a later evaluation run against stale classes.
+     */
+    private boolean resetPending;
+
 
     public static GroovyDeephavenSession of(
             final UpdateGraph updateGraph,
@@ -206,8 +219,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
 
         return new GroovyDeephavenSession(updateGraph, operationInitializer, objectTypeLookup, changeListener,
-                runScripts, classCacheDirectory, consoleImports, loadedGroovyScriptImports, bindingBackingMap,
-                groovyShell);
+                runScripts, classCacheDirectory, consoleImports, loadedGroovyScriptImports, scriptConfig,
+                consoleConfig, bindingBackingMap, groovyShell);
     }
 
     private GroovyDeephavenSession(
@@ -219,6 +232,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             final File classCacheDirectory,
             final ImportCustomizer consoleImports,
             final ImportCustomizer loadedGroovyScriptImports,
+            final CompilerConfiguration scriptConfig,
+            final CompilerConfiguration consoleConfig,
             final Map<String, Object> bindingBackingMap,
             final DeephavenGroovyShell groovyShell)
             throws IOException {
@@ -229,6 +244,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         this.consoleImports = consoleImports;
         this.loadedGroovyScriptImports = loadedGroovyScriptImports;
+        this.scriptConfig = scriptConfig;
+        this.consoleConfig = consoleConfig;
 
         this.dynamicClasses = new HashSet<>();
         this.bindingBackingMap = bindingBackingMap;
@@ -332,6 +349,55 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
+    /**
+     * Replaces the GroovyShell and its class loader, and clears the class cache. This ensures that classes will be
+     * recompiled from source on the next execution.
+     *
+     * <p>
+     * A failure leaves the reset pending, so it is retried before the next evaluation; see
+     * {@link #prepareForEvaluation()}.
+     *
+     * @throws IllegalStateException if the class cache cannot be cleared
+     */
+    private void resetGroovyShell() {
+        clearClassCache(classCacheDirectory);
+
+        // Create fresh classloader - reusing the existing configurations
+        final GroovyClassLoader scriptClassLoader = new GroovyClassLoader(STATIC_LOADER, scriptConfig);
+
+        // Permanently replace groovyShell with fresh shell
+        groovyShell = new DeephavenGroovyShell(scriptClassLoader, groovyShell.getContext(), consoleConfig);
+
+        // Replace the QueryCompiler and the context classloader together. The compiler loads each compiled class in a
+        // child of the context classloader, so leaving a stale loader here would let formulas resolve stale Groovy
+        // classes even though the shell itself was refreshed. The compiler is given no explicit parent, matching the
+        // session's original compiler: one would take precedence over the context classloader, and only the shell's
+        // own loader can see classes defined in the console.
+        final QueryCompiler freshCompiler = QueryCompilerImpl.create(classCacheDirectory);
+        executionContext = executionContext
+                .withQueryCompiler(freshCompiler)
+                .withClassLoader(groovyShell.getClassLoader());
+    }
+
+    @Override
+    protected void prepareForEvaluation() {
+        final RemoteFileSourceClassLoader remoteLoader = RemoteFileSourceClassLoader.getInstance();
+
+        // Claim the declaration made for this run, if there is one; a run without one resolves everything locally
+        final boolean sourcesChanged = remoteLoader.beginEvaluation();
+
+        // Cached classes were compiled against the previous evaluation's sources, so they can only be reused while
+        // those sources still apply
+        if (sourcesChanged) {
+            resetPending = true;
+        }
+        if (resetPending) {
+            log.debug().append("Remote sourcing changed for this evaluation. Clearing class cache.").endl();
+            resetGroovyShell();
+            resetPending = false;
+        }
+    }
+
     @Override
     protected void evaluate(String command, String scriptName) {
         grepScriptImports(removeComments(command));
@@ -343,8 +409,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String currentScriptName = scriptName == null
                 ? DEFAULT_SCRIPT_PREFIX
                 : scriptName.replaceAll("[^0-9A-Za-z_]", "_").replaceAll("(^[0-9])", "_$1");
-        try (final SafeCloseable ignored = groovyShell.setScriptPrefix(currentScriptName)) {
 
+        // Execute the script
+        try (final SafeCloseable ignored = groovyShell.setScriptPrefix(currentScriptName)) {
             updateClassloader(lastCommand);
             try {
                 ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
@@ -688,7 +755,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 // only increment QueryLibrary version if some dynamic class overrides an existing class
                 if (!dynamicClasses.add(entry.getKey()) && !notifiedQueryLibrary) {
                     notifiedQueryLibrary = true;
-                    executionContext.getQueryLibrary().updateVersionString();
+                    getExecutionContext().getQueryLibrary().updateVersionString();
                 }
             }
         }
@@ -707,6 +774,28 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             return true;
         } catch (NumberFormatException e) {
             return false;
+        }
+    }
+
+    /**
+     * Empties the class cache to force recompilation. This is necessary because GroovyClassLoader can reload .class
+     * files from disk even after clearCache(). Groovy recreates the directory when it next compiles.
+     *
+     * <p>
+     * Bytecode left behind stays on the {@link QueryCompiler}'s classpath, where a class that is no longer being
+     * recompiled - one whose remote source the client has stopped serving - can still be resolved from its previous
+     * compilation. Failing to delete is therefore treated as a failure to reset rather than as a warning.
+     *
+     * @param directory the class cache directory
+     * @throws IllegalStateException if the directory cannot be deleted
+     */
+    private static void clearClassCache(@NotNull final File directory) {
+        log.debug().append("Clearing class cache directory: ").append(directory.getAbsolutePath()).endl();
+        try {
+            FileUtils.deleteRecursively(directory);
+        } catch (UncheckedIOException e) {
+            throw new IllegalStateException("Cannot reset Groovy shell: unable to clear class cache directory: "
+                    + directory.getAbsolutePath(), e);
         }
     }
 

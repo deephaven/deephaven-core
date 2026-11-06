@@ -1,0 +1,496 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.web.client.api.remotefilesource;
+
+import com.google.protobuf.ByteString;
+import com.google.protobuf.ByteStringAccess;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
+import elemental2.core.Uint8Array;
+import elemental2.promise.Promise;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceClientMessage;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaRequest;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponse;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerMessage;
+import io.deephaven.proto.backplane.grpc.SetRemoteSourcesRequest;
+import io.deephaven.web.client.api.event.Event;
+import io.deephaven.web.client.api.event.EventFn;
+import io.deephaven.web.client.api.WorkerConnection;
+import io.deephaven.web.client.api.console.JsVariableDefinition;
+import io.deephaven.web.client.api.event.HasEventHandling;
+import io.deephaven.web.client.api.widget.JsWidget;
+import io.deephaven.web.shared.fu.RemoverFn;
+import io.deephaven.web.client.api.widget.WidgetMessageDetails;
+import io.deephaven.web.client.fu.LazyPromise;
+import io.deephaven.web.client.ide.IdeConnection;
+import io.deephaven.web.client.ide.IdeSession;
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
+import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
+import org.gwtproject.nio.TypedArrayHelper;
+import org.jetbrains.annotations.NotNull;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
+
+/**
+ * JavaScript client for the RemoteFileSource service. Provides bidirectional communication with the server-side
+ * RemoteFileSourcePlugin via a message stream.
+ * <p>
+ * Events:
+ * <ul>
+ * <li>{@link #EVENT_REQUEST_SOURCE}: Fired when the server requests a resource from the client. This event MUST have
+ * exactly one listener registered. Attempting to register more than one listener will throw an IllegalStateException.
+ * Receiving a resource request without a registered listener will also throw an IllegalStateException.</li>
+ * </ul>
+ */
+@JsType(namespace = "dh.remotefilesource", name = "RemoteFileSourceService")
+public class JsRemoteFileSourceService extends HasEventHandling {
+    /** Event name for resource request events from the server */
+    @JsProperty(namespace = "dh.remotefilesource.RemoteFileSourceService")
+    public static final String EVENT_REQUEST_SOURCE = "requestsource";
+
+    // Plugin name must match RemoteFileSourcePlugin.name() on the server
+    private static final String PLUGIN_NAME = "DeephavenRemoteFileSourcePlugin";
+
+    private static final String GROOVY_CONSOLE_TYPE = "groovy";
+
+    // Expression evaluated on the server to obtain the object that connects to the plugin. Must match
+    // RemoteFileSourcePlugin.INSTANCE on the server.
+    private static final String INSTANCE_EXPRESSION = "io.deephaven.remotefilesource.RemoteFileSourcePlugin.INSTANCE";
+
+    // Prefix for the transient scope variable the instantiation script assigns the plugin instance to
+    private static final String INSTANCE_VARIABLE_PREFIX = "__deephaven_remote_file_source_";
+
+    // Timeout for setRemoteSources requests (in milliseconds)
+    private static final int SET_REMOTE_SOURCES_TIMEOUT_MS = 30000; // 30 seconds
+
+    private final JsWidget widget;
+
+    // Track pending setRemoteSources requests
+    private final Map<String, LazyPromise<Void>> pendingSetRemoteSourcesRequests = new HashMap<>();
+    private int requestIdCounter = 0;
+
+    private boolean closed;
+    private Runnable closedHandler;
+
+    private JsRemoteFileSourceService(JsWidget widget) {
+        this.widget = widget;
+    }
+
+    /**
+     * Overrides addEventListener to enforce that EVENT_REQUEST_SOURCE can only have one listener.
+     *
+     * @param name the name of the event to listen for
+     * @param callback a function to call when the event occurs
+     * @return Returns a cleanup function.
+     * @param <T> the type of the data that the event will provide
+     */
+    @Override
+    public <T> RemoverFn addEventListener(String name, EventFn<T> callback) {
+        if (EVENT_REQUEST_SOURCE.equals(name) && hasListeners(EVENT_REQUEST_SOURCE)) {
+            throw new IllegalStateException(
+                    "EVENT_REQUEST_SOURCE already has a listener. Only one listener is allowed for this event.");
+        }
+        return super.addEventListener(name, callback);
+    }
+
+    /**
+     * Fetches a RemoteFileSource plugin instance from the server and establishes a message stream connection.
+     *
+     * <p>
+     * There is no dedicated RPC for this: the plugin's instance object is obtained by running an instantiation script
+     * in a Groovy console session and exporting the variable it assigns. Running code on the worker requires permission
+     * to write to it, so a caller without that permission cannot open a connection.
+     *
+     * @param ide the IDE connection used to run the instantiation script
+     * @param connection the worker connection to use for communication
+     * @return a promise that resolves to a RemoteFileSourceService instance with an active message stream
+     */
+    @JsIgnore
+    public static Promise<JsRemoteFileSourceService> fetchPlugin(IdeConnection ide, WorkerConnection connection) {
+        return fetchInstanceWidget(ide, connection).then(widget -> {
+            JsRemoteFileSourceService service = new JsRemoteFileSourceService(widget);
+            return service.connect().catch_(error -> {
+                // Closing the widget releases the instance export, which nothing else holds once the connect fails
+                widget.close();
+                return Promise.reject(error);
+            });
+        });
+    }
+
+    /**
+     * Exports the plugin's instance object as a widget by evaluating an instantiation script in a temporary Groovy
+     * console session. The console session is closed whether or not the export succeeds.
+     *
+     * @param ide the IDE connection used to start the console session
+     * @param connection the worker connection to export the instance through
+     * @return a promise that resolves to an unconnected widget for the instance
+     */
+    private static Promise<JsWidget> fetchInstanceWidget(IdeConnection ide, WorkerConnection connection) {
+        return ide.getConsoleTypes().then(types -> {
+            if (!types.includes(GROOVY_CONSOLE_TYPE)) {
+                return Promise.reject("Remote file sourcing requires a " + GROOVY_CONSOLE_TYPE
+                        + " console session, but the server supports " + types.join(", "));
+            }
+
+            return ide.startSession(GROOVY_CONSOLE_TYPE)
+                    .then(session -> fetchInstanceWidget(session, connection).finally_(session::close));
+        });
+    }
+
+    /**
+     * Runs the instantiation script in the given console session and exports the instance it assigns.
+     *
+     * <p>
+     * The script assigns the instance to a uniquely named scope variable. Once the export has settled, the variable is
+     * removed again, including when the script or the export fails, so that it does not linger in the worker's scope.
+     *
+     * @param session a started Groovy console session
+     * @param connection the worker connection to export the instance through
+     * @return a promise that resolves to an unconnected widget for the instance
+     */
+    private static Promise<JsWidget> fetchInstanceWidget(IdeSession session, WorkerConnection connection) {
+        final String variableName = newInstanceVariableName();
+
+        final Promise<JsWidget> fetched = session.runCode(variableName + " = " + INSTANCE_EXPRESSION)
+                .then(result -> {
+                    if (result.getError() != null) {
+                        return Promise.reject(result.getError());
+                    }
+
+                    final JsVariableDefinition instance = result.getChanges().getCreated()
+                            .find((definition, index, array) -> variableName.equals(definition.getTitle()));
+                    if (instance == null) {
+                        return Promise.reject("Instantiation script did not create " + variableName);
+                    }
+                    // The server types the variable by the plugin that claims it, so this also checks that the plugin
+                    // is installed
+                    if (!PLUGIN_NAME.equals(instance.getType())) {
+                        return Promise.reject("Expected " + variableName + " to have type " + PLUGIN_NAME
+                                + ", but it has type " + instance.getType());
+                    }
+
+                    // Resolves only once the variable has been exported, so it can then be removed safely
+                    return connection.getWidget(instance);
+                });
+
+        // The export holds its own reference to the instance, so the variable is removed once the export has settled.
+        // A failure to remove it is not a failure to export, so it does not change the outcome.
+        final Function<Object, Promise<JsWidget>> removeVariable =
+                ignored -> session.runCode("binding.variables.remove('" + variableName + "')")
+                        .then(removed -> fetched, removeError -> fetched);
+        return fetched.then(removeVariable::apply, removeVariable::apply);
+    }
+
+    /**
+     * Creates a randomized scope variable name for the instance. Every client shares the worker's scope, so a fixed
+     * name would let one fetch remove the variable before a concurrent fetch had exported it.
+     *
+     * @return a new variable name, valid as a Groovy identifier
+     */
+    private static String newInstanceVariableName() {
+        return INSTANCE_VARIABLE_PREFIX + Long.toHexString((long) (Math.random() * Long.MAX_VALUE));
+    }
+
+    /**
+     * Establishes the message stream connection to the server-side plugin instance.
+     *
+     * @return a promise that resolves to this service instance when the connection is established
+     */
+    private Promise<JsRemoteFileSourceService> connect() {
+        widget.addEventListener(JsWidget.EVENT_MESSAGE, this::handleMessage);
+        widget.addEventListener(JsWidget.EVENT_CLOSE,
+                ignored -> markClosed("RemoteFileSourceService message stream closed"));
+        return widget.refetch().then(w -> Promise.resolve(this));
+    }
+
+    /**
+     * Marks this service unusable, failing what is in flight and notifying the owner so it can discard this instance.
+     * Reached both when the server closes the message stream and from {@link #close()}, so a caller closing a service
+     * the server has already closed arrives here twice; the first call wins, leaving the owner notified once.
+     *
+     * <p>
+     * A closed stream is permanent for this instance: {@link JsWidget} does not reconnect, and widgets are not
+     * refetched when the connection is re-established (deephaven-core#3604). Left in place, this service would silently
+     * drop messages and leave {@link #setRemoteSources} calls sitting until their timeout.
+     *
+     * @param reason the failure reason to deliver to in-flight callers
+     */
+    private void markClosed(final String reason) {
+        if (closed) {
+            return;
+        }
+        closed = true;
+
+        failPendingRequests(reason);
+
+        // Closing the widget is what releases the plugin export ticket, so it has to happen on every close path, not
+        // only when a caller closes the service
+        widget.close();
+
+        // Release the handler as it runs. Callers can hold a reference to a closed service, and it should not keep
+        // the owner alive through this lambda.
+        final Runnable handler = closedHandler;
+        closedHandler = null;
+        if (handler != null) {
+            handler.run();
+        }
+    }
+
+    /**
+     * Sets the handler notified when this service's message stream closes and the instance should be discarded,
+     * replacing any previous one. The handler runs once and is not retained afterwards, and it runs immediately if the
+     * stream has already closed, which it may have by the time the owner gets the resolved service.
+     *
+     * @param handler the handler to run when the stream closes
+     */
+    @JsIgnore
+    public void setClosedHandler(final Runnable handler) {
+        if (closed) {
+            handler.run();
+            return;
+        }
+        closedHandler = handler;
+    }
+
+    /**
+     * Fails every in-flight setRemoteSources request with the given reason.
+     *
+     * @param reason the failure reason to deliver to callers
+     */
+    private void failPendingRequests(final String reason) {
+        // Take the in-flight promises before clearing, so the map is empty before the failures are delivered
+        final List<LazyPromise<Void>> pending = new ArrayList<>(pendingSetRemoteSourcesRequests.values());
+        pendingSetRemoteSourcesRequests.clear();
+        pending.forEach(promise -> promise.fail(reason));
+    }
+
+    /**
+     * Handles incoming messages from the server.
+     *
+     * @param event the message event from the server
+     */
+    private void handleMessage(Event<WidgetMessageDetails> event) {
+        Uint8Array payload = event.getDetail().getDataAsU8();
+
+        RemoteFileSourceServerMessage message;
+        try {
+            message = RemoteFileSourceServerMessage
+                    .parseFrom(ByteStringAccess.wrap(TypedArrayHelper.wrap(payload)));
+        } catch (InvalidProtocolBufferException e) {
+            // Failed to parse as proto
+            throw new IllegalStateException("Received unparseable message from server", e);
+        }
+
+        // Route the parsed message to the appropriate handler
+        if (message.hasMetaRequest()) {
+            handleMetaRequest(message);
+        } else if (message.hasSetRemoteSourcesResponse()) {
+            handleSetRemoteSourcesResponse(message);
+        } else {
+            throw new IllegalStateException("Received unknown message type from server");
+        }
+    }
+
+    /**
+     * Handles a meta request (resource request) from the server.
+     *
+     * @param message the server request message
+     */
+    private void handleMetaRequest(RemoteFileSourceServerMessage message) {
+        if (!hasListeners(EVENT_REQUEST_SOURCE)) {
+            throw new IllegalStateException(
+                    "Received resource request from server but no listener is registered for EVENT_REQUEST_SOURCE. "
+                            + "A listener must be registered to handle resource requests.");
+        }
+        RemoteFileSourceMetaRequest request = message.getMetaRequest();
+        fireEvent(EVENT_REQUEST_SOURCE, new ResourceRequestEvent(message.getRequestId(), request));
+    }
+
+    /**
+     * Handles a set remote sources response from the server.
+     *
+     * @param message the server request message
+     */
+    private void handleSetRemoteSourcesResponse(RemoteFileSourceServerMessage message) {
+        String requestId = message.getRequestId();
+        LazyPromise<Void> promise = pendingSetRemoteSourcesRequests.get(requestId);
+        if (promise != null) {
+            promise.succeed(null);
+        }
+    }
+
+
+    /**
+     * Declares to the server which resources to source from this client for the next script execution.
+     *
+     * @param isDirty whether the remote sources have changed since the previous declaration
+     * @param resourcePaths array of resource paths to resolve from remote source (e.g., ["com/example/Test.groovy",
+     *        "org/mycompany/Utils.groovy"]), or null/empty for no specific resources
+     * @return a promise that resolves once the server has acknowledged the declaration
+     */
+    @JsMethod
+    public Promise<Void> setRemoteSources(boolean isDirty, @JsOptional @JsNullable String[] resourcePaths) {
+        // Nothing can be sent on a closed stream, and waiting out the timeout only delays the same failure
+        if (closed) {
+            return Promise.reject("RemoteFileSourceService is closed");
+        }
+
+        // Generate a unique request ID
+        String requestId = "setRemoteSources-" + (requestIdCounter++);
+
+        // Create a lazy promise that will be resolved when we get the response
+        LazyPromise<Void> promise = new LazyPromise<>();
+        pendingSetRemoteSourcesRequests.put(requestId, promise);
+        // Drop the entry on every completion path, not just when a response arrives. A request that times out on a
+        // stream that stays open would otherwise be retained until the service closes.
+        promise.onSuccess(ignored -> pendingSetRemoteSourcesRequests.remove(requestId));
+        promise.onFailure(ignored -> pendingSetRemoteSourcesRequests.remove(requestId));
+
+        // Send the request
+        RemoteFileSourceClientMessage clientRequest = getSetRemoteSourcesRequest(isDirty, resourcePaths, requestId);
+        sendClientRequest(clientRequest);
+
+        // Return a promise with built-in timeout
+        return promise.asPromise(SET_REMOTE_SOURCES_TIMEOUT_MS);
+    }
+
+    /**
+     * Helper method to build a RemoteFileSourceClientMessage for setting remote sources.
+     *
+     * @param isDirty whether the remote sources have changed since the previous declaration
+     * @param resourcePaths array of resource paths to resolve
+     * @param requestId unique request ID
+     * @return the constructed RemoteFileSourceClientMessage
+     */
+    private static @NotNull RemoteFileSourceClientMessage getSetRemoteSourcesRequest(boolean isDirty,
+            String[] resourcePaths, String requestId) {
+        SetRemoteSourcesRequest.Builder setContextRequest = SetRemoteSourcesRequest.newBuilder()
+                .setIsDirty(isDirty);
+
+        if (resourcePaths != null) {
+            setContextRequest.addAllResourcePaths(Arrays.asList(resourcePaths));
+        }
+
+        return RemoteFileSourceClientMessage.newBuilder()
+                .setRequestId(requestId)
+                .setSetRemoteSources(setContextRequest)
+                .build();
+    }
+
+    /**
+     * Helper method to send a RemoteFileSourceClientMessage to the server.
+     *
+     * @param clientRequest the client request to send
+     */
+    private void sendClientRequest(RemoteFileSourceClientMessage clientRequest) {
+        // Serialize the protobuf message to bytes
+        Uint8Array messageBytes = toUint8Array(clientRequest.toByteString());
+
+        // Uint8Array is an ArrayBufferView, which is one of the MessageUnion types
+        // The unchecked cast is safe because MessageUnion accepts String | ArrayBuffer | ArrayBufferView
+        widget.sendMessage(Js.uncheckedCast(messageBytes), null);
+    }
+
+    /**
+     * Copies a ByteString into a Uint8Array so that it can be handed to JS APIs.
+     *
+     * @param bytes the bytes to copy
+     * @return a new Uint8Array holding the same bytes
+     */
+    private static Uint8Array toUint8Array(ByteString bytes) {
+        Uint8Array result = new Uint8Array(bytes.size());
+        for (int i = 0; i < bytes.size(); i++) {
+            result.setAt(i, (double) bytes.byteAt(i));
+        }
+        return result;
+    }
+
+    /**
+     * Closes the message stream connection to the server. Any in-flight requests are failed rather than left to time
+     * out, since their responses can no longer arrive once the stream is gone, and the owner is notified so that this
+     * instance is not handed out again.
+     */
+    public void close() {
+        markClosed("RemoteFileSourceService closed");
+    }
+
+    /**
+     * Event details for a resource request from the server. Wraps the proto RemoteFileSourceMetaRequest and provides a
+     * respond() method.
+     */
+    @TsInterface
+    @TsName(namespace = "dh.remotefilesource")
+    public class ResourceRequestEvent {
+        private final String requestId;
+        private final RemoteFileSourceMetaRequest protoRequest;
+
+        public ResourceRequestEvent(String requestId, RemoteFileSourceMetaRequest protoRequest) {
+            this.requestId = requestId;
+            this.protoRequest = protoRequest;
+        }
+
+        /**
+         * @return the name/path of the requested resource
+         */
+        @JsProperty
+        public String getResourceName() {
+            return protoRequest.getResourceName();
+        }
+
+        /**
+         * Responds to this resource request with the given content.
+         *
+         * @param content the resource content (String | Uint8Array | null):
+         *        <ul>
+         *        <li>String - will be UTF-8 encoded before sending to server</li>
+         *        <li>Uint8Array - sent as-is to server</li>
+         *        <li>null - indicates resource was not found</li>
+         *        </ul>
+         *        An empty String or Uint8Array is an empty file, not a missing one.
+         */
+        @JsMethod
+        public void respond(@JsNullable ResourceContentUnion content) {
+            // Build RemoteFileSourceMetaResponse proto
+            RemoteFileSourceMetaResponse.Builder response = RemoteFileSourceMetaResponse.newBuilder();
+
+            if (content == null) {
+                // Resource not found
+                response.setFound(false);
+                response.setContent(ByteString.EMPTY);
+            } else {
+                response.setFound(true);
+
+                // Convert content to bytes using union type methods
+                if (content.isString()) {
+                    response.setContent(ByteString.copyFrom(content.asString(), StandardCharsets.UTF_8));
+                } else if (content.isUint8Array()) {
+                    response.setContent(ByteStringAccess.wrap(TypedArrayHelper.wrap(content.asUint8Array())));
+                } else {
+                    throw new IllegalArgumentException("Content must be a String, Uint8Array, or null");
+                }
+            }
+
+            // Wrap in RemoteFileSourceClientMessage (client→server)
+            RemoteFileSourceClientMessage clientRequest = RemoteFileSourceClientMessage.newBuilder()
+                    .setRequestId(requestId)
+                    .setMetaResponse(response)
+                    .build();
+
+            sendClientRequest(clientRequest);
+        }
+    }
+}
