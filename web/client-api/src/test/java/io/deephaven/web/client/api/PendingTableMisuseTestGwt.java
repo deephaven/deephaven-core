@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -45,12 +46,18 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     /**
-     * Runs {@code scenario} against each kind of pending table: an operation, sent in a batch, and an entry-point
-     * fetch.
+     * Runs {@code scenario} against each kind of pending table: an operation, sent in a batch, an entry-point fetch,
+     * and a table's operations.
      */
     private static Promise<Object> forEachKind(IdeSession session, JsTable table, PendingScenario scenario) {
         return scenario.run("operation", () -> table.operations().update(arr("Z = X + Y")))
-                .then(ignore -> scenario.run("fetch", () -> session.getTable("source", null)));
+                .then(ignore -> scenario.run("fetch", () -> session.getTable("source", null)))
+                .then(ignore -> scenario.run("view", table::operations));
+    }
+
+    /** Whether waiting for the state to be released applies: a view's state is its table's, held while that is open. */
+    private static boolean isReleasedOnAnswer(String kind) {
+        return !kind.equals("view");
     }
 
     /** The resolved source table of the running test, for scenarios that need an operand or a connection. */
@@ -187,6 +194,14 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         return Promise.race(expectRejection(what, promise, fragment), timeout);
     }
 
+    /** Resolves once {@code promise} has resolved; fails naming {@code what} if it rejects or takes over 3s. */
+    private static Promise<Object> expectResolutionWithin(String what, Promise<?> promise) {
+        Promise<Object> settled = promise.then(ignore -> Promise.resolve((Object) null),
+                err -> Promise.reject(what + " rejected; expected the call already sent to stand: " + err));
+        Promise<Object> timeout = delay(3_000).then(ignore -> Promise.reject(what + " did not settle within 3s"));
+        return Promise.race(settled, timeout);
+    }
+
     private static JsTableReference operand(JsPendingTable<?> pending) {
         return Js.uncheckedCast(pending);
     }
@@ -268,12 +283,14 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
 
     public void testLateChainRejects() {
         runForEachKind(25_001, (kind, make) -> lateChainRejects(false).run(kind, make)
-                .then(ignore -> lateChainRejects(true).run(kind, make)));
+                .then(ignore -> isReleasedOnAnswer(kind) ? lateChainRejects(true).run(kind, make)
+                        : Promise.resolve((Object) null)));
     }
 
     public void testLateAwaitRejects() {
         runForEachKind(25_002, (kind, make) -> lateAwaitRejects(false).run(kind, make)
-                .then(ignore -> lateAwaitRejects(true).run(kind, make)));
+                .then(ignore -> isReleasedOnAnswer(kind) ? lateAwaitRejects(true).run(kind, make)
+                        : Promise.resolve((Object) null)));
     }
 
     public void testWrappedInItsTaskStaysUsable() {
@@ -294,18 +311,20 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
             JsPendingTable<?> pending = made(make);
             Promise<JsITable> owned = Js.uncheckedCast(pending.resolve());
             String what = "a " + kind + " awaited in its task, then used later";
-            return withWarnings(() -> owned.then(table -> {
-                assertEquals(5., table.getSize(), 0);
-                return expectLateUse(what + " (chained on)", pending.head(Js.uncheckedCast(1.0)).resolve())
-                        .then(ignore -> expectRejection(what + " (awaited again)",
-                                Js.uncheckedCast(pending.resolve()), LATE))
-                        .then(ignore -> {
-                            // The table itself is unaffected and still the caller's to close
-                            assertEquals(5., table.getSize(), 0);
-                            table.close();
-                            return Promise.resolve((Object) null);
-                        });
-            }), warnedLate(what));
+            // A view's table is already there, so awaiting it may not leave the task; the late uses wait for the next
+            return withWarnings(
+                    () -> owned.then(table -> delay(0).then(ignore -> Promise.resolve(table))).then(table -> {
+                        assertEquals(5., table.getSize(), 0);
+                        return expectLateUse(what + " (chained on)", pending.head(Js.uncheckedCast(1.0)).resolve())
+                                .then(ignore -> expectRejection(what + " (awaited again)",
+                                        Js.uncheckedCast(pending.resolve()), LATE))
+                                .then(ignore -> {
+                                    // The table itself is unaffected and still the caller's to close
+                                    assertEquals(5., table.getSize(), 0);
+                                    table.close();
+                                    return Promise.resolve((Object) null);
+                                });
+                    }), warnedLate(what));
         });
     }
 
@@ -342,9 +361,35 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         });
     }
 
+    public void testOperationsUsedLaterReject() {
+        // A table's operations follow the pending rule: only in the task that took them, even though the table still
+        // holds the state they stand for
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_017);
+                    return session.getTable("source", null).asPromise().then(table -> {
+                        JsTableOperations view = table.operations();
+                        String what = "a table's operations used in a later task";
+                        return delay(0)
+                                .then(ignore -> expectLateUse(what + " (chained on)",
+                                        view.head(Js.uncheckedCast(1.0)).resolve()))
+                                .then(ignore -> expectRejection(what + " (resolved)", view.resolve(), LATE))
+                                .then(ignore -> {
+                                    table.close();
+                                    return Promise.resolve(session);
+                                });
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testSequentialAwaitsRejectTheSecond() {
         // await a; await b; - b was not awaited in the task that created it
         runForEachKind(15_007, (kind, make) -> {
+            if (kind.equals("view")) {
+                // A view's table is already there, so the first await does not leave the task and the second is fine
+                return Promise.resolve((Object) null);
+            }
             JsPendingTable<?> first = made(make);
             JsPendingTable<?> second = made(make);
             String what = "awaiting the second of two " + kind + "s after the first";
@@ -438,6 +483,14 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
      * define.
      */
     private void runUnbatched(int timeout, String spoiled, Pass pass, String fragment) {
+        runUnbatched(timeout, spoiled, pass, fragment, Set.of());
+    }
+
+    /**
+     * As {@code runUnbatched}, except that with a view as the operand, the methods in {@code standForViews} must
+     * resolve: their request was already sent, and a view's table still exists on the server.
+     */
+    private void runUnbatched(int timeout, String spoiled, Pass pass, String fragment, Set<String> standForViews) {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(timeout);
@@ -460,7 +513,11 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
                                             checks.add(Promise.reject(what + " threw instead of rejecting: " + e));
                                             return;
                                         }
-                                        checks.add(expectRejectionWithin(what, result, fragment));
+                                        if (kind.equals("view") && standForViews.contains(name)) {
+                                            checks.add(expectResolutionWithin(what, result));
+                                        } else {
+                                            checks.add(expectRejectionWithin(what, result, fragment));
+                                        }
                                     });
                                     return allOf(checks);
                                 }).then(ignore -> {
@@ -490,12 +547,14 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     public void testOperandCanceledAfterTheCallRejects() {
-        // Canceled before its batch is sent, so the ticket the call already named is never defined on the server
+        // An operation or fetch canceled before it is defined fails its ticket, so the server fails the call as well. A
+        // view's table exists on the server whatever the view does, so a call already sent with it cannot be undone:
+        // the calls that only have an effect on the server keep their result, and those that make a table release it.
         runUnbatched(15_015, "later canceled", (pending, consumer) -> {
             Promise<?> result = consumer.apply(operand(pending));
             pending.cancel();
             return result;
-        }, "Operation canceled");
+        }, "Operation canceled", Set.of("InputTable.addTable", "InputTable.deleteTable", "shareObject"));
     }
 
     /** A ticking table that fails on the server about a second after it starts, and an input table it fits. */
@@ -590,6 +649,10 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
      */
     public void testLateUseReportsTheEarlierFailure() {
         runForEachKind(15_012, (kind, make) -> {
+            if (kind.equals("view")) {
+                // A view cannot fail on its own: the state it stands for is its table's
+                return Promise.resolve((Object) null);
+            }
             JsPendingTable<?> failing;
             String fragment;
             if (kind.equals("operation")) {

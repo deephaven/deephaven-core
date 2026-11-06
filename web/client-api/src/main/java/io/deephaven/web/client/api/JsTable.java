@@ -300,16 +300,18 @@ public class JsTable extends HasLifecycle
     }
 
     /**
-     * The chainable, immutable {@link JsTableOperations} over this table's current server-side state. The view owns
-     * nothing: operations chained on it produce new tables, each retained only once awaited, and this table is
-     * unaffected. The view reads this table's ticket when each operation is called, so a chain started after
-     * {@link #applyFilter} or {@link #applySort} builds on the filtered or sorted state.
+     * This table's server-side state as it is now, as a pending table to chain operations on. Like every
+     * {@code TableOperations}, it stands for one fixed table: a later {@link #applyFilter}, {@link #applySort} or other
+     * change to this table does not move it; call {@code operations()} again to build on the changed table. Like any
+     * pending table, it can only be used in the task that created it; await or {@code resolve()} it to keep the table
+     * longer, as a {@link JsResolvedTable} to close when done. This table is unaffected by anything done with it.
      *
-     * @return an operations view over this table
+     * @return a pending table over this table's current state
+     * @throws IllegalStateException if this table is closed
      */
     @JsMethod
-    public JsTableOperations operations() {
-        return new MicrotaskBatchImpl.View(this);
+    public JsPendingTable<JsResolvedTable> operations() {
+        return MicrotaskBatchImpl.operationsOf(workerConnection, state());
     }
 
     @JsMethod

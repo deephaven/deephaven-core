@@ -259,6 +259,102 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testOperationsOnClosedTableThrows() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_034);
+                    return session.getTable("source", null).asPromise().then(table -> {
+                        table.close();
+                        try {
+                            table.operations();
+                        } catch (IllegalStateException expected) {
+                            return Promise.resolve(session);
+                        }
+                        return Promise.reject("operations() on a closed table returned instead of throwing");
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testOperationsArePinnedWhenTaken() {
+        // A filter applied to the table afterwards does not move a view taken before it
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_035);
+                    return session.getTable("source", null).asPromise().then(table -> {
+                        JsTableOperations before = table.operations();
+                        table.applyFilter(new FilterCondition[] {
+                                table.findColumn("X").filter().greaterThan(FilterValue.ofNumber(2.0))});
+                        // Both resolved in this task, the only one the views may be used in
+                        Promise<JsResolvedTable> unfiltered = before.resolve();
+                        Promise<JsResolvedTable> filtered = table.operations().resolve();
+                        return unfiltered.then(u -> filtered.then(f -> {
+                            double unfilteredSize = u.getSize();
+                            double filteredSize = f.getSize();
+                            u.close();
+                            f.close();
+                            table.close();
+                            assertEquals("the filter was not applied", 2., filteredSize, 0);
+                            assertEquals("a view taken before the filter followed it", 5., unfilteredSize, 0);
+                            return Promise.resolve(session);
+                        }));
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testOperationsHoldTheTableForTheirTask() {
+        // Closing the table at once does not take its state from under the view; once the task is over, the view
+        // holds nothing
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_037);
+                    return session.getTable("source", null).asPromise().then(table -> {
+                        ClientTableState state = table.state();
+                        JsTableOperations view = table.operations();
+                        table.close();
+                        // A few microtasks on, still in this task: the close has been flushed by then
+                        return Promise.resolve((Object) null)
+                                .then(ignore -> Promise.resolve((Object) null))
+                                .then(ignore -> Promise.resolve((Object) null))
+                                .then(ignore -> view.resolve().then(Promise::resolve, err -> Promise.reject(
+                                        "the view lost the table's state within its task: " + err)))
+                                .then(resolved -> {
+                                    assertEquals(5., resolved.getSize(), 0);
+                                    resolved.close();
+                                    return delay(200);
+                                }).then(ignore -> {
+                                    assertEquals("the view still held the table's state after its task",
+                                            ClientTableState.ResolutionState.RELEASED, state.getResolution());
+                                    return Promise.resolve(session);
+                                });
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testAwaitingOperationsGivesATable() {
+        // A table's operations are a pending table: awaiting them gives a table the caller owns
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_038);
+                    return session.getTable("source", null).asPromise().then(table -> {
+                        JsTableOperations view = table.operations();
+                        return Promise.resolve(Js.<IThenable<Object>>uncheckedCast(view)).then(result -> {
+                            if (result == view) {
+                                return Promise.reject("awaiting operations() gave the view back instead of a table");
+                            }
+                            JsResolvedTable resolved = Js.uncheckedCast(result);
+                            assertEquals(5., resolved.getSize(), 0);
+                            resolved.close();
+                            table.close();
+                            return Promise.resolve(session);
+                        });
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testCopyIsOfTheTableWhenCalled() {
         connect(tables)
                 .then(session -> {
@@ -587,6 +683,31 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testOperationsResolveWithAbortedSignal() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_036);
+                    return session.getTable("source", null).asPromise();
+                })
+                .then(table -> {
+                    AbortController controller = new AbortController();
+                    controller.abort();
+                    ClientTableState state = table.state();
+                    return expectRejection(table.operations().resolve(withSignal(controller)), "Abort")
+                            .then(ignore -> {
+                                // Nothing was handed out, so closing the table releases its state
+                                table.close();
+                                return delay(200);
+                            })
+                            .then(ignore -> {
+                                assertEquals("state still held after an aborted resolve",
+                                        ClientTableState.ResolutionState.RELEASED, state.getResolution());
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testAbortAfterDelivery() {
         connect(tables)
                 .then(session -> {
@@ -609,6 +730,44 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                 table.close();
                                 return Promise.resolve(table);
                             });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /** Rejects naming {@code what} unless {@code dependent} rejects because its source was canceled. */
+    private static Promise<Object> expectSourceCanceled(String what, Promise<?> dependent) {
+        return dependent.then(
+                ignore -> Promise.reject(what + " resolved; expected it to fail with its canceled source"),
+                err -> String.valueOf(err).contains("Source table failed: Operation canceled")
+                        ? Promise.resolve((Object) null)
+                        : Promise.reject(what + " rejected for another reason: " + err));
+    }
+
+    public void testCancelAfterDeliveryFailsUnsettledDependents() {
+        // A pending that has produced its table is canceled while a slow operation chained on it is still running:
+        // the table is gone, for what was chained on it too
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(15_039);
+                    return session.getTable("slowsource", null).asPromise().then(slow -> {
+                        JsPendingTable<JsResolvedTable> operation = slow.operations().head(Js.uncheckedCast(1.0));
+                        Promise<JsResolvedTable> dependentOfOperation = operation.update(arr(SLOW)).resolve();
+                        return operation.resolve().then(delivered -> {
+                            operation.cancel();
+                            return expectSourceCanceled("a dependent of a delivered operation",
+                                    dependentOfOperation);
+                        }).then(ignore -> {
+                            JsPendingTable<JsTable> fetch = session.getTable("slowsource", null);
+                            Promise<JsResolvedTable> dependentOfFetch = fetch.update(arr(SLOW)).resolve();
+                            return fetch.asPromise().then(delivered -> {
+                                fetch.cancel();
+                                return expectSourceCanceled("a dependent of a delivered fetch", dependentOfFetch);
+                            });
+                        }).then(ignore -> {
+                            slow.close();
+                            return abandonedWorkDone(session);
+                        });
+                    });
                 })
                 .then(this::finish).catch_(this::report);
     }

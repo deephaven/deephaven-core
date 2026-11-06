@@ -155,8 +155,7 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
                                     .then(right -> session.getTable("grouped", null).asPromise()
                                             .then(grouped -> {
                                                 List<String> failures = new ArrayList<>();
-                                                return runFrom(cases(), 0, source.operations(), right,
-                                                        grouped, failures)
+                                                return runFrom(cases(), 0, source, right, grouped, failures)
                                                         .then(ignore -> {
                                                             source.close();
                                                             right.close();
@@ -175,7 +174,7 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
      * Runs the cases one at a time, so a hang is attributed to a case by its timeout value (20100 plus its index), and
      * collects failures rather than stopping at the first.
      */
-    private Promise<Object> runFrom(List<Case> cases, int index, JsTableOperations source, JsTable right,
+    private Promise<Object> runFrom(List<Case> cases, int index, JsTable source, JsTable right,
             JsTable grouped, List<String> failures) {
         if (index == cases.size()) {
             return Promise.resolve((Object) null);
@@ -184,7 +183,8 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
         delayTestFinish(20_100 + index);
         Promise<JsResolvedTable> resolved;
         try {
-            resolved = c.call.apply(source, right, grouped).resolve();
+            // Taken per case: a table's operations are usable only in the task that takes them
+            resolved = c.call.apply(source.operations(), right, grouped).resolve();
         } catch (Exception e) {
             failures.add(c.name + ": threw " + e);
             return runFrom(cases, index + 1, source, right, grouped, failures);

@@ -200,8 +200,8 @@ public class JsInputTable {
         if (tablesToAdd.length == 1) {
             return addTicket(ticketOf(tablesToAdd[0]));
         }
-        // The merge holds its tables until it exists; the add holds the merge, and the server waits for it, so both
-        // requests go out at once
+        // The merge holds its tables until it exists, and fails if one does; the add holds the merge, and the server
+        // waits for it, so both requests go out at once
         return addTicket(table.getConnection().mergeTables(tablesToAdd, this.table).typedTicket().getTicket());
     }
 

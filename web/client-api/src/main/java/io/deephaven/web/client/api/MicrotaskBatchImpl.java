@@ -26,6 +26,7 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.fu.PromiseLike;
 import io.deephaven.web.shared.fu.JsConsumer;
+import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Any;
@@ -58,39 +59,11 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
-     * The ownerless {@link JsTableOperations} over an existing table such as a {@link JsTable}, reading the table's
-     * current ticket each time an operation is called. Holds no server resources of its own; an operation chained on it
-     * retains the table's state of that moment until the operation has been created on the server.
+     * The operations of a {@link JsTable}: a pending table over the state that table has now, which its later changes
+     * do not move.
      */
-    public static class View implements JsTableOperations {
-        private final JsTable source;
-
-        public View(JsTable source) {
-            this.source = source;
-        }
-
-        @Override
-        public Promise<JsResolvedTable> resolve(@JsOptional @Nullable Object options) {
-            // The table's current state, which an applyFilter or applySort in flight may not have created yet
-            ClientTableState state = source.state();
-            return whenRunning(new Resolved(source.getConnection(), state), state).asPromise();
-        }
-
-        @Override
-        public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation,
-                @Nullable JsTableReference operand) {
-            return enqueue(source.getConnection(), resultId, operation, source.state(), operand);
-        }
-
-        @Override
-        public TypedTicket typedTicket() {
-            return source.typedTicket();
-        }
-
-        @Override
-        public WorkerConnection getConnection() {
-            return source.getConnection();
-        }
+    public static JsPendingTable<JsResolvedTable> operationsOf(WorkerConnection connection, ClientTableState state) {
+        return new View(connection, state);
     }
 
     /**
@@ -111,12 +84,33 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         /** Set on an operation that failed before it was sent: its message already says why, and is passed on as is. */
         protected boolean failedAtBirth;
 
+        /** Fails a dependent chained on this pending that has not settled yet, when this pending is canceled. */
+        private final List<Consumer<String>> unsettled = new ArrayList<>();
+
+        /** The state this pending table occupies. */
+        protected abstract ClientTableState tableState();
+
         /**
          * Has the {@code dependent} state retain the state this pending table occupies until the dependent has settled,
-         * or fails the dependent through {@code fail} if this pending table never produces a state. {@code role} names
-         * this table in that failure, "Source table" or "Operand table".
+         * and fails the dependent through {@code fail} if this pending table never produces a state, or is canceled
+         * before the dependent settles. {@code role} names this table in that failure, "Source table" or "Operand
+         * table".
          */
-        protected abstract void retainUntilSettled(ClientTableState dependent, Consumer<String> fail, String role);
+        protected void retainUntilSettled(ClientTableState dependent, Consumer<String> fail, String role) {
+            MicrotaskBatchImpl.retainUntilSettled(tableState(), dependent, fail, role);
+            if (dependent.getResolution() != ClientTableState.ResolutionState.UNRESOLVED) {
+                return;
+            }
+            Consumer<String> onCancel = message -> fail.accept(role + " failed: " + message);
+            unsettled.add(onCancel);
+            JsRunnable stop = () -> unsettled.remove(onCancel);
+            dependent.onRunning(ignore -> stop.run(), failure -> stop.run(), stop);
+        }
+
+        /** Part of every cancel: fails the dependents that have not settled, with {@code message}. */
+        protected void failUnsettledDependents(String message) {
+            new ArrayList<>(unsettled).forEach(fail -> fail.accept(message));
+        }
 
         protected abstract boolean cancelled();
 
@@ -236,23 +230,135 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
+     * A pending table over one {@link ClientTableState}, which it hands out at most once, as a {@link Resolved}:
+     * awaiting and resolving share that one owner. {@link #cancel()} closes the owner or rejects its promise, and fails
+     * what was chained on this pending and has not settled; {@link #onCancel(String)} does whatever else the subclass
+     * needs.
+     */
+    private abstract static class OverState extends Pending<JsResolvedTable> {
+        /** Set by the subclass constructor. */
+        protected ClientTableState state;
+        private boolean cancelled;
+        private @Nullable String cancelMessage;
+        private @Nullable LazyPromise<JsResolvedTable> resolving;
+        private @Nullable Promise<JsResolvedTable> resolved;
+        private @Nullable Resolved owner;
+
+        protected OverState(WorkerConnection connection, Ticket ticket) {
+            super(connection, ticket);
+        }
+
+        @Override
+        protected ClientTableState tableState() {
+            return state;
+        }
+
+        @Override
+        protected boolean cancelled() {
+            return cancelled;
+        }
+
+        @Override
+        protected String cancelMessage() {
+            return String.valueOf(cancelMessage);
+        }
+
+        @Override
+        public Promise<JsResolvedTable> resolve(@JsOptional @Nullable Object options) {
+            // Checked on every call: a canceled pending's state may already be released, so its own message is the
+            // answer, and after its task even an awaited pending is not to be used again
+            String misuse = misuse();
+            if (misuse != null) {
+                return Promise.reject(misuse);
+            }
+            if (resolved == null) {
+                // The Resolved retains the state from now on; the caller owns it and must close it, or cancel() does
+                owner = new Resolved(connection, state);
+                resolving = whenRunning(owner, state);
+                resolved = resolving.asPromise();
+            }
+            cancelOnAbort(options, resolved);
+            return resolved;
+        }
+
+        @Override
+        protected Promise<JsResolvedTable> awaitResult() {
+            // A ResolvedTable either way, so awaiting and resolving share one owner
+            return resolve(null);
+        }
+
+        @Override
+        protected final void cancel(String message) {
+            if (cancelled) {
+                return;
+            }
+            cancelled = true;
+            cancelMessage = message;
+            if (owner != null) {
+                // The table this pending handed out is released; if not yet delivered, its promise rejects
+                owner.closeFromCancel();
+                resolving.fail(message);
+            }
+            failUnsettledDependents(message);
+            onCancel(message);
+        }
+
+        /** The rest of {@link #cancel(String)}, once the owner and the dependents have been dealt with. */
+        protected abstract void onCancel(String message);
+    }
+
+    /**
+     * The operations of a {@link JsTable}: a pending table over the state that table had when they were taken. It holds
+     * that state until the end of the task that took it, by when anything chained on it or resolved from it holds the
+     * state itself; like any pending table it is not to be used after that task. The state stays the table's, so a
+     * cancel does not fail it.
+     */
+    private static class View extends OverState {
+        private boolean holding = true;
+
+        View(WorkerConnection connection, ClientTableState state) {
+            super(connection, state.getHandle().makeTicket());
+            this.state = state;
+            state.retain(this);
+            atTaskEnd(this::letGo);
+        }
+
+        private void letGo() {
+            if (holding) {
+                holding = false;
+                state.unretain(this);
+            }
+        }
+
+        @Override
+        protected @Nullable String failure() {
+            return null;
+        }
+
+        @Override
+        protected String describe() {
+            return "operations()";
+        }
+
+        @Override
+        protected void onCancel(String message) {
+            letGo();
+        }
+    }
+
+    /**
      * A pending operation sent in a batch. Its {@link ClientTableState} exists from construction; the first
      * {@link #resolve()} creates the one {@link Resolved} that retains it, and a state nobody retains is released as
      * soon as its response arrives and no dependent needs it any more. {@link #cancel()} fails the state at once: the
      * refcount then releases the ticket, and the batch stops waiting for the response.
      */
-    private static class Operation extends Pending<JsResolvedTable> {
+    private static class Operation extends OverState {
         private final BatchTableRequest.Operation operation;
-        private final ClientTableState state;
         private boolean sent;
         /** The connection's session when the batch sent this operation; only that session can re-issue it. */
         private int sentInSession;
-        private boolean cancelled;
-        private @Nullable String cancelMessage;
         private @Nullable String failure;
         private @Nullable Batch batch;
-        private @Nullable Promise<JsResolvedTable> resolved;
-        private @Nullable Resolved owner;
 
         public Operation(WorkerConnection connection, TableTicket handle,
                 BatchTableRequest.Operation.Builder operation) {
@@ -298,21 +404,6 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        protected void retainUntilSettled(ClientTableState dependent, Consumer<String> fail, String role) {
-            MicrotaskBatchImpl.retainUntilSettled(state, dependent, fail, role);
-        }
-
-        @Override
-        protected boolean cancelled() {
-            return cancelled;
-        }
-
-        @Override
-        protected String cancelMessage() {
-            return String.valueOf(cancelMessage);
-        }
-
-        @Override
         protected @Nullable String failure() {
             return failure;
         }
@@ -331,29 +422,6 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             return operation.getOpCase().name().toLowerCase();
         }
 
-        @Override
-        public Promise<JsResolvedTable> resolve(@JsOptional @Nullable Object options) {
-            // Checked on every call: a canceled pending's state may already be released, so its own message is the
-            // answer, and after its task even an awaited pending is not to be used again
-            String misuse = misuse();
-            if (misuse != null) {
-                return Promise.reject(misuse);
-            }
-            if (resolved == null) {
-                // The Resolved retains the state from now on; the caller owns it and must close it, or cancel() does
-                owner = new Resolved(connection, state);
-                resolved = whenRunning(owner, state).asPromise();
-            }
-            cancelOnAbort(options, resolved);
-            return resolved;
-        }
-
-        @Override
-        protected Promise<JsResolvedTable> awaitResult() {
-            // An operation produces a ResolvedTable either way, so awaiting and resolving share one owner
-            return resolve(null);
-        }
-
         /**
          * As {@link #cancel(String)}, but only while this operation has not settled: once it has its table, a failure
          * elsewhere must not close a table its caller owns.
@@ -365,17 +433,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        protected void cancel(String message) {
-            if (cancelled) {
-                return;
-            }
-            cancelled = true;
-            cancelMessage = message;
+        protected void onCancel(String message) {
             if (state.getResolution() != ClientTableState.ResolutionState.UNRESOLVED) {
-                // Already settled: nothing to cancel, but the table this pending handed out is released
-                if (owner != null) {
-                    owner.closeFromCancel();
-                }
+                // Already settled: nothing to cancel on the server
                 return;
             }
             if (!sent) {
@@ -470,8 +530,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        protected void retainUntilSettled(ClientTableState dependent, Consumer<String> fail, String role) {
-            MicrotaskBatchImpl.retainUntilSettled(state, dependent, fail, role);
+        protected ClientTableState tableState() {
+            return state;
         }
 
         @Override
@@ -558,6 +618,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             }
             cancelled = true;
             cancelMessage = message;
+            failUnsettledDependents(message);
             if (delivered != null) {
                 // Already delivered: nothing to cancel, but the table this pending handed out is released
                 delivered.close();
@@ -776,9 +837,23 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             DomGlobal.setTimeout(ignore -> {
                 taskEndScheduled = false;
                 task++;
+                List<Runnable> ending = new ArrayList<>(atTaskEnd);
+                atTaskEnd.clear();
+                ending.forEach(Runnable::run);
             }, 0);
         }
         return task;
+    }
+
+    private static final List<Runnable> atTaskEnd = new ArrayList<>();
+
+    /**
+     * Runs {@code action} when {@link #currentTask()} sees the current task end, so that whatever the task check still
+     * lets through has not yet been undone by it.
+     */
+    private static void atTaskEnd(Runnable action) {
+        currentTask();
+        atTaskEnd.add(action);
     }
 
     protected final WorkerConnection connection;
@@ -854,7 +929,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     /**
      * Makes the gRPC call {@code call} returns, holding the tables {@code tickets} name until it settles, for a request
      * outside the batch that names them. The result is the call's, unless a held table fails or is released first: the
-     * server may then never answer, so the result rejects at once and that table is let go.
+     * server may then never answer, so the result rejects at once and the tables are let go. Canceling a pending table
+     * after the call is sent has no other effect on it: a table that already exists on the server stays usable there,
+     * and the call cannot be withdrawn.
      */
     public static <T> Promise<T> holdUntil(WorkerConnection connection, Ticket[] tickets, Supplier<Promise<T>> call) {
         Object retainer = new Object();
@@ -1031,7 +1108,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             // Operations canceled before this point, including while waiting for the server, are never sent
             BatchTableRequest.Builder request = BatchTableRequest.newBuilder();
             for (Operation task : batch.ops) {
-                if (task.cancelled) {
+                if (task.cancelled()) {
                     continue;
                 }
                 task.sent = true;
@@ -1080,7 +1157,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             // The server was not ready, or setting up the stream threw: nothing else observes this, so the states
             // must carry the failure
             for (Operation task : batch.ops) {
-                if (task.cancelled) {
+                if (task.cancelled()) {
                     continue;
                 }
                 task.fail(String.valueOf(err));

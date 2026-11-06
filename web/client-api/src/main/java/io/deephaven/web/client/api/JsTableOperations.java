@@ -61,6 +61,12 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * Describes operations that can be performed on a table without retrieving data or metadata, allowing these operations
  * to potentially be chained with no direct interaction with a promise.
  * <p>
+ * Every {@code TableOperations} is immutable: it stands for one server-side table, fixed when it is created, and
+ * nothing done elsewhere changes which table that is. An operation never alters the table it is called on; it returns a
+ * new pending table, so the caller decides the order of operations by how they chain them. This holds for the
+ * {@link JsTable#operations()} of a {@link JsTable} too: it stands for the table as it was when taken, and a later
+ * filter or sort applied to that {@code Table} is not seen by it.
+ * <p>
  * Each method checks its arguments when called and throws for invalid ones. A failure of the operation itself, on the
  * server or because a table it uses was canceled, failed, or used too late, is reported by rejecting the pending table
  * it returns; see {@link JsPendingTable} for how long a pending table may be used.
@@ -135,10 +141,11 @@ public interface JsTableOperations extends ServerObject {
      * The one consistent way to get from any table operations, pending or already resolved, to a retained
      * {@link JsResolvedTable} whose data can be read and on which more operations can be chained. A
      * {@link JsPendingTable} yields the table it creates, whatever awaiting it would give; an already resolved table
-     * yields an independently closeable copy of itself; the operations of a {@link JsTable} yield a new owner of its
-     * current state. The caller owns the result and must close it. Resolving the same pending table again yields the
-     * same promise and the same table; a pending table that was canceled, or is resolved after the task that created
-     * it, rejects instead, as does a fetched one that was already awaited.
+     * yields an independently closeable copy of itself; the operations of a {@link JsTable} yield a new owner of the
+     * state that table had when {@link JsTable#operations()} was called. The caller owns the result and must close it.
+     * Resolving the same pending table again yields the same promise and the same table; a pending table that was
+     * canceled, or is resolved after the task that created it, rejects instead, as does a fetched one that was already
+     * awaited.
      *
      * @param options optionally, a {@code signal} that cancels a pending table when aborted
      * @return a promise of a retained resolved table
