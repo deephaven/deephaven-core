@@ -480,7 +480,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * snapshot table will not update. This does not change the original table, and the new table will not have any of
      * the client side sorts/filters/columns. New client side sorts/filters/columns can be added to the snapshot copy.
      * 
-     * @return A promise that resolves to the snapshot table.
+     * @return the snapshot table, as a pending table
      */
     @Override
     @JsMethod
@@ -494,7 +494,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param baseTable The table to snapshot.
      * @param doInitialSnapshot Whether to create an initial snapshot immediately.
      * @param stampColumns Optional list of stamp column match pairs to include in the result.
-     * @return A promise that resolves to the snapshot table.
+     * @return the snapshot table, as a pending table
      */
     @Override
     @JsMethod
@@ -512,7 +512,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
      * @param asOfMatchRule If joinType is {@code AJ}/{@code RAJ}/{@code ReverseAJ}, the match rule to use.
-     * @return A promise that resolves to the joined table.
+     * @return the joined table, as a pending table
      */
     @Override
     @JsMethod
@@ -530,7 +530,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
      * @param asOfMatchRule The match rule to use.
-     * @return A promise that resolves to the joined table.
+     * @return the joined table, as a pending table
      */
     @Override
     @JsMethod
@@ -548,7 +548,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
      * @param reserveBits Optional reserve bits for the join.
-     * @return A promise that resolves to the joined table.
+     * @return the joined table, as a pending table
      */
     @Override
     @JsMethod
@@ -565,7 +565,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param rightTable The table to join to.
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
-     * @return A promise that resolves to the joined table.
+     * @return the joined table, as a pending table
      */
     @Override
     @JsMethod
@@ -581,7 +581,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param rightTable The table to join to.
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
-     * @return A promise that resolves to the joined table.
+     * @return the joined table, as a pending table
      */
     @Override
     @JsMethod
