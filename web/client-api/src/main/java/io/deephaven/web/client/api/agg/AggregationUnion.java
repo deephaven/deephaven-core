@@ -6,11 +6,9 @@ package io.deephaven.web.client.api.agg;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
-import elemental2.core.ReadonlyArray;
 import io.deephaven.proto.backplane.grpc.Aggregation;
 import io.deephaven.proto.backplane.grpc.AggSpec;
 import io.deephaven.web.client.api.JsTable;
-import io.deephaven.web.client.api.JsTableOperations;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -18,18 +16,13 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 /**
- * Union type representing all aggregation variants accepted by
- * {@link io.deephaven.web.client.api.JsTableOperations#aggBy(AggByOptions)},
- * {@link io.deephaven.web.client.api.JsTableOperations#rangeJoin(JsTableOperations, ReadonlyArray, JsTableOperations.RangeJoinMatch, ReadonlyArray)},
- * etc. This includes both column-based aggregations (subtypes of {@link ColumnAggregation}) that operate on
- * input/output column pairs, and non-column aggregations ({@link Count}, {@link CountWhere}, {@link Partition},
- * {@link FirstRowKey}, {@link LastRowKey}) that produce a single named output column.
- *
+ * Union type representing all aggregation variants accepted by {@code TableOperations.aggBy},
+ * {@code TableOperations.rangeJoin}, etc. This includes both column-based aggregations (subtypes of
+ * {@link ColumnAggregation}) that operate on input/output column pairs, and non-column aggregations ({@link Count},
+ * {@link CountWhere}, {@link Partition}, {@link FirstRowKey}, {@link LastRowKey}) that produce a single named output
+ * column. {@code dh.agg.AggAllByUnion} is the subset accepted by {@code aggAllBy}.
  * <p>
- * Each variant carries a {@code type} field (accessible via {@link #getType()}) that acts as a discriminant for
- * TypeScript narrowing.
- *
- * @see AggAllByUnion for the subset accepted by {@code aggAllBy}
+ * Each variant carries a {@code type} field that acts as a discriminant for TypeScript narrowing.
  */
 @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
 @TsUnion(anonymous = false, name = "AggregationUnion", namespace = "dh.agg")

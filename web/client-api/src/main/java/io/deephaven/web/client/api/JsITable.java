@@ -32,7 +32,7 @@ public interface JsITable {
     /**
      * The total count of rows in the table. If there is a viewport subscription active, this size will be updated when
      * the subscription updates. If not, and the table is uncoalesced, the size will be
-     * {@link JsTable#SIZE_UNCOALESCED}. Otherwise, the size will be updated when the server's update graph processes
+     * {@code dh.Table.SIZE_UNCOALESCED}. Otherwise, the size will be updated when the server's update graph processes
      * changes.
      *
      * @return the size of the table

@@ -23,10 +23,10 @@ import jsinterop.annotations.JsType;
  *
  * <p>
  * Each concrete subtype carries a {@code type} field whose compile-time constant value acts as a discriminant, enabling
- * TypeScript consumers to narrow the union via {@code switch (agg.type)}.
+ * TypeScript consumers to narrow the union of all of them, {@code dh.agg.AggregationUnion}, via
+ * {@code switch (agg.type)}.
  *
  * @see ColumnAggregation
- * @see AggregationUnion
  */
 @JsType(namespace = "dh.agg")
 public abstract sealed class Aggregation

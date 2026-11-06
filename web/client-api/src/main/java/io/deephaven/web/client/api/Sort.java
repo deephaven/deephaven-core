@@ -53,7 +53,7 @@ public class Sort {
     }
 
     /**
-     * The direction of a {@link SimpleSort}. To reverse a table's order, use {@code reverse()} instead: the server
+     * The direction of a {@code dh.SimpleSort}. To reverse a table's order, use {@code reverse()} instead: the server
      * applies a reverse to the whole sort, not to a column.
      */
     @TsUnion(anonymous = false, name = "SortDirection", namespace = "dh")
