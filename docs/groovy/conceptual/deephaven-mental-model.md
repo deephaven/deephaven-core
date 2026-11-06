@@ -145,7 +145,7 @@ import io.deephaven.api.updateby.UpdateByOperation
 result = emptyTable(5).update("X = i + 1").updateBy(UpdateByOperation.CumSum("RunningTotal = X"))
 ```
 
-For more complex cases involving state, see [Controlling concurrency](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where), which explains how to make the engine evaluate a formula serially.
+For more complex cases involving state, see [Controlling execution order](./query-engine/parallelization.md#controlling-execution-order), which explains how to make the engine evaluate a formula serially.
 
 ## Moving data between Groovy and Deephaven
 

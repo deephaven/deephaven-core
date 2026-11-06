@@ -2,15 +2,27 @@
 title: ConcurrencyControl
 ---
 
-[`ConcurrencyControl`](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) is the shared interface that provides concurrency control for column calculations and filters. [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (used by [`where`](../../table-operations/filter/where.md)) both implement it, so the same three methods are available on either one — though, as the `withSerial` vs. barriers comparison below shows, not every method's behavior is identical between the two.
+[`ConcurrencyControl`](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) is the interface that controls how Deephaven runs a column calculation or a filter. [`Selectable`](./Selectable.md) (used by [`select`](../../table-operations/select/select.md), [`update`](../../table-operations/select/update.md), [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md)) and [`Filter`](./Filter.md) (used by [`where`](../../table-operations/filter/where.md)) both implement it. Both therefore have the same three methods: [`withSerial`](#withserial), [`withDeclaredBarriers`](#withdeclaredbarriers), and [`withRespectedBarriers`](#withrespectedbarriers).
 
-By default, Deephaven is free to parallelize column calculations and filter evaluation across multiple CPU cores when they are eligible for it — eligibility depends on statelessness, table size, and available threads. Use the methods below when your formula or filter has side effects, or depends on row order, that make parallel execution unsafe.
+This page defines what each method guarantees and where the guarantees differ between a [`Selectable`](./Selectable.md) and a [`Filter`](./Filter.md). The [`Selectable`](./Selectable.md) and [`Filter`](./Filter.md) pages describe how to use each type, and [`withSerial` versus Barriers](#withserial-versus-barriers) compares the two controls.
+
+This page uses these terms:
+
+- **Expression**: a [`Selectable`](./Selectable.md) or a [`Filter`](./Filter.md).
+- **Row set order**: ascending row key.
+- **[Barrier](./Barrier.md)**: an object that orders one expression after another. In Groovy, any Java object can serve as a [Barrier](./Barrier.md).
+- **Default parallelization**: Deephaven splits the rows of an expression across threads when enough rows and threads are available, unless the expression is marked [serial](#withserial). See [Parallelization](../../../conceptual/query-engine/parallelization.md).
 
 ## Methods
 
 ### `withSerial`
 
-Forces the expression to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the formula or filter has side effects or depends on row order.
+[`withSerial`](#withserial) marks an expression as serial. A serial expression has two guarantees:
+
+- It never runs concurrently with itself.
+- It evaluates its rows one at a time, in row set order.
+
+The following example assigns IDs from a shared counter. Serial evaluation gives each row the next counter value, in row order.
 
 ```groovy order=result
 import io.deephaven.api.Selectable
@@ -18,19 +30,31 @@ import java.util.concurrent.atomic.AtomicInteger
 
 counter = new AtomicInteger(0)
 
-// Force serial execution - never concurrent, rows processed in row-set order
+// Force serial execution - never concurrent, rows processed in row set order
 col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
 result = emptyTable(10).update([col])
 ```
 
-When an expression is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), only one thread processes the expression at a time, and shared state updates happen sequentially without race conditions.
+[`withSerial`](#withserial) protects:
+
+- State used only by this expression.
+- State shared with other [filters](./Filter.md) in the same [`where`](../../table-operations/filter/where.md) call, because a serial filter orders itself against every other filter in that call.
+
+[`withSerial`](#withserial) does not protect:
+
+- State shared with other [selectables](./Selectable.md) in the same [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) call. [Barriers](./Barrier.md) order those expressions.
+- State shared with another table's [formulas](../../../how-to-guides/formulas.md). [Barriers](./Barrier.md) cannot order across tables, so that shared code must be thread-safe, meaning concurrent calls cannot corrupt it.
+
+A serial [filter](./Filter.md) evaluates only the rows that earlier filters keep. Because no later filter can reduce that set first, it can examine more rows than a non-serial filter would, and it gives up some engine optimizations.
 
 > [!NOTE]
-> Not running concurrently is not the same guarantee `withSerial` provides — the engine may still evaluate a non-serial expression out of row-set order. Use `withSerial` any time your formula or filter depends on shared state or row order, not just when you expect concurrent execution.
+> Not running concurrently is not the same as running in row set order. The engine can evaluate a non-serial expression out of row set order even when it does not run that expression concurrently.
 
 ### `withDeclaredBarriers`
 
-Marks the expression as declaring the given [barrier](./Barrier.md) object(s). The declaring expression runs to completion — all of its rows — before any expression that respects the same barrier begins.
+[`withDeclaredBarriers`](#withdeclaredbarriers) marks an expression as declaring the given [Barrier](./Barrier.md) objects. A declaring expression evaluates all of its rows before any expression that respects the same [Barrier](./Barrier.md) begins.
+
+The following snippet declares a [Barrier](./Barrier.md) on a [`Selectable`](./Selectable.md).
 
 ```groovy syntax
 import io.deephaven.api.Selectable
@@ -39,11 +63,19 @@ barrier = new Object()
 col = Selectable.parse("A = someFunction()").withDeclaredBarriers(barrier)
 ```
 
-Each barrier can only be declared by one expression, and only within the same `select`, `update`, or `where` call as the expression that respects it. For a `Selectable` specifically, a constant-valued expression cannot declare one either — this restriction does not apply to `Filter`. See [Barrier](./Barrier.md) for the full constraints and a complete worked example.
+A declared [Barrier](./Barrier.md) has these constraints:
+
+- Only one expression declares a given [Barrier](./Barrier.md).
+- The declaring and respecting expressions belong to the same [`select`](../../table-operations/select/select.md), [`update`](../../table-operations/select/update.md), or [`where`](../../table-operations/filter/where.md) call.
+- A constant-valued [`Selectable`](./Selectable.md) cannot declare or respect a [Barrier](./Barrier.md). A [`Filter`](./Filter.md) has no such restriction.
+
+See [Barrier](./Barrier.md) for the full constraints and a complete worked example.
 
 ### `withRespectedBarriers`
 
-Marks the expression as respecting the given [barrier](./Barrier.md) object(s). The respecting expression does not start until every expression that declares that barrier has finished.
+[`withRespectedBarriers`](#withrespectedbarriers) marks an expression as respecting the given [Barrier](./Barrier.md) objects. A respecting expression does not start until the expression that declares that [Barrier](./Barrier.md) has finished.
+
+The following snippet respects a [Barrier](./Barrier.md) on a [`Selectable`](./Selectable.md).
 
 ```groovy syntax
 import io.deephaven.api.Selectable
@@ -52,21 +84,44 @@ barrier = new Object()
 col = Selectable.parse("B = someFunction()").withRespectedBarriers(barrier)
 ```
 
-Multiple expressions can respect the same barrier, and one expression can respect more than one barrier. The respecting expression must come after the declaring expression, in left-to-right order within the same call — the engine raises an error otherwise. See [Barrier](./Barrier.md) for the full constraints and a complete worked example, including how to coordinate more than two expressions.
+A respected [Barrier](./Barrier.md) has these rules:
 
-## `withSerial` vs. barriers
+- Several expressions can respect the same [Barrier](./Barrier.md), and one expression can respect several [Barriers](./Barrier.md).
+- A respecting expression comes after the declaring expression, in left-to-right order within the same call. The engine raises an error otherwise.
 
-These solve different problems:
+See [Barrier](./Barrier.md) for the full constraints and a complete worked example, including how to coordinate more than two expressions.
 
-- **`withSerial`**: Rows _within one_ expression are processed sequentially (row 0, then row 1, etc.). For a **filter**, a serial filter also acts as an absolute ordering barrier against every other filter in the same `where` call — no filter can execute out of order around it. For a **selectable**, `withSerial` gives no such guarantee relative to other _independent_ expressions by default; two expressions that do not reference each other's output can still run at the same time unless you add an explicit barrier. Note that an expression that references another's result column is a different case — the engine already evaluates the referenced column first as an ordinary data dependency, barrier or not.
-- **Barriers**: _Between_ expressions, one finishes all its rows before another starts. Rows within each expression can still be parallelized.
+## `withSerial` versus Barriers
 
-When shared state is involved, you often need both: `withSerial` to protect row-level access to the shared state, and — especially for selectables — a barrier to ensure one expression is completely done before another starts.
+The two controls order different things:
+
+- **[`withSerial`](#withserial)**: orders the rows _within one_ expression. Those rows are evaluated one at a time, from the lowest row key to the highest.
+- **[Barriers](./Barrier.md)**: order expressions _relative to each other_. One expression finishes all of its rows before another starts, and the rows within each expression can still be parallelized.
+
+A column that references another column's result needs no [Barrier](./Barrier.md) for that ordering. The engine evaluates the referenced column first as an ordinary data dependency.
+
+Expressions that share state usually need both controls. [`withSerial`](#withserial) evaluates the rows of each expression one at a time. For [selectables](./Selectable.md), a [Barrier](./Barrier.md) also orders the expressions. [Filters](./Filter.md) need only `withSerial`, because a serial filter orders itself against the other filters.
+
+## Selectable versus Filter
+
+The two types share these methods but differ in the following ways.
+
+|                                                                              | [`Selectable`](./Selectable.md)                                                                                                               | [`Filter`](./Filter.md)                                                                                                                          |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Table operations                                                             | The five operations listed above, with restrictions described in [Selectable](./Selectable.md#table-operations-that-accept-a-selectable)      | [`where`](../../table-operations/filter/where.md)                                                                                                |
+| Effect of [`withSerial`](#withserial) on other expressions                   | By default, none. Two independent [selectables](./Selectable.md) can still run at the same time unless a [Barrier](./Barrier.md) orders them. | A serial filter keeps its position: the engine moves no other filter in the same [`where`](../../table-operations/filter/where.md) call past it. |
+| Constant-valued expression declaring or respecting a [Barrier](./Barrier.md) | Not allowed.                                                                                                                                  | Allowed.                                                                                                                                         |
+
+By default, Deephaven adds no implicit ordering between [selectables](./Selectable.md). The [`QueryTable.serialSelectImplicitBarriers`](../../../conceptual/query-table-configuration.md#stateless-by-default) property changes that, and [Implicit Barriers](../../../conceptual/query-engine/parallelization.md#implicit-barriers) describes the alternative.
 
 ## Related documentation
 
-- [Barrier](./Barrier.md) — The marker object used with `withDeclaredBarriers` and `withRespectedBarriers`
-- [Query table configuration](../../../conceptual/query-table-configuration.md) — Configuration properties that control default parallelization behavior
+- [Selectable](./Selectable.md)
+- [Filter](./Filter.md)
+- [Barrier](./Barrier.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Query table configuration](../../../conceptual/query-table-configuration.md)
+- [`select`](../../table-operations/select/select.md)
+- [`update`](../../table-operations/select/update.md)
+- [`where`](../../table-operations/filter/where.md)
 - [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)
-- [Selectable Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html)
-- [Filter Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html)

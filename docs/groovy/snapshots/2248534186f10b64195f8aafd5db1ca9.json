@@ -1,0 +1,1 @@
+{"file":"reference/query-language/types/Barrier.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"MinB","type":"int"},{"name":"MaxB","type":"int"}],"rows":[[{"value":"6,000,000"},{"value":"6,000,000"}]]}}}}
