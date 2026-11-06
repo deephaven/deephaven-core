@@ -15,20 +15,30 @@ namespace Deephaven.Dh_NetClientTests;
 ///
 /// Whether the delta lands between rounds is not left to timing. The part of a table that changes is an input
 /// table, empty when the subscription opens, and the test waits for the first round to arrive before adding rows
-/// to it with a second script, so that the change is applied while the rest of the snapshot is still being
-/// delivered. The helper hands back what the subscription reported for every update from that point on, and each
-/// test asserts that its delta was observed, so that it cannot pass without the scenario it describes. The one
-/// table that ticks on its own does so on every update graph cycle for as long as the subscription lives.
+/// to it, so that the change is applied while the rest of the snapshot is still being delivered. The rows are
+/// added through the client rather than a script, because a script queues behind every other script on the
+/// server's shared session and holds the update graph's exclusive lock for as long as it runs, formula compilation
+/// included, while snapshot rounds carry on without that lock. The helper hands back what the subscription
+/// reported for every update from the delta on, and each test says what observing its delta looks like, so that
+/// it cannot pass without the scenario it describes. A loaded server can still complete a snapshot before the
+/// delta is applied; the helper then starts over with a fresh table, a bounded number of times, and fails loudly
+/// if the delta never lands in time. The one table that ticks on its own does so on every update graph cycle for
+/// as long as the subscription lives.
 ///
 /// Two things about the tables are deliberate. Each has a column computed by a Python function that sleeps for a
 /// few microseconds per row, so that every snapshot round costs the server real time. The server sizes a round to
 /// about a quarter of an update graph cycle, so the rounds come out small and the snapshot as a whole spans
 /// several cycles, which leaves the delta room to land between rounds. Without that, a table of this size arrives
 /// in two back-to-back rounds. Secondly, a column whose value is the same in every row at the moment the table is
-/// fetched is advertised by the server as run-end encoded, which this client cannot decode on the subscription
-/// path. So the tables avoid constant columns, and in particular the joined table below is seeded with a row so
-/// that the joined column is not null everywhere until the first tick.
+/// fetched is advertised by the server as run-end encoded. The client decodes that on the subscription path too,
+/// but these tests are about how the add phase is sized and keep the encoding path out of it: the tables avoid
+/// constant columns, and in particular the joined table below is seeded with a row so that the joined column is
+/// not null everywhere until the first tick.
+///
+/// The tests run one at a time within a process: each loads the server, and the less loaded it is, the wider the
+/// window in which a delta can land.
 /// </summary>
+[NotInParallel]
 public class GrowingSubscriptionTest {
   private const int BaseRows = 20_000;
 
@@ -52,22 +62,25 @@ public class GrowingSubscriptionTest {
   [Test]
   public async Task LargeAppendingTableIsFullyDelivered() {
     const int appendedRows = 2_000;
-    var run = RunId();
-    var script = Expensive + "\n\n" + $"""
-      _base = empty_table({BaseRows}).update(["K = ii", "Price = ii * 1.5"]).update_view(["Slow = (long) expensive(K)"])
-      # The rows appended once the snapshot is under way; empty until then, with the columns of the rows to come.
-      appended_{run} = input_table(init_table=empty_table(0).update(["K = ii", "Price = ii * 2.5"]))
-      growing_appends_{run} = merge([_base, appended_{run}.update_view(["Slow = (long) expensive(K)"])])
-      """;
-    var delta = $"""
-      appended_{run}.add(empty_table({appendedRows}).update(["K = 9_000_000 + ii", "Price = ii * 2.5"]))
-      """;
-    var delivery = await AssertFullyDelivered(script, $"growing_appends_{run}", delta, settlesAt: BaseRows + appendedRows);
-
-    // The appended rows lie beyond the region the snapshot has delivered, so their delta reaches the client with
-    // no data for them: an update that adds nothing. The rows themselves follow in a later round.
-    await Assert.That(delivery.SinceDelta.Any(r => r.Added == 0 && r.Removed == 0)).IsTrue()
-      .Because("the delta appending rows beyond the delivered region should arrive as an update that adds nothing");
+    var delivery = await AssertFullyDelivered(new Scenario {
+      TableName = "growing_appends",
+      Script = run => Expensive + "\n\n" + $"""
+        _base = empty_table({BaseRows}).update(["K = ii", "Price = ii * 1.5"]).update_view(["Slow = (long) expensive(K)"])
+        # The rows appended once the snapshot is under way; empty until then, with the columns of the rows to come.
+        appended_{run} = input_table(init_table=empty_table(0).update(["K = ii", "Price = ii * 2.5"]))
+        growing_appends_{run} = merge([_base, appended_{run}.update_view(["Slow = (long) expensive(K)"])])
+        """,
+      Delta = (manager, run) => {
+        using var appended = manager.FetchTable($"appended_{run}");
+        using var rows = manager.EmptyTable(appendedRows).Update("K = 9_000_000 + ii", "Price = ii * 2.5");
+        appended.AddTable(rows);
+      },
+      // The appended rows lie beyond the region the snapshot has delivered, so their delta reaches the client with
+      // no data for them: an update that adds nothing. The rows themselves follow in a later round.
+      DeltaObserved = since => since.Any(r => r.Added == 0 && r.Removed == 0),
+      DeltaDescription = "the delta appending rows beyond the delivered region arrives as an update that adds nothing",
+      SettlesAt = BaseRows + appendedRows,
+    });
 
     // The base rows come first, with keys 0, 1, 2, ...; the appended rows follow, with keys from 9,000,000 up.
     // Every row's other columns are functions of its key, so a misaligned row shows up as a wrong value.
@@ -95,23 +108,23 @@ public class GrowingSubscriptionTest {
   /// </summary>
   [Test]
   public async Task WideModifiedTableIsFullyDelivered() {
-    var run = RunId();
-    var script = Expensive + "\n\n" + $"""
-      # A one-row table that ticks, joined to every row of the big table so that every row is modified each cycle.
-      _seed = empty_table(1).update(["Beat = (long) 0"])
-      _beat = merge([_seed, time_table("PT0.002S").update(["Beat = ii"]).drop_columns("Timestamp")]).last_by()
-      _cols = ["C%d = ii * %d" % (i, i + 1) for i in range(30)]
-      growing_modifies_{run} = (empty_table({BaseRows}).update(["K = ii"] + _cols)
-          .update_view(["Slow = (long) expensive(K)"])
-          .natural_join(_beat, on=[], joins=["Beat"])
-          .update_view(["BeatK = Beat * 1_000_000 + K"])
-          .drop_columns("Beat"))
-      """;
-    var delivery = await AssertFullyDelivered(script, $"growing_modifies_{run}");
-
-    // The beat ticks on every cycle, so the deltas between rounds modify the rows delivered so far.
-    await Assert.That(delivery.SinceDelta.Any(r => r.Modified != 0)).IsTrue()
-      .Because("the rows delivered so far should have been modified between rounds");
+    var delivery = await AssertFullyDelivered(new Scenario {
+      TableName = "growing_modifies",
+      Script = run => Expensive + "\n\n" + $"""
+        # A one-row table that ticks, joined to every row of the big table so that every row is modified each cycle.
+        _seed = empty_table(1).update(["Beat = (long) 0"])
+        _beat = merge([_seed, time_table("PT0.002S").update(["Beat = ii"]).drop_columns("Timestamp")]).last_by()
+        _cols = ["C%d = ii * %d" % (i, i + 1) for i in range(30)]
+        growing_modifies_{run} = (empty_table({BaseRows}).update(["K = ii"] + _cols)
+            .update_view(["Slow = (long) expensive(K)"])
+            .natural_join(_beat, on=[], joins=["Beat"])
+            .update_view(["BeatK = Beat * 1_000_000 + K"])
+            .drop_columns("Beat"))
+        """,
+      // The beat ticks on every cycle, so the deltas between rounds modify the rows delivered so far.
+      DeltaObserved = since => since.Any(r => r.Modified != 0),
+      DeltaDescription = "the rows delivered so far are modified between rounds",
+    });
 
     // Columns are K, C0..C29, Slow, BeatK. BeatK combines the beat the row was last modified with and the row's
     // own key; every row has seen the same beat, because each round carries the beat as of that round and the
@@ -152,58 +165,104 @@ public class GrowingSubscriptionTest {
   private sealed record Delivery(IClientTable Table, IReadOnlyList<Reported> SinceDelta);
 
   /// <summary>
-  /// Defines the table, subscribes, and once the first snapshot round has arrived runs 'delta', the script that
-  /// changes the table while the rest of the snapshot is still being delivered. Then waits until the subscription
-  /// has held at least as many rows as the table had when it was opened, which for a table of fixed size means the
-  /// initial snapshot has been delivered in full. A table whose row count the delta changes is complete at some
-  /// other count: a growing one reaches its opening count while the snapshot still owes it the rows added since,
-  /// and a shrinking one never reaches it. For such a table 'settlesAt' gives the row count at which it is
-  /// complete, which the completing update must hit exactly. Returns the table as of the completing update, along
-  /// with what the subscription reported for each update from the delta on (for a table that ticks on its own,
-  /// each update after the first), so that the caller can check that the delta was observed.
+  /// A table to subscribe to and the change to make to it once its first snapshot round has arrived. Every
+  /// server-side name carries the run id, because the server's script session is shared by every console: the
+  /// canonical test run drives two copies of this suite against one server at the same time, and an attempt that
+  /// starts over needs a table of its own.
   /// </summary>
-  private static async Task<Delivery> AssertFullyDelivered(string script, string tableName, string? delta = null,
-      Int64? settlesAt = null) {
+  private sealed class Scenario {
+    /// <summary>The table's name on the server, before the run id is appended.</summary>
+    public required string TableName { get; init; }
+    /// <summary>The script that defines the table, given the run id.</summary>
+    public required Func<string, string> Script { get; init; }
+    /// <summary>The change to make once the first round has arrived, given the manager and the run id; null for a
+    /// table that ticks on its own.</summary>
+    public Action<TableHandleManager, string>? Delta { get; init; }
+    /// <summary>Whether what the subscription reported from the delta on shows the delta having landed while the
+    /// snapshot was still being delivered.</summary>
+    public required Func<IReadOnlyList<Reported>, bool> DeltaObserved { get; init; }
+    /// <summary>What DeltaObserved looks for, for the failure message.</summary>
+    public required string DeltaDescription { get; init; }
+    /// <summary>The row count at which the table is complete, for a table whose row count the delta changes; null
+    /// for a table that is complete once it has reached the row count it had when it was opened.</summary>
+    public Int64? SettlesAt { get; init; }
+  }
+
+  /// <summary>
+  /// Defines the table, subscribes, and once the first snapshot round has arrived makes the scenario's delta, so
+  /// that the change is applied while the rest of the snapshot is still being delivered. Then waits until the
+  /// subscription has held at least as many rows as the table had when it was opened, which for a table of fixed
+  /// size means the initial snapshot has been delivered in full. A table whose row count the delta changes is
+  /// complete at some other count: a growing one reaches its opening count while the snapshot still owes it the
+  /// rows added since, and a shrinking one never reaches it. For such a table 'SettlesAt' gives the row count at
+  /// which it is complete, which the completing update must hit exactly. Returns the table as of the completing
+  /// update, along with what the subscription reported for each update from the delta on (for a table that ticks
+  /// on its own, every update).
+  ///
+  /// A delta is applied only once the server's update graph gets to it, and a loaded server can finish the snapshot
+  /// first, in which case the subscription reports nothing of the kind the scenario describes. Such an attempt is
+  /// discarded and the scenario is tried again with a fresh table, up to MaxAttempts times.
+  /// </summary>
+  private static async Task<Delivery> AssertFullyDelivered(Scenario scenario) {
     using var ctx = CommonContextForTests.Create(new ClientOptions().SetSessionType(SessionTypes.Python));
     var manager = ctx.Client.Manager;
-    manager.RunScript(script);
+    for (var attempt = 1; ; ++attempt) {
+      var delivery = await Attempt(manager, scenario);
+      if (scenario.DeltaObserved(delivery.SinceDelta)) {
+        return delivery;
+      }
+      if (attempt == MaxAttempts) {
+        throw new Exception($"In {attempt} attempts the snapshot was never still being delivered when the delta " +
+                            $"landed, so it could not be checked that {scenario.DeltaDescription}");
+      }
+      Console.WriteLine($"  attempt {attempt}: the delta landed after the snapshot had completed; starting over " +
+                        "with a fresh table");
+    }
+  }
 
+  private const int MaxAttempts = 3;
+
+  /// <summary>
+  /// One attempt at the scenario, on a table of its own.
+  /// </summary>
+  private static async Task<Delivery> Attempt(TableHandleManager manager, Scenario scenario) {
+    var run = RunId();
+    manager.RunScript(scenario.Script(run));
+
+    var tableName = $"{scenario.TableName}_{run}";
     using var table = manager.FetchTable(tableName);
     var rowsAtOpen = table.NumRows;
     Console.WriteLine($"{tableName}: {rowsAtOpen:N0} rows at open");
 
-    var observer = new SnapshotObserver(rowsAtOpen, settlesAt);
+    var observer = new SnapshotObserver(rowsAtOpen, scenario.SettlesAt);
     using var cookie = table.Subscribe(observer);
     var timeout = TimeSpan.FromSeconds(120);
     Exception? error;
     try {
       await observer.FirstUpdate.WaitAsync(timeout);
-      // Marked before the script runs, so that no update the delta produces can land ahead of the mark.
-      observer.MarkDelta();
-      if (delta != null) {
-        manager.RunScript(delta);
+      if (scenario.Delta != null) {
+        // Marked before the delta is made, so that no update it produces can land ahead of the mark.
+        observer.MarkDelta();
+        scenario.Delta(manager, run);
       }
       error = await observer.Finished.WaitAsync(timeout);
     } catch (TimeoutException) {
-      var target = settlesAt ?? rowsAtOpen;
+      var target = scenario.SettlesAt ?? rowsAtOpen;
       throw new Exception($"Timed out after {observer.UpdateCount} updates, having reached only " +
                           $"{observer.PeakRowCount:N0} of {target:N0} rows");
     }
 
     await Assert.That(error).IsNull();
-    if (settlesAt == null) {
+    if (scenario.SettlesAt == null) {
       await Assert.That(observer.PeakRowCount).IsGreaterThanOrEqualTo(rowsAtOpen);
     } else {
-      await Assert.That(observer.Last!.NumRows).IsEqualTo(settlesAt.Value);
+      await Assert.That(observer.Last!.NumRows).IsEqualTo(scenario.SettlesAt.Value);
     }
     return new Delivery(observer.Last!, observer.SinceDelta);
   }
 
   /// <summary>
-  /// A suffix that makes a test's server-side names its own. The server's script session is shared by every
-  /// console, and the canonical test run drives two copies of this suite, one per target framework, against one
-  /// server at the same time. The second script of a test refers to its input table by name, so that name must
-  /// not be one the other copy can rebind in between.
+  /// A suffix that makes a test's server-side names its own.
   /// </summary>
   private static string RunId() {
     return Guid.NewGuid().ToString("N")[..8];
