@@ -19,6 +19,9 @@ import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * Exercises the immutable, chainable table API end to end: chain before awaiting, read data from the result, close it,
@@ -353,6 +356,45 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     });
                 })
                 .then(this::finish).catch_(this::report);
+    }
+
+    public void testSeveralUsesOfOnePendingBeforeItResolves() {
+        // Each use registers on the pending's state, which is not running yet
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(15_044);
+                    List<Promise<?>> uses = new ArrayList<>();
+                    try {
+                        JsPendingTable<JsTable> fetch = session.getTable("source", null);
+                        uses.add(fetch.head(Js.uncheckedCast(1.0)).resolve());
+                        uses.add(fetch.tail(Js.uncheckedCast(1.0)).resolve());
+                        JsPendingTable<JsResolvedTable> operation = fetch.update(arr("Z = X + Y"));
+                        uses.add(operation.head(Js.uncheckedCast(1.0)).resolve());
+                        uses.add(operation.tail(Js.uncheckedCast(1.0)).resolve());
+                        uses.add(session.mergeTables(new JsTableReference[] {Js.uncheckedCast(operation),
+                                Js.uncheckedCast(operation)}).resolve());
+                        String id = "several-uses-" + DomGlobal.performance.now();
+                        uses.add(session.shareObject(Js.uncheckedCast(operation), Js.uncheckedCast(id + "-a")));
+                        uses.add(session.shareObject(Js.uncheckedCast(operation), Js.uncheckedCast(id + "-b")));
+                    } catch (Throwable e) {
+                        return Promise.reject("using one pending several times before it resolved threw: " + e);
+                    }
+                    return settleAll(uses, 0).then(ignore -> Promise.resolve(session));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /** Waits for each use in turn, closing the tables they produce. */
+    private static Promise<Object> settleAll(List<Promise<?>> uses, int index) {
+        if (index == uses.size()) {
+            return Promise.resolve((Object) null);
+        }
+        return uses.get(index).then(result -> {
+            if (result instanceof JsResolvedTable) {
+                ((JsResolvedTable) result).close();
+            }
+            return settleAll(uses, index + 1);
+        });
     }
 
     public void testCreateMutableTableReadsTheSameData() {

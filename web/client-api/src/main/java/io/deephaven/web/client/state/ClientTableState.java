@@ -507,6 +507,30 @@ public final class ClientTableState extends TableConfig {
         onReleased.add(release);
     }
 
+    /**
+     * As {@link #onRunning(JsConsumer, JsConsumer, JsRunnable)} for a caller that only needs to know if this state
+     * fails or is released before it is running: once running, neither is called.
+     */
+    public void onFailedOrReleased(JsConsumer<String> failed, JsRunnable release) {
+        if (resolution == ResolutionState.RELEASED) {
+            release.run();
+            return;
+        } else if (resolution == ResolutionState.FAILED) {
+            failed.apply(failMsg);
+            return;
+        } else if (resolution == ResolutionState.RUNNING) {
+            return;
+        }
+        if (onFailed == null) {
+            onFailed = new ArrayList<>();
+        }
+        onFailed.add(failed);
+        if (onReleased == null) {
+            onReleased = new ArrayList<>();
+        }
+        onReleased.add(release);
+    }
+
     public void onFailed(JsConsumer<String> callback, JsRunnable other) {
         if (resolution == ResolutionState.RELEASED || resolution == ResolutionState.RUNNING) {
             other.run();

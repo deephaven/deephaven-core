@@ -25,7 +25,6 @@ import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.fu.PromiseLike;
-import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsOptional;
@@ -961,7 +960,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             }
         };
         for (ClientTableState state : held) {
-            state.onRunning(JsConsumer.doNothing(), failure -> {
+            state.onFailedOrReleased(failure -> {
                 letGo.run();
                 result.fail("Operand table failed: " + failure);
             }, () -> {
@@ -1114,8 +1113,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         // in which case the dependent would wait on a placeholder export forever; failing it here also releases its
         // ticket so the server drops that placeholder. When the server did define the source, this merely beats its
         // own dependency failure to the same result.
-        source.onRunning(
-                JsConsumer.doNothing(),
+        source.onFailedOrReleased(
                 failure -> fail.accept(role + " failed: " + failure),
                 () -> fail.accept(role + " was released"));
     }
