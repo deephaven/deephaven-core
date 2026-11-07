@@ -3,11 +3,13 @@
 #
 
 import unittest
+from collections.abc import Callable
 
 from deephaven import (
     DHError,
     SortDirection,
     empty_table,
+    merge,
     read_csv,
     time_table,
     update_graph,
@@ -31,7 +33,7 @@ from deephaven.agg import (
 from deephaven.concurrency_control import Barrier
 from deephaven.execution_context import get_exec_ctx
 from deephaven.filters import Filter
-from deephaven.table import PartitionedTableProxy, Selectable
+from deephaven.table import NaturalJoinType, PartitionedTableProxy, Selectable, Table
 from tests.testbase import BaseTestCase
 
 
@@ -664,6 +666,110 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             filtered_pt_proxy.target.constituent_tables,
         ):
             self.assertLessEqual(filtered_ct.size, ct.size)
+
+    def assert_matches_per_constituent(
+        self,
+        result: PartitionedTableProxy,
+        expected_op: Callable[[Table], Table],
+    ) -> None:
+        for ct, rct in zip(
+            self.pt_proxy.target.constituent_tables,
+            result.target.constituent_tables,
+            strict=True,
+        ):
+            self.assert_table_equals(expected_op(ct), rct)
+
+    def test_drop_columns(self):
+        self.assert_matches_per_constituent(
+            self.pt_proxy.drop_columns(["d", "e"]),
+            lambda t: t.drop_columns(["d", "e"]),
+        )
+
+    def test_lazy_update(self):
+        self.assert_matches_per_constituent(
+            self.pt_proxy.lazy_update("f = a * 2"),
+            lambda t: t.lazy_update("f = a * 2"),
+        )
+
+    def test_slice(self):
+        self.assert_matches_per_constituent(
+            self.pt_proxy.slice(1, -1), lambda t: t.slice(1, -1)
+        )
+
+    def test_ungroup(self):
+        grouped = self.pt_proxy.group_by("a")
+        ungrouped = grouped.ungroup()
+        for gct, uct in zip(
+            grouped.target.constituent_tables,
+            ungrouped.target.constituent_tables,
+            strict=True,
+        ):
+            self.assert_table_equals(gct.ungroup(), uct)
+
+    def test_range_join(self):
+        aggs = [group(cols=["GroupD=d"])]
+        right_table = self.test_table.select_distinct().sort("b").drop_columns("e")
+        self.assert_matches_per_constituent(
+            self.pt_proxy.range_join(right_table, on=["a = a", "c < b < e"], aggs=aggs),
+            lambda t: t.range_join(right_table, on=["a = a", "c < b < e"], aggs=aggs),
+        )
+
+    def test_natural_join_type(self):
+        # Merging the table with itself gives every key in "a" a duplicate right row.
+        one_copy = self.test_table.drop_columns(["b", "c"])
+        right_table = merge([one_copy, one_copy])
+        with self.assertRaises(DHError) as cm:
+            self.pt_proxy.natural_join(right_table, on="a", joins="d2 = d")
+        self.assertIn("duplicate", str(cm.exception).lower())
+
+        self.assert_matches_per_constituent(
+            self.pt_proxy.natural_join(
+                right_table,
+                on="a",
+                joins="d2 = d",
+                type=NaturalJoinType.FIRST_MATCH,
+            ),
+            lambda t: t.natural_join(
+                right_table, on="a", joins="d2 = d", type=NaturalJoinType.FIRST_MATCH
+            ),
+        )
+
+    def test_agg_by_preserve_empty_and_initial_groups(self):
+        initial_groups = self.test_table.select_distinct("a")
+        aggs = [sum_(cols=["SumB = b"])]
+        self.assert_matches_per_constituent(
+            self.pt_proxy.agg_by(
+                aggs, by="a", preserve_empty=True, initial_groups=initial_groups
+            ),
+            lambda t: t.agg_by(
+                aggs, by="a", preserve_empty=True, initial_groups=initial_groups
+            ),
+        )
+
+    def test_agg_by_refreshing_initial_groups(self):
+        # A refreshing table with the same rows as the static test table, so both proxies have the same keys.
+        with update_graph.shared_lock(self.test_update_graph):
+            no_rows = (
+                time_table("PT1h")
+                .view([f"{col} = (int)0" for col in ["a", "b", "c", "d", "e"]])
+                .where("false")
+            )
+            refreshing_table = merge([self.test_table, no_rows])
+        initial_groups = refreshing_table.partition_by("c").proxy()
+        self.assertTrue(initial_groups.is_refreshing)
+        self.assertFalse(self.pt_proxy.is_refreshing)
+
+        # The receiver is static, so the op must take the lock for the refreshing initial_groups.
+        agg_pt_proxy = self.pt_proxy.agg_by(
+            [sum_(cols=["SumB = b"])], by="a", initial_groups=initial_groups
+        )
+        self.assertTrue(agg_pt_proxy.is_refreshing)
+
+    def test_weighted_avg_by_without_by(self):
+        self.assert_matches_per_constituent(
+            self.pt_proxy.weighted_avg_by(wcol="e"),
+            lambda t: t.weighted_avg_by(wcol="e"),
+        )
 
 
 def global_fn() -> str:
