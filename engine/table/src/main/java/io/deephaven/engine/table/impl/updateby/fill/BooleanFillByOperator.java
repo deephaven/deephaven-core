@@ -11,7 +11,7 @@ import io.deephaven.engine.table.ColumnSource;
 import java.util.Map;
 import java.util.Collections;
 import io.deephaven.engine.table.impl.sources.BooleanArraySource;
-import io.deephaven.engine.table.impl.sources.BooleanSparseArraySource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.BooleanUtils;
 
@@ -84,7 +84,7 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
     }
     @Override
     protected WritableColumnSource<Byte> makeSparseSource() {
-        return (WritableColumnSource<Byte>) new BooleanSparseArraySource().reinterpret(byte.class);
+        return (WritableColumnSource<Byte>) SparseArrayColumnSource.getSparseMemoryColumnSource(Boolean.class).reinterpret(byte.class);
     }
 
     @Override

@@ -1563,6 +1563,24 @@ public class TestRollingFormula extends BaseUpdateByTest {
     }
 
     @Test
+    public void testZeroKeyGeneralTickingShiftedBooleanResult() {
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, false, false, true, 0x31313131);
+        final QueryTable t = result.t;
+
+        // without redirection, the Boolean results are shifted in their own sparse source
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                EvalNugget.from(() -> t.updateBy(
+                        UpdateByOperation.RollingFormula(10, 0, "sum(x) > 0", "x", "intCol"))),
+                EvalNugget.from(() -> t.updateBy(UpdateByOperation.RollingFormula(10, 0, "pos=sum(intCol) > 0"))),
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
+            simulateShiftAwareStep("step " + ii, DYNAMIC_UPDATE_SIZE, billy, t, result.infos, nuggets);
+        }
+    }
+
+    @Test
     public void testBucketedGeneralTickingTimedRevRedirected() {
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ofMinutes(0);

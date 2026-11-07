@@ -291,7 +291,7 @@ public class RollingGroupOperator extends UpdateByOperator {
             groupRowSetSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, innerGroupRowSetSource, 0);
 
         } else {
-            groupRowSetSource = new ObjectSparseArraySource<>(RowSet.class);
+            groupRowSetSource = SparseArrayColumnSource.getSparseMemoryColumnSource(RowSet.class);
             innerGroupRowSetSource = null;
         }
 
@@ -304,8 +304,8 @@ public class RollingGroupOperator extends UpdateByOperator {
         } else {
             // We are computing using the timestamp columns, create the appropriate sources (potentially redirected)
             if (rowRedirection == null) {
-                startSource = new LongSparseArraySource();
-                endSource = new LongSparseArraySource();
+                startSource = SparseArrayColumnSource.getSparseMemoryColumnSource(long.class);
+                endSource = SparseArrayColumnSource.getSparseMemoryColumnSource(long.class);
                 innerStartSource = null;
                 innerEndSource = null;
             } else {
@@ -380,10 +380,10 @@ public class RollingGroupOperator extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((ObjectSparseArraySource<?>) groupRowSetSource).shift(subRowSetToShift, delta);
+        ((SparseArrayColumnSource<?>) groupRowSetSource).shift(subRowSetToShift, delta);
         if (timestampColumnName != null) {
-            ((LongSparseArraySource) startSource).shift(subRowSetToShift, delta);
-            ((LongSparseArraySource) endSource).shift(subRowSetToShift, delta);
+            ((SparseArrayColumnSource<?>) startSource).shift(subRowSetToShift, delta);
+            ((SparseArrayColumnSource<?>) endSource).shift(subRowSetToShift, delta);
         }
     }
     // endregion Shifts

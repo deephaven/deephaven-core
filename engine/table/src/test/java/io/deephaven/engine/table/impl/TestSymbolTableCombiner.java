@@ -13,7 +13,7 @@ import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.engine.testutil.generator.UniqueLongGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
+import io.deephaven.engine.table.impl.sources.IntegerAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
@@ -51,13 +51,13 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
         final ColumnSource<Long> idSource = symbolTable.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
         final SymbolTableCombiner combiner = new SymbolTableCombiner(new ColumnSource[] {symbolSource}, 128);
 
-        final IntegerSparseArraySource symbolMapper = new IntegerSparseArraySource();
+        final IntegerAdaptiveSparseArraySource symbolMapper = new IntegerAdaptiveSparseArraySource();
         combiner.addSymbols(symbolTable, symbolMapper);
 
         final Map<String, Integer> uniqueIdMap = new HashMap<>();
         checkAdditions(symbolTable, symbolSource, idSource, symbolMapper, uniqueIdMap);
 
-        final IntegerSparseArraySource symbolMapper2 = new IntegerSparseArraySource();
+        final IntegerAdaptiveSparseArraySource symbolMapper2 = new IntegerAdaptiveSparseArraySource();
         combiner.lookupSymbols(symbolTable, symbolMapper2, -2);
 
         for (final RowSet.Iterator it = symbolTable.getRowSet().iterator(); it.hasNext();) {
@@ -104,7 +104,8 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
     }
 
     private static void checkAdditions(QueryTable symbolTable, ColumnSource<String> symbolSource,
-            ColumnSource<Long> idSource, IntegerSparseArraySource symbolMapper, Map<String, Integer> uniqueIdMap) {
+            ColumnSource<Long> idSource, IntegerAdaptiveSparseArraySource symbolMapper,
+            Map<String, Integer> uniqueIdMap) {
         for (final RowSet.Iterator it = symbolTable.getRowSet().iterator(); it.hasNext();) {
             final long key = it.nextLong();
             final String symbol = symbolSource.get(key);

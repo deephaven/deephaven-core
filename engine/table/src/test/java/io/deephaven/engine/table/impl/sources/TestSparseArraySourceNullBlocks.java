@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
@@ -36,6 +37,7 @@ import java.util.stream.LongStream;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK0_SHIFT;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK1_SHIFT;
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK2_SIZE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
 import static io.deephaven.engine.testutil.TstUtils.i;
@@ -69,7 +71,7 @@ public class TestSparseArraySourceNullBlocks {
      * A redirection over a sparse source whose outer row keys are the rows of a tracking row set.
      */
     private static final class Fixture {
-        final LongSparseArraySource source = new LongSparseArraySource();
+        final LongAdaptiveSparseArraySource source = LongAdaptiveSparseArraySource.fullBlocks();
         final LongColumnSourceWritableRowRedirection redirection = new LongColumnSourceWritableRowRedirection(source);
         final TrackingWritableRowSet rowSet;
 
@@ -109,7 +111,7 @@ public class TestSparseArraySourceNullBlocks {
 
     @Test
     public void testIntRedirectionReleasesRemovedAndShiftedBlocks() {
-        final IntegerSparseArraySource source = new IntegerSparseArraySource();
+        final IntegerAdaptiveSparseArraySource source = IntegerAdaptiveSparseArraySource.fullBlocks();
         final IntColumnSourceWritableRowRedirection redirection = new IntColumnSourceWritableRowRedirection(source);
         final TrackingWritableRowSet rowSet = ir(0, 3 * BLOCK_SIZE - 1).toTracking();
         rowSet.forAllRowKeys(key -> redirection.put(key, key * 10));
@@ -139,7 +141,7 @@ public class TestSparseArraySourceNullBlocks {
         });
 
         // the removed and vacated blocks are released, and the shifted block is allocated at its new position
-        assertEquals(sizeBefore - intBlockBytes, source.estimateSize());
+        assertEquals(blocks(sizeBefore, intBlockBytes) - 1, blocks(source.estimateSize(), intBlockBytes));
         for (long key = 0; key < BLOCK_SIZE; ++key) {
             assertEquals(RowSet.NULL_ROW_KEY, redirection.get(key));
             assertEquals(RowSet.NULL_ROW_KEY, redirection.get(key + 2L * BLOCK_SIZE));
@@ -170,7 +172,10 @@ public class TestSparseArraySourceNullBlocks {
                     .getSparseMemoryColumnSource(1, (Class<?>) typeAndValue[0]);
             source.set(0, typeAndValue[1]);
             source.startTrackingPrevValues();
-            final SparseArrayColumnSource<?> sparseSource = (SparseArrayColumnSource<?>) source;
+            // as in SelectOrUpdateListener, a Boolean source may hold its values in a sparse byte source
+            final SparseArrayColumnSource<?> sparseSource = source instanceof SparseArrayColumnSource
+                    ? (SparseArrayColumnSource<?>) source
+                    : (SparseArrayColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(source);
             final long sizeBefore = sparseSource.estimateSize();
 
             updateGraph().runWithinUnitTestCycle(() -> {
@@ -285,7 +290,7 @@ public class TestSparseArraySourceNullBlocks {
                 assertEquals(sizeBefore, fixture.source.estimateSize());
             });
 
-            assertEquals(sizeBefore - LONG_BLOCK_BYTES, fixture.source.estimateSize());
+            assertEquals(longBlocks(sizeBefore) - 1, longBlocks(fixture.source.estimateSize()));
             assertRedirections(fixture, 0, BLOCK_SIZE - 1, false, NULL_LONG);
             assertRedirections(fixture, 0, BLOCK_SIZE - 1, true, NULL_LONG);
             assertRedirections(fixture, BLOCK_SIZE, 2 * BLOCK_SIZE - 1, false, 0);
@@ -321,7 +326,7 @@ public class TestSparseArraySourceNullBlocks {
                     fixture.update(removed, RowSetShiftData.EMPTY);
                 }
             });
-            assertEquals(sizeBefore - LONG_BLOCK_BYTES, fixture.source.estimateSize());
+            assertEquals(longBlocks(sizeBefore) - 1, longBlocks(fixture.source.estimateSize()));
 
             updateGraph().runWithinUnitTestCycle(() -> {
                 fixture.rowSet.insert(5);
@@ -331,7 +336,7 @@ public class TestSparseArraySourceNullBlocks {
                 assertEquals(RowSet.NULL_ROW_KEY, fixture.redirection.get(6));
             });
 
-            assertEquals(sizeBefore, fixture.source.estimateSize());
+            assertEquals(longBlocks(sizeBefore), longBlocks(fixture.source.estimateSize()));
             assertEquals(50, fixture.redirection.get(5));
             assertEquals(50, fixture.redirection.getPrev(5));
             assertEquals(RowSet.NULL_ROW_KEY, fixture.redirection.get(6));
@@ -360,7 +365,7 @@ public class TestSparseArraySourceNullBlocks {
             });
 
             // the vacated block is released, and the destination holds as many blocks as the source did
-            assertEquals(sizeBefore, fixture.source.estimateSize());
+            assertEquals(longBlocks(sizeBefore), longBlocks(fixture.source.estimateSize()));
             assertRedirections(fixture, 0, BLOCK_SIZE - 1, false, 0);
             assertRedirections(fixture, BLOCK_SIZE, 2 * BLOCK_SIZE - 1, false, NULL_LONG);
             assertRedirections(fixture, BLOCK_SIZE + shiftDelta, 2 * BLOCK_SIZE - 1 + shiftDelta, false,
@@ -414,7 +419,7 @@ public class TestSparseArraySourceNullBlocks {
                 fixture.rowSet.insert(secondBlock1);
                 fixture.redirection.put(secondBlock1, 7);
             });
-            assertEquals(LONG_BLOCK_BYTES, fixture.source.estimateSize());
+            assertEquals(1, longBlocks(fixture.source.estimateSize()));
             assertEquals(7, fixture.redirection.get(secondBlock1));
         }
     }
@@ -450,6 +455,18 @@ public class TestSparseArraySourceNullBlocks {
         return refreshing
                 ? TstUtils.testRefreshingTable(RowSetFactory.flat(RIGHT_KEYS).toTracking(), columns)
                 : TstUtils.testTable(RowSetFactory.flat(RIGHT_KEYS).toTracking(), columns);
+    }
+
+    /**
+     * @return the number of whole blocks of {@code blockBytes} in {@code size}, which leaves out the page table above
+     *         the leaves, far smaller than a block in these tests
+     */
+    private static long blocks(final long size, final long blockBytes) {
+        return size / blockBytes;
+    }
+
+    private static long longBlocks(final long size) {
+        return blocks(size, LONG_BLOCK_BYTES);
     }
 
     private static long redirectionSize(final Table result, final String column) {
@@ -504,8 +521,11 @@ public class TestSparseArraySourceNullBlocks {
             maxSize = Math.max(maxSize, currentSize);
         }
         assertEquals(LIVE_ROWS, result.size());
-        // the live rows are a contiguous range, so they span the same number of blocks, give or take one, each cycle
-        assertTrue("firstSize=" + firstSize + ", maxSize=" + maxSize, maxSize <= firstSize + 2 * LONG_BLOCK_BYTES);
+        // the live rows are a contiguous range, so they span the same number of blocks, give or take one, each cycle; a
+        // cycle that first writes few rows to a leaf may also allocate the bottom page table level's array of compact
+        // leaves
+        assertTrue("firstSize=" + firstSize + ", maxSize=" + maxSize,
+                maxSize <= firstSize + 2 * LONG_BLOCK_BYTES + (long) BLOCK2_SIZE * Long.BYTES);
         return result;
     }
 

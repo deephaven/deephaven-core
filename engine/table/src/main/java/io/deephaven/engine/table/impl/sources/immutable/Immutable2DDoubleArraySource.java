@@ -344,6 +344,26 @@ public class Immutable2DDoubleArraySource extends AbstractColumnSource<Double>
         ensureCapacity(rowSequence.lastRowKey() + 1, false);
     }
 
+    @Override
+    public int parallelPopulationAlignment() {
+        return 1;
+    }
+
+    @Override
+    public void prepareForParallelPopulation(final RowSequence rowSequence, final boolean alignedDivisions) {
+        prepareForParallelPopulation(rowSequence);
+    }
+
+    @Override
+    public void prepareForParallelPopulationInDivisions(final RowSequence rowSequence) {
+        prepareForParallelPopulation(rowSequence);
+    }
+
+    @Override
+    public void prepareDivisionForParallelPopulation(final RowSequence division) {
+        // prepareForParallelPopulationInDivisions prepares every row
+    }
+
     // region reinterpretation
     // endregion reinterpretation
 }
