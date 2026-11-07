@@ -573,6 +573,38 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         return counts;
     }
 
+    /**
+     * Disabled until DH-24231: the server must remember a release for an export id it has not seen yet. Until then, the
+     * release of a canceled operation that was never sent can reach the server before the call that named its ticket,
+     * and that call then waits forever. Restore by renaming to
+     * {@code testCanceledUnsentOperandFailsTheCallOnTheServer}.
+     */
+    public void ignore_DH24231_testCanceledUnsentOperandFailsTheCallOnTheServer() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(15_019);
+                    return session.getTable("source", null).asPromise().then(table -> {
+                        String id = "canceled-unsent-" + DomGlobal.performance.now();
+                        JsPendingTable<JsResolvedTable> unsent = table.operations().update(arr("Z = X + Y"));
+                        Promise<?> shared = session.shareObject(Js.uncheckedCast(unsent), Js.uncheckedCast(id));
+                        // Canceled in the same task, before its batch is sent: the publish already named its ticket
+                        unsent.cancel();
+                        return expectRejectionWithin("sharing an operation canceled before it was sent", shared,
+                                "Operation canceled")
+                                // The server's publish must fail too, so nothing waits on the ticket there
+                                .then(ignore -> expectRejectionWithin("fetching what was shared from it",
+                                        Promise.resolve(Js.<IThenable<Object>>uncheckedCast(
+                                                session.getSharedObject(Js.uncheckedCast(id), "Table"))),
+                                        ""))
+                                .then(ignore -> {
+                                    table.close();
+                                    return Promise.resolve(session);
+                                });
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testLateViewReportsItsTableFailure() {
         // A view's table can fail after the view is taken; used late, the view reports that failure, not the lateness
         errorLogsDontFail();

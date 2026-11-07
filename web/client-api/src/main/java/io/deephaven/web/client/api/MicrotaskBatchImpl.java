@@ -438,13 +438,12 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 // Already settled: nothing to cancel on the server
                 return;
             }
-            if (!sent) {
-                // Never reached the server, so there is no ticket to release there; sendBatch skips it
-                state.getHandle().setConnected(false);
-            } else if (batch != null) {
+            if (sent && batch != null) {
                 // Stop waiting for the response; the batch closes its stream once nobody on it is waiting
                 batch.settled(this);
             }
+            // If never sent, sendBatch skips it, but its ticket is released all the same: a call outside the batch may
+            // already have named it, and the server is to remember a release for an id it has not seen (DH-24231)
             // Fails the promise from resolve() and closes its owner, if any; the refcount then releases the ticket,
             // which cancels the work on the server if it has not begun. Work the server has already started runs to
             // completion there, so callers that cancel often should debounce.
