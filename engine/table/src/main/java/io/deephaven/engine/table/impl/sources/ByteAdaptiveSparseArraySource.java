@@ -1837,18 +1837,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
         if (rowKey < 0) {
             return NULL_BYTE;
         }
-        final Level2 level2 = getLevel2(rowKey);
-        if (level2 == null) {
-            return NULL_BYTE;
-        }
-        final int slot = level2.slot(block2(rowKey));
-        final int offset = (int) (rowKey & INDEX_MASK);
-        final byte[] block = level2.blockAt(slot);
-        if (block != null) {
-            return block[offset];
-        }
-        final ByteCompactLeaf compact = level2.compactAt(slot);
-        return compact == null ? NULL_BYTE : compact.get(offset);
+        return getValue(getLevel2(rowKey), block2(rowKey), (int) (rowKey & INDEX_MASK));
     }
 
     @Override

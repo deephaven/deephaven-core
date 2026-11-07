@@ -1843,18 +1843,7 @@ public class LongAdaptiveSparseArraySource extends SparseArrayColumnSource<Long>
         if (rowKey < 0) {
             return NULL_LONG;
         }
-        final Level2 level2 = getLevel2(rowKey);
-        if (level2 == null) {
-            return NULL_LONG;
-        }
-        final int slot = level2.slot(block2(rowKey));
-        final int offset = (int) (rowKey & INDEX_MASK);
-        final long[] block = level2.blockAt(slot);
-        if (block != null) {
-            return block[offset];
-        }
-        final LongCompactLeaf compact = level2.compactAt(slot);
-        return compact == null ? NULL_LONG : compact.get(offset);
+        return getValue(getLevel2(rowKey), block2(rowKey), (int) (rowKey & INDEX_MASK));
     }
 
     @Override

@@ -528,8 +528,7 @@ public class ReplicateSourcesAndChunks {
         lines = simpleFixup(lines, "primitive get",
                 "Object get\\(", "T get(",
                 "Object getPrevObject\\(", "T getPrev(",
-                "return block\\[offset\\]", "return (T) block[offset]",
-                "compact.get\\(offset\\)", "(T) compact.get(offset)",
+                "return getValue", "return (T) getValue",
                 "return getPrevValue", "return (T) getPrevValue");
         lines = applyFixup(lines, "primitive get", "(\\s*)@Override", m -> Arrays.asList(
                 m.group(1) + "@SuppressWarnings(\"unchecked\")",

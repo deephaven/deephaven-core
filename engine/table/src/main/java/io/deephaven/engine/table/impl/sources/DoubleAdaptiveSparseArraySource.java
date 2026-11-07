@@ -1835,18 +1835,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         if (rowKey < 0) {
             return NULL_DOUBLE;
         }
-        final Level2 level2 = getLevel2(rowKey);
-        if (level2 == null) {
-            return NULL_DOUBLE;
-        }
-        final int slot = level2.slot(block2(rowKey));
-        final int offset = (int) (rowKey & INDEX_MASK);
-        final double[] block = level2.blockAt(slot);
-        if (block != null) {
-            return block[offset];
-        }
-        final DoubleCompactLeaf compact = level2.compactAt(slot);
-        return compact == null ? NULL_DOUBLE : compact.get(offset);
+        return getValue(getLevel2(rowKey), block2(rowKey), (int) (rowKey & INDEX_MASK));
     }
 
     @Override

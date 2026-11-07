@@ -1843,18 +1843,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
         if (rowKey < 0) {
             return null;
         }
-        final Level2 level2 = getLevel2(rowKey);
-        if (level2 == null) {
-            return null;
-        }
-        final int slot = level2.slot(block2(rowKey));
-        final int offset = (int) (rowKey & INDEX_MASK);
-        final Object[] block = level2.blockAt(slot);
-        if (block != null) {
-            return (T) block[offset];
-        }
-        final ObjectCompactLeaf compact = level2.compactAt(slot);
-        return compact == null ? null : (T) compact.get(offset);
+        return (T) getValue(getLevel2(rowKey), block2(rowKey), (int) (rowKey & INDEX_MASK));
     }
 
     @SuppressWarnings("unchecked")

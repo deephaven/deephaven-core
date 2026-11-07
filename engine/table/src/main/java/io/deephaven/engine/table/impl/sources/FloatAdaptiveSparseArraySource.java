@@ -1835,18 +1835,7 @@ public class FloatAdaptiveSparseArraySource extends SparseArrayColumnSource<Floa
         if (rowKey < 0) {
             return NULL_FLOAT;
         }
-        final Level2 level2 = getLevel2(rowKey);
-        if (level2 == null) {
-            return NULL_FLOAT;
-        }
-        final int slot = level2.slot(block2(rowKey));
-        final int offset = (int) (rowKey & INDEX_MASK);
-        final float[] block = level2.blockAt(slot);
-        if (block != null) {
-            return block[offset];
-        }
-        final FloatCompactLeaf compact = level2.compactAt(slot);
-        return compact == null ? NULL_FLOAT : compact.get(offset);
+        return getValue(getLevel2(rowKey), block2(rowKey), (int) (rowKey & INDEX_MASK));
     }
 
     @Override
