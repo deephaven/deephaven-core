@@ -1434,9 +1434,16 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
     }
 
     /**
-     * @return {@code compact}, the leaf covering {@code key} in {@code level2}, the bottom level covering it in the
-     *         previous value page table if {@code prev}, else in the current one; or a bitmap leaf with its values that
-     *         replaces it if it is a sorted leaf and {@code newSize} is more than a sorted leaf holds
+     * Move a sorted leaf to the bitmap tier when it is about to hold more values than a sorted leaf allows. When
+     * {@code compact} is a sorted leaf and {@code newSize} is more than {@code sortedThreshold}, its values are copied
+     * into a new bitmap leaf, which replaces it in the page table. Otherwise {@code compact} is returned unchanged.
+     *
+     * @param prev whether the leaf is in the previous value page table rather than the current one
+     * @param key a row key the leaf covers
+     * @param level2 the bottom level covering {@code key}
+     * @param compact the compact leaf covering {@code key}
+     * @param newSize the number of values the leaf is about to hold
+     * @return the leaf to write: {@code compact}, or the bitmap leaf that replaced it
      */
     private ByteCompactLeaf maybeLeaveSortedTier(
             final boolean prev,
