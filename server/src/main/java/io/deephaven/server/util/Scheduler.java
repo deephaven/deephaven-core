@@ -3,11 +3,9 @@
 //
 package io.deephaven.server.util;
 
-import io.deephaven.base.clock.Clock;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -15,16 +13,21 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * The Scheduler is used to schedule tasks that should execute at a future time.
+ *
+ * <p>
+ * Scheduling uses monotonic time, which is unaffected by wall-clock adjustments. Code that needs wall-clock time should
+ * use a {@link io.deephaven.base.clock.Clock} instead.
  */
-public interface Scheduler extends Clock {
+public interface Scheduler {
 
     /**
-     * Schedule this task to run at the specified time.
+     * Monotonic time for pacing work scheduled with {@link #runAfterDelay}. A task scheduled with a delay of {@code d}
+     * milliseconds does not run before {@code monotonicTimeMillis() + d}. Values are never negative and never decrease;
+     * the origin is no later than the creation of this scheduler.
      *
-     * @param epochMillis when to run this task
-     * @param command the task to run
+     * @return monotonic milliseconds
      */
-    void runAtTime(long epochMillis, @NotNull Runnable command);
+    long monotonicTimeMillis();
 
     /**
      * Schedule this task to run at the specified time.
@@ -59,13 +62,11 @@ public interface Scheduler extends Clock {
 
         private final ExecutorService serialDelegate;
         private final ScheduledExecutorService concurrentDelegate;
-        private final Clock clock;
+        private final long originNanos = System.nanoTime();
 
-        public DelegatingImpl(ExecutorService serialExecutor, ScheduledExecutorService concurrentExecutor,
-                Clock clock) {
+        public DelegatingImpl(ExecutorService serialExecutor, ScheduledExecutorService concurrentExecutor) {
             this.serialDelegate = Objects.requireNonNull(serialExecutor);
             this.concurrentDelegate = Objects.requireNonNull(concurrentExecutor);
-            this.clock = Objects.requireNonNull(clock);
         }
 
         @VisibleForTesting
@@ -81,33 +82,8 @@ public interface Scheduler extends Clock {
         }
 
         @Override
-        public long currentTimeMillis() {
-            return clock.currentTimeMillis();
-        }
-
-        @Override
-        public long currentTimeMicros() {
-            return clock.currentTimeMicros();
-        }
-
-        @Override
-        public long currentTimeNanos() {
-            return clock.currentTimeNanos();
-        }
-
-        @Override
-        public Instant instantNanos() {
-            return clock.instantNanos();
-        }
-
-        @Override
-        public Instant instantMillis() {
-            return clock.instantMillis();
-        }
-
-        @Override
-        public void runAtTime(long epochMillis, @NotNull Runnable command) {
-            runAfterDelay(epochMillis - clock.currentTimeMillis(), command);
+        public long monotonicTimeMillis() {
+            return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - originNanos);
         }
 
         @Override
