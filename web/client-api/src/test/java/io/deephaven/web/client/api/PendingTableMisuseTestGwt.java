@@ -429,6 +429,10 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
                 op -> session.mergeTables(new JsTableReference[] {JsTableReference.of(source), op}).resolve());
         consumers.put("InputTable.addTable", input::addTable);
         consumers.put("InputTable.deleteTable", input::deleteTable);
+        consumers.put("InputTable.addTables",
+                op -> input.addTables(new JsTableReference[] {JsTableReference.of(source), op}));
+        consumers.put("InputTable.deleteTables",
+                op -> input.deleteTables(new JsTableReference[] {JsTableReference.of(source), op}));
         consumers.put("shareObject",
                 op -> session.shareObject(Js.uncheckedCast(op), Js.uncheckedCast("misuse-share-" + shares++)));
         return consumers;
@@ -537,11 +541,20 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         // An operation or fetch canceled before it is defined fails its ticket, so the server fails the call as well. A
         // view's table exists on the server whatever the view does, so a call already sent with it cannot be undone:
         // the calls that only have an effect on the server keep their result, and those that make a table release it.
+        // addTables is not among the former: it merges first, and canceling an operand before the merge exists cancels
+        // the merge, and with it the add.
         runUnbatched(15_015, "later canceled", (pending, consumer) -> {
             Promise<?> result = consumer.apply(operand(pending));
             pending.cancel();
             return result;
-        }, "Operation canceled", Set.of("InputTable.addTable", "InputTable.deleteTable", "shareObject"));
+        }, "Operation canceled",
+                Set.of("InputTable.addTable", "InputTable.deleteTable", "InputTable.deleteTables", "shareObject"));
+    }
+
+    public void testLateOperandOutsideTheBatchRejects() {
+        // Used in a later task: the check made when the call is made rejects it, whatever the server still has
+        runUnbatched(15_016, "late", (pending, consumer) -> delay(500)
+                .then(ignore -> Js.uncheckedCast(consumer.apply(operand(pending)))), LATE);
     }
 
     /** A ticking table that fails on the server about a second after it starts, and an input table it fits. */
