@@ -395,8 +395,10 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
             JsPendingTable<?> pending = make.get();
             return delay(0).then(ignore -> {
                 JsPendingTable<JsResolvedTable> failed = pending.head(Js.uncheckedCast(1.0));
-                return expectRejectionWithin("an operation taking a failed chain on a " + kind + " as its operand",
-                        source.operations().whereIn(operand(failed), arr("X")).resolve(), LATE);
+                // Passed once its failed state has been released, so only the check made when chaining can catch it
+                return afterReleaseFlush().then(ignore2 -> expectRejectionWithin(
+                        "an operation taking a failed chain on a " + kind + " as its operand",
+                        source.operations().whereIn(operand(failed), arr("X")).resolve(), LATE));
             });
         });
     }
@@ -405,8 +407,10 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         runForEachKind(15_011, (kind, make) -> {
             JsPendingTable<?> pending = make.get();
             pending.cancel();
-            return expectRejectionWithin("an operation taking a canceled " + kind + " as its operand",
-                    source.operations().whereIn(operand(pending), arr("X")).resolve(), "Operation canceled");
+            // Passed once the canceled state has been released, so only the check made when chaining can catch it
+            return afterReleaseFlush().then(ignore -> expectRejectionWithin(
+                    "an operation taking a canceled " + kind + " as its operand",
+                    source.operations().whereIn(operand(pending), arr("X")).resolve(), "Operation canceled"));
         });
     }
 
@@ -513,16 +517,20 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     public void testCanceledOperandOutsideTheBatchRejects() {
+        // Passed once the canceled state has been released, so only the check made when the call is made can catch it
         runUnbatched(15_013, "canceled", (pending, consumer) -> {
             pending.cancel();
-            return consumer.apply(operand(pending));
+            return afterReleaseFlush().then(ignore -> Js.uncheckedCast(consumer.apply(operand(pending))));
         }, "Operation canceled");
     }
 
     public void testFailedOperandOutsideTheBatchRejects() {
-        // A chain that failed for late use was never sent, so nothing on the server will ever define its ticket
-        runUnbatched(15_014, "failed chain on a", (pending, consumer) -> delay(0).then(
-                ignore -> Js.uncheckedCast(consumer.apply(operand(pending.head(Js.uncheckedCast(1.0)))))), LATE);
+        // A chain that failed for late use was never sent, so nothing on the server will ever define its ticket. Passed
+        // once its failed state has been released, so only the check made when the call is made can catch it.
+        runUnbatched(15_014, "failed chain on a", (pending, consumer) -> delay(0).then(ignore -> {
+            JsPendingTable<JsResolvedTable> failed = pending.head(Js.uncheckedCast(1.0));
+            return afterReleaseFlush().then(ignore2 -> Js.uncheckedCast(consumer.apply(operand(failed))));
+        }), LATE);
     }
 
     public void testOperandCanceledAfterTheCallRejects() {

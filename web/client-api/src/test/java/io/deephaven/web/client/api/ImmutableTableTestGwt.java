@@ -457,12 +457,22 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     return session.getTable("source", null).resolve();
                 })
                 .then(resolved -> {
-                    // The ResolvedTable closed first: the Table it made still works
+                    // The ResolvedTable closed first: once its release has been flushed, the Table it made still holds
+                    // the state and reads data through it
                     JsTable table = resolved.createMutableTable();
+                    ClientTableState state = table.state();
                     resolved.close();
-                    return table.operations().resolve().then(fromTable -> {
-                        assertEquals("the table did not outlive the resolved table it came from", 5.,
-                                fromTable.getSize(), 0);
+                    return afterReleaseFlush().then(ignore -> {
+                        assertFalse("the table did not hold the state once the resolved table was closed",
+                                state.getResolution() == ClientTableState.ResolutionState.RELEASED);
+                        DataOptions.SnapshotOptions opts = new DataOptions.SnapshotOptions();
+                        opts.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 4));
+                        opts.columns = Js.cast(table.getColumns());
+                        return table.createSnapshot(opts);
+                    }).then(data -> {
+                        assertEquals(5, data.getRows().length);
+                        return table.operations().resolve();
+                    }).then(fromTable -> {
                         // The Table closed first: the ResolvedTable it came from still works
                         JsTable other = fromTable.createMutableTable();
                         other.close();

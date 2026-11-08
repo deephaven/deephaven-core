@@ -283,6 +283,16 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
     }
 
+    /**
+     * Resolves a few microtasks later, still in this task: after the client's release flush, which runs on a microtask,
+     * has dropped any state nothing holds.
+     */
+    protected static Promise<Object> afterReleaseFlush() {
+        return Promise.resolve((Object) null)
+                .then(ignore -> Promise.resolve((Object) null))
+                .then(ignore -> Promise.resolve((Object) null));
+    }
+
     /** A JS array of {@code items}, typed as whichever array the caller needs. */
     protected static <T> ReadonlyArray<T> arr(Object... items) {
         return Js.uncheckedCast(JsArray.of(items));
