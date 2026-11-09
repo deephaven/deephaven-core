@@ -1,5 +1,5 @@
 ---
-title: How do I ungroup a column created from a Python list?
+title: How do I create unrollable columns in the Python IDE?
 ---
 
 Ungrouping (sometimes called unrolling) a column of arrays expands each element into its own row. Deephaven's engine is built in Java, so the [`ungroup`](../table-operations/group-and-aggregate/ungroup.md) method works only on Java array and Deephaven Vector columns, not on Python lists. For example, the following query fails:
