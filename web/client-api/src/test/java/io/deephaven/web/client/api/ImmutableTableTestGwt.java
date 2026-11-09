@@ -344,10 +344,9 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     return session.getTable("source", null).asPromise().then(table -> {
                         JsTableOperations view = table.operations();
                         return Promise.resolve(Js.<IThenable<Object>>uncheckedCast(view)).then(result -> {
-                            if (result == view) {
-                                return Promise.reject("awaiting operations() gave the view back instead of a table");
-                            }
-                            JsResolvedTable resolved = Js.uncheckedCast(result);
+                            assertTrue("awaiting operations() did not give a ResolvedTable: " + result,
+                                    result instanceof JsResolvedTable);
+                            JsResolvedTable resolved = (JsResolvedTable) result;
                             assertEquals(5., resolved.getSize(), 0);
                             resolved.close();
                             table.close();

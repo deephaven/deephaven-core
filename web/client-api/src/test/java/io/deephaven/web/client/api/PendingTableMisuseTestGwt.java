@@ -9,6 +9,8 @@ import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.web.client.state.ClientTableState;
@@ -365,9 +367,10 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         // await a; await b; - b was not awaited in the task that created it
         runForEachKind(15_007, (kind, make) -> {
             if (kind.equals("view")) {
-                // A view whose table is already there does not leave the task on the first await, so the second is in
-                // time; one whose table is still changing would. Which one happens is timing, so neither is asserted.
-                return Promise.resolve((Object) null);
+                // A view of a table already there may answer within the task; one taken right after a filter waits
+                // for the server. The filter keeps every row, and views are the last kind, so nothing else sees it.
+                source.applyFilter(new FilterCondition[] {
+                        source.findColumn("X").filter().greaterThan(FilterValue.ofNumber(-1.0))});
             }
             JsPendingTable<?> first = made(make);
             JsPendingTable<?> second = made(make);
@@ -434,11 +437,12 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         consumers.put("InputTable.deleteTables",
                 op -> input.deleteTables(arr(JsTableReference.of(source), op)));
         consumers.put("shareObject",
-                op -> session.shareObject(Js.uncheckedCast(op), Js.uncheckedCast("misuse-share-" + shares++)));
+                op -> session.shareObject(Js.uncheckedCast(op),
+                        Js.uncheckedCast("misuse-share-" + (long) DomGlobal.performance.timeOrigin + "-" + shares++)));
         return consumers;
     }
 
-    /** Makes each shared ticket in this class distinct. */
+    /** Numbers shared tickets; the page's time origin keeps them distinct across runs on a reused server. */
     private static int shares;
 
     /** Waits for every check, then fails listing each one that failed, so one hang does not hide another. */
@@ -557,10 +561,12 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
                 .then(ignore -> Js.uncheckedCast(consumer.apply(operand(pending)))), LATE);
     }
 
-    /** A ticking table that fails on the server about a second after it starts, and an input table it fits. */
+    /** A ticking table that fails on the server once a test sets {@code fail_now}, and an input table it fits. */
     private final TableSourceBuilder failingTables = new TableSourceBuilder()
             .script("from deephaven import time_table, input_table, dtypes")
-            .script("def boom(i) -> int:\n    if i >= 5:\n        raise Exception('boom')\n    return i")
+            // Fails on the first tick after a test sets fail_now, not on a timer
+            .script("fail_now = False")
+            .script("def boom(i) -> int:\n    if fail_now:\n        raise Exception('boom')\n    return i")
             .script("failing", "time_table('PT0.2S').update(['X = boom(ii)'])")
             .script("failing_input",
                     "input_table(col_defs={'Timestamp': dtypes.Instant, 'X': dtypes.int64})");
@@ -574,12 +580,15 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
 
     /** Starts {@code round} every 50ms, {@code left} more times, collecting what each start returns. */
     private static Promise<Object> everyFiftyMs(int left, Supplier<List<Promise<Boolean>>> round,
-            List<Promise<Boolean>> started) {
+            List<Promise<Boolean>> started, int failAt, Runnable fail) {
+        if (left == failAt) {
+            fail.run();
+        }
         started.addAll(round.get());
         if (left == 0) {
             return Promise.resolve((Object) null);
         }
-        return delay(50).then(ignore -> everyFiftyMs(left - 1, round, started));
+        return delay(50).then(ignore -> everyFiftyMs(left - 1, round, started, failAt, fail));
     }
 
     /** Waits for every call; resolves to {succeeded, failed}, or rejects with the first that did not settle. */
@@ -636,6 +645,7 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
                         ClientTableState state = failing.state();
                         JsPendingTable<JsResolvedTable> view = failing.operations();
                         String what = "a view used after its table failed";
+                        session.runCode("fail_now = True");
                         return Promise.resolve(waitFor(
                                 () -> state.getResolution() == ClientTableState.ResolutionState.FAILED, 100, 5_000,
                                 (Object) null))
@@ -653,8 +663,9 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     public void testCallsRacingAnOperandFailureSettle() {
-        // Calls made before, during and after the operand fails: whichever of client and server notices first, each
-        // call must settle, and none may hold anything afterwards
+        // A smoke test: calls made before, around and after the operand fails on the server, whichever of client and
+        // server notices first, each settle, and no batch state is left held afterwards. The failure is set off
+        // halfway through the rounds.
         errorLogsDontFail();
         connect(failingTables)
                 .then(session -> {
@@ -680,7 +691,8 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
                                             })));
                                     return calls;
                                 };
-                                return everyFiftyMs(60, round, started)
+                                return everyFiftyMs(60, round, started, 30,
+                                        () -> session.runCode("fail_now = True"))
                                         .then(ignore -> countSucceeded(started))
                                         .then(counts -> {
                                             // The rounds must span the failure for the race to have been run
