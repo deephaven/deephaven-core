@@ -109,8 +109,10 @@ are included. `--merges` would silently skip any PR that was squash-merged or re
 
 The commit titles are the primary triage input — each represents a PR or direct commit that
 landed, and the Conventional Commits prefix (`feat:`, `fix:`, `perf:`, `chore:`, `docs:`,
-`test:`, `refactor:`) tells you its intent. The `--name-status` diff tells you what files
-actually changed.
+`test:`, `refactor:`) tells you its intent. Some commits use `no-ticket:` instead of a ticket
+ID — these follow the same prefix convention but lack a tracking ticket. Treat them identically
+to ticketed commits for triage purposes. The `--name-status` diff tells you what files actually
+changed.
 
 ### Filter out reverted changes on main
 
@@ -299,6 +301,8 @@ deployment requirements, and a `refactor:` can rename a public API.
 
 - **`feat:`** that might be internal-only (new test infrastructure, build tooling).
 - **`fix:`** where it's unclear if docs described the buggy or correct behavior.
+- **`no-ticket:`** commits — these lack a tracking ticket, so the intent may be less clear from
+  the title alone. Inspect the diff to determine scope.
 - Any commit whose title doesn't clearly indicate scope.
 
 ## 3. Second pass: analyze user-facing changes in detail
@@ -415,6 +419,24 @@ Classify each item:
   will pick up automatically; no prose doc changes needed unless the feature is complex enough
   to warrant a how-to or concept guide.
 
+### Identify documentation categories
+
+For each item that needs documentation (new page or updates), identify which documentation
+category or categories the work falls into. The four categories are defined in
+`ref-deephaven-doc-categories` and correspond to directory paths:
+
+| Category | Directory | When to use |
+|---|---|---|
+| **Tutorial** | `docs/{python,groovy}/getting-started/crash-course/` | Only if the change affects the Crash Course's linear walkthrough |
+| **How-to guide** | `docs/{python,groovy}/how-to-guides/` | Step-by-step instructions for a specific task — most new features need at least one |
+| **Concept guide** | `docs/{python,groovy}/conceptual/` | Explains how or why something works — new subsystems, architectural changes, new mental models |
+| **Reference** | `docs/{python,groovy}/reference/` | API reference pages, configuration reference, enumerable facts |
+
+A single change can need work in multiple categories — e.g., a new table operation might need
+a how-to guide (how to use it), a reference page (parameters, return type), and an update to a
+concept guide (how it fits into the table operations model). Tag each item with its applicable
+categories in the report.
+
 ## 5. Write the report
 
 Structure the output as:
@@ -436,6 +458,7 @@ the next release ships. Group by priority.
 
 - **PR(s):** <commit title(s) and PR number(s)>
 - **What changed:** <specific description of the user-facing change>
+- **Categories:** <Tutorial | How-to guide | Concept guide | Reference — one or more>
 - **Where in docs:** <existing page to update, or "new page needed" with suggested location>
 - **What to document:** <specific content needed — parameters, examples, migration notes>
 
