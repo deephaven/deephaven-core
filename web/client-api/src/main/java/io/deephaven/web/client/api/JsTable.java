@@ -71,6 +71,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ActiveTableBinding;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
+import io.deephaven.web.client.state.Revivable;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsProvider;
@@ -107,7 +108,7 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * </ol>
  */
 @TsName(namespace = "dh", name = "Table")
-public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject {
+public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject, Revivable {
     /**
      * The table size has updated, so live scrollbars and the like can be updated accordingly.
      */
@@ -163,21 +164,25 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * This table has lost its connection to the server. Events will not fire and data will not update until the
-     * connection is reestablished, at which point {@link #EVENT_RECONNECT} will fire. A reconnect will be attempted
-     * automatically.
+     * connection is reestablished, at which point {@link #EVENT_RECONNECT} will fire, or {@link #EVENT_RECONNECTFAILED}
+     * if this table cannot be re-established. A reconnect will be attempted automatically. Subscriptions made from this
+     * table report their own lifecycle with the same event names.
      */
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_DISCONNECT = "disconnect";
 
     /**
      * This table has reconnected to the server, and data will update again. Any viewport or subscription that was
-     * active before the disconnect is restored.
+     * active before the disconnect has been re-requested; its data follows in {@code updated} events on the object it
+     * was subscribed through, this table or the subscription.
      */
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_RECONNECT = "reconnect";
 
     /**
-     * This table failed to reconnect to the server. The {@code event.detail} value describes the failure.
+     * This table could not be re-established after a reconnect and cannot be used again; fetch a new one. The
+     * {@code event.detail} value describes the failure. This says nothing about the connection as a whole: other tables
+     * may have reconnected.
      */
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_RECONNECTFAILED = "reconnectfailed";
