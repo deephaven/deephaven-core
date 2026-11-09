@@ -120,6 +120,7 @@ public class ReplicateSourceAndChunkTests {
         lines = removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
         lines = globalReplacements(lines,
                 "NULL_OBJECT", "null",
+                "\\(Object\\) random.nextInt\\(1000\\)", "Integer.toString(random.nextInt(1000))",
                 "ObjectAdaptiveSparseArraySource makeTestSource",
                 "ObjectAdaptiveSparseArraySource<Object> makeTestSource",
                 "new ObjectAdaptiveSparseArraySource\\(\\)", "new ObjectAdaptiveSparseArraySource<>(Object.class)",

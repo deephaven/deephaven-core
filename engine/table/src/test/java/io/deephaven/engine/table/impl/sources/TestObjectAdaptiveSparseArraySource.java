@@ -121,7 +121,7 @@ public class TestObjectAdaptiveSparseArraySource extends AbstractObjectColumnSou
     }
 
     private static Object randomValue(final Random random) {
-        return (Object) random.nextInt(1000);
+        return Integer.toString(random.nextInt(1000));
     }
 
     private static void checkValue(final String message, final Object expected, final Object actual) {
