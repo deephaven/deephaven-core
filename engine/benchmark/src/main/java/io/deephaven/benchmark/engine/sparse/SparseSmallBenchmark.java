@@ -6,8 +6,6 @@ package io.deephaven.benchmark.engine.sparse;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -17,7 +15,6 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import org.openjdk.jmh.annotations.*;
 
@@ -26,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Measures populating and reading small results in each storage of {@link SparseStorage}, in the shapes of
- * {@link SparseSmallMemory}.
+ * {@link SparsePatterns#smallKeys(String, int)}.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -62,9 +59,8 @@ public class SparseSmallBenchmark {
 
     @Setup(Level.Trial)
     public void setupTrial() {
-        executionContext = TestExecutionContext.createForUnitTests().open();
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        keys = SparseSmallMemory.keys(shape, size);
+        executionContext = SparseStorage.openContext();
+        keys = SparsePatterns.smallKeys(shape, size);
         source = SparseStorage.populate(storage, keys);
         final Random random = new Random(0);
         randomKeys = new long[RANDOM_READS];

@@ -7,8 +7,6 @@ import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -20,7 +18,6 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import org.openjdk.jmh.annotations.*;
 
@@ -30,8 +27,8 @@ import java.util.concurrent.TimeUnit;
 import static io.deephaven.benchmark.engine.sparse.SparseStorage.CHUNK_SIZE;
 
 /**
- * Measures populating and reading each storage of {@link SparseStorage} for each of its row patterns. Each benchmark
- * reports milliseconds per invocation; divide by the row counts the trial prints to compare patterns.
+ * Measures populating and reading each storage of {@link SparseStorage} for each pattern of {@link SparsePatterns}.
+ * Each benchmark reports milliseconds per invocation; divide by the row counts the trial prints to compare patterns.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -67,10 +64,9 @@ public class SparseStorageBenchmark {
 
     @Setup(Level.Trial)
     public void setupTrial() {
-        executionContext = TestExecutionContext.createForUnitTests().open();
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
+        executionContext = SparseStorage.openContext();
 
-        keys = SparseStorage.keys(pattern);
+        keys = SparsePatterns.keys(pattern);
         source = SparseStorage.populate(storage, keys);
 
         final Random random = new Random(0);

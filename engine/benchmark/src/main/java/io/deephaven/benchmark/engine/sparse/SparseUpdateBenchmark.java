@@ -8,17 +8,15 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseMemoryColumnSourceFactory;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -38,24 +36,15 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
-
 /**
  * Measures {@code update()} into sparse array sources that hold every leaf as a full block, or into adaptive sparse
  * array sources with compact leaves, selected by {@link SparseMemoryColumnSourceFactory#USE_ADAPTIVE}, for a refreshing
- * parent whose row keys follow a pattern over a window of {@link SparseStorage#keySpace(String)} row keys, which holds
- * at least about {@link SparseStorage#MIN_ROWS} rows:
- * <ul>
- * <li>Dense: every row key</li>
- * <li>Stride8, Stride64, Stride512: every 8th, 64th or 512th row key</li>
- * <li>Random1: each row key with probability 1%</li>
- * <li>Clustered: an eighth of the leaves full, and up to 4 row keys in each other leaf</li>
- * </ul>
+ * parent whose row keys follow a pattern of {@link SparsePatterns} over a window of
+ * {@link SparsePatterns#keySpace(String)} row keys, which holds at least about {@link SparsePatterns#MIN_ROWS} rows.
  * The benchmarks are:
  * <ul>
  * <li>{@link #initialUpdate()}: computing the result of the whole parent</li>
@@ -64,7 +53,7 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * <li>{@link #modifyCycle()}: a cycle that reports every parent row within a cycle span of row keys as modified, so
  * that the result recomputes them and records their previous values</li>
  * </ul>
- * A cycle span is {@code 2^logCycleRows} times {@link SparseStorage#keysPerRow(String)} row keys, so that each cycle
+ * A cycle span is {@code 2^logCycleRows} times {@link SparsePatterns#keysPerRow(String)} row keys, so that each cycle
  * changes about {@code 2^logCycleRows} rows whatever the pattern. The parent's value column is computed from the row
  * key, so the measured work is the result's. The retained size that {@link SparseArrayColumnSource#estimateSize()}
  * reports for the result column is printed at the end of each trial.
@@ -79,32 +68,13 @@ public class SparseUpdateBenchmark {
     private static final String FORMULA = "X = V * 2.0";
 
     /**
-     * A long column whose value at a row key is the row key.
+     * A long column whose value at a row key is the row key, which reports itself as mutable, as a refreshing table's
+     * column would, so that {@code update()} recomputes the rows that each cycle modifies.
      */
-    private static final class ComputedSource extends AbstractColumnSource<Long>
-            implements MutableColumnSourceGetDefaults.ForLong {
-        private ComputedSource() {
-            super(long.class);
-        }
-
-        @Override
-        public long getLong(final long rowKey) {
-            return rowKey;
-        }
-
-        @Override
-        public long getPrevLong(final long rowKey) {
-            return rowKey;
-        }
-
+    private static final class RowKeyValues extends RowKeyColumnSource {
         @Override
         public boolean isImmutable() {
             return false;
-        }
-
-        @Override
-        public boolean isStateless() {
-            return true;
         }
     }
 
@@ -145,9 +115,9 @@ public class SparseUpdateBenchmark {
         // each initialUpdate must build a new result rather than return the memoized one
         QueryTable.setMemoizeResults(false);
 
-        window = SparseStorage.keySpace(pattern);
-        cycleKeys = (1L << logCycleRows) * SparseStorage.keysPerRow(pattern);
-        parent = new QueryTable(keys(pattern, 0, window).toTracking(), Map.of("V", new ComputedSource()));
+        window = SparsePatterns.keySpace(pattern);
+        cycleKeys = (1L << logCycleRows) * SparsePatterns.keysPerRow(pattern);
+        parent = new QueryTable(SparsePatterns.keys(pattern, 0, window).toTracking(), Map.of("V", new RowKeyValues()));
         parent.setRefreshing(true);
         valuesModified = parent.newModifiedColumnSet("V");
         result = locked(() -> parent.update(FORMULA));
@@ -180,8 +150,8 @@ public class SparseUpdateBenchmark {
     public Table marchCycle() {
         final long removeStart = windowStart;
         updateGraph.runWithinUnitTestCycle(() -> {
-            final RowSet removed = keys(pattern, removeStart, removeStart + cycleKeys);
-            final RowSet added = keys(pattern, removeStart + window, removeStart + window + cycleKeys);
+            final RowSet removed = SparsePatterns.keys(pattern, removeStart, removeStart + cycleKeys);
+            final RowSet added = SparsePatterns.keys(pattern, removeStart + window, removeStart + window + cycleKeys);
             final WritableRowSet rowSet = parent.getRowSet().writableCast();
             rowSet.remove(removed);
             rowSet.insert(added);
@@ -196,76 +166,12 @@ public class SparseUpdateBenchmark {
     public Table modifyCycle() {
         final long first = windowStart + modifyStart;
         updateGraph.runWithinUnitTestCycle(() -> {
-            final RowSet modified = keys(pattern, first, first + cycleKeys);
+            final RowSet modified = SparsePatterns.keys(pattern, first, first + cycleKeys);
             parent.notifyListeners(new TableUpdateImpl(RowSetFactory.empty(), RowSetFactory.empty(), modified,
                     RowSetShiftData.EMPTY, valuesModified));
         });
         modifyStart = (modifyStart + cycleKeys) % window;
         return result;
-    }
-
-    /**
-     * @return the row keys of {@code pattern} from {@code start} (inclusive) to {@code end} (exclusive), both multiples
-     *         of the block size
-     */
-    static WritableRowSet keys(final String pattern, final long start, final long end) {
-        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        switch (pattern) {
-            case "Dense":
-                return RowSetFactory.fromRange(start, end - 1);
-            case "Stride8":
-                return stride(start, end, 8);
-            case "Stride64":
-                return stride(start, end, 64);
-            case "Stride512":
-                return stride(start, end, 512);
-            case "Random1":
-                for (long key = start; key < end; ++key) {
-                    if (Long.remainderUnsigned(mix(key), 100) == 0) {
-                        builder.appendKey(key);
-                    }
-                }
-                return builder.build();
-            case "Clustered":
-                for (long leafStart = start; leafStart < end; leafStart += BLOCK_SIZE) {
-                    if (Long.remainderUnsigned(mix(leafStart), 8) == 0) {
-                        builder.appendRange(leafStart, leafStart + BLOCK_SIZE - 1);
-                    } else {
-                        // up to 4 distinct offsets, appended in order
-                        final long offsets = mix(leafStart + 1);
-                        long previous = -1;
-                        final long[] sorted = new long[4];
-                        for (int ii = 0; ii < 4; ++ii) {
-                            sorted[ii] = (offsets >>> (ii * 10)) & (BLOCK_SIZE - 1);
-                        }
-                        Arrays.sort(sorted);
-                        for (final long offset : sorted) {
-                            if (offset != previous) {
-                                builder.appendKey(leafStart + offset);
-                                previous = offset;
-                            }
-                        }
-                    }
-                }
-                return builder.build();
-            default:
-                throw new IllegalArgumentException("Unknown pattern " + pattern);
-        }
-    }
-
-    private static WritableRowSet stride(final long start, final long end, final int stride) {
-        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        for (long key = start; key < end; key += stride) {
-            builder.appendKey(key);
-        }
-        return builder.build();
-    }
-
-    private static long mix(final long key) {
-        long value = key * 0x9E3779B97F4A7C15L;
-        value ^= value >>> 32;
-        value *= 0xD6E8FEB86659FD93L;
-        return value ^ (value >>> 32);
     }
 
     private static <T> T locked(final Supplier<T> operation) {

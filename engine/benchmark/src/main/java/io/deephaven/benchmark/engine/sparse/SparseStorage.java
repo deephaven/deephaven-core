@@ -5,10 +5,10 @@ package io.deephaven.benchmark.engine.sparse;
 
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleAdaptiveSparseArraySource;
@@ -17,14 +17,18 @@ import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableLong;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Random;
-
-import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.util.function.Supplier;
 
 /**
- * The storages and row patterns compared by {@link SparseStorageBenchmark} and {@link SparseStorageMemory}.
+ * The storages that the sparse benchmarks compare, holding the row keys of {@link SparsePatterns}, and how to measure
+ * the heap they retain.
  * <p>
  * Storages:
  * <ul>
@@ -36,112 +40,13 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * <li>AdaptiveFull: {@link DoubleAdaptiveSparseArraySource} with every leaf a full block, as the factory methods of
  * {@link SparseArrayColumnSource} create it</li>
  * </ul>
- * Each pattern spans {@link #keySpace(String)} row keys, at least {@link #MIN_KEY_SPACE} and enough for about
- * {@link #MIN_ROWS} rows, so that every measurement covers at least that many rows:
- * <ul>
- * <li>Dense: every row key</li>
- * <li>Stride8, Stride64, Stride512: every 8th, 64th or 512th row key</li>
- * <li>Runs64: the first 64 row keys of every 512</li>
- * <li>Random10, Random1: each row key with probability 10% or 1%</li>
- * <li>Clustered: an eighth of the leaves full, and 4 random row keys in each other leaf</li>
- * </ul>
  */
 final class SparseStorage {
-    /** The fewest rows a pattern holds, about. */
-    static final int MIN_ROWS = 1 << 20;
-    /** The fewest row keys a pattern spans. */
-    static final long MIN_KEY_SPACE = 1L << 23;
     static final int CHUNK_SIZE = 4096;
 
+    private static final MemoryMXBean MEMORY = ManagementFactory.getMemoryMXBean();
+
     private SparseStorage() {}
-
-    /**
-     * @return the mean number of row keys {@code pattern} spans for each row it holds, rounded to an integer
-     */
-    static int keysPerRow(final String pattern) {
-        switch (pattern) {
-            case "Dense":
-                return 1;
-            case "Stride8":
-            case "Runs64":
-            case "Clustered":
-                return 8;
-            case "Stride64":
-                return 64;
-            case "Stride512":
-                return 512;
-            case "Random10":
-                return 10;
-            case "Random1":
-                return 100;
-            default:
-                throw new IllegalArgumentException("Unknown pattern " + pattern);
-        }
-    }
-
-    /**
-     * @return the number of row keys {@code pattern} spans from 0: at least {@link #MIN_KEY_SPACE}, and enough for
-     *         about {@link #MIN_ROWS} rows; a multiple of the block size
-     */
-    static long keySpace(final String pattern) {
-        return Math.max(MIN_KEY_SPACE, (long) MIN_ROWS * keysPerRow(pattern));
-    }
-
-    static RowSet keys(final String pattern) {
-        final long keySpace = keySpace(pattern);
-        final Random random = new Random(0);
-        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        switch (pattern) {
-            case "Dense":
-                return RowSetFactory.flat(keySpace);
-            case "Stride8":
-                return stride(keySpace, 8);
-            case "Stride64":
-                return stride(keySpace, 64);
-            case "Stride512":
-                return stride(keySpace, 512);
-            case "Runs64":
-                for (long key = 0; key < keySpace; key += 512) {
-                    builder.appendRange(key, key + 63);
-                }
-                return builder.build();
-            case "Random10":
-                return random(random, keySpace, 10);
-            case "Random1":
-                return random(random, keySpace, 100);
-            case "Clustered":
-                for (long leafStart = 0; leafStart < keySpace; leafStart += BLOCK_SIZE) {
-                    if (random.nextInt(8) == 0) {
-                        builder.appendRange(leafStart, leafStart + BLOCK_SIZE - 1);
-                    } else {
-                        final long start = leafStart;
-                        random.ints(0, BLOCK_SIZE).distinct().limit(4).sorted()
-                                .forEach(offset -> builder.appendKey(start + offset));
-                    }
-                }
-                return builder.build();
-            default:
-                throw new IllegalArgumentException("Unknown pattern " + pattern);
-        }
-    }
-
-    private static RowSet stride(final long keySpace, final int stride) {
-        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        for (long key = 0; key < keySpace; key += stride) {
-            builder.appendKey(key);
-        }
-        return builder.build();
-    }
-
-    private static RowSet random(final Random random, final long keySpace, final int oneIn) {
-        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        for (long key = 0; key < keySpace; ++key) {
-            if (random.nextInt(oneIn) == 0) {
-                builder.appendKey(key);
-            }
-        }
-        return builder.build();
-    }
 
     /**
      * Create an empty storage that will hold {@code expectedSize} values.
@@ -174,6 +79,18 @@ final class SparseStorage {
         final WritableRowRedirection redirection = storage.equals("Redirected")
                 ? (WritableRowRedirection) ((WritableRedirectedColumnSource<Double>) source).getRowRedirection()
                 : null;
+        fill(source, keys, redirection);
+        return source;
+    }
+
+    /**
+     * Write the position of each key of {@code keys}, from 0, as its value in {@code source}, a chunk at a time, first
+     * mapping each key to its position in {@code redirection}, if not null.
+     */
+    static void fill(
+            final WritableColumnSource<Double> source,
+            final RowSet keys,
+            @Nullable final WritableRowRedirection redirection) {
         long nextPosition = 0;
         try (final ChunkSink.FillFromContext context = source.makeFillFromContext(CHUNK_SIZE);
                 final WritableDoubleChunk<Values> values = WritableDoubleChunk.makeWritableChunk(CHUNK_SIZE);
@@ -193,6 +110,51 @@ final class SparseStorage {
                 nextPosition += size;
             }
         }
-        return source;
+    }
+
+    /**
+     * @return an open execution context whose update graph is in unit test mode, as the storages need outside an update
+     *         cycle
+     */
+    static SafeCloseable openContext() {
+        final SafeCloseable context = TestExecutionContext.createForUnitTests().open();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
+        return context;
+    }
+
+    /**
+     * @return the heap that the sources {@code populate} creates retain: the heap in use after creating them less the
+     *         heap in use before, each once a full collection stops reducing it. Each source must hold 0 at the first
+     *         key of {@code keys}.
+     */
+    static long retainedHeap(final Supplier<WritableColumnSource<Double>[]> populate, final RowSet keys)
+            throws InterruptedException {
+        final long before = usedAfterGc();
+        final WritableColumnSource<Double>[] sources = populate.get();
+        final long retained = usedAfterGc() - before;
+        // read the sources after measuring, so that they are retained through the measurement
+        for (final WritableColumnSource<Double> source : sources) {
+            if (source.getDouble(keys.firstRowKey()) != 0) {
+                throw new IllegalStateException("Unexpected first value");
+            }
+        }
+        return retained;
+    }
+
+    /**
+     * @return the heap in use once a full collection stops reducing it
+     */
+    private static long usedAfterGc() throws InterruptedException {
+        long last = Long.MAX_VALUE;
+        for (int attempt = 0; attempt < 20; ++attempt) {
+            System.gc();
+            Thread.sleep(100);
+            final long used = MEMORY.getHeapMemoryUsage().getUsed();
+            if (Math.abs(last - used) < 64 * 1024) {
+                return used;
+            }
+            last = used;
+        }
+        return last;
     }
 }
