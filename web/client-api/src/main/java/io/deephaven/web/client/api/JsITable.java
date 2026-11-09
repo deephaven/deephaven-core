@@ -90,7 +90,6 @@ public interface JsITable {
      * Signals that the table will no longer be used and server resources should be cleaned up. Logs a warning if called
      * more than once.
      */
-    // TODO support Symbol.dispose, if present
     @JsMethod
     void close();
 
