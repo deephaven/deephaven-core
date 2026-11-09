@@ -1016,7 +1016,8 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         try:
             formulas = to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
-                # An empty list goes to Java as an empty collection, which adds no columns.
+                # Selectable objects go to Java as a collection. An empty list does too, which adds no columns.
+                # Strings go to Java one by one.
                 if not formulas or isinstance(formulas[0], Selectable.j_object_type):
                     return self._wrap_result(
                         self.j_object.update(j_array_list(formulas))
