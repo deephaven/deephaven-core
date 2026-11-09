@@ -67,24 +67,14 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         ops = [PartitionedTableProxy.head, PartitionedTableProxy.tail]
         for op in ops:
             with self.subTest(op):
-                pt_proxy = op(self.pt_proxy, 5)
-                constituent_tables = pt_proxy.target.constituent_tables
-                for ct in constituent_tables:
-                    self.assertGreaterEqual(5, ct.size)
+                self.assert_matches_per_constituent(
+                    op(self.pt_proxy, 5), lambda ct: getattr(ct, op.__name__)(5)
+                )
 
     def test_reverse(self):
-        pt_proxy = self.pt_proxy.reverse()
-        for ct, rct in zip(
-            self.pt_proxy.target.constituent_tables, pt_proxy.target.constituent_tables
-        ):
-            self.assertEqual(
-                ct.to_string(num_rows=1),
-                rct.tail(num_rows=1).to_string(num_rows=1),
-            )
-            self.assertEqual(
-                ct.tail(num_rows=1).to_string(num_rows=1),
-                rct.to_string(num_rows=1),
-            )
+        self.assert_matches_per_constituent(
+            self.pt_proxy.reverse(), lambda ct: ct.reverse()
+        )
 
     def test_snapshot(self):
         snapshot_proxy = self.pt_proxy.snapshot()
@@ -123,31 +113,23 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             )
 
     def test_sort(self):
-        sorted_pt_proxy = self.pt_proxy.sort(
-            order_by=["a", "b"],
-            order=[SortDirection.DESCENDING, SortDirection.ASCENDING],
+        order = [SortDirection.DESCENDING, SortDirection.ASCENDING]
+        self.assert_matches_per_constituent(
+            self.pt_proxy.sort(order_by=["a", "b"], order=order),
+            lambda ct: ct.sort(order_by=["a", "b"], order=order),
         )
-        for ct, sorted_ct in zip(
-            self.pt_proxy.target.constituent_tables,
-            sorted_pt_proxy.target.constituent_tables,
-        ):
-            self.assertEqual(ct.size, sorted_ct.size)
 
     def test_sort_descending(self):
-        sorted_pt_proxy = self.pt_proxy.sort_descending(order_by=["a", "b"])
-        for ct, sorted_ct in zip(
-            self.pt_proxy.target.constituent_tables,
-            sorted_pt_proxy.target.constituent_tables,
-        ):
-            self.assertEqual(ct.size, sorted_ct.size)
+        self.assert_matches_per_constituent(
+            self.pt_proxy.sort_descending(order_by=["a", "b"]),
+            lambda ct: ct.sort_descending(order_by=["a", "b"]),
+        )
 
     def test_where(self):
-        filtered_pt_proxy = self.pt_proxy.where(filters=["a > 10", "b < 100"])
-        for ct, filtered_ct in zip(
-            self.pt_proxy.target.constituent_tables,
-            filtered_pt_proxy.target.constituent_tables,
-        ):
-            self.assertLessEqual(filtered_ct.size, ct.size)
+        filters = ["a > 10", "b < 100"]
+        self.assert_matches_per_constituent(
+            self.pt_proxy.where(filters=filters), lambda ct: ct.where(filters=filters)
+        )
 
     def test_where_in(self):
         unique_table = self.test_table.head(num_rows=50).select_distinct(
@@ -185,31 +167,22 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             PartitionedTableProxy.update_view,
             PartitionedTableProxy.select,
         ]
+        formulas = ["a", "c", "Sum = a + b + c + d"]
         for op in ops:
             with self.subTest(op=op):
-                result_pt_proxy = op(
-                    self.pt_proxy, formulas=["a", "c", "Sum = a + b + c + d"]
+                self.assert_matches_per_constituent(
+                    op(self.pt_proxy, formulas=formulas),
+                    lambda ct: getattr(ct, op.__name__)(formulas=formulas),
                 )
-                for rct, ct in zip(
-                    result_pt_proxy.target.constituent_tables,
-                    self.pt_proxy.target.constituent_tables,
-                ):
-                    self.assertTrue(len(rct.definition) >= 3)
-                    self.assertLessEqual(rct.size, ct.size)
 
     def test_select_distinct(self):
-        unique_pt_proxy = self.pt_proxy.select_distinct(formulas=["a"])
-        for uct, ct in zip(
-            unique_pt_proxy.target.constituent_tables,
-            self.pt_proxy.target.constituent_tables,
-        ):
-            self.assertLessEqual(uct.size, ct.size)
-        unique_pt_proxy = self.pt_proxy.select_distinct()
-        for uct, ct in zip(
-            unique_pt_proxy.target.constituent_tables,
-            self.pt_proxy.target.constituent_tables,
-        ):
-            self.assertLessEqual(uct.size, ct.size)
+        self.assert_matches_per_constituent(
+            self.pt_proxy.select_distinct(formulas=["a"]),
+            lambda ct: ct.select_distinct(formulas=["a"]),
+        )
+        self.assert_matches_per_constituent(
+            self.pt_proxy.select_distinct(), lambda ct: ct.select_distinct()
+        )
 
     def test_natural_join(self):
         with self.subTest("Join with a Table"):
@@ -217,11 +190,11 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 self.test_table.drop_columns(["d", "e"]).partition_by("c").proxy()
             )
             right_table = self.test_table.drop_columns(["b", "c"]).head(5)
-            joined_pt_proxy = pt_proxy.natural_join(
-                right_table, on="a", joins=["d", "e"]
+            self.assert_matches_per_constituent(
+                pt_proxy.natural_join(right_table, on="a", joins=["d", "e"]),
+                lambda ct: ct.natural_join(right_table, on="a", joins=["d", "e"]),
+                source=pt_proxy,
             )
-            for ct in joined_pt_proxy.target.constituent_tables:
-                self.assertEqual(len(ct.definition), 5)
 
         with self.subTest("Join with another Proxy"):
             with self.assertRaises(DHError) as cm:
@@ -264,14 +237,11 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 self.test_table.drop_columns(["d", "e"]).partition_by("c").proxy()
             )
             right_table = self.test_table.drop_columns(["b", "c"]).group_by("a")
-            joined_pt_proxy = pt_proxy.exact_join(right_table, on="a", joins=["d", "e"])
-            for ct, jct in zip(
-                pt_proxy.target.constituent_tables,
-                joined_pt_proxy.target.constituent_tables,
-            ):
-                self.assertEqual(len(jct.definition), 5)
-                self.assertEqual(ct.size, jct.size)
-                self.assertLessEqual(jct.size, right_table.size)
+            self.assert_matches_per_constituent(
+                pt_proxy.exact_join(right_table, on="a", joins=["d", "e"]),
+                lambda ct: ct.exact_join(right_table, on="a", joins=["d", "e"]),
+                source=pt_proxy,
+            )
 
         with self.subTest("Join with another Proxy"):
             pt_proxy = (
@@ -302,23 +272,17 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 .head(5)
             )
             with self.subTest("with some join keys"):
-                joined_pt_proxy = pt_proxy.join(right_table, on="a", joins=["d", "e"])
-                self.assertTrue(
-                    [
-                        ct
-                        for ct in joined_pt_proxy.target.constituent_tables
-                        if ct.size < 5
-                    ]
+                self.assert_matches_per_constituent(
+                    pt_proxy.join(right_table, on="a", joins=["d", "e"]),
+                    lambda ct: ct.join(right_table, on="a", joins=["d", "e"]),
+                    source=pt_proxy,
                 )
 
             with self.subTest("with no join keys"):
-                joined_pt_proxy = pt_proxy.join(right_table, joins="e")
-                self.assertTrue(
-                    [
-                        ct
-                        for ct in joined_pt_proxy.target.constituent_tables
-                        if ct.size > 5
-                    ]
+                self.assert_matches_per_constituent(
+                    pt_proxy.join(right_table, joins="e"),
+                    lambda ct: ct.join(right_table, joins="e"),
+                    source=pt_proxy,
                 )
 
         with self.subTest("Join with another Proxy"):
@@ -346,25 +310,21 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 .head(5)
             )
             with self.subTest("with some join keys"):
-                joined_pt_proxy = pt_proxy.join(
-                    right_table, on="a", joins=["d", "e"], reserve_bits=2
-                )
-                self.assertTrue(
-                    [
-                        ct
-                        for ct in joined_pt_proxy.target.constituent_tables
-                        if ct.size < 5
-                    ]
+                self.assert_matches_per_constituent(
+                    pt_proxy.join(
+                        right_table, on="a", joins=["d", "e"], reserve_bits=2
+                    ),
+                    lambda ct: ct.join(
+                        right_table, on="a", joins=["d", "e"], reserve_bits=2
+                    ),
+                    source=pt_proxy,
                 )
 
             with self.subTest("with no join keys"):
-                joined_pt_proxy = pt_proxy.join(right_table, joins="e", reserve_bits=2)
-                self.assertTrue(
-                    [
-                        ct
-                        for ct in joined_pt_proxy.target.constituent_tables
-                        if ct.size > 5
-                    ]
+                self.assert_matches_per_constituent(
+                    pt_proxy.join(right_table, joins="e", reserve_bits=2),
+                    lambda ct: ct.join(right_table, joins="e", reserve_bits=2),
+                    source=pt_proxy,
                 )
 
         with self.subTest("Join with another Proxy"):
@@ -402,41 +362,27 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             )
 
             with self.subTest("as-of join"):
-                joined_pt_proxy = pt_proxy.aj(right_table, on=["a"])
-                self.assertTrue(
-                    [
-                        ct
-                        for ct in joined_pt_proxy.target.constituent_tables
-                        if ct.size > 0
-                    ]
+                self.assert_matches_per_constituent(
+                    pt_proxy.aj(right_table, on=["a"]),
+                    lambda ct: ct.aj(right_table, on=["a"]),
+                    source=pt_proxy,
                 )
-
-                joined_pt_proxy = pt_proxy.aj(right_table, on=["a > a"], joins="e")
-                self.assertTrue(
-                    [
-                        ct
-                        for ct in joined_pt_proxy.target.constituent_tables
-                        if ct.size > 0
-                    ]
+                self.assert_matches_per_constituent(
+                    pt_proxy.aj(right_table, on=["a > a"], joins="e"),
+                    lambda ct: ct.aj(right_table, on=["a > a"], joins="e"),
+                    source=pt_proxy,
                 )
 
             with self.subTest("reverse as-of join"):
-                joined_pt_proxy = pt_proxy.raj(right_table, on=["a"])
-                self.assertTrue(
-                    [
-                        ct
-                        for ct in joined_pt_proxy.target.constituent_tables
-                        if ct.size > 0
-                    ]
+                self.assert_matches_per_constituent(
+                    pt_proxy.raj(right_table, on=["a"]),
+                    lambda ct: ct.raj(right_table, on=["a"]),
+                    source=pt_proxy,
                 )
-
-                joined_pt_proxy = pt_proxy.raj(right_table, on=["a < a"], joins="e")
-                self.assertTrue(
-                    [
-                        ct
-                        for ct in joined_pt_proxy.target.constituent_tables
-                        if ct.size > 0
-                    ]
+                self.assert_matches_per_constituent(
+                    pt_proxy.raj(right_table, on=["a < a"], joins="e"),
+                    lambda ct: ct.raj(right_table, on=["a < a"], joins="e"),
+                    source=pt_proxy,
                 )
 
         with self.subTest("Join with another Proxy"):
@@ -471,28 +417,20 @@ class PartitionedTableProxyTestCase(BaseTestCase):
 
     def test_group_by(self):
         with self.subTest("with some columns"):
-            grouped_pt_proxy = self.pt_proxy.group_by(by=["a", "b"])
-            for gct, ct in zip(
-                grouped_pt_proxy.target.constituent_tables,
-                self.pt_proxy.target.constituent_tables,
-            ):
-                self.assertLessEqual(gct.size, ct.size)
+            self.assert_matches_per_constituent(
+                self.pt_proxy.group_by(by=["a", "b"]),
+                lambda ct: ct.group_by(by=["a", "b"]),
+            )
         with self.subTest("with no columns"):
-            grouped_pt_proxy = self.pt_proxy.group_by()
-            for gct, ct in zip(
-                grouped_pt_proxy.target.constituent_tables,
-                self.pt_proxy.target.constituent_tables,
-            ):
-                self.assertLessEqual(gct.size, ct.size)
+            self.assert_matches_per_constituent(
+                self.pt_proxy.group_by(), lambda ct: ct.group_by()
+            )
 
     def test_count_by(self):
-        agg_pt_proxy = self.pt_proxy.count_by(col="cnt", by=["a"])
-        for gct, ct in zip(
-            agg_pt_proxy.target.constituent_tables,
-            self.pt_proxy.target.constituent_tables,
-        ):
-            self.assertLessEqual(gct.size, ct.size)
-            self.assertEqual(len(gct.definition), 2)
+        self.assert_matches_per_constituent(
+            self.pt_proxy.count_by(col="cnt", by=["a"]),
+            lambda ct: ct.count_by(col="cnt", by=["a"]),
+        )
 
     def test_dedicated_agg(self):
         ops = [
@@ -508,15 +446,14 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             PartitionedTableProxy.max_by,
         ]
 
+        # The no-by pass calls a different Java overload, so check it too.
         for op in ops:
-            with self.subTest(op=op):
-                agg_pt_proxy = op(self.pt_proxy, by=["a", "b"])
-                for gct, ct in zip(
-                    agg_pt_proxy.target.constituent_tables,
-                    self.pt_proxy.target.constituent_tables,
-                ):
-                    self.assertLessEqual(gct.size, ct.size)
-                    self.assertEqual(len(gct.definition), len(ct.definition))
+            for by in (["a", "b"], None):
+                with self.subTest(op=op, by=by):
+                    self.assert_matches_per_constituent(
+                        op(self.pt_proxy, by=by),
+                        lambda ct: getattr(ct, op.__name__)(by=by),
+                    )
 
         wops = [
             PartitionedTableProxy.weighted_avg_by,
@@ -524,14 +461,12 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         ]
 
         for wop in wops:
-            with self.subTest(wop):
-                agg_pt_proxy = wop(self.pt_proxy, wcol="e", by=["a", "b"])
-                for gct, ct in zip(
-                    agg_pt_proxy.target.constituent_tables,
-                    self.pt_proxy.target.constituent_tables,
-                ):
-                    self.assertLessEqual(gct.size, ct.size)
-                    self.assertEqual(len(gct.definition), len(ct.definition) - 1)
+            for by in (["a", "b"], None):
+                with self.subTest(wop=wop, by=by):
+                    self.assert_matches_per_constituent(
+                        wop(self.pt_proxy, wcol="e", by=by),
+                        lambda ct: getattr(ct, wop.__name__)(wcol="e", by=by),
+                    )
 
     def test_agg_by(self):
         aggs = [
@@ -544,13 +479,10 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             ),
         ]
 
-        agg_pt_proxy = self.pt_proxy.agg_by(aggs=aggs, by=["a"])
-        for gct, ct in zip(
-            agg_pt_proxy.target.constituent_tables,
-            self.pt_proxy.target.constituent_tables,
-        ):
-            self.assertLessEqual(gct.size, ct.size)
-            self.assertEqual(len(gct.definition), 8)
+        self.assert_matches_per_constituent(
+            self.pt_proxy.agg_by(aggs=aggs, by=["a"]),
+            lambda ct: ct.agg_by(aggs=aggs, by=["a"]),
+        )
 
     def test_agg_all_by(self):
         aggs = [
@@ -569,9 +501,11 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             weighted_avg("b"),
         ]
         for agg in aggs:
-            agg_pt_proxy = self.pt_proxy.agg_all_by(agg=agg, by=["a"])
-            for gct in agg_pt_proxy.target.constituent_tables:
-                self.assertGreaterEqual(gct.size, 1)
+            with self.subTest(agg=agg):
+                self.assert_matches_per_constituent(
+                    self.pt_proxy.agg_all_by(agg=agg, by=["a"]),
+                    lambda ct: ct.agg_all_by(agg=agg, by=["a"]),
+                )
 
     def test_query_scope(self):
         nonlocal_str = "nonlocal str"
@@ -671,9 +605,18 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         self,
         result: PartitionedTableProxy,
         expected_op: Callable[[Table], Table],
+        source: PartitionedTableProxy | None = None,
     ) -> None:
+        """Asserts that each constituent of the result equals expected_op applied to the matching source constituent.
+
+        Args:
+            result (PartitionedTableProxy): the proxy an op returned
+            expected_op (Callable[[Table], Table]): the same op on a plain Table
+            source (PartitionedTableProxy | None): the proxy the op ran on. Defaults to None, meaning self.pt_proxy.
+        """
+        source = self.pt_proxy if source is None else source
         for ct, rct in zip(
-            self.pt_proxy.target.constituent_tables,
+            source.target.constituent_tables,
             result.target.constituent_tables,
             strict=True,
         ):

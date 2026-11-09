@@ -8,7 +8,7 @@ instruments for working with Deephaven refreshing and static data."""
 from __future__ import annotations
 
 import contextlib
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
 from enum import Enum, auto
 from functools import cache, cached_property
@@ -929,9 +929,10 @@ class TableDefinition(JObjectWrapper, Mapping):
         return JObjectWrapper.__hash__(self)
 
 
-class _TableOperations(ABC, Generic[T]):
+class _TableOperations(JObjectWrapper, Generic[T]):
     """The table operations that Table and PartitionedTableProxy share. Each one calls the method of the same
-    name on the Java ``TableOperations`` interface, which both Java classes implement.
+    name on the Java ``TableOperations`` interface, which both Java classes implement. The ops reach the Java object
+    through ``j_object``, which each subclass defines as a JObjectWrapper.
 
     A subclass that sets ``_doc_vars`` gets its own copy of every public op, with the op's docstring filled in from
     those values. ``returns`` fills ``{returns}``. ``right_type`` fills ``{right_type}``, the type of the right or
@@ -950,10 +951,6 @@ class _TableOperations(ABC, Generic[T]):
             required=("returns", "right_type"),
             defaults={"right_note": "", "intro": ""},
         )
-
-    @property
-    @abstractmethod
-    def j_object(self) -> jpy.JType: ...
 
     @abstractmethod
     def _wrap_result(self, j_obj: jpy.JType) -> T:
@@ -2239,7 +2236,7 @@ class _TableOperations(ABC, Generic[T]):
             raise self._make_op_error(e, "slice") from e
 
 
-class Table(_TableOperations["Table"], JObjectWrapper):
+class Table(_TableOperations["Table"]):
     """A Table represents a Deephaven table. It allows applications to perform powerful Deephaven table operations.
 
     Note: It should not be instantiated directly by user code. Tables are mostly created by factory methods,
@@ -3799,7 +3796,7 @@ class PartitionedTable(JObjectWrapper):
         )
 
 
-class PartitionedTableProxy(_TableOperations["PartitionedTableProxy"], JObjectWrapper):
+class PartitionedTableProxy(_TableOperations["PartitionedTableProxy"]):
     """A PartitionedTableProxy is a table operation proxy for the underlying partitioned table. It provides methods
     that apply table operations to the constituent tables of the underlying partitioned table, produce a new
     partitioned table from the resulting constituent tables, and return a proxy of it.
