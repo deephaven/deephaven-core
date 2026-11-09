@@ -1141,7 +1141,12 @@ class UpdateByRequest(_message.Message):
                     FORMULA_FIELD_NUMBER: _builtins.int
                     PARAM_TOKEN_FIELD_NUMBER: _builtins.int
                     formula: _builtins.str
-                    param_token: _builtins.str
+                    @_builtins.property
+                    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+                    def param_token(self) -> _builtins.str: ...
+                    @param_token.setter
+                    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+                    def param_token(self, value: _builtins.str) -> None: ...
                     @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
                     @_builtins.property
@@ -1180,7 +1185,7 @@ class UpdateByRequest(_message.Message):
 
                     @_builtins.property
                     def filters(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
-                        """The filters tp apply before counting"""
+                        """The filters to apply before counting"""
 
                     def __init__(
                         self,
@@ -1206,7 +1211,7 @@ class UpdateByRequest(_message.Message):
                     """The output column name"""
                     @_builtins.property
                     def filters(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
-                        """The filters tp apply before counting"""
+                        """The filters to apply before counting"""
 
                     def __init__(
                         self,
