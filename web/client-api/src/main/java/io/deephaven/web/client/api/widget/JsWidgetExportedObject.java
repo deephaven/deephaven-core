@@ -3,11 +3,11 @@
 //
 package io.deephaven.web.client.api.widget;
 
+import elemental2.core.ReadonlyArray;
 import io.deephaven.web.client.api.TableTicket;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.ExportRequest;
 import io.deephaven.proto.backplane.grpc.ExportResponse;
@@ -71,7 +71,7 @@ public class JsWidgetExportedObject implements ServerObject {
     /**
      * Returns the type of this export, typically one of {@link JsVariableType}, but may also include plugin types. If
      * null, this object cannot be fetched, but can be passed to the server, such as via
-     * {@link JsWidget#sendMessage(JsWidget.MessageUnion, JsArray)}.
+     * {@link JsWidget#sendMessage(JsWidget.MessageUnion, ReadonlyArray)}.
      *
      * @return the string type of this server-side object, or null.
      */
