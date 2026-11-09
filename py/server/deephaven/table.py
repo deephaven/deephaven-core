@@ -1519,8 +1519,9 @@ class Table(JObjectWrapper):
     def rename_columns(self, cols: str | Sequence[str]) -> Table:
         """The rename_columns method creates a new table with the specified columns renamed. The renames are
         simultaneous and unordered, enabling direct swaps between column names. Specifying a source or
-        destination more than once is prohibited. If a new column name conflicts with an existing column
-        name in the table, the existing column will be silently replaced.
+        destination more than once is prohibited. If a new column name matches an existing column that is not itself
+        renamed, that existing column is silently dropped from the result. When the existing column is also renamed
+        (a swap), nothing is dropped.
 
         Args:
             cols (Union[str, Sequence[str]]) : the column rename expr(s) as "X = Y"
@@ -2869,8 +2870,8 @@ class Table(JObjectWrapper):
         Args:
             col (str): the column name
             cond (str): the condition expression
-            formula (str): the formatting string in the form of assignment expression "column=color expression"
-                where color_expression can be a color name or a Java ternary expression that results in a color.
+            formula (str): the color expression to apply where the condition is true, such as a color name or a
+                Java ternary expression that results in a color. It is not an assignment; col names the column.
 
         Returns:
             a new table
@@ -2889,8 +2890,8 @@ class Table(JObjectWrapper):
 
         Args:
             cond (str): the condition expression
-            formula (str): the formatting string in the form of assignment expression "column=color expression"
-                where color_expression can be a color name or a Java ternary expression that results in a color.
+            formula (str): the color expression to apply to the rows where the condition is true, such as a color
+                name or a Java ternary expression that results in a color. It is not an assignment.
 
         Returns:
             a new table
@@ -4989,10 +4990,10 @@ def table_diff(
     an empty string is returned. The differences are returned in a human-readable format.
 
     This method starts by comparing the table sizes, and then the schema of the two tables, such as the number of
-    columns, column names, column types, column orders. If the schemas are different, the comparison stops and
-    the differences are returned. If the schemas are the same, the method proceeds to compare the data in the
-    tables. The method compares the data in the tables column by column (not row by row) and only records the first
-    difference found in each column.
+    columns, column names, column types, column orders. Then it compares the data of the columns that exist in both
+    tables with the same type. The comparison stops only when max_diffs differences have been found; schema
+    differences alone do not stop it. The method compares the data in the tables column by column (not row by row)
+    and only records the first difference found in each column.
 
     Note, inexact comparison of floating numbers may sometimes be desirable due to their inherent imprecision.
     When that is the case, the floating_comparison should be set to either 'absolute' or 'relative'. When it is set
@@ -5101,9 +5102,12 @@ def keyed_transpose(
     - If ``aggs > 1``: Column names are prefixed with the aggregation column name. (ex. Count_INFO, MySum_INFO)
     - If ``col_by_cols > 1``: Values for the original columns are separated by an underscore (ex. INFO_OTHER1,
     WARN_OTHER2)
-    - If Illegal Characters: Purge characters that are invalid for Deephaven column names. (ex. "1-2.3/4" becomes
-    "1234")
-    - If Starts with Number: Add the prefix "column_" to the column name. (ex. column_123)
+    - If Reserved Word: Add the prefix "column_" to a name that is a Java keyword or a query language reserved name
+    (``in``, ``not``, ``i``, ``ii``, ``k``). (ex. column_not)
+    - If Illegal Characters: Remove every character other than letters, digits, "_", and "$". (ex. "a-b.c" becomes
+    "abc")
+    - If Starts with Number: After removing illegal characters, add the prefix "column_" to the column name. (ex.
+    "1-2.3/4" becomes column_1234)
     - If Duplicate Column Name: Add a suffix to differentiate the columns. (ex. INFO, INFO2)
 
     Given the above contract, and to give you more control over the result, it may be necessary to sanitize data values

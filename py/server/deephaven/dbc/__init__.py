@@ -19,7 +19,7 @@ def read_sql(
         conn (Any): must either be a connection string for the given driver or a Turbodbc/ADBC DBAPI Connection
             object; when it is a Connection object, the driver argument will be ignored.
         query (str): SQL query statement
-        driver: (str): the driver to use, supported drivers are "odbc", "adbc", "connectorx", default is "connectorx"
+        driver (str): the driver to use, supported drivers are "odbc", "adbc", "connectorx", default is "connectorx"
 
     Returns:
         a new Table

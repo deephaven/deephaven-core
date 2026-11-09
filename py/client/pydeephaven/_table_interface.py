@@ -3,7 +3,9 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, TypeVar
+import sys
+import types
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, get_type_hints
 
 from pydeephaven.filters import Filter
 
@@ -52,11 +54,160 @@ from pydeephaven.updateby import UpdateByOperation
 T = TypeVar("T")
 
 
+def _fill_raises(doc: str, raises: str) -> str:
+    """Replaces each line that holds only ``{raises}`` with the lines of ``raises``, at that line's indent.
+
+    Args:
+        doc (str): the docstring to fill
+        raises (str): the section to put in, such as "Raises:\\n    DHError"; an empty string removes the
+            placeholder line and the blank line before it
+
+    Returns:
+        the filled docstring
+    """
+    out: list[str] = []
+    for line in doc.split("\n"):
+        if line.strip() != "{raises}":
+            out.append(line)
+            continue
+        indent = line[: len(line) - len(line.lstrip())]
+        if raises:
+            out.extend(f"{indent}{r}" if r else "" for r in raises.split("\n"))
+        elif out and not out[-1].strip():
+            # Without dropping it, the blank line before the placeholder would double up with the one after it.
+            out.pop()
+    return "\n".join(out)
+
+
+def _bind_t(hint: Any, cls: type) -> Any:
+    """Replaces T in a type hint with the class, such as ``Table | T`` with ``Table``.
+
+    Args:
+        hint (Any): the resolved type hint
+        cls (type): the class that T stands for
+
+    Returns:
+        the hint with T replaced; a hint without T, or with only other TypeVars, comes back unchanged
+    """
+    if hint is T:
+        return cls
+    params = getattr(hint, "__parameters__", ())
+    if T not in params:
+        return hint
+    # Subscripting fills the hint's TypeVars in order, and a union drops the duplicate, so Table | T becomes Table.
+    return hint[tuple(cls if p is T else p for p in params)]
+
+
+def _fill_doc(doc: str, doc_vars: dict[str, str]) -> str:
+    """Fills a docstring template from a class's ``_doc_vars``.
+
+    Args:
+        doc (str): the docstring template
+        doc_vars (dict[str, str]): the values; ``returns`` fills ``{returns}``, ``raises`` fills the ``{raises}``
+            line, and ``intro``, when not empty, becomes the first paragraph
+
+    Returns:
+        the filled docstring
+    """
+    doc = _fill_raises(
+        doc.replace("{returns}", doc_vars["returns"]), doc_vars.get("raises", "")
+    )
+    intro = doc_vars.get("intro", "")
+    if not intro:
+        return doc
+    # The first docstring line has no indent and the rest share one. Without that indent, the original first line
+    # would be the least indented line and the rest would become a quoted block in Sphinx. A one-line docstring has
+    # no other lines, and without the default min() would raise and break the import.
+    indent = min(
+        (
+            len(line) - len(line.lstrip())
+            for line in doc.splitlines()[1:]
+            if line.strip()
+        ),
+        default=0,
+    )
+    return f"{intro}\n\n{' ' * indent}{doc}"
+
+
+def _copy_op(func: types.FunctionType, cls: type, doc: str) -> types.FunctionType:
+    """Copies a TableInterface op onto a subclass, with T bound to the subclass in its type hints.
+
+    Args:
+        func (types.FunctionType): the TableInterface op
+        cls (type): the subclass
+        doc (str): the copy's docstring
+
+    Returns:
+        the copy, named and documented as the subclass's own method
+    """
+    # A copy, not a wrapper, so the signature, defaults and annotations stay the base op's own.
+    op = types.FunctionType(
+        func.__code__,
+        func.__globals__,
+        func.__name__,
+        func.__defaults__,
+        func.__closure__,
+    )
+    op.__kwdefaults__ = func.__kwdefaults__
+    # The copy keeps this module's globals, where Table exists only for type checking and the subclass not at all.
+    # Without resolving the string annotations here, Sphinx cannot resolve 'Table' or 'Query'. T is then bound to the
+    # subclass, or the docs would show "-> T".
+    hints = get_type_hints(
+        func,
+        globalns={
+            **func.__globals__,
+            **vars(sys.modules[cls.__module__]),
+            cls.__name__: cls,
+        },
+    )
+    # get_type_hints turns a None hint into NoneType, which help() would show as "-> NoneType".
+    op.__annotations__ = {
+        k: None if v is type(None) else _bind_t(v, cls) for k, v in hints.items()
+    }
+    op.__qualname__ = f"{cls.__qualname__}.{func.__name__}"
+    op.__module__ = cls.__module__
+    op.__doc__ = doc
+    return op
+
+
 class TableInterface(ABC, Generic[T]):
     """TableInterface defines and implements a set of Table operations that eventually are performed on tables in
     the Deephaven server. It is inherited by the Table and Query classes for single table operations on a Table or a
     batch of operations that are defined by a Query.
+
+    A subclass that sets ``_doc_vars`` gets its own copy of every public op, with the op's docstring filled in from
+    those values. ``returns`` is required and fills the ``{returns}`` placeholder. ``raises`` fills a ``{raises}``
+    line, which ops that raise only once the operation runs on the server use. ``intro``, when not empty, becomes the
+    first paragraph of the docstring.
     """
+
+    _doc_vars: ClassVar[dict[str, str]] = {}
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        # A subclass without its own _doc_vars, such as InputTable, inherits its parent's filled-in copies.
+        if "_doc_vars" not in vars(cls):
+            return
+        if "returns" not in cls._doc_vars:
+            raise TypeError(
+                f"{cls.__qualname__}._doc_vars needs a 'returns' value to fill the {{returns}} placeholder"
+            )
+        for name, func in vars(TableInterface).items():
+            if (
+                name.startswith("_")
+                or name == "table_op_handler"
+                or not isinstance(func, types.FunctionType)
+                or name in vars(cls)
+            ):
+                continue
+            # The copy takes the wrapper's code, so a decorated op would show (*args, **kwargs) in its signature and
+            # docs, or fail to resolve its hints in the decorator's module.
+            if hasattr(func, "__wrapped__"):
+                raise TypeError(
+                    f"TableInterface.{name} is decorated; decorated TableInterface ops are not supported"
+                )
+            doc = _fill_doc(func.__doc__ or "", cls._doc_vars)
+            setattr(cls, name, _copy_op(func, cls, doc))
 
     @abstractmethod
     def table_op_handler(self, table_op: TableOp) -> T: ...
@@ -69,10 +220,9 @@ class TableInterface(ABC, Generic[T]):
             cols (Union[str, list[str]]) : the column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = DropColumnsOp(column_names=to_list(cols))
         return self.table_op_handler(table_op)
@@ -84,10 +234,9 @@ class TableInterface(ABC, Generic[T]):
             formulas (Union[str, list[str]]): the column formula(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = UpdateOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
@@ -99,10 +248,9 @@ class TableInterface(ABC, Generic[T]):
             formulas (Union[str, list[str]]): the column formula(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = LazyUpdateOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
@@ -114,10 +262,9 @@ class TableInterface(ABC, Generic[T]):
             formulas (Union[str, list[str]]): the column formula(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = ViewOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
@@ -129,10 +276,9 @@ class TableInterface(ABC, Generic[T]):
             formulas (Union[str, list[str]]): the column formula(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = UpdateViewOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
@@ -145,10 +291,9 @@ class TableInterface(ABC, Generic[T]):
             formulas (Optional[Union[str, list[str]]]): the column formula(s), default is None
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = SelectOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
@@ -162,10 +307,9 @@ class TableInterface(ABC, Generic[T]):
             cols (Optional[Union[str, list[str]]]): the column name(s), default is None
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = SelectDistinctOp(column_names=to_list(cols))
         return self.table_op_handler(table_op)
@@ -185,10 +329,9 @@ class TableInterface(ABC, Generic[T]):
                 ascending order.
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = SortOp(column_names=to_list(order_by), directions=to_list(order))
         return self.table_op_handler(table_op)
@@ -201,7 +344,7 @@ class TableInterface(ABC, Generic[T]):
             filters (Union[str, list[str], Filter, list[Filter]]): the filter condition expression(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
         Raises:
             DHError
@@ -211,8 +354,13 @@ class TableInterface(ABC, Generic[T]):
         if not filters_list:
             raise DHError("filters cannot be empty")
 
-        # Check if we have Filter objects or strings based on the first element
-        if isinstance(filters_list[0], Filter):
+        # The request carries either Filter objects or strings, not both.
+        n_filters = sum(isinstance(f, Filter) for f in filters_list)
+        if 0 < n_filters < len(filters_list):
+            raise DHError(
+                "filters must be all strings or all Filter objects, not a mix of both."
+            )
+        if n_filters:
             table_op: TableOp = FilterOp(filters=filters_list)
         else:
             table_op = UnstructuredFilterOp(filters=filters_list)
@@ -226,10 +374,9 @@ class TableInterface(ABC, Generic[T]):
             num_rows (int): the number of rows at the head of table
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = HeadOp(num_rows=num_rows)
         return self.table_op_handler(table_op)
@@ -241,10 +388,9 @@ class TableInterface(ABC, Generic[T]):
             num_rows (int): the number of rows at the end of table
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = TailOp(num_rows=num_rows)
         return self.table_op_handler(table_op)
@@ -268,12 +414,13 @@ class TableInterface(ABC, Generic[T]):
             joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
+            type (NaturalJoinType): the action to be taken when duplicate right hand rows are
+                encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = NaturalJoinOp(
             table=table, keys=to_list(on), columns_to_add=to_list(joins), type=type
@@ -300,10 +447,9 @@ class TableInterface(ABC, Generic[T]):
                 from the right table, excluding those specified in 'on'
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = ExactJoinOp(
             table=table, keys=to_list(on), columns_to_add=to_list(joins)
@@ -332,10 +478,9 @@ class TableInterface(ABC, Generic[T]):
             reserve_bits(int): the number of bits of key-space to initially reserve per group; default is 10
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = CrossJoinOp(
             table=table,
@@ -368,12 +513,16 @@ class TableInterface(ABC, Generic[T]):
                 from the right table, excluding those specified in 'on'
 
         Returns:
-            a Table or Query object
+            {returns}
 
         Raises:
             DHError
         """
-        table_op = AjOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
+        keys = to_list(on)
+        # The last 'on' column is the as-of match, which the request requires.
+        if not keys:
+            raise DHError("on must name at least one column.")
+        table_op = AjOp(table=table, keys=keys, columns_to_add=to_list(joins))
         return self.table_op_handler(table_op)
 
     def raj(
@@ -399,12 +548,16 @@ class TableInterface(ABC, Generic[T]):
                 from the right table, excluding those specified in 'on'
 
         Returns:
-            a Table or Query object
+            {returns}
 
         Raises:
             DHError
         """
-        table_op = RajOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
+        keys = to_list(on)
+        # The last 'on' column is the as-of match, which the request requires.
+        if not keys:
+            raise DHError("on must name at least one column.")
+        table_op = RajOp(table=table, keys=keys, columns_to_add=to_list(joins))
         return self.table_op_handler(table_op)
 
     def head_by(self, num_rows: int, by: str | list[str]) -> T:
@@ -415,10 +568,9 @@ class TableInterface(ABC, Generic[T]):
             by (Union[str, list[str]]): the group-by column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = HeadByOp(num_rows=num_rows, column_names=to_list(by))
         return self.table_op_handler(table_op)
@@ -431,10 +583,9 @@ class TableInterface(ABC, Generic[T]):
             by (Union[str, list[str]]): the group-by column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = TailByOp(num_rows=num_rows, column_names=to_list(by))
         return self.table_op_handler(table_op)
@@ -450,10 +601,9 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.group(), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -468,10 +618,9 @@ class TableInterface(ABC, Generic[T]):
             null_fill (bool): indicates whether null should be used to fill missing cells, default is True
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = UngroupOp(column_names=to_list(cols), null_fill=null_fill)
         return self.table_op_handler(table_op)
@@ -484,10 +633,9 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.first(), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -500,10 +648,9 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.last(), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -517,10 +664,9 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.sum_(), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -534,10 +680,9 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.avg(), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -554,10 +699,9 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.std(), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -574,10 +718,9 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.var(), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -591,10 +734,9 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.median(), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -608,10 +750,9 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.min_(), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -625,10 +766,9 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.max_(), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -643,10 +783,9 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateOp(aggs=[agg.count_(col=col)], by=to_list(by))
         return self.table_op_handler(table_op)
@@ -660,7 +799,7 @@ class TableInterface(ABC, Generic[T]):
             by (Union[str, list[str]]): the group-by column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
         Raises:
             DHError
@@ -669,7 +808,7 @@ class TableInterface(ABC, Generic[T]):
         for agg in aggs:  # noqa: F402
             if hasattr(agg, "cols") and not agg.cols:
                 raise DHError(
-                    message="No columns specified for the aggregation operation {agg}."
+                    message=f"No columns specified for the aggregation operation {agg}."
                 )
 
         table_op = AggregateOp(aggs=aggs, by=to_list(by))
@@ -687,7 +826,7 @@ class TableInterface(ABC, Generic[T]):
             by (Union[str, list[str]]): the group-by column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
         Raises:
             DHError
@@ -715,10 +854,9 @@ class TableInterface(ABC, Generic[T]):
                 performed over the entire table
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = UpdateByOp(operations=to_list(ops), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -727,10 +865,9 @@ class TableInterface(ABC, Generic[T]):
         """The snapshot method creates a static snapshot table.
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = SnapshotTableOp()
         return self.table_op_handler(table_op)
@@ -764,10 +901,9 @@ class TableInterface(ABC, Generic[T]):
                 must be False.
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = SnapshotWhenTableOp(
             trigger_table=trigger_table,
@@ -787,10 +923,9 @@ class TableInterface(ABC, Generic[T]):
             cols (Union[str, list[str]]): the column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = WhereInTableOp(
             filter_table=filter_table, cols=to_list(cols), inverted=False
@@ -806,10 +941,9 @@ class TableInterface(ABC, Generic[T]):
             cols (Union[str, list[str]]): the column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = WhereInTableOp(
             filter_table=filter_table, cols=to_list(cols), inverted=True
@@ -820,7 +954,8 @@ class TableInterface(ABC, Generic[T]):
         """Extracts a subset of a table by row positions into a new Table.
 
         If both the start and the stop are positive, then both are counted from the beginning of the table.
-        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
+        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to
+        :meth:`~pydeephaven.table.Table.head` (N)
         The start must be less than or equal to the stop.
 
         If the start is positive and the stop is negative, then the start is counted from the beginning of the
@@ -828,20 +963,20 @@ class TableInterface(ABC, Generic[T]):
         rows but the first and last. If the stop is before the start, the result is an empty table.
 
         If the start is negative, and the stop is zero, then the start is counted from the end of the table,
-        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
+        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to
+        :meth:`~pydeephaven.table.Table.tail` (N).
 
         If the start is negative and the stop is negative, they are both counted from the end of the
         table. For example, slice(-2, -1) returns the second to last row of the table.
 
         Args:
             start (int): the first row position to include in the result
-            stop (int): the last row position to include in the result
+            stop (int): the row position to stop before, exclusive
 
         Returns:
-            a new Table
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
 
         Examples:
             >>> table.slice(0, 5)    # first 5 rows

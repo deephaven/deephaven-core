@@ -336,9 +336,6 @@ std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessor
   // round and is added then. The insertion is strict. During the initial snapshot the server can
   // legitimately re-send a row we already hold; supporting that is a separate change, so for now
   // such a row fails loudly inside SpaceMapper rather than being silently inserted a second time.
-  // Removes have the same gap: a full subscription is sent the server's entire removed set, which
-  // during the initial snapshot can name rows we have not been given yet. Skipping those is a
-  // separate change too, so for now such a remove fails loudly inside SpaceMapper as well.
   auto added_rows_index_space = table_state_.AddKeys(*added_rows_included);
 
   owner->state_ = State::kAwaitingAdds;
@@ -360,7 +357,11 @@ AwaitingMetadata::ProcessRemoves(const RowSequence &removed_rows) {
     after_removes = prev;
   } else {
     removed_rows_index_space = table_state_.Erase(removed_rows);
-    after_removes = table_state_.Snapshot();
+    // A non-empty removed set can still erase nothing: a full subscription is sent the server's
+    // entire removed set, which while the initial snapshot is still arriving can name only rows
+    // this client has not been given yet. The table is unchanged then, so this takes the
+    // pointer-equality path too.
+    after_removes = removed_rows_index_space->Empty() ? prev : table_state_.Snapshot();
   }
   return {std::move(prev), std::move(removed_rows_index_space), std::move(after_removes)};
 }
