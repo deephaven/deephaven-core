@@ -194,8 +194,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     /**
-     * Utility to fire an event on this object and also optionally on the parent if still active. All
-     * {@link #fireEvent(Event)} overloads dispatch to this.
+     * Utility to fire an event on this object and also optionally on the parent if still active. All {@code fireEvent}
+     * overloads dispatch to this.
      *
      * @param e The event to fire.
      * @param <T> The type of the custom event data.
@@ -326,8 +326,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     /**
-     * Internal API method to indicate that the {@link JsTable Table} itself has no further use for this. The
-     * subscription should stop forwarding events and optionally close the underlying table/subscription.
+     * Internal API method to indicate that the {@code Table} itself has no further use for this. The subscription
+     * should stop forwarding events and optionally close the underlying table/subscription.
      */
     public void internalClose() {
         // indicate that the base table shouldn't get events anymore, even if it is still retained elsewhere

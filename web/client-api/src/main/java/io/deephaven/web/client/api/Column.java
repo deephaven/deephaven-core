@@ -39,7 +39,7 @@ public class Column {
     private final int jsIndex;
 
     /**
-     * Specific to rollup tables when constituent columns are enabled. Used in {@link #toString()}, but ignored for
+     * Specific to rollup tables when constituent columns are enabled. Used in {@code toString()}, but ignored for
      * equals/hashcode, since it might be helpful for debugging, but could potentially confuse some comparisons between
      * instances since this is set after the CTS is created, ready for use.
      */
