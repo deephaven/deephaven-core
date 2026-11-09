@@ -371,8 +371,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                         JsPendingTable<JsResolvedTable> operation = fetch.update(arr("Z = X + Y"));
                         uses.add(operation.head(Js.uncheckedCast(1.0)).resolve());
                         uses.add(operation.tail(Js.uncheckedCast(1.0)).resolve());
-                        uses.add(session.mergeTables(new JsTableReference[] {Js.uncheckedCast(operation),
-                                Js.uncheckedCast(operation)}).resolve());
+                        uses.add(session.mergeTables(arr(operation, operation)).resolve());
                         String id = "several-uses-" + DomGlobal.performance.now();
                         uses.add(session.shareObject(Js.uncheckedCast(operation), Js.uncheckedCast(id + "-a")));
                         uses.add(session.shareObject(Js.uncheckedCast(operation), Js.uncheckedCast(id + "-b")));
@@ -1188,7 +1187,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                         // A merge that is only chained on holds nothing once its dependent is done. Through the
                         // session, as a caller would, not the connection: the session layer is what is under test.
                         JsPendingTable<JsTable> merged = session.mergeTables(
-                                new JsTableReference[] {JsTableReference.of(source), JsTableReference.of(source)});
+                                arr(JsTableReference.of(source), JsTableReference.of(source)));
                         JsPendingTable<JsResolvedTable> head = merged.head(Js.uncheckedCast(7.0));
                         return head.resolve()
                                 .then(table -> {

@@ -62,8 +62,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                                                 local.snapshot(operand, true, null).resolve()),
                                         () -> rejectsForConnection("addTable", input.addTable(operand)),
                                         () -> rejectsForConnection("deleteTable", input.deleteTable(operand)),
-                                        () -> rejectsForConnection("addTables", input.addTables(
-                                                new JsTableReference[] {JsTableReference.of(local), operand})),
+                                        () -> rejectsForConnection("addTables",
+                                                input.addTables(arr(JsTableReference.of(local), operand))),
                                         () -> rejectsForConnection("bindTableToVariable",
                                                 first.bindTableToVariable(foreign, "foreign")))) {
                                     checks = checks.then(ignore -> check.get().then(Promise::resolve, err -> {
@@ -88,9 +88,9 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(session -> {
                     delayTestFinish(15_007);
                     return session.getTable("editable", null).asPromise().then(editable -> editable.inputTable()
-                            .then(input -> input.addTables(new JsTableReference[] {
-                                    Js.uncheckedCast(session.emptyTable(2).update(arr("K = i", "V = i * 10"))),
-                                    Js.uncheckedCast(session.emptyTable(1).update(arr("K = 5", "V = 50")))}))
+                            .then(input -> input.addTables(arr(
+                                    session.emptyTable(2).update(arr("K = i", "V = i * 10")),
+                                    session.emptyTable(1).update(arr("K = 5", "V = 50")))))
                             .then(input -> sizeOf(session, "editable").then(size -> {
                                 assertEquals(3., size, 0);
                                 return input.deleteTable(

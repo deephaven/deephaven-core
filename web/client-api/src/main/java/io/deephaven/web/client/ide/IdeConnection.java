@@ -4,6 +4,7 @@
 package io.deephaven.web.client.ide;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.web.client.api.ConnectOptions;
@@ -31,6 +32,7 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.List;
@@ -290,7 +292,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * @param tables the tables to merge, which must have the same columns and be from this connection
      * @return the merged table, as a pending table
      */
-    public JsPendingTable<JsTable> mergeTables(JsTableReference[] tables) {
-        return connection.get().mergeTables(tables, this);
+    public JsPendingTable<JsTable> mergeTables(ReadonlyArray<JsTableReference> tables) {
+        return connection.get().mergeTables(Js.uncheckedCast(tables), this);
     }
 }

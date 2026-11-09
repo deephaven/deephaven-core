@@ -12,6 +12,7 @@ import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.ArrayBuffer;
 import elemental2.core.ArrayBufferView;
 import elemental2.core.JsArray;
+import elemental2.core.ReadonlyArray;
 import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
@@ -336,7 +337,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
      *        server has definitely received it (by the plugin's acknowledgement, or for the plugin's lifetime)
      */
     @JsMethod
-    public void sendMessage(MessageUnion msg, @JsOptional @JsNullable JsArray<ServerObject.Union> references) {
+    public void sendMessage(MessageUnion msg, @JsOptional @JsNullable ReadonlyArray<ServerObject.Union> references) {
         if (messageStream == null) {
             return;
         }
@@ -354,7 +355,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             throw new IllegalArgumentException("Expected message to be a String or ArrayBuffer");
         }
 
-        for (int i = 0; references != null && i < references.length; i++) {
+        for (int i = 0; references != null && i < references.getLength(); i++) {
             ServerObject reference = references.getAt(i).asServerObject();
             data.addReferences(reference.typedTicket());
         }

@@ -426,13 +426,13 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
         consumers.put("Table.asOfJoin", op -> source.asOfJoin(op, arr("X"), arr("Y2=Y"), null).resolve());
         consumers.put("Table.snapshot", op -> source.snapshot(op, true, null).resolve());
         consumers.put("mergeTables",
-                op -> session.mergeTables(new JsTableReference[] {JsTableReference.of(source), op}).resolve());
+                op -> session.mergeTables(arr(JsTableReference.of(source), op)).resolve());
         consumers.put("InputTable.addTable", input::addTable);
         consumers.put("InputTable.deleteTable", input::deleteTable);
         consumers.put("InputTable.addTables",
-                op -> input.addTables(new JsTableReference[] {JsTableReference.of(source), op}));
+                op -> input.addTables(arr(JsTableReference.of(source), op)));
         consumers.put("InputTable.deleteTables",
-                op -> input.deleteTables(new JsTableReference[] {JsTableReference.of(source), op}));
+                op -> input.deleteTables(arr(JsTableReference.of(source), op)));
         consumers.put("shareObject",
                 op -> session.shareObject(Js.uncheckedCast(op), Js.uncheckedCast("misuse-share-" + shares++)));
         return consumers;
@@ -668,7 +668,7 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
                                     calls.add(settles("InputTable.addTable",
                                             input.addTable(JsTableReference.of(failing))));
                                     calls.add(settles("mergeTables", session
-                                            .mergeTables(new JsTableReference[] {JsTableReference.of(failing)})
+                                            .mergeTables(arr(JsTableReference.of(failing)))
                                             .resolve().then(merged -> {
                                                 merged.close();
                                                 return Promise.resolve(merged);

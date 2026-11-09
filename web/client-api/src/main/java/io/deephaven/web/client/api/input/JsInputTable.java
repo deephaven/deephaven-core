@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.input;
 
 import elemental2.core.JsObject;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
 import io.deephaven.proto.backplane.grpc.AddTableResponse;
@@ -28,6 +29,7 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
@@ -168,7 +170,7 @@ public class JsInputTable {
      * @return a promise of this input table, resolved once the rows have been added
      */
     public Promise<JsInputTable> addTable(JsTableReference tableToAdd) {
-        return addTables(new JsTableReference[] {tableToAdd});
+        return addAll(new JsTableReference[] {tableToAdd});
     }
 
     /**
@@ -188,7 +190,11 @@ public class JsInputTable {
      * @param tablesToAdd the tables whose rows to add, merged into one add
      * @return a promise of this input table, resolved once the rows have been added
      */
-    public Promise<JsInputTable> addTables(JsTableReference[] tablesToAdd) {
+    public Promise<JsInputTable> addTables(ReadonlyArray<JsTableReference> tablesToAdd) {
+        return addAll(Js.uncheckedCast(tablesToAdd));
+    }
+
+    private Promise<JsInputTable> addAll(JsTableReference[] tablesToAdd) {
         if (tablesToAdd.length == 0) {
             // noinspection unchecked,rawtypes
             return (Promise) Promise.reject("Must provide at least one table");
@@ -226,7 +232,7 @@ public class JsInputTable {
      * @return a promise of this input table, resolved once the rows have been deleted
      */
     public Promise<JsInputTable> deleteTable(JsTableReference tableToDelete) {
-        return deleteTables(new JsTableReference[] {tableToDelete});
+        return deleteAll(new JsTableReference[] {tableToDelete});
     }
 
     /**
@@ -235,7 +241,11 @@ public class JsInputTable {
      * @param tablesToDelete the tables whose rows to delete, matched on the key columns
      * @return a promise of this input table, resolved once the rows have been deleted
      */
-    public Promise<JsInputTable> deleteTables(JsTableReference[] tablesToDelete) {
+    public Promise<JsInputTable> deleteTables(ReadonlyArray<JsTableReference> tablesToDelete) {
+        return deleteAll(Js.uncheckedCast(tablesToDelete));
+    }
+
+    private Promise<JsInputTable> deleteAll(JsTableReference[] tablesToDelete) {
         if (tablesToDelete.length == 0) {
             return Promise.resolve(this);
         }

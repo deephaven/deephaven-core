@@ -7,6 +7,7 @@ import com.google.gwt.user.client.Timer;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
@@ -207,8 +208,8 @@ public class IdeSession extends HasEventHandling {
      * @param tables the tables to merge, which must have the same columns and be from this connection
      * @return the merged table, as a pending table
      */
-    public JsPendingTable<JsTable> mergeTables(JsTableReference[] tables) {
-        return connection.mergeTables(tables, this);
+    public JsPendingTable<JsTable> mergeTables(ReadonlyArray<JsTableReference> tables) {
+        return connection.mergeTables(Js.uncheckedCast(tables), this);
     }
 
     public Promise<Void> bindTableToVariable(JsTable table, String name) {
