@@ -1319,7 +1319,7 @@ public class JsTable extends HasLifecycle
      * this method will each produce a new {@link JsTreeTable dh.TreeTable} which must have {@link JsTreeTable#close()
      * close()} called on it when not in use.
      * 
-     * @param configObject
+     * @param configObject specifies which columns to aggregate and which to group by, and other rollup behavior
      * @return Promise of {@link JsTreeTable dh.TreeTable}
      */
     @JsMethod
@@ -1357,7 +1357,8 @@ public class JsTable extends HasLifecycle
      * method will each produce a new {@link JsTreeTable dh.TreeTable} which must have {@link JsTreeTable#close()
      * close()} called on it when not in use.
      * 
-     * @param configObject
+     * @param configObject specifies which column to use as the row ID, and which for parent ID, and how to handle rows
+     *        with no parent
      * @return Promise of {@link JsTreeTable dh.TreeTable}
      */
     @JsMethod

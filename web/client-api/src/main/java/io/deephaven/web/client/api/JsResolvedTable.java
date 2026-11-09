@@ -7,6 +7,9 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.promise.Promise;
+import io.deephaven.web.client.api.tree.JsRollupConfig;
+import io.deephaven.web.client.api.tree.JsTreeTable;
+import io.deephaven.web.client.api.tree.JsTreeTableConfig;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -61,4 +64,43 @@ public interface JsResolvedTable extends JsITable, JsTableOperations {
      */
     @JsMethod
     JsTable createMutableTable();
+
+    /**
+     * A promise that will resolve to a new {@link JsTreeTable dh.TreeTable} of this table. Multiple calls to this
+     * method will each produce a new {@link JsTreeTable dh.TreeTable} which must have {@link JsTreeTable#close()
+     * close()} called on it when not in use.
+     *
+     * @param configObject specifies which column to use as the row ID, and which for parent ID, and how to handle rows
+     *        with no parent
+     * @return Promise of {@link JsTreeTable dh.TreeTable}
+     */
+    @JsMethod
+    default Promise<JsTreeTable> createTreeTable(@TsTypeRef(JsTreeTableConfig.class) Object configObject) {
+        JsTable t = createMutableTable();
+        try {
+            return t.treeTable(configObject).finally_(t::close);
+        } catch (RuntimeException e) {
+            t.close();
+            throw e;
+        }
+    }
+
+    /**
+     * A promise that will resolve to a new roll-up {@link JsTreeTable dh.TreeTable} of this table. Multiple calls to
+     * this method will each produce a new {@link JsTreeTable dh.TreeTable} which must have {@link JsTreeTable#close()
+     * close()} called on it when not in use.
+     *
+     * @param configObject specifies which columns to aggregate and which to group by, and other rollup behavior
+     * @return Promise of {@link JsTreeTable dh.TreeTable}
+     */
+    @JsMethod
+    default Promise<JsTreeTable> createRollup(@TsTypeRef(JsRollupConfig.class) Object configObject) {
+        JsTable t = createMutableTable();
+        try {
+            return t.rollup(configObject).finally_(t::close);
+        } catch (RuntimeException e) {
+            t.close();
+            throw e;
+        }
+    }
 }
