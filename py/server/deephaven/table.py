@@ -956,21 +956,30 @@ class _TableOperations(ABC, Generic[T]):
     def j_object(self) -> jpy.JType: ...
 
     @abstractmethod
-    def _wrap(self, j_obj: jpy.JType) -> T:
-        """Wraps the Java result of an op in this class."""
+    def _wrap_result(self, j_obj: jpy.JType) -> T:
+        """Returns the Java result of an op wrapped in this class."""
 
     @abstractmethod
-    def _j_right(self, table: Table | T) -> jpy.JType:
-        """Returns the Java object to pass to an op for a right, trigger or initial-groups table."""
+    def _unwrap_other(self, table: Table | T) -> jpy.JType:
+        """Returns the Java object to pass to an op for its other table: the right table of a join, the filter table
+        of where_in and where_not_in, the trigger table of snapshot_when, or the initial groups of agg_by."""
 
     @abstractmethod
-    def _op_lock_ctx(self, *others: Table | T) -> contextlib.AbstractContextManager:
-        """Returns the lock context for the ops that Table runs without the update graph lock and
-        PartitionedTableProxy runs with it."""
+    def _extra_lock_ctx(self, *others: Table | T) -> contextlib.AbstractContextManager:
+        """Returns the update graph lock context this class adds to the ops for which Java does not require the lock
+        on a Table.
+
+        The ops for which Java requires the lock on a refreshing Table, such as update, the joins and snapshot, take
+        it through auto_locking_ctx on every class and do not call this. A class that adds no lock returns a null
+        context.
+
+        Args:
+            others (Table | T): the other tables of the op, which the lock also covers when they are refreshing
+        """
 
     @abstractmethod
-    def _op_error(self, e: Exception, op: str) -> DHError:
-        """Returns the DHError to raise when an op fails."""
+    def _make_op_error(self, e: Exception, op: str) -> DHError:
+        """Returns the DHError for an op that failed. The op raises it."""
 
     def drop_columns(self, cols: str | Sequence[str]) -> T:
         """The drop_columns method creates a new table with the same size as this table but omits any of specified
@@ -986,11 +995,11 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 cols = to_sequence(cols)
-                return self._wrap(self.j_object.dropColumns(*cols))
+                return self._wrap_result(self.j_object.dropColumns(*cols))
         except Exception as e:
-            raise self._op_error(e, "drop_columns") from e
+            raise self._make_op_error(e, "drop_columns") from e
 
     def update(
         self, formulas: str | Sequence[str] | Selectable | Sequence[Selectable]
@@ -1011,11 +1020,13 @@ class _TableOperations(ABC, Generic[T]):
             formulas = to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
                 if isinstance(formulas[0], Selectable.j_object_type):
-                    return self._wrap(self.j_object.update(j_array_list(formulas)))
+                    return self._wrap_result(
+                        self.j_object.update(j_array_list(formulas))
+                    )
                 else:
-                    return self._wrap(self.j_object.update(*formulas))
+                    return self._wrap_result(self.j_object.update(*formulas))
         except Exception as e:
-            raise self._op_error(e, "update") from e
+            raise self._make_op_error(e, "update") from e
 
     def lazy_update(self, formulas: str | Sequence[str]) -> T:
         """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
@@ -1032,9 +1043,9 @@ class _TableOperations(ABC, Generic[T]):
         try:
             formulas = to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
-                return self._wrap(self.j_object.lazyUpdate(*formulas))
+                return self._wrap_result(self.j_object.lazyUpdate(*formulas))
         except Exception as e:
-            raise self._op_error(e, "lazy_update") from e
+            raise self._make_op_error(e, "lazy_update") from e
 
     def view(self, formulas: str | Sequence[str]) -> T:
         """The view method creates a new formula table that includes one column for each formula.
@@ -1050,10 +1061,10 @@ class _TableOperations(ABC, Generic[T]):
         """
         try:
             formulas = to_sequence(formulas)
-            with query_scope_ctx(), self._op_lock_ctx():
-                return self._wrap(self.j_object.view(*formulas))
+            with query_scope_ctx(), self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.view(*formulas))
         except Exception as e:
-            raise self._op_error(e, "view") from e
+            raise self._make_op_error(e, "view") from e
 
     def update_view(self, formulas: str | Sequence[str]) -> T:
         """The update_view method creates a new table containing a new, formula column for each formula.
@@ -1069,10 +1080,10 @@ class _TableOperations(ABC, Generic[T]):
         """
         try:
             formulas = to_sequence(formulas)
-            with query_scope_ctx(), self._op_lock_ctx():
-                return self._wrap(self.j_object.updateView(*formulas))
+            with query_scope_ctx(), self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.updateView(*formulas))
         except Exception as e:
-            raise self._op_error(e, "update_view") from e
+            raise self._make_op_error(e, "update_view") from e
 
     def select(
         self,
@@ -1094,15 +1105,17 @@ class _TableOperations(ABC, Generic[T]):
         try:
             with query_scope_ctx(), auto_locking_ctx(self):
                 if not formulas:
-                    return self._wrap(self.j_object.select())
+                    return self._wrap_result(self.j_object.select())
 
                 formulas = to_sequence(formulas)
                 if isinstance(formulas[0], Selectable.j_object_type):
-                    return self._wrap(self.j_object.select(j_array_list(formulas)))
+                    return self._wrap_result(
+                        self.j_object.select(j_array_list(formulas))
+                    )
                 else:
-                    return self._wrap(self.j_object.select(*formulas))
+                    return self._wrap_result(self.j_object.select(*formulas))
         except Exception as e:
-            raise self._op_error(e, "select") from e
+            raise self._make_op_error(e, "select") from e
 
     def select_distinct(self, formulas: str | Sequence[str] | None = None) -> T:
         """The select_distinct method creates a new table containing all the unique values for a set of key
@@ -1120,10 +1133,10 @@ class _TableOperations(ABC, Generic[T]):
         """
         try:
             formulas = to_sequence(formulas)
-            with query_scope_ctx(), self._op_lock_ctx():
-                return self._wrap(self.j_object.selectDistinct(*formulas))
+            with query_scope_ctx(), self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.selectDistinct(*formulas))
         except Exception as e:
-            raise self._op_error(e, "select_distinct") from e
+            raise self._make_op_error(e, "select_distinct") from e
 
     def where(
         self,
@@ -1144,10 +1157,10 @@ class _TableOperations(ABC, Generic[T]):
         """
         try:
             filters = to_sequence(filters)
-            with query_scope_ctx(), self._op_lock_ctx():
-                return self._wrap(self.j_object.where(and_(filters).j_filter))
+            with query_scope_ctx(), self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.where(and_(filters).j_filter))
         except Exception as e:
-            raise self._op_error(e, "where") from e
+            raise self._make_op_error(e, "where") from e
 
     def where_in(self, filter_table: Table, cols: str | Sequence[str]) -> T:
         """The where_in method creates a new table containing rows from the source table, where the rows match
@@ -1164,11 +1177,13 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx(filter_table):
+            with self._extra_lock_ctx(filter_table):
                 cols = to_sequence(cols)
-                return self._wrap(self.j_object.whereIn(filter_table.j_table, *cols))
+                return self._wrap_result(
+                    self.j_object.whereIn(filter_table.j_table, *cols)
+                )
         except Exception as e:
-            raise self._op_error(e, "where_in") from e
+            raise self._make_op_error(e, "where_in") from e
 
     def where_not_in(self, filter_table: Table, cols: str | Sequence[str]) -> T:
         """The where_not_in method creates a new table containing rows from the source table, where the rows do not
@@ -1185,11 +1200,13 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx(filter_table):
+            with self._extra_lock_ctx(filter_table):
                 cols = to_sequence(cols)
-                return self._wrap(self.j_object.whereNotIn(filter_table.j_table, *cols))
+                return self._wrap_result(
+                    self.j_object.whereNotIn(filter_table.j_table, *cols)
+                )
         except Exception as e:
-            raise self._op_error(e, "where_not_in") from e
+            raise self._make_op_error(e, "where_not_in") from e
 
     def head(self, num_rows: int) -> T:
         """The head method creates a new table with a specific number of rows from the beginning of the table.
@@ -1204,10 +1221,10 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
-                return self._wrap(self.j_object.head(num_rows))
+            with self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.head(num_rows))
         except Exception as e:
-            raise self._op_error(e, "head") from e
+            raise self._make_op_error(e, "head") from e
 
     def tail(self, num_rows: int) -> T:
         """The tail method creates a new table with a specific number of rows from the end of the table.
@@ -1222,10 +1239,10 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
-                return self._wrap(self.j_object.tail(num_rows))
+            with self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.tail(num_rows))
         except Exception as e:
-            raise self._op_error(e, "tail") from e
+            raise self._make_op_error(e, "tail") from e
 
     def reverse(self) -> T:
         """The reverse method creates a new table with all of the rows from this table in reverse order.
@@ -1237,10 +1254,10 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
-                return self._wrap(self.j_object.reverse())
+            with self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.reverse())
         except Exception as e:
-            raise self._op_error(e, "reverse") from e
+            raise self._make_op_error(e, "reverse") from e
 
     def snapshot(self) -> T:
         """Returns a static snapshot table.
@@ -1253,9 +1270,9 @@ class _TableOperations(ABC, Generic[T]):
         """
         try:
             with auto_locking_ctx(self):
-                return self._wrap(self.j_object.snapshot())
+                return self._wrap_result(self.j_object.snapshot())
         except Exception as e:
-            raise self._op_error(e, "snapshot") from e
+            raise self._make_op_error(e, "snapshot") from e
 
     def snapshot_when(
         self,
@@ -1302,11 +1319,13 @@ class _TableOperations(ABC, Generic[T]):
                 initial, incremental, history, to_sequence(stamp_cols)
             )
             with auto_locking_ctx(self, trigger_table):
-                return self._wrap(
-                    self.j_object.snapshotWhen(self._j_right(trigger_table), options)
+                return self._wrap_result(
+                    self.j_object.snapshotWhen(
+                        self._unwrap_other(trigger_table), options
+                    )
                 )
         except Exception as e:
-            raise self._op_error(e, "snapshot_when") from e
+            raise self._make_op_error(e, "snapshot_when") from e
 
     def sort(
         self,
@@ -1328,7 +1347,7 @@ class _TableOperations(ABC, Generic[T]):
         """
 
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 order_by = to_sequence(order_by)
                 if not order:
                     order = (SortDirection.ASCENDING,) * len(order_by)
@@ -1353,9 +1372,9 @@ class _TableOperations(ABC, Generic[T]):
                     for col, dir_ in zip(order_by, order, strict=True)
                 ]
                 j_sc_list = j_array_list(sort_columns)
-                return self._wrap(self.j_object.sort(j_sc_list))
+                return self._wrap_result(self.j_object.sort(j_sc_list))
         except Exception as e:
-            raise self._op_error(e, "sort") from e
+            raise self._make_op_error(e, "sort") from e
 
     def sort_descending(self, order_by: str | Sequence[str]) -> T:
         """The sort_descending method creates a new table where rows in a table are sorted in descending order based on
@@ -1371,11 +1390,11 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 order_by = to_sequence(order_by)
-                return self._wrap(self.j_object.sortDescending(*order_by))
+                return self._wrap_result(self.j_object.sortDescending(*order_by))
         except Exception as e:
-            raise self._op_error(e, "sort_descending") from e
+            raise self._make_op_error(e, "sort_descending") from e
 
     def natural_join(
         self,
@@ -1410,13 +1429,13 @@ class _TableOperations(ABC, Generic[T]):
             on = ",".join(to_sequence(on))
             joins = ",".join(to_sequence(joins))
             with auto_locking_ctx(self, table):
-                return self._wrap(
+                return self._wrap_result(
                     self.j_object.naturalJoin(
-                        self._j_right(table), on, joins, type.value
+                        self._unwrap_other(table), on, joins, type.value
                     )
                 )
         except Exception as e:
-            raise self._op_error(e, "natural_join") from e
+            raise self._make_op_error(e, "natural_join") from e
 
     def exact_join(
         self,
@@ -1448,11 +1467,11 @@ class _TableOperations(ABC, Generic[T]):
             on = ",".join(to_sequence(on))
             joins = ",".join(to_sequence(joins))
             with auto_locking_ctx(self, table):
-                return self._wrap(
-                    self.j_object.exactJoin(self._j_right(table), on, joins)
+                return self._wrap_result(
+                    self.j_object.exactJoin(self._unwrap_other(table), on, joins)
                 )
         except Exception as e:
-            raise self._op_error(e, "exact_join") from e
+            raise self._make_op_error(e, "exact_join") from e
 
     def join(
         self,
@@ -1498,16 +1517,16 @@ class _TableOperations(ABC, Generic[T]):
             if reserve_bits is None:
                 reserve_bits = _default_cross_join_reserve_bits()
             with auto_locking_ctx(self, table):
-                return self._wrap(
+                return self._wrap_result(
                     table_op.join(
-                        self._j_right(table),
+                        self._unwrap_other(table),
                         on,
                         joins,
                         reserve_bits,
                     )
                 )
         except Exception as e:
-            raise self._op_error(e, "join") from e
+            raise self._make_op_error(e, "join") from e
 
     def aj(
         self,
@@ -1542,9 +1561,11 @@ class _TableOperations(ABC, Generic[T]):
             joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                return self._wrap(table_op.aj(self._j_right(table), on, joins))
+                return self._wrap_result(
+                    table_op.aj(self._unwrap_other(table), on, joins)
+                )
         except Exception as e:
-            raise self._op_error(e, "aj") from e
+            raise self._make_op_error(e, "aj") from e
 
     def raj(
         self,
@@ -1580,9 +1601,11 @@ class _TableOperations(ABC, Generic[T]):
             joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                return self._wrap(table_op.raj(self._j_right(table), on, joins))
+                return self._wrap_result(
+                    table_op.raj(self._unwrap_other(table), on, joins)
+                )
         except Exception as e:
-            raise self._op_error(e, "raj") from e
+            raise self._make_op_error(e, "raj") from e
 
     def range_join(
         self,
@@ -1691,17 +1714,17 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx(table):
+            with self._extra_lock_ctx(table):
                 on = to_sequence(on)
                 aggs = to_sequence(aggs)
                 j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-                return self._wrap(
+                return self._wrap_result(
                     self.j_object.rangeJoin(
-                        self._j_right(table), j_array_list(on), j_agg_list
+                        self._unwrap_other(table), j_array_list(on), j_agg_list
                     )
                 )
         except Exception as e:
-            raise self._op_error(e, "range_join") from e
+            raise self._make_op_error(e, "range_join") from e
 
     def group_by(self, by: str | Sequence[str] | None = None) -> T:
         """The group_by method creates a new table containing grouping columns and grouped data, column content is
@@ -1717,14 +1740,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.groupBy(*by))
+                    return self._wrap_result(self.j_object.groupBy(*by))
                 else:
-                    return self._wrap(self.j_object.groupBy())
+                    return self._wrap_result(self.j_object.groupBy())
         except Exception as e:
-            raise self._op_error(e, "group_by") from e
+            raise self._make_op_error(e, "group_by") from e
 
     def ungroup(self, cols: str | Sequence[str] | None = None) -> T:
         """The ungroup method creates a new table in which array columns from the source table are unwrapped into
@@ -1742,13 +1765,13 @@ class _TableOperations(ABC, Generic[T]):
         """
         try:
             cols = to_sequence(cols)
-            with auto_locking_ctx(self):
+            with self._extra_lock_ctx():
                 if cols:
-                    return self._wrap(self.j_object.ungroup(*cols))
+                    return self._wrap_result(self.j_object.ungroup(*cols))
                 else:
-                    return self._wrap(self.j_object.ungroup())
+                    return self._wrap_result(self.j_object.ungroup())
         except Exception as e:
-            raise self._op_error(e, "ungroup") from e
+            raise self._make_op_error(e, "ungroup") from e
 
     def agg_by(
         self,
@@ -1795,19 +1818,21 @@ class _TableOperations(ABC, Generic[T]):
             cm = _query_scope_agg_ctx(aggs)
             # A refreshing initial_groups needs the lock too, even when this table or proxy is static.
             others = () if initial_groups is None else (initial_groups,)
-            with cm, self._op_lock_ctx(*others):
+            with cm, self._extra_lock_ctx(*others):
                 if not by:
-                    return self._wrap(self.j_object.aggBy(j_agg_list, preserve_empty))
+                    return self._wrap_result(
+                        self.j_object.aggBy(j_agg_list, preserve_empty)
+                    )
                 else:
                     j_column_name_list = j_array_list(
                         [_JColumnName.of(col) for col in by]
                     )
                     j_initial_groups = (
-                        self._j_right(initial_groups)
+                        self._unwrap_other(initial_groups)
                         if initial_groups is not None
                         else None
                     )
-                    return self._wrap(
+                    return self._wrap_result(
                         self.j_object.aggBy(
                             j_agg_list,
                             preserve_empty,
@@ -1816,7 +1841,7 @@ class _TableOperations(ABC, Generic[T]):
                         )
                     )
         except Exception as e:
-            raise self._op_error(e, "agg_by") from e
+            raise self._make_op_error(e, "agg_by") from e
 
     def agg_all_by(self, agg: Aggregation, by: str | Sequence[str] | None = None) -> T:
         """The agg_all_by method creates a new table containing grouping columns and grouped data. The resulting
@@ -1838,10 +1863,10 @@ class _TableOperations(ABC, Generic[T]):
         try:
             by = to_sequence(by)
             cm = _query_scope_agg_ctx([agg])
-            with cm, self._op_lock_ctx():
-                return self._wrap(self.j_object.aggAllBy(agg.j_agg_spec, *by))
+            with cm, self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.aggAllBy(agg.j_agg_spec, *by))
         except Exception as e:
-            raise self._op_error(e, "agg_all_by") from e
+            raise self._make_op_error(e, "agg_all_by") from e
 
     def count_by(self, col: str, by: str | Sequence[str] | None = None) -> T:
         """The count_by method creates a new table containing the number of rows for each group.
@@ -1857,14 +1882,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.countBy(col, *by))
+                    return self._wrap_result(self.j_object.countBy(col, *by))
                 else:
-                    return self._wrap(self.j_object.countBy(col))
+                    return self._wrap_result(self.j_object.countBy(col))
         except Exception as e:
-            raise self._op_error(e, "count_by") from e
+            raise self._make_op_error(e, "count_by") from e
 
     def first_by(self, by: str | Sequence[str] | None = None) -> T:
         """The first_by method creates a new table containing the first row for each group.
@@ -1879,14 +1904,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.firstBy(*by))
+                    return self._wrap_result(self.j_object.firstBy(*by))
                 else:
-                    return self._wrap(self.j_object.firstBy())
+                    return self._wrap_result(self.j_object.firstBy())
         except Exception as e:
-            raise self._op_error(e, "first_by") from e
+            raise self._make_op_error(e, "first_by") from e
 
     def last_by(self, by: str | Sequence[str] | None = None) -> T:
         """The last_by method creates a new table containing the last row for each group.
@@ -1901,14 +1926,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.lastBy(*by))
+                    return self._wrap_result(self.j_object.lastBy(*by))
                 else:
-                    return self._wrap(self.j_object.lastBy())
+                    return self._wrap_result(self.j_object.lastBy())
         except Exception as e:
-            raise self._op_error(e, "last_by") from e
+            raise self._make_op_error(e, "last_by") from e
 
     def min_by(self, by: str | Sequence[str] | None = None) -> T:
         """The min_by method creates a new table containing the minimum value for each group.
@@ -1923,14 +1948,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.minBy(*by))
+                    return self._wrap_result(self.j_object.minBy(*by))
                 else:
-                    return self._wrap(self.j_object.minBy())
+                    return self._wrap_result(self.j_object.minBy())
         except Exception as e:
-            raise self._op_error(e, "min_by") from e
+            raise self._make_op_error(e, "min_by") from e
 
     def max_by(self, by: str | Sequence[str] | None = None) -> T:
         """The max_by method creates a new table containing the maximum value for each group.
@@ -1945,14 +1970,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.maxBy(*by))
+                    return self._wrap_result(self.j_object.maxBy(*by))
                 else:
-                    return self._wrap(self.j_object.maxBy())
+                    return self._wrap_result(self.j_object.maxBy())
         except Exception as e:
-            raise self._op_error(e, "max_by") from e
+            raise self._make_op_error(e, "max_by") from e
 
     def sum_by(self, by: str | Sequence[str] | None = None) -> T:
         """The sum_by method creates a new table containing the sum for each group.
@@ -1967,14 +1992,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.sumBy(*by))
+                    return self._wrap_result(self.j_object.sumBy(*by))
                 else:
-                    return self._wrap(self.j_object.sumBy())
+                    return self._wrap_result(self.j_object.sumBy())
         except Exception as e:
-            raise self._op_error(e, "sum_by") from e
+            raise self._make_op_error(e, "sum_by") from e
 
     def abs_sum_by(self, by: str | Sequence[str] | None = None) -> T:
         """The abs_sum_by method creates a new table containing the absolute sum for each group.
@@ -1989,14 +2014,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.absSumBy(*by))
+                    return self._wrap_result(self.j_object.absSumBy(*by))
                 else:
-                    return self._wrap(self.j_object.absSumBy())
+                    return self._wrap_result(self.j_object.absSumBy())
         except Exception as e:
-            raise self._op_error(e, "abs_sum_by") from e
+            raise self._make_op_error(e, "abs_sum_by") from e
 
     def weighted_sum_by(self, wcol: str, by: str | Sequence[str] | None = None) -> T:
         """The weighted_sum_by method creates a new table containing the weighted sum for each group.
@@ -2012,14 +2037,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.wsumBy(wcol, *by))
+                    return self._wrap_result(self.j_object.wsumBy(wcol, *by))
                 else:
-                    return self._wrap(self.j_object.wsumBy(wcol))
+                    return self._wrap_result(self.j_object.wsumBy(wcol))
         except Exception as e:
-            raise self._op_error(e, "weighted_sum_by") from e
+            raise self._make_op_error(e, "weighted_sum_by") from e
 
     def avg_by(self, by: str | Sequence[str] | None = None) -> T:
         """The avg_by method creates a new table containing the average for each group.
@@ -2034,14 +2059,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.avgBy(*by))
+                    return self._wrap_result(self.j_object.avgBy(*by))
                 else:
-                    return self._wrap(self.j_object.avgBy())
+                    return self._wrap_result(self.j_object.avgBy())
         except Exception as e:
-            raise self._op_error(e, "avg_by") from e
+            raise self._make_op_error(e, "avg_by") from e
 
     def weighted_avg_by(self, wcol: str, by: str | Sequence[str] | None = None) -> T:
         """The weighted_avg_by method creates a new table containing the weighted average for each group.
@@ -2057,14 +2082,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.wavgBy(wcol, *by))
+                    return self._wrap_result(self.j_object.wavgBy(wcol, *by))
                 else:
-                    return self._wrap(self.j_object.wavgBy(wcol))
+                    return self._wrap_result(self.j_object.wavgBy(wcol))
         except Exception as e:
-            raise self._op_error(e, "weighted_avg_by") from e
+            raise self._make_op_error(e, "weighted_avg_by") from e
 
     def median_by(self, by: str | Sequence[str] | None = None) -> T:
         """The median_by method creates a new table containing the median for each group.
@@ -2079,14 +2104,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.medianBy(*by))
+                    return self._wrap_result(self.j_object.medianBy(*by))
                 else:
-                    return self._wrap(self.j_object.medianBy())
+                    return self._wrap_result(self.j_object.medianBy())
         except Exception as e:
-            raise self._op_error(e, "median_by") from e
+            raise self._make_op_error(e, "median_by") from e
 
     def std_by(self, by: str | Sequence[str] | None = None) -> T:
         """The std_by method creates a new table containing the sample standard deviation for each group.
@@ -2105,14 +2130,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.stdBy(*by))
+                    return self._wrap_result(self.j_object.stdBy(*by))
                 else:
-                    return self._wrap(self.j_object.stdBy())
+                    return self._wrap_result(self.j_object.stdBy())
         except Exception as e:
-            raise self._op_error(e, "std_by") from e
+            raise self._make_op_error(e, "std_by") from e
 
     def var_by(self, by: str | Sequence[str] | None = None) -> T:
         """The var_by method creates a new table containing the sample variance for each group.
@@ -2130,14 +2155,14 @@ class _TableOperations(ABC, Generic[T]):
             DHError
         """
         try:
-            with self._op_lock_ctx():
+            with self._extra_lock_ctx():
                 by = to_sequence(by)
                 if by:
-                    return self._wrap(self.j_object.varBy(*by))
+                    return self._wrap_result(self.j_object.varBy(*by))
                 else:
-                    return self._wrap(self.j_object.varBy())
+                    return self._wrap_result(self.j_object.varBy())
         except Exception as e:
-            raise self._op_error(e, "var_by") from e
+            raise self._make_op_error(e, "var_by") from e
 
     def update_by(
         self,
@@ -2163,9 +2188,9 @@ class _TableOperations(ABC, Generic[T]):
             ops = to_sequence(ops)
             by = to_sequence(by)
             with auto_locking_ctx(self):
-                return self._wrap(self.j_object.updateBy(j_array_list(ops), *by))
+                return self._wrap_result(self.j_object.updateBy(j_array_list(ops), *by))
         except Exception as e:
-            raise self._op_error(e, "update_by") from e
+            raise self._make_op_error(e, "update_by") from e
 
     def slice(self, start: int, stop: int) -> T:
         """Extracts a subset of a table by row positions into a new Table.
@@ -2205,10 +2230,10 @@ class _TableOperations(ABC, Generic[T]):
             >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
         """
         try:
-            with self._op_lock_ctx():
-                return self._wrap(self.j_object.slice(start, stop))
+            with self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.slice(start, stop))
         except Exception as e:
-            raise self._op_error(e, "slice") from e
+            raise self._make_op_error(e, "slice") from e
 
 
 class Table(_TableOperations["Table"], JObjectWrapper):
@@ -2222,16 +2247,16 @@ class Table(_TableOperations["Table"], JObjectWrapper):
     j_object_type = _JTable
     _doc_vars = {"returns": "a new table", "right_type": "Table"}
 
-    def _wrap(self, j_obj: jpy.JType) -> Table:
+    def _wrap_result(self, j_obj: jpy.JType) -> Table:
         return Table(j_table=j_obj)
 
-    def _j_right(self, table: Table) -> jpy.JType:
+    def _unwrap_other(self, table: Table) -> jpy.JType:
         return table.j_table
 
-    def _op_lock_ctx(self, *others: Table) -> contextlib.AbstractContextManager:
+    def _extra_lock_ctx(self, *others: Table) -> contextlib.AbstractContextManager:
         return contextlib.nullcontext()
 
-    def _op_error(self, e: Exception, op: str) -> DHError:
+    def _make_op_error(self, e: Exception, op: str) -> DHError:
         return DHError(e, f"table {op} operation failed.")
 
     def __init__(self, j_table: jpy.JType):
@@ -3802,18 +3827,18 @@ class PartitionedTableProxy(_TableOperations["PartitionedTableProxy"], JObjectWr
         "applied to the matching pairs of constituent tables from both underlying partitioned tables.",
     }
 
-    def _wrap(self, j_obj: jpy.JType) -> PartitionedTableProxy:
+    def _wrap_result(self, j_obj: jpy.JType) -> PartitionedTableProxy:
         return PartitionedTableProxy(j_pt_proxy=j_obj)
 
-    def _j_right(self, table: Table | PartitionedTableProxy) -> jpy.JType:
+    def _unwrap_other(self, table: Table | PartitionedTableProxy) -> jpy.JType:
         return jpy.cast(table.j_object, _JTableOperations)
 
-    def _op_lock_ctx(
+    def _extra_lock_ctx(
         self, *others: Table | PartitionedTableProxy
     ) -> contextlib.AbstractContextManager:
         return auto_locking_ctx(self, *others)
 
-    def _op_error(self, e: Exception, op: str) -> DHError:
+    def _make_op_error(self, e: Exception, op: str) -> DHError:
         return DHError(e, f"{op} operation on the PartitionedTableProxy failed.")
 
     @property

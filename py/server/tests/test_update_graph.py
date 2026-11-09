@@ -136,6 +136,17 @@ class UpdateGraphTestCase(BaseTestCase):
         result_table = test_table.where_not_in(unique_table, cols=["Y"])
         self.assertTrue(result_table.is_refreshing)
 
+    def test_no_auto_locking_ungroup(self) -> None:
+        # ungroup builds its result from a consistent snapshot and needs no update graph lock on a refreshing table.
+        with ug.shared_lock(self.test_update_graph):
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13"])
+            grouped_table = test_table.group_by(by="Y")
+        self.assertTrue(grouped_table.is_refreshing)
+
+        # auto_locking is off (see setUp) and no lock is held; the call must still succeed.
+        result_table = grouped_table.ungroup(cols=["X"])
+        self.assertTrue(result_table.is_refreshing)
+
     def test_auto_locking_joins(self):
         with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
