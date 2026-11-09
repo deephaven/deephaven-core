@@ -226,7 +226,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @return a new {@link TableSubscription}
      */
     @JsMethod
-    public TableSubscription createSubscription(Object options) {
+    public TableSubscription createSubscription(@TsTypeRef(DataOptions.SubscriptionOptions.class) Object options) {
         return wrappedTable.createSubscription(options);
     }
 
@@ -239,7 +239,8 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @return a new {@link TableViewportSubscription}
      */
     @JsMethod
-    public TableViewportSubscription createViewportSubscription(Object options) {
+    public TableViewportSubscription createViewportSubscription(
+            @TsTypeRef(DataOptions.ViewportSubscriptionOptions.class) Object options) {
         return wrappedTable.createViewportSubscription(options);
     }
 
@@ -251,7 +252,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @return Promise of {@link TableData}
      */
     @JsMethod
-    public Promise<TableData> createSnapshot(Object options) {
+    public Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options) {
         return wrappedTable.createSnapshot(options);
     }
 
