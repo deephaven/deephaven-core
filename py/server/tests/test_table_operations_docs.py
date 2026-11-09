@@ -8,8 +8,6 @@ import types
 import unittest
 from pathlib import Path
 
-import pydeephaven._doc_template as client_copy
-
 import deephaven._doc_template as server_copy
 from deephaven.table import PartitionedTableProxy, Table, _TableOperations
 from deephaven.table_factory import InputTable
@@ -41,6 +39,9 @@ class TableOperationsDocsTestCase(BaseTestCase):
     def test_doc_template_matches_client_copy(self) -> None:
         # The Python test matrix copies only the tests into its work folder, so find each copy by import. Both test
         # environments install both packages: the Docker image installs py/client, and the matrix installs the wheels.
+        # Imported here, so a run without pydeephaven loses only this check and not the whole module.
+        import pydeephaven._doc_template as client_copy
+
         self.assertEqual(
             Path(inspect.getfile(client_copy)).read_text(),
             Path(inspect.getfile(server_copy)).read_text(),

@@ -1180,7 +1180,7 @@ class _TableOperations(ABC, Generic[T]):
             with self._extra_lock_ctx(filter_table):
                 cols = to_sequence(cols)
                 return self._wrap_result(
-                    self.j_object.whereIn(filter_table.j_table, *cols)
+                    self.j_object.whereIn(self._unwrap_other(filter_table), *cols)
                 )
         except Exception as e:
             raise self._make_op_error(e, "where_in") from e
@@ -1203,7 +1203,7 @@ class _TableOperations(ABC, Generic[T]):
             with self._extra_lock_ctx(filter_table):
                 cols = to_sequence(cols)
                 return self._wrap_result(
-                    self.j_object.whereNotIn(filter_table.j_table, *cols)
+                    self.j_object.whereNotIn(self._unwrap_other(filter_table), *cols)
                 )
         except Exception as e:
             raise self._make_op_error(e, "where_not_in") from e
@@ -1809,14 +1809,17 @@ class _TableOperations(ABC, Generic[T]):
         try:
             aggs = to_sequence(aggs)
             by = to_sequence(by)
-            if not by and initial_groups:
+            if not by and initial_groups is not None:
                 raise ValueError(
                     "missing group-by column names when initial_groups is provided."
                 )
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
 
             cm = _query_scope_agg_ctx(aggs)
-            # A refreshing initial_groups needs the lock too, even when this table or proxy is static.
+            # The proxy also locks for initial_groups. Java requires the lock when initial_groups is a refreshing
+            # PartitionedTableProxy, even when this proxy is static. Without it, the op fails with "May not
+            # initiate serial table operations". Table needs no lock here, because Java reads initial_groups from a
+            # snapshot.
             others = () if initial_groups is None else (initial_groups,)
             with cm, self._extra_lock_ctx(*others):
                 if not by:

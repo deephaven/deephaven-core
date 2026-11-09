@@ -679,24 +679,24 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         ):
             self.assert_table_equals(expected_op(ct), rct)
 
-    def test_drop_columns(self):
+    def test_drop_columns(self) -> None:
         self.assert_matches_per_constituent(
             self.pt_proxy.drop_columns(["d", "e"]),
             lambda t: t.drop_columns(["d", "e"]),
         )
 
-    def test_lazy_update(self):
+    def test_lazy_update(self) -> None:
         self.assert_matches_per_constituent(
             self.pt_proxy.lazy_update("f = a * 2"),
             lambda t: t.lazy_update("f = a * 2"),
         )
 
-    def test_slice(self):
+    def test_slice(self) -> None:
         self.assert_matches_per_constituent(
             self.pt_proxy.slice(1, -1), lambda t: t.slice(1, -1)
         )
 
-    def test_ungroup(self):
+    def test_ungroup(self) -> None:
         grouped = self.pt_proxy.group_by("a")
         ungrouped = grouped.ungroup()
         for gct, uct in zip(
@@ -706,7 +706,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         ):
             self.assert_table_equals(gct.ungroup(), uct)
 
-    def test_range_join(self):
+    def test_range_join(self) -> None:
         aggs = [group(cols=["GroupD=d"])]
         right_table = self.test_table.select_distinct().sort("b").drop_columns("e")
         self.assert_matches_per_constituent(
@@ -714,7 +714,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             lambda t: t.range_join(right_table, on=["a = a", "c < b < e"], aggs=aggs),
         )
 
-    def test_natural_join_type(self):
+    def test_natural_join_type(self) -> None:
         # Merging the table with itself gives every key in "a" a duplicate right row.
         one_copy = self.test_table.drop_columns(["b", "c"])
         right_table = merge([one_copy, one_copy])
@@ -734,7 +734,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             ),
         )
 
-    def test_agg_by_preserve_empty_and_initial_groups(self):
+    def test_agg_by_preserve_empty_and_initial_groups(self) -> None:
         initial_groups = self.test_table.select_distinct("a")
         aggs = [sum_(cols=["SumB = b"])]
         self.assert_matches_per_constituent(
@@ -746,7 +746,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             ),
         )
 
-    def test_agg_by_refreshing_initial_groups(self):
+    def test_agg_by_refreshing_initial_groups(self) -> None:
         # A refreshing table with the same rows as the static test table, so both proxies have the same keys.
         with update_graph.shared_lock(self.test_update_graph):
             no_rows = (
@@ -765,7 +765,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         )
         self.assertTrue(agg_pt_proxy.is_refreshing)
 
-    def test_weighted_avg_by_without_by(self):
+    def test_weighted_avg_by_without_by(self) -> None:
         self.assert_matches_per_constituent(
             self.pt_proxy.weighted_avg_by(wcol="e"),
             lambda t: t.weighted_avg_by(wcol="e"),
