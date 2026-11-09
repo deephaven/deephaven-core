@@ -1368,33 +1368,6 @@ public interface JsTableOperations extends ServerObject {
                         groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
     }
 
-    // @JsMethod
-    // JsTableOperations meta();
-
-    // wouldMatch
-
-    // format methods
-
-    // slice/head/tail pct
-
-    // @JsMethod
-    // JsTableOperations headBy(double nRows, JsArray<String> groupByColumnNames);
-
-    // @JsMethod
-    // JsTableOperations tailBy(double nRows, JsArray<String> groupByColumnNames);
-
-    // applyToAllBy
-
-    // partitionBy, partitionedAggBy
-
-    // tree
-
-    // rollup
-
-    // coalesce
-
-    // getSubTable
-
     /**
      * Creates a version of this table with a flat rowset.
      * 
@@ -1410,8 +1383,4 @@ public interface JsTableOperations extends ServerObject {
                         .build())
                 .setResultId(ticket)));
     }
-
-    // TODO options
-    // @JsMethod
-    // JsPendingTable downsample();
 }
