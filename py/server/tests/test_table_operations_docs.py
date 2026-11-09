@@ -7,6 +7,7 @@ import re
 import types
 import unittest
 from pathlib import Path
+from typing import get_type_hints
 
 import deephaven._doc_template as server_copy
 from deephaven.table import PartitionedTableProxy, Table, _TableOperations
@@ -85,14 +86,22 @@ class TableOperationsDocsTestCase(BaseTestCase):
                     "PartitionedTableProxy", inspect.getdoc(vars(Table)[name]) or ""
                 )
 
-    def test_signatures_use_real_types(self) -> None:
+    def test_signatures_keep_source_text(self) -> None:
+        # Signatures show the hints as the source wrote them, with T replaced. The Web IDE's autocomplete prints them,
+        # and resolved types would show long names such as collections.abc.Sequence[str].
         for cls in (Table, PartitionedTableProxy):
             for name in OP_NAMES:
                 with self.subTest(cls=cls.__name__, op=name):
                     sig = inspect.signature(vars(cls)[name])
-                    self.assertIs(cls, sig.return_annotation)
-                    for param in sig.parameters.values():
-                        self.assertNotIsInstance(param.annotation, str)
+                    self.assertEqual(cls.__name__, sig.return_annotation)
+                    self.assertNotIn("collections.abc", str(sig))
+                    self.assertNotRegex(str(sig), r"\bT\b")
+
+    def test_hints_resolve(self) -> None:
+        for cls in (Table, PartitionedTableProxy):
+            for name in OP_NAMES:
+                with self.subTest(cls=cls.__name__, op=name):
+                    self.assertIs(cls, get_type_hints(vars(cls)[name])["return"])
 
     def test_signatures_use_pipe_unions(self) -> None:
         for cls in (Table, PartitionedTableProxy):
@@ -105,25 +114,29 @@ class TableOperationsDocsTestCase(BaseTestCase):
     def test_right_table_type(self) -> None:
         for name, param in RIGHT_PARAMS.items():
             with self.subTest(op=name):
-                self.assertIs(
-                    Table,
+                self.assertEqual(
+                    "Table",
                     inspect.signature(Table.__dict__[name])
                     .parameters[param]
                     .annotation,
                 )
                 self.assertEqual(
-                    Table | PartitionedTableProxy,
+                    "Table | PartitionedTableProxy",
                     inspect.signature(PartitionedTableProxy.__dict__[name])
                     .parameters[param]
                     .annotation,
+                )
+                self.assertEqual(
+                    Table | PartitionedTableProxy,
+                    get_type_hints(PartitionedTableProxy.__dict__[name])[param],
                 )
 
     def test_plain_class_hints_stay_plain(self) -> None:
         for cls in (Table, PartitionedTableProxy):
             for name in ("where_in", "where_not_in"):
                 with self.subTest(cls=cls.__name__, op=name):
-                    self.assertIs(
-                        Table,
+                    self.assertEqual(
+                        "Table",
                         inspect.signature(vars(cls)[name])
                         .parameters["filter_table"]
                         .annotation,

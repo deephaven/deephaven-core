@@ -9,11 +9,9 @@ the other. A server test fails when the two copies differ, so edit both together
 
 from __future__ import annotations
 
-import functools
-import operator
-import sys
+import re
 import types
-from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
+from typing import TypeVar
 
 T = TypeVar("T")
 
@@ -45,52 +43,31 @@ def _fill_block(doc: str, name: str, value: str) -> str:
     return "\n".join(out)
 
 
-def bind_t(hint: Any, cls: type) -> Any:
-    """Replaces T in a type hint with the class, such as ``Table | T`` with ``Table``.
+def bind_t_text(hint: str, cls: type) -> str:
+    """Replaces T in a hint written as source text with the class name, such as ``"Table | T"`` with ``"Table"``.
 
     Args:
-        hint (Any): the resolved type hint
+        hint (str): the hint as written in the source
         cls (type): the class that T stands for
 
     Returns:
-        the hint with T replaced. A hint without T, or with only other TypeVars, comes back unchanged.
+        the hint with T replaced. A union keeps each member once, in its first position.
     """
-    if hint is T:
-        return cls
-    # A plain class needs no binding. Without this check, a Generic subclass whose __init_subclass__ chain skips
-    # Generic's hook keeps T in __parameters__. A Table hint would then come back as Table[Table].
-    if isinstance(hint, type) and not isinstance(hint, types.GenericAlias):
-        return hint
-    params = getattr(hint, "__parameters__", ())
-    if T not in params:
-        return hint
-    # Subscripting fills the hint's TypeVars in order. A union drops the duplicate, so Table | T becomes Table.
-    return hint[tuple(cls if p is T else p for p in params)]
-
-
-def to_pipe_union(hint: Any) -> Any:
-    """Rewrites a ``typing.Union`` hint as an ``X | Y`` union, such as ``Optional[int]`` as ``int | None``.
-
-    On Python 3.10, ``get_type_hints`` wraps the hint of a parameter that defaults to None in ``Optional``, and a
-    union with a TypeVar, such as ``Table | T``, is a ``typing.Union``. Both would show as ``Union[...]`` in
-    signatures and docs, while the source writes ``X | Y``.
-
-    Args:
-        hint (Any): the resolved type hint
-
-    Returns:
-        the hint as an ``X | Y`` union. A hint that is not a ``typing.Union``, or a union whose members cannot be
-        joined with ``|``, comes back unchanged.
-    """
-    if get_origin(hint) is not Union:
-        return hint
-    try:
-        return functools.reduce(
-            operator.or_, (to_pipe_union(a) for a in get_args(hint))
-        )
-    except TypeError:
-        # A member such as an unbound TypeVar or a forward reference string does not support |.
-        return hint
+    members: list[str] = []
+    depth = 0
+    start = 0
+    # Split on the top-level "|" only, so a "|" inside brackets, such as in "Sequence[int | str]", stays in its member.
+    for i, ch in enumerate(hint):
+        if ch in "[(":
+            depth += 1
+        elif ch in "])":
+            depth -= 1
+        elif ch == "|" and depth == 0:
+            members.append(hint[start:i])
+            start = i + 1
+    members.append(hint[start:])
+    bound = (re.sub(r"\bT\b", cls.__name__, m.strip()) for m in members)
+    return " | ".join(dict.fromkeys(bound))
 
 
 def fill_doc(doc: str, doc_vars: dict[str, str], op_name: str = "") -> str:
@@ -137,6 +114,9 @@ def copy_op(func: types.FunctionType, cls: type, doc: str) -> types.FunctionType
 
     Returns:
         the copy, named and documented as the subclass's own method
+
+    Raises:
+        TypeError: when the op has a hint that is not text
     """
     # A new function on the same code keeps the base op's signature, defaults and annotations. A wrapper would show
     # (*args, **kwargs) instead.
@@ -148,22 +128,21 @@ def copy_op(func: types.FunctionType, cls: type, doc: str) -> types.FunctionType
         func.__closure__,
     )
     op.__kwdefaults__ = func.__kwdefaults__
-    # Resolve the string annotations here, with the subclass's module added. The copy keeps the base module's
-    # globals, where the subclass may not exist yet or may exist only for type checking. Without this, Sphinx cannot
-    # resolve the class names. Binding T to the subclass then keeps the docs from showing "-> T".
-    hints = get_type_hints(
-        func,
-        globalns={
-            **func.__globals__,
-            **vars(sys.modules[cls.__module__]),
-            cls.__name__: cls,
-        },
-    )
-    # get_type_hints turns a None hint into NoneType, which help() would show as "-> NoneType".
+    for name, hint in func.__annotations__.items():
+        # A hint that is an object would need resolving, and the copy would show it with full module paths, such as
+        # "collections.abc.Sequence[str]", in tools that print the signature, such as the Web IDE's autocomplete.
+        if not isinstance(hint, str):
+            raise TypeError(
+                f"{func.__qualname__} has a {name!r} hint that is not text; its module needs "
+                f"'from __future__ import annotations'"
+            )
+    # Keep the source text, with T replaced, so signatures show "Sequence[str]".
     op.__annotations__ = {
-        k: None if v is type(None) else to_pipe_union(bind_t(v, cls))
-        for k, v in hints.items()
+        k: bind_t_text(v, cls) for k, v in func.__annotations__.items()
     }
+    # get_type_hints resolves the text in the copy's globals, which are the base module's. A base module that imports
+    # the subclass only for type checking would raise NameError there, so bind the subclass's name.
+    func.__globals__.setdefault(cls.__name__, cls)
     op.__qualname__ = f"{cls.__qualname__}.{func.__name__}"
     op.__module__ = cls.__module__
     op.__doc__ = doc
@@ -193,7 +172,8 @@ def copy_ops(
             public function is copied
 
     Raises:
-        TypeError: when the subclass's ``_doc_vars`` lacks a required key, or an op is decorated
+        TypeError: when the subclass's ``_doc_vars`` lacks a required key, an op is decorated, or an op has a hint
+            that is not text
     """
     if "_doc_vars" not in vars(cls):
         return
