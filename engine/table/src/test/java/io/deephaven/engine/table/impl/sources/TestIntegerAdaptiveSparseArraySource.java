@@ -141,7 +141,33 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
     private static RowSet randomRowSet(final Random random, final int maxSize) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         final int size = 1 + random.nextInt(maxSize);
-        final long start = KEY_REGION_STARTS[random.nextInt(KEY_REGION_STARTS.length)];
+        addRandomRows(builder, random, size, KEY_REGION_STARTS[random.nextInt(KEY_REGION_STARTS.length)]);
+        return builder.build();
+    }
+
+    /**
+     * @return a random row set over one or more of the key regions, so that it may span several bottom and middle page
+     *         table levels, whose density varies by leaf as {@link #randomRowSet} does
+     */
+    private static RowSet randomRowSetAcrossRegions(final Random random, final int maxSize) {
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+        final int firstRegion = random.nextInt(KEY_REGION_STARTS.length);
+        final int regions = 1 + random.nextInt(KEY_REGION_STARTS.length);
+        for (int ri = 0; ri < regions; ++ri) {
+            addRandomRows(builder, random, 1 + random.nextInt(maxSize / regions),
+                    KEY_REGION_STARTS[(firstRegion + ri) % KEY_REGION_STARTS.length]);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Add {@code size} random row keys or short ranges in the key region beginning at {@code start} to {@code builder}.
+     */
+    private static void addRandomRows(
+            final RowSetBuilderRandom builder,
+            final Random random,
+            final int size,
+            final long start) {
         for (int ii = 0; ii < size; ++ii) {
             final long leafStart = start + (long) random.nextInt(KEY_REGION_SIZE / BLOCK_SIZE) * BLOCK_SIZE;
             final int span = random.nextBoolean() ? BLOCK_SIZE : 16;
@@ -152,7 +178,6 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
                 builder.addKey(key);
             }
         }
-        return builder.build();
     }
 
     private static void checkAgainstMap(final IntegerAdaptiveSparseArraySource source, final int seed) {
@@ -264,7 +289,7 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
                 final Long2IntOpenHashMap expectedPrev = new Long2IntOpenHashMap(expected);
                 expectedPrev.defaultReturnValue(NULL_INT);
                 updateGraph.startCycleForUnitTests();
-                try (final RowSet rows = randomRowSet(random, 4000)) {
+                try (final RowSet rows = randomRowSetAcrossRegions(random, 4000)) {
                     final int[] values = new int[rows.intSize()];
                     final MutableInt position = new MutableInt(0);
                     rows.forAllRowKeys(key -> {
