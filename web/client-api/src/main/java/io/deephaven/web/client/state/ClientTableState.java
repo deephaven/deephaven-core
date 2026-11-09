@@ -25,6 +25,8 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.*;
+import io.grpc.Context;
+import io.grpc.stub.StreamObserver;
 import jsinterop.base.Js;
 
 import java.nio.ByteBuffer;
@@ -98,6 +100,8 @@ public final class ClientTableState extends TableConfig {
     private final WorkerConnection connection;
     private final JsTableFetch fetch;
     private final String fetchSummary;
+    /** The context of the latest {@link #refetch()}; canceling it ends that fetch's call. */
+    private Context.CancellableContext fetchContext;
 
     // ===================================================================================
     // These fields describe mutable value state of a ClientTableState
@@ -949,8 +953,10 @@ public final class ClientTableState extends TableConfig {
             }
             return Promise.resolve(this);
         }
+        Context.CancellableContext context = Context.current().withCancellation();
+        fetchContext = context;
         final Promise<ExportedTableCreationResponse> promise =
-                Callbacks.grpcUnaryPromise(c -> fetch.fetch(c, this));
+                Callbacks.grpcUnaryPromise(c -> context.run(() -> fetch.fetch(c, this)));
         // noinspection unchecked
         return promise.then(def -> {
             if (resolution == ResolutionState.RELEASED) {
@@ -962,6 +968,26 @@ public final class ClientTableState extends TableConfig {
             applyTableCreationResponse(def);
             return Promise.resolve(this);
         });
+    }
+
+    /**
+     * Makes the call of a fetch that issues it later than {@link #refetch()} does, in that fetch's context so that
+     * {@link #cancelFetch()} ends it; if the fetch was already canceled, fails {@code callback} instead of calling.
+     */
+    public void runInFetch(StreamObserver<?> callback, Runnable call) {
+        assert fetchContext != null : "fetchers run only from refetch()";
+        if (fetchContext.isCancelled()) {
+            callback.onError(new IllegalStateException("Fetch canceled before it was sent"));
+            return;
+        }
+        fetchContext.run(call);
+    }
+
+    /** Ends the call of the latest {@link #refetch()}, or keeps it from being made. */
+    public void cancelFetch() {
+        if (fetchContext != null) {
+            fetchContext.cancel(null);
+        }
     }
 
     public void applyTableCreationResponse(ExportedTableCreationResponse def) {

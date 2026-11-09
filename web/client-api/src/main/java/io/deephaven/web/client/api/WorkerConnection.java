@@ -728,20 +728,22 @@ public class WorkerConnection {
         }
         return newState((c, cts) -> whenServerReady("get a table").then(serve -> definition).then(varDef -> {
             JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts, " (" + cts.getHandle() + ")");
-            // Only apply preview if specifically requested
-            if (applyPreviewColumns != null && applyPreviewColumns) {
-                ApplyPreviewColumnsRequest req = ApplyPreviewColumnsRequest.newBuilder()
-                        .setSourceId(Tickets.createTableRef(varDef))
-                        .setResultId(cts.getHandle().makeTicket())
-                        .build();
-                tableServiceClient.applyPreviewColumns(req, c);
-            } else {
-                FetchTableRequest req = FetchTableRequest.newBuilder()
-                        .setSourceId(Tickets.createTableRef(varDef))
-                        .setResultId(cts.getHandle().makeTicket())
-                        .build();
-                tableServiceClient.fetchTable(req, c);
-            }
+            cts.runInFetch(c, () -> {
+                // Only apply preview if specifically requested
+                if (applyPreviewColumns != null && applyPreviewColumns) {
+                    ApplyPreviewColumnsRequest req = ApplyPreviewColumnsRequest.newBuilder()
+                            .setSourceId(Tickets.createTableRef(varDef))
+                            .setResultId(cts.getHandle().makeTicket())
+                            .build();
+                    tableServiceClient.applyPreviewColumns(req, c);
+                } else {
+                    FetchTableRequest req = FetchTableRequest.newBuilder()
+                            .setSourceId(Tickets.createTableRef(varDef))
+                            .setResultId(cts.getHandle().makeTicket())
+                            .build();
+                    tableServiceClient.fetchTable(req, c);
+                }
+            });
             return null;
         }).catch_(error -> {
             c.onError(asThrowable(error));
@@ -1564,7 +1566,7 @@ public class WorkerConnection {
      */
     public JsPendingTable<JsTable> pendingTable(String operationName, JsTableFetch fetcher, String fetchSummary) {
         return pendingTable((c, cts) -> whenServerReady(operationName).then(server -> {
-            fetcher.fetch(c, cts);
+            cts.runInFetch(c, () -> fetcher.fetch(c, cts));
             return null;
         }).catch_(error -> {
             c.onError(asThrowable(error));

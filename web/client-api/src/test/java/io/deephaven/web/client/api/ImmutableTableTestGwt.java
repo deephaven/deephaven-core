@@ -4,10 +4,13 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
+import elemental2.core.Uint8Array;
 import elemental2.dom.AbortController;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
+import io.deephaven.proto.backplane.grpc.ReleaseRequest;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
@@ -21,6 +24,7 @@ import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 
 /**
@@ -1057,6 +1061,97 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testCancelBeforeSendSkipsTheFetch() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(10_045);
+                    // Canceled in the creating task, before the server-ready wait lets the request go
+                    session.timeTable(1e9, null).cancel();
+                    return delay(500).then(ignore -> {
+                        assertEquals("a timeTable canceled before it was sent was sent anyway", 0,
+                                transport.streamsStarted(TIME_TABLE));
+                        return Promise.resolve(session);
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCancelInFlightFetchEndsItsCall() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(10_046);
+                    // Holding the response keeps the call open until something ends it
+                    transport.holdStreams(TIME_TABLE);
+                    JsPendingTable<JsTable> pending = session.timeTable(1e9, null);
+                    return within("the timeTable call never started", () -> transport.hasOpenStream(TIME_TABLE))
+                            .then(ignore -> {
+                                pending.cancel();
+                                return within("the canceled timeTable's call was still open",
+                                        () -> !transport.hasOpenStream(TIME_TABLE));
+                            })
+                            .then(ignore -> {
+                                transport.holdStreams(null);
+                                return Promise.resolve(session);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCancelInFlightFetchReleasesItsTicket() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(10_047);
+                    // With no response, the ticket was never confirmed to the client; it is released anyway
+                    transport.holdStreams(TIME_TABLE);
+                    JsPendingTable<JsTable> pending = session.timeTable(1e9, null);
+                    Ticket ticket = pending.typedTicket().getTicket();
+                    return within("the timeTable call never started", () -> transport.hasOpenStream(TIME_TABLE))
+                            .then(ignore -> {
+                                pending.cancel();
+                                return within("no Release was sent for the canceled timeTable's ticket",
+                                        () -> releaseSent(transport, ticket));
+                            })
+                            .then(ignore -> {
+                                transport.holdStreams(null);
+                                return Promise.resolve(session);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    private static final String TIME_TABLE = "TableService/TimeTable";
+
+    /** Resolves once {@code condition} holds; fails with {@code failure} if it does not within 2s. */
+    private Promise<Object> within(String failure, BooleanSupplier condition) {
+        return Promise.resolve(waitFor(condition, 50, 2_000, (Object) null))
+                .then(ok -> Promise.resolve(ok), err -> Promise.reject(failure));
+    }
+
+    /** Whether {@code transport} sent a Release naming {@code ticket}; each message carries a 5-byte frame header. */
+    private static boolean releaseSent(CuttingTransportFactory transport, Ticket ticket) {
+        byte[] expected = ReleaseRequest.newBuilder().setId(ticket).build().toByteArray();
+        for (Uint8Array message : transport.messagesSent("SessionService/Release")) {
+            int offset = message.length - expected.length;
+            boolean same = offset >= 0;
+            for (int i = 0; same && i < expected.length; i++) {
+                same = (message.getAt(offset + i).intValue() & 0xff) == (expected[i] & 0xff);
+            }
+            if (same) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void testAbortEntryPointFetch() {
         connect(tables)
                 .then(session -> {
@@ -1065,7 +1160,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     JsPendingTable<JsTable> pending = session.getTable("source", null);
                     Promise<JsResolvedTable> fetched = pending.resolve(withSignal(controller));
                     controller.abort();
-                    // The fetch itself is not withdrawn, but the state it fetches is released
+                    // The fetch's call is ended and the state it fetches is released
                     return expectRejection(fetched, "Abort")
                             .then(ignore -> delay(500))
                             .then(ignore -> {
