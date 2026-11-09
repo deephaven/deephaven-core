@@ -8,11 +8,12 @@ async function probe() {
     const a = await session.getObject(def);
     const asTable: dh.Table = a;
     const isAny: number = a;
+    asTable.close();
 
     // 2. .then on the union
     session.getObject(def).then(t => {
         const tIsAny: number = t;
-        return t;
+        t.close();
     });
 
     // 3. chaining without a cast
@@ -29,11 +30,14 @@ async function probe() {
     // 5. Promise.all with the union
     const [x, y] = await Promise.all([session.getObject(def), session.getObject(def)]);
     const xType: dh.Table = x;
+    x.close();
+    y.close();
 
     // 6. narrowing by a property test
     const o = session.getObject(def);
     if ("where" in o) {
         const n = await o.where([]);
         const nType: dh.ResolvedTable = n;
+        n.close();
     }
 }

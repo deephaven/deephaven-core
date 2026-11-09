@@ -131,7 +131,8 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  *     }
  *     changeFilters(filters: ReadonlyArray&lt;dh.FilterCondition>) {
  *         if (this.filteredTable) {
- *             this.filteredTable.then(t => t.close());
+ *             // A table that failed has nothing to close
+ *             this.filteredTable.then(t => t.close(), () => {});
  *         }
  *         // Note that this can be a surprise - returning a Thenable or PromiseLike as the result
  *         // of a resolved callback will invoke `then()` on it, which will retain the table.
@@ -149,9 +150,9 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  *         })
  *     }
  *     close() {
- *         this.table.then(t => t.close());
+ *         this.table.then(t => t.close(), () => {});
  *         if (this.filteredTable) {
- *             this.filteredTable.then(t => t.close());
+ *             this.filteredTable.then(t => t.close(), () => {});
  *         }
  *     }
  * }

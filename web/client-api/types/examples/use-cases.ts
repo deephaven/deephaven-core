@@ -35,7 +35,7 @@ async function joins() {
     const [joined, asOf, exact] = await Promise.all([
         left.naturalJoin(right, ["Key"], ["Value"]),
         left.aj(right, ["Key", "Ts"]),
-        left.exactJoin(right, ["Key"]),
+        left.exactJoin(right, ["Key"], ["Value"]),
     ]);
     joined.close();
     asOf.close();
@@ -192,7 +192,8 @@ async function legacy() {
     const table = (await session.getObject({ type: "Table", name: "source" })) as dh.Table;
     table.applyFilter([]);
     const derived = await table.operations().update(["Z = X + 1"]);
-    const joined = await derived.naturalJoin(table, ["Key"]);
+    // derived already has every column of table, so name the one to add
+    const joined = await derived.naturalJoin(table, ["Key"], ["OriginalX = X"]);
     await readAny(table.operations());
     table.close();
     derived.close();
