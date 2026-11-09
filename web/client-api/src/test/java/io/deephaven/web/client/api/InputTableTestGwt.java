@@ -114,7 +114,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     public void testAddSeveralTablesThenDelete() {
-        // Several tables are merged by a request sent with the add, not awaited first
+        // Pending tables added together all land, and one can then be deleted
         connect(tables)
                 .then(session -> {
                     delayTestFinish(15_007);
