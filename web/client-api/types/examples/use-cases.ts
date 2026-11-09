@@ -124,6 +124,21 @@ async function handleFailure() {
     orNull?.close();
 }
 
+// Several tables at once when any can fail: Promise.all would reject and lose the ones that arrived, still open
+async function severalThatMayFail() {
+    const t = session.emptyTable(5).update(["X = i"]);
+    const results = await Promise.allSettled([t.update(["Y = X * 2"]), t.update(["Z = NoSuchColumn"])]);
+    const tables = results.flatMap(r => r.status === "fulfilled" ? [r.value] : []);
+    try {
+        if (tables.length < results.length) {
+            throw new Error("some tables failed");
+        }
+        // ... use the tables ...
+    } finally {
+        tables.forEach(table => table.close());
+    }
+}
+
 // Reading any table, legacy or new: Table, TotalsTable and ResolvedTable are all an ITable
 function describe(t: dh.ITable): string {
     return `${t.size} rows: ${t.columns.map(c => c.name).join(", ")}`;
