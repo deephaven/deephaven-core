@@ -164,8 +164,8 @@ public class JsInputTable {
      * future updates to the source table will not be reflected in the Input Table. The returned promise will be
      * resolved to the same {@link JsInputTable} instance this method was called upon once the server returns.
      *
-     * @param tableToAdd
-     * @return Promise of dh.InputTable
+     * @param tableToAdd the table whose rows to add; only columns matching this input table are used
+     * @return a promise of this input table, resolved once the rows have been added
      */
     public Promise<JsInputTable> addTable(JsTableReference tableToAdd) {
         return addTables(new JsTableReference[] {tableToAdd});
@@ -185,8 +185,8 @@ public class JsInputTable {
     /**
      * Add multiple tables to this Input Table.
      *
-     * @param tablesToAdd
-     * @return Promise of dh.InputTable
+     * @param tablesToAdd the tables whose rows to add, merged into one add
+     * @return a promise of this input table, resolved once the rows have been added
      */
     public Promise<JsInputTable> addTables(JsTableReference[] tablesToAdd) {
         if (tablesToAdd.length == 0) {
@@ -222,8 +222,8 @@ public class JsInputTable {
     /**
      * Deletes an entire table from this Input Table. Key columns must match the Input Table.
      * 
-     * @param tableToDelete
-     * @return Promise of dh.InputTable
+     * @param tableToDelete the table whose rows to delete, matched on this input table's key columns
+     * @return a promise of this input table, resolved once the rows have been deleted
      */
     public Promise<JsInputTable> deleteTable(JsTableReference tableToDelete) {
         return deleteTables(new JsTableReference[] {tableToDelete});
@@ -232,8 +232,8 @@ public class JsInputTable {
     /**
      * Delete multiple tables from this Input Table.
      * 
-     * @param tablesToDelete
-     * @return
+     * @param tablesToDelete the tables whose rows to delete, matched on the key columns
+     * @return a promise of this input table, resolved once the rows have been deleted
      */
     public Promise<JsInputTable> deleteTables(JsTableReference[] tablesToDelete) {
         if (tablesToDelete.length == 0) {

@@ -204,7 +204,7 @@ public class IdeSession extends HasEventHandling {
     /**
      * Merges the given tables into a single table. Assumes all tables have the same structure.
      * 
-     * @param tables
+     * @param tables the tables to merge, which must have the same columns and be from this connection
      * @return the merged table, as a pending table
      */
     public JsPendingTable<JsTable> mergeTables(JsTableReference[] tables) {
