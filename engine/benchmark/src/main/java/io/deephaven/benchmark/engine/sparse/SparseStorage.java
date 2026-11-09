@@ -36,7 +36,8 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * <li>AdaptiveFull: {@link DoubleAdaptiveSparseArraySource} with every leaf a full block, as the factory methods of
  * {@link SparseArrayColumnSource} create it</li>
  * </ul>
- * Patterns cover a space of {@link #KEY_SPACE} row keys:
+ * Each pattern spans {@link #keySpace(String)} row keys, at least {@link #MIN_KEY_SPACE} and enough for about
+ * {@link #MIN_ROWS} rows, so that every measurement covers at least that many rows:
  * <ul>
  * <li>Dense: every row key</li>
  * <li>Stride8, Stride64, Stride512: every 8th, 64th or 512th row key</li>
@@ -46,34 +47,70 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * </ul>
  */
 final class SparseStorage {
-    static final long KEY_SPACE = 1L << 23;
+    /** The fewest rows a pattern holds, about. */
+    static final int MIN_ROWS = 1 << 20;
+    /** The fewest row keys a pattern spans. */
+    static final long MIN_KEY_SPACE = 1L << 23;
     static final int CHUNK_SIZE = 4096;
 
     private SparseStorage() {}
 
+    /**
+     * @return the mean number of row keys {@code pattern} spans for each row it holds, rounded to an integer
+     */
+    static int keysPerRow(final String pattern) {
+        switch (pattern) {
+            case "Dense":
+                return 1;
+            case "Stride8":
+            case "Runs64":
+            case "Clustered":
+                return 8;
+            case "Stride64":
+                return 64;
+            case "Stride512":
+                return 512;
+            case "Random10":
+                return 10;
+            case "Random1":
+                return 100;
+            default:
+                throw new IllegalArgumentException("Unknown pattern " + pattern);
+        }
+    }
+
+    /**
+     * @return the number of row keys {@code pattern} spans from 0: at least {@link #MIN_KEY_SPACE}, and enough for
+     *         about {@link #MIN_ROWS} rows; a multiple of the block size
+     */
+    static long keySpace(final String pattern) {
+        return Math.max(MIN_KEY_SPACE, (long) MIN_ROWS * keysPerRow(pattern));
+    }
+
     static RowSet keys(final String pattern) {
+        final long keySpace = keySpace(pattern);
         final Random random = new Random(0);
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         switch (pattern) {
             case "Dense":
-                return RowSetFactory.flat(KEY_SPACE);
+                return RowSetFactory.flat(keySpace);
             case "Stride8":
-                return stride(8);
+                return stride(keySpace, 8);
             case "Stride64":
-                return stride(64);
+                return stride(keySpace, 64);
             case "Stride512":
-                return stride(512);
+                return stride(keySpace, 512);
             case "Runs64":
-                for (long key = 0; key < KEY_SPACE; key += 512) {
+                for (long key = 0; key < keySpace; key += 512) {
                     builder.appendRange(key, key + 63);
                 }
                 return builder.build();
             case "Random10":
-                return random(random, 10);
+                return random(random, keySpace, 10);
             case "Random1":
-                return random(random, 100);
+                return random(random, keySpace, 100);
             case "Clustered":
-                for (long leafStart = 0; leafStart < KEY_SPACE; leafStart += BLOCK_SIZE) {
+                for (long leafStart = 0; leafStart < keySpace; leafStart += BLOCK_SIZE) {
                     if (random.nextInt(8) == 0) {
                         builder.appendRange(leafStart, leafStart + BLOCK_SIZE - 1);
                     } else {
@@ -88,17 +125,17 @@ final class SparseStorage {
         }
     }
 
-    private static RowSet stride(final int stride) {
+    private static RowSet stride(final long keySpace, final int stride) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        for (long key = 0; key < KEY_SPACE; key += stride) {
+        for (long key = 0; key < keySpace; key += stride) {
             builder.appendKey(key);
         }
         return builder.build();
     }
 
-    private static RowSet random(final Random random, final int oneIn) {
+    private static RowSet random(final Random random, final long keySpace, final int oneIn) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        for (long key = 0; key < KEY_SPACE; ++key) {
+        for (long key = 0; key < keySpace; ++key) {
             if (random.nextInt(oneIn) == 0) {
                 builder.appendKey(key);
             }

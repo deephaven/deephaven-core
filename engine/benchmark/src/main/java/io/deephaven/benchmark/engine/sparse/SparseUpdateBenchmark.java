@@ -48,7 +48,8 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
 /**
  * Measures {@code update()} into sparse array sources that hold every leaf as a full block, or into adaptive sparse
  * array sources with compact leaves, selected by {@link SparseMemoryColumnSourceFactory#USE_ADAPTIVE}, for a refreshing
- * parent whose row keys follow a pattern over a window of {@code 2^logWindow} row keys:
+ * parent whose row keys follow a pattern over a window of {@link SparseStorage#keySpace(String)} row keys, which holds
+ * at least about {@link SparseStorage#MIN_ROWS} rows:
  * <ul>
  * <li>Dense: every row key</li>
  * <li>Stride8, Stride64, Stride512: every 8th, 64th or 512th row key</li>
@@ -58,13 +59,15 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * The benchmarks are:
  * <ul>
  * <li>{@link #initialUpdate()}: computing the result of the whole parent</li>
- * <li>{@link #marchCycle()}: a cycle that removes the parent's lowest {@code 2^logCycleKeys} row keys and adds as many
- * beyond its highest, so that the result fills new leaves and releases old ones</li>
- * <li>{@link #modifyCycle()}: a cycle that reports every parent row within {@code 2^logCycleKeys} row keys as modified,
- * so that the result recomputes them and records their previous values</li>
+ * <li>{@link #marchCycle()}: a cycle that removes the parent's rows in its lowest cycle span of row keys and adds as
+ * many beyond its highest, so that the result fills new leaves and releases old ones</li>
+ * <li>{@link #modifyCycle()}: a cycle that reports every parent row within a cycle span of row keys as modified, so
+ * that the result recomputes them and records their previous values</li>
  * </ul>
- * The parent's value column is computed from the row key, so the measured work is the result's. The retained size that
- * {@link SparseArrayColumnSource#estimateSize()} reports for the result column is printed at the end of each trial.
+ * A cycle span is {@code 2^logCycleRows} times {@link SparseStorage#keysPerRow(String)} row keys, so that each cycle
+ * changes about {@code 2^logCycleRows} rows whatever the pattern. The parent's value column is computed from the row
+ * key, so the measured work is the result's. The retained size that {@link SparseArrayColumnSource#estimateSize()}
+ * reports for the result column is printed at the end of each trial.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -115,11 +118,8 @@ public class SparseUpdateBenchmark {
     @Param({"serial", "parallel"})
     private String threads;
 
-    @Param({"23"})
-    private int logWindow;
-
     @Param({"16"})
-    private int logCycleKeys;
+    private int logCycleRows;
 
     private ControlledUpdateGraph updateGraph;
     private QueryTable parent;
@@ -145,8 +145,8 @@ public class SparseUpdateBenchmark {
         // each initialUpdate must build a new result rather than return the memoized one
         QueryTable.setMemoizeResults(false);
 
-        window = 1L << logWindow;
-        cycleKeys = 1L << logCycleKeys;
+        window = SparseStorage.keySpace(pattern);
+        cycleKeys = (1L << logCycleRows) * SparseStorage.keysPerRow(pattern);
         parent = new QueryTable(keys(pattern, 0, window).toTracking(), Map.of("V", new ComputedSource()));
         parent.setRefreshing(true);
         valuesModified = parent.newModifiedColumnSet("V");
