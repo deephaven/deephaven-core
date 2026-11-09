@@ -19,7 +19,8 @@ import jsinterop.annotations.JsOptional;
  * <p>
  * Each instance belongs to whoever created it or was given it to own, and must be {@link #close() closed} by them.
  * {@link #copy()} produces another instance over the same server-side table that can be closed independently; see
- * {@link JsTableOperations} for who owns what.
+ * {@link JsTableOperations} for who owns what. Like other tables made by operations, it is not revived if a reconnect
+ * needs a new session.
  */
 @TsName(namespace = "dh", name = "ResolvedTable")
 @TsInterface

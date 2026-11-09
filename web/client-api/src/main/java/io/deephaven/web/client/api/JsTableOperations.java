@@ -612,7 +612,7 @@ public interface JsTableOperations extends ServerObject {
      * @param rightTable The right side table on the join.
      * @param columnsToMatch The match pair conditions.
      * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
-     *        match.
+     *        match; if omitted, all non-match columns are added.
      * @param joinType The type of join to perform
      * @return the natural-joined table
      */

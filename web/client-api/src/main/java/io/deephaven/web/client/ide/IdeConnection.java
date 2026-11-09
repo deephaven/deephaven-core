@@ -196,7 +196,9 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * <p>
      * Shared objects will remain available using the {@code sharedTicketBytes} until the client that first shared them
      * releases/closes their copy of the object. Whatever side-channel is used to share the bytes, be sure to wait until
-     * the remote end has signaled that it has successfully fetched the object before releasing it from this client.
+     * the remote end has signaled that it has successfully fetched the object before releasing it from this client. A
+     * pending table that nothing awaits is released once its result arrives and the share has been made, so keep it by
+     * awaiting it, or share the table that awaiting gives.
      * <p>
      * Be sure to use an unpredictable value for the shared ticket bytes, like a UUID or other large, random value to
      * prevent access by unauthorized clients.
