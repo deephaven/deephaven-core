@@ -73,4 +73,4 @@ docker pull ghcr.io/deephaven/server-slim:latest
 
 Then stop your running container and start a new one with the same `docker run` command you used in [Get started](./get-started.md). To stop the container, press <kbd>Ctrl+C</kbd> in its terminal or run `docker stop deephaven`. Because the Get started command mounts `./data`, your saved files carry over.
 
-If you run Deephaven from a `docker-compose.yml` file or your own `Dockerfile`, see the [guide to updating Deephaven](../../how-to-guides/configuration/updating-deephaven.md#update-deephaven) to set the image version there.
+If you run Deephaven from a `docker-compose.yml` file or your own `Dockerfile`, see the [guide to updating Docker-installed Deephaven](../../how-to-guides/configuration/updating-deephaven.md#update-docker-installed-deephaven) to set the image version there.

@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
@@ -46,6 +47,27 @@ public interface WhereFilter extends Filter {
     @InternalUseOnly
     static WhereFilter[] fromInternal(Filter filter) {
         return from(FilterToListImpl.of(filter));
+    }
+
+    /**
+     * {@link #beginOperation(Table) Begin} the operation of each of {@code filters}, in order. If any filter throws,
+     * the operations already begun are closed before the exception propagates.
+     *
+     * @param sourceTable The {@link Table} that will be filtered with {@code filters}
+     * @param filters The filters whose operations to begin
+     * @return A {@link SafeCloseable} that closes every operation begun, attempting each even if an earlier one throws
+     */
+    static SafeCloseable beginOperations(@NotNull final Table sourceTable, @NotNull final WhereFilter... filters) {
+        final SafeCloseable[] operations = new SafeCloseable[filters.length];
+        try {
+            for (int fi = 0; fi < filters.length; ++fi) {
+                operations[fi] = filters[fi].beginOperation(sourceTable);
+            }
+        } catch (final RuntimeException | Error failure) {
+            SafeCloseable.closeAllDuringFailure(failure, operations);
+            throw failure;
+        }
+        return new SafeCloseableList(operations);
     }
 
     /**
@@ -387,10 +409,30 @@ public interface WhereFilter extends Filter {
     }
 
     /**
-     * Returns true if this filter uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
+     * Returns true if this filter uses row virtual offset columns of {@code i}, {@code ii} or {@code k}, or selects
+     * rows by position as those variables do, as a release filter does.
      */
     default boolean hasVirtualRowVariables() {
         return false;
+    }
+
+    /**
+     * Whether this filter's result for a row depends on other rows, through a {@link #hasVirtualRowVariables() virtual
+     * row variable} ({@code i}, {@code ii} or {@code k}) or a {@link #getColumnArrays() column array} such as
+     * {@code A_}; a shift such as {@code A_[i - 1]} uses both. Such a filter must see every row its where receives, as
+     * on a {@link io.deephaven.engine.table.impl.QueryTable QueryTable}, so a table that defers, merges or reorders
+     * filters runs the whole where on the coalesced table.
+     * <p>
+     * A release filter, which selects rows by position, reports a virtual row variable. A downsampling filter, which
+     * depends on the rows that the filters before the downsampling filter pass, {@link #isSerial() is serial} instead.
+     * <p>
+     * This filter must already be initialized.
+     *
+     * @return whether this filter has cross-row dependencies
+     */
+    @FinalDefault
+    default boolean hasCrossRowDependencies() {
+        return hasVirtualRowVariables() || !getColumnArrays().isEmpty();
     }
 
     /**

@@ -302,7 +302,7 @@ public class LeaderTableFilter {
         if (tableCount > MAX_FOLLOWERS) {
             throw new IllegalArgumentException("Only " + MAX_FOLLOWERS + " follower tables are supported!");
         }
-        this.completelySatisfiedMask = ((1 << tableCount) - 1);
+        this.completelySatisfiedMask = -1 >>> (MAX_FOLLOWERS - tableCount);
         this.followerKeyStateMap = new ArrayList<>(tableCount);
         this.followerKeySources = new TupleSource[tableCount];
         // noinspection unchecked
@@ -1065,7 +1065,8 @@ public class LeaderTableFilter {
         /**
          * Instantiate the Result with synchronized tables.
          * <p>
-         * This must be called under the UpdateGraph lock.
+         * If any input table is refreshing, this must be called while holding the update graph's shared or exclusive
+         * lock, or from a context where serial table operations are otherwise safe.
          *
          * @return a Result with one entry for each input Table (leader and all followers)
          */
@@ -1188,7 +1189,8 @@ public class LeaderTableFilter {
         /**
          * Instantiate the Result with synchronized PartitionedTables.
          * <p>
-         * This must be called under the UpdateGraph lock.
+         * If any input table is refreshing, this must be called while holding the update graph's shared or exclusive
+         * lock, or from a context where serial table operations are otherwise safe.
          *
          * @return a Result with one entry for each input PartitionedTable
          */

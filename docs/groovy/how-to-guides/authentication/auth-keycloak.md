@@ -20,7 +20,7 @@ Deephaven can be configured to authenticate users with OIDC and Keycloak with so
 
 This guide will first cover the configuration of Keycloak and a database for it.
 
-Docker will create three services: `deephaven`, `database`, and `keycloak`. It will also set up the bridge network between the Keycloak server and the database. Usernames and passwords in Keycloak are created with a JSON file, which will be mounted in a [Docker volume](../../conceptual/docker-data-volumes.md).
+Docker will create three services: `deephaven`, `database`, and `keycloak`. It will also set up the bridge network between the Keycloak server and the database. Usernames and passwords in Keycloak are created with a JSON file, which will be mounted in a [Docker bind mount](../../conceptual/docker-data-volumes.md).
 
 ## Example
 
@@ -71,7 +71,7 @@ services:
       - dh_auth_ntw
 
   keycloak:
-    image: quay.io/keycloak/keycloak:19.0.1
+    image: quay.io/keycloak/keycloak:19.0.3
     container_name: keycloak
     environment:
       - KEYCLOAK_LOGLEVEL=ALL

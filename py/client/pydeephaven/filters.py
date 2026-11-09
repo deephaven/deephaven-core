@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import datetime
 from abc import ABC, abstractmethod
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -29,13 +30,20 @@ from deephaven_core.proto.table_pb2 import (
     Value,
 )
 
+from .dherror import DHError
+
 # Type alias for datetime-like types
-DatetimeLike = Union[
-    datetime.datetime,
-    datetime.date,
-    np.datetime64,
-    pd.Timestamp,
-]
+DatetimeLike: TypeAlias = (
+    datetime.datetime | datetime.date | np.datetime64 | pd.Timestamp
+)
+
+_EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+
+
+def _aware_datetime_to_nanos(dt: datetime.datetime) -> int:
+    """Returns nanoseconds since the Unix epoch for an aware datetime. Integer math keeps every microsecond.
+    datetime.timestamp() returns a float, which cannot hold epoch nanoseconds exactly."""
+    return (dt - _EPOCH) // datetime.timedelta(microseconds=1) * 1_000
 
 
 def _datetime_to_nanos(dt: DatetimeLike) -> int:
@@ -54,26 +62,27 @@ def _datetime_to_nanos(dt: DatetimeLike) -> int:
         # numpy datetime64 - convert to nanoseconds
         return dt.astype("datetime64[ns]").astype(int)
     elif isinstance(dt, datetime.datetime):
-        # Python datetime - convert to nanoseconds
-        # timestamp() returns seconds since epoch (as float)
-        return int(dt.timestamp() * 1_000_000_000)
+        # Python datetime - a naive one is local time, as in datetime.timestamp(). Python counts a datetime as naive
+        # when utcoffset() is None, even if it has a tzinfo, and subtracting the aware epoch from it would raise.
+        aware = dt if dt.utcoffset() is not None else dt.astimezone()
+        return _aware_datetime_to_nanos(aware)
     elif isinstance(dt, datetime.date):
         # Python date - convert to datetime at midnight UTC, then to nanos
         dt_obj = datetime.datetime.combine(
             dt, datetime.time.min, tzinfo=datetime.timezone.utc
         )
-        return int(dt_obj.timestamp() * 1_000_000_000)
+        return _aware_datetime_to_nanos(dt_obj)
     else:
         raise TypeError(f"Unsupported datetime type: {type(dt)}")
 
 
-def _to_proto_value(v: Union[bool, int, float, str, DatetimeLike, ColumnName]) -> Value:
+def _to_proto_value(v: bool | int | float | str | DatetimeLike | ColumnName) -> Value:
     if isinstance(v, ColumnName):
         return Value(reference=Reference(column_name=v))
     elif isinstance(v, str):
         return Value(literal=Literal(string_value=v))
-    elif isinstance(v, bool):
-        return Value(literal=Literal(bool_value=v))
+    elif isinstance(v, (bool, np.bool_)):
+        return Value(literal=Literal(bool_value=bool(v)))
     elif isinstance(v, (datetime.datetime, datetime.date, np.datetime64, pd.Timestamp)):
         # Handle datetime types - convert to nanoseconds since epoch
         nanos = _datetime_to_nanos(v)
@@ -106,8 +115,8 @@ class _CompareFilter(Filter):
     def __init__(
         self,
         op: CompareCondition.CompareOperation.ValueType,
-        left: Union[bool, int, float, str, DatetimeLike, ColumnName],
-        right: Union[bool, int, float, str, DatetimeLike, ColumnName],
+        left: bool | int | float | str | DatetimeLike | ColumnName,
+        right: bool | int | float | str | DatetimeLike | ColumnName,
         case_sensitive: bool = True,
     ):
         self._lhs = _to_proto_value(left)
@@ -135,11 +144,22 @@ class _InFilter(Filter):
     def __init__(
         self,
         col: str,
-        values: Sequence[Union[bool, int, float, str]],
+        values: Sequence[bool | int | float | str],
         case_sensitive: bool = True,
     ):
         self._col = col
-        self._values = values
+        # A single string is one value. Iterating it would send each character as a value. Any other iterable,
+        # such as a NumPy array, pandas Series or set, is iterated.
+        self._values: list[bool | int | float | str]
+        if isinstance(values, str):
+            self._values = [values]
+        else:
+            try:
+                self._values = list(values)
+            except TypeError as e:
+                raise DHError(
+                    f"in_ values must be a string or an iterable of values, not {type(values)}."
+                ) from e
         self._case_sensitivity = (
             CaseSensitivity.MATCH_CASE
             if case_sensitive
@@ -372,7 +392,7 @@ def contains(
 
 def in_(
     col: str,
-    values: Sequence[Union[bool, int, float, str]],
+    values: Sequence[bool | int | float | str],
     case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the column's value is in the given values.
@@ -392,8 +412,8 @@ def in_(
 
 
 def eq(
-    left: Union[bool, int, float, str, DatetimeLike, ColumnName],
-    right: Union[bool, int, float, str, DatetimeLike, ColumnName],
+    left: bool | int | float | str | DatetimeLike | ColumnName,
+    right: bool | int | float | str | DatetimeLike | ColumnName,
     case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is equal to the right operand.
@@ -415,8 +435,8 @@ def eq(
 
 
 def ne(
-    left: Union[bool, int, float, str, DatetimeLike, ColumnName],
-    right: Union[bool, int, float, str, DatetimeLike, ColumnName],
+    left: bool | int | float | str | DatetimeLike | ColumnName,
+    right: bool | int | float | str | DatetimeLike | ColumnName,
     case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is not equal to the right operand.
@@ -438,8 +458,8 @@ def ne(
 
 
 def lt(
-    left: Union[int, float, str, DatetimeLike, ColumnName],
-    right: Union[int, float, str, DatetimeLike, ColumnName],
+    left: int | float | str | DatetimeLike | ColumnName,
+    right: int | float | str | DatetimeLike | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is less than the right operand.
 
@@ -458,8 +478,8 @@ def lt(
 
 
 def gt(
-    left: Union[int, float, str, DatetimeLike, ColumnName],
-    right: Union[int, float, str, DatetimeLike, ColumnName],
+    left: int | float | str | DatetimeLike | ColumnName,
+    right: int | float | str | DatetimeLike | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is greater than the right operand.
 
@@ -478,8 +498,8 @@ def gt(
 
 
 def le(
-    left: Union[int, float, str, DatetimeLike, ColumnName],
-    right: Union[int, float, str, DatetimeLike, ColumnName],
+    left: int | float | str | DatetimeLike | ColumnName,
+    right: int | float | str | DatetimeLike | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is less than or equal to the right operand.
 
@@ -498,8 +518,8 @@ def le(
 
 
 def ge(
-    left: Union[int, float, str, DatetimeLike, ColumnName],
-    right: Union[int, float, str, DatetimeLike, ColumnName],
+    left: int | float | str | DatetimeLike | ColumnName,
+    right: int | float | str | DatetimeLike | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is greater than or equal to the right operand.
 

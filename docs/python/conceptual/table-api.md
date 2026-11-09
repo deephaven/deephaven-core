@@ -13,7 +13,7 @@ Deephaven's Table API lets you filter, transform, join, and aggregate data using
 > [!NOTE]
 > New to Deephaven? Start with [How Deephaven works: A mental model](./deephaven-mental-model.md) for the conceptual foundation this guide builds on. This page assumes you already know why tables don't copy data and why formulas run in the engine, and focuses on the API surface and tradeoffs you'll actually choose between.
 
-For a quick-reference index of available operations and where to find full guides for each, see [Table operations overview](./table-operations-overview.md).
+For a quick-reference index of available operations and the reference page for each, see [Table operations overview](./table-operations-overview.md).
 
 ## Tables are immutable
 
@@ -181,7 +181,7 @@ For refreshing tables, this choice also affects update performance. `view` recom
 
 ## Same API, different behavior
 
-The same operations work on both static and live tables — see [Static vs. live: understanding mutability](./deephaven-mental-model.md#static-vs-live-understanding-mutability) for the underlying concept. In practice, this means:
+The same operations work on both static and live tables — see [Static vs. live tables](./deephaven-mental-model.md#static-vs-live-tables) for the underlying concept. In practice, this means:
 
 ```python order=null ticking-table
 from deephaven import empty_table, time_table
@@ -210,7 +210,7 @@ print(live_table.is_refreshing)  # True
 ## Related documentation
 
 - [How Deephaven works: A mental model](./deephaven-mental-model.md) — The conceptual foundation this guide builds on
-- [Table operations overview](./table-operations-overview.md) — Quick-reference index of available operations
+- [Table operations overview](./table-operations-overview.md)
 - [Deephaven's design](./deephaven-design.md) — Architecture and update model
 - [Table types](./table-types.md) — Static, streaming, blink, and ring tables
 - [Pydoc: Table](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) — Complete Python API reference

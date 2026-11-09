@@ -73,12 +73,20 @@ public final class WaitNotification extends AbstractNotification {
      * @param step The step to wait for satisfaction on
      * @param dependencies The dependencies to wait for
      * @return True if the dependencies became satisfied on the specified step, false if the cycle had already completed
+     * @throws UpdateGraphWaitForbiddenException If waiting is required, and {@link UpdateGraphWaitGuard#forbidWaits()
+     *         forbidden}
      */
     public static boolean waitForSatisfaction(final long step,
             @NotNull final NotificationQueue.Dependency... dependencies) {
         final WaitNotification waitNotification = new WaitNotification(dependencies);
         if (NotificationQueue.Dependency.getUpdateGraph(null, dependencies).maybeAddNotification(waitNotification,
                 step)) {
+            if (UpdateGraphWaitGuard.waitsForbidden()) {
+                // the notification fires without a waiter, which is harmless
+                throw new UpdateGraphWaitForbiddenException("Waits are forbidden, and dependencies "
+                        + Arrays.stream(dependencies).map(Objects::toString).collect(Collectors.joining(","))
+                        + " are not yet satisfied on step " + step);
+            }
             try {
                 waitNotification.await();
             } catch (InterruptedException e) {

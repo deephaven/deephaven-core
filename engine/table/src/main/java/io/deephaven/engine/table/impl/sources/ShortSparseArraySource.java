@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.sources.sparse.ShortOneOrN;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.SoftRecyclerWindow;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -50,17 +51,21 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
         implements MutableColumnSourceGetDefaults.ForShort /* MIXIN_IMPLS */ {
     // region recyclers
     private static final SoftRecycler<short[]> recycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY,
-                    () -> new short[BLOCK_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY,
+                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY,
+                    () -> new short[BLOCK_SIZE], null));
     private static final SoftRecycler<short[][]> recycler2 =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY2,
-                    () -> new short[BLOCK2_SIZE][], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY2,
+                    () -> new short[BLOCK2_SIZE][], null));
     private static final SoftRecycler<ShortOneOrN.Block2[]> recycler1 =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY1,
-                    () -> new ShortOneOrN.Block2[BLOCK1_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY1,
+                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY1,
+                    () -> new ShortOneOrN.Block2[BLOCK1_SIZE], null));
     private static final SoftRecycler<ShortOneOrN.Block1[]> recycler0 =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY0,
-                    () -> new ShortOneOrN.Block1[BLOCK0_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY0,
+                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY0,
+                    () -> new ShortOneOrN.Block1[BLOCK0_SIZE], null));
     // endregion recyclers
 
     /**

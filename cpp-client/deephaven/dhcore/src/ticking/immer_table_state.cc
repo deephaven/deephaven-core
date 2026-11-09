@@ -141,12 +141,23 @@ void ImmerTableState::AddData(const std::vector<std::shared_ptr<ColumnSource>> &
 }
 
 std::shared_ptr<RowSequence> ImmerTableState::Erase(const RowSequence &rows_to_erase_key_space) {
-  auto result = spaceMapper_.ConvertKeysToIndices(rows_to_erase_key_space);
+  // Only the rows we hold can be erased. A full subscription is sent the server's entire removed
+  // set, which while the initial snapshot is still arriving can name rows this client has not been
+  // given yet; those are skipped rather than rejected.
+  auto result = spaceMapper_.ConvertPresentKeysToIndices(rows_to_erase_key_space);
+  if (result->Empty()) {
+    // None of the named rows is held, so there is nothing to do, not even to the key mapping.
+    return result;
+  }
 
   auto erase_chunk = [this](uint64_t begin_key, uint64_t end_key) {
-    auto size = end_key - begin_key;
+    // The keys held in [begin_key, end_key) occupy consecutive ranks, so they are one slice of
+    // every column. Both ranks are taken before the erasure changes them.
+    auto end_index = spaceMapper_.ZeroBasedRank(end_key);
     auto begin_index = spaceMapper_.EraseRange(begin_key, end_key);
-    auto end_index = begin_index + size;
+    if (begin_index == end_index) {
+      return;
+    }
 
     for (auto &fv : flexVectors_) {
       auto fv_temp = std::move(fv);

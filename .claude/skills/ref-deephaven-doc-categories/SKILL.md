@@ -81,8 +81,14 @@ definition, and two kinds of exception are common enough to expect, not treat as
   interleaving, intro/first-section overlap) because it's typically the longest and most
   narrative-heavy category — weight those checks accordingly.
 
-**Reference guide** — `docs/{python,groovy}/reference/*`. Purely informative — describes without
-advice or extraneous tips. JavaDocs, PyDocs, and other API documentation are reference guides.
+**Reference guide** — `docs/{python,groovy}/reference/*`. Informative: it describes the thing it
+documents. JavaDocs, PyDocs, and other API documentation are reference guides. A reference page
+may say when to use the thing it documents, such as when a string is enough and when a `Filter`
+or `Selectable` object is needed, in its own labeled section ("When to use ..."), because a reader
+on that page is deciding whether it applies to them. That guidance stays scoped to the documented
+item: no tutorials or walkthroughs, no general tips, and no advice sentence tacked onto a
+paragraph that describes behavior. Guidance about combining several features belongs on the
+concept guide or how-to that covers them, with a link.
 - Tone: dry, formal, third-person, no contractions. **Exception:** the 50+ *individual Q&A pages*
   under `reference/community-questions/*` (not the directory's own index page — see below) are a
   conversational Q&A format, not API documentation. Each page's `title` is its question

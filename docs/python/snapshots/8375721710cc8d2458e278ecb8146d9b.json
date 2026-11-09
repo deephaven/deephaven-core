@@ -1,0 +1,1 @@
+{"file":"how-to-guides/pyarrow.md","objects":{"from_pyarrow":{"type":"Table","data":{"columns":[{"name":"Id","type":"long"},{"name":"Name","type":"java.lang.String"}],"rows":[[{"value":"1"},{"value":"a"}],[{"value":"2"},{"value":"b"}],[{"value":"3"},{"value":"c"}]]}}}}

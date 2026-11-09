@@ -2,9 +2,9 @@
 title: Read HTML files into Deephaven tables
 ---
 
-While Deephaven does not have its own methods for reading HTML tables, it's easy to do with [`pandas`](https://pandas.pydata.org/docs/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/). This guide will demonstrate multiple ways to pull data from online HTML tables into Deephaven tables.
+While Deephaven does not have its own methods for reading HTML tables, you can read them with [pandas](https://pandas.pydata.org/docs/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/). This guide demonstrates multiple ways to pull data from HTML tables, such as those on web pages, into Deephaven tables.
 
-## HTML table
+## Example table and setup
 
 We'll use this HTML table in the examples below:
 
@@ -138,61 +138,86 @@ We'll use this HTML table in the examples below:
 </tbody>
 </table>
 
-## `pandas.read_html`
+The examples read this table from a string of HTML, `html_str`, rather than from a web page, so reading the table doesn't need a network connection. The following code defines `html_str` and installs BeautifulSoup and [lxml](https://lxml.de/), the HTML parser the examples use:
 
-[`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) is a convenient method for reading HTML tables into a list of pandas DataFrames. The method can be used to read tables from a URL or a local file.
-
-We'll start with an example of how to use [`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) to read an HTML table from a URL and convert it to a Deephaven table. This approach is simple and easy, but has some limitations - for instance, it does not handle the non-numerical values in this table gracefully:
-
-```python order=deephaven_theme_colors
-from deephaven import pandas as dhpd
-from deephaven import merge
-
+```python test-set=html-import order=null
 import os
 
-os.system("pip install lxml")
+os.system("pip install beautifulsoup4 lxml")
 
-import pandas as pd
-import lxml
-
-deephaven_theme_colors = merge(
-    [
-        dhpd.to_table(df)
-        for df in pd.read_html(
-            "https://deephaven.io/core/docs/how-to-guides/data-import-export/html-import/"
-        )
-    ]
-)
+html_str = """
+<table>
+  <thead>
+    <tr><th>Color</th><th colspan="11">Shades</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>primary</td>
+      <td>#e5faff</td><td>#d7f7ff</td><td>#c8f4ff</td><td>#b9f1ff</td><td>#a9edff</td><td>#99eaff</td>
+      <td>#7fc6d9</td><td>#65a4b4</td><td>#4d8391</td><td>#35636f</td><td>#1f454f</td></tr>
+    <tr><td>secondary</td>
+      <td>#6a81f2</td><td>#596fe9</td><td>#495ee0</td><td>#384cd6</td><td>#2439cb</td><td>#0625c0</td>
+      <td>#0121aa</td><td>#001e94</td><td>#001a7e</td><td>#011569</td><td>#031155</td></tr>
+    <tr><td>negative</td>
+      <td>#f883a0</td><td>#f87694</td><td>#f76989</td><td>#f65a7d</td><td>#f54a72</td><td>#f33666</td>
+      <td>#da2e59</td><td>#c1254c</td><td>#a91d40</td><td>#911534</td><td>#7a0d28</td></tr>
+    <tr><td>positive</td>
+      <td>#9dfc7e</td><td>#93fa72</td><td>#89f966</td><td>#7ef758</td><td>#72f549</td><td>#65f336</td>
+      <td>#58d92e</td><td>#4cc025</td><td>#3fa71d</td><td>#348f15</td><td>#28780d</td></tr>
+    <tr><td>warn</td>
+      <td>#ffe590</td><td>#ffe183</td><td>#fedd75</td><td>#fed966</td><td>#fdd455</td><td>#fdd041</td>
+      <td>#e8be38</td><td>#d4ac2f</td><td>#c09b27</td><td>#ac8a1e</td><td>#997915</td></tr>
+    <tr><td>info</td>
+      <td>#f08df9</td><td>#ee7ff8</td><td>#eb70f7</td><td>#e960f6</td><td>#e64df4</td><td>#e336f3</td>
+      <td>#cd34dd</td><td>#b732c7</td><td>#a22fb2</td><td>#8d2c9d</td><td>#792989</td></tr>
+    <tr><td>fg</td>
+      <td>#f3f7fa</td><td>#eef2f5</td><td>#e9edf0</td><td>#e4e9ec</td><td>#dfe4e7</td><td>#dadfe2</td>
+      <td>#c6cbcf</td><td>#b2b8bc</td><td>#9fa5aa</td><td>#8c9298</td><td>#798086</td></tr>
+    <tr><td>bg</td>
+      <td>#434f56</td><td>#3c474d</td><td>#353e44</td><td>#2f363c</td><td>#282f33</td><td>#22272b</td>
+      <td>#1f2327</td><td>#1b2023</td><td>#181c1f</td><td>#15181b</td><td>#121517</td></tr>
+  </tbody>
+</table>
+"""
 ```
 
-The sections below properly handle data types, leading to tables with actual data rather than just `NaN`s.
+## `pandas.read_html`
+
+[`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) is a convenient method for reading HTML tables into a list of pandas DataFrames. The method also reads tables from a URL or a local file. To read HTML that is already in a string, wrap the string in [`io.StringIO`](https://docs.python.org/3/library/io.html#io.StringIO). pandas 2.1 deprecated passing literal HTML as a plain string, and pandas 3 treats a plain string as a URL or file path.
+
+Let's start with [`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html). The following example reads the color table in `html_str` and converts it to a Deephaven table with [`to_table`](../../reference/pandas/to-table.md). The [Example table and setup](#example-table-and-setup) section defines `html_str` and installs lxml, the parser that `read_html` uses by default. `read_html` returns one DataFrame for each `<table>` element in its input, so the example converts the first one:
+
+```python test-set=html-import order=deephaven_theme_colors
+from deephaven import pandas as dhpd
+import pandas as pd
+import io
+
+dfs = pd.read_html(io.StringIO(html_str))
+
+deephaven_theme_colors = dhpd.to_table(dfs[0])
+```
+
+This approach is simple, but you have little control over the column names or which part of each cell it reads:
+
+- [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) names each column after its header cell. The `Shades` header spans 11 columns, so pandas repeats the name and makes each copy unique: `Shades`, `Shades.1`, and so on through `Shades.10`. Deephaven column names must be valid Java identifiers, so [`to_table`](../../reference/pandas/to-table.md) replaces characters that a column name can't contain, such as `.`, with `_`, which gives `Shades_1` through `Shades_10`.
+- By default, [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) keeps only the text of each cell. Its `extract_links` argument can also keep link URLs, but `read_html` doesn't return any other cell attributes. An empty cell becomes `NaN`, so if a table stores its values in attributes such as `title` instead of in the cell text, those columns contain only `NaN` values.
 
 ## BeautifulSoup
 
-[BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) is a Python library for pulling data out of HTML and XML files.
+[BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) is a Python library for pulling data out of HTML and XML files. It takes more code than [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html), but you decide what to read from each cell and what to name each column.
 
-In this example, we'll use [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) to read the same HTML table as in the example above and convert it to a Deephaven table:
+In this example, we'll use [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) to read the color table in `html_str` and convert it to a Deephaven table with [`new_table`](../../reference/table-operations/create/newTable.md) and [`string_col`](../../reference/table-operations/create/stringCol.md). The [Example table and setup](#example-table-and-setup) section defines `html_str` and installs BeautifulSoup. The `Shades` header spans 11 columns, so the code generates a name for each of them. The result matches the [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) example's result, so you can compare the two approaches:
 
-```python order=deephaven_theme_colors
-import os
-
-os.system("pip install beautifulsoup4 requests lxml")
-from deephaven.column import string_col, int_col
+```python test-set=html-import order=deephaven_theme_colors
+from deephaven.column import string_col
 from deephaven import new_table
 from bs4 import BeautifulSoup
-import requests
 
-url = "https://deephaven.io/core/docs/how-to-guides/data-import-export/html-import/"
-headers = {"User-Agent": "Mozilla/5.0"}  # helps avoid being blocked
+soup = BeautifulSoup(html_str, "lxml")
 
-r = requests.get(url, headers=headers)
+# Find the first table; pass class_="..." to pick a specific one
+table = soup.find("table")
 
-soup = BeautifulSoup(r.content, "lxml")
-
-# Try to find the table
-table = soup.find("table")  # you can add class_="..." if needed
-
-# Extract headers
+# Extract headers: "Color" and "Shades"
 headers = [th.text.strip() for th in table.find("thead").find_all("th")]
 
 # Extract rows
@@ -202,168 +227,99 @@ for tr in table.find("tbody").find_all("tr"):
     if row:
         rows.append(row)
 
+# Name every column: "Color", "Shades", then "Shades_1" through "Shades_10"
+column_names = headers + [f"{headers[1]}_{i}" for i in range(1, len(rows[0]) - 1)]
+
 deephaven_theme_colors = new_table(
-    [
-        string_col("Color", [row[0] for row in rows]),
-        string_col("Shades", [row[1] for row in rows]),
-        string_col("Shades_1", [row[2] for row in rows]),
-        string_col("Shades_2", [row[3] for row in rows]),
-        string_col("Shades_3", [row[4] for row in rows]),
-        string_col("Shades_4", [row[5] for row in rows]),
-        string_col("Shades_5", [row[6] for row in rows]),
-        string_col("Shades_6", [row[7] for row in rows]),
-        string_col("Shades_7", [row[8] for row in rows]),
-        string_col("Shades_8", [row[9] for row in rows]),
-        string_col("Shades_9", [row[10] for row in rows]),
-        string_col("Shades_10", [row[11] for row in rows]),
-    ]
+    [string_col(name, [row[i] for row in rows]) for i, name in enumerate(column_names)]
 )
 ```
+
+If a table stores a cell's value in an attribute, such as `title`, instead of in the cell text, replace `td.text.strip()` with `td.get("title", td.text.strip())`. The cells in `html_str` have no `title` attribute, so this change doesn't alter the example's result.
+
+To read a table from a local HTML file, open the file and pass it to [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) in place of `html_str`, for example `with open("/path/to/file.html") as f: soup = BeautifulSoup(f, "lxml")`. To read a table from a web page, download the page first and pass the result to `BeautifulSoup`. For example, install the [`requests`](https://requests.readthedocs.io/) library with `pip install requests` and use `requests.get(url).content`.
 
 ## Data types
 
-Since HTML tables store all data as plain text and have no concept of data types, some care must be taken when importing HTML tables into Deephaven to ensure that you end up with correct data types for each column. Deephaven's [`to_table`](../../reference/pandas/to-table.md) method will automatically infer types as long as `infer_objects=True`, but to guarantee that the types are correct, manual specification is recommended.
+HTML tables store all data as plain text and have no concept of data types, so check each column's type after you import a table. Each tool handles types differently:
 
-Whether you are using [`pandas`](https://pandas.pydata.org/docs/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), you can specify the data type of each column at either the DataFrame stage or by calling [`update`](../../reference/table-operations/select/update.md) to typecast columns after the Deephaven table has been created. This can be done by using the [`astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) method in [`pandas`](https://pandas.pydata.org/docs/index.html) or by using one of Deephaven's [selection](../use-select-view-update.md) methods.
+- By default, [`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) converts columns of numeric text to numeric columns but leaves other values, such as dates, as strings.
+- [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) returns every value as a string.
+- [`to_table`](../../reference/pandas/to-table.md) gives each Deephaven column the type that matches the DataFrame column's type, so a column of text becomes a `String` column. `to_table` doesn't parse text, so numbers stored as strings stay strings.
 
-### Typing with selection methods
+Whether you use [pandas](https://pandas.pydata.org/docs/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), you can set each column's data type in either of two places:
 
-In this example, we use the same HTML table as in the examples above as a source. We then read the table into Deephaven with [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) and convert it to a Deephaven table with `to_table`. Finally, we restore the correct types fore each column with Deephaven's [`update`](../../reference/table-operations/select/update.md) method:
+- In the Deephaven table, with [`update`](../../reference/table-operations/select/update.md) or another of Deephaven's [selection](../use-select-view-update.md) methods.
+- In the DataFrame, with the pandas [`astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) method.
 
-```python order=table_typed
+The examples in this section use a small HTML table of stock trades with `Symbol`, `Price`, `Size`, and `Timestamp` columns. We'll read it with [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), so every column starts as text. With [`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html), `Price` and `Size` would already be numeric, and only `Timestamp` would need converting. The code puts the rows in a pandas DataFrame, so both typing methods below can start from the same data.
+
+The following code reads the table into `trades_df`, a DataFrame of strings. It then uses [`to_table`](../../reference/pandas/to-table.md) to convert `trades_df` to `trades`, a Deephaven table of `String` columns:
+
+```python test-set=html-import order=trades
 from deephaven import pandas as dhpd
-import pandas as pd
-import os
-
-os.system("pip install beautifulsoup4 requests")
-os.system("pip install requests")
-os.system("pip install lxml")
 from bs4 import BeautifulSoup
-import requests
+import pandas as pd
 
-url = "https://deephaven.io/core/docs/how-to-guides/data-import-export/html-import/"
-headers = {"User-Agent": "Mozilla/5.0"}  # helps avoid being blocked
+trades_html = """
+<table>
+  <thead>
+    <tr><th>Symbol</th><th>Price</th><th>Size</th><th>Timestamp</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>AAPL</td><td>226.50</td><td>100</td><td>2024-09-03T13:30:00Z</td></tr>
+    <tr><td>MSFT</td><td>409.44</td><td>250</td><td>2024-09-03T13:31:15Z</td></tr>
+    <tr><td>GOOG</td><td>163.38</td><td>75</td><td>2024-09-03T13:32:40Z</td></tr>
+  </tbody>
+</table>
+"""
 
-r = requests.get(url, headers=headers)
+soup = BeautifulSoup(trades_html, "lxml")
+trade_columns = [th.text.strip() for th in soup.find("thead").find_all("th")]
+trade_rows = [
+    [td.text.strip() for td in tr.find_all("td")]
+    for tr in soup.find("tbody").find_all("tr")
+]
 
-soup = BeautifulSoup(r.content, "lxml")
+trades_df = pd.DataFrame(trade_rows, columns=trade_columns)
 
-# Try to find the table
-table = soup.find("table")  # you can add class_="..." if needed
+# Every column holds text, so to_table makes each one a String column
+trades = dhpd.to_table(trades_df)
+```
 
-# Get basic headers from thead (usually just 'Color' and 'Shades')
-basic_headers = [th.text.strip() for th in table.find("thead").find_all("th")]
+### Typing with `update`
 
-# Extract rows
-rows = []
-for tr in table.find("tbody").find_all("tr"):
-    row = [td.text.strip() for td in tr.find_all("td")]
-    if row:
-        rows.append(row)
+In this example, we start from `trades`, the table of `String` columns created in [Data types](#data-types). It sets the correct type for each column with Deephaven's [`update`](../../reference/table-operations/select/update.md) method, using Java's `Double.parseDouble` and `Integer.parseInt` methods and the built-in [`parseInstant`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseInstant(java.lang.String)) function:
 
-# Create expanded headers to match the actual number of columns
-# First column keeps its name (usually 'Color')
-headers = [basic_headers[0]]
-# For remaining columns, use second header name with index suffix if needed
-for i in range(1, len(rows[0])):
-    if i == 1:
-        headers.append(basic_headers[1])  # Usually 'Shades'
-    else:
-        headers.append(f"{basic_headers[1]}_{i - 1}")  # 'Shades_1', 'Shades_2', etc.
-
-df = pd.DataFrame(rows, columns=headers)
-
-# infer_objects is set to `True` be default
-# in this case, all columns are inferred as Strings
-deephaven_theme_colors = dhpd.to_table(df)
-
-table_typed = deephaven_theme_colors.update(
+```python test-set=html-import order=trades_typed
+trades_typed = trades.update(
     [
-        "Color = String.valueOf(Color)",
-        "Shades = String.valueOf(Shades)",
-        "Shades_1 = String.valueOf(Shades_1)",
-        "Shades_2 = String.valueOf(Shades_2)",
-        "Shades_3 = String.valueOf(Shades_3)",
-        "Shades_4 = String.valueOf(Shades_4)",
-        "Shades_5 = String.valueOf(Shades_5)",
-        "Shades_6 = String.valueOf(Shades_6)",
-        "Shades_7 = String.valueOf(Shades_7)",
-        "Shades_8 = String.valueOf(Shades_8)",
-        "Shades_9 = String.valueOf(Shades_9)",
-        "Shades_10 = String.valueOf(Shades_10)",
+        "Price = Double.parseDouble(Price)",
+        "Size = Integer.parseInt(Size)",
+        "Timestamp = parseInstant(Timestamp)",
     ]
 )
 ```
 
-Note that the Pandas [`DataFrame.astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) method can also be used to restore typing. However, it does not handle Deephaven's datetime types effectively, so the [`update`](../../reference/table-operations/select/update.md) method is recommended in those cases.
-
 ### Typing with `astype`
 
-This example demonstrates how to add typing to the `deephaven_theme_colors` table created above, using [`astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype):
+In this example, we start from `trades_df`, the DataFrame of strings created in [Data types](#data-types). It sets each column's type with [`astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) before it converts the DataFrame to a Deephaven table. [`to_table`](../../reference/pandas/to-table.md) turns the `float64` column into a `double` column, the `int32` column into an `int` column, and the `datetime64` column into an `Instant` column:
 
-```python order=deephaven_theme_colors
-from deephaven import pandas as dhpd
-import pandas as pd
-import os
-
-os.system("pip install beautifulsoup4 requests")
-os.system("pip install requests")
-os.system("pip install lxml")
-from bs4 import BeautifulSoup
-import requests
-
-url = "https://deephaven.io/core/docs/how-to-guides/data-import-export/html-import/"
-headers = {"User-Agent": "Mozilla/5.0"}  # helps avoid being blocked
-
-r = requests.get(url, headers=headers)
-
-soup = BeautifulSoup(r.content, "lxml")
-
-# Try to find the table
-table = soup.find("table")
-
-# Get basic headers
-basic_headers = [th.text.strip() for th in table.find("thead").find_all("th")]
-
-# Extract rows
-rows = []
-for tr in table.find("tbody").find_all("tr"):
-    row = [td.text.strip() for td in tr.find_all("td")]
-    if row:
-        rows.append(row)
-
-# Create expanded headers to match the actual number of columns
-# First column keeps its name (usually 'Color')
-headers = [basic_headers[0]]
-# For remaining columns, use second header name with index suffix if needed
-for i in range(1, len(rows[0])):
-    if i == 1:
-        headers.append(basic_headers[1])  # Usually 'Shades'
-    else:
-        headers.append(f"{basic_headers[1]}_{i - 1}")  # 'Shades_1', 'Shades_2', etc.
-
-# create the dataframe and specify types for each column
-df = pd.DataFrame(rows, columns=headers).astype(
-    {
-        "Color": "string",
-        "Shades": "string",
-        "Shades_1": "string",
-        "Shades_2": "string",
-        "Shades_3": "string",
-        "Shades_4": "string",
-        "Shades_5": "string",
-        "Shades_6": "string",
-        "Shades_7": "string",
-        "Shades_8": "string",
-        "Shades_9": "string",
-        "Shades_10": "string",
-    }
+```python test-set=html-import order=trades_from_astype
+trades_from_astype = dhpd.to_table(
+    trades_df.astype(
+        {
+            "Price": "float64",
+            "Size": "int32",
+            "Timestamp": "datetime64[ns, UTC]",
+        }
+    )
 )
-
-# convert to table - Deephaven correctly interprets "string" as a String
-deephaven_theme_colors = dhpd.to_table(df)
 ```
 
 ## Related documentation
 
 - [Convert tables to HTML strings](./html-export.md)
+- [`to_table`](../../reference/pandas/to-table.md)
+- [`new_table`](../../reference/table-operations/create/newTable.md)
+- [`update`](../../reference/table-operations/select/update.md)

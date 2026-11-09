@@ -5,11 +5,9 @@ package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.impl.by.RollupConstants;
-import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.CharSsmBackedSource;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctContext;
-import io.deephaven.engine.table.impl.sources.CharacterArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
@@ -20,12 +18,10 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.ssms.CharSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.CharCompactModifications;
-import io.deephaven.engine.table.impl.util.compact.CharCompactKernel;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -33,8 +29,7 @@ import java.util.function.Supplier;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
- * This operator computes the single unique value of a particular aggregated state. If there are no values at all the
- * 'no value key' is used. If there are more than one values for the state, the 'non unique key' is used.
+ * Computes the single unique value of each aggregated state, supporting removals and modifications.
  *
  * <p>
  * A state holding zero values or one distinct value is stored without a {@link CharSegmentedSortedMultiset SSM}: the
@@ -44,80 +39,32 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * {@code ssms} holds them. An SSM is created only when a state actually becomes non-unique, and is discarded when
  * removals collapse it back to a single distinct value (or empty).
  */
-public class CharChunkedUniqueOperator implements IterativeChunkedAggregationOperator {
-    private final String name;
-
+public class CharChunkedUniqueOperator extends BaseCharChunkedUniqueOperator {
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNullNaN;
     private final boolean exposeInternal;
 
     private final CharSsmBackedSource ssms;
-    private final CharacterArraySource internalResult;
     private final LongArraySource singletonCount;
-    private final ColumnSource<?> externalResult;
-    private final char onlyNullsSentinel;
-    private final char nonUniqueSentinel;
 
     public CharChunkedUniqueOperator(
             // region Constructor
             // endregion Constructor
             String name, boolean countNullNaN, boolean exposeInternal, char onlyNullsSentinel, char nonUniqueSentinel) {
-        this.name = name;
-        this.countNullNaN = countNullNaN;
+        super(
+                // region SuperConstructor
+                // endregion SuperConstructor
+                name, countNullNaN, onlyNullsSentinel, nonUniqueSentinel);
         this.exposeInternal = exposeInternal;
-        this.onlyNullsSentinel = onlyNullsSentinel;
-        this.nonUniqueSentinel = nonUniqueSentinel;
 
         // region SsmCreation
         this.ssms = new CharSsmBackedSource();
         // endregion SsmCreation
-        // region ResultCreation
-        this.internalResult = new CharacterArraySource();
-        // endregion ResultCreation
         this.singletonCount = new LongArraySource();
-        // region ResultAssignment
-        this.externalResult = internalResult;
-        // endregion ResultAssignment
 
         removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(SsmDistinctContext.NODE_SIZE);
     }
 
     // region Bucketed Updates
-    @NotNull
-    private BucketSsmDistinctContext getAndUpdateContext(Chunk<? extends Values> values,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, BucketedContext bucketedContext) {
-        final BucketSsmDistinctContext context = (BucketSsmDistinctContext) bucketedContext;
-
-        context.valueCopy.setSize(values.size());
-        context.valueCopy.copyFromChunk(values, 0, 0, values.size());
-
-        context.lengthCopy.setSize(length.size());
-        context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
-
-        doCompactAndCount((WritableCharChunk<? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNullNaN, countNullNaN);
-        return context;
-    }
-
-    @Override
-    public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmDistinctContext context = getAndUpdateContext(values, startPositions, length, bucketedContext);
-        final WritableCharChunk<? extends Values> valueCopy = context.valueCopy.asWritableCharChunk();
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int runLength = context.lengthCopy.get(ii);
-            if (runLength == 0) {
-                stateModified.set(ii, false);
-                continue;
-            }
-            final int startPosition = startPositions.get(ii);
-            final long destination = destinations.get(startPosition);
-            stateModified.set(ii, addToState(destination, valueCopy, context.counts, startPosition, runLength));
-        }
-    }
-
     @Override
     public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
@@ -181,17 +128,6 @@ public class CharChunkedUniqueOperator implements IterativeChunkedAggregationOpe
 
     // region Singleton Updates
     @NotNull
-    private SsmDistinctContext getAndUpdateContext(Chunk<? extends Values> values, SingletonContext singletonContext) {
-        final SsmDistinctContext context = (SsmDistinctContext) singletonContext;
-
-        context.valueCopy.setSize(values.size());
-        context.valueCopy.copyFromChunk(values, 0, 0, values.size());
-        doCompactAndCount((WritableCharChunk<? extends Values>) context.valueCopy, context.counts,
-                countNullNaN, countNullNaN);
-        return context;
-    }
-
-    @NotNull
     private SsmDistinctContext getAndUpdateContext(Chunk<? extends Values> preValues,
             Chunk<? extends Values> postValues, SingletonContext singletonContext) {
         final SsmDistinctContext context = (SsmDistinctContext) singletonContext;
@@ -207,17 +143,6 @@ public class CharChunkedUniqueOperator implements IterativeChunkedAggregationOpe
                 (WritableCharChunk<? extends Values>) context.postValues, context.postCounts,
                 0, length, 0, length, countNullNaN, countNullNaN, context.removedSize, context.addedSize);
         return context;
-    }
-
-    @Override
-    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        final SsmDistinctContext context = getAndUpdateContext(values, singletonContext);
-        if (context.valueCopy.size() == 0) {
-            return false;
-        }
-        return addToState(destination, (WritableCharChunk<? extends Values>) context.valueCopy, context.counts, 0,
-                context.valueCopy.size());
     }
 
     @Override
@@ -248,7 +173,8 @@ public class CharChunkedUniqueOperator implements IterativeChunkedAggregationOpe
      * Apply an addition of the compacted distinct {@code (value, count)} entries in {@code [start, start + len)} to
      * {@code destination}'s state, transitioning empty -> unique -> non-unique (allocating an SSM) as needed.
      */
-    private boolean addToState(long destination, WritableCharChunk<? extends Values> values,
+    @Override
+    protected boolean addToState(long destination, WritableCharChunk<? extends Values> values,
             WritableIntChunk<ChunkLengths> counts, int start, int len) {
         final long priorState = singletonCount.getUnsafe(destination);
         if (isUnique(priorState)) {
@@ -389,7 +315,7 @@ public class CharChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     // region IterativeOperator / DistinctAggregationOperator
     @Override
     public void ensureCapacity(long tableSize) {
-        internalResult.ensureCapacity(tableSize);
+        super.ensureCapacity(tableSize);
         singletonCount.ensureCapacity(tableSize);
         ssms.ensureCapacity(tableSize);
     }
@@ -405,28 +331,15 @@ public class CharChunkedUniqueOperator implements IterativeChunkedAggregationOpe
             return columns;
         }
 
-        return Collections.<String, ColumnSource<?>>singletonMap(name, externalResult);
+        return super.getResultColumns();
     }
 
     @Override
     public void startTrackingPrevValues() {
-        internalResult.startTrackingPrevValues();
+        super.startTrackingPrevValues();
         if (exposeInternal) {
             singletonCount.startTrackingPrevValues();
         }
-    }
-
-    // endregion
-
-    // region Contexts
-    @Override
-    public BucketedContext makeBucketedContext(int size) {
-        return new BucketSsmDistinctContext(ChunkType.Char, size);
-    }
-
-    @Override
-    public SingletonContext makeSingletonContext(int size) {
-        return new SsmDistinctContext(ChunkType.Char, size);
     }
     // endregion
 
@@ -438,40 +351,7 @@ public class CharChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     private void clearSsm(long destination) {
         ssms.clear(destination);
     }
-
-    /**
-     * Test two values for equality consistent with the ordering of the SSM; a state holds one entry for each class of
-     * equal values.
-     */
-    private static boolean eq(char lhs, char rhs) {
-        // region equality function
-        return CharComparisons.eq(lhs, rhs);
-        // endregion equality function
-    }
     // endregion
-
-    /**
-     * Sorts {@code valueChunk}, compacts each run of equal values to one value, and sets each value's count in
-     * {@code counts}; both chunks are resized to the number of distinct values.
-     */
-    private void doCompactAndCount(WritableCharChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, boolean countNull, boolean countNaN) {
-        // region CompactAndCount
-        CharCompactKernel.compactAndCount(valueChunk, counts, countNull, countNaN);
-        // endregion CompactAndCount
-    }
-
-    /**
-     * Sorts and compacts each run of {@code valueChunk} given by {@code startPositions} and {@code lengths}, setting
-     * each distinct value's count in {@code counts} and each run's distinct value count in {@code lengths}.
-     */
-    private void doCompactAndCount(WritableCharChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
-            WritableIntChunk<ChunkLengths> lengths, boolean countNull, boolean countNaN) {
-        // region CompactAndCountRuns
-        CharCompactKernel.compactAndCount(valueChunk, counts, startPositions, lengths, countNull, countNaN);
-        // endregion CompactAndCountRuns
-    }
 
     /**
      * Reduces the removed and added ranges to their net removals and net additions, each compacted to distinct values
