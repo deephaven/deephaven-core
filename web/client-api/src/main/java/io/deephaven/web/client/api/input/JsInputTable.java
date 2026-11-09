@@ -193,7 +193,10 @@ public class JsInputTable {
             // noinspection unchecked,rawtypes
             return (Promise) Promise.reject("Must provide at least one table");
         }
-        String failure = MicrotaskBatchImpl.operandFailure(tablesToAdd);
+        String failure = MicrotaskBatchImpl.foreignOperand(table.getConnection(), tablesToAdd);
+        if (failure == null) {
+            failure = MicrotaskBatchImpl.operandFailure(tablesToAdd);
+        }
         if (failure != null) {
             return Promise.reject(failure);
         }
@@ -236,7 +239,10 @@ public class JsInputTable {
         if (tablesToDelete.length == 0) {
             return Promise.resolve(this);
         }
-        String failure = MicrotaskBatchImpl.operandFailure(tablesToDelete);
+        String failure = MicrotaskBatchImpl.foreignOperand(table.getConnection(), tablesToDelete);
+        if (failure == null) {
+            failure = MicrotaskBatchImpl.operandFailure(tablesToDelete);
+        }
         if (failure != null) {
             return Promise.reject(failure);
         }

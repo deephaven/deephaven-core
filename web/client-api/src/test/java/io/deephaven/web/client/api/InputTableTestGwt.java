@@ -9,7 +9,10 @@ import io.deephaven.web.client.ide.IdeSession;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
     private final TableSourceBuilder tables = new TableSourceBuilder()
@@ -32,6 +35,51 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
             table.close();
             return Promise.resolve(size);
         });
+    }
+
+    /** Resolves once {@code call} has rejected naming the connection; fails naming {@code what} otherwise. */
+    private static Promise<Object> rejectsForConnection(String what, Promise<?> call) {
+        Promise<Object> settled = call.then(
+                ignore -> Promise.reject(what + " resolved; expected it to reject its foreign operand"),
+                err -> String.valueOf(err).contains("connection") ? Promise.resolve((Object) null)
+                        : Promise.reject(what + " rejected for another reason: " + err));
+        Promise<Object> timeout = delay(5_000).then(ignore -> Promise.reject(what + " did not settle within 5s"));
+        return Promise.race(settled, timeout);
+    }
+
+    public void testOperandFromAnotherConnectionRejects() {
+        // A ticket from another connection can name a different table on this one, so it must be refused
+        connect(tables).then(first -> connect(tables).then(second -> {
+            delayTestFinish(20_008);
+            return second.getTable("source", null).asPromise().then(foreign -> first.getTable("source", null)
+                    .asPromise().then(local -> first.getTable("editable", null).asPromise()
+                            .then(editable -> editable.inputTable().then(input -> {
+                                JsTableReference operand = JsTableReference.of(foreign);
+                                List<String> failures = new ArrayList<>();
+                                Promise<Object> checks = Promise.resolve((Object) null);
+                                for (Supplier<Promise<Object>> check : List.<Supplier<Promise<Object>>>of(
+                                        () -> rejectsForConnection("snapshot",
+                                                local.snapshot(operand, true, null).resolve()),
+                                        () -> rejectsForConnection("addTable", input.addTable(operand)),
+                                        () -> rejectsForConnection("deleteTable", input.deleteTable(operand)),
+                                        () -> rejectsForConnection("addTables", input.addTables(
+                                                new JsTableReference[] {JsTableReference.of(local), operand})),
+                                        () -> rejectsForConnection("bindTableToVariable",
+                                                first.bindTableToVariable(foreign, "foreign")))) {
+                                    checks = checks.then(ignore -> check.get().then(Promise::resolve, err -> {
+                                        failures.add(String.valueOf(err));
+                                        return Promise.resolve((Object) null);
+                                    }));
+                                }
+                                return checks.then(ignore -> {
+                                    foreign.close();
+                                    local.close();
+                                    editable.close();
+                                    return failures.isEmpty() ? Promise.resolve(first)
+                                            : Promise.reject(failures.size() + " failed: " + failures);
+                                });
+                            }))));
+        })).then(this::finish).catch_(this::report);
     }
 
     public void testAddSeveralTablesThenDelete() {

@@ -212,6 +212,10 @@ public class IdeSession extends HasEventHandling {
     }
 
     public Promise<Void> bindTableToVariable(JsTable table, String name) {
+        String failure = MicrotaskBatchImpl.foreignOperand(connection, JsTableReference.of(table));
+        if (failure != null) {
+            return Promise.reject(failure);
+        }
         BindTableToVariableRequest bindRequest = BindTableToVariableRequest.newBuilder()
                 .setTableId(table.getHandle().makeTicket())
                 .setVariableName(name)

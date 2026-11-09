@@ -895,7 +895,10 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
      */
     public static <T extends JsITable> JsPendingTable<T> wrapWithOperands(WorkerConnection connection,
             ClientTableState state, JsTableReference[] operands, Function<ClientTableState, T> build) {
-        String failure = operandFailure(operands);
+        String failure = foreignOperand(connection, operands);
+        if (failure == null) {
+            failure = operandFailure(operands);
+        }
         if (failure != null) {
             // Never fetched, so there is no ticket to release on the server
             state.getHandle().setConnected(false);
@@ -987,6 +990,19 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             });
         }
         return result.asPromise();
+    }
+
+    /**
+     * Why a request on {@code connection} must not name {@code operands}, or {@code null} if all are on it: a ticket
+     * from another connection can name a different table on this one.
+     */
+    public static @Nullable String foreignOperand(WorkerConnection connection, JsTableReference... operands) {
+        for (JsTableReference operand : operands) {
+            if (operand.getConnection() != connection) {
+                return "Operand table is not from the same connection as the table it is used with";
+            }
+        }
+        return null;
     }
 
     private static @Nullable Pending<?> asPending(JsTableReference operand) {
