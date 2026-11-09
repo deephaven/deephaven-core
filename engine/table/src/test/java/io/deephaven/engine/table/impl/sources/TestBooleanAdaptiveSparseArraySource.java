@@ -46,7 +46,12 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnSourceTest {
-    private static final int KEY_RANGE = 8 * BLOCK_SIZE;
+    /**
+     * Row keys in three regions of several leaves each: the first two in different bottom levels of one middle level,
+     * the third in a different middle level, so that the root and a middle level each hold more than one child.
+     */
+    private static final long[] KEY_REGION_STARTS = {0, 1L << 26, 1L << 41};
+    private static final int KEY_REGION_SIZE = 8 * BLOCK_SIZE;
 
     /**
      * @return a source over a byte source with the default thresholds, whose leaves may be compact
@@ -60,6 +65,10 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
     private static Boolean randomBoolean(final Random random) {
         final int choice = random.nextInt(3);
         return choice == 0 ? null : choice == 1;
+    }
+
+    private static long randomKey(final Random random) {
+        return KEY_REGION_STARTS[random.nextInt(KEY_REGION_STARTS.length)] + random.nextInt(KEY_REGION_SIZE);
     }
 
     @Test
@@ -173,7 +182,7 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         final int size = 1 + random.nextInt(2000);
         for (int ii = 0; ii < size; ++ii) {
-            final long key = random.nextInt(KEY_RANGE);
+            final long key = randomKey(random);
             if (random.nextInt(4) == 0) {
                 builder.addRange(key, key + random.nextInt(64));
             } else {
@@ -205,9 +214,11 @@ public class TestBooleanAdaptiveSparseArraySource extends AbstractBooleanColumnS
             final BooleanAdaptiveSparseArraySource source,
             final Map<Long, Boolean> expected,
             final Map<Long, Boolean> expectedPrev) {
-        for (long key = 0; key < KEY_RANGE + 64; ++key) {
-            assertSame(expected.get(key), source.get(key));
-            assertSame(expectedPrev.get(key), source.getPrev(key));
+        for (final long regionStart : KEY_REGION_STARTS) {
+            for (long key = regionStart; key < regionStart + KEY_REGION_SIZE + 64; ++key) {
+                assertSame(expected.get(key), source.get(key));
+                assertSame(expectedPrev.get(key), source.getPrev(key));
+            }
         }
     }
 

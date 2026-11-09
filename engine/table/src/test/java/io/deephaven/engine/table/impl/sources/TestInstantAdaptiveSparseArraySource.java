@@ -55,7 +55,12 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class TestInstantAdaptiveSparseArraySource {
-    private static final int KEY_RANGE = 8 * BLOCK_SIZE;
+    /**
+     * Row keys in three regions of several leaves each: the first two in different bottom levels of one middle level,
+     * the third in a different middle level, so that the root and a middle level each hold more than one child.
+     */
+    private static final long[] KEY_REGION_STARTS = {0, 1L << 26, 1L << 41};
+    private static final int KEY_REGION_SIZE = 8 * BLOCK_SIZE;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -71,11 +76,15 @@ public class TestInstantAdaptiveSparseArraySource {
         return random.nextInt(10) == 0 ? null : DateTimeUtils.epochNanosToInstant(random.nextLong() >>> 2);
     }
 
+    private static long randomKey(final Random random) {
+        return KEY_REGION_STARTS[random.nextInt(KEY_REGION_STARTS.length)] + random.nextInt(KEY_REGION_SIZE);
+    }
+
     private static RowSet randomRowSet(final Random random) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         final int size = 1 + random.nextInt(2000);
         for (int ii = 0; ii < size; ++ii) {
-            final long key = random.nextInt(KEY_RANGE);
+            final long key = randomKey(random);
             if (random.nextInt(4) == 0) {
                 builder.addRange(key, key + random.nextInt(64));
             } else {
@@ -111,7 +120,7 @@ public class TestInstantAdaptiveSparseArraySource {
                                 WritableObjectChunk.makeWritableChunk(count);
                         final ChunkSink.FillFromContext context = source.makeFillFromContext(count)) {
                     for (int ii = 0; ii < count; ++ii) {
-                        final long key = random.nextInt(KEY_RANGE);
+                        final long key = randomKey(random);
                         final Instant value = randomInstant(random);
                         keys.set(ii, key);
                         values.set(ii, value);
@@ -167,7 +176,7 @@ public class TestInstantAdaptiveSparseArraySource {
                 final WritableObjectChunk<Instant, Values> values = WritableObjectChunk.makeWritableChunk(count);
                 final ChunkSource.FillContext context = source.makeFillContext(count)) {
             for (int ii = 0; ii < count; ++ii) {
-                keys.set(ii, random.nextInt(10) == 0 ? RowSequence.NULL_ROW_KEY : random.nextInt(KEY_RANGE));
+                keys.set(ii, random.nextInt(10) == 0 ? RowSequence.NULL_ROW_KEY : randomKey(random));
             }
             source.fillChunkUnordered(context, values, keys);
             assertEquals(count, values.size());
@@ -312,9 +321,11 @@ public class TestInstantAdaptiveSparseArraySource {
             final InstantAdaptiveSparseArraySource source,
             final Map<Long, Instant> expected,
             final Map<Long, Instant> expectedPrev) {
-        for (long key = 0; key < KEY_RANGE + 64; ++key) {
-            assertEquals(expected.get(key), source.get(key));
-            assertEquals(expectedPrev.get(key), source.getPrev(key));
+        for (final long regionStart : KEY_REGION_STARTS) {
+            for (long key = regionStart; key < regionStart + KEY_REGION_SIZE + 64; ++key) {
+                assertEquals(expected.get(key), source.get(key));
+                assertEquals(expectedPrev.get(key), source.getPrev(key));
+            }
         }
     }
 
