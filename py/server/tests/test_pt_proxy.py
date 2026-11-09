@@ -175,6 +175,11 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                     lambda ct: getattr(ct, op.__name__)(formulas=formulas),
                 )
 
+    def test_update_empty(self) -> None:
+        self.assert_matches_per_constituent(
+            self.pt_proxy.update([]), lambda ct: ct.update([])
+        )
+
     def test_select_distinct(self):
         self.assert_matches_per_constituent(
             self.pt_proxy.select_distinct(formulas=["a"]),

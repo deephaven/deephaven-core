@@ -1016,7 +1016,8 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         try:
             formulas = to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
-                if isinstance(formulas[0], Selectable.j_object_type):
+                # An empty list goes to Java as an empty collection, which adds no columns.
+                if not formulas or isinstance(formulas[0], Selectable.j_object_type):
                     return self._wrap_result(
                         self.j_object.update(j_array_list(formulas))
                     )
@@ -3588,15 +3589,17 @@ class PartitionedTable(JObjectWrapper):
         Raises:
             DHError
         """
-        filters = to_sequence(filters)
-        if isinstance(filters[0], str):
-            filters = to_sequence(Filter.from_(filters))  # type: ignore[arg-type]
-
         try:
+            # Convert each string on its own, so a list may mix strings and Filter objects as Java allows. An empty
+            # list keeps every row, as in Java.
+            j_filters = j_array_list(
+                [
+                    Filter.from_(f) if isinstance(f, str) else f
+                    for f in to_sequence(filters)
+                ]
+            )
             return PartitionedTable(
-                j_partitioned_table=self.j_partitioned_table.filter(
-                    j_array_list(filters)
-                )
+                j_partitioned_table=self.j_partitioned_table.filter(j_filters)
             )
         except Exception as e:
             raise DHError(e, "failed to apply filters to the partitioned table.") from e

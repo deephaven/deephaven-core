@@ -71,7 +71,9 @@ def j_array_list(values: Iterable | None = None) -> jpy.JType | None:
     """Creates a Java ArrayList instance from an iterable."""
     if values is None:
         return None
-    r = jpy.get_type("java.util.ArrayList")(len(list(values)))
+    # Read the input once. A generator can be read only once, so reading it again would leave the list empty.
+    values = list(values)
+    r = jpy.get_type("java.util.ArrayList")(len(values))
     for v in values:
         r.add(unwrap(v))
     return r
