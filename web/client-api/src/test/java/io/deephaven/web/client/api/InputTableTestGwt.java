@@ -6,6 +6,7 @@ package io.deephaven.web.client.api;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.ide.IdeSession;
+import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
@@ -80,6 +81,36 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                                 });
                             }))));
         })).then(this::finish).catch_(this::report);
+    }
+
+    public void testDeleteThatThrowsKeepsNothing() {
+        // Deleting through an input table whose table was closed throws, as it always has; it must not keep holding
+        // the table it was given
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_009);
+                    return session.getTable("source", null).resolve().then(operand -> session
+                            .getTable("editable", null).asPromise()
+                            .then(editable -> editable.inputTable().then(input -> {
+                                ClientTableState state = operand.getConnection().getCache()
+                                        .get(new TableTicket(operand.typedTicket().getTicket())).get();
+                                editable.close();
+                                try {
+                                    input.deleteTable(JsTableReference.of(operand));
+                                    return Promise.reject(
+                                            "deleteTable through a closed table returned instead of throwing");
+                                } catch (Throwable expected) {
+                                    // As on main
+                                }
+                                operand.close();
+                                return afterReleaseFlush().then(ignore -> {
+                                    assertEquals("the delete that threw still held its operand",
+                                            ClientTableState.ResolutionState.RELEASED, state.getResolution());
+                                    return Promise.resolve(session);
+                                });
+                            })));
+                })
+                .then(this::finish).catch_(this::report);
     }
 
     public void testAddSeveralTablesThenDelete() {

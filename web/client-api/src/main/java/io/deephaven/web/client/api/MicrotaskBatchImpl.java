@@ -979,7 +979,15 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
         if (!lettingGo[0]) {
             // Nothing failed while being held, so the request names only tables the server has or will have
-            call.get().then(value -> {
+            Promise<T> sent;
+            try {
+                sent = call.get();
+            } catch (RuntimeException e) {
+                // Thrown while making the request: nothing will settle, so let go before passing it on
+                letGo.run();
+                throw e;
+            }
+            sent.then(value -> {
                 letGo.run();
                 result.succeed(value);
                 return null;
