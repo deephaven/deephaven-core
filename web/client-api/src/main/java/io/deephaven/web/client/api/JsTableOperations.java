@@ -67,6 +67,29 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * {@link JsTable#operations()} of a {@link JsTable} too: it stands for the table as it was when taken, and a later
  * filter or sort applied to that {@code Table} is not seen by it.
  * <p>
+ * Each table holds server resources until it is closed, by whoever owns it:
+ * <ul>
+ * <li>Awaiting a {@link JsPendingTable} gives the table it produces, and {@link #resolve()} gives it as a
+ * {@link JsResolvedTable}. Repeating either gives the same instance, as awaiting a promise twice does. Whoever created
+ * the pending table owns that table.</li>
+ * <li>A {@code ResolvedTable} cannot be awaited, since awaiting a thenable would also await what it resolves to.
+ * {@link #resolve()} is how code reaches the table from any {@code TableOperations}, pending or resolved: on a
+ * {@code ResolvedTable} it gives that same table.</li>
+ * <li>Neither awaiting nor {@code resolve()} changes who owns a table; whether code that receives a table may close it
+ * is agreed between that code and its caller. A {@code TableOperations} parameter reads best as operations to chain on.
+ * Code that takes over a table to close later is clearer taking a {@code ResolvedTable}, which the sender resolves
+ * before handing it over. Code that keeps a table it was only lent can call {@link JsResolvedTable#copy()} for a new
+ * instance with its own lifetime.</li>
+ * </ul>
+ * To hand one table to several owners, resolve it once, give each a copy, and close your own:
+ *
+ * <pre>
+ * const t = await pending;
+ * popupA.show(t.copy());
+ * popupB.show(t.copy());
+ * t.close();
+ * </pre>
+ * <p>
  * Each method checks its arguments when called and throws for invalid ones. A failure of the operation itself, on the
  * server or because a table it uses was canceled, failed, or used too late, is reported by rejecting the pending table
  * it returns; see {@link JsPendingTable} for how long a pending table may be used.
@@ -94,16 +117,17 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * </pre>
  * 
  * The caller here might be passing in an existing ResolvedTable so later operations are safe, but it isn't declared
- * that way, so we can't be sure, and the method shouldn't rely on it. Here's an example instead of retaining a table
- * for later reuse - both the initial table is retained upon creation, then each change in filter is retained as well.
- * Each retained table must be released when being replaced, or when the entire instance will no longer be used.
- * 
+ * that way, so we can't be sure, and the method shouldn't rely on it. Here's an example instead of keeping a table for
+ * later reuse: the table it was handed is copied, so the class owns its own instance, and each filtered table it
+ * creates is its own as well. Each must be closed when replaced, or when the instance is no longer used.
+ *
  * <pre>
  * class SwapFilters {
  *     private readonly table: Promise&lt;dh.ResolvedTable>;
  *     private filteredTable: Promise&lt;dh.ResolvedTable> | null = null;
  *     constructor(table: dh.TableOperations) {
- *         this.table = table.resolve();
+ *         // resolve() gives the caller's table; copy() makes one this class owns
+ *         this.table = table.resolve().then(t => t.copy());
  *     }
  *     changeFilters(filters: ReadonlyArray&lt;dh.FilterCondition>) {
  *         if (this.filteredTable) {
@@ -138,16 +162,16 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
 public interface JsTableOperations extends ServerObject {
 
     /**
-     * The one consistent way to get from any table operations, pending or already resolved, to a retained
-     * {@link JsResolvedTable} whose data can be read and on which more operations can be chained. A
-     * {@link JsPendingTable}, including the {@link JsTable#operations()} of a {@link JsTable}, yields the table it
-     * creates or stands for, whatever awaiting it would give; an already resolved table yields an independently
-     * closeable copy of itself. The caller owns the result and must close it. Resolving the same pending table again
-     * yields the same promise and the same table; a pending table that was canceled, or is resolved after the task that
-     * created it, rejects instead, as does a fetched one that was already awaited.
+     * The table these operations stand for, as a {@link JsResolvedTable} whose data can be read and on which more
+     * operations can be chained. On a {@link JsPendingTable}, including the {@link JsTable#operations()} of a
+     * {@link JsTable}, it is the table the pending table produces, whatever awaiting it gives; on a resolved table, it
+     * is that table itself. Repeated calls give the same promise and the same table. Resolving does not change who owns
+     * the table; use {@link JsResolvedTable#copy()} for an instance with its own lifetime. A pending table that was
+     * canceled, or is resolved after the task that created it, rejects instead, as does a fetched one that was already
+     * awaited.
      *
      * @param options optionally, a {@code signal} that cancels a pending table when aborted
-     * @return a promise of a retained resolved table
+     * @return a promise of the resolved table
      */
     @JsMethod
     Promise<JsResolvedTable> resolve(@JsOptional @JsNullable @TsTypeRef(ResolveOptions.class) Object options);

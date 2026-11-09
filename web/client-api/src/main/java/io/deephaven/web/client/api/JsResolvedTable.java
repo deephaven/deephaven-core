@@ -17,22 +17,22 @@ import jsinterop.annotations.JsOptional;
  * chainable {@link JsTableOperations}, each of which again yields a {@link JsPendingTable}. It has no client-side
  * filter or sort state of its own; every change is a new server-side table.
  * <p>
- * Instances are owned by the caller and must be {@link #close() closed}. {@link #copy()} produces another instance over
- * the same server-side table that can be closed independently.
+ * Each instance belongs to whoever created it or was given it to own, and must be {@link #close() closed} by them.
+ * {@link #copy()} produces another instance over the same server-side table that can be closed independently; see
+ * {@link JsTableOperations} for who owns what.
  */
 @TsName(namespace = "dh", name = "ResolvedTable")
 @TsInterface
 public interface JsResolvedTable extends JsITable, JsTableOperations {
     /**
-     * An independently closeable copy of this table, so that whatever {@code resolve()} hands out is the caller's to
-     * close.
+     * This table itself, as {@link JsTableOperations#resolve(Object)} gives for any table operations. Resolving does
+     * not change who owns it; use {@link #copy()} for an instance with its own lifetime.
+     *
+     * @throws IllegalStateException if this table is closed
      */
     @Override
     @JsMethod
-    default Promise<JsResolvedTable> resolve(@JsOptional @JsNullable @TsTypeRef(ResolveOptions.class) Object options) {
-        // Nothing pending to cancel: the signal is irrelevant here
-        return copy();
-    }
+    Promise<JsResolvedTable> resolve(@JsOptional @JsNullable @TsTypeRef(ResolveOptions.class) Object options);
 
     @Override
     @JsIgnore
@@ -41,12 +41,14 @@ public interface JsResolvedTable extends JsITable, JsTableOperations {
     }
 
     /**
-     * Returns another instance of this table, allowing either instance to be closed without affecting the other.
+     * A new instance over the same server-side table with its own lifetime, available at once. The caller owns it, and
+     * either instance can be closed without affecting the other.
      *
-     * @return a copy of this table, sharing resources on the server
+     * @return a new instance of this table, sharing resources on the server
+     * @throws IllegalStateException if this table is closed
      */
     @JsMethod
-    Promise<JsResolvedTable> copy();
+    JsResolvedTable copy();
 
     /**
      * A new {@link JsTable} over the same server-side table, the inverse of {@link JsTable#operations()}. The

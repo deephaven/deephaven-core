@@ -397,6 +397,72 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         });
     }
 
+    public void testResolveOfAResolvedTableIsItself() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_045);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(resolved -> {
+                    Promise<JsResolvedTable> again;
+                    try {
+                        again = resolved.resolve();
+                    } catch (Throwable e) {
+                        return Promise.reject("resolve() on a resolved table threw: " + e);
+                    }
+                    return again.then(same -> {
+                        assertSame("resolve() on a resolved table gave another instance", resolved, same);
+                        resolved.close();
+                        return Promise.resolve(same);
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCopyIsAtOnceAndIndependent() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_046);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(resolved -> {
+                    JsResolvedTable[] copies = new JsResolvedTable[2];
+                    try {
+                        copies[0] = resolved.copy();
+                    } catch (Throwable e) {
+                        return Promise.reject("copy() threw: " + e);
+                    }
+                    assertNotSame(resolved, copies[0]);
+                    assertEquals(5., copies[0].getSize(), 0);
+                    // The original closed first: once its release is flushed, the copy still works
+                    resolved.close();
+                    return afterReleaseFlush()
+                            .then(ignore -> copies[0].head(Js.uncheckedCast(1.0)).resolve())
+                            .then(head -> {
+                                assertEquals("the copy did not outlive the original", 1., head.getSize(), 0);
+                                head.close();
+                                // The copy closed first: a copy made from it still works
+                                copies[1] = copies[0].copy();
+                                copies[0].close();
+                                return afterReleaseFlush();
+                            })
+                            .then(ignore -> copies[1].head(Js.uncheckedCast(1.0)).resolve())
+                            .then(head -> {
+                                assertEquals("a copy did not outlive the copy it was made from", 1., head.getSize(),
+                                        0);
+                                head.close();
+                                copies[1].close();
+                                try {
+                                    copies[1].copy();
+                                } catch (IllegalStateException expected) {
+                                    return Promise.resolve(head);
+                                }
+                                return Promise.reject("copy() of a closed table returned instead of throwing");
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testCreateMutableTableReadsTheSameData() {
         connect(tables)
                 .then(session -> {

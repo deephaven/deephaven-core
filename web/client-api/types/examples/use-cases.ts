@@ -162,9 +162,10 @@ async function mergeTwo() {
     b.close();
 }
 
-// A function that accepts any operations, reads the result, and chains on it later
+// A function that accepts any operations, reads the result, and chains on it later. The table ops resolves to is the
+// caller's, so this copies it to have one of its own to close.
 async function readAny(ops: dh.TableOperations) {
-    const t = await ops.resolve();
+    const t = (await ops.resolve()).copy();
     const n: number = t.size;
     const top = await t.head(10);
     top.close();
