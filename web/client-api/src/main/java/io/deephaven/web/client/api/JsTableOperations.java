@@ -70,15 +70,17 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * Each table holds server resources until it is closed, by whoever owns it:
  * <ul>
  * <li>Awaiting a {@link JsPendingTable} gives the table it produces, and {@link #resolve()} gives it as a
- * {@link JsResolvedTable}. Repeating either gives the same instance, as awaiting a promise twice does. Whoever created
- * the pending table owns that table.</li>
+ * {@link JsResolvedTable}. Repeating either gives the same instance, as awaiting a promise twice does. A pending table
+ * has no owner: awaiting or resolving it retains the table it produces, one instance shared by every await and
+ * {@code resolve()} of it, and whoever does so is responsible for closing it.</li>
  * <li>A {@code ResolvedTable} cannot be awaited, since awaiting a thenable would also await what it resolves to.
  * {@link #resolve()} is how code reaches the table from any {@code TableOperations}, pending or resolved: on a
  * {@code ResolvedTable} it gives that same table.</li>
- * <li>Neither awaiting nor {@code resolve()} changes who owns a table; whether code that receives a table may close it
- * is agreed between that code and its caller. A {@code TableOperations} parameter reads best as operations to chain on.
- * Code that takes over a table to close later is clearer taking a {@code ResolvedTable}, which the sender resolves
- * before handing it over. Code that keeps a table it was only lent can call {@link JsResolvedTable#copy()} for a new
+ * <li>Awaiting or resolving it again gives that same instance and does not change who is responsible for it; whether
+ * code that receives a table may close it is agreed between that code and its caller. Code given a
+ * {@code TableOperations} should only chain on it: if it is a pending table, resolving it would retain a table the
+ * caller cannot reach to close. Code that reads a table should take a {@code ResolvedTable}, which the sender resolves
+ * before handing it over, and code that keeps one it was lent can call {@link JsResolvedTable#copy()} for a new
  * instance with its own lifetime.</li>
  * </ul>
  * To hand one table to several owners, resolve it once, give each a copy, and close your own:
@@ -116,28 +118,24 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * }
  * </pre>
  * 
- * The caller here might be passing in an existing ResolvedTable so later operations are safe, but it isn't declared
- * that way, so we can't be sure, and the method shouldn't rely on it. Here's an example instead of keeping a table for
- * later reuse: the table it was handed is copied, so the class owns its own instance, and each filtered table it
- * creates is its own as well. Each must be closed when replaced, or when the instance is no longer used.
+ * This function only chains on the table it is given, so it works whether the caller passes a pending or a resolved
+ * table, and closes only what its own chain produced. To keep a table for later, take a {@code ResolvedTable} and copy
+ * it: this class owns its copy and each filtered table it makes, and closes each when replaced or when it is closed.
  *
  * <pre>
  * class SwapFilters {
- *     private readonly table: Promise&lt;dh.ResolvedTable>;
+ *     private readonly table: dh.ResolvedTable;
  *     private filteredTable: Promise&lt;dh.ResolvedTable> | null = null;
- *     constructor(table: dh.TableOperations) {
- *         // resolve() gives the caller's table; copy() makes one this class owns
- *         this.table = table.resolve().then(t => t.copy());
+ *     constructor(table: dh.ResolvedTable) {
+ *         // The caller keeps its own table; this class owns the copy
+ *         this.table = table.copy();
  *     }
  *     changeFilters(filters: ReadonlyArray&lt;dh.FilterCondition>) {
  *         if (this.filteredTable) {
  *             // A table that failed has nothing to close
  *             this.filteredTable.then(t => t.close(), () => {});
  *         }
- *         // Note that this can be a surprise - returning a Thenable or PromiseLike as the result
- *         // of a resolved callback will invoke `then()` on it, which will retain the table.
- *         // In this case, this is what we want, but it could still be a surprise in some cases.
- *         this.filteredTable = this.table.then(t => t.where(filters));
+ *         this.filteredTable = Promise.resolve(this.table.where(filters));
  *     }
  *     async loadData(): Promise&lt;dh.TableData> {
  *         if (!this.filteredTable) {
@@ -150,7 +148,7 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  *         })
  *     }
  *     close() {
- *         this.table.then(t => t.close(), () => {});
+ *         this.table.close();
  *         if (this.filteredTable) {
  *             this.filteredTable.then(t => t.close(), () => {});
  *         }

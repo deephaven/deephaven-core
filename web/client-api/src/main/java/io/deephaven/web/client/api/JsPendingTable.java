@@ -20,11 +20,10 @@ import jsinterop.annotations.JsMethod;
  * as fetching a named table, yield a {@link JsTable}. {@link #resolve()} always yields a {@link JsResolvedTable}. For
  * these the two are the same table; a fetched pending table produces one or the other, so await it or call
  * {@code resolve()} on it, not both. Either may be repeated within the task that created it, and gives the same table.
- * It has no {@code catch} or {@code finally}; wrap it with {@code Promise.resolve(...)}, in that task, for those. The
- * resulting table must be closed by whoever created the pending table, to indicate that it will no longer be used and
- * server resources can be freed; code lent a pending table can copy the result for a table of its own (see
- * {@link JsTableOperations}). A future version of this API could provide "liveness scopes" to claim/release batches of
- * tables at a time automatically.
+ * It has no {@code catch} or {@code finally}; wrap it with {@code Promise.resolve(...)}, in that task, for those. A
+ * pending table has no owner: whoever awaits or resolves it must close the resulting table, to indicate that it will no
+ * longer be used and server resources can be freed (see {@link JsTableOperations}). A future version of this API could
+ * provide "liveness scopes" to claim/release batches of tables at a time automatically.
  * <p>
  * A pending table may only be used in the task that created it, before control returns to the event loop: awaited,
  * {@code then()} or {@code resolve()} called on it, chained on, passed as an operand, or passed to

@@ -177,14 +177,12 @@ async function mergeTwo() {
     b.close();
 }
 
-// A function that accepts any operations, reads the result, and chains on it later. The table ops resolves to is the
-// caller's, so this copies it to have one of its own to close.
-async function readAny(ops: dh.TableOperations) {
-    const t = (await ops.resolve()).copy();
+// A function that reads a table it is lent and chains on it. It takes a ResolvedTable, which the caller resolved and
+// still closes; it closes only what its own chain produced.
+async function readTable(t: dh.ResolvedTable) {
     const n: number = t.size;
     const top = await t.head(10);
     top.close();
-    t.close();
 }
 
 // Mixing the legacy mutable Table with the new API
@@ -194,7 +192,9 @@ async function legacy() {
     const derived = await table.operations().update(["Z = X + 1"]);
     // derived already has every column of table, so name the one to add
     const joined = await derived.naturalJoin(table, ["Key"], ["OriginalX = X"]);
-    await readAny(table.operations());
+    const view = await table.operations();
+    await readTable(view);
+    view.close();
     table.close();
     derived.close();
     joined.close();

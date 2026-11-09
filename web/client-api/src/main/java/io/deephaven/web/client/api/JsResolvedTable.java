@@ -17,10 +17,10 @@ import jsinterop.annotations.JsOptional;
  * chainable {@link JsTableOperations}, each of which again yields a {@link JsPendingTable}. It has no client-side
  * filter or sort state of its own; every change is a new server-side table.
  * <p>
- * Each instance belongs to whoever created it or was given it to own, and must be {@link #close() closed} by them.
- * {@link #copy()} produces another instance over the same server-side table that can be closed independently; see
- * {@link JsTableOperations} for who owns what. Like other tables made by operations, it is not revived if a reconnect
- * needs a new session.
+ * Each instance must be {@link #close() closed} by whoever is responsible for it: the code that awaited or resolved the
+ * pending table it came from, called {@link #copy()}, or was handed it to own. {@link #copy()} produces another
+ * instance over the same server-side table that can be closed independently; see {@link JsTableOperations} for who owns
+ * what. Like other tables made by operations, it is not revived if a reconnect needs a new session.
  */
 @TsName(namespace = "dh", name = "ResolvedTable")
 @TsInterface
