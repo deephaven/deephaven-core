@@ -1,11 +1,10 @@
 #
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
-"""Gives each subclass of a table-operations base class its own copy of the base's ops, with the docstrings filled
-in for that subclass.
+"""Copies the ops of a base class onto each subclass and fills in their docstrings for that subclass.
 
 The pydeephaven and deephaven packages each hold an identical copy of this file, because neither package can import
-the other. A check fails the build when the two copies differ, so edit both together.
+the other. A server test fails when the two copies differ, so edit both together.
 """
 
 from __future__ import annotations
@@ -25,8 +24,8 @@ def _fill_block(doc: str, name: str, value: str) -> str:
     Args:
         doc (str): the docstring to fill
         name (str): the placeholder name
-        value (str): the lines to put in, such as "Raises:\\n    DHError"; an empty string removes the placeholder
-            line and the blank line before it
+        value (str): the lines to put in, such as "Raises:\\n    DHError". An empty string removes the placeholder
+            line and the blank line before it.
 
     Returns:
         the filled docstring
@@ -41,7 +40,7 @@ def _fill_block(doc: str, name: str, value: str) -> str:
         if value:
             out.extend(f"{indent}{v}" if v else "" for v in value.split("\n"))
         elif out and not out[-1].strip():
-            # Without dropping it, the blank line before the placeholder would double up with the one after it.
+            # Drop the blank line before the placeholder. Otherwise it doubles up with the blank line after it.
             out.pop()
     return "\n".join(out)
 
@@ -54,18 +53,18 @@ def bind_t(hint: Any, cls: type) -> Any:
         cls (type): the class that T stands for
 
     Returns:
-        the hint with T replaced; a hint without T, or with only other TypeVars, comes back unchanged
+        the hint with T replaced. A hint without T, or with only other TypeVars, comes back unchanged.
     """
     if hint is T:
         return cls
     # A plain class needs no binding. Without this check, a Generic subclass whose __init_subclass__ chain skips
-    # Generic's keeps T in __parameters__, and a Table hint would come back as Table[Table].
+    # Generic's hook keeps T in __parameters__. A Table hint would then come back as Table[Table].
     if isinstance(hint, type) and not isinstance(hint, types.GenericAlias):
         return hint
     params = getattr(hint, "__parameters__", ())
     if T not in params:
         return hint
-    # Subscripting fills the hint's TypeVars in order, and a union drops the duplicate, so Table | T becomes Table.
+    # Subscripting fills the hint's TypeVars in order. A union drops the duplicate, so Table | T becomes Table.
     return hint[tuple(cls if p is T else p for p in params)]
 
 
@@ -80,8 +79,8 @@ def to_pipe_union(hint: Any) -> Any:
         hint (Any): the resolved type hint
 
     Returns:
-        the hint as an ``X | Y`` union; a hint that is not a ``typing.Union``, or a union whose members cannot be
-        joined with ``|``, comes back unchanged
+        the hint as an ``X | Y`` union. A hint that is not a ``typing.Union``, or a union whose members cannot be
+        joined with ``|``, comes back unchanged.
     """
     if get_origin(hint) is not Union:
         return hint
@@ -99,9 +98,9 @@ def fill_doc(doc: str, doc_vars: dict[str, str], op_name: str = "") -> str:
 
     Args:
         doc (str): the docstring template
-        doc_vars (dict[str, str]): the values; ``intro``, when not empty, becomes the first paragraph, and every
-            other key fills its ``{key}`` placeholder. A line that holds only the placeholder takes the value's lines
-            at that line's indent, and an empty value removes that line.
+        doc_vars (dict[str, str]): the values. A non-empty ``intro`` becomes the first paragraph. Every other key
+            fills its ``{key}`` placeholder. A line that holds only the placeholder takes the value's lines at that
+            line's indent, and an empty value removes that line.
         op_name (str): the op's name, which fills ``{op}`` in the docstring and in the values; defaults to an empty
             string, meaning ``{op}`` is left as is
 
@@ -113,9 +112,9 @@ def fill_doc(doc: str, doc_vars: dict[str, str], op_name: str = "") -> str:
             doc = _fill_block(doc, name, value).replace(f"{{{name}}}", value)
     intro = doc_vars.get("intro", "")
     if intro:
-        # The first docstring line has no indent and the rest share one. Without that indent, the original first
-        # line would be the least indented line and the rest would become a quoted block in Sphinx. A one-line
-        # docstring has no other lines, and without the default min() would raise and break the import.
+        # Give the original first line the indent the other lines share. A docstring's first line has no indent.
+        # Without this, it would be the least indented line, and Sphinx would show the rest as a quoted block.
+        # A one-line docstring has no other lines. Without the default, min() would raise and break the import.
         indent = min(
             (
                 len(line) - len(line.lstrip())
@@ -139,7 +138,8 @@ def copy_op(func: types.FunctionType, cls: type, doc: str) -> types.FunctionType
     Returns:
         the copy, named and documented as the subclass's own method
     """
-    # A copy, not a wrapper, so the signature, defaults and annotations stay the base op's own.
+    # A new function on the same code keeps the base op's signature, defaults and annotations. A wrapper would show
+    # (*args, **kwargs) instead.
     op = types.FunctionType(
         func.__code__,
         func.__globals__,
@@ -148,9 +148,9 @@ def copy_op(func: types.FunctionType, cls: type, doc: str) -> types.FunctionType
         func.__closure__,
     )
     op.__kwdefaults__ = func.__kwdefaults__
-    # The copy keeps the base module's globals, where the subclass may not exist yet, or may exist only for type
-    # checking. Without resolving the string annotations here, Sphinx cannot resolve the class names. T is then bound
-    # to the subclass, or the docs would show "-> T".
+    # Resolve the string annotations here, with the subclass's module added. The copy keeps the base module's
+    # globals, where the subclass may not exist yet or may exist only for type checking. Without this, Sphinx cannot
+    # resolve the class names. Binding T to the subclass then keeps the docs from showing "-> T".
     hints = get_type_hints(
         func,
         globalns={
@@ -211,8 +211,8 @@ def copy_ops(
             or name in vars(cls)
         ):
             continue
-        # The copy takes the wrapper's code, so a decorated op would show (*args, **kwargs) in its signature and
-        # docs, or fail to resolve its hints in the decorator's module.
+        # The copy would take the wrapper's code. A decorated op would then show (*args, **kwargs) in its signature
+        # and docs, or fail to resolve its hints in the decorator's module.
         if hasattr(func, "__wrapped__"):
             raise TypeError(
                 f"{base.__qualname__}.{name} is decorated; decorated {base.__qualname__} ops are not supported"

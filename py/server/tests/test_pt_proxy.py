@@ -747,7 +747,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         )
 
     def test_agg_by_refreshing_initial_groups(self) -> None:
-        # A refreshing table with the same rows as the static test table, so both proxies have the same keys.
+        # This refreshing table has the same rows as the static test table, so both proxies have the same keys.
         with update_graph.shared_lock(self.test_update_graph):
             no_rows = (
                 time_table("PT1h")

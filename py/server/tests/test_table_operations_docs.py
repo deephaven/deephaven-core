@@ -19,7 +19,7 @@ OP_NAMES: list[str] = [
     if isinstance(func, types.FunctionType) and not name.startswith("_")
 ]
 
-# The ops whose first argument is the right, trigger or initial-groups table.
+# Maps each op whose first argument is a second table to that argument's name.
 RIGHT_PARAMS: dict[str, str] = {
     "natural_join": "table",
     "exact_join": "table",
@@ -37,9 +37,10 @@ PLACEHOLDER = re.compile(r"\{[a-z_]+\}")
 
 class TableOperationsDocsTestCase(BaseTestCase):
     def test_doc_template_matches_client_copy(self) -> None:
-        # The Python test matrix copies only the tests into its work folder, so find each copy by import. Both test
-        # environments install both packages: the Docker image installs py/client, and the matrix installs the wheels.
-        # Imported here, so a run without pydeephaven loses only this check and not the whole module.
+        # Find each copy by import. The Python test matrix copies only the tests into its work folder, so a path
+        # next to the tests finds nothing. Both test setups install both packages. The Docker image installs
+        # py/client, and the matrix installs the wheels. The import sits here, so a run without pydeephaven loses
+        # only this check.
         import pydeephaven._doc_template as client_copy
 
         self.assertEqual(
@@ -129,8 +130,8 @@ class TableOperationsDocsTestCase(BaseTestCase):
                     )
 
     def test_generic_hook_runs(self) -> None:
-        # Generic's __init_subclass__ comes after JObjectWrapper's in the MRO, so it runs only when
-        # JObjectWrapper's passes the call on. Without it, T stays in __parameters__.
+        # Generic's __init_subclass__ comes after JObjectWrapper's in the MRO. It runs only when JObjectWrapper's
+        # hook passes the call on. Without it, T stays in __parameters__.
         for cls in (Table, PartitionedTableProxy, InputTable):
             with self.subTest(cls=cls.__name__):
                 self.assertEqual((), cls.__parameters__)

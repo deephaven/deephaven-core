@@ -934,10 +934,10 @@ class _TableOperations(ABC, Generic[T]):
     name on the Java ``TableOperations`` interface, which both Java classes implement.
 
     A subclass that sets ``_doc_vars`` gets its own copy of every public op, with the op's docstring filled in from
-    those values. ``returns`` fills ``{returns}``, and ``right_type`` fills ``{right_type}``, the type of the right or
-    trigger table in the Args section. ``right_note`` fills a ``{right_note}`` line, which says what an op does when the
-    other table is of the subclass's own type; an empty value removes the line. ``intro``, when not empty, becomes the
-    first paragraph. ``{op}`` in any of them becomes the op's name.
+    those values. ``returns`` fills ``{returns}``. ``right_type`` fills ``{right_type}``, the type of the right or
+    trigger table in the Args section. ``right_note`` fills a ``{right_note}`` line, which says what an op does when
+    the other table has the subclass's own type. An empty ``right_note`` removes the line. A non-empty ``intro``
+    becomes the first paragraph. ``{op}`` in any of them becomes the op's name.
     """
 
     _doc_vars: ClassVar[dict[str, str]] = {}

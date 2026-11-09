@@ -143,7 +143,7 @@ class UpdateGraphTestCase(BaseTestCase):
             grouped_table = test_table.group_by(by="Y")
         self.assertTrue(grouped_table.is_refreshing)
 
-        # auto_locking is off (see setUp) and no lock is held; the call must still succeed.
+        # setUp turns auto_locking off, and no lock is held. The call must still succeed.
         result_table = grouped_table.ungroup(cols=["X"])
         self.assertTrue(result_table.is_refreshing)
 
