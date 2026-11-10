@@ -588,6 +588,8 @@ public class BarrageMessageProducer extends LivenessArtifact
         private boolean isActive = false;
         /** is this subscription deleted as far as the client is concerned? */
         private boolean pendingDelete = false;
+        /** why a client request deleted this subscription; the client is sent this error instead of a completion */
+        private String rejection;
         /** is this subscription in our pending list? */
         private boolean hasPendingUpdate = false;
         /** do we need to send the initial snapshot? */
@@ -752,9 +754,11 @@ public class BarrageMessageProducer extends LivenessArtifact
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.isFullSubscription()) {
                 // never allow changes to a full subscription
-                GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT,
-                        "cannot change from full subscription to viewport or vice versa");
-                removeSubscription(listener);
+                reject(sub, "cannot change from full subscription to viewport or vice versa");
+                return;
+            }
+            if (isBlinkTable && newReverseViewport) {
+                reject(sub, "Reverse viewport is not supported for blink tables");
                 return;
             }
 
@@ -763,12 +767,6 @@ public class BarrageMessageProducer extends LivenessArtifact
             }
             sub.pendingViewport = newViewport != null ? newViewport.copy() : null;
             sub.pendingReverseViewport = newReverseViewport;
-            if (isBlinkTable && newReverseViewport) {
-                GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT,
-                        "Reverse viewport is not supported for blink tables");
-                removeSubscription(listener);
-                return;
-            }
             final BitSet cols;
             if (columnsToSubscribe == null) {
                 cols = new BitSet(chunkSources.length);
@@ -783,6 +781,23 @@ public class BarrageMessageProducer extends LivenessArtifact
                         .append("scheduling update immediately, for viewport and column updates.").endl();
             }
         });
+    }
+
+    /**
+     * Deletes {@code sub} because the client asked for a change it may not make. The propagation job tells the client,
+     * as it completes the streams of other deleted subscriptions. The listener is not called here: the caller holds
+     * this producer's monitor, and a write to the listener can fail and cancel the call on the writing thread, which
+     * then closes the request handler and so needs locks that the requesting thread may hold.
+     *
+     * @param sub the subscription to delete
+     * @param reason the error message for the client
+     */
+    private void reject(final Subscription sub, final String reason) {
+        Assert.assertion(Thread.holdsLock(this), "Thread.holdsLock(this)");
+        if (sub.rejection == null) {
+            sub.rejection = reason;
+        }
+        sub.pendingDelete = true;
     }
 
     public void removeSubscription(final StreamObserver<BarrageMessageWriter.MessageView> listener) {
@@ -1685,6 +1700,10 @@ public class BarrageMessageProducer extends LivenessArtifact
         // complete the subscriptions removed above now; the early return below would otherwise skip them
         if (deletedSubscriptions != null) {
             for (final Subscription subscription : deletedSubscriptions) {
+                if (subscription.rejection != null) {
+                    GrpcUtil.safelyError(subscription.listener, Code.INVALID_ARGUMENT, subscription.rejection);
+                    continue;
+                }
                 try {
                     subscription.listener.onCompleted();
                 } catch (final Exception ignored) {

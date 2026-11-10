@@ -126,7 +126,12 @@ public interface ExchangeMarshaller {
 
         /**
          * Update the subscription with the new request.
-         * 
+         *
+         * <p>
+         * The caller holds the request handler's monitor, which closing the stream needs. A write to the listener can
+         * fail and close the stream on the writing thread while that thread holds the listener's lock, so this method
+         * must not call the listener, not even to report an invalid request.
+         *
          * @param subscriptionRequest the request to update the subscription
          * @return true if the subscription was found and updated, false otherwise
          */
