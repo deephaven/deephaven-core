@@ -12,7 +12,7 @@ description: >
   for an upcoming release, or reviewing what's undocumented since the last release. **Do NOT
   use for:** reviewing existing documentation (use deephaven-docs-review-full), writing
   documentation, checking a single PR (just read the PR diff), or Enterprise/deephaven-ent code.
-allowed-tools: Read, Grep, Glob, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git tag *), Bash(git fetch *), Bash(git grep *), Bash(git branch *), Bash(git merge-base *), Bash(git cherry *), Bash(git patch-id *), Bash(find *), Bash(wc *), Bash(grep *), Bash(sort *), Bash(head *)
+allowed-tools: Read, Grep, Glob, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git tag *), Bash(git fetch *), Bash(git grep *), Bash(git branch *), Bash(git merge-base *), Bash(git cherry *), Bash(git patch-id *), Bash(BASE=*), Bash(find *), Bash(wc *), Bash(grep *), Bash(sort *), Bash(head *)
 ---
 
 # Release documentation needs check
@@ -73,8 +73,10 @@ git branch -r | grep '^  upstream/rc/v' | sort -V
 `dgodinez-dh/rc/...`). If the latest release tag is `v42.7`, the RC branch `upstream/rc/v42.x`
 is the one v42.7 was **already cut from** — it is not the next release's RC. Look for
 `upstream/rc/v43.x` or a higher major. If no RC branch exists with a version strictly newer
-than the latest tag, take the last entry from the version-sorted list (the highest version).
-If no RC branches exist at all, note this in the report and treat all changes as unconfirmed.
+than the latest tag, there is no active RC — note this in the report and treat all changes as
+unconfirmed. Do **not** fall back to the highest RC branch, as that is the branch the latest
+tag was cut from and using it would mark already-shipped changes as "confirmed for next release."
+If no RC branches exist at all, likewise treat all changes as unconfirmed.
 
 Not every commit on `upstream/main` gets cherry-picked onto the RC branch. The RC branch
 determines what ships in the next release, so use it to partition the report: changes that
@@ -114,32 +116,55 @@ ID — these follow the same prefix convention but lack a tracking ticket. Treat
 to ticketed commits for triage purposes. The `--name-status` diff tells you what files actually
 changed.
 
-### Filter out reverted changes on main
+### Revert handling
 
-Identify commits on `upstream/main` that were subsequently reverted on `upstream/main` itself.
-Reverts typically use the title pattern `Revert "<original title>"` and produce a diff that is
-the exact inverse of the original commit.
+All revert-related logic is collected here. Other filtering and classification steps reference
+this section rather than duplicating revert rules.
 
-To detect reverts: scan the first-parent commit list for titles matching `Revert "..."`. For
-each revert, find the original commit by title and verify the revert's diff is the inverse of
-the original's (the added/removed lines are swapped).
+**Detecting reverts:** scan the first-parent commit list for titles matching
+`Revert "<original title>"`. For each revert, find the original commit by title and verify the
+revert's diff is the inverse of the original's (added/removed lines are swapped).
 
-**Before excluding a revert pair, check whether the original commit was cherry-picked onto the
-RC branch or a release branch:**
+**Revert of a commit within the range (both original and revert are in `$BASE..upstream/main`):**
 
-- **Cherry-picked to RC, not reverted on RC:** the feature will still ship — exclude only the
-  revert from the triage and keep the original commit so it flows through to RC classification.
-- **Cherry-picked to RC and also reverted on RC:** the feature is absent from both branches.
-  Do not exclude silently — include both the original and the revert in the report as an
-  informational item (e.g., "Added then removed") so a human can assess whether the situation
+Before excluding a revert pair, check the original commit's status on the RC branch and any
+release branches:
+
+- **Original cherry-picked to RC, not reverted on RC:** the feature will still ship — exclude
+  only the revert from the triage and keep the original so it flows through to RC classification.
+- **Original cherry-picked to RC and also reverted on RC:** the feature is absent from both
+  branches. Do not exclude silently — include both the original and the revert in the report as
+  an informational item (e.g., "Added then removed") so a human can assess whether the situation
   warrants documentation (e.g., a feature that was announced, shipped briefly, then pulled).
-- **Not cherry-picked to RC or any release branch:** the net effect on main is zero — exclude
-  both the original and the revert from the triage.
+- **Original not cherry-picked to RC or any release branch:** the net effect on main is zero —
+  exclude both the original and the revert from the triage.
 
-For reverts where the original commit is **not in the range** (it predates the base), the
-revert is a standalone change — a removal of a previously shipped feature. Keep it in the
-triage; removing a shipped feature is user-facing and typically needs documentation (deprecation
-notice, migration guidance).
+**Revert of a commit before the range (original predates `$BASE`):** the revert is a standalone
+change — a removal of a previously shipped feature. Keep it in the triage; removing a shipped
+feature is user-facing and typically needs documentation (deprecation notice, migration guidance).
+
+**Revert of a shipped cherry-pick:** when the cherry-pick filter (below) identifies a commit as
+already-shipped, check whether a revert of that commit exists in the `$BASE..upstream/main`
+range (by title match: `Revert "<original title>"`). If a revert exists, it means a shipped
+feature is being removed on main — that revert **must stay in the triage**. Never silently
+exclude both a shipped feature and its main-side revert. Prefer noise over missing a
+shipped-feature removal.
+
+**Revert on the RC branch:** when classifying a commit as RC-confirmed, verify the change is
+still effective at the RC tip. A patch-id match does not prove the feature will ship — if the
+cherry-pick was subsequently reverted on the RC branch, the original patch still matches but
+the change is no longer present. Check concretely:
+
+```bash
+# Look for reverts on the RC branch
+git log upstream/rc/vNN.x --grep='Revert' --oneline
+
+# Or search for the removal of a key symbol/function added by the commit
+git log upstream/rc/vNN.x -S 'functionOrSymbolName' --oneline
+```
+
+If the change has been reverted or superseded on RC, reclassify it as main-only and note the
+revert.
 
 ### Filter out superseded changes on main
 
@@ -184,19 +209,7 @@ git tag --sort=v:refname | grep -E '^v<major>\.[0-9]+$'
 git cherry <release-tag> upstream/main $BASE
 ```
 
-**Merge commits:** `git cherry` skips merge commits because they have no single patch-id. For
-first-parent merge commits (PRs merged with a merge commit rather than squash/rebase), generate
-a first-parent patch-id manually and compare it against release branch commits:
-
-```bash
-# Generate a first-parent patch-id for a merge commit
-git diff <sha>^1..<sha> | git patch-id --stable
-```
-
-Compare these against the first-parent patch-ids of commits on each release tag. A match means
-the PR's changes were cherry-picked (typically with `git cherry-pick -m 1`).
-
-Commits marked with `-` by `git cherry`, or merge commits with matching first-parent patch-ids,
+Commits marked with `-` by `git cherry`
 have patch-equivalent counterparts on the release branch. **Before excluding them, verify the
 change is still effective in that release tag.** A release branch can contain a cherry-pick
 followed by its revert before the tag is cut, so a patch-id match does not prove the change
@@ -205,13 +218,8 @@ tag (e.g., compare `git show <tag>:<file>` against the expected state). Only exc
 when the change is confirmed present in at least one released tag — otherwise it is still
 unreleased and needs triage.
 
-**Do not discard reverts of shipped features.** When excluding a commit as already-shipped,
-check whether a revert of that commit exists in the `$BASE..upstream/main` range (by title
-match: `Revert "<original title>"`). If a revert exists, it means a previously shipped feature
-is being removed on main — that revert **must stay in the triage** as a user-facing change
-that likely needs documentation (deprecation notice, migration guidance, release notes). Never
-silently exclude both a shipped feature and its main-side revert. Prefer a little noise in
-the report over missing a shipped-feature removal.
+When excluding a commit as already-shipped, also apply the "Revert of a shipped cherry-pick"
+rule from the Revert handling section above.
 
 ### Classify each commit as RC-confirmed or main-only
 
@@ -229,39 +237,28 @@ git merge-base --is-ancestor <sha> upstream/rc/vNN.x
 
 Commits that are ancestors of the RC tip are RC-confirmed without needing patch-id matching.
 
-**2. Cherry-picked commits.** For commits not inherited, use `git cherry` plus merge-commit
-matching (same approach as the release filter):
+**2. Cherry-picked commits.** For commits not inherited, use `git cherry` (same approach as
+the release filter):
 
 ```bash
 git cherry upstream/rc/vNN.x upstream/main $BASE
 ```
 
-Commits marked `-` have patch-equivalent counterparts on the RC branch. For merge commits
-skipped by `git cherry`, compare first-parent patch-ids as described above.
+Commits marked `-` have patch-equivalent counterparts on the RC branch.
 
 Classify each commit:
 
 - **RC-confirmed**: the commit is an ancestor of the RC tip, or has a patch-equivalent
   counterpart on the RC branch, **and** the change is still effective at the RC tip (see
-  verification below). This change is confirmed for the next release.
+  the "Revert on the RC branch" rule in the Revert handling section). This change is confirmed
+  for the next release.
 - **Main-only**: the commit is not reachable from the RC branch and has no patch-equivalent
   match. This change is on `upstream/main` but has not been picked for the next release and may
   be held back.
 
-**Verify the change is still effective at the RC tip.** A patch-id match alone does not prove
-the feature will ship — if the cherry-pick was subsequently reverted on the RC branch, the
-original patch still matches but the change is no longer present. To check concretely:
-
-```bash
-# Look for reverts on the RC branch that mention the commit's title
-git log upstream/rc/vNN.x --grep='Revert' --oneline
-
-# Or search for the removal of a key symbol/function added by the commit
-git log upstream/rc/vNN.x -S 'functionOrSymbolName' --oneline
-```
-
-If the change has been reverted or superseded on RC, reclassify it as main-only and note the
-revert.
+**Verify the change is still effective at the RC tip** using the "Revert on the RC branch" rule
+from the Revert handling section above. If the change has been reverted or superseded on RC,
+reclassify it as main-only and note the revert.
 
 This classification carries through to the report — every documentation item is tagged as
 RC-confirmed or main-only so the reader knows which items are urgent (shipping soon) vs which
@@ -384,7 +381,7 @@ are already on `upstream/main`).
 
 ```bash
 # Search for existing mentions of the feature/class/method in docs on upstream/main
-git grep -l "featureName\|ClassName\|method_name" upstream/main -- 'docs/**/*.md'
+git grep -El "featureName|ClassName|method_name" upstream/main -- 'docs/**/*.md'
 
 # Read a specific doc page at the upstream/main revision
 git show upstream/main:docs/python/path/to/page.md
