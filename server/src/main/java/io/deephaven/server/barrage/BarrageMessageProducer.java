@@ -596,6 +596,11 @@ public class BarrageMessageProducer extends LivenessArtifact
         private boolean pendingDelete = false;
         /** why a client request deleted this subscription; the client is sent this error instead of a completion */
         private String rejection;
+        /**
+         * has the client been sent an error? Read and written only while holding the propagation job's run lock, by
+         * whichever of its threads sends the error.
+         */
+        private volatile boolean errorSent = false;
         /** is this subscription in our pending list? */
         private boolean hasPendingUpdate = false;
         /** do we need to send the initial snapshot? */
@@ -1336,6 +1341,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             final StatusRuntimeException apiError = errorTransformer.transform(exception);
 
             Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
+                    .filter(BarrageMessageProducer::markErrorSent)
                     .forEach(sub -> GrpcUtil.safelyError(sub.listener, apiError));
 
             activeSubscriptions.clear();
@@ -1721,17 +1727,19 @@ public class BarrageMessageProducer extends LivenessArtifact
         // complete the subscriptions removed above now; the early return below would otherwise skip them
         if (deletedSubscriptions != null) {
             for (final Subscription subscription : deletedSubscriptions) {
-                if (subscription.rejection != null) {
+                if (subscription.rejection != null && markErrorSent(subscription)) {
                     GrpcUtil.safelyError(subscription.listener, Code.INVALID_ARGUMENT, subscription.rejection);
+                } else {
+                    try {
+                        subscription.listener.onCompleted();
+                    } catch (final Exception ignored) {
+                        // ignore races on cancellation
+                    }
+                }
+                if (subscription.rejection != null) {
                     synchronized (this) {
                         rejectedListeners.removeIf(rejected -> rejected == subscription.listener);
                     }
-                    continue;
-                }
-                try {
-                    subscription.listener.onCompleted();
-                } catch (final Exception ignored) {
-                    // ignore races on cancellation
                 }
             }
         }
@@ -2041,7 +2049,9 @@ public class BarrageMessageProducer extends LivenessArtifact
         if (pendingError != null) {
             StatusRuntimeException ex = errorTransformer.transform(pendingError);
             for (final Subscription subscription : activeSubscriptions) {
-                GrpcUtil.safelyError(subscription.listener, ex);
+                if (markErrorSent(subscription)) {
+                    GrpcUtil.safelyError(subscription.listener, ex);
+                }
             }
         }
 
@@ -2370,11 +2380,29 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     /** Tells {@code subscription}'s listener that {@code failure} has ended it, and removes it. */
     private void failSubscription(final Subscription subscription, final Exception failure) {
-        try {
-            subscription.listener.onError(errorTransformer.transform(failure));
-        } catch (final Exception ignored) {
+        if (markErrorSent(subscription)) {
+            try {
+                subscription.listener.onError(errorTransformer.transform(failure));
+            } catch (final Exception ignored) {
+            }
         }
         removeSubscription(subscription.listener);
+    }
+
+    /**
+     * Records that {@code subscription} is about to be sent an error, so that it is sent one: a write failure, a source
+     * failure and a rejected request can each try to send one. Callers hold the propagation job's run lock, so no two
+     * of them run at once for a subscription.
+     *
+     * @param subscription the subscription whose client is to be sent an error
+     * @return whether the caller should send its error, which is false if the client was already sent one
+     */
+    private static boolean markErrorSent(final Subscription subscription) {
+        if (subscription.errorSent) {
+            return false;
+        }
+        subscription.errorSent = true;
+        return true;
     }
 
     private void propagateSnapshotForSubscription(final Subscription subscription,
@@ -2444,7 +2472,9 @@ public class BarrageMessageProducer extends LivenessArtifact
                                 subscription.dictionaryRegistry));
 
             } catch (final Exception e) {
-                GrpcUtil.safelyError(subscription.listener, errorTransformer.transform(e));
+                if (markErrorSent(subscription)) {
+                    GrpcUtil.safelyError(subscription.listener, errorTransformer.transform(e));
+                }
                 removeSubscription(subscription.listener);
             }
         }

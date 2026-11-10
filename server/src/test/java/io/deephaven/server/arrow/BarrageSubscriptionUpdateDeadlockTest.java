@@ -19,7 +19,10 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -75,6 +78,7 @@ public class BarrageSubscriptionUpdateDeadlockTest {
 
     private ExecutionContext executionContext;
     private SafeCloseable executionContextCloseable;
+    private ControlledUpdateGraph updateGraph;
     /** runs the session's exports, including the handler's export-resolution continuation */
     private TestControlledScheduler sessionScheduler;
     /** runs the producer's propagation job */
@@ -85,6 +89,9 @@ public class BarrageSubscriptionUpdateDeadlockTest {
     public void setUp() {
         executionContext = TestExecutionContext.createForUnitTests();
         executionContextCloseable = executionContext.open();
+        updateGraph = executionContext.getUpdateGraph().cast();
+        updateGraph.enableUnitTestMode();
+        updateGraph.resetForUnitTests(false);
         sessionScheduler = new TestControlledScheduler();
         producerScheduler = new SynchronizedTestControlledScheduler();
         session = new SessionState(sessionScheduler, new SessionService.ObfuscatingErrorTransformer(),
@@ -98,6 +105,8 @@ public class BarrageSubscriptionUpdateDeadlockTest {
 
     @After
     public void tearDown() {
+        updateGraph.resetForUnitTests(true);
+        updateGraph = null;
         session = null;
         sessionScheduler = null;
         producerScheduler = null;
@@ -238,6 +247,69 @@ public class BarrageSubscriptionUpdateDeadlockTest {
     }
 
     /**
+     * A write that fails after a rejection has been recorded sends the client the write's error; the rejection is not
+     * sent afterwards as a second error.
+     */
+    @Test
+    public void testRejectionAfterFailedWriteIsNotSentAgain() throws Exception {
+        final InlineCancelCallObserver call = new InlineCancelCallObserver();
+        final ArrowFlightUtil.DoExchangeMarshaller marshaller = openFullSubscription(call);
+
+        final AtomicReference<Thread> rejectingThread = new AtomicReference<>();
+        final AtomicReference<Throwable> rejectingFailure = new AtomicReference<>();
+        call.onWrite = () -> {
+            call.onWrite = null;
+            // while the initial snapshot is being written, the client asks for a change that is rejected
+            final Thread rejecting = new Thread(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(0, 9)));
+                } catch (final Throwable t) {
+                    rejectingFailure.set(t);
+                }
+            }, "BarrageSubscriptionUpdateDeadlockTest-rejecting");
+            rejecting.setDaemon(true);
+            rejectingThread.set(rejecting);
+            rejecting.start();
+            // once the rejection is recorded, the request waits to schedule the propagation job, which this thread runs
+            awaitBlockedOn(rejectingThread, producerScheduler);
+            throw new IllegalStateException("the write failed");
+        };
+
+        producerScheduler.runUntilQueueEmpty();
+        rejectingThread.get().join(JOIN_TIMEOUT_MILLIS);
+        assertFalse("the rejected request should finish", rejectingThread.get().isAlive());
+        assertNull(rejectingFailure.get());
+        producerScheduler.runUntilQueueEmpty();
+
+        assertEquals("the client should be sent one error", 1, call.errors);
+    }
+
+    /**
+     * A source table failure ends the stream with the producer's error; a later rejected request does not send a second
+     * error.
+     */
+    @Test
+    public void testRejectionAfterSourceFailureIsNotSentAgain() {
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),
+                TableTools.intCol("I", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        final InlineCancelCallObserver call = new InlineCancelCallObserver();
+        final ArrowFlightUtil.DoExchangeMarshaller marshaller = openFullSubscription(call, source);
+        producerScheduler.runUntilQueueEmpty();
+        assertNull(call.error);
+
+        updateGraph.runWithinUnitTestCycle(
+                () -> source.notifyListenersOnError(new RuntimeException("the source failed"), null));
+        producerScheduler.runUntilQueueEmpty();
+        assertEquals("the source failure should end the stream", 1, call.errors);
+
+        // a full subscription cannot change to a viewport
+        marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(0, 9)));
+        producerScheduler.runUntilQueueEmpty();
+
+        assertEquals("the client should be sent one error", 1, call.errors);
+    }
+
+    /**
      * When the stream closes while the handler is subscribing, the handler closes the new subscription without holding
      * its own monitor. Closing a subscription can write to the stream, and a write that fails on another thread can
      * cancel the call there while it holds the stream's lock; the cancel closes the handler, which needs the monitor.
@@ -345,7 +417,15 @@ public class BarrageSubscriptionUpdateDeadlockTest {
      * scheduled but has not run.
      */
     private ArrowFlightUtil.DoExchangeMarshaller openFullSubscription(final InlineCancelCallObserver call) {
-        final Table table = TableTools.emptyTable(100).update("I = i");
+        return openFullSubscription(call, TableTools.emptyTable(100).update("I = i"));
+    }
+
+    /**
+     * Exports {@code table} and opens a DoExchange full subscription to it on {@code call}. The producer's propagation
+     * job is scheduled but has not run.
+     */
+    private ArrowFlightUtil.DoExchangeMarshaller openFullSubscription(final InlineCancelCallObserver call,
+            final Table table) {
         session.newExport(EXPORT_ID).submit(() -> table);
         sessionScheduler.runUntilQueueEmpty();
 
@@ -465,6 +545,7 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         }
 
         volatile Throwable error;
+        volatile int errors;
         volatile int completions;
 
         /** runs when the error is written, while the writer holds the response stream's monitor */
@@ -473,6 +554,7 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         @Override
         public void onError(final Throwable t) {
             error = t;
+            ++errors;
             final Runnable toRun = onErrorHook;
             if (toRun != null) {
                 toRun.run();
