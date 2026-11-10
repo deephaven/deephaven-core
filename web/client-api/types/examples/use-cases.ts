@@ -84,10 +84,12 @@ async function rollingUpdateBy() {
 
 // py: t.where_in(keys, ["Key"]); windows.range_join(t, on=["Key", "LStart <= Ts <= LEnd"], aggs=[agg.group(["Ts"])])
 async function whereInAndRangeJoin() {
-    const t = session.timeTable(1e9).update(["Key = i % 3", "Ts = i"]);
+    // rangeJoin only supports static inputs, so t is not a time table
+    const t = session.emptyTable(30).update(["Key = i % 3", "Ts = i"]);
     const keys = session.emptyTable(2).update(["Key = i"]);
     const windows = session.emptyTable(3).update(["Key = i % 3", "LStart = i * 10", "LEnd = LStart + 5"]);
-    const [inKeys, ranged] = await Promise.all([
+    // allSettled, so a table that arrived is still closed if the other fails
+    const results = await Promise.allSettled([
         t.whereIn(keys, ["Key"]),
         windows.rangeJoin(t, ["Key"], {
             leftStartColumn: "LStart",
@@ -97,8 +99,16 @@ async function whereInAndRangeJoin() {
             leftEndColumn: "LEnd",
         }, [dh.agg.Aggregation.AggGroup(["Ts"])]),
     ]);
-    inKeys.close();
-    ranged.close();
+    const tables = results.flatMap(r => r.status === "fulfilled" ? [r.value] : []);
+    try {
+        if (tables.length < results.length) {
+            throw new Error("whereIn or rangeJoin failed");
+        }
+        const [inKeys, ranged] = tables;
+        // ... use inKeys and ranged ...
+    } finally {
+        tables.forEach(table => table.close());
+    }
 }
 
 // Abandoning work that is no longer wanted: cancel() a pending table, or abort the signal given to resolve()
