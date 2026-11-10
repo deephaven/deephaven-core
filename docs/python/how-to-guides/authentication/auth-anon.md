@@ -82,4 +82,4 @@ Replace `http://localhost:10000` with the address of your server, in both the im
 - [Deephaven configuration files](../configuration/config-file.md)
 - [How to configure pre-shared key authentication](./auth-psk.md)
 - [How to configure the Docker application](../configuration/docker-application.md)
-- [Pydoc](/core/pydoc/code/deephaven_server.html#deephaven_server.Server)
+- [The `deephaven-server` package on PyPi](https://pypi.org/project/deephaven-server/)
