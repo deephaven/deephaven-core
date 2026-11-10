@@ -4,7 +4,9 @@
 package io.deephaven.io;
 
 import io.deephaven.io.streams.MultiFileInputStream;
-import io.deephaven.io.streams.SevenZipInputStream;
+import io.deephaven.io.streams.SevenZipEntryInputStream;
+import org.apache.commons.compress.archivers.sevenz.SevenZFile;
+import org.apache.commons.compress.utils.SeekableInMemoryByteChannel;
 import io.deephaven.base.verify.Require;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -299,21 +301,22 @@ public class CompressedFileUtil {
                 }
             };
 
-        } else if (SevenZipInputStream.SIGNATURE_AS_LONG == nMagic6) {
-            // open as 7zipped text
+        } else if (SevenZipEntryInputStream.SIGNATURE_AS_LONG == nMagic6) {
+            // open as 7zipped text; SevenZFile needs random access, so the archive is read into memory
             decompressedInputStreamFactory = new InputStreamFactory() {
                 private String m_sSubFileName;
 
                 public InputStream createInputStream() throws IOException {
-                    SevenZipInputStream zipInputStream = new SevenZipInputStream(inputStreamFactory);
-                    SevenZipInputStream.Entry entry =
-                            zipInputStream.getNextEntry(SevenZipInputStream.Behavior.SKIP_WHEN_NO_STREAM);
-                    if (null == entry) {
-                        throw new FileNotFoundException(
-                                "No zip entries in " + inputStreamFactory.getDescription() + ".");
+                    final byte[] archiveBytes;
+                    try (final InputStream archiveStream = inputStreamFactory.createInputStream()) {
+                        archiveBytes = archiveStream.readAllBytes();
                     }
-                    m_sSubFileName = entry.getName();
-                    return zipInputStream;
+                    final SevenZipEntryInputStream entryStream = SevenZipEntryInputStream.openFirstEntry(
+                            SevenZFile.builder().setSeekableByteChannel(new SeekableInMemoryByteChannel(archiveBytes))
+                                    .get(),
+                            inputStreamFactory.getDescription());
+                    m_sSubFileName = entryStream.getEntryName();
+                    return entryStream;
                 }
 
                 public String getDescription() {

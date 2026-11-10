@@ -3,21 +3,25 @@
 //
 package io.deephaven.io.streams;
 
+import io.deephaven.io.CompressedFileUtil;
 import io.deephaven.io.InputStreamFactory;
+import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
-public class TestSevenZipInputStream {
+public class TestSevenZipEntryInputStream {
     /**
      * {@code lines.txt.7z} holds a single LZMA-compressed entry, {@code lines.txt}, made with
      * {@code 7z a -t7z -m0=LZMA lines.txt.7z lines.txt} from the text that {@link #expectedLines()} returns.
@@ -25,25 +29,16 @@ public class TestSevenZipInputStream {
     private static final String RESOURCE = "lines.txt.7z";
 
     @Test
-    public void testReadLzmaEntry() throws IOException {
-        try (final SevenZipInputStream in = new SevenZipInputStream(resourceFactory(RESOURCE))) {
-            final SevenZipInputStream.Entry entry = in.getNextEntry(SevenZipInputStream.Behavior.SKIP_WHEN_NO_STREAM);
-            assertNotNull(entry);
-            assertEquals("lines.txt", entry.getName());
-            assertFalse(entry.isDirectory());
-
-            final byte[] expected = expectedLines().getBytes(StandardCharsets.UTF_8);
-            assertArrayEquals(expected, readFully(in));
-
-            assertNull(in.getNextEntry(SevenZipInputStream.Behavior.SKIP_WHEN_NO_STREAM));
+    public void testReadFirstEntry() throws IOException, URISyntaxException {
+        try (final SevenZipEntryInputStream in = openResource()) {
+            assertEquals("lines.txt", in.getEntryName());
+            assertArrayEquals(expectedLines().getBytes(StandardCharsets.UTF_8), readFully(in));
         }
     }
 
     @Test
-    public void testSingleByteReads() throws IOException {
-        try (final SevenZipInputStream in = new SevenZipInputStream(resourceFactory(RESOURCE))) {
-            assertNotNull(in.getNextEntry(SevenZipInputStream.Behavior.SKIP_WHEN_NO_STREAM));
-
+    public void testSingleByteReads() throws IOException, URISyntaxException {
+        try (final SevenZipEntryInputStream in = openResource()) {
             final ByteArrayOutputStream out = new ByteArrayOutputStream();
             int value;
             while ((value = in.read()) != -1) {
@@ -51,6 +46,20 @@ public class TestSevenZipInputStream {
             }
             assertArrayEquals(expectedLines().getBytes(StandardCharsets.UTF_8), out.toByteArray());
         }
+    }
+
+    @Test
+    public void testOpenPossiblyCompressedFile() throws IOException {
+        try (final InputStream in = CompressedFileUtil.openPossiblyCompressedFile(resourceFactory())) {
+            assertArrayEquals(expectedLines().getBytes(StandardCharsets.UTF_8), readFully(in));
+        }
+    }
+
+    private static SevenZipEntryInputStream openResource() throws IOException, URISyntaxException {
+        final URL resource = TestSevenZipEntryInputStream.class.getResource(RESOURCE);
+        assertNotNull(RESOURCE, resource);
+        final Path path = Paths.get(resource.toURI());
+        return SevenZipEntryInputStream.openFirstEntry(SevenZFile.builder().setPath(path).get(), path.toString());
     }
 
     private static String expectedLines() {
@@ -72,20 +81,20 @@ public class TestSevenZipInputStream {
         return out.toByteArray();
     }
 
-    private static InputStreamFactory resourceFactory(final String name) {
+    private static InputStreamFactory resourceFactory() {
         return new InputStreamFactory() {
             @Override
             public InputStream createInputStream() throws IOException {
-                final InputStream in = TestSevenZipInputStream.class.getResourceAsStream(name);
+                final InputStream in = TestSevenZipEntryInputStream.class.getResourceAsStream(RESOURCE);
                 if (in == null) {
-                    throw new IOException("Missing test resource " + name);
+                    throw new IOException("Missing test resource " + RESOURCE);
                 }
                 return in;
             }
 
             @Override
             public String getDescription() {
-                return name;
+                return RESOURCE;
             }
         };
     }
