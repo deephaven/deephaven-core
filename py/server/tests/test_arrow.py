@@ -13,8 +13,8 @@ import pyarrow as pa
 import pyarrow.feather as feather
 import pyarrow.parquet as papq
 
+from deephaven import DHError, empty_table, new_table, time_table
 from deephaven import arrow as dharrow
-from deephaven import empty_table, new_table, time_table
 from deephaven.column import (
     bool_col,
     byte_col,
@@ -498,6 +498,17 @@ class ArrowTestCase(BaseTestCase):
 
         expected = new_table([string_col("S", ["a", "b", "a", None, "c", "c", "a"])])
         self.assert_table_equals(dh_table, expected)
+
+    def test_to_table_unsupported_dictionary_value_type(self) -> None:
+        # The error for an unsupported value type names the encoded type, which is the type in the user's schema
+        pa_table = pa.table(
+            {"S": pa.array(["a", "b"], type=pa.large_string()).dictionary_encode()}
+        )
+
+        with self.assertRaises(DHError) as cm:
+            dharrow.to_table(pa_table)
+
+        self.assertIn("dictionary<values=large_string", str(cm.exception))
 
 
 if __name__ == "__main__":

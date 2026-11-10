@@ -5,10 +5,11 @@ import unittest
 from decimal import Decimal
 
 import numpy as np
-import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 
+from pydeephaven._arrow import decode_for_pyarrow, map_arrow_type
+from pydeephaven.dherror import DHError
 from tests.testbase import BaseTestCase
 
 
@@ -342,20 +343,6 @@ class ArrowEncodingsTestCase(BaseTestCase):
         df = pa_table.to_pandas()
         self.assertEqual({"A": 13150, "B": 13150}, df["S"].value_counts().to_dict())
 
-    def test_to_arrow_dictionary_timestamps(self) -> None:
-        # A timestamp column with a few distinct values reaches the client dictionary-encoded. to_arrow decodes it, so
-        # pyarrow's to_pandas keeps its time zone.
-        self.session.run_script(
-            "from deephaven import empty_table\n"
-            'times = empty_table(1000).update("T = epochNanosToInstant((long) (ii / 100) * 1000000000L)")'
-        )
-
-        pa_table = self.session.open_table("times").to_arrow()
-
-        self.assertEqual(pa.timestamp("ns", tz="UTC"), pa_table.schema.field("T").type)
-        df = pa_table.to_pandas()
-        self.assertEqual(100, (df["T"] == pd.Timestamp(0, tz="UTC")).sum())
-
     def test_input_table_encodings(self) -> None:
         # An input table can be created from a schema with dictionary, run-end, and run-end over dictionary encoded
         # fields, and takes rows with or without those encodings
@@ -434,6 +421,42 @@ class ArrowEncodingsTestCase(BaseTestCase):
         new_table = self.session.import_table(pa_table)
 
         self.assertEqual(pa_table.to_pydict(), new_table.to_arrow().to_pydict())
+
+
+class ArrowDecodeTestCase(unittest.TestCase):
+    def test_decode_dictionary_timestamps(self) -> None:
+        # decode_for_pyarrow decodes dictionary-encoded timestamp columns with a time zone, including ones that are
+        # also run-end encoded, so pyarrow's to_pandas keeps the time zone
+        timestamps = pa.array(
+            [0, 0, 10**9, None, 10**9], type=pa.timestamp("ns", tz="UTC")
+        )
+        dict_array = timestamps.dictionary_encode()
+        runs = pc.run_end_encode(dict_array.indices)
+        pa_table = pa.table(
+            {
+                "Dict": dict_array,
+                "ReeDict": pa.RunEndEncodedArray.from_arrays(
+                    runs.run_ends,
+                    pa.DictionaryArray.from_arrays(runs.values, dict_array.dictionary),
+                ),
+            }
+        )
+
+        decoded = decode_for_pyarrow(pa_table)
+
+        expected = pa.table({"T": timestamps}).to_pandas()["T"]
+        for name in ["Dict", "ReeDict"]:
+            self.assertEqual(timestamps.type, decoded.schema.field(name).type, name)
+            self.assertTrue(
+                expected.equals(decoded.to_pandas()[name].rename("T")), name
+            )
+
+    def test_map_arrow_type_error_names_encoded_type(self) -> None:
+        # The error for an unsupported value type names the encoded type, which is the type in the user's schema
+        with self.assertRaises(DHError) as cm:
+            map_arrow_type(pa.dictionary(pa.int8(), pa.large_string()))
+
+        self.assertIn("dictionary<values=large_string", str(cm.exception))
 
 
 if __name__ == "__main__":

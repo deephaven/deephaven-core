@@ -61,14 +61,16 @@ _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES = {
 def map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
     """Maps an Arrow type to the corresponding Deephaven column data type."""
     # A run-end encoded or dictionary-encoded column holds values of its value type, and the server decodes both
-    # encodings, so the column maps to the Deephaven type of those values.
-    if isinstance(arrow_type, (pa.RunEndEncodedType, pa.DictionaryType)):
-        return map_arrow_type(arrow_type.value_type)
+    # encodings, so the column maps to the Deephaven type of those values. The error below still names arrow_type, so
+    # that it matches the type in the user's schema.
+    value_type = arrow_type
+    while isinstance(value_type, (pa.RunEndEncodedType, pa.DictionaryType)):
+        value_type = value_type.value_type
 
-    dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(arrow_type)
+    dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(value_type)
 
     if not dh_type:
-        if type(arrow_type) in _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES:
+        if type(value_type) in _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES:
             # For parameterizable types let the server handle the mapping
             return {}
 
