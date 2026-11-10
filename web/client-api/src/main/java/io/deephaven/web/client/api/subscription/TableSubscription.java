@@ -55,7 +55,8 @@ public final class TableSubscription extends AbstractTableSubscription {
      */
     public static final String EVENT_REQUEST_FAILED = JsTable.EVENT_REQUEST_FAILED;
 
-    private final JsArray<Column> columns;
+    /** A copy of the caller's columns, names or Column instances; names are resolved when the first request is sent. */
+    private final ReadonlyArray<Column.ColumnOrName> requestedColumns;
     private final Double updateIntervalMs;
     private final int previewListLengthLimit;
 
@@ -63,7 +64,7 @@ public final class TableSubscription extends AbstractTableSubscription {
     private TableSubscription(ClientTableState state, WorkerConnection connection,
             DataOptions.SubscriptionOptions options) {
         super(SubscriptionType.FULL_SUBSCRIPTION, state, connection);
-        this.columns = state.mapToColumns(options.columns);
+        this.requestedColumns = options.columns.slice();
         this.updateIntervalMs = options.updateIntervalMs;
         this.previewListLengthLimit = getPreviewListLengthLimit(options);
     }
@@ -86,7 +87,7 @@ public final class TableSubscription extends AbstractTableSubscription {
 
     @Override
     protected void sendFirstSubscriptionRequest() {
-        sendBarrageSubscriptionRequest(null, Js.cast(columns), updateIntervalMs, false, previewListLengthLimit);
+        sendBarrageSubscriptionRequest(null, requestedColumns, updateIntervalMs, false, previewListLengthLimit);
     }
 
     /**

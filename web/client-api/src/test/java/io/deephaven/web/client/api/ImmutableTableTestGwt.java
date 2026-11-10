@@ -15,7 +15,9 @@ import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.api.subscription.DataOptions;
+import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.client.state.ClientTableState;
@@ -110,6 +112,67 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                         resolved.close();
                         return Promise.resolve(resolved);
                     });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testSnapshotByColumnName() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_048);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(resolved -> {
+                    DataOptions.SnapshotOptions opts = new DataOptions.SnapshotOptions();
+                    opts.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 4));
+                    opts.columns = arr("Y");
+                    Promise<TableData> snapshot;
+                    try {
+                        snapshot = resolved.createSnapshot(opts);
+                    } catch (RuntimeException e) {
+                        return Promise.reject("a snapshot naming its column threw: " + e);
+                    }
+                    Promise<Object> checked = snapshot.then(data -> {
+                        Object first = data.getColumns().getAt(0);
+                        assertTrue("a snapshot naming its column gave a non-Column: " + first, first instanceof Column);
+                        // Y = i * 2
+                        assertEquals(4, data.getData(2, resolved.findColumn("Y")).asInt());
+                        resolved.close();
+                        return Promise.resolve((Object) resolved);
+                    }, err -> Promise.reject("a snapshot naming its column rejected: " + err));
+                    Promise<Object> timeout = delay(3_000).then(
+                            ignore -> Promise.reject("a snapshot naming its column did not settle within 3s"));
+                    return Promise.race(checked, timeout);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testSubscriptionByColumnName() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_049);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(resolved -> {
+                    DataOptions.SubscriptionOptions opts = new DataOptions.SubscriptionOptions();
+                    opts.columns = arr("Y");
+                    TableSubscription subscription;
+                    try {
+                        subscription = resolved.createSubscription(opts);
+                    } catch (RuntimeException e) {
+                        return Promise.reject("a subscription naming its column threw: " + e);
+                    }
+                    return this.<TableSubscription, AbstractTableSubscription.SubscriptionEventData>waitForEvent(
+                            subscription, TableSubscription.EVENT_UPDATED, e -> {
+                                Column y = subscription.getColumns().getAt(0);
+                                assertEquals("Y", y.getName());
+                                assertEquals(4, e.getDetail().getData(2, y).asInt());
+                            }, 5_049)
+                            .then(ignore -> {
+                                subscription.close();
+                                resolved.close();
+                                return Promise.resolve(resolved);
+                            });
                 })
                 .then(this::finish).catch_(this::report);
     }

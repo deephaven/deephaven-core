@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
+import java.util.NoSuchElementException;
 
 /**
  * Superclass of various subscription types, allowing specific implementations to customize behavior for their needs.
@@ -173,7 +174,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
     public static Promise<TableData> createSnapshot(WorkerConnection connection, ClientTableState state,
             Object options) {
         DataOptions.SnapshotOptions snapshotOptions = DataOptions.SnapshotOptions.of(options);
-        ReadonlyArray<Column.ColumnOrName> columns = snapshotOptions.columns;
         RangeSet rows = snapshotOptions.rows.asRangeSet().getRange();
 
         // TODO #1039 slice rows and drop columns
@@ -189,6 +189,14 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
 
         LazyPromise<TableData> promise = new LazyPromise<>();
         previewed.onRunning(cts -> {
+            // Names can only be resolved once the previewed state has its columns
+            JsArray<Column> columns;
+            try {
+                columns = cts.mapToColumns(snapshotOptions.columns);
+            } catch (NoSuchElementException e) {
+                promise.fail("No column named " + e.getMessage());
+                return;
+            }
             int rowStyleColumn = cts.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
                     : cts.getRowFormatColumn().getIndex();
 
@@ -260,7 +268,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
                     }
 
                     promise.succeed(new SubscriptionEventData(snapshot, rowStyleColumn,
-                            Js.uncheckedCast(columns),
+                            columns,
                             result,
                             RangeSet.empty(),
                             RangeSet.empty(),
