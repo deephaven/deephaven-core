@@ -5,7 +5,9 @@ import unittest
 from decimal import Decimal
 
 import numpy as np
+import pandas as pd
 import pyarrow as pa
+import pyarrow.compute as pc
 
 from tests.testbase import BaseTestCase
 
@@ -324,6 +326,114 @@ class ArrowTypesImportTestCase(BaseTestCase):
         new_table = self.session.import_table(pa_table)
         pa_table2 = new_table.to_arrow()
         self.assertEqual(pa_table, pa_table2)
+
+
+class ArrowEncodingsTestCase(BaseTestCase):
+    def test_to_arrow_run_end_dictionary(self) -> None:
+        # Long runs of a few strings reach the client as run-end over dictionary encoded. to_arrow decodes the runs,
+        # so pyarrow's to_pandas can convert the column, and keeps the dictionary.
+        self.session.run_script(
+            'from deephaven import empty_table\nruns = empty_table(26300).update("S = (ii < 13150) ? `A` : `B`")'
+        )
+
+        pa_table = self.session.open_table("runs").to_arrow()
+
+        self.assertTrue(pa.types.is_dictionary(pa_table.schema.field("S").type))
+        df = pa_table.to_pandas()
+        self.assertEqual({"A": 13150, "B": 13150}, df["S"].value_counts().to_dict())
+
+    def test_to_arrow_dictionary_timestamps(self) -> None:
+        # A timestamp column with a few distinct values reaches the client dictionary-encoded. to_arrow decodes it, so
+        # pyarrow's to_pandas keeps its time zone.
+        self.session.run_script(
+            "from deephaven import empty_table\n"
+            'times = empty_table(1000).update("T = epochNanosToInstant((long) (ii / 100) * 1000000000L)")'
+        )
+
+        pa_table = self.session.open_table("times").to_arrow()
+
+        self.assertEqual(pa.timestamp("ns", tz="UTC"), pa_table.schema.field("T").type)
+        df = pa_table.to_pandas()
+        self.assertEqual(100, (df["T"] == pd.Timestamp(0, tz="UTC")).sum())
+
+    def test_input_table_encodings(self) -> None:
+        # An input table can be created from a schema with dictionary, run-end, and run-end over dictionary encoded
+        # fields, and takes rows with or without those encodings
+        dict_type = pa.dictionary(pa.int32(), pa.string())
+        schema = pa.schema(
+            [
+                pa.field("Dict", dict_type),
+                pa.field("Ree", pa.run_end_encoded(pa.int32(), pa.int64()), False),
+                pa.field("ReeDict", pa.run_end_encoded(pa.int32(), dict_type), False),
+            ]
+        )
+        dict_array = pa.array(["a", "b", "a"]).dictionary_encode()
+        runs = pc.run_end_encode(dict_array.indices)
+        encoded = pa.table(
+            {
+                "Dict": dict_array,
+                "Ree": pc.run_end_encode(pa.array([1, 1, 2])),
+                "ReeDict": pa.RunEndEncodedArray.from_arrays(
+                    runs.run_ends,
+                    pa.DictionaryArray.from_arrays(runs.values, dict_array.dictionary),
+                ),
+            }
+        )
+        plain = pa.table({"Dict": ["c"], "Ree": [5], "ReeDict": ["d"]})
+
+        input_table = self.session.input_table(schema=schema)
+        input_table.add(self.session.import_table(encoded))
+        input_table.add(self.session.import_table(plain))
+
+        self.assertEqual(
+            {
+                "Dict": ["a", "b", "a", "c"],
+                "Ree": [1, 1, 2, 5],
+                "ReeDict": ["a", "b", "a", "d"],
+            },
+            input_table.to_arrow().to_pydict(),
+        )
+
+    def test_import_table_encodings(self) -> None:
+        # import_table accepts dictionary, run-end, and run-end over dictionary encoded columns
+        dict_array = pa.array(["a", "b", "a", None, "b", "b"]).dictionary_encode()
+        ree_dict_runs = pc.run_end_encode(dict_array.indices)
+        pa_table = pa.table(
+            {
+                "Dict": dict_array,
+                "Ree": pc.run_end_encode(pa.array([1, 1, 1, None, 2, 2])),
+                "ReeDict": pa.RunEndEncodedArray.from_arrays(
+                    ree_dict_runs.run_ends,
+                    pa.DictionaryArray.from_arrays(
+                        ree_dict_runs.values, dict_array.dictionary
+                    ),
+                ),
+            }
+        )
+
+        new_table = self.session.import_table(pa_table)
+
+        self.assertEqual(
+            {
+                "Dict": ["a", "b", "a", None, "b", "b"],
+                "Ree": [1, 1, 1, None, 2, 2],
+                "ReeDict": ["a", "b", "a", None, "b", "b"],
+            },
+            new_table.to_arrow().to_pydict(),
+        )
+
+    def test_import_table_round_trip_encodings(self) -> None:
+        # A table the server sends with dictionary and run-end encoded columns imports back unchanged
+        self.session.run_script(
+            "from deephaven import empty_table\n"
+            'encoded = empty_table(1000).update(["S = (ii < 500) ? `A` : `B`", "X = ii % 3 == 0 ? `C` : `D`", '
+            '"I = (int) (ii / 100)"])'
+        )
+        pa_table = self.session.open_table("encoded").to_arrow()
+
+        new_table = self.session.import_table(pa_table)
+
+        self.assertEqual(pa_table.to_pydict(), new_table.to_arrow().to_pydict())
 
 
 if __name__ == "__main__":

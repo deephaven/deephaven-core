@@ -9,7 +9,7 @@ import pyarrow as pa
 import pyarrow.flight as paflight
 from pyarrow.flight import FlightCallOptions
 
-from pydeephaven._arrow import map_arrow_type
+from pydeephaven._arrow import decode_for_pyarrow, map_arrow_type
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
 
@@ -30,8 +30,15 @@ class ArrowFlightService:
             ticket = self.session.next_export_ticket_number()
             dh_fields = []
             for f in data.schema:
+                # Keep the field's nullability. The writer below refuses record batches whose schema differs from
+                # dh_schema, and the server returns run-end encoded fields as not nullable.
                 dh_fields.append(
-                    pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type))
+                    pa.field(
+                        name=f.name,
+                        type=f.type,
+                        nullable=f.nullable,
+                        metadata=map_arrow_type(f.type),
+                    )
                 )
             dh_schema = pa.schema(dh_fields)
 
@@ -60,7 +67,7 @@ class ArrowFlightService:
                 flight_ticket, FlightCallOptions(headers=self.session.grpc_metadata)
             )
 
-            return reader.read_all()
+            return decode_for_pyarrow(reader.read_all())
         except Exception as e:
             raise DHError("failed to perform a flight DoGet on the table.") from e
 

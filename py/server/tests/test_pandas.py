@@ -10,7 +10,7 @@ import pandas
 import pandas as pd
 import pyarrow as pa
 
-from deephaven import DHError, dtypes, new_table, time
+from deephaven import DHError, dtypes, empty_table, new_table, time
 from deephaven.column import (
     bool_col,
     byte_col,
@@ -37,6 +37,7 @@ from deephaven.constants import (
 )
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
+from tests.barrage_encodings import with_barrage_encodings
 from tests.testbase import BaseTestCase
 
 
@@ -327,6 +328,60 @@ class PandasTestCase(BaseTestCase):
         df = to_pandas(test_table, dtype_backend="numpy_nullable")
         dh_table = to_table(df)
         self.assert_table_equals(test_table, dh_table)
+
+    def test_to_pandas_with_barrage_encodings(self) -> None:
+        # to_pandas converts the dictionary, run-end, and run-end over dictionary encoded columns that to_arrow
+        # returns. A dictionary-encoded column becomes a category column. A run-end encoded column gets the dtype it
+        # gets without the encoding.
+        source = empty_table(100).update(
+            [
+                "Sym = i % 3 == 0 ? `AAPL` : `MSFT`",
+                "Block = (int) (i / 10)",
+                "Both = ((int) (i / 10)) % 2 == 0 ? `X` : null",
+            ]
+        )
+        encoded = with_barrage_encodings(
+            source, dict_cols=["Sym"], ree_cols=["Block"], ree_dict_cols=["Both"]
+        )
+
+        for dtype_backend in ["numpy_nullable", "pyarrow"]:
+            with self.subTest(dtype_backend=dtype_backend):
+                df_plain = to_pandas(source, dtype_backend=dtype_backend)
+                df_encoded = to_pandas(encoded, dtype_backend=dtype_backend)
+
+                self.assertIsInstance(df_encoded["Sym"].dtype, pd.CategoricalDtype)
+                self.assertIsInstance(df_encoded["Both"].dtype, pd.CategoricalDtype)
+                self.assertEqual(df_encoded["Block"].dtype, df_plain["Block"].dtype)
+                self.assertTrue(df_encoded.isna().equals(df_plain.isna()))
+                for name in ["Sym", "Block", "Both"]:
+                    not_null = df_plain[name].notna()
+                    self.assertEqual(
+                        df_encoded[name][not_null].tolist(),
+                        df_plain[name][not_null].tolist(),
+                        name,
+                    )
+
+    def test_to_pandas_dictionary_timestamps(self) -> None:
+        # A dictionary-encoded timestamp column keeps its time zone in to_pandas. Left encoded, it would become a
+        # category column of timestamps without the time zone.
+        source = empty_table(100).update(
+            [
+                "Dict = i >= 90 ? null : epochNanosToInstant((long) (i / 10) * 1000000000L)",
+                "ReeDict = i >= 90 ? null : epochNanosToInstant((long) (i / 10) * 1000000000L)",
+            ]
+        )
+        encoded = with_barrage_encodings(
+            source, dict_cols=["Dict"], ree_dict_cols=["ReeDict"]
+        )
+
+        for dtype_backend in ["numpy_nullable", "pyarrow"]:
+            with self.subTest(dtype_backend=dtype_backend):
+                df_plain = to_pandas(source, dtype_backend=dtype_backend)
+                df_encoded = to_pandas(encoded, dtype_backend=dtype_backend)
+
+                for name in ["Dict", "ReeDict"]:
+                    self.assertEqual(df_plain[name].dtype, df_encoded[name].dtype, name)
+                    self.assertTrue(df_plain[name].equals(df_encoded[name]), name)
 
     def test_numpy_array(self):
         df_dict = {

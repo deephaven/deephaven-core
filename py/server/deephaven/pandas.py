@@ -10,6 +10,7 @@ import jpy
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.compute as pc
 from pandas.api.extensions import ExtensionArray
 from pandas.api.types import is_object_dtype
 
@@ -100,6 +101,60 @@ _PYARROW_TO_PANDAS_TYPE_MAPPERS = {
 }
 
 
+def _decode_run_end_array(array: pa.RunEndEncodedArray) -> pa.Array:
+    """Decodes one chunk of a run-end encoded column, keeping dictionary-encoded values dictionary-encoded."""
+    values = array.values
+    if not isinstance(values, pa.DictionaryArray):
+        return pc.run_end_decode(array)
+
+    # pyarrow has no run_end_decode kernel for dictionary values, so decode the runs of indices and pair the result
+    # with the dictionary. The children of a sliced array cover the whole unsliced array, hence the final slice.
+    indices = pc.run_end_decode(
+        pa.RunEndEncodedArray.from_arrays(array.run_ends, values.indices)
+    )
+    return pa.DictionaryArray.from_arrays(
+        indices.slice(array.offset, len(array)), values.dictionary
+    )
+
+
+def _decode_for_pandas(pa_table: pa.Table) -> pa.Table:
+    """Returns the pyarrow table with the encoded columns that pyarrow's to_pandas mishandles decoded.
+
+    - A run-end encoded column. to_pandas can't convert one with dictionary-encoded values. For the other value types
+      it passes the run-end encoded type to the types_mapper, which maps none of them, so the column gets pyarrow's
+      default conversion.
+    - A dictionary-encoded timestamp column with a time zone. to_pandas turns it into a category column of timestamps
+      without the time zone, and comparing those with a timestamp that has one is silently False.
+
+    Other dictionary-encoded columns stay encoded and become pandas category columns.
+    """
+    for i, field in enumerate(pa_table.schema):
+        column = pa_table.column(i)
+        if isinstance(column.type, pa.RunEndEncodedType):
+            value_type = column.type.value_type
+            column = pa.chunked_array(
+                [_decode_run_end_array(chunk) for chunk in column.chunks],
+                type=value_type,
+            )
+        if (
+            isinstance(column.type, pa.DictionaryType)
+            and pa.types.is_timestamp(column.type.value_type)
+            and column.type.value_type.tz is not None
+        ):
+            value_type = column.type.value_type
+            column = pa.chunked_array(
+                [chunk.dictionary_decode() for chunk in column.chunks],
+                type=value_type,
+            )
+        if column.type != field.type:
+            # A run-end encoded field is not nullable, because its nulls live in its values. The decoded column holds
+            # those nulls, so its field is nullable.
+            pa_table = pa_table.set_column(
+                i, pa.field(field.name, column.type, True, field.metadata), column
+            )
+    return pa_table
+
+
 def to_pandas(
     table: Table,
     cols: list[str] | None = None,
@@ -148,7 +203,7 @@ def to_pandas(
 
         # if nullable dtypes (pandas or pyarrow) is requested
         if type_mapper := _PYARROW_TO_PANDAS_TYPE_MAPPERS.get(str(dtype_backend)):
-            pa_table = arrow.to_arrow(table=table, cols=cols)
+            pa_table = _decode_for_pandas(arrow.to_arrow(table=table, cols=cols))
             df = pa_table.to_pandas(types_mapper=type_mapper)
             del pa_table
             return df
