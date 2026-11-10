@@ -1,7 +1,7 @@
 package io.deephaven.tools
 
+import com.github.jengelman.gradle.plugins.shadow.ShadowJavaPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.github.jengelman.gradle.plugins.shadow.transformers.MergeLicenseResourceTransformer
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.file.DuplicatesStrategy
@@ -28,8 +28,8 @@ class License {
     // the license through transformers instead, see configureShadowJar.
     private static final List<String> PUBLISHED_JAR_TASK_NAMES = ['jar', 'sourcesJar', 'javadocJar']
 
-    // The license and notice files that a shadowed dependency may contain; the first six are the defaults of
-    // MergeLicenseResourceTransformer.
+    // The license and notice files that a shadowed dependency may contain; the license paths are the defaults of
+    // Shadow 9's MergeLicenseResourceTransformer.
     private static final List<String> DEPENDENCY_LICENSE_PATHS = [
             'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/LICENSE.md', 'LICENSE', 'LICENSE.txt', 'LICENSE.md']
     private static final List<String> DEPENDENCY_NOTICE_PATHS = [
@@ -131,7 +131,7 @@ class License {
         }
 
         project.plugins.withId('com.gradleup.shadow') {
-            project.tasks.named(ShadowJar.SHADOW_JAR_TASK_NAME, ShadowJar).configure { ShadowJar shadowJar ->
+            project.tasks.named(ShadowJavaPlugin.SHADOW_JAR_TASK_NAME, ShadowJar).configure { ShadowJar shadowJar ->
                 configureShadowJar(shadowJar, syncLicenseData, "${licenseSourceSetDir}/META-INF")
             }
         }
@@ -146,22 +146,22 @@ class License {
         }
 
         shadowJar.transform(MergeLicenseResourceTransformer) { MergeLicenseResourceTransformer transformer ->
-            transformer.setIncludes(DEPENDENCY_LICENSE_PATHS)
-            transformer.artifactLicense.set(project.file("${licenseDir}/${OUTPUT_LICENSE_NAME}"))
-            transformer.artifactLicenseSpdxId.set(name == APACHE_LICENSE_NAME ? 'Apache-2.0' : '')
+            transformer.includes = DEPENDENCY_LICENSE_PATHS
+            transformer.artifactLicense = project.file("${licenseDir}/${OUTPUT_LICENSE_NAME}")
+            transformer.artifactLicenseSpdxId = name == APACHE_LICENSE_NAME ? 'Apache-2.0' : ''
         }
 
         shadowJar.transform(MergeLicenseResourceTransformer) { MergeLicenseResourceTransformer transformer ->
-            transformer.setIncludes(DEPENDENCY_NOTICE_PATHS)
-            transformer.outputPath.set("META-INF/${OUTPUT_NOTICE_NAME}".toString())
-            transformer.artifactLicense.set(project.file("${licenseDir}/${OUTPUT_NOTICE_NAME}"))
-            transformer.artifactLicenseSpdxId.set('')
-            transformer.firstSeparator.set("""
+            transformer.includes = DEPENDENCY_NOTICE_PATHS
+            transformer.outputPath = "META-INF/${OUTPUT_NOTICE_NAME}".toString()
+            transformer.artifactLicense = project.file("${licenseDir}/${OUTPUT_NOTICE_NAME}")
+            transformer.artifactLicenseSpdxId = ''
+            transformer.firstSeparator = """
 ${'-' * 120}
 
 This artifact includes dependencies with the following notices:
 ---------------------------------------------------------------
-""".toString())
+""".toString()
         }
     }
 
