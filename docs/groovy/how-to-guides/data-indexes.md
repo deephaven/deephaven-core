@@ -2,7 +2,7 @@
 title: Data indexes
 ---
 
-This guide covers what data indexes are, how to create and use them, and how they can improve query performance.
+This guide covers data indexes: what they are, how to create and use them, and how they can improve query performance.
 
 A data index maps key values in one or more key columns to the [row sets](../conceptual/table-update-model.md#describing-table-updates) that contain them. Every data index is backed by a table that stores the row sets in a column called `dh_row_set`. Many table operations use a data index if one is present. Data indexes help in two ways:
 

@@ -169,9 +169,7 @@ notification that the UpdateGraph propagates. Pair it with a custom
 
 The following Groovy example shows this pattern:
 
-<!-- skip-test: the background thread and listener keep running after the snippet ends. -->
-
-```groovy skip-test
+```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.context.ExecutionContext;
@@ -184,13 +182,13 @@ final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
 final Condition myCondition = updateGraph.exclusiveLock().newCondition();
 
 Thread independentThread = new Thread(() -> {
-  System.out.println(Thread.currentThread().getName() + " - " + now() + " - Acquiring update graph exclusive lock...");
+  System.out.println(Thread.currentThread().getName() + " - " + now() + " - Acquiring UpdateGraph exclusive lock...");
   updateGraph.exclusiveLock().doLocked(() -> {
     System.out.println(Thread.currentThread().getName() + " - " + now() + " - Waiting for condition...");
     myCondition.await();
     System.out.println(Thread.currentThread().getName() + " - " + now() + " - Condition was signaled!");
   });
-  System.out.println(Thread.currentThread().getName() + " - " + now() + " - update graph exclusive lock released.");
+  System.out.println(Thread.currentThread().getName() + " - " + now() + " - UpdateGraph exclusive lock released.");
 
 }, "myIndependentThread");
 independentThread.start();
@@ -220,12 +218,12 @@ update thread, so those lines show
 `PeriodicUpdateGraph.DEFAULT.refreshThread`:
 
 ```
-myIndependentThread - 2022-10-12T16:36:06.890861Z - Acquiring update graph exclusive lock...
+myIndependentThread - 2022-10-12T16:36:06.890861Z - Acquiring UpdateGraph exclusive lock...
 myIndependentThread - 2022-10-12T16:36:06.998700Z - Waiting for condition...
 PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T16:36:07.142583Z - Signaling condition...
 PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T16:36:07.150394Z - Condition signaled.
 myIndependentThread - 2022-10-12T16:36:07.153525Z - Condition was signaled!
-myIndependentThread - 2022-10-12T16:36:07.154153Z - update graph exclusive lock released.
+myIndependentThread - 2022-10-12T16:36:07.154153Z - UpdateGraph exclusive lock released.
 PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T16:36:10.117031Z - Signaling condition...
 PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T16:36:10.117912Z - Condition signaled.
 PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T16:36:15.115583Z - Signaling condition...

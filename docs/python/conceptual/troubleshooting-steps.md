@@ -38,8 +38,8 @@ Table operations create three common column types:
 
 Each type trades memory against computation:
 
-- In-memory columns store every value, so downstream operations read them without recalculating. [High update-cycle ratio](#high-update-cycle-ratio) recommends them.
-- Formula columns store almost nothing and recalculate values on every read. [Insufficient memory](#insufficient-memory) recommends them.
+- In-memory columns store every value, so downstream operations read them without recalculating. The [High update-cycle ratio](#high-update-cycle-ratio) section of this guide recommends them.
+- Formula columns store almost nothing and recalculate values on every read. The [Insufficient memory](#insufficient-memory) section of this guide recommends them.
 - Memoized columns store one result for each distinct set of input values. They use less memory than in-memory columns only when a column has few distinct inputs. With many distinct inputs, the cache can use more memory than an in-memory column.
 
 The [Select and create columns](../how-to-guides/use-select-view-update.md) guide covers these column types and the operations that produce them in more depth.
