@@ -49,17 +49,28 @@ public class TestSevenZipEntryInputStream {
     }
 
     @Test
-    public void testOpenPossiblyCompressedFile() throws IOException {
+    public void testOpenPossiblyCompressedFileName() throws IOException, URISyntaxException {
+        try (final InputStream in = CompressedFileUtil.openPossiblyCompressedFile(resourcePath().toString())) {
+            assertArrayEquals(expectedLines().getBytes(StandardCharsets.UTF_8), readFully(in));
+        }
+    }
+
+    @Test
+    public void testOpenPossiblyCompressedStreamFactory() throws IOException {
         try (final InputStream in = CompressedFileUtil.openPossiblyCompressedFile(resourceFactory())) {
             assertArrayEquals(expectedLines().getBytes(StandardCharsets.UTF_8), readFully(in));
         }
     }
 
     private static SevenZipEntryInputStream openResource() throws IOException, URISyntaxException {
+        final Path path = resourcePath();
+        return SevenZipEntryInputStream.openFirstEntry(SevenZFile.builder().setPath(path).get(), path.toString());
+    }
+
+    private static Path resourcePath() throws URISyntaxException {
         final URL resource = TestSevenZipEntryInputStream.class.getResource(RESOURCE);
         assertNotNull(RESOURCE, resource);
-        final Path path = Paths.get(resource.toURI());
-        return SevenZipEntryInputStream.openFirstEntry(SevenZFile.builder().setPath(path).get(), path.toString());
+        return Paths.get(resource.toURI());
     }
 
     private static String expectedLines() {

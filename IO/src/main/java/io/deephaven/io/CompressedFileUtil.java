@@ -15,6 +15,7 @@ import org.apache.commons.compress.archivers.tar.TarUtils;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 
 import java.io.*;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.*;
@@ -302,19 +303,13 @@ public class CompressedFileUtil {
             };
 
         } else if (SevenZipEntryInputStream.SIGNATURE_AS_LONG == nMagic6) {
-            // open as 7zipped text; SevenZFile needs random access, so the archive is read into memory
+            // open as 7zipped text
             decompressedInputStreamFactory = new InputStreamFactory() {
                 private String m_sSubFileName;
 
                 public InputStream createInputStream() throws IOException {
-                    final byte[] archiveBytes;
-                    try (final InputStream archiveStream = inputStreamFactory.createInputStream()) {
-                        archiveBytes = archiveStream.readAllBytes();
-                    }
                     final SevenZipEntryInputStream entryStream = SevenZipEntryInputStream.openFirstEntry(
-                            SevenZFile.builder().setSeekableByteChannel(new SeekableInMemoryByteChannel(archiveBytes))
-                                    .get(),
-                            inputStreamFactory.getDescription());
+                            openSevenZFile(inputStreamFactory), inputStreamFactory.getDescription());
                     m_sSubFileName = entryStream.getEntryName();
                     return entryStream;
                 }
@@ -337,6 +332,23 @@ public class CompressedFileUtil {
             };
         }
         return decompressedInputStreamFactory;
+    }
+
+    /**
+     * Opens a 7z archive. {@link SevenZFile} needs random access, so an archive from a {@link FileInputStreamFactory}
+     * is opened from its file, and an archive from any other factory is read into memory.
+     */
+    private static SevenZFile openSevenZFile(final InputStreamFactory inputStreamFactory) throws IOException {
+        if (inputStreamFactory instanceof FileInputStreamFactory) {
+            return SevenZFile.builder()
+                    .setPath(Paths.get(((FileInputStreamFactory) inputStreamFactory).getFileName()))
+                    .get();
+        }
+        final byte[] archiveBytes;
+        try (final InputStream archiveStream = inputStreamFactory.createInputStream()) {
+            archiveBytes = archiveStream.readAllBytes();
+        }
+        return SevenZFile.builder().setSeekableByteChannel(new SeekableInMemoryByteChannel(archiveBytes)).get();
     }
 
     public static long getMagic6(InputStream testStream, int nMagic4) throws IOException {
@@ -520,6 +532,13 @@ public class CompressedFileUtil {
 
         public InputStream createInputStream() throws IOException {
             return new BufferedInputStream(new FileInputStream(m_sFileName), m_bufferedSize);
+        }
+
+        /**
+         * @return the name of the file this factory opens
+         */
+        public String getFileName() {
+            return m_sFileName;
         }
 
         public String getDescription() {
