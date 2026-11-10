@@ -1400,6 +1400,66 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testCancelSelectDistinctBeforeSendSkipsIt() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(treeTable("static_tree"))
+                .then(tree -> {
+                    delayTestFinish(10_022);
+                    // Canceled in the creating task, before the source table it waits for has arrived
+                    Column[] columns = {tree.getColumns().getAt(0)};
+                    tree.selectDistinct(columns).cancel();
+                    // Both wait on the same source table, so once this one's request is sent, the canceled one has
+                    // had its chance to send
+                    JsPendingTable<JsTable> control = tree.selectDistinct(columns);
+                    Promise<JsResolvedTable> controlTable = control.resolve();
+                    return within("the uncanceled selectDistinct never sent its request",
+                            () -> transport.streamsThatSent(SELECT_DISTINCT) > 0)
+                            .then(ignore -> {
+                                assertEquals("a selectDistinct canceled before it was sent sent its request anyway",
+                                        1, transport.streamsThatSent(SELECT_DISTINCT));
+                                return controlTable;
+                            })
+                            .then(table -> {
+                                table.close();
+                                tree.close();
+                                return Promise.resolve(tree);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCancelInFlightSelectDistinctEndsItsCall() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(treeTable("static_tree"))
+                .then(tree -> {
+                    delayTestFinish(10_023);
+                    // Holding the response keeps the call open until something ends it
+                    transport.holdStreams(SELECT_DISTINCT);
+                    JsPendingTable<JsTable> pending = tree.selectDistinct(new Column[] {tree.getColumns().getAt(0)});
+                    return within("the selectDistinct call never started",
+                            () -> transport.hasOpenStream(SELECT_DISTINCT))
+                            .then(ignore -> {
+                                pending.cancel();
+                                return within("the canceled selectDistinct's call was still open",
+                                        () -> !transport.hasOpenStream(SELECT_DISTINCT));
+                            })
+                            .then(ignore -> {
+                                transport.holdStreams(null);
+                                tree.close();
+                                return Promise.resolve(tree);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    private static final String SELECT_DISTINCT = "TableService/SelectDistinct";
+
     public void testCreateTreeAndRollupFromResolvedTable() {
         // Each resolved table is closed as soon as the call returns; the call holds what it needs
         connect(tables)

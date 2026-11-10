@@ -417,6 +417,12 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         });
     }
 
+    /** Resolves once {@code condition} holds; fails with {@code failure} if it does not within 2s. */
+    protected Promise<Object> within(String failure, BooleanSupplier condition) {
+        return Promise.resolve(waitFor(condition, 50, 2_000, (Object) null))
+                .then(ok -> Promise.resolve(ok), err -> Promise.reject(failure));
+    }
+
     protected <T> IThenable.ThenOnFulfilledCallbackFn<T, T> waitFor(int millis) {
         return result -> new Promise<>((resolve, reject) -> {
             DomGlobal.setTimeout(p -> resolve.onInvoke(result), millis);

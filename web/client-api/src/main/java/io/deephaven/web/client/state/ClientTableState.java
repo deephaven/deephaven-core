@@ -26,7 +26,6 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.*;
 import io.grpc.Context;
-import io.grpc.stub.StreamObserver;
 import jsinterop.base.Js;
 
 import java.nio.ByteBuffer;
@@ -953,10 +952,17 @@ public final class ClientTableState extends TableConfig {
             }
             return Promise.resolve(this);
         }
-        Context.CancellableContext context = Context.current().withCancellation();
+        // Rooted, not the current context: a fetch started inside another fetcher is not canceled with it
+        Context.CancellableContext context = Context.ROOT.withCancellation();
         fetchContext = context;
-        final Promise<ExportedTableCreationResponse> promise =
-                Callbacks.grpcUnaryPromise(c -> context.run(() -> fetch.fetch(c, this)));
+        final Promise<ExportedTableCreationResponse> promise = Callbacks.grpcUnaryPromise(c -> {
+            Context previous = context.attach();
+            try {
+                fetch.fetch(c, this);
+            } finally {
+                context.detach(previous);
+            }
+        });
         // noinspection unchecked
         return promise.then(def -> {
             if (resolution == ResolutionState.RELEASED) {
@@ -970,20 +976,7 @@ public final class ClientTableState extends TableConfig {
         });
     }
 
-    /**
-     * Makes the call of a fetch that issues it later than {@link #refetch()} does, in that fetch's context so that
-     * {@link #cancelFetch()} ends it; if the fetch was already canceled, fails {@code callback} instead of calling.
-     */
-    public void runInFetch(StreamObserver<?> callback, Runnable call) {
-        assert fetchContext != null : "fetchers run only from refetch()";
-        if (fetchContext.isCancelled()) {
-            callback.onError(new IllegalStateException("Fetch canceled before it was sent"));
-            return;
-        }
-        fetchContext.run(call);
-    }
-
-    /** Ends the call of the latest {@link #refetch()}, or keeps it from being made. */
+    /** Ends the calls of the latest {@link #refetch()}, or keeps them from being made. */
     public void cancelFetch() {
         if (fetchContext != null) {
             fetchContext.cancel(null);

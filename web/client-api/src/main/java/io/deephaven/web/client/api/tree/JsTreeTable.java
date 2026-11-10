@@ -1524,23 +1524,32 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     public JsPendingTable<JsTable> selectDistinct(Column[] columns) {
         // The result's ticket and state exist now, so operations can be chained before the source table has resolved
         List<String> columnNames = Arrays.stream(columns).map(Column::getName).collect(Collectors.toList());
-        ClientTableState state = connection.newState((c, cts) -> sourceTable.get().then(t -> {
-            // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
-            // up.
-            if (!t.getFilter().asList().equals(getFilter().asList())) {
-                t.applyFilter(getFilter().asArray(new FilterCondition[0]));
-            }
-            SelectDistinctRequest request = SelectDistinctRequest.newBuilder()
-                    .setSourceId(t.state().getHandle().makeTableReference())
-                    .setResultId(cts.getHandle().makeTicket())
-                    .addAllColumnNames(columnNames)
-                    .build();
-            connection.tableServiceClient().selectDistinct(request, c);
-            return null;
-        }).catch_(error -> {
-            c.onError(error instanceof Throwable ? (Throwable) error : new RuntimeException(String.valueOf(error)));
-            return null;
-        }), "selectDistinct " + columnNames, connection.getTickets().newTableTicket());
+        ClientTableState state = connection.newState((c, cts) -> {
+            // The call is made once the source table arrives, in this fetch's context, where a cancel reaches it
+            Context fetchContext = Context.current();
+            sourceTable.get().then(t -> {
+                // if this is the first time it is used, it might not be filtered correctly, so check that the filters
+                // match up.
+                if (!t.getFilter().asList().equals(getFilter().asList())) {
+                    t.applyFilter(getFilter().asArray(new FilterCondition[0]));
+                }
+                SelectDistinctRequest request = SelectDistinctRequest.newBuilder()
+                        .setSourceId(t.state().getHandle().makeTableReference())
+                        .setResultId(cts.getHandle().makeTicket())
+                        .addAllColumnNames(columnNames)
+                        .build();
+                Context previous = fetchContext.attach();
+                try {
+                    connection.tableServiceClient().selectDistinct(request, c);
+                } finally {
+                    fetchContext.detach(previous);
+                }
+                return null;
+            }).catch_(error -> {
+                c.onError(error instanceof Throwable ? (Throwable) error : new RuntimeException(String.valueOf(error)));
+                return null;
+            });
+        }, "selectDistinct " + columnNames, connection.getTickets().newTableTicket());
         return connection.pendingTable(state);
     }
 

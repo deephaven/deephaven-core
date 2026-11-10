@@ -726,29 +726,36 @@ public class WorkerConnection {
         if (applyPreviewColumns != null && applyPreviewColumns) {
             JsLog.warn("applyPreviewColumns is deprecated, and will be removed in a future release");
         }
-        return newState((c, cts) -> whenServerReady("get a table").then(serve -> definition).then(varDef -> {
-            JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts, " (" + cts.getHandle() + ")");
-            cts.runInFetch(c, () -> {
-                // Only apply preview if specifically requested
-                if (applyPreviewColumns != null && applyPreviewColumns) {
-                    ApplyPreviewColumnsRequest req = ApplyPreviewColumnsRequest.newBuilder()
-                            .setSourceId(Tickets.createTableRef(varDef))
-                            .setResultId(cts.getHandle().makeTicket())
-                            .build();
-                    tableServiceClient.applyPreviewColumns(req, c);
-                } else {
-                    FetchTableRequest req = FetchTableRequest.newBuilder()
-                            .setSourceId(Tickets.createTableRef(varDef))
-                            .setResultId(cts.getHandle().makeTicket())
-                            .build();
-                    tableServiceClient.fetchTable(req, c);
+        return newState((c, cts) -> {
+            // The call is made later, so it is made in this fetch's context, where a cancel reaches it
+            Context fetchContext = Context.current();
+            whenServerReady("get a table").then(serve -> definition).then(varDef -> {
+                JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts, " (" + cts.getHandle() + ")");
+                Context previous = fetchContext.attach();
+                try {
+                    // Only apply preview if specifically requested
+                    if (applyPreviewColumns != null && applyPreviewColumns) {
+                        ApplyPreviewColumnsRequest req = ApplyPreviewColumnsRequest.newBuilder()
+                                .setSourceId(Tickets.createTableRef(varDef))
+                                .setResultId(cts.getHandle().makeTicket())
+                                .build();
+                        tableServiceClient.applyPreviewColumns(req, c);
+                    } else {
+                        FetchTableRequest req = FetchTableRequest.newBuilder()
+                                .setSourceId(Tickets.createTableRef(varDef))
+                                .setResultId(cts.getHandle().makeTicket())
+                                .build();
+                        tableServiceClient.fetchTable(req, c);
+                    }
+                } finally {
+                    fetchContext.detach(previous);
                 }
+                return null;
+            }).catch_(error -> {
+                c.onError(asThrowable(error));
+                return null;
             });
-            return null;
-        }).catch_(error -> {
-            c.onError(asThrowable(error));
-            return null;
-        }), "fetch table", handle);
+        }, "fetch table", handle);
     }
 
     /**
@@ -1031,7 +1038,8 @@ public class WorkerConnection {
                 return Promise.reject("Can't " + operationName + " while connection is closed");
             case Failed:
                 state = State.Reconnecting;
-                newSessionReconnect.initialConnection();
+                // Shared by every caller, so a caller's cancellable context (a fetch's) must not reach its calls
+                Context.ROOT.run(newSessionReconnect::initialConnection);
                 // deliberate fall-through
             case Connecting:
             case Reconnecting:
@@ -1565,13 +1573,22 @@ public class WorkerConnection {
      * ticket exist immediately.
      */
     public JsPendingTable<JsTable> pendingTable(String operationName, JsTableFetch fetcher, String fetchSummary) {
-        return pendingTable((c, cts) -> whenServerReady(operationName).then(server -> {
-            cts.runInFetch(c, () -> fetcher.fetch(c, cts));
-            return null;
-        }).catch_(error -> {
-            c.onError(asThrowable(error));
-            return null;
-        }), fetchSummary);
+        return pendingTable((c, cts) -> {
+            // The inner fetch runs later, so it runs in this fetch's context, where a cancel reaches it
+            Context fetchContext = Context.current();
+            whenServerReady(operationName).then(server -> {
+                Context previous = fetchContext.attach();
+                try {
+                    fetcher.fetch(c, cts);
+                } finally {
+                    fetchContext.detach(previous);
+                }
+                return null;
+            }).catch_(error -> {
+                c.onError(asThrowable(error));
+                return null;
+            });
+        }, fetchSummary);
     }
 
     /**

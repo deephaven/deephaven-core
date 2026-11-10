@@ -1133,11 +1133,20 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     delayTestFinish(10_045);
                     // Canceled in the creating task, before the server-ready wait lets the request go
                     session.timeTable(1e9, null).cancel();
-                    return delay(500).then(ignore -> {
-                        assertEquals("a timeTable canceled before it was sent was sent anyway", 0,
-                                transport.streamsStarted(TIME_TABLE));
-                        return Promise.resolve(session);
-                    });
+                    // Both wait on the same server-ready promise, so once this one's request is sent, the canceled
+                    // one has had its chance to send
+                    Promise<JsResolvedTable> control = session.timeTable(1e9, null).resolve();
+                    return within("the uncanceled timeTable never sent its request",
+                            () -> transport.streamsThatSent(TIME_TABLE) > 0)
+                            .then(ignore -> {
+                                assertEquals("a timeTable canceled before it was sent sent its request anyway", 1,
+                                        transport.streamsThatSent(TIME_TABLE));
+                                return control;
+                            })
+                            .then(table -> {
+                                table.close();
+                                return Promise.resolve(session);
+                            });
                 })
                 .then(this::finish).catch_(this::report);
     }
@@ -1191,15 +1200,38 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    private static final String TIME_TABLE = "TableService/TimeTable";
-
-    /** Resolves once {@code condition} holds; fails with {@code failure} if it does not within 2s. */
-    private Promise<Object> within(String failure, BooleanSupplier condition) {
-        return Promise.resolve(waitFor(condition, 50, 2_000, (Object) null))
-                .then(ok -> Promise.resolve(ok), err -> Promise.reject(failure));
+    public void testCancelInFlightNewTableEndsItsUpload() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(10_050);
+                    // newTable uploads through its own stream; holding the response keeps that stream open
+                    transport.holdStreams(DO_PUT);
+                    JsPendingTable<JsTable> pending = session.newTable(new String[] {"A"}, new String[] {"int"},
+                            new String[][] {{"1", "2"}}, null);
+                    return within("the newTable upload never started", () -> transport.hasOpenStream(DO_PUT))
+                            .then(ignore -> {
+                                pending.cancel();
+                                return within("the canceled newTable's upload was still open",
+                                        () -> !transport.hasOpenStream(DO_PUT));
+                            })
+                            .then(ignore -> {
+                                transport.holdStreams(null);
+                                return Promise.resolve(session);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
     }
 
-    /** Whether {@code transport} sent a Release naming {@code ticket}; each message carries a 5-byte frame header. */
+    private static final String TIME_TABLE = "TableService/TimeTable";
+    private static final String DO_PUT = "DoPut";
+
+    /**
+     * Whether {@code transport} sent a Release naming {@code ticket}. A chunk may be the whole frame or just its
+     * payload, so this matches on the end of a chunk.
+     */
     private static boolean releaseSent(CuttingTransportFactory transport, Ticket ticket) {
         byte[] expected = ReleaseRequest.newBuilder().setId(ticket).build().toByteArray();
         for (Uint8Array message : transport.messagesSent("SessionService/Release")) {

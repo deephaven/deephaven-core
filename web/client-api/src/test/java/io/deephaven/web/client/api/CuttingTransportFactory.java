@@ -26,6 +26,7 @@ public class CuttingTransportFactory implements GrpcTransportFactory {
     private final List<Open> open = new ArrayList<>();
     private final List<String> started = new ArrayList<>();
     private final List<String> sentUrls = new ArrayList<>();
+    private final List<String> sendingStreams = new ArrayList<>();
     private final List<Uint8Array> sentMessages = new ArrayList<>();
     private int cuts;
     private String holdUrlPart;
@@ -34,6 +35,7 @@ public class CuttingTransportFactory implements GrpcTransportFactory {
         private final GrpcTransportOptions options;
         private final GrpcTransport transport;
         private boolean ended;
+        private boolean sentAny;
 
         Open(GrpcTransportOptions options) {
             this.options = options;
@@ -78,6 +80,10 @@ public class CuttingTransportFactory implements GrpcTransportFactory {
 
         @Override
         public void sendMessage(Uint8Array msgBytes) {
+            if (!sentAny) {
+                sentAny = true;
+                sendingStreams.add(options.url.href);
+            }
             sentUrls.add(options.url.href);
             sentMessages.add(Js.uncheckedCast(msgBytes.slice()));
             transport.sendMessage(msgBytes);
@@ -153,7 +159,18 @@ public class CuttingTransportFactory implements GrpcTransportFactory {
         return (int) started.stream().filter(url -> url.contains(urlPart)).count();
     }
 
-    /** The messages sent so far on streams whose URL contains {@code urlPart}, each with its gRPC frame header. */
+    /**
+     * How many streams whose URL contains {@code urlPart} sent anything, that is, how many requests went out; a stream
+     * that was started but canceled before sending is not counted.
+     */
+    public int streamsThatSent(String urlPart) {
+        return (int) sendingStreams.stream().filter(url -> url.contains(urlPart)).count();
+    }
+
+    /**
+     * The chunks sent so far on streams whose URL contains {@code urlPart}, as handed to the transport: a gRPC frame's
+     * 5-byte header and its payload may arrive as separate chunks.
+     */
     public List<Uint8Array> messagesSent(String urlPart) {
         List<Uint8Array> matching = new ArrayList<>();
         for (int i = 0; i < sentUrls.size(); i++) {
