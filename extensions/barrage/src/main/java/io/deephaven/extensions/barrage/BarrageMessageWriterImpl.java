@@ -1421,9 +1421,8 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             // nothing is left to add, but every column must still write an empty field node
             myAddedOffsets = RowSetFactory.empty();
         } else {
-            // A column that no subscription needs has no chunks, and the first column may be such a column. Every
-            // column with chunks has the same chunk boundaries, so the first column with chunks supplies the
-            // boundaries for all columns. When no column has chunks, every column writes an empty field node.
+            // Find the first column with any chunks. When no such column exists, every column writes an empty field
+            // node.
             ChunkWriter.Context[] boundaryChunks = addColumnData[0].chunks();
             for (int ci = 1; boundaryChunks.length == 0 && ci < addColumnData.length; ++ci) {
                 boundaryChunks = addColumnData[ci].chunks();
