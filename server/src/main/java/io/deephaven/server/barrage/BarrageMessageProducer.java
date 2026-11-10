@@ -405,6 +405,12 @@ public class BarrageMessageProducer extends LivenessArtifact
     private long numGrowingSubscriptions = 0;
     private List<Subscription> pendingSubscriptions = new ArrayList<>();
     private final ArrayList<Subscription> activeSubscriptions = new ArrayList<>();
+    /**
+     * Listeners whose subscriptions were rejected and whose error the propagation job has not yet sent, guarded by this
+     * producer's monitor. A request from one of them is ignored rather than reported as not found, so the client sees
+     * why its subscription ended.
+     */
+    private final List<StreamObserver<BarrageMessageWriter.MessageView>> rejectedListeners = new ArrayList<>();
 
     /**
      * Shared dictionary states for full subscriptions, keyed by Arrow dictionary id. Lives for the lifetime of this
@@ -736,8 +742,18 @@ public class BarrageMessageProducer extends LivenessArtifact
         };
 
         synchronized (this) {
-            return findAndUpdate.apply(activeSubscriptions) || findAndUpdate.apply(pendingSubscriptions);
+            return findAndUpdate.apply(activeSubscriptions) || findAndUpdate.apply(pendingSubscriptions)
+                    || isRejected(listener);
         }
+    }
+
+    private boolean isRejected(final StreamObserver<BarrageMessageWriter.MessageView> listener) {
+        for (final StreamObserver<BarrageMessageWriter.MessageView> rejected : rejectedListeners) {
+            if (rejected == listener) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean updateSubscription(final StreamObserver<BarrageMessageWriter.MessageView> listener,
@@ -752,6 +768,10 @@ public class BarrageMessageProducer extends LivenessArtifact
             @Nullable final BitSet columnsToSubscribe,
             final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
+            if (sub.rejection != null) {
+                // the subscription is over; the client is about to be told why
+                return;
+            }
             if (sub.isFullSubscription()) {
                 // never allow changes to a full subscription
                 reject(sub, "cannot change from full subscription to viewport or vice versa");
@@ -794,10 +814,9 @@ public class BarrageMessageProducer extends LivenessArtifact
      */
     private void reject(final Subscription sub, final String reason) {
         Assert.assertion(Thread.holdsLock(this), "Thread.holdsLock(this)");
-        if (sub.rejection == null) {
-            sub.rejection = reason;
-        }
+        sub.rejection = reason;
         sub.pendingDelete = true;
+        rejectedListeners.add(sub.listener);
     }
 
     public void removeSubscription(final StreamObserver<BarrageMessageWriter.MessageView> listener) {
@@ -1321,6 +1340,8 @@ public class BarrageMessageProducer extends LivenessArtifact
 
             activeSubscriptions.clear();
             pendingSubscriptions.clear();
+            // their streams have just been ended with the producer's error instead
+            rejectedListeners.clear();
             // The counters describe the lists that were just emptied. Left stale, a growing count would have the
             // next propagation reschedule itself forever over no subscriptions.
             numFullSubscriptions = 0;
@@ -1702,6 +1723,9 @@ public class BarrageMessageProducer extends LivenessArtifact
             for (final Subscription subscription : deletedSubscriptions) {
                 if (subscription.rejection != null) {
                     GrpcUtil.safelyError(subscription.listener, Code.INVALID_ARGUMENT, subscription.rejection);
+                    synchronized (this) {
+                        rejectedListeners.removeIf(rejected -> rejected == subscription.listener);
+                    }
                     continue;
                 }
                 try {

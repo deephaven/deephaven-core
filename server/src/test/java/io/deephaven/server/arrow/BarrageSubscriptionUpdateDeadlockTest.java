@@ -5,10 +5,17 @@ package io.deephaven.server.arrow;
 
 import com.google.protobuf.ByteString;
 import io.deephaven.auth.AuthContext;
+import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
@@ -27,6 +34,7 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
+import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -46,9 +54,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -186,6 +196,151 @@ public class BarrageSubscriptionUpdateDeadlockTest {
     }
 
     /**
+     * A request that arrives while the rejection of an earlier one is being sent is ignored: the client sees why its
+     * subscription ended, not a {@code NOT_FOUND} for a subscription that the producer has already removed.
+     */
+    @Test
+    public void testRequestDuringRejectionIsIgnored() throws Exception {
+        final InlineCancelCallObserver call = new InlineCancelCallObserver();
+        final ArrowFlightUtil.DoExchangeMarshaller marshaller = openFullSubscription(call);
+        producerScheduler.runUntilQueueEmpty();
+
+        final AtomicReference<Throwable> laterRequestFailure = new AtomicReference<>();
+        final AtomicBoolean laterRequestFinished = new AtomicBoolean();
+        call.onErrorHook = () -> {
+            call.onErrorHook = null;
+            // the producer has removed the subscription and is sending its error
+            final Thread laterRequest = new Thread(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(10, 19)));
+                } catch (final Throwable t) {
+                    laterRequestFailure.set(t);
+                }
+                laterRequestFinished.set(true);
+            }, "BarrageSubscriptionUpdateDeadlockTest-laterRequest");
+            laterRequest.setDaemon(true);
+            laterRequest.start();
+            try {
+                laterRequest.join(JOIN_TIMEOUT_MILLIS);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        // a full subscription cannot change to a viewport
+        marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(0, 9)));
+        producerScheduler.runUntilQueueEmpty();
+
+        assertTrue("the later request should finish", laterRequestFinished.get());
+        assertNull("the later request should be ignored", laterRequestFailure.get());
+        assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(call.error).getCode());
+        assertEquals(0, call.completions);
+    }
+
+    /**
+     * When the stream closes while the handler is subscribing, the handler closes the new subscription without holding
+     * its own monitor. Closing a subscription can write to the stream, and a write that fails on another thread can
+     * cancel the call there while it holds the stream's lock; the cancel closes the handler, which needs the monitor.
+     */
+    @Test
+    public void testSubscriptionClosedDuringSubscribeIsClosedWithoutHandlerMonitor() {
+        final Table table = TableTools.emptyTable(10);
+        session.newExport(EXPORT_ID).submit(() -> table);
+        sessionScheduler.runUntilQueueEmpty();
+
+        final AtomicReference<ArrowFlightUtil.DoExchangeMarshaller> marshallerRef = new AtomicReference<>();
+        final AtomicReference<ArrowFlightUtil.DoExchangeMarshaller.Handler> handlerRef = new AtomicReference<>();
+        final AtomicReference<Boolean> closedHoldingHandlerMonitor = new AtomicReference<>();
+
+        final ExchangeRequestHandlerFactory handlerFactory = new ExchangeRequestHandlerFactory() {
+            private final ExchangeRequestHandlerFactory delegate =
+                    new BarrageSubscriptionRequestHandler.BarrageSubscriptionRequestHandlerFactory();
+
+            @Override
+            public byte type() {
+                return delegate.type();
+            }
+
+            @Override
+            public ArrowFlightUtil.DoExchangeMarshaller.Handler create(
+                    final ArrowFlightUtil.DoExchangeMarshaller marshaller,
+                    final StreamObserver<BarrageMessageWriter.MessageView> listener) {
+                final ArrowFlightUtil.DoExchangeMarshaller.Handler handler = delegate.create(marshaller, listener);
+                handlerRef.set(handler);
+                return handler;
+            }
+        };
+
+        final ExchangeMarshaller closingMarshaller = new ExchangeMarshaller() {
+            @Override
+            public int priority() {
+                return 0;
+            }
+
+            @Override
+            public boolean accept(final Object export) {
+                return true;
+            }
+
+            @Override
+            public void snapshot(final BarrageSnapshotRequest snapshotRequest,
+                    final BarrageSnapshotOptions options,
+                    final Object export,
+                    final BarragePerformanceLog.SnapshotMetricsHelper metrics,
+                    final StreamObserver<BarrageMessageWriter.MessageView> listener,
+                    final String ticketLogName,
+                    final BarrageMessageWriter.Factory streamGeneratorFactory) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Subscription subscribe(final BarrageSubscriptionRequest subscriptionRequest,
+                    final BarrageSubscriptionOptions options,
+                    final Object export,
+                    final StreamObserver<BarrageMessageWriter.MessageView> listener) {
+                // the client half-closes while the subscription is being created
+                marshallerRef.get().onCompleted();
+                return new Subscription() {
+                    @Override
+                    public LivenessReferent toManage() {
+                        return null;
+                    }
+
+                    @Override
+                    public void close() {
+                        closedHoldingHandlerMonitor.set(Thread.holdsLock(handlerRef.get()));
+                    }
+
+                    @Override
+                    public boolean update(final BarrageSubscriptionRequest subscriptionRequest) {
+                        return true;
+                    }
+                };
+            }
+        };
+
+        final SessionService.ErrorTransformer errorTransformer = new SessionService.ObfuscatingErrorTransformer();
+        final AllowAllAuthorizationProvider authProvider = new AllowAllAuthorizationProvider();
+        final ArrowFlightUtil.DoExchangeMarshaller marshaller = new ArrowFlightUtil.DoExchangeMarshaller(
+                new TicketRouter(authProvider, Set.of(new ExportTicketResolver(authProvider))),
+                new BarrageMessageWriterImpl.Factory(),
+                List.of(closingMarshaller),
+                Set.of(handlerFactory),
+                errorTransformer,
+                session,
+                new InlineCancelCallObserver());
+        marshallerRef.set(marshaller);
+
+        marshaller.onNext(subscriptionRequest(null));
+        sessionScheduler.runUntilQueueEmpty();
+
+        assertTrue("the marshaller should be closed", marshaller.isClosed());
+        assertNotNull("the new subscription should be closed", closedHoldingHandlerMonitor.get());
+        assertFalse("the new subscription must be closed without the handler's monitor",
+                closedHoldingHandlerMonitor.get());
+    }
+
+    /**
      * Exports a table and opens a DoExchange full subscription to it on {@code call}. The producer's propagation job is
      * scheduled but has not run.
      */
@@ -312,9 +467,16 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         volatile Throwable error;
         volatile int completions;
 
+        /** runs when the error is written, while the writer holds the response stream's monitor */
+        volatile Runnable onErrorHook;
+
         @Override
         public void onError(final Throwable t) {
             error = t;
+            final Runnable toRun = onErrorHook;
+            if (toRun != null) {
+                toRun.run();
+            }
         }
 
         @Override
