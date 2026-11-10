@@ -1421,24 +1421,33 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             // nothing is left to add, but every column must still write an empty field node
             myAddedOffsets = RowSetFactory.empty();
         } else {
+            // A column that no subscription needs has no chunks, and the first column may be such a column. Every
+            // column with chunks has the same chunk boundaries, so the first column with chunks supplies the
+            // boundaries for all columns. When no column has chunks, every column writes an empty field node.
+            ChunkWriter.Context[] boundaryChunks = addColumnData[0].chunks();
+            for (int ci = 1; boundaryChunks.length == 0 && ci < addColumnData.length; ++ci) {
+                boundaryChunks = addColumnData[ci].chunks();
+            }
+
             // find the writer for the initial position-space key
             final long startPos = addRowOffsets.get(startRange);
-            chunkIdx = findWriterForOffset(addColumnData[0].chunks(), startPos);
+            chunkIdx = findWriterForOffset(boundaryChunks, startPos);
 
             // adjust the batch size if we would cross a chunk boundary
             long endPos = addRowOffsets.get(startRange + targetBatchSize - 1);
             if (endPos == RowSet.NULL_ROW_KEY) {
                 endPos = Long.MAX_VALUE;
             }
-            if (addColumnData[0].chunks().length != 0) {
-                final ChunkWriter.Context writer = addColumnData[0].chunks()[chunkIdx];
+            if (boundaryChunks.length != 0) {
+                final ChunkWriter.Context writer = boundaryChunks[chunkIdx];
                 endPos = Math.min(endPos, writer.getLastRowOffset());
                 shift = -writer.getRowOffset();
             }
             myAddedOffsets = addRowOffsets.subSetByKeyRange(startPos, endPos);
         }
 
-        // all column writers have the same boundaries, so we can re-use the offsets internal to this chunkIdx
+        // all column writers with chunks have the same boundaries, so we can re-use the offsets internal to this
+        // chunkIdx; a column writer without chunks writes no rows
         final DictionaryWriterRegistry dictionaryRegistry = view.dictionaryRegistry();
         try (myAddedOffsets;
                 final RowSet adjustedOffsets = shift == 0 ? null : myAddedOffsets.shift(shift)) {
