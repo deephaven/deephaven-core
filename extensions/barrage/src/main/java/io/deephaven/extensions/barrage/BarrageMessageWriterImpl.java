@@ -1182,9 +1182,16 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             return view.addRowOffsets().intSize();
         }
 
+        // Find the first column with any chunks. When no such column exists, every column writes an empty field
+        // node.
+        ChunkWriter.Context[] boundaryChunks = addColumnData[0].chunks();
+        for (int ci = 1; boundaryChunks.length == 0 && ci < addColumnData.length; ++ci) {
+            boundaryChunks = addColumnData[ci].chunks();
+        }
+
         // find the writer for the initial position-space key
         final long startPos = view.addRowOffsets().get(startRange);
-        final int chunkIdx = findWriterForOffset(addColumnData[0].chunks(), startPos);
+        final int chunkIdx = findWriterForOffset(boundaryChunks, startPos);
 
         // adjust the batch size if we would cross a chunk boundary
         long shift = 0;
@@ -1192,13 +1199,14 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         if (endPos == RowSet.NULL_ROW_KEY) {
             endPos = Long.MAX_VALUE;
         }
-        if (addColumnData[0].chunks().length != 0) {
-            final ChunkWriter.Context writer = addColumnData[0].chunks()[chunkIdx];
+        if (boundaryChunks.length != 0) {
+            final ChunkWriter.Context writer = boundaryChunks[chunkIdx];
             endPos = Math.min(endPos, writer.getLastRowOffset());
             shift = -writer.getRowOffset();
         }
 
-        // all column writers have the same boundaries, so we can re-use the offsets internal to this chunkIdx
+        // all column writers with chunks have the same boundaries, so we can re-use the offsets internal to this
+        // chunkIdx; a column writer without chunks writes no rows
         final DictionaryWriterRegistry dictionaryRegistry = view.dictionaryRegistry();
         try (final RowSet allowedRange = RowSetFactory.fromRange(startPos, endPos);
                 final WritableRowSet myAddedOffsets =

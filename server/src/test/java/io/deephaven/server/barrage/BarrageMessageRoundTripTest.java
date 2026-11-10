@@ -1462,6 +1462,61 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         remoteNugget.validate("mod spanning chunks with gapped viewport");
     }
 
+    /**
+     * A message holds added rows only for the columns that some subscription needs, so a message holds no added rows
+     * for the table's first column when no subscription has that column. The added rows of the other columns must still
+     * be split into record batches at the chunk boundaries of those other columns. Without that split, a delta that
+     * adds more rows than one chunk holds fails with "Subset {..} is out of bounds for context of size N".
+     * <p>
+     * A delta exercises the failure deterministically. A growing snapshot reaches the same writer code, but the size of
+     * each growth round depends on timing, so a snapshot message of more than one chunk cannot be forced here.
+     */
+    public void testAddedRowsSpanningChunksWithoutTheFirstColumn() {
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(RowSetFactory.empty().toTracking(),
+                TableTools.intCol("I"), TableTools.stringCol("S"));
+        sourceTable.setFlat();
+
+        // every column except the first
+        final BitSet allButFirst = new BitSet();
+        allButFirst.set(1, sourceTable.numColumns());
+
+        final RemoteNugget remoteNugget = new RemoteNugget(() -> sourceTable);
+        // noinspection unused
+        final RemoteClient fullClient = remoteNugget.newClient(null, allButFirst, "full-without-first-column");
+        // noinspection unused
+        final RemoteClient viewportClient = remoteNugget.newClient(RowSetFactory.fromRange(0, Long.MAX_VALUE - 1),
+                allButFirst, "viewport-without-first-column");
+
+        // Obtain the (empty) initial snapshot.
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        remoteNugget.validate("initial snapshot");
+
+        // Add enough rows in one delta to fill more than two delta chunks.
+        final int numRows = 2 * BarrageMessageProducer.DELTA_CHUNK_SIZE + 100;
+        final int[] ints = new int[numRows];
+        final String[] strings = new String[numRows];
+        for (int ii = 0; ii < numRows; ++ii) {
+            ints[ii] = ii;
+            strings[ii] = ii % 7 == 0 ? null : Integer.toString(ii);
+        }
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet added = RowSetFactory.flat(numRows);
+            TstUtils.addToTable(sourceTable, added, TableTools.intCol("I", ints), TableTools.stringCol("S", strings));
+            sourceTable.notifyListeners(new TableUpdateImpl(added, RowSetFactory.empty(), RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+
+        // This flush serializes the delta; without the fix it throws:
+        // "Subset {..} is out of bounds for context of size N"
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        remoteNugget.validate("added rows spanning chunks without the first column");
+    }
+
     public void testAllUniqueChunkTypeColumnSourcesWithValidityBuffers() {
         testAllUniqueChunkTypeColumnSources(false);
     }
