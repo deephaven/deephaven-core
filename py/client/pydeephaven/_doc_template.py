@@ -141,7 +141,9 @@ def copy_op(func: types.FunctionType, cls: type, doc: str) -> types.FunctionType
         k: bind_t_text(v, cls) for k, v in func.__annotations__.items()
     }
     # get_type_hints resolves the text in the copy's globals, which are the base module's. A base module that imports
-    # the subclass only for type checking would raise NameError there, so bind the subclass's name.
+    # the subclass only for type checking would raise NameError there, so bind the subclass's name. A name that is
+    # already bound keeps its first value. A second subclass with the same name, or a reloaded one, then resolves its
+    # hints to the first class. No two subclasses in either package share a name.
     func.__globals__.setdefault(cls.__name__, cls)
     op.__qualname__ = f"{cls.__qualname__}.{func.__name__}"
     op.__module__ = cls.__module__
