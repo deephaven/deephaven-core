@@ -24,6 +24,7 @@ from pydeephaven.agg import (
     unique,
     weighted_avg,
 )
+from pydeephaven.filters import ColumnName, eq
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -112,6 +113,17 @@ class TableTestCase(BaseTestCase):
         filtered_table = test_table.where(["a > 10", "b < 100"])
         self.assertLessEqual(filtered_table.size, pa_table.num_rows)
 
+    def test_where_mixed_filters_raises(self) -> None:
+        test_table = self.session.empty_table(1).update(["a = i"])
+        for filters in (
+            ["a > 0", eq(ColumnName("a"), 0)],
+            [eq(ColumnName("a"), 0), "a > 0"],
+        ):
+            with self.subTest(first=type(filters[0]).__name__):
+                with self.assertRaises(DHError) as cm:
+                    test_table.where(filters)
+                self.assertIn("not a mix", str(cm.exception))
+
     def test_sort(self):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)
@@ -129,6 +141,14 @@ class TableTestCase(BaseTestCase):
         df = sorted_table.to_arrow().to_pandas()
 
         self.assertTrue(df.iloc[:, 0].is_monotonic_decreasing)
+        # Every sort column is descending, not only the first one. a % 5 makes ties in a, so b's order shows.
+        tied_table = test_table.update(["a = a % 5"])
+        df = tied_table.sort_descending(order_by=["a", "b"]).to_arrow().to_pandas()
+        expected = df.sort_values(["a", "b"], ascending=False)
+        self.assertEqual(
+            list(df[["a", "b"]].itertuples(index=False)),
+            list(expected[["a", "b"]].itertuples(index=False)),
+        )
 
     def test_head_tail(self):
         ops = [Table.head, Table.tail]
@@ -244,6 +264,15 @@ class TableTestCase(BaseTestCase):
         result_table = left_table.raj(right_table, on=["Col1", "Timestamp"])
         self.assertGreater(result_table.size, 0)
         self.assertLessEqual(result_table.size, left_table.size)
+
+    def test_aj_raj_empty_on_raises(self) -> None:
+        left_table = self.session.empty_table(1).update(["a = i"])
+        right_table = self.session.empty_table(1).update(["a = i", "b = i"])
+        for name in ("aj", "raj"):
+            with self.subTest(name):
+                with self.assertRaises(DHError) as cm:
+                    getattr(left_table, name)(right_table, on=[])
+                self.assertIn("on must name at least one column", str(cm.exception))
 
     def test_head_tail_by(self):
         ops = [Table.head_by, Table.tail_by]
@@ -457,6 +486,31 @@ class TableTestCase(BaseTestCase):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table).drop_columns(["e"])
         self.assertEqual(len(test_table.schema), len(test_table.meta_table.to_arrow()))
+
+    def test_unique_bool_sentinel_request(self) -> None:
+        # True is an int in Python. It must still be sent as a boolean sentinel, and so must np.bool_.
+        for sentinel in (True, np.bool_(False)):
+            with self.subTest(type(sentinel).__name__):
+                spec = unique(cols=["U = Flag"], non_unique_sentinel=sentinel).agg_spec
+                self.assertEqual(
+                    spec.unique.non_unique_sentinel.WhichOneof("type"), "bool_value"
+                )
+
+    def test_unique_bool_sentinel(self) -> None:
+        # True is an int in Python. It must still reach the server as a boolean sentinel.
+        test_table = self.session.empty_table(10).update(
+            ["Grp = i % 2", "Flag = i % 3 == 0"]
+        )
+        rt = test_table.agg_by(
+            aggs=[unique(cols=["U = Flag"], non_unique_sentinel=True)], by=["Grp"]
+        )
+        df = rt.to_arrow().to_pandas()
+        self.assertEqual(list(df["U"]), [True, True])
+
+    def test_agg_by_without_columns_names_the_agg(self) -> None:
+        with self.assertRaises(DHError) as cm:
+            self.session.empty_table(1).agg_by(aggs=[sum_()], by=[])
+        self.assertNotIn("{agg}", str(cm.exception))
 
     def test_agg_with_options(self):
         pa_table = csv.read_csv(self.csv_file)

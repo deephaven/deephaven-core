@@ -6,7 +6,7 @@ Deephaven tables are the core data structures supporting Deephaven's static and 
 
 ## Table type summary
 
-This guide discusses the unique properties of each of Deephaven's table types. The following table summarizes the main points.
+The following table summarizes the main differences.
 
 <table className="text--center">
   <thead>
@@ -316,7 +316,7 @@ t_append_only = blink_to_append_only(t)
 
 ### Create a blink table from an add-only table
 
-Use [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md) to convert an add-only table to a blink table. The conversion helps when the upstream add-only table is not fully in memory, or when you want [blink table aggregation semantics](#specialized-semantics-for-blink-tables). If the upstream table already holds all its rows in memory, the conversion doesn't reduce memory use, because the upstream table still keeps every row.
+Use [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md) to convert an add-only table to a blink table. The conversion helps when the upstream add-only table is not fully in memory, or when you want [blink table aggregation semantics](#specialized-semantics-for-blink-tables). If the upstream table already holds all its rows in memory, the conversion increases memory use rather than reducing it, because the upstream table still keeps every row.
 
 The following example converts an append-only time table to a blink table:
 

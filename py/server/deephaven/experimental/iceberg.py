@@ -673,7 +673,7 @@ class IcebergTableAdapter(JObjectWrapper):
         Returns information on the snapshots of this table as a Deephaven table. The table contains the
         following columns:
         - `Id`: the snapshot identifier (can be used for updating the table or loading a specific snapshot).
-        - `TimestampMs`: the timestamp of the snapshot.
+        - `Timestamp`: the timestamp of the snapshot.
         - `Operation`: the data operation that created this snapshot.
         - `Summary`: additional information about this snapshot from the Iceberg metadata.
         - `SnapshotObject`: a Java object containing the Iceberg API snapshot.
@@ -985,7 +985,7 @@ def adapter(
     construction logic.
 
     For complex use cases, consider using S3 Instruction profiles, which provide extensive configuration options. When
-    set, these instructions are automatically included in the :meth:`.IcebergInstructions.__init__` `data_instructions`.
+    set, these instructions are automatically included in the :meth:`.IcebergReadInstructions.__init__` `data_instructions`.
 
     If you prefer to use Iceberg's native AWS properties, Deephaven will attempt to infer the necessary construction
     logic. However, in advanced scenarios, there might be discrepancies between the two clients, potentially leading to

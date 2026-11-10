@@ -140,6 +140,17 @@ t1 = empty_table(0) if t.is_blink else None
         df = pa_table2.to_pandas()
         self.assertEqual(1000, len(df.index))
 
+    def test_import_table_rejects_record_batch(self) -> None:
+        batch = pa.record_batch([pa.array([1, 2])], names=["a"])
+        with self.assertRaises(DHError) as cm:
+            self.session.import_table(batch)
+        self.assertIn("must be a pyarrow Table", str(cm.exception.__cause__))
+
+    def test_log_prefix_has_port(self) -> None:
+        self.assertTrue(
+            self.session._logpfx.endswith(f"{self.session.host}:{self.session.port}")
+        )
+
     def test_input_table(self):
         pa_types = [
             pa.bool_(),

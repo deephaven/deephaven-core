@@ -54,7 +54,6 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final Comparator[] comparators;
     private final boolean[] comparatorsRespectEquality;
     private final WritableRowRedirection sortMapping;
-    private final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy;
     private final EffortTracker effortTracker;
 
     private final TargetComparator targetComparator;
@@ -72,7 +71,6 @@ public class SortListener extends BaseTable.ListenerImpl {
             final Comparator[] comparators,
             final boolean[] comparatorsRespectEquality,
             final WritableRowRedirection sortMapping,
-            final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
             final ModifiedColumnSet.Transformer mcsTransformer,
             final ModifiedColumnSet sortColumnSet) {
         super("sortInternal", parent, result);
@@ -86,7 +84,6 @@ public class SortListener extends BaseTable.ListenerImpl {
         this.comparators = comparators;
         this.comparatorsRespectEquality = comparatorsRespectEquality;
         this.sortMapping = sortMapping;
-        this.sortedColumnsToSortBy = sortedColumnsToSortBy;
         this.effortTracker = REBALANCE_EFFORT_TRACKER_ENABLED ? new EffortTracker(100) : null;
 
         // We create these comparators here to avoid building new ones on every call to doUpdate().
@@ -603,19 +600,18 @@ public class SortListener extends BaseTable.ListenerImpl {
 
     /**
      * The following may clarify what we are doing: lKey (the "target") is in input coordinates rKey (the "probe") is in
-     * output coordinates
+     * output coordinates. Each probe looks up the previous input key of rKey once, and then compares the previous
+     * values of the input columns at that key, which are the previous values of the sorted columns at rKey.
      */
     private class TargetComparator implements RowSet.TargetComparator {
         private long lKey;
         private final ColumnComparatorFactory.IComparator[] comparators;
 
         TargetComparator() {
-            Assert.eq(columnsToSortBy.length, "columnsToSortBy.length",
-                    sortedColumnsToSortBy.length, "sortedColumnsToSortBy.length");
             this.comparators = new ColumnComparatorFactory.IComparator[columnsToSortBy.length];
             for (int ii = 0; ii < columnsToSortBy.length; ii++) {
                 comparators[ii] = ColumnComparatorFactory.createComparatorLeftCurrRightPrev(columnsToSortBy[ii],
-                        sortedColumnsToSortBy[ii],
+                        columnsToSortBy[ii],
                         SortListener.this.comparators[ii]);
             }
             setTarget(-1);
@@ -627,8 +623,9 @@ public class SortListener extends BaseTable.ListenerImpl {
 
         @Override
         public int compareTargetTo(final long rKey, final int dir) {
+            final long rInputKey = sortMapping.getPrev(rKey);
             for (int ii = 0; ii < columnsToSortBy.length; ++ii) {
-                final int difference = comparators[ii].compare(lKey, rKey);
+                final int difference = comparators[ii].compare(lKey, rInputKey);
                 if (difference != 0) {
                     return difference * order[ii].direction * dir;
                 }

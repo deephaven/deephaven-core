@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static org.junit.Assert.*;
 
@@ -86,6 +87,54 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
         assertTrue(DataIndexer.hasDataIndex(xu, "Sym"));
         assertTrue(DataIndexer.hasDataIndex(xu, "Sym2"));
         assertFalse(DataIndexer.hasDataIndex(xu, "Sentinel"));
+    }
+
+    /**
+     * An alias made before the select shares the indexed column's source, so the select copies one indexed source to
+     * two result columns. Each alias gets an index, and an index on another column is added once.
+     */
+    @Test
+    public void testPreserveGroupingOfAliasedColumn() {
+        final Table x = TstUtils.testTable(TstUtils.colIndexed("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+                TstUtils.colIndexed("Exch", "N", "Q", "N", "Q", "N", "Q"),
+                intCol("Sentinel", 1, 2, 3, 4, 5, 6));
+        final Table aliased = x.updateView("Sym2 = Sym");
+        assertSame(aliased.getColumnSource("Sym"), aliased.getColumnSource("Sym2"));
+
+        final Table xs = aliased.select();
+        assertTableEquals(aliased, xs);
+        assertNotSame(xs.getColumnSource("Sym"), xs.getColumnSource("Sym2"));
+
+        assertTrue(DataIndexer.hasDataIndex(xs, "Sym"));
+        assertTrue(DataIndexer.hasDataIndex(xs, "Sym2"));
+        assertTrue(DataIndexer.hasDataIndex(xs, "Exch"));
+        assertFalse(DataIndexer.hasDataIndex(xs, "Sentinel"));
+    }
+
+    /**
+     * A multi-column index is remapped once per combination of the key columns' aliases, and an index on a single key
+     * column once per alias of that column.
+     */
+    @Test
+    public void testPreserveMultiColumnGroupingOfAliasedColumns() {
+        final Table x = TstUtils.testTable(
+                stringCol("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+                stringCol("Exch", "N", "Q", "N", "Q", "N", "Q"),
+                intCol("Sentinel", 1, 2, 3, 4, 5, 6));
+        DataIndexer.getOrCreateDataIndex(x, "Sym", "Exch");
+        DataIndexer.getOrCreateDataIndex(x, "Sym");
+
+        final Table xs = x.updateView("Sym2 = Sym", "Exch2 = Exch").select();
+        assertTableEquals(x.updateView("Sym2 = Sym", "Exch2 = Exch"), xs);
+
+        for (final String sym : new String[] {"Sym", "Sym2"}) {
+            assertTrue(DataIndexer.hasDataIndex(xs, sym));
+            for (final String exch : new String[] {"Exch", "Exch2"}) {
+                assertTrue(DataIndexer.hasDataIndex(xs, sym, exch));
+            }
+        }
+        assertFalse(DataIndexer.hasDataIndex(xs, "Exch"));
+        assertFalse(DataIndexer.hasDataIndex(xs, "Exch2"));
     }
 
     @Test
