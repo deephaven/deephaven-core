@@ -1161,12 +1161,14 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         except Exception as e:
             raise self._make_op_error(e, "where") from e
 
-    def where_in(self, filter_table: Table, cols: str | Sequence[str]) -> T:
+    def where_in(self, filter_table: Table | T, cols: str | Sequence[str]) -> T:
         """The where_in method creates a new table containing rows from the source table, where the rows match
         values in the filter table. The filter is updated whenever either table changes.
 
+        {right_note}
+
         Args:
-            filter_table (Table): the table containing the set of values to filter on
+            filter_table ({right_type}): the table containing the set of values to filter on
             cols (Union[str, Sequence[str]]): the column name(s)
 
         Returns:
@@ -1184,12 +1186,14 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         except Exception as e:
             raise self._make_op_error(e, "where_in") from e
 
-    def where_not_in(self, filter_table: Table, cols: str | Sequence[str]) -> T:
+    def where_not_in(self, filter_table: Table | T, cols: str | Sequence[str]) -> T:
         """The where_not_in method creates a new table containing rows from the source table, where the rows do not
         match values in the filter table.
 
+        {right_note}
+
         Args:
-            filter_table (Table): the table containing the set of values to filter on
+            filter_table ({right_type}): the table containing the set of values to filter on
             cols (Union[str, Sequence[str]]): the column name(s)
 
         Returns:
@@ -1787,18 +1791,20 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
             by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), if not provided, all rows from
-            this table are
-                grouped into a single group of rows before the aggregations are applied to the result, default is None.
+                this table are grouped into a single group of rows before the aggregations are applied to the
+                result, default is None.
             preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
                 a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
-            initial_groups (Optional[{right_type}]): a table whose distinct combinations of values for the group-by column(s)
-                should be used to create an initial set of aggregation groups. All other columns are ignored. This is
-                useful in combination with preserve_empty=True to ensure that particular groups appear in the result
-                table, or with preserve_empty=False to control the encounter order for a collection of groups and
-                thus their relative order in the result. Changes to this table are not expected or handled; if this
-                table is a refreshing table, only its contents at instantiation time will be used. Default is None,
-                the result will be the same as if a table is provided but no rows were supplied. When it is provided,
-                the 'by' argument must be provided to explicitly specify the grouping columns.
+            initial_groups (Optional[{right_type}]): a table whose distinct combinations of values for
+                the group-by column(s) should be used to create an initial set of aggregation groups. All other columns
+                are ignored. This is useful in combination with preserve_empty=True to ensure that particular groups
+                appear in the result table, or with preserve_empty=False to control the encounter order for a
+                collection of groups and thus their relative order in the result. Changes to this table are not
+                expected or handled; if this table is a refreshing table, only its contents at instantiation time
+                will be used. Default is None, the result will be the same as if a table is provided but no rows were
+                supplied. When it is provided, the 'by' argument must be provided to explicitly specify the grouping
+                columns.
+
         Returns:
             {returns}
 
@@ -1815,10 +1821,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
 
             cm = _query_scope_agg_ctx(aggs)
-            # The proxy also locks for initial_groups. Java requires the lock when initial_groups is a refreshing
-            # PartitionedTableProxy, even when this proxy is static. Without it, the op fails with "May not
-            # initiate serial table operations". Table needs no lock here, because Java reads initial_groups from a
-            # snapshot.
+            # initial_groups is the op's other table, so the class's lock covers it too.
             others = () if initial_groups is None else (initial_groups,)
             with cm, self._extra_lock_ctx(*others):
                 if not by:
@@ -2256,6 +2259,8 @@ class Table(_TableOperations["Table"]):
         return table.j_table
 
     def _extra_lock_ctx(self, *others: Table) -> contextlib.AbstractContextManager:
+        """Returns a null context. These ops need no lock on a Table. Java reads the other table, such as agg_by's
+        initial_groups, from a snapshot."""
         return contextlib.nullcontext()
 
     def _make_op_error(self, e: Exception, op: str) -> DHError:
@@ -3824,11 +3829,12 @@ class PartitionedTableProxy(_TableOperations["PartitionedTableProxy"]):
     _doc_vars = {
         "returns": "a new PartitionedTableProxy",
         "right_type": "Union[Table, PartitionedTableProxy]",
-        "intro": "Applies the :meth:`~Table.{op}` table operation to all constituent tables of the underlying "
-        "partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of "
-        "its underlying partitioned table.",
-        "right_note": "When the other table is a PartitionedTableProxy, the :meth:`~Table.{op}` table operation is "
-        "applied to the matching pairs of constituent tables from both underlying partitioned tables.",
+        "intro": "Applies the :meth:`~Table.{op}` table operation to all constituent tables of the underlying\n"
+        "partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of\n"
+        "its underlying partitioned table. On each constituent table, :meth:`~Table.{op}` works as described below.",
+        "right_note": "When the other table is a PartitionedTableProxy, the :meth:`~Table.{op}` table operation is\n"
+        "applied to the matching pairs of constituent tables from both underlying partitioned tables. When their\n"
+        "keys differ, the op may raise an error. See ``require_matching_keys`` in :meth:`~PartitionedTable.proxy`.",
     }
 
     def _wrap_result(self, j_obj: jpy.JType) -> PartitionedTableProxy:
@@ -3840,6 +3846,12 @@ class PartitionedTableProxy(_TableOperations["PartitionedTableProxy"]):
     def _extra_lock_ctx(
         self, *others: Table | PartitionedTableProxy
     ) -> contextlib.AbstractContextManager:
+        """Returns the update graph lock context when this proxy or any other table is refreshing.
+
+        Java requires the lock for an op whose other table is a refreshing PartitionedTableProxy, such as agg_by with
+        a refreshing initial_groups, even when this proxy is static. Without it, the op fails with "May not initiate
+        serial table operations". The proxy's other ops lock too, which is more than Java requires.
+        """
         return auto_locking_ctx(self, *others)
 
     def _make_op_error(self, e: Exception, op: str) -> DHError:

@@ -160,6 +160,46 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             )
             self.assertEqual(total_original, total_in + total_not_in)
 
+        with self.subTest("proxy filter table"):
+            # The sanity check rejects an "a" value found under more than one key, which the test data has.
+            pt_proxy = self.partitioned_table.proxy(sanity_check_joins=False)
+
+            def total_size(proxy: PartitionedTableProxy) -> int:
+                return sum(ct.size for ct in proxy.target.constituent_tables)
+
+            def check(
+                filter_table: Table, cols: list[str], match_cols: list[str]
+            ) -> None:
+                filter_proxy = filter_table.partition_by(by=["c"]).proxy(
+                    sanity_check_joins=False
+                )
+                self.assertEqual(
+                    self.test_table.where_in(filter_table, cols=match_cols).size,
+                    total_size(pt_proxy.where_in(filter_proxy, cols=cols)),
+                )
+                self.assertEqual(
+                    self.test_table.where_not_in(filter_table, cols=match_cols).size,
+                    total_size(pt_proxy.where_not_in(filter_proxy, cols=cols)),
+                )
+
+            # On the key column, the whole filter table applies. unique_table lacks some keys, so some partitions
+            # go.
+            self.assertLess(
+                unique_table.select_distinct(formulas=["c"]).size,
+                self.test_table.select_distinct(formulas=["c"]).size,
+            )
+            with self.subTest(cols=["c"]):
+                check(unique_table, ["c"], ["c"])
+
+            # On another column, each constituent is filtered by the filter constituent with the same key, which is
+            # the same as also matching on the key column. The filter proxy must have every key, so add each key with
+            # an "a" value no row has.
+            with self.subTest(cols=["a"]):
+                every_key = self.test_table.select_distinct(formulas=["c"]).view(
+                    ["a = -1", "c"]
+                )
+                check(merge([unique_table, every_key]), ["a"], ["c", "a"])
+
     def test_USV(self):
         ops = [
             PartitionedTableProxy.update,

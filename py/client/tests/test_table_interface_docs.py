@@ -133,6 +133,11 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
             "Intro.\n\n    Summary.\n\n    Returns:\n        x\n    ",
             fill_doc(template, {"returns": "x", "raises": "", "intro": "Intro."}),
         )
+        # The later lines of an intro take the docstring's indent, so getdoc strips it evenly.
+        self.assertEqual(
+            "Intro\n    more.\n\n    Summary.\n\n    Returns:\n        x\n    ",
+            fill_doc(template, {"returns": "x", "raises": "", "intro": "Intro\nmore."}),
+        )
         # A one-line docstring has no indent to copy.
         self.assertEqual(
             "Intro.\n\nReturns x.",

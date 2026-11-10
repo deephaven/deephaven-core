@@ -29,6 +29,8 @@ RIGHT_PARAMS: dict[str, str] = {
     "raj": "table",
     "range_join": "table",
     "snapshot_when": "trigger_table",
+    "where_in": "filter_table",
+    "where_not_in": "filter_table",
 }
 
 # A leftover placeholder, such as {returns}. It does not match the {...} of a dict or set literal in an example,
@@ -130,17 +132,6 @@ class TableOperationsDocsTestCase(BaseTestCase):
                     Table | PartitionedTableProxy,
                     get_type_hints(PartitionedTableProxy.__dict__[name])[param],
                 )
-
-    def test_plain_class_hints_stay_plain(self) -> None:
-        for cls in (Table, PartitionedTableProxy):
-            for name in ("where_in", "where_not_in"):
-                with self.subTest(cls=cls.__name__, op=name):
-                    self.assertEqual(
-                        "Table",
-                        inspect.signature(vars(cls)[name])
-                        .parameters["filter_table"]
-                        .annotation,
-                    )
 
     def test_generic_hook_runs(self) -> None:
         # Generic's __init_subclass__ comes after JObjectWrapper's in the MRO. It runs only when JObjectWrapper's

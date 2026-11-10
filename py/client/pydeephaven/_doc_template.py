@@ -75,9 +75,9 @@ def fill_doc(doc: str, doc_vars: dict[str, str], op_name: str = "") -> str:
 
     Args:
         doc (str): the docstring template
-        doc_vars (dict[str, str]): the values. A non-empty ``intro`` becomes the first paragraph. Every other key
-            fills its ``{key}`` placeholder. A line that holds only the placeholder takes the value's lines at that
-            line's indent, and an empty value removes that line.
+        doc_vars (dict[str, str]): the values. A non-empty ``intro`` becomes the first paragraph, and may hold several
+            lines. Every other key fills its ``{key}`` placeholder. A line that holds only the placeholder takes the
+            value's lines at that line's indent, and an empty value removes that line.
         op_name (str): the op's name, which fills ``{op}`` in the docstring and in the values; defaults to an empty
             string, meaning ``{op}`` is left as is
 
@@ -100,6 +100,8 @@ def fill_doc(doc: str, doc_vars: dict[str, str], op_name: str = "") -> str:
             ),
             default=0,
         )
+        # An intro of several lines takes the same indent on its later lines, for the same reason.
+        intro = intro.replace("\n", "\n" + " " * indent)
         doc = f"{intro}\n\n{' ' * indent}{doc}"
     return doc.replace("{op}", op_name) if op_name else doc
 
