@@ -127,18 +127,21 @@ There's a lot going on in this file. Here's what it all means:
 The `docker-compose.yml` file in the root directory tells Docker to build images using the Dockerfile found in the `docker/deephaven` directory. So, create that filepath, and create a `Dockerfile`. It should look like this:
 
 ```dockerfile
+ARG VERSION=42.8
+
 FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
 RUN ./pack-plugins.sh @deephaven/js-plugin-auth-keycloak
 
-FROM ghcr.io/deephaven/server-slim:42.8
-ADD https://repo1.maven.org/maven2/io/deephaven/deephaven-oidc-authentication-provider/42.8/deephaven-oidc-authentication-provider-42.8.jar /apps/libs/
+FROM ghcr.io/deephaven/server-slim:${VERSION}
+ARG VERSION
+ADD https://repo1.maven.org/maven2/io/deephaven/deephaven-oidc-authentication-provider/${VERSION}/deephaven-oidc-authentication-provider-${VERSION}.jar /apps/libs/
 COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 ```
 
-This Dockerfile packages the Keycloak authentication JS plugin, builds on the Deephaven 42.8 server image, and adds the [Deephaven OIDC JAR file](https://repo1.maven.org/maven2/io/deephaven/deephaven-oidc-authentication-provider/42.8/deephaven-oidc-authentication-provider-42.8.jar) to the `/apps/libs` directory within the Deephaven Docker container.
+This Dockerfile packages the Keycloak authentication JS plugin, builds on the Deephaven server image, and adds the matching [Deephaven OIDC JAR file](https://repo1.maven.org/maven2/io/deephaven/deephaven-oidc-authentication-provider/) to the `/apps/libs` directory within the Deephaven Docker container. To use a different Deephaven release, pass it when building, for example `docker compose build --build-arg VERSION=42.8`. `VERSION` must be a release number such as `42.8`; Maven Central has no `latest` version of the JAR.
 
 > [!IMPORTANT]
-> The Deephaven version (42.8 in the Dockerfile above) _must_ be consistent between the server image and JAR file. Inconsistencies between them will cause errors.
+> The server image and JAR file _must_ use the same Deephaven version. Inconsistencies between them will cause errors. The `VERSION` argument sets both.
 
 ## Keycloak
 
