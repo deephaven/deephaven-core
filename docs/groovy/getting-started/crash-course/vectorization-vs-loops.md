@@ -193,6 +193,6 @@ tables = [:]
 ## Next steps
 
 - Continue to the next chapter, [Real-time plots](./plots.md), to visualize static and ticking tables.
-- Read [Think like a ninja](../../conceptual/ninja.md#looping-dont-do-it) for more examples.
+- Read [Think like a Deephaven ninja](../../conceptual/ninja.md#replace-loops-with-table-operations) for more examples.
 - Read [Vectorization and the recipe paradigm](../../conceptual/vectorization-and-recipes.md) for technical details.
 - See [rolling aggregations with `updateBy`](../../how-to-guides/rolling-aggregations.md) for more recipes.
