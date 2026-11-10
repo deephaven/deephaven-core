@@ -12,7 +12,7 @@ Storage systems often divide tables into multiple regions. For instance, multipl
 
 Predicate pushdown enhances row elimination by leveraging these underlying data structures. For example, match and range filters may use storage file metadata (such as min/max statistics) to eliminate entire row groups or files. Consequently, the engine avoids loading unnecessary data from storage — a massive advantage for large datasets in formats like Parquet and Iceberg. Although the engine generally processes filters sequentially, the pushdown mechanism may reorder them to maximize efficiency based on the capabilities of the data sources. Therefore, you cannot guarantee the final execution order of pushed-down filters. To enforce a specific order, use [barriers and serial execution](../conceptual/query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where).
 
-Pushdown works on ticking data too. Each time a refreshing table updates, the engine filters the rows added in that update cycle and the modified rows whose filtered columns changed. Pushdown applies to those rows just as it does to a static table.
+Pushdown works on ticking data too. Each time a refreshing table updates, the engine filters the rows added in that update cycle and the modified rows whose filtered columns changed, and it still pushes those filters down to the table's data sources. Table-level [data indexes](#deephaven-data-indexes) are the exception: the engine uses them only when [`where`](../reference/table-operations/filter/where.md) first filters the table, not on later updates.
 
 ## Filter priority
 
