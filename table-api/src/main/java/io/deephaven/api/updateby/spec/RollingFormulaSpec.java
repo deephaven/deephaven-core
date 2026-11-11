@@ -27,6 +27,7 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
      * this case the formula should only contain the expression in terms of the token. (e.g. {@code sum(x)} where x is
      * the {@link #paramToken()}). NOTE: This form is deprecated and will be removed in a future release.
      */
+    @Value.Parameter
     public abstract String formula();
 
     /**
