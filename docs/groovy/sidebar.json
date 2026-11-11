@@ -1287,6 +1287,10 @@
                 ]
               },
               {
+                "label": "html",
+                "path": "reference/data-import-export/HTML/html.md"
+              },
+              {
                 "label": "Iceberg",
                 "items": [
                   {
