@@ -23,7 +23,7 @@ In `sourceMeta`, both columns are `java.lang.Boolean`, the type Deephaven uses f
 
 Numeric literals in DQL can be integers or floating-point numbers. By default, the engine treats an integer literal as a 32-bit signed integer ([Java primitive](./data-types.md#primitive-types) `int`) and a floating-point literal as a 64-bit floating-point number ([Java primitive](./data-types.md#primitive-types) `double`).
 
-Java rejects an integer literal that is too large for an `int`. The engine makes it a `long` instead. For a hexadecimal or binary literal, the engine compares the unsigned value with the `int` maximum, so `0xFFFFFFFF` is the `long` 4294967295, not the `int` -1 that Java produces.
+Java rejects an integer literal that is too large for an `int`. The engine makes it a `long` instead. For a hexadecimal, octal, or binary literal, the engine compares the unsigned value with the `int` maximum, so `0xFFFFFFFF` is the `long` 4294967295, not the `int` -1 that Java produces.
 
 You can specify the type of a numeric literal by appending a suffix to the number:
 

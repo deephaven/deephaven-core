@@ -2288,6 +2288,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // If a literal has 32 bits, the 32nd (i.e. MSB) is *not* taken as the sign bit!
             // This follows from the fact that Integer.parseInt(str, 2) will only parse an 'str' up to 31 chars long.
             longValue = Long.parseLong(value.substring(2), 2);
+        } else if (value.length() > 1 && value.charAt(0) == '0') { // octal literal
+            longValue = Long.parseLong(value.substring(1), 8);
         } else { // regular numeric literal
             longValue = Long.parseLong(value);
         }

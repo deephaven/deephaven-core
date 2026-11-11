@@ -418,6 +418,15 @@ public class TestQueryLanguageParser {
         expression = "0b11111111000000001111111100000000"; // 32 bits -- must be a long
         resultExpression = "0b11111111000000001111111100000000L";
         check(expression, resultExpression, long.class, new String[] {});
+
+        // octal 03000000000 is 402653184, which fits in an int even though decimal 3000000000 does not
+        expression = "03000000000";
+        resultExpression = "03000000000";
+        check(expression, resultExpression, int.class, new String[] {});
+
+        expression = "040000000000"; // 2^32
+        resultExpression = "040000000000L";
+        check(expression, resultExpression, long.class, new String[] {});
     }
 
     @Test
