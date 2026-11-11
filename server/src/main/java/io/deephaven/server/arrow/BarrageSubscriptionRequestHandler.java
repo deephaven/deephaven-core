@@ -184,9 +184,7 @@ public class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExch
         }
 
         if (closed) {
-            // Closing the subscription can complete the response stream, so it is not done under this monitor. The
-            // subscription may already be writing; if that write fails, the cancel closes this handler on the writing
-            // thread while it holds the stream's lock, and close() needs this monitor.
+            // not under this monitor: closing may write, and a failed write's cancel needs this monitor
             newSubscriptionObject.close();
         }
     }
