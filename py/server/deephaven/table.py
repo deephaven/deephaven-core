@@ -3784,7 +3784,7 @@ class PartitionedTable(JObjectWrapper):
             ) from e
 
     def proxy(
-        self, require_matching_keys: bool = True, sanity_check_joins: bool = True
+        self, require_matching_keys: bool = True, sanity_check_joins: bool = False
     ) -> PartitionedTableProxy:
         """Makes a proxy that allows table operations to be applied to the constituent tables of this
         PartitionedTable.
@@ -3795,8 +3795,12 @@ class PartitionedTable(JObjectWrapper):
                 :meth:`~PartitionedTable.partitioned_transform`, default is True
             sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs
                 in exactly one constituent table of the underlying partitioned table. If the other table argument is
-                also a
-                PartitionedTableProxy, its constituents will also be subjected to this constraint.
+                also a PartitionedTableProxy, its constituents will also be subjected to this constraint. The check
+                also applies to :meth:`~PartitionedTableProxy.where_in` and :meth:`~PartitionedTableProxy.where_not_in`.
+                Default is False, meaning the check is skipped. The check adds work and limits the parallelism of
+                proxied joins, because it examines every row of every constituent and updates a shared data structure.
+                It can catch data errors that would otherwise produce results that differ from the same operation on
+                unpartitioned tables. Set it to True to run the check.
         """
         return PartitionedTableProxy(
             j_pt_proxy=self.j_partitioned_table.proxy(
@@ -3817,7 +3821,8 @@ class PartitionedTableProxy(_TableOperations["PartitionedTableProxy"]):
             :meth:`~PartitionedTable.partitioned_transform`, default is True
         sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs
             in exactly one constituent table of the underlying partitioned table. If the other table argument is also a
-            PartitionedTableProxy, its constituents will also be subjected to this constraint.
+            PartitionedTableProxy, its constituents will also be subjected to this constraint. The check also applies
+            to :meth:`~PartitionedTableProxy.where_in` and :meth:`~PartitionedTableProxy.where_not_in`.
     """
 
     j_object_type = _JPartitionedTableProxy
