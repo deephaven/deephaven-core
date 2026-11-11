@@ -7,6 +7,7 @@ import elemental2.core.ReadonlyArray;
 import io.deephaven.web.client.api.Column.ColumnOrName;
 import io.deephaven.web.client.api.JsTable.MatchPairUnion;
 import io.deephaven.web.client.api.Sort;
+import io.deephaven.web.client.api.agg.Unique.NonUniqueSentinelUnion;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -267,18 +268,21 @@ public abstract sealed class Aggregation
 
     /**
      * Creates a Unique aggregation, returning the single unique value within each group. If there is more than one
-     * distinct value, the result is null (or a specified sentinel).
+     * distinct value, the result is {@code nonUniqueSentinel}.
      *
      * @param includeNulls whether null is treated as a value for determining uniqueness. Defaults to {@code false}.
      * @param columns the column(s) to aggregate
+     * @param nonUniqueSentinel the value for a group without a single unique value. Defaults to {@code null}.
      * @return an aggregation
      */
     @JsMethod
     public static Unique AggUnique(@JsOptional @JsNullable Boolean includeNulls,
-            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns) {
+            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns,
+            @JsOptional @JsNullable NonUniqueSentinelUnion nonUniqueSentinel) {
         Unique agg = new Unique();
         agg.includeNulls = includeNulls;
         agg.columns = columns;
+        agg.nonUniqueSentinel = nonUniqueSentinel;
         return agg;
     }
 

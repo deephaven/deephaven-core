@@ -15,6 +15,9 @@ import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.agg.AggByOptions;
+import io.deephaven.web.client.api.agg.Aggregation;
+import io.deephaven.web.client.api.agg.Unique;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.api.subscription.TableSubscription;
@@ -173,6 +176,81 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                 resolved.close();
                                 return Promise.resolve(resolved);
                             });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testUniqueWithoutSentinelGivesNull() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_051);
+                    // Two groups, each with several distinct Y values, so neither has a unique value
+                    AggByOptions aggBy = new AggByOptions();
+                    aggBy.aggregations = arr(Aggregation.AggUnique(null, arr("Y"), null));
+                    aggBy.groupByColumns = arr("G");
+                    JsPendingTable<JsResolvedTable> unique;
+                    try {
+                        unique = session.getTable("source", null).update(arr("G = i % 2")).aggBy(aggBy);
+                    } catch (RuntimeException e) {
+                        return Promise.reject("a Unique aggregation with no sentinel threw: " + e);
+                    }
+                    return unique.resolve().then(table -> {
+                        DataOptions.SnapshotOptions opts = new DataOptions.SnapshotOptions();
+                        opts.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                        opts.columns = Js.cast(table.getColumns());
+                        return table.createSnapshot(opts).then(data -> {
+                            assertNull(data.getData(0, table.findColumn("Y")));
+                            assertNull(data.getData(1, table.findColumn("Y")));
+                            table.close();
+                            return Promise.resolve(table);
+                        });
+                    }, err -> Promise.reject("a Unique aggregation with no sentinel rejected: " + err));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testUniqueWithSentinelGivesIt() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_052);
+                    Unique.IntSentinel sentinel = new Unique.IntSentinel();
+                    sentinel.value = -1;
+                    AggByOptions aggBy = new AggByOptions();
+                    aggBy.aggregations = arr(Aggregation.AggUnique(null, arr("Y"), Js.uncheckedCast(sentinel)));
+                    aggBy.groupByColumns = arr("G");
+                    return session.getTable("source", null).update(arr("G = i % 2")).aggBy(aggBy).resolve()
+                            .then(table -> {
+                                DataOptions.SnapshotOptions opts = new DataOptions.SnapshotOptions();
+                                opts.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                                opts.columns = Js.cast(table.getColumns());
+                                return table.createSnapshot(opts).then(data -> {
+                                    assertEquals(-1, data.getData(0, table.findColumn("Y")).asInt());
+                                    assertEquals(-1, data.getData(1, table.findColumn("Y")).asInt());
+                                    table.close();
+                                    return Promise.resolve(table);
+                                });
+                            }, err -> Promise.reject("a Unique aggregation with an int sentinel rejected: " + err));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testUniqueSentinelOutOfRangeThrows() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_053);
+                    Unique.ByteSentinel sentinel = new Unique.ByteSentinel();
+                    sentinel.value = 200;
+                    AggByOptions aggBy = new AggByOptions();
+                    aggBy.aggregations = arr(Aggregation.AggUnique(null, arr("Y"), Js.uncheckedCast(sentinel)));
+                    aggBy.groupByColumns = arr("G");
+                    JsPendingTable<JsResolvedTable> source = session.getTable("source", null).update(arr("G = i % 2"));
+                    try {
+                        source.aggBy(aggBy);
+                        fail("a byte sentinel of 200 did not throw");
+                    } catch (IllegalArgumentException expected) {
+                        assertTrue(expected.getMessage(), expected.getMessage().contains("byte"));
+                    }
+                    return Promise.resolve(session);
                 })
                 .then(this::finish).catch_(this::report);
     }

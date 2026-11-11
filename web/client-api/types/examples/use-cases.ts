@@ -42,6 +42,19 @@ async function joins() {
     exact.close();
 }
 
+// py: t.agg_by([agg.unique(["X"], non_unique_sentinel=-1)], by=["Key"])
+async function uniqueWithSentinel() {
+    const t = session.emptyTable(6).update(["Key = i % 3", "X = i", "L = (long) i"]);
+    const unique = await t.aggBy({
+        aggregations: [
+            dh.agg.Aggregation.AggUnique(false, ["X"], { type: "int", value: -1 }),
+            { type: "Unique", columns: ["L"], nonUniqueSentinel: { type: "long", value: dh.LongWrapper.ofString("-1") } },
+        ],
+        groupByColumns: ["Key"],
+    });
+    unique.close();
+}
+
 // py: t.agg_by([agg.sum_(["SumX = X"]), agg.count_("N")], by=["Key"])
 async function aggregate() {
     const t = session.timeTable(1e9).update(["Key = i % 3", "X = i"]);

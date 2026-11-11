@@ -293,8 +293,8 @@ public interface AggAllByUnion {
             case "Unique": {
                 Unique unique = asUnique();
                 spec.setUnique(AggSpec.AggSpecUnique.newBuilder()
-                        .setIncludeNulls(unique.includeNulls != null && unique.includeNulls));
-                // TODO support null sentinels
+                        .setIncludeNulls(unique.includeNulls != null && unique.includeNulls)
+                        .setNonUniqueSentinel(Unique.toProto(unique.nonUniqueSentinel)));
                 break;
             }
             case "Var":

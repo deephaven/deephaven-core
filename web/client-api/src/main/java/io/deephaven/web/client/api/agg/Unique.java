@@ -3,13 +3,23 @@
 //
 package io.deephaven.web.client.api.agg;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsLiteral;
+import com.vertispan.tsdefs.annotations.TsUnion;
+import com.vertispan.tsdefs.annotations.TsUnionMember;
+import io.deephaven.proto.backplane.grpc.AggSpec;
+import io.deephaven.proto.backplane.grpc.NullValue;
+import io.deephaven.web.client.api.LongWrapper;
 import jsinterop.annotations.JsNullable;
+import jsinterop.annotations.JsOverlay;
+import jsinterop.annotations.JsPackage;
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 
 /**
  * Computes the single unique value within each aggregation group. If all values in a group are null, or if there is
- * more than one distinct value, the result is null (or a non-unique sentinel value, if supported).
+ * more than one distinct value, the result is {@link #nonUniqueSentinel}.
  */
 @JsType(namespace = "dh.agg")
 public final class Unique extends ColumnAggregation {
@@ -23,5 +33,239 @@ public final class Unique extends ColumnAggregation {
      */
     @JsNullable
     public Boolean includeNulls;
-    // TODO non-unique sentinel values
+
+    /**
+     * The value to output for a group without a single unique value. Its type must suit the aggregated columns, for
+     * example an {@code "int"} sentinel for an int column. Defaults to {@code null}.
+     */
+    @JsNullable
+    public NonUniqueSentinelUnion nonUniqueSentinel;
+
+    /**
+     * The proto form of {@code sentinel}, or of the {@code null} sentinel if it is not set.
+     */
+    static AggSpec.AggSpecNonUniqueSentinel toProto(NonUniqueSentinelUnion sentinel) {
+        if (sentinel == null) {
+            return AggSpec.AggSpecNonUniqueSentinel.newBuilder().setNullValue(NullValue.NULL_VALUE).build();
+        }
+        return sentinel.toProto();
+    }
+
+    @TsUnion
+    @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "?")
+    public interface NonUniqueSentinelUnion {
+
+        @TsUnionMember
+        @JsOverlay
+        default NullSentinel asNullSentinel() {
+            return Js.uncheckedCast(this);
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default StringSentinel asStringSentinel() {
+            return Js.uncheckedCast(this);
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default IntSentinel asIntSentinel() {
+            return Js.uncheckedCast(this);
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default LongSentinel asLongSentinel() {
+            return Js.uncheckedCast(this);
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default FloatSentinel asFloatSentinel() {
+            return Js.uncheckedCast(this);
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default DoubleSentinel asDoubleSentinel() {
+            return Js.uncheckedCast(this);
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default BooleanSentinel asBooleanSentinel() {
+            return Js.uncheckedCast(this);
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default ByteSentinel asByteSentinel() {
+            return Js.uncheckedCast(this);
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default ShortSentinel asShortSentinel() {
+            return Js.uncheckedCast(this);
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default CharSentinel asCharSentinel() {
+            return Js.uncheckedCast(this);
+        }
+
+        /**
+         * Helper to read the type discriminant from any sentinel variant. Not visible from JS/TS as part of this union,
+         * but allows access to the {@code type} field that each sentinel type has.
+         */
+        @JsProperty
+        String getType();
+
+        @JsOverlay
+        default AggSpec.AggSpecNonUniqueSentinel toProto() {
+            AggSpec.AggSpecNonUniqueSentinel.Builder builder = AggSpec.AggSpecNonUniqueSentinel.newBuilder();
+            switch (getType()) {
+                case "null":
+                    builder.setNullValue(NullValue.NULL_VALUE);
+                    break;
+                case "string":
+                    builder.setStringValue(asStringSentinel().value);
+                    break;
+                case "int":
+                    builder.setIntValue(whole("int", asIntSentinel().value, Integer.MIN_VALUE, Integer.MAX_VALUE));
+                    break;
+                case "long":
+                    builder.setLongValue(asLongSentinel().value.getWrapped());
+                    break;
+                case "float":
+                    builder.setFloatValue((float) asFloatSentinel().value);
+                    break;
+                case "double":
+                    builder.setDoubleValue(asDoubleSentinel().value);
+                    break;
+                case "boolean":
+                    builder.setBoolValue(asBooleanSentinel().value);
+                    break;
+                case "byte":
+                    builder.setByteValue(whole("byte", asByteSentinel().value, Byte.MIN_VALUE, Byte.MAX_VALUE));
+                    break;
+                case "short":
+                    builder.setShortValue(whole("short", asShortSentinel().value, Short.MIN_VALUE, Short.MAX_VALUE));
+                    break;
+                case "char": {
+                    String value = asCharSentinel().value;
+                    if (value == null || value.length() != 1) {
+                        throw new IllegalArgumentException(
+                                "A char non-unique sentinel must be a single character, not " + value);
+                    }
+                    builder.setCharValue(value.charAt(0));
+                    break;
+                }
+                default:
+                    throw new IllegalArgumentException("Unknown non-unique sentinel type " + getType());
+            }
+            return builder.build();
+        }
+
+        /** {@code value} as an int, if it is a whole number within [{@code min}, {@code max}]. */
+        @JsOverlay
+        static int whole(String type, double value, int min, int max) {
+            if (value != Math.floor(value) || value < min || value > max) {
+                throw new IllegalArgumentException(
+                        "A " + type + " non-unique sentinel must be a whole number in [" + min + ", " + max + "], not "
+                                + value);
+            }
+            return (int) value;
+        }
+    }
+
+    /** Outputs {@code null} for a group without a single unique value. */
+    @TsInterface
+    @JsType(namespace = "dh.agg")
+    public static final class NullSentinel {
+        @TsLiteral
+        public final String type = "null";
+    }
+
+    /** Outputs {@code value} for a group without a single unique value, for a String column. */
+    @TsInterface
+    @JsType(namespace = "dh.agg")
+    public static final class StringSentinel {
+        @TsLiteral
+        public final String type = "string";
+        public String value;
+    }
+
+    /** Outputs {@code value}, a whole number within the int range, for an int column. */
+    @TsInterface
+    @JsType(namespace = "dh.agg")
+    public static final class IntSentinel {
+        @TsLiteral
+        public final String type = "int";
+        public double value;
+    }
+
+    /** Outputs {@code value} for a long column. */
+    @TsInterface
+    @JsType(namespace = "dh.agg")
+    public static final class LongSentinel {
+        @TsLiteral
+        public final String type = "long";
+        public LongWrapper value;
+    }
+
+    /** Outputs {@code value} for a float column. */
+    @TsInterface
+    @JsType(namespace = "dh.agg")
+    public static final class FloatSentinel {
+        @TsLiteral
+        public final String type = "float";
+        public double value;
+    }
+
+    /** Outputs {@code value} for a double column. */
+    @TsInterface
+    @JsType(namespace = "dh.agg")
+    public static final class DoubleSentinel {
+        @TsLiteral
+        public final String type = "double";
+        public double value;
+    }
+
+    /** Outputs {@code value} for a boolean column. */
+    @TsInterface
+    @JsType(namespace = "dh.agg")
+    public static final class BooleanSentinel {
+        @TsLiteral
+        public final String type = "boolean";
+        public boolean value;
+    }
+
+    /** Outputs {@code value}, a whole number within the byte range, for a byte column. */
+    @TsInterface
+    @JsType(namespace = "dh.agg")
+    public static final class ByteSentinel {
+        @TsLiteral
+        public final String type = "byte";
+        public double value;
+    }
+
+    /** Outputs {@code value}, a whole number within the short range, for a short column. */
+    @TsInterface
+    @JsType(namespace = "dh.agg")
+    public static final class ShortSentinel {
+        @TsLiteral
+        public final String type = "short";
+        public double value;
+    }
+
+    /** Outputs {@code value}, a single-character string, for a char column. */
+    @TsInterface
+    @JsType(namespace = "dh.agg")
+    public static final class CharSentinel {
+        @TsLiteral
+        public final String type = "char";
+        public String value;
+    }
 }
