@@ -510,18 +510,27 @@ class ArrowTestCase(BaseTestCase):
         self.assertIn("deephaven.arrow.is_deephaven_compatible", str(cm.exception))
 
     def test_is_deephaven_compatible(self) -> None:
-        # Exact, parameterized, and encoded types whose values are supported pass. Others fail.
+        # Exact, parameterized, and encoded types pass when their values and elements are supported.
         string_dict = pa.dictionary(pa.int32(), pa.string())
         supported = [
             pa.int64(),
             pa.decimal128(5, 2),
             string_dict,
             pa.run_end_encoded(pa.int32(), string_dict),
+            pa.list_(pa.int64()),
+            pa.list_(string_dict),
+            pa.map_(pa.string(), pa.decimal128(5, 2)),
         ]
         unsupported = [
             pa.large_string(),
             pa.dictionary(pa.int32(), pa.large_string()),
             pa.struct([pa.field("a", pa.int64())]),
+            pa.list_(pa.large_string()),
+            pa.list_(pa.struct([pa.field("a", pa.int64())])),
+            pa.map_(pa.string(), pa.large_string()),
+            pa.dense_union(
+                [pa.field("s", pa.string()), pa.field("l", pa.large_string())]
+            ),
         ]
 
         for data_type in supported:

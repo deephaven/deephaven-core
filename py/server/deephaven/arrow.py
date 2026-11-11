@@ -82,6 +82,17 @@ SUPPORTED_ARROW_TYPES = [k for k, v in _ARROW_DH_DATA_TYPE_MAPPING.items() if v]
 SUPPORTED_ARROW_ENCODINGS = (pa.DictionaryType, pa.RunEndEncodedType)
 
 
+def _element_types(arrow_type: pa.DataType) -> list[pa.DataType]:
+    """Returns the element types of a list, map, or union type, or an empty list for any other type."""
+    if isinstance(arrow_type, (pa.ListType, pa.ListViewType, pa.FixedSizeListType)):
+        return [arrow_type.value_type]
+    if isinstance(arrow_type, pa.MapType):
+        return [arrow_type.key_type, arrow_type.item_type]
+    if isinstance(arrow_type, pa.UnionType):
+        return [arrow_type.field(i).type for i in range(arrow_type.num_fields)]
+    return []
+
+
 def _map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
     """Maps a pyarrow type to the corresponding Deephaven column data type."""
     # Encoded columns map to the type of their values. The error names arrow_type, the type in the user's schema.
@@ -92,8 +103,11 @@ def _map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(value_type)
 
     if not dh_type:
-        if type(value_type) in _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES:
-            # For parameterizable types let the server handle the mapping
+        # For parameterizable types let the server handle the mapping. Check their element types here, so an
+        # unsupported one fails with the error below instead of in the server.
+        if type(value_type) in _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES and all(
+            is_deephaven_compatible(t) for t in _element_types(value_type)
+        ):
             return {}
 
         raise DHError(
