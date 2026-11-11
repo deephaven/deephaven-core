@@ -88,13 +88,13 @@ Unsafe usage throws an error like this:
 IllegalArgumentException: Formula '<formula>' uses i, ii, k, or column array variables,
 and is not safe to refresh. Note that some usages, such as on an append-only table are safe.
 To allow unsafe refreshing formulas, set the system property
-io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas.
+AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true.
 ```
 
 > [!WARNING]
 > Turning off this check lets these formulas run on any [refreshing table](../conceptual/table-types.md), and their results can be wrong after rows are added, removed, modified, or shifted.
 >
-> To turn it off anyway, set `AbstractFormulaColumn.allowUnsafeRefreshingFormulas` to `true`, for example with the JVM argument `-DAbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`. The fully qualified name in the error message has no effect.
+> To turn it off anyway, set `AbstractFormulaColumn.allowUnsafeRefreshingFormulas` to `true`, for example with the JVM argument `-DAbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`.
 
 ## Alternatives for refreshing tables
 
