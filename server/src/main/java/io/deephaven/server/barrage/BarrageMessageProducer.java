@@ -2410,8 +2410,8 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     /**
      * Records that {@code subscription} is about to be sent an error, so that it is sent only one: a write failure, a
-     * source failure and a rejected request can each try to send one. Callers hold the propagation job's run lock, so
-     * no two of them run at once for a subscription.
+     * source failure and a rejected request can each try to send one. Callers run inside a propagation run, either on
+     * the thread holding the run lock or on a helper it waits for, so no two of them run at once for a subscription.
      *
      * @param subscription the subscription whose client is to be sent an error
      * @return whether the caller should send its error, which is false if the client was already sent one
