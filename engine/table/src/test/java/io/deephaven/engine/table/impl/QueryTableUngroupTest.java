@@ -848,9 +848,15 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
 
     @Test
     public void testUngroupLargeGroupsRebase() {
-        // Growing a group from more than 2^31 to more than 2^32 elements rebases the result from 32 to 33 bits.
-        final long initialSize = (1L << 31) + 3;
-        final long grownSize = (1L << 32) + 3;
+        // A slot of 2^31 elements is the largest whose size is a positive int; a slot of 2^32 elements is the
+        // smallest whose size does not fit in an int at all. Both grow to a group that needs 33 bits.
+        checkUngroupLargeGroupRebase((1L << 30) + 1, 31);
+        checkUngroupLargeGroupRebase((1L << 31) + 1, 32);
+    }
+
+    private void checkUngroupLargeGroupRebase(final long initialSize, final int initialBase) {
+        final long grownSize = (1L << 32) + 1;
+        final int grownBase = 33;
         final Table values = testTable(RowSetFactory.flat(grownSize).toTracking()).view("L = k");
         final ColumnSource<Long> valueSource = values.getColumnSource("L", long.class);
 
@@ -859,8 +865,14 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                         new LongVectorColumnWrapper(valueSource, RowSetFactory.flat(initialSize)),
                         new LongVectorDirect(7)));
         final Table ungrouped = grouped.ungroup();
+        final ColumnSource<Long> cs = ungrouped.getColumnSource("W", long.class);
         assertEquals(initialSize + 1, ungrouped.size());
-        assertEquals(RowSetFactory.fromRange(0, initialSize - 1).union(i(1L << 32)), ungrouped.getRowSet());
+        assertEquals(RowSetFactory.fromRange(0, initialSize - 1).union(i(1L << initialBase)),
+                ungrouped.getRowSet());
+        for (final long offset : new long[] {0, 1, initialSize / 2, initialSize - 1}) {
+            assertEquals("initial offset " + offset, offset, cs.getLong(offset));
+        }
+        assertEquals(7L, cs.getLong(1L << initialBase));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -870,13 +882,12 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         });
 
         assertEquals(grownSize + 1, ungrouped.size());
-        assertEquals(RowSetFactory.fromRange(0, grownSize - 1).union(i(1L << 33)), ungrouped.getRowSet());
-        final ColumnSource<Long> cs = ungrouped.getColumnSource("W", long.class);
-        for (final long offset : new long[] {0, 1, (1L << 31) - 1, 1L << 31, (1L << 31) + 2, 1L << 32,
-                grownSize - 1}) {
-            assertEquals("offset " + offset, offset, cs.getLong(offset));
+        assertEquals(RowSetFactory.fromRange(0, grownSize - 1).union(i(1L << grownBase)), ungrouped.getRowSet());
+        for (final long offset : new long[] {0, 1, initialSize - 1, initialSize, (1L << 31) - 1, 1L << 31,
+                (1L << 31) + 2, 1L << 32, grownSize - 1}) {
+            assertEquals("grown offset " + offset, offset, cs.getLong(offset));
         }
-        assertEquals(7L, cs.getLong(1L << 33));
+        assertEquals(7L, cs.getLong(1L << grownBase));
     }
 
     @Test
