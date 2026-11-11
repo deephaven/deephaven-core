@@ -866,25 +866,44 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                         new LongVectorDirect(7)));
         final Table ungrouped = grouped.ungroup();
         final ColumnSource<Long> cs = ungrouped.getColumnSource("W", long.class);
+        final RowSet initialRowSet = RowSetFactory.fromRange(0, initialSize - 1).union(i(1L << initialBase));
+        final long[] initialOffsets = {0, 1, initialSize / 2, initialSize - 1};
         assertEquals(initialSize + 1, ungrouped.size());
-        assertEquals(RowSetFactory.fromRange(0, initialSize - 1).union(i(1L << initialBase)),
-                ungrouped.getRowSet());
-        for (final long offset : new long[] {0, 1, initialSize / 2, initialSize - 1}) {
+        assertEquals(initialRowSet, ungrouped.getRowSet());
+        for (final long offset : initialOffsets) {
             assertEquals("initial offset " + offset, offset, cs.getLong(offset));
         }
         assertEquals(7L, cs.getLong(1L << initialBase));
 
+        final RowSet grownRowSet = RowSetFactory.fromRange(0, grownSize - 1).union(i(1L << grownBase));
+        final long[] grownOffsets = {0, 1, initialSize - 1, initialSize, (1L << 31) - 1, 1L << 31,
+                (1L << 31) + 2, 1L << 32, grownSize - 1};
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(grouped, i(0), new ColumnHolder<>("W", LongVector.class, long.class, false,
                     new LongVectorColumnWrapper(valueSource, RowSetFactory.flat(grownSize))));
             grouped.notifyListeners(i(), i(), i(0));
+            updateGraph.flushAllNormalNotificationsForUnitTests();
+            assertTrue(ungrouped.satisfied(updateGraph.clock().currentStep()));
+
+            // Within the cycle, the previous row set and values are still those of the initial base.
+            assertEquals(initialRowSet, ungrouped.getRowSet().prev());
+            for (final long offset : initialOffsets) {
+                assertEquals("prev offset " + offset, offset, cs.getPrevLong(offset));
+                assertEquals("prev offset " + offset, Long.valueOf(offset), cs.getPrev(offset));
+            }
+            assertEquals(7L, cs.getPrevLong(1L << initialBase));
+
+            assertEquals(grownRowSet, ungrouped.getRowSet());
+            for (final long offset : grownOffsets) {
+                assertEquals("current offset " + offset, offset, cs.getLong(offset));
+            }
+            assertEquals(7L, cs.getLong(1L << grownBase));
         });
 
         assertEquals(grownSize + 1, ungrouped.size());
-        assertEquals(RowSetFactory.fromRange(0, grownSize - 1).union(i(1L << grownBase)), ungrouped.getRowSet());
-        for (final long offset : new long[] {0, 1, initialSize - 1, initialSize, (1L << 31) - 1, 1L << 31,
-                (1L << 31) + 2, 1L << 32, grownSize - 1}) {
+        assertEquals(grownRowSet, ungrouped.getRowSet());
+        for (final long offset : grownOffsets) {
             assertEquals("grown offset " + offset, offset, cs.getLong(offset));
         }
         assertEquals(7L, cs.getLong(1L << grownBase));
