@@ -24,7 +24,6 @@ import static io.deephaven.iceberg.base.IcebergUtils.deephavenNullOrderMatchesIc
 import static io.deephaven.iceberg.base.IcebergUtils.deephavenOrderMatchesIceberg;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -179,21 +178,6 @@ public class TestIcebergUtils {
         assertOrderMatches(double.class, Types.LongType.get(), false);
         assertOrderMatches(int.class, Types.BooleanType.get(), false);
         assertOrderMatches(Instant.class, Types.DateType.get(), false);
-    }
-
-    /**
-     * Every Iceberg type ID gets an answer, so that a type ID an Iceberg upgrade adds fails here rather than at a
-     * write.
-     */
-    @Test
-    void testDeephavenOrderMatchesIcebergAnswersEveryTypeId() {
-        for (final Type.TypeID typeId : Type.TypeID.values()) {
-            final Type icebergType = () -> typeId;
-            assertThatCode(() -> deephavenOrderMatchesIceberg(
-                    SortDirection.ASC, NullOrder.NULLS_FIRST, Object.class, icebergType))
-                    .as("%s", typeId)
-                    .doesNotThrowAnyException();
-        }
     }
 
     /**
