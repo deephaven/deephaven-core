@@ -355,7 +355,13 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
             doExchange.onData(this::onFlightData);
             doExchange.onEnd(this::onStreamEnd);
 
-            sendFirstSubscriptionRequest();
+            try {
+                sendFirstSubscriptionRequest();
+            } catch (NoSuchElementException e) {
+                // Names are only resolved now that the table has its columns; nothing else would report this
+                unknownColumn("No column named " + e.getMessage());
+                return;
+            }
             if (disconnected) {
                 disconnected = false;
                 fireEvent(JsTable.EVENT_RECONNECT);
@@ -391,6 +397,17 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
     }
 
     protected abstract void sendFirstSubscriptionRequest();
+
+    /**
+     * The first request named a column the table does not have. A full subscription cannot change its columns, so it
+     * fails and ends; the request is never sent.
+     */
+    protected void unknownColumn(String message) {
+        BiDiStream<Flight.FlightData, Flight.FlightData> stream = doExchange;
+        // Closed first, so the end of the canceled stream is not reported as a second failure
+        fail(message);
+        stream.cancel();
+    }
 
     protected void sendBarrageSubscriptionRequest(@Nullable RangeSet viewport,
             ReadonlyArray<Column.ColumnOrName> columns, Double updateIntervalMs, boolean isReverseViewport,

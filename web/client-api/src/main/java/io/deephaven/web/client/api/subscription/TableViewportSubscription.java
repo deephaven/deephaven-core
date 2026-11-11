@@ -162,6 +162,15 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         setInternalViewport(options);
     }
 
+    /**
+     * Reports the unknown column but stays open: a later {@code update} or {@code setViewport} with columns that exist
+     * sends the first request on the stream already open.
+     */
+    @Override
+    protected void unknownColumn(String message) {
+        failureHandled(message);
+    }
+
     @Override
     protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods, ShiftedRange[] shifted) {
         // viewport subscriptions are sometimes required to notify of size change events

@@ -180,6 +180,74 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testSubscriptionToUnknownColumnFails() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_054);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(resolved -> {
+                    DataOptions.SubscriptionOptions opts = new DataOptions.SubscriptionOptions();
+                    opts.columns = arr("Nope");
+                    TableSubscription subscription = resolved.createSubscription(opts);
+                    return this.<TableSubscription, Object>waitForEvent(subscription,
+                            TableSubscription.EVENT_REQUEST_FAILED,
+                            e -> assertTrue("requestfailed did not name the column: " + e.getDetail(),
+                                    String.valueOf(e.getDetail()).contains("Nope")),
+                            3_000)
+                            .then(ignore -> {
+                                // A full subscription's columns cannot change, so it ends
+                                assertTrue("a full subscription to an unknown column stayed open",
+                                        subscription.isClosed());
+                                resolved.close();
+                                return Promise.resolve(resolved);
+                            }, err -> Promise.reject(
+                                    "a subscription to an unknown column fired no requestfailed: " + err));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testViewportToUnknownColumnFailsThenRecovers() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(15_055);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(resolved -> {
+                    DataOptions.ViewportSubscriptionOptions opts = new DataOptions.ViewportSubscriptionOptions();
+                    opts.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 4));
+                    opts.columns = arr("Nope");
+                    TableViewportSubscription viewport = resolved.createViewportSubscription(opts);
+                    return this.<TableViewportSubscription, Object>waitForEvent(viewport,
+                            TableViewportSubscription.EVENT_REQUEST_FAILED,
+                            e -> assertTrue("requestfailed did not name the column: " + e.getDetail(),
+                                    String.valueOf(e.getDetail()).contains("Nope")),
+                            3_000)
+                            .then(ignore -> {
+                                // A viewport can be pointed at other columns, so it stays usable
+                                assertFalse("a viewport to an unknown column was closed", viewport.isClosed());
+                                DataOptions.ViewportSubscriptionOptions fixed =
+                                        new DataOptions.ViewportSubscriptionOptions();
+                                fixed.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 4));
+                                fixed.columns = arr("Y");
+                                viewport.update(fixed);
+                                return this.<TableViewportSubscription, AbstractTableSubscription.SubscriptionEventData>waitForEvent(
+                                        viewport, TableViewportSubscription.EVENT_UPDATED, e -> {
+                                            Column y = viewport.getColumns().getAt(0);
+                                            // Y = i * 2
+                                            assertEquals(4, e.getDetail().getData(2, y).asInt());
+                                        }, 5_055);
+                            }, err -> Promise.reject(
+                                    "a viewport to an unknown column fired no requestfailed: " + err))
+                            .then(ignore -> {
+                                viewport.close();
+                                resolved.close();
+                                return Promise.resolve(resolved);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testUniqueWithoutSentinelGivesNull() {
         connect(tables)
                 .then(session -> {
