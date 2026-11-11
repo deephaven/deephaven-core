@@ -128,8 +128,9 @@ def to_table(pa_table: pa.Table, cols: Sequence[str] | None = None) -> Table:
 
     dh_fields = []
     for f in pa_table.schema:
-        # Keep nullability. The writer rejects batches whose schema differs, and to_arrow returns REE
-        # fields as not nullable.
+        # Copy nullable from pa_table. pa.field defaults to nullable=True, and the writer below rejects data whose
+        # schema differs from dh_schema. pa_table can have non-nullable fields, such as the REE fields to_arrow()
+        # returns.
         dh_fields.append(
             pa.field(
                 name=f.name,

@@ -30,8 +30,9 @@ class ArrowFlightService:
             ticket = self.session.next_export_ticket_number()
             dh_fields = []
             for f in data.schema:
-                # Keep nullability. The writer rejects batches whose schema differs, and the server sends REE
-                # fields as not nullable.
+                # Copy nullable from data. pa.field defaults to nullable=True, and the writer below rejects data
+                # whose schema differs from dh_schema. data can have non-nullable fields, such as the REE fields
+                # Table.to_arrow() returns.
                 dh_fields.append(
                     pa.field(
                         name=f.name,
