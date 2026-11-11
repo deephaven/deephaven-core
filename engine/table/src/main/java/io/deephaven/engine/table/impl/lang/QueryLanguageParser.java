@@ -2251,7 +2251,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     public Class<?> visit(DoubleLiteralExpr n, VisitArgs printer) {
         String value = n.getValue();
         printer.append(value);
-        if (value.charAt(value.length() - 1) == 'f') {
+        if (Character.toLowerCase(value.charAt(value.length() - 1)) == 'f') {
             return float.class;
         }
 
@@ -2817,7 +2817,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     new ConstantChunkArgument(((StringLiteralExpr) expression).getValue(), String.class));
         } else if (argType == float.class) {
             pyCallableWrapper.addChunkArgument(
-                    new ConstantChunkArgument((Float.parseFloat(((DoubleLiteralExpr) expression).getValue())),
+                    new ConstantChunkArgument(
+                            Float.parseFloat(((DoubleLiteralExpr) expression).getValue().replace("_", "")),
                             float.class));
         } else if (argType == double.class) {
             pyCallableWrapper.addChunkArgument(
