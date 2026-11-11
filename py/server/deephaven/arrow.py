@@ -97,12 +97,20 @@ def _map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
             return {}
 
         raise DHError(
-            message=f"unsupported arrow data type : {arrow_type}, refer to "
-            f"deephaven.arrow.SUPPORTED_ARROW_TYPES for the list of supported pyarrow types. A column with an "
-            f"encoding in deephaven.arrow.SUPPORTED_ARROW_ENCODINGS is checked by the type of its values."
+            message=f"unsupported arrow data type : {arrow_type}. Use deephaven.arrow.is_deephaven_compatible to "
+            f"check a type. A dictionary-encoded or run-end encoded column is checked by the type of its values."
         )
 
     return {"deephaven:type": dh_type}
+
+
+def is_deephaven_compatible(data_type: pa.DataType) -> bool:
+    """Checks if the arrow data type is supported by Deephaven."""
+    try:
+        _map_arrow_type(data_type)
+        return True
+    except DHError:
+        return False
 
 
 def to_table(pa_table: pa.Table, cols: Sequence[str] | None = None) -> Table:

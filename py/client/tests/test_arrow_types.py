@@ -10,6 +10,7 @@ import pyarrow.compute as pc
 
 from pydeephaven._arrow import decode_for_pyarrow, map_arrow_type
 from pydeephaven.dherror import DHError
+from pydeephaven.utils import is_deephaven_compatible
 from tests.testbase import BaseTestCase
 
 
@@ -406,6 +407,11 @@ class ArrowEncodingsTestCase(BaseTestCase):
             },
             new_table.to_arrow().to_pydict(),
         )
+        # The returned table's schema reports the plain column types the server stores
+        self.assertEqual(
+            [pa.string(), pa.int64(), pa.string()],
+            [f.type for f in new_table.schema],
+        )
 
     def test_import_table_round_trip_encodings(self) -> None:
         # A table the server sends with dictionary and run-end encoded columns imports back unchanged
@@ -422,6 +428,22 @@ class ArrowEncodingsTestCase(BaseTestCase):
 
 
 class ArrowDecodeTestCase(unittest.TestCase):
+    def test_decode_run_end_ordered_dictionary(self) -> None:
+        # Decoding run-end over an ordered dictionary keeps the dictionary ordered.
+        dict_type = pa.dictionary(pa.int32(), pa.string(), ordered=True)
+        runs = pc.run_end_encode(pa.array([0, 0, 1], pa.int32()))
+        ree = pa.RunEndEncodedArray.from_arrays(
+            runs.run_ends,
+            pa.DictionaryArray.from_arrays(
+                runs.values, pa.array(["a", "b"]), ordered=True
+            ),
+        )
+
+        decoded = decode_for_pyarrow(pa.table({"C": ree}))
+
+        self.assertEqual(dict_type, decoded.schema.field("C").type)
+        self.assertEqual(["a", "a", "b"], decoded.column("C").to_pylist())
+
     def test_decode_dictionary_timestamps(self) -> None:
         # Dictionary timestamps, plain or run-end encoded, keep their time zone in to_pandas.
         timestamps = pa.array(
@@ -454,6 +476,27 @@ class ArrowDecodeTestCase(unittest.TestCase):
             map_arrow_type(pa.dictionary(pa.int8(), pa.large_string()))
 
         self.assertIn("dictionary<values=large_string", str(cm.exception))
+        self.assertIn("pydeephaven.utils.is_deephaven_compatible", str(cm.exception))
+
+    def test_is_deephaven_compatible(self) -> None:
+        # Exact, parameterized, and encoded types whose values are supported pass. Others fail.
+        string_dict = pa.dictionary(pa.int32(), pa.string())
+        supported = [
+            pa.int64(),
+            pa.decimal128(5, 2),
+            string_dict,
+            pa.run_end_encoded(pa.int32(), string_dict),
+        ]
+        unsupported = [
+            pa.large_string(),
+            pa.dictionary(pa.int32(), pa.large_string()),
+            pa.struct([pa.field("a", pa.int64())]),
+        ]
+
+        for data_type in supported:
+            self.assertTrue(is_deephaven_compatible(data_type), data_type)
+        for data_type in unsupported:
+            self.assertFalse(is_deephaven_compatible(data_type), data_type)
 
 
 if __name__ == "__main__":

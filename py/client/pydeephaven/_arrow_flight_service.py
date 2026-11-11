@@ -9,7 +9,7 @@ import pyarrow as pa
 import pyarrow.flight as paflight
 from pyarrow.flight import FlightCallOptions
 
-from pydeephaven._arrow import decode_for_pyarrow, map_arrow_type
+from pydeephaven._arrow import decode_for_pyarrow, map_arrow_type, value_type_of
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
 
@@ -54,8 +54,20 @@ class ArrowFlightService:
             # knows what it is for and sends a RST_STREAM causing a failure.
             _ = reader.read()
             flight_ticket = self.session.make_export_ticket(ticket)
+            # The server stores an encoded column as a plain column of its value type.
+            table_schema = pa.schema(
+                [
+                    pa.field(f.name, value_type_of(f.type), True, f.metadata)
+                    if value_type_of(f.type) != f.type
+                    else f
+                    for f in dh_schema
+                ]
+            )
             return Table(
-                self.session, ticket=flight_ticket, size=data.num_rows, schema=dh_schema
+                self.session,
+                ticket=flight_ticket,
+                size=data.num_rows,
+                schema=table_schema,
             )
         except Exception as e:
             raise DHError("failed to create a Deephaven table from Arrow data.") from e

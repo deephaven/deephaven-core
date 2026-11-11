@@ -61,12 +61,17 @@ _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES = {
 _SUPPORTED_ARROW_ENCODINGS = (pa.DictionaryType, pa.RunEndEncodedType)
 
 
+def value_type_of(arrow_type: pa.DataType) -> pa.DataType:
+    """Returns the type of the values of a dictionary-encoded or run-end encoded type, or arrow_type itself."""
+    while isinstance(arrow_type, _SUPPORTED_ARROW_ENCODINGS):
+        arrow_type = arrow_type.value_type
+    return arrow_type
+
+
 def map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
     """Maps an Arrow type to the corresponding Deephaven column data type."""
     # Encoded columns map to the type of their values. The error names arrow_type, the type in the user's schema.
-    value_type = arrow_type
-    while isinstance(value_type, _SUPPORTED_ARROW_ENCODINGS):
-        value_type = value_type.value_type
+    value_type = value_type_of(arrow_type)
 
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(value_type)
 
@@ -76,9 +81,8 @@ def map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
             return {}
 
         raise DHError(
-            message=f"unsupported arrow data type : {arrow_type}, refer to "
-            f"deephaven.arrow.SUPPORTED_ARROW_TYPES for the list of supported Arrow types. A dictionary-encoded or "
-            f"run-end encoded column is checked by the type of its values."
+            message=f"unsupported arrow data type : {arrow_type}. Use pydeephaven.utils.is_deephaven_compatible to "
+            f"check a type. A dictionary-encoded or run-end encoded column is checked by the type of its values."
         )
 
     return {"deephaven:type": dh_type}
@@ -93,7 +97,9 @@ def _decode_run_end_dictionary_array(array: pa.RunEndEncodedArray) -> pa.Array:
         pa.RunEndEncodedArray.from_arrays(array.run_ends, values.indices)
     )
     return pa.DictionaryArray.from_arrays(
-        indices.slice(array.offset, len(array)), values.dictionary
+        indices.slice(array.offset, len(array)),
+        values.dictionary,
+        ordered=values.type.ordered,
     )
 
 

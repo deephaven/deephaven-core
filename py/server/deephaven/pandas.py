@@ -113,7 +113,9 @@ def _decode_run_end_array(array: pa.RunEndEncodedArray) -> pa.Array:
         pa.RunEndEncodedArray.from_arrays(array.run_ends, values.indices)
     )
     return pa.DictionaryArray.from_arrays(
-        indices.slice(array.offset, len(array)), values.dictionary
+        indices.slice(array.offset, len(array)),
+        values.dictionary,
+        ordered=values.type.ordered,
     )
 
 

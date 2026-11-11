@@ -119,7 +119,7 @@ To see the full list of exact types, print `SUPPORTED_ARROW_TYPES`:
 print(dharrow.SUPPORTED_ARROW_TYPES)
 ```
 
-[`to_table`](../reference/arrow/to-table.md) raises an error for any other column type, including large strings, large binary, large lists, and structs. The error message points only to `SUPPORTED_ARROW_TYPES` and `SUPPORTED_ARROW_ENCODINGS`, so check the parameterized types above as well before you decide a type is unsupported.
+[`to_table`](../reference/arrow/to-table.md) raises an error for any other column type, including large strings, large binary, large lists, and structs. To check whether it accepts a type, call `deephaven.arrow.is_deephaven_compatible`, which covers all three groups above.
 
 ## Write a Feather file
 

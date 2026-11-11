@@ -9,6 +9,7 @@ import numpy as np
 import pandas
 import pandas as pd
 import pyarrow as pa
+import pyarrow.compute as pc
 
 from deephaven import DHError, dtypes, empty_table, new_table, time
 from deephaven.column import (
@@ -36,7 +37,7 @@ from deephaven.constants import (
     NULL_SHORT,
 )
 from deephaven.jcompat import j_array_list
-from deephaven.pandas import to_pandas, to_table
+from deephaven.pandas import _decode_for_pandas, to_pandas, to_table
 from tests.barrage_encodings import with_barrage_encodings
 from tests.testbase import BaseTestCase
 
@@ -358,6 +359,24 @@ class PandasTestCase(BaseTestCase):
                         df_plain[name][not_null].tolist(),
                         name,
                     )
+
+    def test_decode_run_end_ordered_dictionary(self) -> None:
+        # Decoding run-end over an ordered dictionary keeps the dictionary ordered.
+        runs = pc.run_end_encode(pa.array([0, 0, 1], pa.int32()))
+        ree = pa.RunEndEncodedArray.from_arrays(
+            runs.run_ends,
+            pa.DictionaryArray.from_arrays(
+                runs.values, pa.array(["a", "b"]), ordered=True
+            ),
+        )
+
+        decoded = _decode_for_pandas(pa.table({"C": ree}))
+
+        self.assertEqual(
+            pa.dictionary(pa.int32(), pa.string(), ordered=True),
+            decoded.schema.field("C").type,
+        )
+        self.assertEqual(["a", "a", "b"], decoded.column("C").to_pylist())
 
     def test_to_pandas_dictionary_timestamps(self) -> None:
         # Dictionary timestamps keep their time zone in to_pandas.

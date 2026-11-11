@@ -507,6 +507,27 @@ class ArrowTestCase(BaseTestCase):
             dharrow.to_table(pa_table)
 
         self.assertIn("dictionary<values=large_string", str(cm.exception))
+        self.assertIn("deephaven.arrow.is_deephaven_compatible", str(cm.exception))
+
+    def test_is_deephaven_compatible(self) -> None:
+        # Exact, parameterized, and encoded types whose values are supported pass. Others fail.
+        string_dict = pa.dictionary(pa.int32(), pa.string())
+        supported = [
+            pa.int64(),
+            pa.decimal128(5, 2),
+            string_dict,
+            pa.run_end_encoded(pa.int32(), string_dict),
+        ]
+        unsupported = [
+            pa.large_string(),
+            pa.dictionary(pa.int32(), pa.large_string()),
+            pa.struct([pa.field("a", pa.int64())]),
+        ]
+
+        for data_type in supported:
+            self.assertTrue(dharrow.is_deephaven_compatible(data_type), data_type)
+        for data_type in unsupported:
+            self.assertFalse(dharrow.is_deephaven_compatible(data_type), data_type)
 
 
 if __name__ == "__main__":
