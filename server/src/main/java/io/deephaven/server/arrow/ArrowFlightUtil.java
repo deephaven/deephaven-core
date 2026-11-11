@@ -54,6 +54,13 @@ import java.util.*;
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
 
+    /**
+     * Writes each message's streams to the call. Every method locks this adapter and then the delegate. That is the
+     * order {@link GrpcUtil}'s methods take them in, since they lock the observer they are given before calling it, so
+     * a thread that writes directly and a thread that writes through {@link GrpcUtil} cannot each hold one lock while
+     * waiting for the other. A failed write can run the call's cancel handler on the writing thread, and that handler
+     * reports the error through {@link GrpcUtil}.
+     */
     private static class MessageViewAdapter implements StreamObserver<BarrageMessageWriter.MessageView> {
         private final StreamObserver<InputStream> delegate;
 
@@ -61,7 +68,7 @@ public class ArrowFlightUtil {
             this.delegate = delegate;
         }
 
-        public void onNext(final BarrageMessageWriter.MessageView value) {
+        public synchronized void onNext(final BarrageMessageWriter.MessageView value) {
             synchronized (delegate) {
                 try {
                     value.forEachStream(delegate::onNext);
@@ -72,14 +79,14 @@ public class ArrowFlightUtil {
         }
 
         @Override
-        public void onError(final Throwable t) {
+        public synchronized void onError(final Throwable t) {
             synchronized (delegate) {
                 delegate.onError(t);
             }
         }
 
         @Override
-        public void onCompleted() {
+        public synchronized void onCompleted() {
             synchronized (delegate) {
                 delegate.onCompleted();
             }

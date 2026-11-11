@@ -73,6 +73,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.extensions.barrage.util.BarrageUtil.MAX_SNAPSHOT_CELL_COUNT;
@@ -406,11 +407,11 @@ public class BarrageMessageProducer extends LivenessArtifact
     private List<Subscription> pendingSubscriptions = new ArrayList<>();
     private final ArrayList<Subscription> activeSubscriptions = new ArrayList<>();
     /**
-     * Listeners whose subscriptions were rejected and whose error the propagation job has not yet sent, guarded by this
-     * producer's monitor. A request from one of them is ignored rather than reported as not found, so the client sees
-     * why its subscription ended.
+     * Subscriptions that have ended with an error their client has not yet been sent, guarded by this producer's
+     * monitor. Errors are sent outside the monitor, so until then a request from one of these clients is ignored rather
+     * than reported as not found, and the client sees why its subscription ended.
      */
-    private final List<StreamObserver<BarrageMessageWriter.MessageView>> rejectedListeners = new ArrayList<>();
+    private final List<Subscription> failingSubscriptions = new ArrayList<>();
 
     /**
      * Shared dictionary states for full subscriptions, keyed by Arrow dictionary id. Lives for the lifetime of this
@@ -683,17 +684,17 @@ public class BarrageMessageProducer extends LivenessArtifact
             @Nullable final BitSet columnsToSubscribe,
             @Nullable final RowSet initialViewport,
             final boolean reverseViewport) {
+        if (isBlinkTable && reverseViewport) {
+            GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT,
+                    "Reverse viewport is not supported for blink tables");
+            return;
+        }
         synchronized (this) {
             final boolean hasSubscription = activeSubscriptions.stream().anyMatch(item -> item.listener == listener)
                     || pendingSubscriptions.stream().anyMatch(item -> item.listener == listener);
             if (hasSubscription) {
                 throw new IllegalStateException(
                         "Asking to add a subscription for an already existing session and listener");
-            }
-            if (isBlinkTable && reverseViewport) {
-                GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT,
-                        "Reverse viewport is not supported for blink tables");
-                return;
             }
 
             final BitSet cols;
@@ -748,13 +749,13 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         synchronized (this) {
             return findAndUpdate.apply(activeSubscriptions) || findAndUpdate.apply(pendingSubscriptions)
-                    || isRejected(listener);
+                    || isFailing(listener);
         }
     }
 
-    private boolean isRejected(final StreamObserver<BarrageMessageWriter.MessageView> listener) {
-        for (final StreamObserver<BarrageMessageWriter.MessageView> rejected : rejectedListeners) {
-            if (rejected == listener) {
+    private boolean isFailing(final StreamObserver<BarrageMessageWriter.MessageView> listener) {
+        for (final Subscription failing : failingSubscriptions) {
+            if (failing.listener == listener) {
                 return true;
             }
         }
@@ -821,7 +822,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         Assert.assertion(Thread.holdsLock(this), "Thread.holdsLock(this)");
         sub.rejection = reason;
         sub.pendingDelete = true;
-        rejectedListeners.add(sub.listener);
+        failingSubscriptions.add(sub);
     }
 
     public void removeSubscription(final StreamObserver<BarrageMessageWriter.MessageView> listener) {
@@ -1337,17 +1338,20 @@ public class BarrageMessageProducer extends LivenessArtifact
      * send.
      */
     private void failAllSubscriptions(final Exception exception) {
+        final StatusRuntimeException apiError = errorTransformer.transform(exception);
+        final List<Subscription> failed;
         synchronized (this) {
-            final StatusRuntimeException apiError = errorTransformer.transform(exception);
-
-            Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
-                    .filter(BarrageMessageProducer::markErrorSent)
-                    .forEach(sub -> GrpcUtil.safelyError(sub.listener, apiError));
+            // a rejected subscription may already be out of both lists, waiting for the propagation job to send its
+            // error
+            failed = Stream.of(activeSubscriptions, pendingSubscriptions, failingSubscriptions)
+                    .flatMap(List::stream)
+                    .distinct()
+                    .collect(Collectors.toList());
 
             activeSubscriptions.clear();
             pendingSubscriptions.clear();
-            // their streams have just been ended with the producer's error instead
-            rejectedListeners.clear();
+            failingSubscriptions.clear();
+            failingSubscriptions.addAll(failed);
             // The counters describe the lists that were just emptied. Left stale, a growing count would have the
             // next propagation reschedule itself forever over no subscriptions.
             numFullSubscriptions = 0;
@@ -1356,6 +1360,21 @@ public class BarrageMessageProducer extends LivenessArtifact
             // thing that drains the queue. destroy() does not close these either, so without this they would be
             // held until the producer is collected and their chunks would never return to the pool.
             discardPendingDeltasAndFlush();
+        }
+
+        // Errors are sent outside the monitor: a failed write can close the stream on this thread, and closing it takes
+        // the request handler's monitor, which a thread waiting for this one in updateSubscription holds.
+        for (final Subscription subscription : failed) {
+            if (markErrorSent(subscription)) {
+                if (subscription.rejection != null) {
+                    GrpcUtil.safelyError(subscription.listener, Code.INVALID_ARGUMENT, subscription.rejection);
+                } else {
+                    GrpcUtil.safelyError(subscription.listener, apiError);
+                }
+            }
+        }
+        synchronized (this) {
+            failingSubscriptions.removeAll(failed);
         }
     }
 
@@ -1738,7 +1757,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 }
                 if (subscription.rejection != null) {
                     synchronized (this) {
-                        rejectedListeners.removeIf(rejected -> rejected == subscription.listener);
+                        failingSubscriptions.remove(subscription);
                     }
                 }
             }
@@ -2390,9 +2409,9 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     /**
-     * Records that {@code subscription} is about to be sent an error, so that it is sent one: a write failure, a source
-     * failure and a rejected request can each try to send one. Callers hold the propagation job's run lock, so no two
-     * of them run at once for a subscription.
+     * Records that {@code subscription} is about to be sent an error, so that it is sent only one: a write failure, a
+     * source failure and a rejected request can each try to send one. Callers hold the propagation job's run lock, so
+     * no two of them run at once for a subscription.
      *
      * @param subscription the subscription whose client is to be sent an error
      * @return whether the caller should send its error, which is false if the client was already sent one

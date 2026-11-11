@@ -51,6 +51,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Set;
@@ -59,6 +60,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -141,7 +143,7 @@ public class BarrageSubscriptionUpdateDeadlockTest {
             // wait for the update to block on this call's monitor, which this thread holds while writing, or to finish
             awaitBlockedOn(updaterThread, call);
             // the write fails; the servlet transport cancels the call on this thread
-            call.onCancelHandler.run();
+            cancelAsGrpcDoes(call, marshaller);
         };
 
         final Thread writer = new Thread(() -> {
@@ -270,8 +272,13 @@ public class BarrageSubscriptionUpdateDeadlockTest {
             rejecting.setDaemon(true);
             rejectingThread.set(rejecting);
             rejecting.start();
-            // once the rejection is recorded, the request waits to schedule the propagation job, which this thread runs
-            awaitBlockedOn(rejectingThread, producerScheduler);
+            // The request records the rejection and returns. It does not schedule the propagation job, because this
+            // thread holds the job's run lock and runs the job again when it releases it.
+            try {
+                rejecting.join(JOIN_TIMEOUT_MILLIS);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             throw new IllegalStateException("the write failed");
         };
 
@@ -307,6 +314,148 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         producerScheduler.runUntilQueueEmpty();
 
         assertEquals("the client should be sent one error", 1, call.errors);
+    }
+
+    /**
+     * Another thread reports an error to the stream while the producer's write fails and is cancelled inline. gRPC
+     * reports the cancel to the request observer after running the cancel handler, and the marshaller sends that error
+     * through {@link io.deephaven.extensions.barrage.util.GrpcUtil}, which locks the listener before the call. The
+     * producer writes to the listener directly, so both must take the two locks in the same order.
+     */
+    @Test
+    public void testErrorFromAnotherThreadDoesNotDeadlockWithCancelFromFailedWrite() throws Exception {
+        final InlineCancelCallObserver call = new InlineCancelCallObserver();
+        final ArrowFlightUtil.DoExchangeMarshaller marshaller = openFullSubscription(call);
+
+        final AtomicReference<Thread> reporterThread = new AtomicReference<>();
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+        call.onWrite = () -> {
+            call.onWrite = null;
+            // while the initial snapshot is being written, an export failure is reported to the stream
+            final Thread reporter = new Thread(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    marshaller.onError(new IllegalStateException("the export failed"));
+                } catch (final Throwable t) {
+                    failure.compareAndSet(null, t);
+                }
+            }, "BarrageSubscriptionUpdateDeadlockTest-reporter");
+            reporter.setDaemon(true);
+            reporterThread.set(reporter);
+            reporter.start();
+            // wait for the reporter to block on one of the stream's locks, which this thread holds while writing
+            awaitBlocked(reporterThread);
+            // the write fails; the servlet transport cancels the call on this thread
+            cancelAsGrpcDoes(call, marshaller);
+        };
+
+        final Thread writer = new Thread(() -> {
+            try (final SafeCloseable ignored = executionContext.open()) {
+                producerScheduler.runUntilQueueEmpty();
+            } catch (final Throwable t) {
+                failure.compareAndSet(null, t);
+            }
+        }, "BarrageSubscriptionUpdateDeadlockTest-writer");
+        writer.setDaemon(true);
+        writer.start();
+
+        final long deadline = System.currentTimeMillis() + JOIN_TIMEOUT_MILLIS;
+        writer.join(Math.max(1, deadline - System.currentTimeMillis()));
+        while (reporterThread.get() == null && System.currentTimeMillis() < deadline) {
+            Thread.onSpinWait();
+        }
+        assertNotNull("the writer should have started the reporter", reporterThread.get());
+        reporterThread.get().join(Math.max(1, deadline - System.currentTimeMillis()));
+        if (writer.isAlive() || reporterThread.get().isAlive()) {
+            throw new AssertionError("error report and inline cancel did not finish; deadlocked:\n"
+                    + describeDeadlockedThreads());
+        }
+        if (failure.get() != null) {
+            throw new AssertionError("worker thread failed", failure.get());
+        }
+        assertTrue("the marshaller should be closed", marshaller.isClosed());
+    }
+
+    /**
+     * An invalid change that arrives before the export resolves is applied as the subscription starts, and the client
+     * is sent its rejection.
+     */
+    @Test
+    public void testInvalidChangeQueuedBeforeExportResolvesIsReported() {
+        final InlineCancelCallObserver call = new InlineCancelCallObserver();
+        final ArrowFlightUtil.DoExchangeMarshaller marshaller =
+                newMarshaller(call, TableTools.emptyTable(100).update("I = i"));
+
+        marshaller.onNext(subscriptionRequest(null));
+        // a full subscription cannot change to a viewport; the export has not resolved, so the request is queued
+        marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(0, 9)));
+        sessionScheduler.runUntilQueueEmpty();
+        producerScheduler.runUntilQueueEmpty();
+
+        assertEquals("the client should be sent one error", 1, call.errors);
+        final Status status = Status.fromThrowable(call.error);
+        assertEquals(Status.Code.INVALID_ARGUMENT, status.getCode());
+        assertEquals("cannot change from full subscription to viewport or vice versa", status.getDescription());
+        assertEquals(0, call.completions);
+    }
+
+    /**
+     * A reverse viewport on a blink table is rejected, even after a valid change that the propagation job has not yet
+     * applied.
+     */
+    @Test
+    public void testBlinkTableReverseViewportIsReported() {
+        final QueryTable table = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),
+                TableTools.intCol("I", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        table.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        final InlineCancelCallObserver call = new InlineCancelCallObserver();
+        final ArrowFlightUtil.DoExchangeMarshaller marshaller = newMarshaller(call, table);
+        marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(0, 4)));
+        sessionScheduler.runUntilQueueEmpty();
+        producerScheduler.runUntilQueueEmpty();
+        assertNull(call.error);
+
+        marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(2, 6)));
+        marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(0, 4), true));
+        producerScheduler.runUntilQueueEmpty();
+
+        assertEquals("the client should be sent one error", 1, call.errors);
+        final Status status = Status.fromThrowable(call.error);
+        assertEquals(Status.Code.INVALID_ARGUMENT, status.getCode());
+        assertEquals("Reverse viewport is not supported for blink tables", status.getDescription());
+        assertEquals(0, call.completions);
+    }
+
+    /**
+     * The propagation job fails after it has taken a rejected subscription out of the producer's lists, but before it
+     * has sent the rejection. The producer's failure handling still ends that client's stream with its rejection, and
+     * sends it without holding the producer's monitor.
+     */
+    @Test
+    public void testRejectionIsSentWhenPropagationFails() throws Exception {
+        final AtomicReference<Object> producer = new AtomicReference<>();
+        final InlineCancelCallObserver call = new InlineCancelCallObserver();
+        final ArrowFlightUtil.DoExchangeMarshaller marshaller = newMarshaller(call,
+                TableTools.emptyTable(100).update("I = i"), producer::set);
+        marshaller.onNext(subscriptionRequest(null));
+        sessionScheduler.runUntilQueueEmpty();
+        producerScheduler.runUntilQueueEmpty();
+        assertNull(call.error);
+
+        // a full subscription cannot change to a viewport
+        marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(0, 9)));
+        final AtomicReference<Boolean> sentHoldingProducerMonitor = new AtomicReference<>();
+        call.onErrorHook = () -> sentHoldingProducerMonitor.set(Thread.holdsLock(producer.get()));
+        // the job's bookkeeping fails after it has removed the deleted subscription from its lists
+        final Field postSnapshotColumns = producer.get().getClass().getDeclaredField("postSnapshotColumns");
+        postSnapshotColumns.setAccessible(true);
+        postSnapshotColumns.set(producer.get(), null);
+        producerScheduler.runUntilQueueEmpty();
+
+        assertEquals("the client should be sent one error", 1, call.errors);
+        final Status status = Status.fromThrowable(call.error);
+        assertEquals(Status.Code.INVALID_ARGUMENT, status.getCode());
+        assertEquals("cannot change from full subscription to viewport or vice versa", status.getDescription());
+        assertFalse("the error must be sent without the producer's monitor", sentHoldingProducerMonitor.get());
     }
 
     /**
@@ -426,6 +575,28 @@ public class BarrageSubscriptionUpdateDeadlockTest {
      */
     private ArrowFlightUtil.DoExchangeMarshaller openFullSubscription(final InlineCancelCallObserver call,
             final Table table) {
+        final ArrowFlightUtil.DoExchangeMarshaller marshaller = newMarshaller(call, table);
+        // the export is already resolved, so the continuation subscribes when the session runs
+        marshaller.onNext(subscriptionRequest(null));
+        sessionScheduler.runUntilQueueEmpty();
+        return marshaller;
+    }
+
+    /**
+     * Exports {@code table} and opens a DoExchange stream on {@code call}, with no request sent yet.
+     */
+    private ArrowFlightUtil.DoExchangeMarshaller newMarshaller(final InlineCancelCallObserver call,
+            final Table table) {
+        return newMarshaller(call, table, producer -> {
+        });
+    }
+
+    /**
+     * Exports {@code table} and opens a DoExchange stream on {@code call}, with no request sent yet. Each
+     * subscription's producer is passed to {@code onProducer}.
+     */
+    private ArrowFlightUtil.DoExchangeMarshaller newMarshaller(final InlineCancelCallObserver call,
+            final Table table, final Consumer<Object> onProducer) {
         session.newExport(EXPORT_ID).submit(() -> table);
         sessionScheduler.runUntilQueueEmpty();
 
@@ -437,25 +608,34 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         final ExchangeMarshaller tableMarshaller = new TableExchangeMarshaller.Factory().create(
                 producerScheduler, errorTransformer, streamGeneratorFactory, ImmediateJobScheduler::new);
 
-        final ArrowFlightUtil.DoExchangeMarshaller marshaller = new ArrowFlightUtil.DoExchangeMarshaller(
+        return new ArrowFlightUtil.DoExchangeMarshaller(
                 ticketRouter,
                 streamGeneratorFactory,
-                List.of(tableMarshaller),
+                List.of(new ProducerCapturingMarshaller(tableMarshaller, onProducer)),
                 Set.of(new BarrageSubscriptionRequestHandler.BarrageSubscriptionRequestHandlerFactory()),
                 errorTransformer,
                 session,
                 call);
+    }
 
-        // the export is already resolved, so the continuation subscribes when the session runs
-        marshaller.onNext(subscriptionRequest(null));
-        sessionScheduler.runUntilQueueEmpty();
-        return marshaller;
+    /**
+     * Fails the write the way the servlet transport does: the call's cancel handler runs on the writing thread, and
+     * then gRPC reports the cancel to the request observer, since the client has not half-closed.
+     */
+    private static void cancelAsGrpcDoes(final InlineCancelCallObserver call,
+            final ArrowFlightUtil.DoExchangeMarshaller marshaller) {
+        call.onCancelHandler.run();
+        marshaller.onError(Status.CANCELLED.withDescription("client cancelled").asRuntimeException());
     }
 
     private static InputStream subscriptionRequest(@Nullable final RowSet viewport) {
+        return subscriptionRequest(viewport, false);
+    }
+
+    private static InputStream subscriptionRequest(@Nullable final RowSet viewport, final boolean reverseViewport) {
         final ByteBuffer viewportBuffer = viewport == null ? null : BarrageProtoUtil.toByteBuffer(viewport);
         final byte[] metadata = BarrageUtil.createSubscriptionRequestMetadataBytes(
-                ExportTicketHelper.exportIdToBytes(EXPORT_ID), null, viewportBuffer, null, false,
+                ExportTicketHelper.exportIdToBytes(EXPORT_ID), null, viewportBuffer, null, reverseViewport,
                 BarrageMessageType.BarrageSubscriptionRequest);
         return Flight.FlightData.newBuilder()
                 .setAppMetadata(ByteString.copyFrom(metadata))
@@ -483,6 +663,18 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         }
     }
 
+    /**
+     * Waits until {@code thread} is blocked entering any monitor, or has finished. Gives up after the join timeout, so
+     * the test reports what is stuck instead of hanging here.
+     */
+    private static void awaitBlocked(final AtomicReference<Thread> thread) {
+        final long deadline = System.currentTimeMillis() + JOIN_TIMEOUT_MILLIS;
+        while (System.currentTimeMillis() < deadline && thread.get().isAlive()
+                && thread.get().getState() != Thread.State.BLOCKED) {
+            Thread.onSpinWait();
+        }
+    }
+
     private static String describeDeadlockedThreads() {
         final ThreadMXBean bean = ManagementFactory.getThreadMXBean();
         final long[] ids = bean.findDeadlockedThreads();
@@ -506,6 +698,57 @@ public class BarrageSubscriptionUpdateDeadlockTest {
             sb.append('\n');
         }
         return sb.toString();
+    }
+
+    /**
+     * Passes each subscription's {@link io.deephaven.server.barrage.BarrageMessageProducer} to a test.
+     */
+    private static final class ProducerCapturingMarshaller implements ExchangeMarshaller {
+        private final ExchangeMarshaller delegate;
+        private final Consumer<Object> onProducer;
+
+        private ProducerCapturingMarshaller(final ExchangeMarshaller delegate, final Consumer<Object> onProducer) {
+            this.delegate = delegate;
+            this.onProducer = onProducer;
+        }
+
+        @Override
+        public int priority() {
+            return delegate.priority();
+        }
+
+        @Override
+        public boolean accept(final Object export) {
+            return delegate.accept(export);
+        }
+
+        @Override
+        public void snapshot(final BarrageSnapshotRequest snapshotRequest,
+                final BarrageSnapshotOptions options,
+                final Object export,
+                final BarragePerformanceLog.SnapshotMetricsHelper metrics,
+                final StreamObserver<BarrageMessageWriter.MessageView> listener,
+                final String ticketLogName,
+                final BarrageMessageWriter.Factory streamGeneratorFactory) {
+            delegate.snapshot(snapshotRequest, options, export, metrics, listener, ticketLogName,
+                    streamGeneratorFactory);
+        }
+
+        @Override
+        public Subscription subscribe(final BarrageSubscriptionRequest subscriptionRequest,
+                final BarrageSubscriptionOptions options,
+                final Object export,
+                final StreamObserver<BarrageMessageWriter.MessageView> listener) {
+            final Subscription subscription = delegate.subscribe(subscriptionRequest, options, export, listener);
+            try {
+                final Field producer = subscription.getClass().getDeclaredField("bmp");
+                producer.setAccessible(true);
+                onProducer.accept(producer.get(subscription));
+            } catch (final ReflectiveOperationException e) {
+                throw new IllegalStateException(e);
+            }
+            return subscription;
+        }
     }
 
     /**
