@@ -4,74 +4,74 @@ title: How efficient are my table selection operations?
 
 _How much memory do my [`select`](../table-operations/select/select.md) and [`update`](../table-operations/select/update.md) operations waste? Are they efficient?_
 
-[`select`](../table-operations/select/select.md) and [`update`](../table-operations/select/update.md) create in-memory columns of data, whereas [`view`](../table-operations/select/view.md), [`updateView`](../table-operations/select/update-view.md), and [`lazyUpdate`](../table-operations/select/lazy-update.md) do not.
+[`select`](../table-operations/select/select.md) and [`update`](../table-operations/select/update.md) create in-memory columns of data. [`view`](../table-operations/select/view.md) and [`updateView`](../table-operations/select/update-view.md) do not store results, and [`lazyUpdate`](../table-operations/select/lazy-update.md) stores only a cache of results keyed by input values.
 
 Deephaven recommends using [`select`](../table-operations/select/select.md) and [`update`](../table-operations/select/update.md) when calculations are expensive, or the results are needed for multiple downstream operations. These methods can cause issues when data gets sufficiently large, as they can consume a lot of memory.
 
-How efficient are your [`select`](../table-operations/select/select.md) and [`update`](../table-operations/select/update.md) operations? This page gives you a query to run in the Deephaven console to find out.
+Run the following Groovy script in the console to measure how efficiently your tables use memory.
 
-To better understand how efficient your memory usage is, execute the following Groovy code:
+### What the script measures
 
-```groovy skip-test
-import gnu.trove.TCollections
-import gnu.trove.set.hash.TLongHashSet
-import gnu.trove.map.hash.TObjectIntHashMap
-import gnu.trove.impl.Constants
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource
-import io.deephaven.util.type.TypeUtils
+The script checks only columns backed by a [`SparseArrayColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/sources/SparseArrayColumnSource.html), which stores data in blocks of 1,024 consecutive row keys. Non-flat refreshing tables with in-memory columns (created by [`select`](../table-operations/select/select.md) or [`update`](../table-operations/select/update.md)) use this column source. A "flat" table has a row set that increases monotonically from 0 to the number of rows minus one with no gaps — flat tables and static tables are not checked.
 
-simpleSizeLookupBuilder = new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, 0)
-simpleSizeLookup = TCollections.unmodifiableMap(simpleSizeLookupBuilder)
+The script computes three values for each table:
 
-accumulateBlocks = { long rowKey, TLongHashSet longSet -> longSet.add(rowKey >> 10) }
-getSimpleDataRecordSizeInBytes = { type -> simpleSizeLookup.get(TypeUtils.getBoxedType(type)) }
+- **Ideal blocks**: the fewest blocks the table's rows could fit in.
+- **Actual blocks**: the number of blocks the table's row keys actually occupy.
+- **Efficiency**: ideal blocks divided by actual blocks, as a percentage. An efficiency of 100% means the selection operations waste no memory.
 
-checkSparsity = { bindingVarEntry, list ->
-    def varName = bindingVarEntry.getKey()
-    def varValue = bindingVarEntry.getValue()
-    if (varValue instanceof Table) {
-        def s = varValue.getColumnSources().stream()
-        s = s.filter({cs -> cs instanceof SparseArrayColumnSource})
-        s = s.map({cs -> cs.getType()})
-        s = s.mapToInt({cst -> int result = getSimpleDataRecordSizeInBytes(cst); return result == 0 ? 8 : result; })
-        colByteSizeSum = s.sum()
-        if (colByteSizeSum > 0) {
-            def longSet = new TLongHashSet()
-            long idealBlocks = ((varValue.getRowSet().size() + 1023) / 1024)
-            varValue.getRowSet().forAllRowKeys({rowKey -> accumulateBlocks(rowKey, longSet)})
-            long actualBlocks = longSet.size()
-            double efficiency = (idealBlocks / actualBlocks) * 100
-            println varName + ": ideal blocks=" + idealBlocks + ", actual blocks=" + actualBlocks + ", efficiency=" + efficiency + "%"
-            list.add([varName, efficiency])
-        }
-    }
+### Example setup
 
-}
-
-bindingVars = new HashMap(getBinding().getVariables())
-resultList = []
-bindingVars.entrySet().forEach({e -> checkSparsity(e, resultList)})
-resultList.sort({e1, e2 -> -1 * Long.compare(e1.get(1), e2.get(1))})
-println resultList
-```
-
-An efficiency of 100% means that the selection operations are perfectly efficient - there is no wasted memory. This is the ideal case.
-
-> **Tip:** Perfect efficiency is not always possible, especially with complex or refreshing tables. Aim for higher efficiency, but don't worry if you can't reach 100% in every case.
-
-An important detail about this code is that it checks memory efficiency for columns backed by a [`SparseArrayColumnSource`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/sources/SparseArrayColumnSource.html). This does not apply to all columns. The simplest way to construct a table with columns backed by these is to create a [non-flat](../table-operations/metadata/isFlat.md) refreshing table with in-memory columns. You can force all columns into memory with [`select`](../table-operations/select/select.md).
+First, create a non-flat refreshing table so the script has something to measure:
 
 ```groovy ticking-table order=null
 t1 = timeTable("PT1s").update("X = randomDouble(-1, 1)").where("X > -0.75")
 ```
+
+### Diagnostic script
+
+```groovy skip-test
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource
+
+checkEfficiency = { varName, table ->
+    def hasSparse = table.getColumnSources().any { it instanceof SparseArrayColumnSource }
+    if (!hasSparse) return null
+
+    def rowSet = table.getRowSet()
+    if (rowSet.isEmpty()) return null
+
+    def blockSet = new LongOpenHashSet()
+    rowSet.forAllRowKeys({ rowKey -> blockSet.add(rowKey >> 10) })
+
+    long idealBlocks = (rowSet.size() + 1023) / 1024
+    long actualBlocks = blockSet.size()
+    double efficiency = ((double) idealBlocks / actualBlocks) * 100
+
+    println varName + ": ideal blocks=" + idealBlocks + ", actual blocks=" + actualBlocks + ", efficiency=" + efficiency + "%"
+    return [varName, efficiency]
+}
+
+def resultList = []
+new HashMap(getBinding().getVariables()).each { name, value ->
+    if (value instanceof Table) {
+        def result = checkEfficiency(name, value)
+        if (result != null) resultList.add(result)
+    }
+}
+resultList.sort { e1, e2 -> Double.compare(e2[1], e1[1]) }
+println resultList
+```
+
+Running the script after creating `t1` prints:
 
 ```text
 t1: ideal blocks=1, actual blocks=1, efficiency=100.0%
 [[t1, 100.0]]
 ```
 
-> [!NOTE]
-> A "flat" table has a flat row set. That means the row set increases monotonically from 0 to the number of rows minus one with no gaps.
+> [!TIP]
+> Perfect efficiency is not always possible, especially with complex or refreshing tables. Aim for higher efficiency, but don't worry if you can't reach 100% in every case.
 
 ## Related documentation
 
