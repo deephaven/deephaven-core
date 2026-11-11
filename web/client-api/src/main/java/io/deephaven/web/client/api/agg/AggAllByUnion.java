@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import io.deephaven.proto.backplane.grpc.AggSpec;
@@ -56,12 +55,6 @@ public interface AggAllByUnion {
     @JsOverlay
     @TsUnionMember
     default First asFirst() {
-        return Js.uncheckedCast(this);
-    }
-
-    @JsOverlay
-    @TsUnionMember
-    default Formula asFormula() {
         return Js.uncheckedCast(this);
     }
 
@@ -206,13 +199,6 @@ public interface AggAllByUnion {
             case "First":
                 spec.setFirst(AggSpec.AggSpecFirst.getDefaultInstance());
                 break;
-            case "Formula": {
-                Formula formula = asFormula();
-                spec.setFormula(AggSpec.AggSpecFormula.newBuilder()
-                        .setFormula(formula.formula)
-                        .setParamToken(formula.paramToken));
-                break;
-            }
             case "Freeze":
                 spec.setFreeze(AggSpec.AggSpecFreeze.getDefaultInstance());
                 break;

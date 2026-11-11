@@ -19,7 +19,7 @@ import jsinterop.annotations.JsType;
  */
 @JsType(namespace = "dh.agg")
 public sealed class ColumnAggregation extends Aggregation
-        permits AbsSum, ApproxPercentile, Avg, CountDistinct, Distinct, First, Formula, Freeze, Group, Last, Max,
+        permits AbsSum, ApproxPercentile, Avg, CountDistinct, Distinct, First, Freeze, Group, Last, Max,
         Median, Min, Percentile, SortedFirst, SortedLast, Std, Sum, TDigest, Unique, Var, WAvg, WSum {
 
     /**

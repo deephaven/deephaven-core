@@ -5,15 +5,11 @@ package io.deephaven.web.client.api.updateby;
 
 import com.vertispan.tsdefs.annotations.TsLiteral;
 import io.deephaven.web.client.api.Column;
-import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 @JsType(namespace = "dh.updateby")
-public class UpdateByRollingWAvg {
+public final class UpdateByRollingWAvg extends UpdateByRollingSpec {
     @TsLiteral
     public final String type = "UpdateByRollingWAvg";
-    @JsNullable
-    public UpdateByWindowScale forwardWindowScale;
-    public UpdateByWindowScale reverseWindowScale;
     public Column.ColumnOrName weightColumn;
 }

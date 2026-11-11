@@ -1052,7 +1052,7 @@ message AggSpec {
     AggSpecCountDistinct count_distinct = 4;
     AggSpecDistinct distinct = 5;
     AggSpecFirst first = 6;
-    AggSpecFormula formula = 7;
+    AggSpecFormula formula = 7 [deprecated=true];
     AggSpecFreeze freeze = 8;
     AggSpecGroup group = 9;
     AggSpecLast last = 10;

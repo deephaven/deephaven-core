@@ -4,20 +4,15 @@
 package io.deephaven.web.client.api.updateby;
 
 import com.vertispan.tsdefs.annotations.TsLiteral;
-import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 @JsType(namespace = "dh.updateby")
-public class UpdateByRollingFormula {
+public final class UpdateByRollingFormula extends UpdateByRollingSpec {
     @TsLiteral
     public final String type = "UpdateByRollingFormula";
-    @JsNullable
-    public UpdateByWindowScale forwardWindowScale;
-    public UpdateByWindowScale reverseWindowScale;
 
+    /**
+     * The formula to use to calculate output values.
+     */
     public String formula;
-
-    @Deprecated // should we even have this?
-    @JsNullable
-    public String paramToken;
 }

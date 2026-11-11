@@ -4,14 +4,10 @@
 package io.deephaven.web.client.api.updateby;
 
 import com.vertispan.tsdefs.annotations.TsLiteral;
-import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 @JsType(namespace = "dh.updateby")
-public class UpdateByRollingGroup {
+public final class UpdateByRollingGroup extends UpdateByRollingSpec {
     @TsLiteral
     public final String type = "UpdateByRollingGroup";
-    @JsNullable
-    public UpdateByWindowScale forwardWindowScale;
-    public UpdateByWindowScale reverseWindowScale;
 }

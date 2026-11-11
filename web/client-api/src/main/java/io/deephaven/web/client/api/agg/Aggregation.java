@@ -31,7 +31,7 @@ import jsinterop.annotations.JsType;
  */
 @JsType(namespace = "dh.agg")
 public abstract sealed class Aggregation
-        permits ColumnAggregation, Count, CountWhere, Partition, FirstRowKey, LastRowKey {
+        permits ColumnAggregation, Count, CountWhere, Formula, Partition, FirstRowKey, LastRowKey {
 
     /**
      * Creates a Sum aggregation.
@@ -367,20 +367,15 @@ public abstract sealed class Aggregation
     }
 
     /**
-     * Creates a Formula aggregation, applying a user-defined formula to each group.
+     * Creates a Formula aggregation, evaluating a user-defined formula.
      *
      * @param formula the formula to evaluate
-     * @param paramToken the parameter token in the formula that will be replaced with the input column name
-     * @param columns the column(s) to aggregate
      * @return an aggregation
      */
     @JsMethod
-    public static Formula AggFormula(String formula, String paramToken,
-            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns) {
+    public static Formula AggFormula(String formula) {
         Formula agg = new Formula();
         agg.formula = formula;
-        agg.paramToken = paramToken;
-        agg.columns = columns;
         return agg;
     }
 

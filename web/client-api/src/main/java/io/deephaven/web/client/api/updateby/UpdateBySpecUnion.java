@@ -333,9 +333,6 @@ public interface UpdateBySpecUnion {
                                 .setReverseWindowScale(rf.reverseWindowScale.toProto())
                                 .setForwardWindowScale(UpdateByWindowScale.forwardToProto(rf.forwardWindowScale))
                                 .setFormula(rf.formula);
-                if (rf.paramToken != null) {
-                    b.setParamToken(rf.paramToken);
-                }
                 builder.setRollingFormula(b);
                 break;
             }

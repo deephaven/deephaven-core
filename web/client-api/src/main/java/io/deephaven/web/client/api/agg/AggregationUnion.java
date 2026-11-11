@@ -8,6 +8,7 @@ import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import io.deephaven.proto.backplane.grpc.Aggregation;
 import io.deephaven.proto.backplane.grpc.AggSpec;
+import io.deephaven.proto.backplane.grpc.Selectable;
 import io.deephaven.web.client.api.JsTable;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -225,6 +226,13 @@ public interface AggregationUnion {
                         .addAllFilters(countWhere.filters.asList()));
                 return result;
             }
+            case "Formula": {
+                Formula formula = asFormula();
+                result.setFormula(Aggregation.AggregationFormula.newBuilder()
+                        .setSelectable(Selectable.newBuilder()
+                                .setRaw(formula.formula)));
+                return result;
+            }
             case "Partition": {
                 Partition partition = asPartition();
                 result.setPartition(Aggregation.AggregationPartition.newBuilder()
@@ -246,6 +254,7 @@ public interface AggregationUnion {
                 return result;
             }
             default:
+                // Handle spec-based types below, which are all wrapped in AggregationColumns
                 break;
         }
 
