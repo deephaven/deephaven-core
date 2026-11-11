@@ -139,7 +139,7 @@ result = source.update("Y = X * 2")
 
 ### Incremental computation
 
-The engine is smart about updates. For many operations, including [`update`](../reference/table-operations/select/update.md), it doesn't recompute the whole table on each update. It processes only the rows that changed.
+For many operations, including [`update`](../reference/table-operations/select/update.md), the engine doesn't recompute the whole table on each update. It processes only the rows that changed.
 
 In the [update propagation example](#update-propagation-example), when new rows arrive in `source`:
 
