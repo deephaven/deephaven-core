@@ -255,7 +255,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
                 : groupRowSetPrev;
     }
 
-    private long getGroupOffsetKey(final long groupIndexKey, final int offsetInGroup) {
+    private long getGroupOffsetKey(final long groupIndexKey, final long offsetInGroup) {
         final long startOffset = getStartOffset(groupIndexKey);
         final RowSet bucketRowSet = groupRowSetSource.get(groupIndexKey);
 
@@ -267,7 +267,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         return bucketRowSet.get(finalPos);
     }
 
-    private long getPrevGroupOffsetKey(final long groupIndexKey, final int offsetInGroup) {
+    private long getPrevGroupOffsetKey(final long groupIndexKey, final long offsetInGroup) {
         final long startOffset = getPrevStartOffset(groupIndexKey);
         final RowSet bucketRowSet = getPrevGroupRowSet(groupIndexKey);
 
@@ -280,7 +280,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final Object getUngrouped(final long groupRowKey, final int offsetInGroup) {
+    public final Object getUngrouped(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
@@ -289,7 +289,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final Object getUngroupedPrev(final long groupRowKey, final int offsetInGroup) {
+    public final Object getUngroupedPrev(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
@@ -298,7 +298,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final Boolean getUngroupedBoolean(final long groupRowKey, final int offsetInGroup) {
+    public final Boolean getUngroupedBoolean(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
@@ -307,7 +307,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final Boolean getUngroupedPrevBoolean(final long groupRowKey, final int offsetInGroup) {
+    public final Boolean getUngroupedPrevBoolean(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
@@ -316,7 +316,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final double getUngroupedDouble(final long groupRowKey, final int offsetInGroup) {
+    public final double getUngroupedDouble(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
@@ -325,7 +325,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final double getUngroupedPrevDouble(final long groupRowKey, final int offsetInGroup) {
+    public final double getUngroupedPrevDouble(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
@@ -334,7 +334,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final float getUngroupedFloat(final long groupRowKey, final int offsetInGroup) {
+    public final float getUngroupedFloat(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
@@ -343,7 +343,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final float getUngroupedPrevFloat(final long groupRowKey, final int offsetInGroup) {
+    public final float getUngroupedPrevFloat(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
@@ -352,7 +352,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final byte getUngroupedByte(final long groupRowKey, final int offsetInGroup) {
+    public final byte getUngroupedByte(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
@@ -361,7 +361,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final byte getUngroupedPrevByte(final long groupRowKey, final int offsetInGroup) {
+    public final byte getUngroupedPrevByte(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
@@ -370,7 +370,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final char getUngroupedChar(final long groupRowKey, final int offsetInGroup) {
+    public final char getUngroupedChar(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
@@ -379,7 +379,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final char getUngroupedPrevChar(final long groupRowKey, final int offsetInGroup) {
+    public final char getUngroupedPrevChar(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
@@ -388,7 +388,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final short getUngroupedShort(final long groupRowKey, final int offsetInGroup) {
+    public final short getUngroupedShort(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
@@ -397,7 +397,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final short getUngroupedPrevShort(final long groupRowKey, final int offsetInGroup) {
+    public final short getUngroupedPrevShort(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
@@ -406,7 +406,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final int getUngroupedInt(final long groupRowKey, final int offsetInGroup) {
+    public final int getUngroupedInt(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
@@ -415,7 +415,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final int getUngroupedPrevInt(final long groupRowKey, final int offsetInGroup) {
+    public final int getUngroupedPrevInt(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
@@ -424,7 +424,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final long getUngroupedLong(final long groupRowKey, final int offsetInGroup) {
+    public final long getUngroupedLong(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
@@ -433,7 +433,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     }
 
     @Override
-    public final long getUngroupedPrevLong(final long groupRowKey, final int offsetInGroup) {
+    public final long getUngroupedPrevLong(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
