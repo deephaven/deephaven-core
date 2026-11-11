@@ -91,6 +91,8 @@ def value_type_of(arrow_type: pa.DataType) -> pa.DataType:
 def map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
     """Maps an Arrow type to the corresponding Deephaven column data type."""
     # Encoded columns map to the type of their values. The error names arrow_type, the type in the user's schema.
+    # In theory a dictionary's values can be dictionary-encoded too, and the server can't import that. In practice
+    # the server never sends one, and pyarrow makes one only when built by hand, so this doesn't reject it.
     value_type = value_type_of(arrow_type)
 
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(value_type)
