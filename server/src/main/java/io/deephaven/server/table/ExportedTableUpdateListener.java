@@ -30,6 +30,7 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
@@ -61,6 +62,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
     private final String logPrefix;
     private final StreamObserver<ExportedTableUpdateMessage> responseObserver;
     private final SessionService.ErrorTransformer errorTransformer;
+    private final Scheduler scheduler;
     /**
      * Guards {@link #updateListenerMap}, {@link #isDestroyed}, each {@link ListenerImpl#sizeSent}, and messages to the
      * {@link #responseObserver}. The session synchronizes on this listener while notifying it, and a new export's
@@ -76,11 +78,13 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
     public ExportedTableUpdateListener(
             @Assisted final SessionState session,
             @Assisted final StreamObserver<ExportedTableUpdateMessage> responseObserver,
-            final SessionService.ErrorTransformer errorTransformer) {
+            final SessionService.ErrorTransformer errorTransformer,
+            final Scheduler scheduler) {
         this.session = session;
         this.logPrefix = "ExportedTableUpdateListener(" + Integer.toHexString(System.identityHashCode(this)) + ") ";
         this.responseObserver = responseObserver;
         this.errorTransformer = errorTransformer;
+        this.scheduler = scheduler;
     }
 
     /**
@@ -138,6 +142,20 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
     @Override
     public void onError(final Throwable t) {
         onCompleted();
+    }
+
+    /**
+     * Ends this listener because the client cancelled its stream, and removes it from the session.
+     *
+     * <p>
+     * A write that fails can cancel the call on the writing thread, which holds {@link #lock}. Removing this listener
+     * from the session synchronizes on it, and the session holds that monitor while notifying it, during which the
+     * notification may wait for {@link #lock}. So this stops the listener under {@link #lock} and removes it from the
+     * session on another thread.
+     */
+    public void onCancel() {
+        onCompleted();
+        scheduler.runImmediately(() -> session.removeExportListener(this));
     }
 
     @Override
