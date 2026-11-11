@@ -107,8 +107,8 @@ def _decode_run_end_array(array: pa.RunEndEncodedArray) -> pa.Array:
     if not isinstance(values, pa.DictionaryArray):
         return pc.run_end_decode(array)
 
-    # pyarrow has no run_end_decode kernel for dictionary values, so decode the runs of indices and pair the result
-    # with the dictionary. The children of a sliced array cover the whole unsliced array, hence the final slice.
+    # pyarrow can't run_end_decode dictionary values, so decode the indices and reattach the dictionary.
+    # The children span the unsliced array, hence the slice.
     indices = pc.run_end_decode(
         pa.RunEndEncodedArray.from_arrays(array.run_ends, values.indices)
     )
@@ -118,15 +118,11 @@ def _decode_run_end_array(array: pa.RunEndEncodedArray) -> pa.Array:
 
 
 def _decode_for_pandas(pa_table: pa.Table) -> pa.Table:
-    """Returns the pyarrow table with the encoded columns that pyarrow's to_pandas mishandles decoded.
+    """Decodes the encoded columns that to_pandas mishandles.
 
-    - A run-end encoded column. to_pandas can't convert one with dictionary-encoded values. For the other value types
-      it passes the run-end encoded type to the types_mapper, which maps none of them, so the column gets pyarrow's
-      default conversion.
-    - A dictionary-encoded timestamp column with a time zone. to_pandas turns it into a category column of timestamps
-      without the time zone, and comparing those with a timestamp that has one is silently False.
-
-    Other dictionary-encoded columns stay encoded and become pandas category columns.
+    - Run-end encoded columns. to_pandas can't convert one over dictionary values, and its types_mapper never sees
+      the value type of the others.
+    - Dictionary-encoded timestamps with a time zone. to_pandas drops their time zone.
     """
     for i, field in enumerate(pa_table.schema):
         column = pa_table.column(i)
@@ -147,8 +143,7 @@ def _decode_for_pandas(pa_table: pa.Table) -> pa.Table:
                 type=value_type,
             )
         if column.type != field.type:
-            # A run-end encoded field is not nullable, because its nulls live in its values. The decoded column holds
-            # those nulls, so its field is nullable.
+            # Nulls of a run-end encoded field live in its values, so the decoded field is nullable.
             pa_table = pa_table.set_column(
                 i, pa.field(field.name, column.type, True, field.metadata), column
             )

@@ -331,8 +331,7 @@ class ArrowTypesImportTestCase(BaseTestCase):
 
 class ArrowEncodingsTestCase(BaseTestCase):
     def test_to_arrow_run_end_dictionary(self) -> None:
-        # Long runs of a few strings reach the client as run-end over dictionary encoded. to_arrow decodes the runs,
-        # so pyarrow's to_pandas can convert the column, and keeps the dictionary.
+        # to_arrow decodes run-end over dictionary into dictionary, so to_pandas works.
         self.session.run_script(
             'from deephaven import empty_table\nruns = empty_table(26300).update("S = (ii < 13150) ? `A` : `B`")'
         )
@@ -344,8 +343,7 @@ class ArrowEncodingsTestCase(BaseTestCase):
         self.assertEqual({"A": 13150, "B": 13150}, df["S"].value_counts().to_dict())
 
     def test_input_table_encodings(self) -> None:
-        # An input table can be created from a schema with dictionary, run-end, and run-end over dictionary encoded
-        # fields, and takes rows with or without those encodings
+        # An input table accepts an encoded schema, and both encoded and plain rows.
         dict_type = pa.dictionary(pa.int32(), pa.string())
         schema = pa.schema(
             [
@@ -425,8 +423,7 @@ class ArrowEncodingsTestCase(BaseTestCase):
 
 class ArrowDecodeTestCase(unittest.TestCase):
     def test_decode_dictionary_timestamps(self) -> None:
-        # decode_for_pyarrow decodes dictionary-encoded timestamp columns with a time zone, including ones that are
-        # also run-end encoded, so pyarrow's to_pandas keeps the time zone
+        # Dictionary timestamps, plain or run-end encoded, keep their time zone in to_pandas.
         timestamps = pa.array(
             [0, 0, 10**9, None, 10**9], type=pa.timestamp("ns", tz="UTC")
         )
@@ -452,7 +449,7 @@ class ArrowDecodeTestCase(unittest.TestCase):
             )
 
     def test_map_arrow_type_error_names_encoded_type(self) -> None:
-        # The error for an unsupported value type names the encoded type, which is the type in the user's schema
+        # The error names the encoded type from the user's schema.
         with self.assertRaises(DHError) as cm:
             map_arrow_type(pa.dictionary(pa.int8(), pa.large_string()))
 

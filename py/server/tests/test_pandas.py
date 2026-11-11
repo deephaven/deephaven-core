@@ -330,9 +330,7 @@ class PandasTestCase(BaseTestCase):
         self.assert_table_equals(test_table, dh_table)
 
     def test_to_pandas_with_barrage_encodings(self) -> None:
-        # to_pandas converts the dictionary, run-end, and run-end over dictionary encoded columns that to_arrow
-        # returns. A dictionary-encoded column becomes a category column. A run-end encoded column gets the dtype it
-        # gets without the encoding.
+        # Dictionary columns become category columns. Run-end columns get their unencoded dtype.
         source = empty_table(100).update(
             [
                 "Sym = i % 3 == 0 ? `AAPL` : `MSFT`",
@@ -362,8 +360,7 @@ class PandasTestCase(BaseTestCase):
                     )
 
     def test_to_pandas_dictionary_timestamps(self) -> None:
-        # A dictionary-encoded timestamp column keeps its time zone in to_pandas. Left encoded, it would become a
-        # category column of timestamps without the time zone.
+        # Dictionary timestamps keep their time zone in to_pandas.
         source = empty_table(100).update(
             [
                 "Dict = i >= 90 ? null : epochNanosToInstant((long) (i / 10) * 1000000000L)",

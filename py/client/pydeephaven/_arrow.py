@@ -57,14 +57,15 @@ _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES = {
     pa.SparseUnionType,
 }
 
+# A column with one of these encodings is supported when the type of its values is.
+_SUPPORTED_ARROW_ENCODINGS = (pa.DictionaryType, pa.RunEndEncodedType)
+
 
 def map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
     """Maps an Arrow type to the corresponding Deephaven column data type."""
-    # A run-end encoded or dictionary-encoded column holds values of its value type, and the server decodes both
-    # encodings, so the column maps to the Deephaven type of those values. The error below still names arrow_type, so
-    # that it matches the type in the user's schema.
+    # Encoded columns map to the type of their values. The error names arrow_type, the type in the user's schema.
     value_type = arrow_type
-    while isinstance(value_type, (pa.RunEndEncodedType, pa.DictionaryType)):
+    while isinstance(value_type, _SUPPORTED_ARROW_ENCODINGS):
         value_type = value_type.value_type
 
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(value_type)
@@ -76,7 +77,8 @@ def map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
 
         raise DHError(
             message=f"unsupported arrow data type : {arrow_type}, refer to "
-            f"deephaven.arrow.SUPPORTED_ARROW_TYPES for the list of supported Arrow types."
+            f"deephaven.arrow.SUPPORTED_ARROW_TYPES for the list of supported Arrow types. A dictionary-encoded or "
+            f"run-end encoded column is checked by the type of its values."
         )
 
     return {"deephaven:type": dh_type}
@@ -85,8 +87,8 @@ def map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
 def _decode_run_end_dictionary_array(array: pa.RunEndEncodedArray) -> pa.Array:
     """Decodes one chunk of a run-end encoded column with dictionary-encoded values into a dictionary-encoded array."""
     values = array.values
-    # pyarrow has no run_end_decode kernel for dictionary values, so decode the runs of indices and pair the result
-    # with the dictionary. The children of a sliced array cover the whole unsliced array, hence the final slice.
+    # pyarrow can't run_end_decode dictionary values, so decode the indices and reattach the dictionary.
+    # The children span the unsliced array, hence the slice.
     indices = pc.run_end_decode(
         pa.RunEndEncodedArray.from_arrays(array.run_ends, values.indices)
     )
@@ -96,16 +98,10 @@ def _decode_run_end_dictionary_array(array: pa.RunEndEncodedArray) -> pa.Array:
 
 
 def decode_for_pyarrow(pa_table: pa.Table) -> pa.Table:
-    """Returns the pyarrow table with the encoded columns that pyarrow mishandles decoded.
+    """Decodes the encoded columns that pyarrow mishandles.
 
-    - A run-end encoded column with dictionary-encoded values becomes a dictionary-encoded column. The server sends
-      one for long runs of a few distinct values. pyarrow can't decode it: to_pandas and the run_end_decode kernel both
-      fail on it.
-    - A dictionary-encoded timestamp column with a time zone becomes a plain timestamp column. pyarrow's to_pandas turns
-      it into a category column of timestamps without the time zone, and comparing those with a timestamp that has one
-      is silently False.
-
-    Other encoded columns stay encoded. to_pandas turns a dictionary-encoded column into a pandas category column.
+    - Run-end encoded over dictionary becomes dictionary-encoded. pyarrow can't decode it.
+    - Dictionary-encoded timestamps with a time zone become plain timestamps. to_pandas drops their time zone.
     """
     for i, field in enumerate(pa_table.schema):
         column = pa_table.column(i)
@@ -126,8 +122,7 @@ def decode_for_pyarrow(pa_table: pa.Table) -> pa.Table:
                 type=column.type.value_type,
             )
         if column.type != field.type:
-            # A run-end encoded field is not nullable, because its nulls live in its values. The decoded column holds
-            # those nulls, so its field is nullable.
+            # Nulls of a run-end encoded field live in its values, so the decoded field is nullable.
             pa_table = pa_table.set_column(
                 i, pa.field(field.name, column.type, True, field.metadata), column
             )

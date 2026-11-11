@@ -44,7 +44,7 @@ The printed schema shows that some columns aren't plain Arrow types. [`to_arrow`
 
 Starting in version 43.0, Deephaven picks these encodings itself by default: dictionary encoding for string and other object columns with few distinct values, and run-end encoding for columns whose values repeat in runs. The `Class` column gets both. To control these encodings, see [Barrage schema annotation](./data-import-export/barrage-schema.md).
 
-[`to_table`](../reference/arrow/to-table.md) rejects encoded columns. If you write them to a Feather file, [`read_feather`](../reference/arrow/read-feather.md) can't read them correctly either. Decode them first:
+[`to_table`](../reference/arrow/to-table.md) accepts encoded columns, but [`read_feather`](../reference/arrow/read-feather.md) can't read them correctly from a Feather file. This guide writes `pa_iris` to a Feather file later, so it decodes the columns first:
 
 ```python test-set=1 order=null
 import pyarrow as pa
@@ -111,6 +111,7 @@ from_pyarrow = dharrow.to_table(pa_table)
 
 - Exact types listed in `deephaven.arrow.SUPPORTED_ARROW_TYPES`, such as `pa.int64()`, `pa.string()`, and `pa.timestamp("ns")`. [`to_table`](../reference/arrow/to-table.md) maps each of these directly to a Deephaven type.
 - Some parameterized types, which take arguments such as a precision, an element type, or a time zone: 128-bit and 256-bit decimals (`pa.decimal128` and `pa.decimal256`), lists, list views, fixed-size lists, maps, fixed-size binary, unions, and timestamps with a time zone. `SUPPORTED_ARROW_TYPES` doesn't list these types, so [`to_table`](../reference/arrow/to-table.md) leaves their mapping to the Deephaven engine.
+- Dictionary-encoded and run-end-encoded columns whose values have one of the types above. `deephaven.arrow.SUPPORTED_ARROW_ENCODINGS` lists these encodings. The column becomes a plain Deephaven column of its value type.
 
 To see the full list of exact types, print `SUPPORTED_ARROW_TYPES`:
 
@@ -118,7 +119,7 @@ To see the full list of exact types, print `SUPPORTED_ARROW_TYPES`:
 print(dharrow.SUPPORTED_ARROW_TYPES)
 ```
 
-[`to_table`](../reference/arrow/to-table.md) raises an error for any other column type, including large strings, large binary, large lists, structs, and dictionary-encoded or run-end-encoded columns. [`to_arrow`](../reference/arrow/to-arrow.md) can produce the last two, so decode them as shown in [Convert between Deephaven and PyArrow tables](#convert-between-deephaven-and-pyarrow-tables) before you convert back. The error message points only to `SUPPORTED_ARROW_TYPES`, so check the parameterized types above as well before you decide a type is unsupported.
+[`to_table`](../reference/arrow/to-table.md) raises an error for any other column type, including large strings, large binary, large lists, and structs. The error message points only to `SUPPORTED_ARROW_TYPES` and `SUPPORTED_ARROW_ENCODINGS`, so check the parameterized types above as well before you decide a type is unsupported.
 
 ## Write a Feather file
 

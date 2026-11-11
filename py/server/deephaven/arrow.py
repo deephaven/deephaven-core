@@ -78,14 +78,15 @@ _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES = {
 
 SUPPORTED_ARROW_TYPES = [k for k, v in _ARROW_DH_DATA_TYPE_MAPPING.items() if v]
 
+# A column with one of these encodings is supported when the type of its values is.
+SUPPORTED_ARROW_ENCODINGS = (pa.DictionaryType, pa.RunEndEncodedType)
+
 
 def _map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
     """Maps a pyarrow type to the corresponding Deephaven column data type."""
-    # A run-end encoded or dictionary-encoded column holds values of its value type, and the server decodes both
-    # encodings, so the column maps to the Deephaven type of those values. The error below still names arrow_type, so
-    # that it matches the type in the user's schema.
+    # Encoded columns map to the type of their values. The error names arrow_type, the type in the user's schema.
     value_type = arrow_type
-    while isinstance(value_type, (pa.RunEndEncodedType, pa.DictionaryType)):
+    while isinstance(value_type, SUPPORTED_ARROW_ENCODINGS):
         value_type = value_type.value_type
 
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(value_type)
@@ -97,7 +98,8 @@ def _map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
 
         raise DHError(
             message=f"unsupported arrow data type : {arrow_type}, refer to "
-            f"deephaven.arrow.SUPPORTED_ARROW_TYPES for the list of supported pyarrow types."
+            f"deephaven.arrow.SUPPORTED_ARROW_TYPES for the list of supported pyarrow types. A column with an "
+            f"encoding in deephaven.arrow.SUPPORTED_ARROW_ENCODINGS is checked by the type of its values."
         )
 
     return {"deephaven:type": dh_type}
@@ -105,6 +107,9 @@ def _map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
 
 def to_table(pa_table: pa.Table, cols: Sequence[str] | None = None) -> Table:
     """Creates a Deephaven table from a pyarrow table.
+
+    A column with an encoding in SUPPORTED_ARROW_ENCODINGS, such as a dictionary-encoded column, is supported when the
+    type of its values is.
 
     Args:
         pa_table(pa.Table): the pyarrow table
@@ -123,8 +128,8 @@ def to_table(pa_table: pa.Table, cols: Sequence[str] | None = None) -> Table:
 
     dh_fields = []
     for f in pa_table.schema:
-        # Keep the field's nullability. The IPC writer below refuses record batches whose schema differs from
-        # dh_schema, and to_arrow returns run-end encoded fields as not nullable.
+        # Keep nullability. The writer rejects batches whose schema differs, and to_arrow returns REE
+        # fields as not nullable.
         dh_fields.append(
             pa.field(
                 name=f.name,
@@ -138,10 +143,8 @@ def to_table(pa_table: pa.Table, cols: Sequence[str] | None = None) -> Table:
     try:
         j_barrage_table_builder.setSchema(jpy.byte_buffer(dh_schema.serialize()))
 
-        # Write the table as an IPC stream one record batch at a time, so that only one batch's messages are held at
-        # once. The writer puts a dictionary batch for each dictionary-encoded column ahead of the record batch that
-        # refers to it. Serializing the record batches alone leaves those out, and the server can't decode the
-        # columns' indices without them.
+        # Stream one batch at a time to bound memory. The writer also emits the dictionary batches that
+        # the server needs to decode dictionary indices.
         sink = io.BytesIO()
         with pa.ipc.new_stream(sink, dh_schema) as writer:
             for record_batch in pa_table.to_batches():

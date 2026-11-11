@@ -473,8 +473,7 @@ class ArrowTestCase(BaseTestCase):
         self.assert_table_equals(dh_table, source)
 
     def test_to_table_auto_detected_encodings(self) -> None:
-        # Long runs of a few strings get run-end over dictionary encoding from the server's auto-detection, which
-        # marks the field not nullable. to_table accepts it.
+        # Auto-detection makes this column run-end over dictionary, with a non-nullable field.
         source = empty_table(26300).update("S = (ii < 13150) ? `A` : `B`")
         pa_table = dharrow.to_arrow(source)
         field = pa_table.schema.field("S")
@@ -486,8 +485,7 @@ class ArrowTestCase(BaseTestCase):
         self.assert_table_equals(dh_table, source)
 
     def test_to_table_dictionary_chunks(self) -> None:
-        # Each chunk of a pyarrow dictionary column can have its own dictionary. to_table sends each one ahead of the
-        # chunk that refers to it.
+        # Each chunk has its own dictionary, and to_table sends each one.
         chunks = [
             pa.array(["a", "b", "a", None]).dictionary_encode(),
             pa.array(["c", "c", "a"]).dictionary_encode(),
@@ -500,7 +498,7 @@ class ArrowTestCase(BaseTestCase):
         self.assert_table_equals(dh_table, expected)
 
     def test_to_table_unsupported_dictionary_value_type(self) -> None:
-        # The error for an unsupported value type names the encoded type, which is the type in the user's schema
+        # The error names the encoded type from the user's schema.
         pa_table = pa.table(
             {"S": pa.array(["a", "b"], type=pa.large_string()).dictionary_encode()}
         )
