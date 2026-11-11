@@ -3,8 +3,6 @@
 //
 package io.deephaven.parquet.table.location;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.Pair;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -30,6 +28,7 @@ import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
+import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
 import io.deephaven.engine.table.impl.filter.ExtractFilterWithoutBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
@@ -37,6 +36,7 @@ import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
+import io.deephaven.engine.table.impl.PrevTableTools;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.internal.log.LoggerFactory;
@@ -73,7 +73,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
@@ -732,7 +731,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex == null) {
                 return input.copy();
             }
-            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
+            return pushdownDataIndex(selection, filter, usePrev, filterCtx.filterColumnToManagerColumnName(),
+                    dataIndex, input);
         }
         if (action == PARQUET_DICTIONARY) {
             if (!hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
@@ -746,7 +746,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex == null) {
                 return input.copy();
             }
-            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
+            return pushdownDataIndex(selection, filter, usePrev, filterCtx.filterColumnToManagerColumnName(),
+                    dataIndex, input);
         }
         throw new IllegalStateException("Unexpected value: " + action);
     }
@@ -1171,24 +1172,31 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * be complete and current for the rows it covers (see {@link #hasDataIndex}). When the selection is too small for
      * the index, or filtering the index fails for a reason other than cancellation, the result is a copy of
      * {@code result}. A filter that respects a barrier is shown only the keys of rows in {@code result}'s maybe
-     * matches.
+     * matches. With {@code usePrev}, the filter reads the previous state of a refreshing index, as a snapshot that uses
+     * previous values must; the index a location reads from its own files is static, and reads the same either way.
      */
     @NotNull
     public PushdownResult pushdownDataIndex(
             final RowSet selection,
             final WhereFilter filter,
+            final boolean usePrev,
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
             final PushdownResult result) {
         final WritableRowSet matching;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final long threshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+            // The rows in question are previous row keys when usePrev is set, so compare them with the previous index.
+            final long indexSize = usePrev
+                    ? dataIndex.table().getRowSet().sizePrev()
+                    : dataIndex.table().size();
+            final long threshold = (long) (indexSize / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
             if (result.maybeMatch().size() <= threshold) {
                 return result.copy();
             }
             final boolean barrierActive = ExtractRespectedBarriers.stream(filter).findAny().isPresent();
             // Extract the fundamental filter, ignoring barriers and serial wrappers.
             final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
+            final List<String> filterColumns = filter.getColumns();
             final String rowSetColumnName = dataIndex.rowSetColumnName();
             // Apply the filter to the data index table
             try {
@@ -1200,13 +1208,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     final Table rawTable = ((RawTableStandaloneDataIndex) dataIndex).rawTable;
                     try (final RowSet locationRowSet = getRowSet();
                             final WritableRowSet positions = locationRowSet.invert(result.maybeMatch());
-                            final WritableRowSet matchingPositions = executeFilterDataIndex(
-                                    rawTable, rowSetColumnName, renameMap, copiedFilter, true, positions)) {
+                            final WritableRowSet matchingPositions = executeFilterDataIndex(rawTable,
+                                    rowSetColumnName, filterColumns, renameMap, copiedFilter, true, positions)) {
                         matching = locationRowSet.subSetForPositions(matchingPositions);
                     }
                 } else {
-                    matching = executeFilterDataIndex(dataIndex.table(), rowSetColumnName, renameMap, copiedFilter,
-                            barrierActive, result.maybeMatch());
+                    final Table indexTable =
+                            usePrev ? PrevTableTools.prevTable(dataIndex.table()) : dataIndex.table();
+                    matching = executeFilterDataIndex(indexTable, rowSetColumnName, filterColumns, renameMap,
+                            copiedFilter, barrierActive, result.maybeMatch());
                 }
             } catch (final Exception e) {
                 // A cancelled query must stop, not carry on filtering without the index.
@@ -1231,12 +1241,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * Apply {@code filter} to {@code indexTable} and return the union of the matching index rows' row sets, each
      * intersected with {@code rows}. Behind a barrier, the filter is applied only to the index rows whose row sets
      * overlap {@code rows}. The index's row sets and {@code rows} must be in the same space, row keys or positions.
+     * {@code filterColumns} and {@code renameMap} name the index columns the filter reads, in the form
+     * {@link DataIndexUtils#indexTableForFilter} takes.
      *
      * @return The matches, in the space of {@code rows}; ownership passes to the caller
      */
     private static WritableRowSet executeFilterDataIndex(
             final Table indexTable,
             final String rowSetColumnName,
+            final List<String> filterColumns,
             final Map<String, String> renameMap,
             final WhereFilter filter,
             final boolean barrierActive,
@@ -1244,14 +1257,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // The tables made here are released before returning, so that none still refers to rows once the caller
         // closes it.
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            Table toFilter = indexTable;
-            if (!renameMap.isEmpty()) {
-                final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                        .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
-                                ColumnName.of(entry.getKey())))
-                        .collect(Collectors.toList());
-                toFilter = toFilter.renameColumns(renamePairs);
-            }
+            Table toFilter = DataIndexUtils.indexTableForFilter(indexTable, rowSetColumnName, filterColumns, renameMap);
             if (barrierActive) {
                 // Keep only the index rows whose row sets overlap the rows in question.
                 final QueryScope scope = new StandaloneQueryScope();

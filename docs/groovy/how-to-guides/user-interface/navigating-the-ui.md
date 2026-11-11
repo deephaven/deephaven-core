@@ -19,7 +19,7 @@ The screenshot below outlines most of the items, each in a different color. The 
 ### Console pane
 
 - **Console** (red outline, first tab on the left): Type and run code here. You do most of your work in this panel.
-- **Log** (purple outline, tab next to **Console**): View recent [server log](../logs.md) output. The panel shows the most recent log messages when you open it, then new messages as they arrive.
+- **Log** (purple outline, tab next to **Console**): View recent [server log](../logs.md#log-panel) output. The panel shows the most recent log messages when you open it, then new messages as they arrive.
 - **Console Options menu** (magenta outline, ⋮ icon at the right end of the console toolbar, tooltip **More Actions...**): Change the console's behavior or [upload a table from a file](./upload-table-from-file.md). Behavior options include whether panels open automatically and whether they close when the connection drops.
 
 ### Right-hand pane
