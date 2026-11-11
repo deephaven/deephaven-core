@@ -7,9 +7,10 @@ import inspect
 import re
 import types
 import unittest
-from typing import Any, TypeVar
+from typing import Any, TypeVar, get_type_hints
 
-from pydeephaven._table_interface import T, TableInterface, _bind_t, _fill_doc
+from pydeephaven._doc_template import T, bind_t_text, fill_doc
+from pydeephaven._table_interface import TableInterface
 from pydeephaven._table_ops import TableOp
 from pydeephaven.query import Query
 from pydeephaven.table import InputTable, Table
@@ -58,16 +59,42 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
                     self.assertNotIn("\n\n\n", doc)
                     self.assertEqual(f"{cls.__name__}.{name}", op.__qualname__)
 
-    def test_signatures_use_real_types(self) -> None:
+    def test_signatures_keep_source_text(self) -> None:
+        # Signatures show the hints as the source wrote them, with T replaced, so tools that print them stay short.
         for cls in (Table, Query):
             for name in OP_NAMES:
                 with self.subTest(cls=cls.__name__, op=name):
                     sig = inspect.signature(vars(cls)[name])
-                    self.assertNotIsInstance(sig.return_annotation, str)
                     if name in T_OP_NAMES:
-                        self.assertIs(cls, sig.return_annotation)
-                    for param in sig.parameters.values():
-                        self.assertNotIsInstance(param.annotation, str)
+                        self.assertEqual(cls.__name__, sig.return_annotation)
+                    self.assertNotRegex(str(sig), r"\bT\b")
+
+    def test_hints_resolve(self) -> None:
+        for cls in (Table, Query):
+            for name in OP_NAMES:
+                with self.subTest(cls=cls.__name__, op=name):
+                    hints = get_type_hints(vars(cls)[name])
+                    if name in T_OP_NAMES:
+                        self.assertIs(cls, hints["return"])
+
+    def test_bind_t_text(self) -> None:
+        self.assertEqual("Query", bind_t_text("T", Query))
+        # A union keeps each member once, so Table | T collapses to Table on Table.
+        self.assertEqual("Table", bind_t_text("Table | T", Table))
+        self.assertEqual("Table | Query | None", bind_t_text("Table | T | None", Query))
+        # Only the top-level "|" splits members, and a name that merely contains T stays as it is.
+        self.assertEqual(
+            "dict[str, Query | int] | TableOp",
+            bind_t_text("dict[str, T | int] | TableOp", Query),
+        )
+
+    def test_signatures_use_pipe_unions(self) -> None:
+        for cls in (Table, Query):
+            for name in OP_NAMES:
+                with self.subTest(cls=cls.__name__, op=name):
+                    sig = str(inspect.signature(vars(cls)[name]))
+                    self.assertNotIn("Union[", sig)
+                    self.assertNotIn("Optional[", sig)
 
     def test_raises_placeholder(self) -> None:
         for cls in (Table, Query):
@@ -100,16 +127,21 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
         template = "Summary.\n\n    Returns:\n        {returns}\n\n    {raises}\n    "
         self.assertEqual(
             "Summary.\n\n    Returns:\n        x\n\n    Raises:\n        E\n    ",
-            _fill_doc(template, {"returns": "x", "raises": "Raises:\n    E"}),
+            fill_doc(template, {"returns": "x", "raises": "Raises:\n    E"}),
         )
         self.assertEqual(
             "Intro.\n\n    Summary.\n\n    Returns:\n        x\n    ",
-            _fill_doc(template, {"returns": "x", "intro": "Intro."}),
+            fill_doc(template, {"returns": "x", "raises": "", "intro": "Intro."}),
+        )
+        # The later lines of an intro take the docstring's indent, so getdoc strips it evenly.
+        self.assertEqual(
+            "Intro\n    more.\n\n    Summary.\n\n    Returns:\n        x\n    ",
+            fill_doc(template, {"returns": "x", "raises": "", "intro": "Intro\nmore."}),
         )
         # A one-line docstring has no indent to copy.
         self.assertEqual(
             "Intro.\n\nReturns x.",
-            _fill_doc("Returns {returns}.", {"returns": "x", "intro": "Intro."}),
+            fill_doc("Returns {returns}.", {"returns": "x", "intro": "Intro."}),
         )
 
     def test_doc_vars_without_returns(self) -> None:
@@ -144,7 +176,7 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
     def test_op_without_t_return(self) -> None:
         original = TableInterface.head
 
-        def op(self: Any) -> None:
+        def op(self: "Any") -> "None":
             """Does a thing.
 
             {raises}
@@ -163,15 +195,17 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
             self.assertEqual(
                 "Intro.\n\nDoes a thing.", (inspect.getdoc(NoneOp.head) or "").rstrip()
             )
-            self.assertIs(None, inspect.signature(NoneOp.head).return_annotation)
+            self.assertEqual("None", inspect.signature(NoneOp.head).return_annotation)
         finally:
             TableInterface.head = original
 
     def test_t_is_bound_in_every_hint(self) -> None:
         original = TableInterface.head
-        R = TypeVar("R")
+        R = TypeVar("R")  # noqa: F841 - named only in a hint below, which stays text
 
-        def op(self: Any, other: Table | T, others: list[T], extra: dict[R, T]) -> bool:
+        def op(
+            self: "Any", other: "Table | T", others: "list[T]", extra: "dict[R, T]"
+        ) -> "bool":
             """Returns {returns}."""
             return True
 
@@ -185,12 +219,31 @@ class TableInterfaceDocsTestCase(unittest.TestCase):
                     return self
 
             hints = Bound.head.__annotations__
-            self.assertEqual(Table | Bound, hints["other"])
-            self.assertEqual(list[Bound], hints["others"])
-            self.assertEqual(dict[R, Bound], hints["extra"])
-            self.assertIs(bool, hints["return"])
-            # On Table, Table | T collapses to Table.
-            self.assertIs(Table, _bind_t(Table | T, Table))
+            self.assertEqual("Table | Bound", hints["other"])
+            self.assertEqual("list[Bound]", hints["others"])
+            # Only T is replaced. Another TypeVar, such as R, stays.
+            self.assertEqual("dict[R, Bound]", hints["extra"])
+            self.assertEqual("bool", hints["return"])
+        finally:
+            TableInterface.head = original
+
+    def test_object_hint_is_rejected(self) -> None:
+        original = TableInterface.head
+
+        def op(self: "Any", n: int) -> "Any":
+            """Returns {returns}."""
+            return self
+
+        TableInterface.head = op  # type: ignore[assignment]
+        try:
+            with self.assertRaisesRegex(TypeError, "'n' hint that is not text"):
+
+                class ObjectHint(TableInterface["ObjectHint"]):
+                    _doc_vars = {"returns": "self"}
+
+                    def table_op_handler(self, table_op: TableOp) -> "ObjectHint":
+                        return self
+
         finally:
             TableInterface.head = original
 

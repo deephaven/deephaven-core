@@ -219,6 +219,10 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(cm.exception.root_cause)
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
+    def test_update_empty(self) -> None:
+        # An empty list adds no columns, as Java's update does.
+        self.assert_table_equals(self.test_table, self.test_table.update([]))
+
     def test_USV(self):
         ops = [
             Table.update,
