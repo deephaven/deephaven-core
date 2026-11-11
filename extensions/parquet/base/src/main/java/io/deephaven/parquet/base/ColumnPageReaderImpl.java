@@ -155,7 +155,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     @Override
     public void openSparse(
             @NotNull final SparsePageCursor cursor,
-            @NotNull final SeekableChannelContext channelContext) throws IOException {
+            @NotNull final SeekableChannelContext channelContext) {
         if (!supportsSparse()) {
             throw new UnsupportedOperationException(
                     "Sparse read of a repeated or nested column: " + columnName + ", uri: " + uri);

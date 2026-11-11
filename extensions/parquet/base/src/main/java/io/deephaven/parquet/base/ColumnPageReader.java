@@ -61,7 +61,7 @@ public interface ColumnPageReader extends AutoCloseable {
      * @param cursor The cursor to open on this page
      * @param channelContext The channel context to use for reading the parquet file
      */
-    default void openSparse(SparsePageCursor cursor, SeekableChannelContext channelContext) throws IOException {
+    default void openSparse(SparsePageCursor cursor, SeekableChannelContext channelContext) {
         throw new UnsupportedOperationException();
     }
 
