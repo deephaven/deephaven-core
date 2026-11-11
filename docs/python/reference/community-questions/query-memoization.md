@@ -2,33 +2,33 @@
 title: Why do some queries run faster the second time they are run?
 ---
 
-Deephaven utilizes [memoization](https://en.wikipedia.org/wiki/Memoization) for many table operations, such as [`avg_by`](../table-operations/group-and-aggregate/avgBy.md), which stores and recalls previously computed results. This optimization significantly reduces execution time on repeated runs.
+Deephaven uses [memoization](https://en.wikipedia.org/wiki/Memoization) for many table operations, such as [`avg_by`](../table-operations/group-and-aggregate/avgBy.md). Memoization stores previously computed results and reuses them instead of computing them again. When you apply the same operation with the same arguments to the same table again, and the earlier result still exists, Deephaven returns that existing result instead of computing it again.
 
 ## Are all operations in Deephaven memoized?
 
 Not all operations are memoized. Some operations are excluded for one of two reasons:
 
 - The work hasn't been done to memoize the table operation (yet).
-- Memoization is unsafe, especially with stateful User-Defined Functions (UDFs).
+- Memoizing the operation would not be safe. For example, `select`, `update`, and `view` calls that compute formula columns are never memoized, and neither are most formula filters, because a formula can return a different result each time it runs.
 
-## Are there other factors contributing to improved execution time on subsequent runs?
+## Do other factors besides memoization make later runs faster?
 
-Yes. Other factors include the following, which is often done on the first pass:
+Yes. The first run also warms caches and compiles code, and later runs benefit from both:
 
-- Warmed filesystem and/or operating system buffer caches, which result in a complete in-memory cache of materialized pages.
-- JIT compilation, which optimizes execution for subsequent runs.
+- Warm filesystem and operating system caches. Data read from disk on the first run stays in memory, so later runs read it from memory instead of from disk.
+- Just-in-time (JIT) compilation. The JVM compiles frequently run code to optimized machine code while the first run executes, so later runs use the faster compiled code.
 
 ## Can memoization be disabled for benchmark testing?
 
-Yes, if you're benchmarking and want to disable memoization, you can do so. Set the property `QueryTable.memoizeResults` to `false`.
+Yes. To disable memoization when benchmarking, set the property `QueryTable.memoizeResults` to `false`. See [Query table configuration](../../conceptual/query-table-configuration.md#memoization) for details.
 
-You can include this setting in your .prop file:
+You can include this setting in your [configuration file](../../how-to-guides/configuration/config-file.md):
 
-```bash
+```properties
 QueryTable.memoizeResults=false
 ```
 
-Or as a JVM argument:
+Or pass it as a JVM system property. With Docker, set it in the `START_OPTS` environment variable:
 
 ```bash
 docker run --rm --env START_OPTS="-DQueryTable.memoizeResults=false" ghcr.io/deephaven/server:latest

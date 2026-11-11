@@ -1,8 +1,8 @@
 ---
-title: How does the console determine what objects tables and charts to display?
+title: How do I control what objects are displayed in the console?
 ---
 
-In Groovy, you can often mark variables, methods, and classes with a leading underscore to indicate that they are for internal use only. In Deephaven, a leading underscore in a table name prevents the table from being displayed in the IDE.
+In the Deephaven IDE, the console doesn't automatically open a panel for a variable whose name starts with an underscore. The variable still exists and you can open it manually.
 
 Consider the following query that creates three named tables:
 
@@ -14,7 +14,7 @@ lastTrades = cryptoTrades.lastBy("Instrument")
 lastTradesWithPriceTimesSize = lastTrades.updateView("PriceTimesSize = Price * Size")
 ```
 
-When this query runs, tabs for `cryptoTrades`, `lastTrades`, and `lastTradesWithPriceTimesSize` will appear in the console. However, if you do not want to display `lastTrades`, you can add a leading underscore to the table name:
+When this query runs, panels for `cryptoTrades`, `lastTrades`, and `lastTradesWithPriceTimesSize` open in the IDE. However, if you do not want to display `lastTrades`, you can add a leading underscore to the table name:
 
 ```groovy order=cryptoTrades,lastTradesWithPriceTimesSize
 import static io.deephaven.csv.CsvTools.readCsv
@@ -24,7 +24,7 @@ _lastTrades = cryptoTrades.lastBy("Instrument")
 lastTradesWithPriceTimesSize = _lastTrades.updateView("PriceTimesSize = Price * Size")
 ```
 
-Using `def` in Groovy allows you to create variables that are only accessible within the current scope, keeping your workspace cleaner by hiding intermediate results. In the following example, `lastTrades` is defined with `def`, which means it is a local variable and not added to the global binding. As a result, it will not appear in the console when the script finishes.
+Variables that a Groovy script assigns without `def` or a type go into the script's binding. The binding is the set of named variables that the console keeps after the script finishes and that the IDE can display. In the following example, `lastTrades` is defined with `def`, so it is a local variable and is not added to the binding.
 
 ```groovy order=cryptoTrades,lastTradesWithPriceTimesSize
 import static io.deephaven.csv.CsvTools.readCsv
@@ -34,9 +34,9 @@ def lastTrades = cryptoTrades.lastBy("Instrument")
 lastTradesWithPriceTimesSize = lastTrades.updateView("PriceTimesSize = Price * Size")
 ```
 
-Here is a third version of the query:
+Declaring the variable with an explicit type, such as `Table`, has the same effect as `def`: the variable is local to the script and isn't added to the binding.
 
-```groovy skip-test
+```groovy order=cryptoTrades,lastTradesWithPriceTimesSize
 import static io.deephaven.csv.CsvTools.readCsv
 
 cryptoTrades = readCsv("/data/examples/CryptoCurrencyHistory/CSV/CryptoTrades_20210922.csv")
@@ -44,22 +44,27 @@ Table lastTrades = cryptoTrades.lastBy("Instrument")
 lastTradesWithPriceTimesSize = lastTrades.updateView("PriceTimesSize = Price * Size")
 ```
 
-`lastTrades` is no longer in the binding, but there are still references to that table itself, as it is still feeding the `lastTradesWithPriceTimesSize` table. `lastTrades` falls between `cryptoTrades` and `lastTradesWithPriceTimesSize` in your query graph. However, generally speaking, this does not improve memory usage or performance, since you will still have a reference to the table.
+In both versions, `lastTrades` is no longer in the binding, but there are still references to that table itself, as it is still feeding the `lastTradesWithPriceTimesSize` table. `lastTrades` falls between `cryptoTrades` and `lastTradesWithPriceTimesSize` in your [query graph](../../conceptual/dag.md), the chain of tables that Deephaven updates in order as data changes. However, generally speaking, this does not improve memory usage or performance, since you will still have a reference to the table.
 
 You can display only the final table in the query by chaining the operations together:
 
 ```groovy order=lastTradesWithPriceTimesSize
-lastTradesWithPriceTimesSize = readCsv("/data/examples/CryptoCurrencyHistory/CSV/CryptoTrades_20210922.csv").lastBy("Instrument").updateView("PriceTimesSize = Price * Size")
+import static io.deephaven.csv.CsvTools.readCsv
+
+lastTradesWithPriceTimesSize = readCsv("/data/examples/CryptoCurrencyHistory/CSV/CryptoTrades_20210922.csv")
+    .lastBy("Instrument")
+    .updateView("PriceTimesSize = Price * Size")
 ```
 
 You may have fewer intermediate table objects that are visible to you at the end of the script, but the query still creates the same number of tables and does the same amount of work:
 
-1. get a table,
-2. filter it,
-3. look at last rows by `Instrument`, and
-4. calculate a weighted mid.
+1. Read a CSV into a table,
+2. take the last row for each `Instrument`, and
+3. add a `PriceTimesSize` column.
 
-However, choosing not to display tables can make a meaningful difference if you are performing an operation in a loop. For example:
+## Variables in loops
+
+How many variables you keep in scope matters more than whether they're displayed. In a loop, reusing one variable name lets earlier tables be cleaned up:
 
 ```groovy order=t,result
 import static io.deephaven.csv.CsvTools.readCsv
