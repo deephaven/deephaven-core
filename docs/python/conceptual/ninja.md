@@ -64,11 +64,11 @@ result = empty_table(10).update(
 
 In this example, the query sets column `X` to a [date-time](../reference/query-language/types/date-time.md). Column `Y` holds the [date-time](../reference/query-language/types/date-time.md) 10 seconds after `X`, and column `Z` holds the [date-time](../reference/query-language/types/date-time.md) one day after `X`. Column `A` holds a character. Single quotes surround the [date-time](../reference/query-language/types/date-time.md), the [duration](../reference/query-language/types/durations.md), the [time period](../reference/query-language/types/periods.md), and the character.
 
-There is one catch. A [query string](../how-to-guides/query-string-overview.md) that contains single quotes, as these date-time and character literals do, must be wrapped in double quotes. If you wrap it in single quotes instead, the first single quote inside it ends the string:
+There is one catch. A [query string](../how-to-guides/query-string-overview.md) that contains single quotes, as these date-time and character literals do, is easiest to write in double quotes. In a single-quoted string, the first unescaped single quote inside it ends the string:
 
 ```python skip-test
 s1 = "'This' is OK"
-s2 = ''This' is NOT'  # Syntax error: the inner single quote ends the string early
+s2 = ''This' is NOT'  # Syntax error: the unescaped inner single quote ends the string early
 ```
 
 There is no downside to using double quotes for [query strings](../how-to-guides/query-string-overview.md). When in doubt, use double quotes. You can use single quotes with escapes, but they are more difficult to read.
