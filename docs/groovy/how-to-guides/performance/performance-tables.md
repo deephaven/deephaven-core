@@ -621,9 +621,9 @@ ss = PerformanceQueries.serverState()
 
 #### Query Performance Tree Table
 
-[`queryPerformanceAsTreeTable`](/core/javadoc/io/deephaven/engine/table/impl/util/PerformanceQueries.html#queryPerformanceAsTreeTable()) returns a [tree table](../tree-table.md) of query performance data. It shows the same information as the [Query Performance Log](#query-performance-log), in tree form. Like a traditional call graph, it places every query that has a parent query into an expandable group. In the image below, a sort applied in the UI ran as the query with `EvaluationNumber = 68`. Expanding its row shows the subquery that did the sort, `EvaluationNumber = 69`:
+[`queryPerformanceAsTreeTable`](/core/javadoc/io/deephaven/engine/table/impl/util/PerformanceQueries.html#queryPerformanceAsTreeTable()) returns a [tree table](../tree-table.md) of query performance data. It shows the same information as the [Query Performance Log](#query-performance-log), in tree form. Like a traditional call graph, it places every query that has a parent query into an expandable group. In the image below, a sort applied in the UI ran as the query with `EvaluationNumber = 85`. Expanding its row shows the subquery that did the sort, `EvaluationNumber = 86`:
 
-![The Query Performance Tree Table, with the row where `EvaluationNumber = 68` expanded to show its subquery](../../assets/how-to/perf-qptt.png)
+![The Query Performance Tree Table, with the row where `EvaluationNumber = 85` expanded to show its subquery](../../assets/how-to/perf-qptt.png)
 
 To see _individual_ sub-operations as a [tree table](../tree-table.md), call [`queryOperationPerformanceAsTreeTable`](/core/javadoc/io/deephaven/engine/table/impl/util/PerformanceQueries.html#queryOperationPerformanceAsTreeTable()).
 

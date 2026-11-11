@@ -96,7 +96,7 @@ print(f"GC2 {(rt.totalMemory() - rt.freeMemory()) / 1024 / 1024}")
 
 The following screenshot shows the printed output from one run, above the `mem` table. The table includes samples from before and after garbage collection:
 
-![The printed memory values from the example, above the mem table, whose UsedMemMiB column drops from 1,716 to 91 after the two garbage collection calls](../../assets/reference/python/gc-perfmon.png)
+![The printed memory values from the example, above the mem table, whose UsedMemMiB column drops from 1,722 to 90 after the two garbage collection calls](../../assets/reference/python/gc-perfmon.png)
 
 The printed values typically show the following:
 
