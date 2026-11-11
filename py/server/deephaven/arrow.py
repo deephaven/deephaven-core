@@ -76,9 +76,12 @@ _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES = {
     pa.SparseUnionType,
 }
 
+#: The pyarrow data types that to_table maps directly to a Deephaven type. Parameterized types, such as decimals and
+#: lists, aren't listed. Use is_deephaven_compatible to check any type.
 SUPPORTED_ARROW_TYPES = [k for k, v in _ARROW_DH_DATA_TYPE_MAPPING.items() if v]
 
-# A column with one of these encodings is supported when the type of its values is.
+#: The pyarrow type classes of the encodings that to_table accepts. A column with one of these encodings is supported
+#: when the type of its values is. Check a type against them with isinstance, or use is_deephaven_compatible.
 SUPPORTED_ARROW_ENCODINGS = (pa.DictionaryType, pa.RunEndEncodedType)
 
 
@@ -119,7 +122,14 @@ def _map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
 
 
 def is_deephaven_compatible(data_type: pa.DataType) -> bool:
-    """Checks if the arrow data type is supported by Deephaven."""
+    """Checks whether to_table supports a pyarrow data type.
+
+    Args:
+        data_type (pa.DataType): the pyarrow data type
+
+    Returns:
+        True if to_table supports the type, False otherwise
+    """
     try:
         _map_arrow_type(data_type)
         return True
