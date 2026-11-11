@@ -200,10 +200,10 @@ Most users work with Deephaven through a programming language such as Python or 
 
 ```groovy order=t1,t2
 t1 = newTable(intCol("X", 1, 2, 3), stringCol("Y", "A/B", "C/D", "E/F"))
-t2 = t1.update("A = java.lang.Math.sin(X)", "B = Y.split(`/`)[1]")
+t2 = t1.update("A = java.lang.Integer.toBinaryString(X)", "B = Y.split(`/`)[1]")
 ```
 
-This query uses Java twice in its [query strings](../how-to-guides/query-string-overview.md). First, the `sin` method from the `java.lang.Math` class computes column `A`.
+This query uses Java twice in its [query strings](../how-to-guides/query-string-overview.md). First, the `toBinaryString` method from the `java.lang.Integer` class computes column `A`, the binary form of `X`.
 
 Second, [DQL strings](../how-to-guides/work-with-strings.md) are `java.lang.String` objects. Here, the `split` method splits `Y` on `/`, and the `[1]` [array access](../how-to-guides/work-with-arrays.md) retrieves the second token. Calling Java `String` methods inline means you don't need to write a custom string-processing function.
 

@@ -220,10 +220,12 @@ from deephaven import new_table
 from deephaven.column import string_col, int_col
 
 t1 = new_table([int_col("X", [1, 2, 3]), string_col("Y", ["A/B", "C/D", "E/F"])])
-t2 = t1.update(formulas=["A = java.lang.Math.sin(X)", "B = Y.split(`/`)[1]"])
+t2 = t1.update(
+    formulas=["A = java.lang.Integer.toBinaryString(X)", "B = Y.split(`/`)[1]"]
+)
 ```
 
-This query uses Java twice in its [query strings](../how-to-guides/query-string-overview.md). First, the `sin` method from the `java.lang.Math` class computes column `A`.
+This query uses Java twice in its [query strings](../how-to-guides/query-string-overview.md). First, the `toBinaryString` method from the `java.lang.Integer` class computes column `A`, the binary form of `X`.
 
 Second, [DQL strings](../how-to-guides/work-with-strings.md) are `java.lang.String` objects. Here, the `split` method splits `Y` on `/`, and the `[1]` [array access](../how-to-guides/work-with-arrays.md) retrieves the second token. Calling Java `String` methods inline means you don't need to write a custom string-processing function.
 
