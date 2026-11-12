@@ -6,11 +6,11 @@ title: How do I automatically execute Python code based on a Deephaven table col
 
 <p></p>
 
-Yes. This is common in algorithmic trading. There are two ways it can be achieved:
+Yes. This is common in algorithmic trading, and you can do it in two ways. Use [`where`](../../reference/table-operations/filter/where.md) and [`update`](../../reference/table-operations/select/update.md) when you want a table that records each trigger. Use a [table listener](../../how-to-guides/table-listeners-python.md) when the action is a side effect outside the query engine, such as sending an alert, and you don't need a result table.
 
-The first is by using [`where`](../../reference/table-operations/filter/where.md) and an [`update`](../../reference/table-operations/select/update.md) operation. The following example prints to the console when new data in the `X` column is greater than 0.5:
+The first approach uses `where` and `update`. The following example prints to the console when new data in the `X` column is greater than 0.5:
 
-```python order=events,t
+```python ticking-table order=events,t
 from deephaven import time_table
 
 t = time_table("PT00:00:01").update("X = random()")
@@ -24,13 +24,11 @@ def do_something(x) -> bool:
 events = t.where("X > 0.5").update("DidIt = do_something(X)")
 ```
 
-Alternatively, the same behavior can be accomplished with a [table listener](../../how-to-guides/table-listeners-python.md). Table listeners listen to ticking tables for new data. Table listeners can be used to trigger external actions, such as Python code, upon table updates. You can set the listener to trigger code based on new data meeting one or more criteria such as a value being in a certain range or a string containing a particular substring.
-
-New data is captured by table listeners in the form of a [dictionary](https://docs.python.org/3/tutorial/datastructures.html#dictionaries), where column names are the keys.
+You can also use a [table listener](../../how-to-guides/table-listeners-python.md). The listener function receives a `TableUpdate` object. Its `added` method returns a dictionary that maps each column name to a NumPy array of the newly added values. Table listeners are notified every time a ticking table changes, and receive the added, removed, and modified rows. You can set the listener to trigger code based on new data meeting one or more criteria such as a value being in a certain range or a string containing a particular substring.
 
 The following example prints `Doing stuff` any time a new value in the `X` column of our table is greater than 0.5:
 
-```python order=t
+```python ticking-table order=t
 from deephaven import time_table
 from deephaven.table_listener import listen
 
@@ -39,10 +37,10 @@ t = time_table("PT00:00:01").update("X = random()")
 
 
 def my_table_listener(update, is_replay):
-    print("New row in t table")
-
-    if update.added()["X"][0] > 0.5:
-        print("Doing stuff")
+    added = update.added()["X"]
+    for x in added:
+        if x > 0.5:
+            print("Doing stuff")
 
 
 my_table_handler = listen(t, my_table_listener)
