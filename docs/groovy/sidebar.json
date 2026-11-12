@@ -2925,15 +2925,15 @@
                     "path": "reference/community-questions/whats-minimum-amount-memory-to-allocate.md"
                   },
                   {
-                    "label": "Is it possible disable the Deephaven console?",
+                    "label": "Is it possible to disable the Deephaven console?",
                     "path": "reference/community-questions/possible-to-disable-console.md"
                   },
                   {
-                    "label": "How do I set the default timezone?",
+                    "label": "How do I set the default time zone?",
                     "path": "reference/community-questions/set-timezone.md"
                   },
                   {
-                    "label": "How can I manage the number of cores Deephaven can use?",
+                    "label": "How can I control how many threads Deephaven uses for query processing?",
                     "path": "reference/community-questions/manage-thread-pool-size.md"
                   },
                   {
