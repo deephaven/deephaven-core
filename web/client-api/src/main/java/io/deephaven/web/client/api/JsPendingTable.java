@@ -47,8 +47,7 @@ import jsinterop.annotations.JsMethod;
  */
 @TsName(namespace = "dh", name = "PendingTable")
 @TsInterface
-public interface JsPendingTable<@TsDefault(JsResolvedTable.class) T extends JsITable>
-        extends JsTableOperations, PromiseLike<T> {
+public interface JsPendingTable<@TsDefault(JsResolvedTable.class) T> extends JsTableOperations, PromiseLike<T> {
     /**
      * Releases everything this pending table produced, whichever stage it is at. If the operation is still pending, it
      * is canceled: the promise from {@link #resolve()} rejects with "Operation canceled" and the ticket is released. If

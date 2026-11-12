@@ -3,8 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
-import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsIgnore;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
@@ -21,13 +20,10 @@ import jsinterop.base.Any;
  * A server-side table that the client has retained: its data and metadata can be read, and it must be closed when no
  * longer needed. A {@link JsTable} is one, with its own client-side filter/sort state on top; a {@link JsResolvedTable}
  * is one that additionally offers the chainable {@link JsTableOperations}; a {@link JsTotalsTable} is one too.
+ * <p>
+ * Only visible directly in Java, not TypeScript - exported members are copied to subclasses instead as needed.
  */
-// TODO once the doclet honors @TsTypeRef on a type-parameter bound: make this @TsIgnore (the doclet already flattens an
-// ignored supertype's members into its subtypes), add a nested Union of Table | TotalsTable | ResolvedTable, and point
-// TableOperations.resolve() and the PendingTable<T> bound at that union via @TsTypeRef. Java keeps this interface for
-// its own typing; TS should never see the name.
-@TsName(namespace = "dh", name = "ITable")
-@TsInterface
+@TsIgnore
 public interface JsITable {
     /**
      * The total count of rows in the table. If there is a viewport subscription active, this size will be updated when

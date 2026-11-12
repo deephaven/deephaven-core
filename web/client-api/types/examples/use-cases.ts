@@ -162,8 +162,8 @@ async function severalThatMayFail() {
     }
 }
 
-// Reading any table, legacy or new: Table, TotalsTable and ResolvedTable are all an ITable
-function describe(t: dh.ITable): string {
+// Reading any table, legacy or new: Table, TotalsTable and ResolvedTable share these members
+function describe(t: dh.Table | dh.TotalsTable | dh.ResolvedTable): string {
     return `${t.size} rows: ${t.columns.map(c => c.name).join(", ")}`;
 }
 async function readEither() {
