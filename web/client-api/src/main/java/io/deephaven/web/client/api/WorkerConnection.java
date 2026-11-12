@@ -320,7 +320,8 @@ public class WorkerConnection {
 
                         reviver.revive(hasActiveSubs);
 
-                        simpleReconnectableInstances.forEach((item, index, arr) -> item.refetch());
+                        // Each object reports its own failure with reconnectfailed
+                        simpleReconnectableInstances.forEach((item, index, arr) -> item.refetch().catch_(err -> null));
                     } else {
                         // wire up figures to attempt to reconnect when ready
                         simpleReconnectableInstances.forEach((item, index, arr) -> {
