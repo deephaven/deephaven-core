@@ -271,14 +271,14 @@ public abstract sealed class Aggregation
      * distinct value, the result is {@code nonUniqueSentinel}.
      *
      * @param includeNulls whether null is treated as a value for determining uniqueness. Defaults to {@code false}.
-     * @param columns the column(s) to aggregate
      * @param nonUniqueSentinel the value for a group without a single unique value. Defaults to {@code null}.
+     * @param columns the column(s) to aggregate
      * @return an aggregation
      */
     @JsMethod
     public static Unique AggUnique(@JsOptional @JsNullable Boolean includeNulls,
-            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns,
-            @JsOptional @JsNullable NonUniqueSentinelUnion nonUniqueSentinel) {
+            @JsOptional @JsNullable NonUniqueSentinelUnion nonUniqueSentinel,
+            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns) {
         Unique agg = new Unique();
         agg.includeNulls = includeNulls;
         agg.columns = columns;
@@ -358,7 +358,7 @@ public abstract sealed class Aggregation
      * @return an aggregation
      */
     @JsMethod
-    public static TDigest AggTDigest(@JsNullable Double compression,
+    public static TDigest AggTDigest(@JsOptional @JsNullable Double compression,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns) {
         TDigest agg = new TDigest();
         agg.compression = compression;

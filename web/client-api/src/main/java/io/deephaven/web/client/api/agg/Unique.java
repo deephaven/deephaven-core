@@ -51,7 +51,7 @@ public final class Unique extends ColumnAggregation {
         return sentinel.toProto();
     }
 
-    @TsUnion
+    @TsUnion(anonymous = false, namespace = "dh.agg")
     @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "?")
     public interface NonUniqueSentinelUnion {
 
