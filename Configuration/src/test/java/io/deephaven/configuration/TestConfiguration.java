@@ -642,4 +642,40 @@ public class TestConfiguration {
 
         }
     }
+
+    @Test
+    public void testWithDefault() {
+        Configuration.reset();
+        try {
+            final Configuration custom = Configuration.newStandaloneConfiguration();
+            assertSame(custom, Configuration.withDefault(custom));
+            assertSame(custom, Configuration.getInstance());
+
+            // A second assignment must be rejected while a default is present
+            try {
+                Configuration.withDefault(Configuration.newStandaloneConfiguration());
+                fail("Expected IllegalStateException when a default is already set");
+            } catch (IllegalStateException ignored) {
+            }
+            assertSame(custom, Configuration.getInstance());
+
+            // Assignment must also be rejected once getInstance() has initialized the default
+            Configuration.reset();
+            final Configuration initialized = Configuration.getInstance();
+            try {
+                Configuration.withDefault(custom);
+                fail("Expected IllegalStateException when getInstance() already initialized the default");
+            } catch (IllegalStateException ignored) {
+            }
+            assertSame(initialized, Configuration.getInstance());
+
+            // After reset(), a new default may be installed
+            Configuration.reset();
+            final Configuration another = Configuration.newStandaloneConfiguration();
+            assertSame(another, Configuration.withDefault(another));
+            assertSame(another, Configuration.getInstance());
+        } finally {
+            Configuration.reset();
+        }
+    }
 }
