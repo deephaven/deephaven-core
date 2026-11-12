@@ -302,10 +302,10 @@ result_via_proxy = pt_joined.merge()
 >
 > The `sanity_check_joins` argument to [`proxy`](../reference/table-operations/partitioned-tables/proxy.md) controls an extra check on proxied joins and filters:
 >
-> - It defaults to `True`.
+> - It defaults to `False`, which skips the check.
 > - When it is `True` and the right-hand table is also a proxy, the engine checks that each join, [`where_in`](../reference/table-operations/filter/where-in.md), or [`where_not_in`](../reference/table-operations/filter/where-not-in.md) key exists in only one partition of each input.
 > - The check does not verify that a key is in the same partition of the left and right tables.
-> - The check adds work and reduces parallelism. Set `sanity_check_joins=False` to skip it.
+> - The check adds work and reduces parallelism. Set `sanity_check_joins=True` to run it.
 
 ## Why use partitioned tables?
 

@@ -53,6 +53,23 @@ class PartitionedTableProxyTestCase(BaseTestCase):
     def test_target(self):
         self.assertEqual(self.partitioned_table, self.pt_proxy.target)
 
+    def test_sanity_check_joins(self):
+        # The test data has "a" values under more than one key, which the sanity check rejects.
+        with self.subTest("default skips the check"):
+            self.assertFalse(self.pt_proxy.sanity_check_joins)
+            filter_proxy = self.test_table.partition_by(by=["c"]).proxy()
+            self.assertFalse(filter_proxy.sanity_check_joins)
+            self.pt_proxy.where_in(filter_proxy, cols=["a"])
+
+        with self.subTest("opt in to the check"):
+            checked_proxy = self.partitioned_table.proxy(sanity_check_joins=True)
+            self.assertTrue(checked_proxy.sanity_check_joins)
+            checked_filter_proxy = self.test_table.partition_by(by=["c"]).proxy(
+                sanity_check_joins=True
+            )
+            with self.assertRaises(DHError):
+                checked_proxy.where_in(checked_filter_proxy, cols=["a"])
+
     def test_is_refreshing(self):
         with update_graph.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
@@ -244,10 +261,14 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         with self.subTest("Join with another Proxy"):
             with self.assertRaises(DHError) as cm:
                 pt_proxy = (
-                    self.test_table.drop_columns(["d", "e"]).partition_by("c").proxy()
+                    self.test_table.drop_columns(["d", "e"])
+                    .partition_by("c")
+                    .proxy(sanity_check_joins=True)
                 )
                 right_proxy = (
-                    self.test_table.drop_columns(["b", "d"]).partition_by("c").proxy()
+                    self.test_table.drop_columns(["b", "d"])
+                    .partition_by("c")
+                    .proxy(sanity_check_joins=True)
                 )
                 joined_pt_proxy = pt_proxy.natural_join(right_proxy, on="a", joins="e")
             self.assertIn("join keys found in multiple constituents", str(cm.exception))
