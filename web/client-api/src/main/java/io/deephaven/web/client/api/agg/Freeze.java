@@ -7,8 +7,9 @@ import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsType;
 
 /**
- * Freezes the first value seen for each group. Once a value has been set for a group, it will not change even if the
- * underlying data updates. This is useful for capturing an initial state.
+ * Freezes the value of each group's single row: once set, it does not change when that row updates. A group must have
+ * at most one row; a group with more fails the aggregation, so group by columns that are unique in the source. When a
+ * group is removed its output row is removed, and if it is added again its new value is frozen.
  */
 @JsType(namespace = "dh.agg")
 public final class Freeze extends ColumnAggregation {
