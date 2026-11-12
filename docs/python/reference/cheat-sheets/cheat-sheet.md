@@ -330,7 +330,7 @@ ends_with_example = static_source_1.where(["String2.endsWith(`M`)"])
 
 ### Number examples
 
-The `mod_example_1` filter condition uses the row-position variable [`i`](../query-language/variables/special-variables.md). See [Get the row number](#get-the-row-number) for when [`i` and `ii`](../query-language/variables/special-variables.md) are allowed.
+The `mod_example_1` filter condition uses the row-position variable [`i`](../query-language/variables/special-variables.md). See [Get the row number](#get-the-row-number) for when [`i` and `ii`](../query-language/variables/special-variables.md) are allowed in formulas. The engine doesn't check `where` filters, so a filter that uses [`i`](../query-language/variables/special-variables.md) on a ticking table runs, but its results can go stale as rows change.
 
 ```python test-set=1 order=null
 equals_example = static_source_2.where(["Int2 = 44"])
@@ -539,7 +539,7 @@ lazy_update_example = static_source_2.lazy_update(["Int2Sqrt = sqrt(Int2)"])
 [`i` and `ii`](../query-language/variables/special-variables.md) are built-in variables that hold a row's position in the table. [`i`](../query-language/variables/special-variables.md) is an `int` and [`ii`](../query-language/variables/special-variables.md) is a `long`.
 
 > [!CAUTION]
-> A row's position can change as rows are added or removed. By default, the engine allows [`i` and `ii`](../query-language/variables/special-variables.md) in a ticking table only if the table is [append-only](../../conceptual/table-types.md#specialization-1-append-only) or a [blink table](../../conceptual/table-types.md#specialization-3-blink). An [add-only table](../../conceptual/table-types.md#specialization-2-add-only) whose row keys match its row positions also qualifies.
+> A row's position can change as rows are added or removed. By default, the engine allows [`i` and `ii`](../query-language/variables/special-variables.md) in a formula on a ticking table only if the table is [append-only](../../conceptual/table-types.md#specialization-1-append-only) or a [blink table](../../conceptual/table-types.md#specialization-3-blink). An [add-only table](../../conceptual/table-types.md#specialization-2-add-only) whose row keys match its row positions also qualifies. The engine doesn't check `where` filters, so a filter that uses [`i` or `ii`](../query-language/variables/special-variables.md) on a ticking table runs, but its results can go stale as rows change.
 
 ```python test-set=1 order=null
 get_row_num = static_source_2.update_view(["RowNumInt = i", "RowNumLong = ii"])
@@ -597,7 +597,7 @@ simple_math = static_source_2.update(
 Append an underscore to a column name to use the whole column as an [array](../query-language/types/arrays.md). For example, `Double2_` is the `Double2` column as an array. Index the array with [`i`](../query-language/variables/special-variables.md) to reach values in other rows. [`subVector(start, end)`](../query-language/types/arrays.md) returns a slice of an array, from `start` up to but not including `end`.
 
 > [!CAUTION]
-> A simple constant offset, such as `Double2_[i-1]`, works on any table. Other column-array expressions, such as `Double2_.subVector(i-2, i+1)`, work only on static tables and [blink tables](../../conceptual/table-types.md#specialization-3-blink). On other ticking tables, including append-only tables, the engine rejects them with an error. For rolling calculations on ticking tables, use [`update_by`](../table-operations/update-by-operations/updateBy.md). See [Special variables](../query-language/variables/special-variables.md).
+> In a formula, a simple constant offset, such as `Double2_[i-1]`, works on any table. Other column-array expressions, such as `Double2_.subVector(i-2, i+1)`, work in formulas only on static tables and [blink tables](../../conceptual/table-types.md#specialization-3-blink). On other ticking tables, including append-only tables, the engine rejects them with an error. For rolling calculations on ticking tables, use [`update_by`](../table-operations/update-by-operations/updateBy.md). See [Special variables](../query-language/variables/special-variables.md).
 
 ```python test-set=1 order=null
 array_examples = static_source_2.update_view(
@@ -900,7 +900,7 @@ numbers_min_meta = numbers_min.meta_table.view(formulas=["Name", "DataType"])
 numbers_max_meta = numbers_max.meta_table.view(formulas=["Name", "DataType"])
 ```
 
-Each row holds a value near one type's limit. When that value is outside a column's type, the cast wraps or saturates as in Java, and a result equal to the type's null value, such as `Integer.MIN_VALUE` for `int`, displays as null. See [Casting](../query-language/control-flow/casting.md).
+Each row holds a value near one type's limit. When that value is outside a column's type, the cast wraps, saturates, or overflows to infinity, as in Java, and a result equal to the type's null value, such as `Integer.MIN_VALUE` for `int`, displays as null. See [Casting](../query-language/control-flow/casting.md).
 
 ### Cast strings
 
@@ -1610,7 +1610,9 @@ from deephaven import time_table
 
 source = time_table("PT1S")
 
-print(source.await_update(0))  # 0 ms timeout: returns False without waiting
+print(
+    source.await_update(0)
+)  # 0 ms timeout: returns False without waiting for an update
 print(source.await_update(1000))  # waits up to 1000 ms; True if the table updated
 
 result = source.update(formulas=["RenamedTimestamp = Timestamp"])

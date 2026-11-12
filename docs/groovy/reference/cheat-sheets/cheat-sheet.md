@@ -313,7 +313,7 @@ endsWithExample = staticSource1.where("String2.endsWith(`M`)")
 
 ### Number examples
 
-The `modExample1` filter condition uses the row-position variable [`i`](../query-language/variables/special-variables.md). See [Get the row number](#get-the-row-number) for when [`i` and `ii`](../query-language/variables/special-variables.md) are allowed.
+The `modExample1` filter condition uses the row-position variable [`i`](../query-language/variables/special-variables.md). See [Get the row number](#get-the-row-number) for when [`i` and `ii`](../query-language/variables/special-variables.md) are allowed in formulas. The engine doesn't check `where` filters, so a filter that uses [`i`](../query-language/variables/special-variables.md) on a ticking table runs, but its results can go stale as rows change.
 
 ```groovy test-set=1 order=null
 equalsExample = staticSource2.where("Int2 = 44")
@@ -516,7 +516,7 @@ lazyUpdateExample = staticSource2.lazyUpdate("Int2Sqrt = sqrt(Int2)")
 [`i` and `ii`](../query-language/variables/special-variables.md) are built-in variables that hold a row's position in the table. [`i`](../query-language/variables/special-variables.md) is an `int` and [`ii`](../query-language/variables/special-variables.md) is a `long`.
 
 > [!CAUTION]
-> A row's position can change as rows are added or removed. By default, the engine allows [`i` and `ii`](../query-language/variables/special-variables.md) in a ticking table only if the table is [append-only](../../conceptual/table-types.md#specialization-1-append-only) or a [blink table](../../conceptual/table-types.md#specialization-3-blink). An [add-only table](../../conceptual/table-types.md#specialization-2-add-only) whose row keys match its row positions also qualifies.
+> A row's position can change as rows are added or removed. By default, the engine allows [`i` and `ii`](../query-language/variables/special-variables.md) in a formula on a ticking table only if the table is [append-only](../../conceptual/table-types.md#specialization-1-append-only) or a [blink table](../../conceptual/table-types.md#specialization-3-blink). An [add-only table](../../conceptual/table-types.md#specialization-2-add-only) whose row keys match its row positions also qualifies. The engine doesn't check `where` filters, so a filter that uses [`i` or `ii`](../query-language/variables/special-variables.md) on a ticking table runs, but its results can go stale as rows change.
 
 ```groovy test-set=1 order=null
 getRowNum = staticSource2.updateView("RowNumInt = i", "RowNumLong = ii")
@@ -572,7 +572,7 @@ simpleMath = staticSource2.update(
 Append an underscore to a column name to use the whole column as an [array](../query-language/types/arrays.md). For example, `Double2_` is the `Double2` column as an array. Index the array with [`i`](../query-language/variables/special-variables.md) to reach values in other rows. [`subVector(start, end)`](../query-language/types/arrays.md) returns a slice of an array, from `start` up to but not including `end`.
 
 > [!CAUTION]
-> A simple constant offset, such as `Double2_[i-1]`, works on any table. Other column-array expressions, such as `Double2_.subVector(i-2, i+1)`, work only on static tables and [blink tables](../../conceptual/table-types.md#specialization-3-blink). On other ticking tables, including append-only tables, the engine rejects them with an error. For rolling calculations on ticking tables, use [`updateBy`](../table-operations/update-by-operations/updateBy.md). See [Special variables](../query-language/variables/special-variables.md).
+> In a formula, a simple constant offset, such as `Double2_[i-1]`, works on any table. Other column-array expressions, such as `Double2_.subVector(i-2, i+1)`, work in formulas only on static tables and [blink tables](../../conceptual/table-types.md#specialization-3-blink). On other ticking tables, including append-only tables, the engine rejects them with an error. For rolling calculations on ticking tables, use [`updateBy`](../table-operations/update-by-operations/updateBy.md). See [Special variables](../query-language/variables/special-variables.md).
 
 ```groovy test-set=1 order=null
 arrayExamples = staticSource2.updateView(
@@ -757,7 +757,7 @@ ifThenExample2 = staticSource2.updateView(
 
 ## Create and use custom variables
 
-A query string can use Groovy variables that are in scope when the query runs. For details, see [Groovy variables in query strings](../../how-to-guides/groovy-variables.md).
+A query string can use Groovy variables in the script's binding, which are those assigned without `def` or a type. For details, see [Groovy variables in query strings](../../how-to-guides/groovy-variables.md).
 
 ```groovy
 a = 7
@@ -839,7 +839,7 @@ numbersMinMeta = numbersMin.meta().view("Name", "DataType")
 numbersMaxMeta = numbersMax.meta().view("Name", "DataType")
 ```
 
-Each row holds a value near one type's limit. When that value is outside a column's type, the cast wraps or saturates as in Java, and a result equal to the type's null value, such as `Integer.MIN_VALUE` for `int`, displays as null. See [Casting](../query-language/control-flow/casting.md).
+Each row holds a value near one type's limit. When that value is outside a column's type, the cast wraps, saturates, or overflows to infinity, as in Java, and a result equal to the type's null value, such as `Integer.MIN_VALUE` for `int`, displays as null. See [Casting](../query-language/control-flow/casting.md).
 
 ### Cast strings
 
@@ -1444,7 +1444,7 @@ Use [`awaitUpdate`](../table-operations/table-listeners/await-update.md) to wait
 ```groovy ticking-table order=null
 source = timeTable("PT1S")
 
-println source.awaitUpdate(0)  // 0 ms timeout: returns false without waiting
+println source.awaitUpdate(0)  // 0 ms timeout: returns false without waiting for an update
 println source.awaitUpdate(1000)  // waits up to 1000 ms; true if the table updated
 
 result = source.update("RenamedTimestamp = Timestamp")
