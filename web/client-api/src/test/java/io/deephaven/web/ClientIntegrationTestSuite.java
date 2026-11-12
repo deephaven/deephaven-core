@@ -46,6 +46,7 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
         suite.addTestSuite(ImmutableTableTestGwt.class);
         suite.addTestSuite(PendingTableMisuseTestGwt.class);
         suite.addTestSuite(TableOperationsSmokeTestGwt.class);
+        suite.addTestSuite(AggregationTestGwt.class);
 
         // This should be a unit test, but it requires a browser environment to run on GWT 2.9
         // GWT 2.9 doesn't have proper bindings for Promises in HtmlUnit, so we need to use the IntegrationTest suite

@@ -264,7 +264,7 @@ public interface AggregationUnion {
         Aggregation.AggregationColumns.Builder colsBuilder =
                 Aggregation.AggregationColumns.newBuilder()
                         .setSpec(spec);
-        ColumnAggregation colAgg = Js.cast(this);
+        ColumnAggregation colAgg = Js.uncheckedCast(this);
         if (colAgg.columns != null) {
             colsBuilder.addAllMatchPairs(JsTable.MatchPairUnion.toStringArray(colAgg.columns));
         }
