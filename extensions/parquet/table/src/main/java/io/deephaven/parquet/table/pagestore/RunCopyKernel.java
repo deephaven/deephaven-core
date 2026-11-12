@@ -8,11 +8,16 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Copies runs of values from an array to a chunk, typed once per batch of runs rather than once per run.
  */
 interface RunCopyKernel {
+    /**
+     * @return The kernel for {@code chunkType}, or {@code null} if there is none
+     */
+    @Nullable
     static RunCopyKernel makeRunCopyKernel(@NotNull final ChunkType chunkType) {
         return switch (chunkType) {
             case Char -> CharRunCopyKernel.INSTANCE;
@@ -23,7 +28,7 @@ interface RunCopyKernel {
             case Float -> FloatRunCopyKernel.INSTANCE;
             case Double -> DoubleRunCopyKernel.INSTANCE;
             case Object -> ObjectRunCopyKernel.INSTANCE;
-            default -> throw new IllegalArgumentException("Unsupported chunk type: " + chunkType);
+            default -> null;
         };
     }
 

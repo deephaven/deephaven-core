@@ -4,7 +4,6 @@
 package io.deephaven.parquet.table.pagestore;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
@@ -16,7 +15,6 @@ import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.page.PagingContextHolder;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -156,12 +154,14 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     /**
      * Whether this column's pages support sparse reads; a property of the column, learned from its first page reader.
      */
-    private volatile SparseSupport sparseSupport = SparseSupport.UNKNOWN;
+    private volatile SparseSupport sparseSupport;
 
     final PageCache<ATTR> pageCache;
     final ColumnChunkReader columnChunkReader;
     private final long mask;
     final ToPage<ATTR, ?> toPage;
+    /** {@code null} if the chunk type has none, in which case the column doesn't read sparsely. */
+    @Nullable
     private final RunCopyKernel runCopyKernel;
 
     private final long numRows;
@@ -255,6 +255,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         this.mask = mask;
         this.toPage = toPage;
         runCopyKernel = RunCopyKernel.makeRunCopyKernel(toPage.getChunkType());
+        sparseSupport = runCopyKernel == null ? SparseSupport.UNSUPPORTED : SparseSupport.UNKNOWN;
 
         this.numRows = Require.inRange(columnChunkReader.numRows(), "numRows", mask, "mask");
     }
@@ -418,18 +419,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 page = new SparsePage<>(rows, Array.getLength(values) == rowCount ? values : copyOf(values, rowCount));
             } else {
                 // Merge with the latest entry, so that rows published by other contexts are kept.
-                final WritableRowSet union = current.rows.union(rows);
-                final Object merged = Array.newInstance(values.getClass().getComponentType(), union.intSize());
-                final WritableChunk<ATTR> mergedChunk = getChunkType().writableChunkWrap(merged, 0, union.intSize());
-                try (final RowSet currentSource = RowSetFactory.flat(current.rows.size());
-                        final RowSet currentDestination = union.invert(current.rows);
-                        final RowSet rowsSource = RowSetFactory.flat(rowCount);
-                        final RowSet rowsDestination = union.invert(rows)) {
-                    copyPositions(current.values, currentSource, mergedChunk, 0, currentDestination);
-                    copyPositions(values, rowsSource, mergedChunk, 0, rowsDestination);
-                }
-                rows.close();
-                page = new SparsePage<>(union, merged);
+                // noinspection DataFlowIssue: only a column with a kernel reads sparsely
+                page = current.merge(rows, values, getChunkType(), runCopyKernel);
                 evict(current);
             }
             state.pageRef = new WeakReference<>(page);
@@ -470,45 +461,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         // noinspection SuspiciousSystemArraycopy: copy is an array of array's component type
         System.arraycopy(array, 0, copy, 0, Math.min(length, Array.getLength(array)));
         return copy;
-    }
-
-    /**
-     * Copy the values at {@code sourcePositions} of {@code source} to {@code destinationOffset} plus the corresponding
-     * {@code destinationPositions} of {@code destination}. The two position sets have the same size.
-     */
-    private void copyPositions(
-            @NotNull final Object source,
-            @NotNull final RowSet sourcePositions,
-            @NotNull final WritableChunk<?> destination,
-            final int destinationOffset,
-            @NotNull final RowSet destinationPositions) {
-        try (final RowSet.RangeIterator sourceRanges = sourcePositions.rangeIterator();
-                final RowSet.RangeIterator destinationRanges = destinationPositions.rangeIterator();
-                final RunBatch runs = new RunBatch()) {
-            runs.begin(runCopyKernel, source, destination);
-            // Positions in an array and a chunk, so they fit in an int.
-            int sourcePos = 0;
-            int sourceEnd = -1;
-            int destinationPos = 0;
-            int destinationEnd = -1;
-            while (sourcePos <= sourceEnd || sourceRanges.hasNext()) {
-                if (sourcePos > sourceEnd) {
-                    sourceRanges.next();
-                    sourcePos = (int) sourceRanges.currentRangeStart();
-                    sourceEnd = (int) sourceRanges.currentRangeEnd();
-                }
-                if (destinationPos > destinationEnd) {
-                    destinationRanges.next();
-                    destinationPos = (int) destinationRanges.currentRangeStart();
-                    destinationEnd = (int) destinationRanges.currentRangeEnd();
-                }
-                final int length = Math.min(sourceEnd - sourcePos, destinationEnd - destinationPos) + 1;
-                runs.add(sourcePos, destinationOffset + destinationPos, length);
-                sourcePos += length;
-                destinationPos += length;
-            }
-            runs.finish();
-        }
     }
 
     @Override
@@ -568,7 +520,9 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             do {
                 final boolean isFirstPage = firstPage;
                 firstPage = false;
-                // Only reading is wrapped as a read failure, not filling from a page in memory.
+                // Reading is wrapped as a read failure, and so is a sparse fill, which fills as it reads; filling from
+                // a
+                // materialized page is not.
                 final ChunkPage<ATTR> page;
                 RowSequence pageRows = null;
                 try {
@@ -729,7 +683,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             }
             return false;
         }
-        final int cachedRows = (cached == null ? 0 : cached.rows.intSize())
+        final int cachedRows = (cached == null ? 0 : cached.size())
                 + (onCursorPage ? contextWrapper.pendingSize(this, pageNum) : 0);
         if (cachedRows + decodeCount > maxDensity * pageRowCount(pageNum)) {
             // Enough of the page is wanted to cache it whole.
@@ -780,17 +734,13 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             @NotNull final WritableIntChunk<Indices> missingRanges) {
         missingRanges.setSize(0);
         int missingCount = 0;
-        try (final CachedRanges cachedRanges = new CachedRanges(cached)) {
+        try (final SparsePage.Cursor cursor = cached.cursor()) {
             for (int ii = 0; ii < requestRanges.size(); ii += 2) {
                 int first = (int) (requestRanges.get(ii) - pageFirstKey);
                 final int last = (int) (requestRanges.get(ii + 1) - pageFirstKey);
                 while (first <= last) {
-                    final boolean found = cachedRanges.seek(first);
-                    final int end;
-                    if (found && cachedRanges.start <= first) {
-                        end = Math.min(last, cachedRanges.end);
-                    } else {
-                        end = found ? Math.min(last, cachedRanges.start - 1) : last;
+                    final int end = cursor.segment(first, last);
+                    if (!cursor.cached()) {
                         missingRanges.add(first);
                         missingRanges.add(end);
                         missingCount += end - first + 1;
@@ -824,171 +774,31 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         int decodedPos = 0;
         final RunBatch cachedRuns = contextWrapper.cachedRuns();
         final RunBatch decodedRuns = contextWrapper.decodedRuns();
-        cachedRuns.begin(runCopyKernel, cached.values, destination);
+        // noinspection DataFlowIssue: only a column with a kernel reads sparsely
+        cachedRuns.begin(runCopyKernel, cached.values(), destination);
+        // noinspection DataFlowIssue: likewise
         decodedRuns.begin(runCopyKernel, decoded, destination);
-        try (final CachedRanges cachedRanges = new CachedRanges(cached)) {
+        try (final SparsePage.Cursor cursor = cached.cursor()) {
             for (int ii = 0; ii < requestRanges.size(); ii += 2) {
                 int first = (int) (requestRanges.get(ii) - pageFirstKey);
                 final int last = (int) (requestRanges.get(ii + 1) - pageFirstKey);
                 while (first <= last) {
-                    final boolean found = cachedRanges.seek(first);
-                    final int end;
-                    if (found && cachedRanges.start <= first) {
-                        end = Math.min(last, cachedRanges.end);
-                        final int length = end - first + 1;
-                        cachedRuns.add(cachedRanges.positionOf(first), destinationPos, length);
-                        destinationPos += length;
+                    final int end = cursor.segment(first, last);
+                    final int length = end - first + 1;
+                    if (cursor.cached()) {
+                        cachedRuns.add(cursor.position(), destinationPos, length);
                     } else {
-                        end = found ? Math.min(last, cachedRanges.start - 1) : last;
-                        final int length = end - first + 1;
                         // decoded holds every requested row that cached lacks
                         decodedRuns.add(decodedPos, destinationPos, length);
                         decodedPos += length;
-                        destinationPos += length;
                     }
+                    destinationPos += length;
                     first = end + 1;
                 }
             }
         }
         cachedRuns.finish();
         decodedRuns.finish();
-    }
-
-    /**
-     * Collects runs to copy from one array to a chunk, and copies each batch of them with one {@link RunCopyKernel}
-     * call. Short runs are common, and a {@link WritableChunk#copyFromArray} call per run is a megamorphic call per
-     * run.
-     */
-    private static final class RunBatch implements SafeCloseable {
-        /** Room for 1024 runs. */
-        private static final int CAPACITY = 3 * 1024;
-
-        private final WritableIntChunk<Any> runs = WritableIntChunk.makeWritableChunk(CAPACITY);
-        private RunCopyKernel kernel;
-        private Object source;
-        private WritableChunk<?> destination;
-
-        private RunBatch() {
-            runs.setSize(0);
-        }
-
-        /**
-         * @param source The array to copy from, or {@code null} if no runs will be added
-         */
-        private void begin(
-                @NotNull final RunCopyKernel kernel,
-                @Nullable final Object source,
-                @NotNull final WritableChunk<?> destination) {
-            this.kernel = kernel;
-            this.source = source;
-            this.destination = destination;
-            runs.setSize(0);
-        }
-
-        private void add(final int sourcePos, final int destinationPos, final int length) {
-            if (runs.size() == CAPACITY) {
-                flush();
-            }
-            runs.add(sourcePos);
-            runs.add(destinationPos);
-            runs.add(length);
-        }
-
-        /**
-         * Copy the remaining runs and release the arrays.
-         */
-        private void finish() {
-            flush();
-            source = null;
-            destination = null;
-        }
-
-        private void flush() {
-            if (runs.size() > 0) {
-                // noinspection DataFlowIssue: runs are added only with a source
-                kernel.copyRuns(source, runs, destination);
-                runs.setSize(0);
-            }
-        }
-
-        @Override
-        public void close() {
-            runs.close();
-        }
-    }
-
-    /**
-     * Walks a page's cached rows forward by range, tracking each range's position in the cached values. Steps over
-     * nearby ranges, summing their sizes, and jumps to the page's last checkpoint before a far key.
-     */
-    private static final class CachedRanges implements SafeCloseable {
-        private final SparsePage<?> page;
-        private final RowSet.RangeIterator ranges;
-        /** The current range, or {@code -1} before the first seek. */
-        private int start = -1;
-        private int end = -1;
-        /** The position of {@link #start} in the page's rows. */
-        private int startPosition;
-        private boolean exhausted;
-
-        private CachedRanges(@NotNull final SparsePage<?> page) {
-            this.page = page;
-            ranges = page.rows.rangeIterator();
-        }
-
-        /**
-         * Move to the first range that ends at or after {@code key}, which must not precede an earlier seek's.
-         *
-         * @return Whether there is such a range
-         */
-        private boolean seek(final int key) {
-            if (end >= key) {
-                return true;
-            }
-            if (exhausted) {
-                return false;
-            }
-            final int checkpoint = page.checkpointBefore(key);
-            if (checkpoint >= 0 && page.checkpointRow(checkpoint) > start) {
-                // Past the current range: jump, rather than step over up to a checkpoint interval's ranges.
-                // A checkpoint row starts one of the page's ranges, so the advance finds it.
-                Assert.assertion(ranges.advance(page.checkpointRow(checkpoint)), "ranges.advance(checkpointRow)");
-                readRange();
-                startPosition = page.checkpointPosition(checkpoint);
-            } else if (start < 0) {
-                ranges.next();
-                readRange();
-                startPosition = 0;
-            }
-            while (end < key) {
-                if (!ranges.hasNext()) {
-                    exhausted = true;
-                    return false;
-                }
-                startPosition += end - start + 1;
-                ranges.next();
-                readRange();
-            }
-            return true;
-        }
-
-        private void readRange() {
-            // Page-relative, so they fit in an int.
-            start = (int) ranges.currentRangeStart();
-            end = (int) ranges.currentRangeEnd();
-        }
-
-        /**
-         * @param key A row in the current range
-         */
-        private int positionOf(final int key) {
-            return startPosition + key - start;
-        }
-
-        @Override
-        public void close() {
-            ranges.close();
-        }
     }
 
     /**

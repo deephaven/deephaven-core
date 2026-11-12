@@ -5,6 +5,7 @@ package io.deephaven.parquet.table.pagestore;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -53,6 +54,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -171,10 +173,58 @@ public class SparsePageReadTest {
         assertSparseMatchesDense(resource("/ReferenceRequiredColumnsV1.parquet"), true);
         assertSparseMatchesDense(resource("/ReferenceRequiredColumnsV2.parquet"), true);
         assertSparseMatchesDense(resource("/ReferenceNullStringDictEncoded1.parquet"), true);
+        // Fixed-length binary, INT96, unsigned, codec and extreme values: each skips values its own way.
+        assertSparseMatchesDense(resource("/ReferenceDecimalLogicalType.parquet"), true);
+        assertSparseMatchesDense(resource("/ReferenceDecimalLogicalType2.parquet"), true);
+        assertSparseMatchesDense(resource("/ReferenceInt96Timestamps.parquet"), true);
+        assertSparseMatchesDense(resource("/ReferenceUintParquetData.parquet"), true);
+        assertSparseMatchesDense(resource("/ReferenceParquetWithCodecData.parquet"), true);
+        assertSparseMatchesDense(resource("/ReferenceExtremeValues.parquet"), true);
         // Repeated columns only, so these must fall back to materializing pages.
         assertSparseMatchesDense(resource("/ReferenceParquetFileWithDifferentPageSizes1.parquet"), false);
         assertSparseMatchesDense(resource("/ReferenceParquetArrayData.parquet"), false);
         assertSparseMatchesDense(resource("/ReferenceParquetVectorData.parquet"), false);
+    }
+
+    /**
+     * A dictionary column's {@code long} reinterpretation reads its keys from a page store of their own.
+     */
+    @Test
+    public void testDictionaryKeysMatchDense() {
+        final String path = writeTestTable();
+        for (final String filter : FILTERS) {
+            final long[] expected = dense(() -> {
+                final Table source = ParquetTools.readTable(path);
+                return dictionaryKeys(source, source.where(filter).getRowSet());
+            });
+            // A fresh read, so that no page is already cached.
+            final Table source = ParquetTools.readTable(path);
+            final RowSet rows = source.where(filter).getRowSet();
+            final long before = ColumnChunkPageStore.sparseFillCount();
+            assertArrayEquals(filter, expected, dictionaryKeys(source, rows));
+            if (rows.size() > 0 && !rows.isContiguous()) {
+                assertTrue(filter + " should read keys sparsely", ColumnChunkPageStore.sparseFillCount() > before);
+            }
+        }
+    }
+
+    private static long[] dictionaryKeys(final Table source, final RowSet rows) {
+        final ColumnSource<?> sym = source.getColumnSource("Sym");
+        assertTrue("Sym should be dictionary encoded", sym.allowsReinterpret(long.class));
+        final ColumnSource<Long> keys = sym.reinterpret(long.class);
+        final long[] result = new long[rows.intSize()];
+        final int chunkSize = 37;
+        try (final ChunkSource.FillContext context = keys.makeFillContext(chunkSize);
+                final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(chunkSize);
+                final RowSequence.Iterator it = rows.getRowSequenceIterator()) {
+            int pos = 0;
+            while (it.hasMore()) {
+                keys.fillChunk(context, chunk, it.getNextRowSequenceWithLength(chunkSize));
+                chunk.copyToTypedArray(0, result, pos, chunk.size());
+                pos += chunk.size();
+            }
+        }
+        return result;
     }
 
     /**
