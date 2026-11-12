@@ -31,7 +31,7 @@ This cheat sheet describes the Python packages on [PyPI](https://pypi.org/search
 
 [`deephaven-core`](https://pypi.org/project/deephaven-core/) is the Deephaven Python Integration Package. It lets Python code access data, run queries, and execute scripts directly inside a Deephaven server, next to the data, on static and real-time tables alike. Python code imports it as [`deephaven`](../../how-to-guides/deephaven-python-package.md). A legacy Enterprise package on PyPI, [`deephaven`](#deephaven), also installs a module called `deephaven`, but that module is unrelated.
 
-`deephaven-core` runs only inside a Deephaven server, and the Python console in the Deephaven Web UI loads it at runtime. The Deephaven Python Docker images, such as [`ghcr.io/deephaven/server`](../../getting-started/docker-install.md), include it. For a server run from the [production application](../../getting-started/production-application.md), install it into the server's virtual environment.
+`deephaven-core` runs only inside a Deephaven server, and the Deephaven Web UI's Python console has it available at runtime. The Deephaven Python Docker images, such as [`ghcr.io/deephaven/server`](../../getting-started/docker-install.md), include it. For a server run from the [production application](../../getting-started/production-application.md), install it into the server's virtual environment.
 
 When you install it yourself, use `deephaven-core[autocomplete]`. The `[autocomplete]` suffix names an extra. An extra is an optional set of dependencies that `pip` installs only when you name the extra in brackets after the package name. This extra installs the libraries that provide code completion in the Deephaven Web UI.
 
@@ -51,7 +51,7 @@ When you install it yourself, use `deephaven-core[autocomplete]`. The `[autocomp
 
 ### `pydeephaven-ticking`
 
-[`pydeephaven-ticking`](https://pypi.org/project/pydeephaven-ticking/) extends [`pydeephaven`](#pydeephaven) so a client can subscribe to [ticking tables](../../conceptual/table-types.md#standard-streaming-tables) and receive the added, removed, and modified rows of each update. It installs [`pydeephaven`](#pydeephaven) as a dependency. PyPI has prebuilt wheels for Linux x86_64 only. For other platforms, see the [version support matrix](../version-matrix.md).
+[`pydeephaven-ticking`](https://pypi.org/project/pydeephaven-ticking/) extends [`pydeephaven`](#pydeephaven) so a client can subscribe to [ticking tables](../../conceptual/table-types.md#standard-streaming-tables) and receive the added, removed, and modified rows of each update. It installs [`pydeephaven`](#pydeephaven) as a dependency. PyPI has prebuilt wheels for Linux x86_64 only. For other platforms, see the [version support matrix](../version-matrix.md#client-libraries).
 
 ## Plugins and plugin development
 
@@ -83,7 +83,7 @@ Install a plugin into the Python environment the server runs in, then restart th
 
 ### `deephaven-plugin-python-remote-file-source`
 
-[`deephaven-plugin-python-remote-file-source`](https://pypi.org/project/deephaven-plugin-python-remote-file-source/) is a [bidirectional plugin](../../how-to-guides/create-plugins.md) that lets Python code import modules from a remote file source. The [Deephaven VS Code extension](https://deephaven.io/vscode/docs/) uses it to enable local Python workspaces.
+[`deephaven-plugin-python-remote-file-source`](https://pypi.org/project/deephaven-plugin-python-remote-file-source/) is a [bidirectional plugin](../../how-to-guides/create-plugins.md) that lets Python code import modules from a remote file source. The [Deephaven VS Code extension](https://deephaven.io/vscode/docs/) uses it to enable local Python workspaces. The [`ghcr.io/deephaven/server`](../../getting-started/docker-install.md) Docker image does not include it, so install it as described at the top of this section.
 
 ### `deephaven-plugin-utilities`
 

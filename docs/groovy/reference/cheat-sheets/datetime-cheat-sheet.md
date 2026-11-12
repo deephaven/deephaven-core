@@ -151,11 +151,10 @@ t4Raw = newTable(
     stringCol("Time", "12:30:01 CT", "12:30:02 CT", "12:30:03 CT")
 )
 
-// parseLocalDate, parseLocalTime, and parseTimeZone are used to convert strings to the correct Java types
 t4 = t4Raw.update(
     // First concatenate strings, then use parseInstant()
     "NewTimestamp1 = parseInstant(Date + `T` + Time)",
-    // Alternatively, parse each component into correct type, then use toInstant
+    // Alternatively, parse each component with parseLocalDate, parseLocalTime, and parseTimeZone, then use toInstant
     "NewTimestamp2 = toInstant(parseLocalDate(Date), parseLocalTime(Time.split(` `)[0]), parseTimeZone(Time.split(` `)[1]))"
 )
 

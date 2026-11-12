@@ -205,12 +205,11 @@ t4_raw = new_table(
     ]
 )
 
-# parseLocalDate, parseLocalTime, and parseTimeZone are used to convert strings to the correct Java types
 t4 = t4_raw.update(
     [
         # First concatenate strings, then use parseInstant()
         "NewTimestamp1 = parseInstant(Date + `T` + Time)",
-        # Alternatively, parse each component into correct type, then use toInstant
+        # Alternatively, parse each component with parseLocalDate, parseLocalTime, and parseTimeZone, then use toInstant
         "NewTimestamp2 = toInstant(parseLocalDate(Date), "
         "parseLocalTime(Time.split(` `)[0]), parseTimeZone(Time.split(` `)[1]))",
     ]

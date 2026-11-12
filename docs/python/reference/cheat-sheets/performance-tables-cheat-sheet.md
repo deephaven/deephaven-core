@@ -4,7 +4,7 @@ title: Performance tables cheat sheet
 
 Deephaven makes several performance tables available. They track metrics about running queries and server state. The tables fall into three groups: performance log tables of raw data, derived tables built from those logs, and [Barrage](../../conceptual/what-is-barrage.md) performance tables.
 
-The performance log tables hold the raw data and suit custom performance statistics. They record queries and update cycles across the whole server. By default, the query performance logs leave out an operation that takes less than a millisecond and reads no data, and the update performance log combines very short updates into one `Aggregated Small Updates` row per interval. The derived tables suit dashboards: the per-query tables filter to one [evaluation number](../../how-to-guides/performance/performance-tables.md#evaluation-numbers), and the [tree tables](../../how-to-guides/tree-table.md) organize every query or operation as a tree.
+The performance log tables hold the raw data and suit custom performance statistics. They record queries and update cycles across the whole server. By default, the query performance logs leave out an operation that takes less than a millisecond and performs no data reads or metadata operations, and the update performance log combines very short updates into one `Aggregated Small Updates` row per interval. The derived tables suit dashboards: the per-query tables filter to one [evaluation number](../../how-to-guides/performance/performance-tables.md#evaluation-numbers), and the [tree tables](../../how-to-guides/tree-table.md) organize every query or operation as a tree.
 
 For what the performance log and derived tables contain and how to use them, see [How to use Deephaven's performance tables](../../how-to-guides/performance/performance-tables.md). For what the Barrage tables record, see [Interpret Barrage metrics](../../conceptual/barrage-metrics.md).
 
@@ -73,14 +73,14 @@ qoptt = pm.query_operation_performance_tree_table()
 
 [Barrage](../../conceptual/what-is-barrage.md) is Deephaven's interprocess communication (IPC) protocol for streaming tables between processes. Deephaven records two sets of statistics for it:
 
-- Subscription metrics, for ticking subscriptions.
+- Subscription metrics, for subscriptions to static or ticking tables.
 - Snapshot metrics, for one-off requests such as an Arrow Flight `DoGet`.
 
 Which process records a statistic depends on its side of the connection:
 
 - **Sender statistics:** the process that publishes the table records them.
 - **Receiver statistics:** a process that subscribes to or snapshots a table through the Java Barrage client records them, in its own subscription metrics table. This includes the [Java client](../../how-to-guides/java-client.md) and a Deephaven server that uses [`barrage_session`](../data-import-export/barrage/barrage-session.md) or a [URI](../../how-to-guides/use-uris.md).
-- Clients such as [`pydeephaven`](../../getting-started/pyclient-quickstart.md) and the JavaScript client record no receiver statistics.
+  Clients such as [`pydeephaven`](../../getting-started/pyclient-quickstart.md) and the JavaScript client record no receiver statistics.
 
 For details, see [Barrage metrics for performance monitoring](../../how-to-guides/performance/barrage-performance.md).
 
