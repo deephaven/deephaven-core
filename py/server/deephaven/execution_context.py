@@ -85,7 +85,6 @@ def make_user_exec_ctx(
                     .captureQueryCompiler()
                     .captureQueryLibrary()
                     .captureQueryScopeVars(*freeze_vars)
-                    .captureUpdateGraph()
                     .build()
                 )
                 return ExecutionContext(j_exec_ctx=j_exec_ctx)

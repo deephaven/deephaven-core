@@ -112,6 +112,12 @@ t_sorted = table.sort(order_by="Number")
 
 The call raises a `DHError` whose message names the column you tried to sort on.
 
+To lift the restriction, call [`clear_sorting_restrictions`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.clear_sorting_restrictions). It returns a table that can be sorted on any column:
+
+```python test-set=1 order=t_sorted_number
+t_sorted_number = table.clear_sorting_restrictions().sort(order_by="Number")
+```
+
 ## Related documentation
 
 - [`sort`](../reference/table-operations/sort/sort.md)

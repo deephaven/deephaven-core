@@ -579,8 +579,10 @@ class RollupTable(JObjectWrapper):
             DHError
         """
         try:
+            with query_scope_ctx():
+                j_rollup_table = self.j_rollup_table.withFilter(and_(filters).j_filter)
             return RollupTable(
-                j_rollup_table=self.j_rollup_table.withFilter(and_(filters).j_filter),
+                j_rollup_table=j_rollup_table,
                 include_constituents=self.include_constituents,
                 aggs=self.aggs,
                 by=self.by,
@@ -763,8 +765,10 @@ class TreeTable(JObjectWrapper):
         """
 
         try:
+            with query_scope_ctx():
+                j_tree_table = self.j_tree_table.withFilter(and_(filters).j_filter)
             return TreeTable(
-                j_tree_table=self.j_tree_table.withFilter(and_(filters).j_filter),
+                j_tree_table=j_tree_table,
                 id_col=self.id_col,
                 parent_col=self.parent_col,
             )
@@ -2192,7 +2196,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         try:
             ops = to_sequence(ops)
             by = to_sequence(by)
-            with auto_locking_ctx(self):
+            with query_scope_ctx(), auto_locking_ctx(self):
                 return self._wrap_result(self.j_object.updateBy(j_array_list(ops), *by))
         except Exception as e:
             raise self._make_op_error(e, "update_by") from e
@@ -2876,6 +2880,23 @@ class Table(_TableOperations["Table"]):
             return Table(self.j_table.restrictSortTo(*cols))
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
+
+    def clear_sorting_restrictions(self) -> Table:
+        """The clear_sorting_restrictions method removes the sorting restrictions that restrict_sort_to applied to the
+        table, so the output table allows sorting on any column.
+
+        Returns:
+            a new table, or this table if it has no sorting restrictions
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(self.j_table.clearSortingRestrictions())
+        except Exception as e:
+            raise DHError(
+                e, "table clear_sorting_restrictions operation failed."
+            ) from e
 
     def with_order_for_column(
         self,
@@ -3604,9 +3625,9 @@ class PartitionedTable(JObjectWrapper):
                     for f in to_sequence(filters)
                 ]
             )
-            return PartitionedTable(
-                j_partitioned_table=self.j_partitioned_table.filter(j_filters)
-            )
+            with query_scope_ctx():
+                j_partitioned_table = self.j_partitioned_table.filter(j_filters)
+            return PartitionedTable(j_partitioned_table=j_partitioned_table)
         except Exception as e:
             raise DHError(e, "failed to apply filters to the partitioned table.") from e
 
