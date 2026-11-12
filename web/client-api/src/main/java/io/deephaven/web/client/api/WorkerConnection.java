@@ -759,9 +759,13 @@ public class WorkerConnection {
     }
 
     /**
-     * The definition a {@code getObject} argument names: looked up by name, or taken as given by id.
+     * The definition a {@code getObject} argument names: the argument itself if it is a {@link JsVariableDefinition},
+     * otherwise looked up by name, or taken as given by id.
      */
     public Promise<JsVariableDefinition> lookupDefinition(JsPropertyMap<Object> definitionObject) {
+        if (definitionObject instanceof JsVariableDefinition) {
+            return Promise.resolve((JsVariableDefinition) definitionObject);
+        }
         String type = definitionType(definitionObject);
         boolean hasName = definitionObject.has("name");
         boolean hasId = definitionObject.has("id");

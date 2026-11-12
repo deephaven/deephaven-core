@@ -24,6 +24,7 @@ import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.client.state.ClientTableState;
+import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
@@ -1443,6 +1444,38 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                 table.close();
                                 return Promise.resolve(table);
                             });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testGetObjectWithFieldUpdateDefinition() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_019);
+                    IdeConnection ide = lastIdeConnection;
+                    // A definition from field updates has both name and id, unlike a plain descriptor
+                    JsRunnable[] unsubscribe = new JsRunnable[1];
+                    Promise<JsVariableDefinition> found = new Promise<>((resolve, reject) -> {
+                        unsubscribe[0] = ide.subscribeToFieldUpdates(changes -> {
+                            for (int i = 0; i < changes.getCreated().length; i++) {
+                                JsVariableDefinition definition = changes.getCreated().getAt(i);
+                                if ("source".equals(definition.getTitle())) {
+                                    resolve.onInvoke(definition);
+                                }
+                            }
+                        });
+                    });
+                    return found.then(definition -> {
+                        unsubscribe[0].run();
+                        return ide.getObject(Js.uncheckedCast(definition)).asPendingTable().resolve()
+                                .<JsResolvedTable>catch_(err -> Promise.reject(
+                                        "IdeConnection.getObject rejected a field-update definition: " + err));
+                    });
+                })
+                .then(table -> {
+                    assertEquals(5., table.getSize(), 0);
+                    table.close();
+                    return Promise.resolve(table);
                 })
                 .then(this::finish).catch_(this::report);
     }
