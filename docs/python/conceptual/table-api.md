@@ -60,7 +60,7 @@ summary = enriched.agg_by([agg.sum_("Total = Doubled")], by=["Category"])
 
 Each table depends on the one before it. If `source` were live, `filtered`, `enriched`, and `summary` would all update whenever it changed.
 
-As [Static vs. live](./deephaven-mental-model.md#static-vs-live-tables) in the mental model guide shows, the same operations work on both static and [live tables](./deephaven-mental-model.md#static-vs-live-tables). Here is what that means for the graph:
+As [Static vs. live tables](./deephaven-mental-model.md#static-vs-live-tables) in the mental model guide shows, the same operations work on both static and [live tables](./deephaven-mental-model.md#static-vs-live-tables). Here is what that means for the graph:
 
 ```python test-set=1 ticking-table order=null
 from deephaven import empty_table, time_table

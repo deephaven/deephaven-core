@@ -58,7 +58,7 @@ summary = enriched.aggBy([AggSum("Total = Doubled")], "Category")
 
 Each table depends on the one before it. If `source` were live, `filtered`, `enriched`, and `summary` would all update whenever it changed.
 
-As [Static vs. live](./deephaven-mental-model.md#static-vs-live-tables) in the mental model guide shows, the same operations work on both static and [live tables](./deephaven-mental-model.md#static-vs-live-tables). Here is what that means for the graph:
+As [Static vs. live tables](./deephaven-mental-model.md#static-vs-live-tables) in the mental model guide shows, the same operations work on both static and [live tables](./deephaven-mental-model.md#static-vs-live-tables). Here is what that means for the graph:
 
 ```groovy test-set=1 ticking-table order=null
 // Static table

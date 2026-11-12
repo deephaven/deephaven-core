@@ -20,9 +20,9 @@ You also need [Node.js](https://nodejs.org/) and npm at the versions each reposi
 Set up the three pieces in order. In step 2, you create your theme plugin by copying the [theme pack](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/theme-pack):
 
 1. A Deephaven server.
-   - Start a Deephaven server on port 10000. Follow the [Quickstart](../getting-started/quickstart.md).
+   - Start a Deephaven server on port `10000`. Follow the [Quickstart](../getting-started/quickstart.md).
 
-2. Your theme plugin and a plugin development server. The development server builds your plugins whenever you save a change and serves them to the web UI, so you can iterate quickly without reinstalling the plugin after every change. The plugin development server listens on port 4100.
+2. Your theme plugin and a plugin development server. The development server builds your plugins whenever you save a change and serves them to the web UI, so you can iterate quickly without reinstalling the plugin after every change. The plugin development server listens on port `4100`.
    - Clone the [deephaven-plugins project](https://github.com/deephaven/deephaven-plugins/tree/main).
    - Copy the `plugins/theme-pack` directory to a new directory under `plugins/`, named for your plugin, such as `plugins/my-theme`.
    - In `plugins/<your-theme>/src/js/package.json` and `plugins/<your-theme>/src/js/src/index.ts`, rename the `theme-pack` references to your plugin name.
@@ -42,7 +42,7 @@ Set up the three pieces in order. In step 2, you create your theme plugin by cop
 
 3. A development build of the Deephaven web UI, built from the web-client-ui repository.
    - Clone the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository.
-   - In web-client-ui, create the file `./packages/code-studio/.env.development.local` if it doesn't already exist, and add the following line so the web UI loads plugins from the plugin development server on port 4100:
+   - In web-client-ui, create the file `./packages/code-studio/.env.development.local` if it doesn't already exist, and add the following line so the web UI loads plugins from the plugin development server on port `4100`:
 
      ```text
      VITE_JS_PLUGINS_DEV_PORT=4100
@@ -55,7 +55,7 @@ Set up the three pieces in order. In step 2, you create your theme plugin by cop
      npm run start
      ```
 
-The web UI development build runs at `http://localhost:4000/ide/` and connects to the Deephaven server on port 10000. Visit it and, if prompted, log in with the [pre-shared key](./authentication/auth-psk.md) printed in the server log. To preview your theme, open the **Settings** menu and select it from the **Pick a color scheme** list in the **Theme** section:
+The web UI development build runs at `http://localhost:4000/ide/` and connects to the Deephaven server on port `10000`. Visit it and, if prompted, log in with the [pre-shared key](./authentication/auth-psk.md) printed in the server log. To preview your theme, open the **Settings** menu and select it from the **Pick a color scheme** list in the **Theme** section:
 
 ![The Pick a color scheme list in the Settings menu, with FT Theme selected](../assets/how-to/themes/pick_a_color.png)
 
