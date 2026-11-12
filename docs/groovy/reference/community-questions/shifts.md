@@ -4,7 +4,7 @@ title: How do row keys and positional indices behave during table operations?
 
 _When working with tables in Deephaven, I understand that "shifts" can happen when tables grow beyond their allocated row key slots. How do the row key (k) and positional index (i) attributes change during these shifts, and what impact does this have on downstream operations?_
 
-**Shifts can occur with any table operation that works with live/refreshing data** - including merges, joins, updates, selects, and other operations. For example, when you merge tables in Deephaven, the engine pre-allocates row key slots for each constituent table. Understanding how row keys (`k`) and positional indices (`i`) behave during growth and shifts is crucial for working with formulas that reference these attributes.
+**Shifts can occur with any table operation that works with live/refreshing data** - including merges, joins, updates, selects, and other operations. For example, when you merge tables, the engine reserves a range of row keys for each input table. If an input table outgrows its range, the engine shifts other tables' row keys to make room. Understanding how row keys (`k`) and positional indices (`i`) behave during these changes is crucial for working with formulas that reference these attributes.
 
 ## Key terms
 
@@ -24,12 +24,13 @@ Before diving into the details, let's define the key concepts:
   - tables created from live data sources (like `timeTable`, Kafka streams, etc.).
   - tables that are the result of operations on refreshing tables.
   - any table where rows can be added, removed, or shifted after creation.
-    In contrast, **[static tables](../../conceptual/table-types.md#static-tables)** never change after creation - they contain fixed data that remains constant.
+
+- **[Static tables](../../conceptual/table-types.md#static-tables)**: Tables that never change after creation - they contain fixed data that remains constant.
 
 - **Append-only tables**: A special type of refreshing table where new rows are only added (never moved or deleted), making positional indices safe to use. See [Table types - Append-only](../../conceptual/table-types.md#specialization-1-append-only) for more information.
 
 > [!CAUTION]
-> **Formulas using positional indices (`i`, `ii`, `k`) or column array variables are unsafe on refreshing tables and will cause `IllegalArgumentException` errors.** The engine blocks these formulas by default to prevent incorrect results. While you can override this with the system property `io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`, doing so **will produce incorrect results** when table shifts occur. Additionally, any table operations that add or remove rows can also cause positional indices to become incorrect. **Note that shifts can happen with any table operation, not just merges** - including joins, updates, selects, and other operations on live/refreshing tables. These formulas are safe to use on static tables or append-only tables (like `timeTable("PT1s").update("X = ii")`) where shifts cannot happen because rows are only added, never moved.
+> **Formulas using positional indices (`i`, `ii`, `k`) or [column array variables](../../how-to-guides/work-with-arrays.md#using-the-underscore-operator) are unsafe on refreshing tables and will cause `IllegalArgumentException` errors.** The engine blocks these formulas by default to prevent incorrect results. While you can override this with the system property `io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`, doing so **will produce incorrect results** when table shifts occur. Additionally, any table operations that add or remove rows can also cause positional indices to become incorrect. **Note that shifts can happen with any table operation, not just merges** - including joins, updates, selects, and other operations on live/refreshing tables. These formulas are safe to use on static tables or append-only tables (like `timeTable("PT1s").update("X = ii")`) where shifts cannot happen because rows are only added, never moved.
 
 ## Row key allocation and shifts
 
@@ -58,7 +59,7 @@ Initially, the engine might allocate:
 
 ## Initial state with few rows
 
-When each table gets one row, the merged table looks like:
+When `tableA` and `tableB` each contain two rows, the merged table assigns each table a separate range of row keys:
 
 | sourceTable | someValue | i | k    |
 | ----------- | --------- | - | ---- |
@@ -69,7 +70,7 @@ When each table gets one row, the merged table looks like:
 
 ## What happens during a shift
 
-If `tableA` grows beyond its allocated 4096 slots, the engine must shift `tableB` to make room. After adding 4096 new rows to `tableA`, the allocation becomes:
+When a constituent table outgrows its reserved row key range, the engine shifts other constituent tables to make room. If `tableA` grows beyond its allocated 4096 slots, the engine shifts `tableB` to a higher range. After adding 4096 new rows to `tableA`, the allocation becomes:
 
 - **`tableA`**: row key slots \[0, 8191\]
 - **`tableB`**: row key slots \[8192, 12287\]
@@ -89,15 +90,15 @@ The merged table now looks like:
 
 ## Key behavior: row keys change, but row data doesn't
 
-The critical insight is that the `zebra` and `bear` rows **were not modified** - they were simply shifted to new row key positions. Their row keys changed from 4096/4097 to 8192/8193, but the actual row data remains unchanged.
+During a shift, moved rows get new row keys but keep their original data. The `zebra` and `bear` rows **were not modified** - they were simply shifted to new row key positions. Their row keys changed from 4096/4097 to 8192/8193, but the actual row data remains unchanged.
 
 ## Impact on formulas using positional index (i)
 
-This behavior has important implications for formulas that reference the positional index `i`. Consider what would happen if you tried to add a formula that depends on `i`:
+Because shifts change row keys without re-evaluating formulas, any formula that references the positional index `i` can produce stale or incorrect results. Consider what would happen if you tried to add a formula that depends on `i`:
 
 ```groovy should-fail
 // This will fail with IllegalArgumentException unless you enable unsafe formulas
-// DO NOT enable unsafe formulas unless you understand the risks (see DANGER banner above)
+// DO NOT enable unsafe formulas unless you understand the risks (see CAUTION above)
 def myMergedTableWithIdx = myMergedTable.update("MyRowIdx = someValue + i")
 ```
 

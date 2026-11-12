@@ -6,9 +6,9 @@ title: Why do I have to drop the blink attribute and re-add it to create a parti
 
 <p></p>
 
-Aggregations on blink tables are defined to act as if you had full history from the time of operation instantiation. For example, if you use [`lastBy`](../table-operations/group-and-aggregate/lastBy.md) on a [blink table](../../conceptual/table-types.md#specialization-3-blink), you get the last `n` rows for each bucket, considering all rows that have ever been processed by the operation since it was created - even if those rows are no longer part of the current update cycle. Deephaven does not allow users to perform operations that can't deliver those semantics - meaning [`groupBy`](../table-operations/group-and-aggregate/groupBy.md), [`partitionBy`](../table-operations/group-and-aggregate/partitionBy.md), and [rollup tables](../table-operations/create/rollup.md) with constituents will not work.
+Aggregations on [blink tables](../../conceptual/table-types.md#specialization-3-blink) behave as though every row ever processed is still available. For example, [`lastBy`](../table-operations/group-and-aggregate/lastBy.md) returns the most recent `n` rows for each bucket across all update cycles, not just the current one. Some operations cannot deliver this guarantee. [`groupBy`](../table-operations/group-and-aggregate/groupBy.md), [`partitionBy`](../table-operations/group-and-aggregate/partitionBy.md), and [rollup tables](../table-operations/create/rollup.md) with constituent tables (the sub-tables inside a partitioned or rollup result) are therefore not allowed on blink tables.
 
-To get around these restrictions, you can use [`removeBlink`](../table-operations/create/remove-blink.md) to opt out of special semantics. Then, you can use [`partitionBy`](../table-operations/group-and-aggregate/partitionBy.md) to get a result with constituents that will blink in and out of existence.
+To get around these restrictions, you can use [`removeBlink`](../table-operations/create/remove-blink.md) to opt out of the full-history aggregation behavior. Then, you can use [`partitionBy`](../table-operations/group-and-aggregate/partitionBy.md) to get a result with constituent tables that will blink in and out of existence.
 
 ```groovy order=null
 import io.deephaven.engine.table.impl.TimeTable.Builder
