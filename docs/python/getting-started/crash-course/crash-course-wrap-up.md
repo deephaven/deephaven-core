@@ -56,7 +56,7 @@ This crash course is a starting point. To continue learning about Deephaven, che
   - [Use Deephaven in Jupyter](../../how-to-guides/jupyter.md)
 - Plotting
   - [Deephaven Express](/core/plotly/docs/)
-  - [Real-time plotting overview](../../how-to-guides/plotting/overview.md)
+  - [Plotting overview](../../how-to-guides/plotting/overview.md)
 - `deephaven.ui`
   - [`deephaven.ui` documentation](/core/ui/docs/)
 - Data I/O

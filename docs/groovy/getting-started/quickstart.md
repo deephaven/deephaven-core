@@ -421,4 +421,4 @@ To go further with the topics in this guide, see:
 - [Connect to a Kafka stream](../how-to-guides/data-import-export/kafka-stream.md)
 - [Filter table data](../how-to-guides/use-filters.md)
 - [Plot with the built-in plotting API](../how-to-guides/plotting/api-plotting.md)
-- [Navigate the Deephaven UI](../how-to-guides/user-interface/navigating-the-ui.md)
+- [Navigate the GUI](../how-to-guides/user-interface/navigating-the-ui.md)
