@@ -213,8 +213,7 @@ Multi-server applications distribute workloads across multiple machines to handl
 **Server C (redundant analysis):**
 
 - Runs the same analysis code as Server B and connects to Server A the same way.
-- Keeps serving clients when Server B fails or is down for maintenance. Server B covers for Server C in the same way.
-- When one of the two goes down, the system loses capacity but keeps running its analysis.
+- Serves the same client applications as Server B.
 
 Deephaven doesn't provide load balancing or failover itself. An external load balancer, or the client applications themselves, route requests to either Server B or Server C.
 
@@ -223,7 +222,7 @@ Deephaven doesn't provide load balancing or failover itself. An external load ba
 - Separation of concerns lets you tune each server for its task.
 - Intensive analysis on Servers B and C doesn't compete with ingestion for Server A's CPU and memory.
 - The system can scale by adding specialized servers for specific markets or strategies.
-- With an external load balancer or client-side routing, Servers B and C share the client load and provide failover for each other.
+- With an external load balancer or client-side routing, Servers B and C share the client load and provide failover for each other. When one goes down, the system loses capacity but keeps running its analysis.
 - You can take Server B or Server C down for maintenance while the other keeps serving clients. Server A has no standby in this design, so taking it down stops the live data for both.
 
 ## Choosing your architecture
