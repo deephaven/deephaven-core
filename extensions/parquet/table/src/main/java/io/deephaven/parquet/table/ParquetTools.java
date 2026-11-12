@@ -313,15 +313,13 @@ public class ParquetTools {
      * source table will be written as sidecar tables. To write only a subset of the indexes or add additional indexes
      * while writing, use {@link ParquetInstructions.Builder#addIndexColumns}.
      * <p>
-     * If the table has no rows, there are no partitions to write and this method writes nothing, not even the metadata
-     * files requested by {@link ParquetInstructions#generateMetadataFiles()}; the destination directory is not created.
-     * The key-value layout records the schema only in its data files, so reading such a destination back requires a
-     * {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition) table definition} in the read
+     * If the table has no rows, there are no partitions and no data files to write, so reading the destination back may
+     * require a {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition) table definition} in the read
      * instructions.
      *
      * @param sourceTable The table to partition and write
      * @param destinationDir The path or URI to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created when there is data to write.
+     *        Non-existing directories are created as needed.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(
@@ -366,15 +364,13 @@ public class ParquetTools {
      * method does not write any indexes as sidecar tables to disk. To write such indexes, use
      * {@link ParquetInstructions.Builder#addIndexColumns}.
      * <p>
-     * If the partitioned table has no constituents, there are no partitions to write and this method writes nothing,
-     * not even the metadata files requested by {@link ParquetInstructions#generateMetadataFiles()}; the destination
-     * directory is not created. The key-value layout records the schema only in its data files, so reading such a
-     * destination back requires a {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition) table
+     * If the partitioned table has no constituents, there are no partitions and no data files to write, so reading the
+     * destination back may require a {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition) table
      * definition} in the read instructions.
      *
      * @param partitionedTable The partitioned table to write
      * @param destinationDir The path or URI to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created when there is data to write.
+     *        Non-existing directories are created as needed.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(
@@ -514,8 +510,7 @@ public class ParquetTools {
         }
         if (destinations.isEmpty()) {
             // The partitioned table has no constituents (as for a source table with no rows), so there are no
-            // partitions to write. Nothing is written, not even metadata files: the key-value layout records the
-            // schema only in the data files, so the metadata files would have nothing to describe.
+            // partitions and no data files to write.
             return;
         }
         final MessageType partitioningColumnsSchema;

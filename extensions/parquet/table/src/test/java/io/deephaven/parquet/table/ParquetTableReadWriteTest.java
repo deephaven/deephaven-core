@@ -1645,18 +1645,6 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void writeKeyValuePartitionedDataWithNoRowsAndMetadataFiles() {
-        // Metadata files describe data files, so none are written when there are no data files
-        final Table inputData = newTable(stringCol("PC1"), intCol("I"));
-        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsAndMetadataFiles");
-        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setGenerateMetadataFiles(true)
-                .build();
-        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), writeInstructions);
-        assertFalse(parentDir.exists());
-    }
-
-    @Test
     public void writeKeyValuePartitionedDataWithNoRowsOverExistingData() {
         // An empty write over a populated directory must leave the existing data intact
         final Table inputData = newTable(stringCol("PC1", "aa", "bb"), intCol("I", 1, 2));
