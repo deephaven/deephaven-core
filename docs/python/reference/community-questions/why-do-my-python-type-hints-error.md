@@ -6,13 +6,13 @@ title: Why does my function with type hints throw an error on null values?
 
 <p></p>
 
-How Deephaven handles null values in function arguments depends on the type hint:
+How a null value reaches a Python function depends on the column's type and the parameter's type hint:
 
-- **`str` and `object` parameters** — Null values pass through as `None` with no conversion and no error. The function must handle `None` if the column can contain nulls.
-- **Primitive parameters (`int`, `float`, `bool`, NumPy scalars)** — Null values pass through as the Deephaven null sentinel value (for example, `NULL_INT` for `int`). This can produce unexpected results if the function doesn't check for the sentinel.
-- **`Optional[...]` parameters** — Wrapping a primitive type hint in `Optional` enables null-to-`None` conversion. For example, `Optional[int]` converts null values to `None` instead of passing the null sentinel. For `str` and `object`, `Optional` has no effect because nulls already pass through as `None`.
+- **String and Boolean columns** — A null arrives as `None`, with or without `Optional`. The function must handle `None` if the column can contain nulls.
+- **Numeric columns with a numeric type hint (`int`, `float`, NumPy scalars)** — A null arrives as the Deephaven null sentinel for the column's type, such as `NULL_INT` for an `int` column or `NULL_LONG` for a `long` column. The sentinel is an ordinary number, so a function that doesn't check for it silently computes with it. Wrapping the type hint in `Optional[...]` converts the sentinel to `None`.
+- **Numeric columns with an `object` type hint** — A null arrives as the null sentinel for the column's type, even with `Optional`.
 
-The following example demonstrates these behaviors:
+The following example shows the difference between a plain numeric type hint and an `Optional` one:
 
 ```python
 from typing import Optional
@@ -33,18 +33,21 @@ def f_optional_int(x: Optional[int]) -> Optional[int]:
     return x + 1
 
 
-source = empty_table(5).update(
-    ["X = i % 2 == 0 ? null : `hello`", "Y = i % 2 == 0 ? null : i"]
+source = empty_table(6).update(
+    ["X = i % 2 == 0 ? null : `hello`", "Y = i % 2 == 0 ? NULL_INT : i"]
 )
 
-# str with nulls: None passes through, f_str returns "got None"
-t1 = source.update("S = f_str(X)")
+# A null string arrives as None, so f_str returns "got None"
+t_str = source.update("S = f_str(X)")
 
-# Optional[int] with nulls: null becomes None, handled explicitly
-t2 = source.update("Z = f_optional_int(Y)")
+# NULL_INT arrives as an ordinary int, so f_int returns NULL_INT + 1 instead of null
+t_int = source.update("Z = f_int(Y)")
+
+# Optional converts NULL_INT to None, so f_optional_int returns null
+t_optional = source.update("Z = f_optional_int(Y)")
 ```
 
-To fix errors caused by null values in columns with primitive type hints, either:
+To handle nulls in numeric columns, either:
 
 1. **Use `Optional[...]`** to convert nulls to `None`, then handle `None` in the function body.
 2. **Filter out nulls** before applying the function, for example with `where("Y != null")`.

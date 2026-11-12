@@ -21,7 +21,7 @@ The code below constructs an [execution context](../../conceptual/execution-cont
 
 ```java skip-test
 final UpdateGraph tableUpdateGraph = PeriodicUpdateGraph.newBuilder("symbolIndexGraph").build();
-// The application must call tableUpdateGraph.start() before the blink table will tick.
+// TablePublisher.of registers the publisher with this update graph, which starts the graph.
 
 final ExecutionContext dhEngineContext = ExecutionContext.newBuilder()
     .setUpdateGraph(tableUpdateGraph)
