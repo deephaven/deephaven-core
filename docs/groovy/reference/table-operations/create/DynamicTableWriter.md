@@ -27,7 +27,7 @@ Column names.
 </Param>
 <Param name="columnTypes" type="Type[]">
 
-Column data types, as [`io.deephaven.qst.type.Type`](/core/javadoc/io/deephaven/qst/type/Type.html) objects, such as `Type.intType()` or `Type.stringType()`.
+Column data types, as [`io.deephaven.qst.type.Type`](/core/javadoc/io/deephaven/qst/type/Type.html) objects, such as `Type.intType` or `Type.stringType`.
 
 </Param>
 <Param name="header" type="TableHeader">
