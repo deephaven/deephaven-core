@@ -4,23 +4,20 @@ title: How can I bin times to a specific time?
 
 _I have a table with time series data. I know I can bin my timestamps into fixed-duration bins. I need these bins to start at a specific time of day. How can I do this?_
 
-The Deephaven query library's built-in [`DateTimeUtils`](/core/javadoc/io/deephaven/time/DateTimeUtils.html) class has the methods [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long,long)) and [`upperBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long,long)) that can be used to bin your time series data. They allow you to pass an offset so that the bins start later than they normally would. You can use this offset to get the bins to start at a specific time.
+The Deephaven query library's built-in [`DateTimeUtils`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html) class has the methods [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long,long)) and [`upperBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long,long)) that can be used to bin your time series data. They allow you to pass an offset so that the bins start later than they normally would. You can use this offset to get the bins to start at a specific time.
 
-`lowerBin` and `upperBin` calculate bin start/end times using [Unix time](https://en.wikipedia.org/wiki/Unix_time). So, if you bin times in 5-minute intervals, the bin start/end times are an integer multiple of 5 minutes since the Unix epoch (`1970-01-01T00:00:00 UTC`).
+[`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long,long)) and [`upperBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long,long)) calculate bin start/end times using [Unix time](https://en.wikipedia.org/wiki/Unix_time). So, if you bin times in 5-minute intervals, the bin start/end times are an integer multiple of 5 minutes since the Unix epoch (`1970-01-01T00:00:00 UTC`).
 
-Getting time bins to start at a specific time can be done in several ways. We will provide solutions that cover the following two cases:
+Getting time bins to start at a specific time can be done in several ways. This page covers two cases:
 
 - You want the bins to snap to a specific time on a single day.
 - You want the bins to snap to a specific time _every_ day.
 
-For the examples below, we will provide code that makes time bins start at 9:30AM ET (NYSE trading start time). We will also only provide solutions that do this for bins that are an integer number of minutes long. The solutions can be extrapolated to cover cases where the bins don't meet this criteria.
-
-> [!IMPORTANT]
-> Bin start times are calculated using Unix epoch time, which is in the UTC time zone. ET (standard time) is 5 hours behind, so NYSE trading start is actually 2:30PM UTC.
+The examples below make time bins start at 9:30AM ET (NYSE trading start time). They only cover bins that are an integer number of minutes long. The solutions can be extrapolated to cover cases where the bins don't meet this criterion.
 
 ## Bin without an offset
 
-Bin sizes of 1, 2, 3, 5, 6, 10, 15, and 30 minutes will _always_ snap to 9:30AM ET every day. Each of these sizes divides both 24 hours (1440 minutes) and the 870 minutes between midnight UTC and 9:30AM ET (2:30PM UTC). Other bin sizes, such as 7 minutes or 60 minutes, do not always snap to 9:30AM ET:
+Bin sizes that evenly divide 30 minutes (1, 2, 3, 5, 6, 10, 15, and 30 minutes) always snap to 9:30AM ET, because 9:30AM ET is a whole number of 30-minute periods after midnight UTC in both standard and daylight time. Other bin sizes, such as 7 minutes, do not always snap to 9:30AM ET:
 
 ```python test-set=1 order=result,source
 from deephaven.time import to_j_instant
@@ -40,11 +37,14 @@ result = source.update(
 )
 ```
 
-Notice how `LowerBin7Min` and `UpperBin7Min` don't snap to 9:30AM ET; rather they snap to 9:24AM ET. To get these to snap to 9:30, you would need to provide a 6-minute offset as the third input parameter to `lowerBin` and `upperBin`. This offset will change every day, so a 6-minute offset will only work for some days.
+Notice how `LowerBin7Min` and `UpperBin7Min` don't snap to 9:30AM ET; rather they snap to 9:24AM ET. To get these to snap to 9:30, you need to provide a 6-minute offset as the third input parameter to [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long,long)) and [`upperBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long,long)). This offset changes every day, so a 6-minute offset only works for some days.
 
 ## Single day
 
-As previously mentioned, the offset needed for snapping bins to a specific time depends on the day. So, we need to be able to calculate this offset for any given day. To do this, we compute the total time from the Epoch to the specific "snapping" time, and divide this by the length of the time bins. Whatever remainder is left over from that division is the offset needed for that day. This can be done via Python's built-in [datetime](https://docs.python.org/3/library/datetime.html) library. Let's do this for 3 different bin sizes: 7 minutes, 14 minutes, and 19 minutes.
+> [!IMPORTANT]
+> Bin start times are calculated using Unix epoch time, which is in the UTC time zone. ET (standard time, EST) is 5 hours behind UTC, so NYSE trading start is 2:30PM UTC. During daylight saving time (EDT), ET is 4 hours behind UTC, so 9:30AM ET is 1:30PM UTC. The `calc_bin_offset` function below takes UTC hours, so pass `14, 30` for dates in EST and `13, 30` for dates in EDT.
+
+The offset needed for snapping bins to a specific time depends on the day. So, we need to calculate this offset for any given day. To do this, compute the total time from the Unix epoch to the specific "snapping" time, and divide this by the length of the time bins. The remainder from that division is the offset needed for that day. This can be done via Python's built-in [datetime](https://docs.python.org/3/library/datetime.html) library. Here is the calculation for 3 different bin sizes: 7 minutes, 14 minutes, and 19 minutes.
 
 ```python test-set=1 order=:log
 import datetime
@@ -66,7 +66,7 @@ print(f"14 minute bin: {offset_14min} minute offset.")
 print(f"19 minute bin: {offset_19min} minute offset.")
 ```
 
-You can use these values in a `lowerBin` or `upperBin`:
+You can use these values in [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long,long)) or [`upperBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long,long)):
 
 ```python test-set=1 order=result
 result = source.update(
@@ -85,14 +85,14 @@ Now, each column has bins that start at 9:30AM ET.
 
 ## Every day
 
-Bin sizes like 7, 14, and 19 minutes don't multiply evenly into 24 hours. The code above will only get bins to snap to that time for a single day. You can make this happen for every day instead. Just keep in mind that bins that contain midnight (a change in days) will likely not be the correct size.
+Bin sizes like 7, 14, and 19 minutes don't divide evenly into 24 hours. The offsets computed in [Single day](#single-day) make bins start at 9:30AM ET on one date only. To make bins start at 9:30AM ET every day, bin on the minute of the day instead of on the timestamp. Bins that contain midnight are likely to be shorter than the bin size.
 
-In order to get this to happen every day, you need to use the equivalent methods from the [`Numeric`](/core/javadoc/io/deephaven/function/Numeric.html) class instead. If you pass in the correct data types, the engine knows to use these methods rather than the ones in [`DateTimeUtils`](/core/javadoc/io/deephaven/time/DateTimeUtils.html).
+To do this, use the equivalent methods from the [`Numeric`](https://deephaven.io/core/javadoc/io/deephaven/function/Numeric.html) class instead. If you pass in the correct data types, the engine uses these methods rather than the ones in [`DateTimeUtils`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html).
 
 - [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#lowerBin(long,long,long))
 - [`upperBin`](https://deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#upperBin(long,long,long))
 
-To do this for time series data, you'll need to extract the minute of day from your Instant column. We also extract the year, month, and day of month so we can [convert the result](./convert-year-day-minute-instant.md) to an Instant back after calculations.
+Extract the minute of day from your [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) column. Also extract the year, month, and day of month so you can [convert the result back to an `Instant`](./convert-year-day-minute-instant.md) after calculations.
 
 ```python test-set=1 order=result
 from deephaven.time import to_j_time_zone
@@ -104,21 +104,23 @@ result = source.update(
         "Year = year(Timestamp, et_tz)",
         "Month = monthOfYear(Timestamp, et_tz)",
         "Day = dayOfMonth(Timestamp, et_tz)",
-        "Minute = minuteOfDay(Timestamp, et_tz, false)",
+        "Minute = minuteOfDay(Timestamp, et_tz, true)",
     ]
 )
 ```
 
+Passing `true` for the `asLocalTime` parameter measures minutes by the local clock, so 9:30AM is always minute 570, even on daylight saving time change days.
+
 Since this data is now stored for the correct time zone, we don't need to account for a difference in time zones. NYSE trading start time is 570 minutes into the day.
 
 ```python test-set=1 order=result_binned
-def calc_bin_offset(binsize, start_minute):
+def calc_daily_bin_offset(binsize, start_minute):
     return int(start_minute % binsize)
 
 
-offset_7min = calc_bin_offset(7, 570)
-offset_14min = calc_bin_offset(14, 570)
-offset_19min = calc_bin_offset(19, 570)
+offset_7min = calc_daily_bin_offset(7, 570)
+offset_14min = calc_daily_bin_offset(14, 570)
+offset_19min = calc_daily_bin_offset(19, 570)
 
 print(f"7 minute bin: {offset_7min} minute offset.")
 print(f"14 minute bin: {offset_14min} minute offset.")
@@ -127,24 +129,24 @@ print(f"19 minute bin: {offset_19min} minute offset.")
 result_binned = result.update(
     [
         f"LowerBin7Min = lowerBin(Minute, 7, {offset_7min})",
-        f"UpperBin14Min = upperBin(Minute, 14, {offset_14min})",
+        f"LowerBin14Min = lowerBin(Minute, 14, {offset_14min})",
         f"LowerBin19Min = lowerBin(Minute, 19, {offset_19min})",
     ]
 )
 ```
 
-Just to prove that it works for more than just a single day:
+To verify that this works across multiple days:
 
 ```python test-set=1 order=new_result_binned,new_source
-new_start_time = to_j_instant("2024-01-02T09:20:00 ET")
+new_start_time = to_j_instant("2024-01-05T09:20:00 ET")
 
-new_source = empty_table(20).update(
+new_source = empty_table(60).update(
     [
-        "Timestamp = new_start_time + i * MINUTE",
+        "Timestamp = new_start_time + i * HOUR",
         "Year = year(Timestamp, et_tz)",
         "Month = monthOfYear(Timestamp, et_tz)",
         "Day = dayOfMonth(Timestamp, et_tz)",
-        "Minute = minuteOfDay(Timestamp, et_tz, false)",
+        "Minute = minuteOfDay(Timestamp, et_tz, true)",
     ]
 )
 
@@ -157,7 +159,7 @@ new_result_binned = new_source.update(
 )
 ```
 
-You can aggregate on these bins just like you would an Instant column. Or, you could [convert the data back to an Instant](./convert-year-day-minute-instant.md).
+You can aggregate on these bins just like you would an `Instant` column. Or, you can [convert the data back to an `Instant`](./convert-year-day-minute-instant.md).
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
