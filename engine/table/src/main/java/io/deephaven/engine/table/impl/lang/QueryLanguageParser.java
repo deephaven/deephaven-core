@@ -2275,10 +2275,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
          */
 
         // First, we need to remove underscores from the value before we can parse it.
-        final String value = origValue.chars()
-                .filter((c) -> c != '_')
-                .collect(StringBuilder::new, (sb, c) -> sb.append((char) c), StringBuilder::append)
-                .toString();
+        final String value = removeUnderscores(origValue);
 
         long longValue;
         String prefix = value.length() > 2 ? value.substring(0, 2) : null;
@@ -2288,9 +2285,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // If a literal has 32 bits, the 32nd (i.e. MSB) is *not* taken as the sign bit!
             // This follows from the fact that Integer.parseInt(str, 2) will only parse an 'str' up to 31 chars long.
             longValue = Long.parseLong(value.substring(2), 2);
-        } else if (value.length() > 1 && value.charAt(0) == '0') { // octal literal
-            longValue = Long.parseLong(value.substring(1), 8);
         } else { // regular numeric literal
+            checkNotOctal(origValue, value);
             longValue = Long.parseLong(value);
         }
 
@@ -2308,9 +2304,37 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     @Override
     public Class<?> visit(LongLiteralExpr n, VisitArgs printer) {
-        printer.append(n.getValue());
+        final String origValue = n.getValue();
+        final String value = removeUnderscores(origValue);
+        final String prefix = value.length() > 2 ? value.substring(0, 2) : null;
+        if (!"0x".equalsIgnoreCase(prefix) && !"0b".equalsIgnoreCase(prefix)) {
+            checkNotOctal(origValue, value);
+        }
+        printer.append(origValue);
 
         return long.class;
+    }
+
+    private static String removeUnderscores(final String literal) {
+        return literal.chars()
+                .filter((c) -> c != '_')
+                .collect(StringBuilder::new, (sb, c) -> sb.append((char) c), StringBuilder::append)
+                .toString();
+    }
+
+    /**
+     * Java reads a decimal-looking integer literal with a leading zero, such as {@code 0777}, as octal. The query
+     * language does not support octal literals, so it rejects such a literal.
+     *
+     * @param origValue the literal as written, for the error message
+     * @param value the literal without underscores; neither hexadecimal nor binary
+     */
+    private static void checkNotOctal(final String origValue, final String value) {
+        if (value.length() > 1 && value.charAt(0) == '0' && Character.isDigit(value.charAt(1))) {
+            throw new ParserResolutionFailure("Integer literal " + origValue
+                    + " has a leading zero, so it would be interpreted as octal, which the query language does not"
+                    + " support; remove the leading zero for a decimal value");
+        }
     }
 
     @Override

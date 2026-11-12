@@ -418,15 +418,31 @@ public class TestQueryLanguageParser {
         expression = "0b11111111000000001111111100000000"; // 32 bits -- must be a long
         resultExpression = "0b11111111000000001111111100000000L";
         check(expression, resultExpression, long.class, new String[] {});
+    }
 
-        // octal 03000000000 is 402653184, which fits in an int even though decimal 3000000000 does not
-        expression = "03000000000";
-        resultExpression = "03000000000";
-        check(expression, resultExpression, int.class, new String[] {});
+    /**
+     * Java reads an integer literal with a leading zero as octal; the query language rejects it.
+     */
+    @Test
+    public void testOctalLiterals() throws Exception {
+        for (final String expression : new String[] {"0777", "03000000000", "040000000000", "0_7", "00", "08",
+                "0777L", "00L", "1 + 010"}) {
+            final QueryLanguageParseException ex = assertThrows(expression, QueryLanguageParseException.class,
+                    () -> check(expression, expression, int.class, new String[] {}));
+            if (!ex.getMessage().contains("would be interpreted as octal, which the query language does not support")) {
+                fail("Unexpected exception message for " + expression + ":\n" + ExceptionUtils.getStackTrace(ex));
+            }
+        }
 
-        expression = "040000000000"; // 2^32
-        resultExpression = "040000000000L";
-        check(expression, resultExpression, long.class, new String[] {});
+        // a lone zero, and hexadecimal, binary and floating point literals with leading zeros, are not octal
+        check("0", "0", int.class, new String[] {});
+        check("0L", "0L", long.class, new String[] {});
+        check("0x0F", "0x0F", int.class, new String[] {});
+        check("0b01", "0b01", int.class, new String[] {});
+        check("0x0FL", "0x0FL", long.class, new String[] {});
+        check("0b01L", "0b01L", long.class, new String[] {});
+        check("00.5", "00.5", double.class, new String[] {});
+        check("010.5f", "010.5f", float.class, new String[] {});
     }
 
     @Test
