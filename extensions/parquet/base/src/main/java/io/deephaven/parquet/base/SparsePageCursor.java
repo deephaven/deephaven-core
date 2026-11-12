@@ -5,7 +5,7 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Indices;
 import io.deephaven.parquet.base.materializers.IntMaterializer;
 import org.apache.parquet.column.values.ValuesReader;
@@ -72,7 +72,7 @@ public final class SparsePageCursor {
      */
     public Object materialize(
             @NotNull final Object nullValue,
-            @NotNull final LongChunk<Indices> rowRanges,
+            @NotNull final IntChunk<Indices> rowRanges,
             final int rowCount) throws IOException {
         return read(factory, valuesReader, nullValue, rowRanges, rowCount);
     }
@@ -84,7 +84,7 @@ public final class SparsePageCursor {
      */
     public int[] readKeyValues(
             final int nullPlaceholder,
-            @NotNull final LongChunk<Indices> rowRanges,
+            @NotNull final IntChunk<Indices> rowRanges,
             final int rowCount) throws IOException {
         if (keyReader == null) {
             // Shares its position with valuesReader.
@@ -132,7 +132,9 @@ public final class SparsePageCursor {
         if (levelBytes.length < size) {
             levelBytes = new byte[MathUtil.roundUpArraySize(size)];
         }
-        levels.duplicate().get(levelBytes, 0, size);
+        final int position = levels.position();
+        levels.get(levelBytes, 0, size);
+        levels.position(position);
         return ByteBuffer.wrap(levelBytes, 0, size);
     }
 
@@ -163,20 +165,19 @@ public final class SparsePageCursor {
             final PageMaterializerFactory factory,
             final ValuesReader dataReader,
             final Object nullValue,
-            final LongChunk<Indices> rowRanges,
+            final IntChunk<Indices> rowRanges,
             final int rowCount) throws IOException {
         Require.neqNull(factory, "factory");
         final PageMaterializer materializer = factory.makeMaterializerWithNulls(dataReader, nullValue, rowCount);
         int outPos = 0;
         for (int ri = 0; ri < rowRanges.size(); ri += 2) {
-            final long first = rowRanges.get(ri);
-            final long last = rowRanges.get(ri + 1);
+            final int first = rowRanges.get(ri);
+            final int last = rowRanges.get(ri + 1);
             Require.geq(first, "first", nextRow, "nextRow");
             Require.geq(last, "last", first, "first");
             Require.lt(last, "last", pageRowCount, "pageRowCount");
-            // Both within the page, so they fit in an int.
-            skip(dataReader, (int) first - nextRow);
-            outPos = fill(materializer, outPos, (int) last - (int) first + 1);
+            skip(dataReader, first - nextRow);
+            outPos = fill(materializer, outPos, last - first + 1);
         }
         return materializer.data();
     }

@@ -10,7 +10,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Indices;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
@@ -80,7 +80,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
     @Override
     @NotNull
     public final Object getSparseResult(@NotNull final SparsePageCursor cursor,
-            @NotNull final LongChunk<Indices> rowRanges, final int rowCount) throws IOException {
+            @NotNull final IntChunk<Indices> rowRanges, final int rowCount) throws IOException {
         if (!cursor.usesDictionary()) {
             return ToPage.super.getSparseResult(cursor, rowRanges, rowCount);
         }
@@ -155,7 +155,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
 
             @Override
             public Object getSparseResult(@NotNull final SparsePageCursor cursor,
-                    @NotNull final LongChunk<Indices> rowRanges, final int rowCount) throws IOException {
+                    @NotNull final IntChunk<Indices> rowRanges, final int rowCount) throws IOException {
                 return ToPageWithDictionary.this.getSparseResult(cursor, rowRanges, rowCount);
             }
 

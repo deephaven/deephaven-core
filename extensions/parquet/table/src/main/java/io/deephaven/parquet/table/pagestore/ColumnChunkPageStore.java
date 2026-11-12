@@ -6,10 +6,12 @@ package io.deephaven.parquet.table.pagestore;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.sized.SizedIntChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.page.PagingContextHolder;
@@ -690,12 +692,12 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         final WritableLongChunk<OrderedRowKeyRanges> requestRanges = contextWrapper.requestRanges(2 * rowCount);
         pageRows.fillRowKeyRangesChunk(requestRanges);
         // Page-relative ranges of the rows to decode: the requested rows that have no cached value.
-        final WritableLongChunk<Indices> decodeRanges = contextWrapper.decodeRanges(2 * rowCount);
+        final WritableIntChunk<Indices> decodeRanges = contextWrapper.decodeRanges(2 * rowCount);
         final int decodeCount;
         if (cached == null) {
             decodeRanges.setSize(requestRanges.size());
             for (int ii = 0; ii < requestRanges.size(); ++ii) {
-                decodeRanges.set(ii, requestRanges.get(ii) - pageFirstKey);
+                decodeRanges.set(ii, (int) (requestRanges.get(ii) - pageFirstKey));
             }
             decodeCount = rowCount;
         } else {
@@ -775,7 +777,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             @NotNull final SparsePage<?> cached,
             @NotNull final LongChunk<OrderedRowKeyRanges> requestRanges,
             final long pageFirstKey,
-            @NotNull final WritableLongChunk<Indices> missingRanges) {
+            @NotNull final WritableIntChunk<Indices> missingRanges) {
         missingRanges.setSize(0);
         int missingCount = 0;
         try (final CachedRanges cachedRanges = new CachedRanges(cached)) {
@@ -1020,7 +1022,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         @Nullable
         private SizedLongChunk<OrderedRowKeyRanges> requestRanges;
         @Nullable
-        private SizedLongChunk<Indices> decodeRanges;
+        private SizedIntChunk<Indices> decodeRanges;
         @Nullable
         private RunBatch cachedRuns;
         @Nullable
@@ -1067,9 +1069,9 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
          * @return A second chunk like {@link #requestRanges}, for page-relative ranges
          */
         @NotNull
-        WritableLongChunk<Indices> decodeRanges(final int capacity) {
+        WritableIntChunk<Indices> decodeRanges(final int capacity) {
             if (decodeRanges == null) {
-                decodeRanges = new SizedLongChunk<>();
+                decodeRanges = new SizedIntChunk<>();
             }
             return decodeRanges.ensureCapacity(capacity);
         }
@@ -1104,7 +1106,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         void appendPending(
                 @NotNull final ColumnChunkPageStore<?> store,
                 final int pageNum,
-                @NotNull final LongChunk<Indices> ranges,
+                @NotNull final IntChunk<Indices> ranges,
                 final int count,
                 @NotNull final Object values) {
             if (pendingStore != store || pendingPageNum != pageNum) {

@@ -14,7 +14,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.parquet.base.ColumnPageReader;
 import io.deephaven.parquet.base.DataWithOffsets;
 import io.deephaven.parquet.base.SparsePageCursor;
-import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.IntChunk;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -111,7 +111,7 @@ public class ToStringSetPage<ATTR extends Any, STRING_ARRAY>
          * Unsupported: string sets are repeated, which sparse reads refuse.
          */
         @Override
-        public Object getSparseResult(SparsePageCursor cursor, LongChunk<Indices> rowRanges, int rowCount) {
+        public Object getSparseResult(SparsePageCursor cursor, IntChunk<Indices> rowRanges, int rowCount) {
             throw new UnsupportedOperationException("Sparse reads of string sets are not supported");
         }
 
