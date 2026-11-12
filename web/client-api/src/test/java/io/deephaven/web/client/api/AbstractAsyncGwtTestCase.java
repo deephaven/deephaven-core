@@ -67,12 +67,13 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
 
     @Override
     protected void gwtTearDown() throws Exception {
-        // Shut every stream of this test's connection, pass or fail, so nothing leaks into the next test
-        if (lastCoreClient != null) {
-            lastCoreClient.disconnect();
-            lastCoreClient = null;
-            lastIdeConnection = null;
+        // Shut every stream of this test's connections, pass or fail, so nothing leaks into the next test
+        for (CoreClient client : coreClients) {
+            client.disconnect();
         }
+        coreClients.clear();
+        lastCoreClient = null;
+        lastIdeConnection = null;
         super.gwtTearDown();
         errorLogsSeen.clear();
         Js.asPropertyMap(console).set("error", originalConsoleError);
@@ -186,10 +187,13 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
 
     /**
      * The client and connection behind the most recent {@link #connect}, for tests that listen to connection-level
-     * events; the client is disconnected in teardown.
+     * events.
      */
     protected CoreClient lastCoreClient;
     protected IdeConnection lastIdeConnection;
+
+    /** Every client {@link #connect} created in this test, disconnected in teardown. */
+    private final List<CoreClient> coreClients = new ArrayList<>();
 
     /**
      * Connects and authenticates to the configured server with the given options, and runs the specified scripts.
@@ -200,6 +204,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         return importDhInternal().then(module -> {
             CoreClient coreClient = new CoreClient(localServer, connectOptions);
             lastCoreClient = coreClient;
+            coreClients.add(coreClient);
             return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
                     .then(ignore -> coreClient.getAsIdeConnection())
                     .then(ide -> {
