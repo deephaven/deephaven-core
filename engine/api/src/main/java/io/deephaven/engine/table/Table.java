@@ -229,6 +229,29 @@ public interface Table extends
      * See {@code org.apache.arrow.vector.types.pojo.Schema}.
      */
     String BARRAGE_SCHEMA_ATTRIBUTE = "BarrageSchema";
+    /**
+     * A comma-separated, ordered list of compression types (the built-in {@code gzip}, {@code zstd}, {@code snappy} and
+     * {@code deflate}, or types that an {@code io.deephaven.grpc.compression.CompressionCodecProvider} adds; e.g.
+     * {@code "zstd,snappy,gzip"}) that allows compressing this table's Barrage snapshots and subscriptions. The server
+     * uses the first listed type that the client accepts, as listed in its {@code grpc-accept-encoding} header, and
+     * sends uncompressed data when none match. Tables with no attribute set use the server's default list, from the
+     * {@code TransportCompression.defaultTypes} property; the property is unset by default, so those tables are never
+     * compressed. An attribute set to an empty list means never compress, even when the server has a default list.
+     * <p>
+     * Prefer setting it with {@code io.deephaven.extensions.barrage.TransportCompressionAttribute.withCompression},
+     * which rejects unsupported names when called, and removing it with {@code resetCompression} in the same class. The
+     * server ignores a value it cannot parse, using its default list instead, and logs a warning the first time a
+     * client fetches a table with that value.
+     * <p>
+     * Operations whose result holds only this table's values keep the attribute: filtering, sorting, reversing,
+     * flattening, dropping or renaming columns, {@code partitionBy} constituents, {@code firstBy}, {@code lastBy},
+     * column previews and coalescing. Operations that compute new values or bring in another table's data drop it,
+     * including {@code view}, {@code updateView}, joins, {@code wouldMatch}, rollups and trees; so do operations that
+     * copy no attributes, such as {@code head}, {@code select} and {@code update}. Their results have no attribute set,
+     * so they use the server's default list, even when this table's attribute is an empty list. To compress a rollup or
+     * tree table, set the attribute on the rollup or tree table itself.
+     */
+    String TRANSPORT_COMPRESSION_ATTRIBUTE = "TransportCompression";
 
     // -----------------------------------------------------------------------------------------------------------------
     // ColumnSources for fetching data by row key
@@ -364,8 +387,8 @@ public interface Table extends
      * simultaneous and unordered, enabling direct swaps between column names. The resulting table retains the original
      * column ordering after applying the specified renames.
      * <p>
-     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
-     * silently replaced.
+     * NOTE: If a new column name matches an existing column that is not itself renamed, that existing column is
+     * silently dropped from the result. When the existing column is also renamed (a swap), nothing is dropped.
      * <p>
      * {@link IllegalArgumentException} will be thrown:
      * <ul>
@@ -385,8 +408,8 @@ public interface Table extends
      * The renames are simultaneous and unordered, enabling direct swaps between column names. The resulting table
      * retains the original column ordering after applying the specified renames.
      * <p>
-     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
-     * silently replaced.
+     * NOTE: If a new column name matches an existing column that is not itself renamed, that existing column is
+     * silently dropped from the result. When the existing column is also renamed (a swap), nothing is dropped.
      * <p>
      * {@link IllegalArgumentException} will be thrown:
      * <ul>
@@ -512,7 +535,7 @@ public interface Table extends
      * Provides a head that selects a dynamic number of rows based on a percent.
      *
      * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
-     *        example if there are 3 rows, headPct(50) returns the first two rows. For percent values outside [0, 1],
+     *        example if there are 3 rows, headPct(0.5) returns the first two rows. For percent values outside [0, 1],
      *        the function will throw an exception.
      */
     @ConcurrentMethod
@@ -522,8 +545,8 @@ public interface Table extends
      * Provides a tail that selects a dynamic number of rows based on a percent.
      *
      * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
-     *        example if there are 3 rows, tailPct(50) returns the last two rows. For percent values outside [0, 1], the
-     *        function will throw an exception.
+     *        example if there are 3 rows, tailPct(0.5) returns the last two rows. For percent values outside [0, 1],
+     *        the function will throw an exception.
      */
     @ConcurrentMethod
     Table tailPct(double percent);

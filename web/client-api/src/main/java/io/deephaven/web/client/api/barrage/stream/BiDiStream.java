@@ -67,11 +67,13 @@ public abstract class BiDiStream<Req, Resp> {
         static class RealBidiStream<ReqT, RespT> extends BiDiStream<ReqT, RespT> {
             private final ResponseStreamWrapper<RespT> wrapper;
             private StreamObserver<ReqT> observer;
+            private boolean ended;
 
             RealBidiStream(BiDiStreamFactory<ReqT, RespT> factory) {
                 wrapper = ResponseStreamWrapper.of(o -> {
                     observer = factory.openBiDiStream(o);
                 });
+                wrapper.onEnd(status -> ended = true);
             }
 
             @Override
@@ -81,11 +83,21 @@ public abstract class BiDiStream<Req, Resp> {
 
             @Override
             public void cancel() {
+                if (ended) {
+                    return;
+                }
+                // the websocket transport has no per-stream cancel; the half-close is what ends the stream server-side
+                observer.onCompleted();
                 wrapper.cancel();
+                // a cancel delivers no end event, so mark the stream ended here
+                ended = true;
             }
 
             @Override
             public void end() {
+                if (ended) {
+                    return;
+                }
                 observer.onCompleted();
             }
 

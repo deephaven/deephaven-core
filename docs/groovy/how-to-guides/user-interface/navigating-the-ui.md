@@ -9,7 +9,7 @@ The Deephaven user interface (GUI) offers a comprehensive suite of advanced tool
 ## Legend
 
 - **<font color="#C80001">Console</font>**: The console is where you can type and run code. Most of the work you do in Deephaven will likely be done in this panel.
-- **<font color="#77379A">Log</font>**: Navigate to this panel to view your Deephaven instance's complete log.
+- **<font color="#77379A">Log</font>**: Navigate to this panel to view recent messages from your Deephaven server's log. See [Retrieve logs](../logs.md#log-panel).
 - **<font color="#00F321">Tables and Widgets Dropdowns</font>**: These menus list all of the tables, plots, and other widgets in your Deephaven instance. Click on a table or widget to view it.
 - **<font color="#EC01EC">Console Options</font>**: This menu contains options to change the console's behavior, such as whether to auto-launch panels or automatically close them upon a disconnection.
 - **<font color="#70ADFB">File Explorer</font>**: Here you can upload and download files to and from your Deephaven instance.

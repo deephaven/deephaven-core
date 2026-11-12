@@ -45,8 +45,8 @@ public class TestConcurrentInstantiationIterativeFilter extends TestConcurrentIn
 
         final Table chain2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(chain1));
-        TstUtils.assertTableEquals(tableStart, prevTable(chain2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(chain1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(chain2));
 
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
@@ -55,8 +55,8 @@ public class TestConcurrentInstantiationIterativeFilter extends TestConcurrentIn
 
         showWithRowSet(chain3);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(chain1));
-        TstUtils.assertTableEquals(tableStart, prevTable(chain2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(chain1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(chain2));
 
         updateGraph.completeCycleForUnitTests();
 

@@ -22,19 +22,18 @@ public class BigDecimalChunkedNumericalStats implements ChunkedNumericalStatsKer
     private final static int SCALE =
             Configuration.getInstance().getIntegerWithDefault("BigDecimalStdOperator.scale", 10);
 
-    private long count = 0;
-
-    private BigDecimal sum = BigDecimal.ZERO;
-    private BigDecimal absSum = BigDecimal.ZERO;
-    private BigDecimal sqrdSum = BigDecimal.ZERO;
-
-    private BigDecimal min = null;
-    private BigDecimal max = null;
-    private BigDecimal absMin = null;
-    private BigDecimal absMax = null;
-
     @Override
     public Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev) {
+        long count = 0;
+
+        BigDecimal sum = BigDecimal.ZERO;
+        BigDecimal absSum = BigDecimal.ZERO;
+        BigDecimal sqrdSum = BigDecimal.ZERO;
+
+        BigDecimal min = null;
+        BigDecimal max = null;
+        BigDecimal absMin = null;
+        BigDecimal absMax = null;
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
             final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();

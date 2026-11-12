@@ -169,6 +169,29 @@ public class QueryTableWhereInTest {
         assertTableEquals(lhs.head(2), result);
     }
 
+    /**
+     * A whereIn on a refreshing table that is empty when the operation begins has no rows to filter, but its result
+     * follows the source's data index table, so the operation builds that table.
+     */
+    @Test
+    public void testWhereInBuildsDataIndexTableOfEmptyRefreshingSource() {
+        final QueryTable setTable = testRefreshingTable(i(2, 4).toTracking(), col("X", "A", "B"));
+        final QueryTable filteredTable = testRefreshingTable(i().toTracking(), col("X", new String[0]));
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(filteredTable, "X");
+        assertFalse(dataIndex.tableIsCached());
+
+        final Table result = filteredTable.whereIn(setTable, "X");
+        assertTrue(dataIndex.tableIsCached());
+        assertEquals(0, result.size());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(filteredTable, i(1, 2, 3), col("X", "A", "C", "B"));
+            filteredTable.notifyListeners(i(1, 2, 3), i(), i());
+        });
+        assertArrayEquals(new String[] {"A", "B"}, ColumnVectors.ofObject(result, "X", String.class).toArray());
+    }
+
     @Test
     public void testPartialOutOfOrderDataIndex() {
         final Table toFilter = TableTools.newTable(

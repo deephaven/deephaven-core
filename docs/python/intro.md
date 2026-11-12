@@ -1,20 +1,17 @@
 ---
 title: Community Core Docs
-description: Learn how to use the Deephaven real-time query engine. Find getting started tutorials, practical how-to guides, deep conceptual explanations, detailed API references, and helpful cheat sheets.
+description: Learn how to use the Deephaven real-time query engine. Find getting-started tutorials, practical how-to guides, deep conceptual explanations, detailed API references, and helpful cheat sheets.
 hide_title: true
-# hide_table_of_contents: true
 slug: /docs
 ---
 
-import { TaglineCarouselTyping } from '../../src/pages/fragments/\_TaglineCarousel';
+import { TaglineCarouselTyping } from '@site/src/pages/fragments/\_TaglineCarousel';
 import { DocsSectionCount } from '@theme/deephaven/core-docs-components';
 import { QuickstartCTA, TutorialCTA, HelpCTA } from '@theme/deephaven/CTA';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { vsCommentDiscussion } from '@deephaven/icons';
 
 <h3 className="text--primary margin-bottom--sm margin-top--md">Learn Deephaven</h3>
 
-<!-- Headlines rotate through at top, expected be split on two lines -->
+<!-- Headlines rotate through at top; each is expected to be split on two lines -->
 
 <TaglineCarouselTyping rows={2} taglines={[
 'and build real-time\n applications',
@@ -60,7 +57,7 @@ Popular guides
 - [Group and ungroup data](./how-to-guides/grouping-data.md)
 - [Read Parquet files](./how-to-guides/data-import-export/parquet-import.md)
 - [Write Parquet files](./how-to-guides/data-import-export/parquet-export.md)
-- [Import from Kafka](./how-to-guides/data-import-export/kafka-stream.md)
+- [Connect to Kafka](./how-to-guides/data-import-export/kafka-stream.md)
 - [Install Python packages](./how-to-guides/install-and-use-python-packages.md)
 
 </div>
@@ -82,10 +79,10 @@ Clear explanations of core concepts to improve your fundamental understanding of
 Important concepts
 
 - [Deephaven overview](./conceptual/deephaven-overview.md)
-- [Deephaven's architectural design](./conceptual/deephaven-design.md)
-- [Core API features](./conceptual/deephaven-core-api.md)
-- [Table update model](./conceptual/table-update-model.md)
-- [Docker data volumes](./conceptual/docker-data-volumes.md)
+- [Deephaven's design](./conceptual/deephaven-design.md)
+- [Designing the Core API](./conceptual/deephaven-core-api.md)
+- [Incremental update model](./conceptual/table-update-model.md)
+- [Docker bind mounts](./conceptual/docker-data-volumes.md)
 
 </div>
 </div>
@@ -98,20 +95,21 @@ Important concepts
 
 </DocsSectionCount>
 
-Technical descriptions of how Deephaven works, with examples. Most useful when you need detailed information about a specfic Deephaven API. For those needing deeper technical documentation, you can also refer to our API documentation generated from source.
+Descriptions of Deephaven's methods, functions, and classes, with examples. Most useful when you need detailed information about a specific Deephaven API. For the full signature of every class and method, use the generated API documentation.
 
 </div>
 <div className="col col--4 popular-articles-list">
 
-API documentation
+Generated API documentation
 
-- [Pydoc (Python client)](/core/client-api/python)
 - [Pydoc (Python server)](/core/pydoc)
+- [Pydoc (Python client)](/core/client-api/python)
 - [Javadoc (Java client/server)](/core/javadoc)
 - [JavaScript (client)](/core/client-api/javascript/modules/dh.html)
-- [Godoc (go client)](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
+- [Godoc (Go client)](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
 - [C++ (client)](/core/client-api/cpp)
-- [C++ (examples)](/core/client-api/cpp-examples)
+- [C++ (client examples)](/core/client-api/cpp-examples)
+- [R (client)](/core/client-api/r)
 
 </div>
 </div>
@@ -131,9 +129,8 @@ Short snippets and example queries. Most useful to keep open in a browser tab wh
 
 Useful cheat sheets
 
-- [Table operations](./reference/cheat-sheets/cheat-sheet.md)
+- [Ultimate cheat sheet](./reference/cheat-sheets/cheat-sheet.md)
 - [Table constructors](./reference/cheat-sheets/simple-table-constructors.md)
-- [Ultimate Cheat Sheet](./reference/cheat-sheets/cheat-sheet.md)
 - [Time operations](./reference/cheat-sheets/time-cheat-sheet.md)
 
 </div>

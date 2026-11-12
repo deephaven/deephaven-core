@@ -4,7 +4,7 @@
 
 import queue
 import unittest
-from typing import Any, Dict, List
+from typing import Any
 
 import pydeephaven as dh
 
@@ -94,9 +94,9 @@ class TickingEncodingsTestCase(unittest.TestCase):
             self.assertEqual(len(plain[name]), _NUM_ROWS, name)
             self.assertEqual(plain[name], encoded[name], name)
 
-    def _subscribe_and_collect(self, table) -> Dict[str, List[Any]]:
+    def _subscribe_and_collect(self, table) -> dict[str, list[Any]]:
         """Subscribes to table and returns the values of its added rows, column by column, once all have arrived."""
-        values: Dict[str, List[Any]] = {name: [] for name in _COLUMNS}
+        values: dict[str, list[Any]] = {name: [] for name in _COLUMNS}
         done: queue.Queue = queue.Queue()
 
         def on_update(update):

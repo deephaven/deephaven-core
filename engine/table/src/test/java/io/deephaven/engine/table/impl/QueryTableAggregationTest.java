@@ -3945,7 +3945,11 @@ public class QueryTableAggregationTest {
     @Test
     public void testIds7553() {
         final Table result = emptyTable(100).updateView("K=ii%10", "V=ii/10").groupBy("K").ungroup();
-        final Table prevResult = prevTableColumnSources(result);
+        // The result is static, and PrevTableTools.prevTable presents a static table as the table itself, so wrap the
+        // result's column sources directly to read the previous values of a static ungroup.
+        final Map<String, ColumnSource<?>> prevSources = new LinkedHashMap<>();
+        result.getColumnSourceMap().forEach((name, source) -> prevSources.put(name, new PrevColumnSource<>(source)));
+        final Table prevResult = new QueryTable(result.getRowSet().copyPrev().toTracking(), prevSources);
         assertTableEquals(result, prevResult);
     }
 

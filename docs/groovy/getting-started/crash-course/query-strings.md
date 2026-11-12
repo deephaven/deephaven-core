@@ -401,7 +401,7 @@ addVarsClass = emptyTable(1).update(
 ```
 
 > [!NOTE]
-> This example uses `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import the class into the query library of the current [`ExecutionContext`](../../conceptual/execution-context.md). This is a quick way to make a user-defined class available in query strings. For production code, see [Import packages with user-defined functions](../../how-to-guides/groovy-closures.md#import-packages-with-user-defined-functions) to put classes in their own Groovy files on the classpath.
+> This example uses `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import the class into the query library of the current [`ExecutionContext`](../../conceptual/execution-context.md). This is a quick way to make a user-defined class available in query strings. For production code, see [Import closures from Groovy files](../../how-to-guides/groovy-closures.md#import-closures-from-groovy-files) to put classes in their own Groovy files on the classpath.
 
 Closures don't expose a return type, and the class methods above don't declare one, so the engine can't infer what data type they return. It stores each result as a Java [`Object`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html). Plain Groovy variables are different: the engine knows their types, so the `Sum` column in `addVars` is an `int`.
 

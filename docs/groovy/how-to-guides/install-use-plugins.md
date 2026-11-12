@@ -268,7 +268,7 @@ dependencies {
 
 ## Related documentation
 
-- [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)
+- [Access your file system with Docker bind mounts](../conceptual/docker-data-volumes.md)
 - [Build and launch Deephaven from source code](../getting-started/launch-build.md)
 - [Create your own plugin](./create-plugins.md)
 - [How to install packages](./install-packages.md)

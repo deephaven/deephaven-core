@@ -46,6 +46,27 @@ public class FormulaAnalyzer {
             staticImports = Set.copyOf(queryLibrary.getStaticImports());
         }
 
+        private Imports(
+                final Map<String, Object> queryScopeVariables,
+                final Collection<Package> packageImports,
+                final Collection<Class<?>> classImports,
+                final Collection<Class<?>> staticImports) {
+            this.queryScopeVariables = queryScopeVariables;
+            this.packageImports = packageImports;
+            this.classImports = classImports;
+            this.staticImports = staticImports;
+        }
+
+        /**
+         * @param queryScopeVariables the query-scope variables to offer in place of this snapshot's variables
+         * @return a snapshot with this snapshot's package, class and static imports, and {@code queryScopeVariables} as
+         *         the query-scope variables
+         */
+        public Imports withQueryScopeVariables(@NotNull final Map<String, Object> queryScopeVariables) {
+            return new Imports(Collections.unmodifiableMap(queryScopeVariables), packageImports, classImports,
+                    staticImports);
+        }
+
         public Map<String, Object> getQueryScopeVariables() {
             return queryScopeVariables;
         }

@@ -397,7 +397,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
 
     private static boolean shouldPreserve(final ColumnSource<?> columnSource) {
-        return columnSource instanceof InMemoryColumnSource && ((InMemoryColumnSource) columnSource).isInMemory()
+        return InMemoryColumnSource.isInMemory(columnSource)
                 && !Vector.class.isAssignableFrom(columnSource.getType());
     }
 

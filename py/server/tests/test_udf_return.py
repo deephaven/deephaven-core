@@ -294,16 +294,17 @@ foo = Foo()
 
     def test_optional_scalar_return(self):
         for dh_dtype, np_dtype in _J_TYPE_NP_DTYPE_MAP.items():
-            with self.subTest(dh_dtype=dh_dtype, np_dtype=np_dtype):
-                func_str = f"""
-def fn(col) -> Optional[{np_dtype}]:
+            for ret in (f"Optional[{np_dtype}]", f"{np_dtype} | None"):
+                with self.subTest(dh_dtype=dh_dtype, ret=ret):
+                    func_str = f"""
+def fn(col) -> {ret}:
     return None if col % 2 == 0 else {np_dtype}(col)
 """
-                exec(func_str, globals())
+                    exec(func_str, globals())
 
-                t = empty_table(10).update("X = i").update("Y= fn(X + 1)")
-                self.assertEqual(t.columns[1].data_type, dh_dtype)
-                self.assertEqual(t.to_string().count("null"), 5)
+                    t = empty_table(10).update("X = i").update("Y= fn(X + 1)")
+                    self.assertEqual(t.columns[1].data_type, dh_dtype)
+                    self.assertEqual(t.to_string().count("null"), 5)
 
     def test_optional_array_return(self):
         def f() -> Optional[np.ndarray[np.int64]]:
@@ -316,6 +317,19 @@ def fn(col) -> Optional[{np_dtype}]:
             return None if col % 2 == 0 else [col]
 
         t = empty_table(10).update(["X1 = f1(i)"])
+        self.assertEqual(t.columns[0].data_type, dtypes.long_array)
+        self.assertEqual(t.to_string().count("null"), 5)
+
+        def f2() -> np.ndarray[np.int64] | None:
+            return np.array([1, 2], dtype=np.int64)
+
+        t = empty_table(10).update(["X1 = f2()"])
+        self.assertEqual(t.columns[0].data_type, dtypes.long_array)
+
+        def f3(col) -> list[int] | None:
+            return None if col % 2 == 0 else [col]
+
+        t = empty_table(10).update(["X1 = f3(i)"])
         self.assertEqual(t.columns[0].data_type, dtypes.long_array)
         self.assertEqual(t.to_string().count("null"), 5)
 

@@ -26,18 +26,26 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     private final String resultName;
     private final ChunkType chunkType;
 
+    /**
+     * The number of rows with a non-null value and weight in each destination, or null when the operator only receives
+     * additions; a null result then means that no such row has been added.
+     */
     private final LongArraySource normalCount;
+    /**
+     * The weighted sum of each destination, or null when the operator only receives additions and accumulates in the
+     * result instead.
+     */
     private final LongArraySource weightedSum;
     private final LongArraySource resultColumn;
 
     LongChunkedWeightedSumOperator(ChunkType chunkType, LongWeightRecordingInternalOperator weightOperator,
-            String name) {
+            boolean addOnly, String name) {
         this.chunkType = chunkType;
         this.weightOperator = weightOperator;
         this.resultName = name;
 
-        normalCount = new LongArraySource();
-        weightedSum = new LongArraySource();
+        normalCount = addOnly ? null : new LongArraySource();
+        weightedSum = addOnly ? null : new LongArraySource();
         resultColumn = new LongArraySource();
     }
 
@@ -156,6 +164,16 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
         final int newNormal = normalOut.get();
         final long newWeightedSum = weightedSumOut.get();
 
+        if (normalCount == null) {
+            if (newNormal == 0) {
+                return false;
+            }
+            final long existingResult = resultColumn.getUnsafe(destination);
+            final long newResult = NullSafeAddition.plusLong(existingResult, newWeightedSum);
+            resultColumn.set(destination, newResult);
+            return newResult != existingResult;
+        }
+
         final long totalNormal;
         final long existingNormal = normalCount.getUnsafe(destination);
         totalNormal = NullSafeAddition.plusLong(existingNormal, newNormal);
@@ -180,6 +198,7 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
 
     private boolean removeChunk(LongChunk<? extends Values> longValues, LongChunk<? extends Values> weightValues,
             int start, int length, long destination) {
+        requireCounts();
         final MutableInt normalOut = new MutableInt();
         final MutableLong weightedSumOut = new MutableLong();
 
@@ -226,6 +245,7 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     private boolean modifyChunk(LongChunk<? extends Values> prevDoubleValues,
             LongChunk<? extends Values> prevWeightValues, LongChunk<? extends Values> newDoubleValues,
             LongChunk<? extends Values> newWeightValues, int start, int length, long destination) {
+        requireCounts();
         final MutableInt normalOut = new MutableInt();
         final MutableLong weightedSumOut = new MutableLong();
 
@@ -268,10 +288,19 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
         }
     }
 
+    private void requireCounts() {
+        if (normalCount == null) {
+            throw new UnsupportedOperationException(
+                    "Add-only weighted sum operators do not support removals or modifications");
+        }
+    }
+
     @Override
     public void ensureCapacity(long tableSize) {
-        normalCount.ensureCapacity(tableSize);
-        weightedSum.ensureCapacity(tableSize);
+        if (normalCount != null) {
+            normalCount.ensureCapacity(tableSize);
+            weightedSum.ensureCapacity(tableSize);
+        }
         resultColumn.ensureCapacity(tableSize);
     }
 

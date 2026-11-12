@@ -38,6 +38,12 @@ The `QueryTable` has the following user-configurable properties:
 | [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.maximumCapacity.*`                       | unlimited  |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.maximumCapacity.*`                 | unlimited  |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.windowMillis`                              | 1000       |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.maximumWindowMillis`                       | 60000      |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.windowMargin`                              | 1.5        |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `SoftRecycler.shrinkFraction`                            | 0.1        |
 | [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |
 
 Each property is described below, roughly categorized by similarity.
@@ -101,7 +107,7 @@ Parallelism for `where` operations is not enabled until the parent's size exceed
 
 | Property Name                                  | Default Value | Description                                                                                                               |
 | ---------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `QueryTable.enableParallelWhere`               | false         | Enables parallelized optimizations for `QueryTable#where` operations                                                      |
+| `QueryTable.disableParallelWhere`              | false         | Disables parallel evaluation of `where` filters                                                                           |
 | `QueryTable.parallelWhereRowsPerSegment`       | `1 << 16`     | The number of rows per segment when the number of segments is not fixed                                                   |
 | `QueryTable.parallelWhereSegments`             | -1            | The number of segments to use when dividing all work equally into a fixed number of tasks; -1 implies one thread per core |
 | `QueryTable.forceParallelWhere` (test-focused) | false         | Forces Where operations to parallelize even when row requirements are not met                                             |
@@ -141,80 +147,102 @@ The `ungroup` table operation can expand one row into multiple rows. `QueryTable
 
 Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources. These column sources must maintain previous values during an update graph cycle. Rather than allocating fresh memory on each cycle, when memory is needed to record previous values it is borrowed from the recycler and returned at the end of the update cycle. These pools can improve performance and reduce garbage collection pressure.
 
-The capacity of these recyclers (how many arrays each recycler holds) can be configured on a per-type basis, allowing you to tune memory usage based on your workload characteristics.
+A recycler's capacity is the most arrays it holds at once. Each recycler adapts its capacity to its traffic: it starts at a configured capacity, grows when a cycle needs more arrays than it holds, and shrinks back toward the configured capacity when arrays go unused, but never below it and never above a configured maximum. Both values can be set per element type, and the [growth and shrink rules](#how-recyclers-grow-and-shrink) are described below.
 
 ### Array column source recyclers
 
-Array-backed column sources (dense arrays) use SoftRecyclers to manage blocks of data for each primitive type.
+Array-backed column sources (dense arrays) use SoftRecyclers to manage blocks of data for each primitive type. Each `capacity` property sets the capacity a recycler starts with and never shrinks below, and each `maximumCapacity` property sets the most it grows to.
 
-| Property Name                     | Default Value           | Description                                                                                           |
-| --------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
-| `array.recycler.capacity.default` | 1024                    | Default recycler capacity for all array types (used if type-specific property is not set)             |
-| `array.recycler.capacity.boolean` | 1024                    | Recycler capacity for boolean array blocks                                                            |
-| `array.recycler.capacity.byte`    | 1024                    | Recycler capacity for byte array blocks                                                               |
-| `array.recycler.capacity.char`    | 1024                    | Recycler capacity for character array blocks                                                          |
-| `array.recycler.capacity.double`  | 1024                    | Recycler capacity for double array blocks                                                             |
-| `array.recycler.capacity.float`   | 1024                    | Recycler capacity for float array blocks                                                              |
-| `array.recycler.capacity.int`     | 1024                    | Recycler capacity for integer array blocks                                                            |
-| `array.recycler.capacity.long`    | 1024                    | Recycler capacity for long array blocks                                                               |
-| `array.recycler.capacity.short`   | 1024                    | Recycler capacity for short array blocks                                                              |
-| `array.recycler.capacity.object`  | 1024                    | Recycler capacity for object array blocks                                                             |
-| `array.recycler.capacity.inuse`   | 9216 (max of all types) | Recycler capacity for "in use" bitmap blocks (should be at least the maximum capacity of other types) |
+| Property Name                            | Default Value | Description                                                                                                                                                                                         |
+| ---------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `array.recycler.capacity.default`        | 1024          | Default recycler capacity for all array types (used if type-specific property is not set)                                                                                                           |
+| `array.recycler.capacity.boolean`        | 1024          | Recycler capacity for boolean array blocks                                                                                                                                                          |
+| `array.recycler.capacity.byte`           | 1024          | Recycler capacity for byte array blocks                                                                                                                                                             |
+| `array.recycler.capacity.char`           | 1024          | Recycler capacity for character array blocks                                                                                                                                                        |
+| `array.recycler.capacity.double`         | 1024          | Recycler capacity for double array blocks                                                                                                                                                           |
+| `array.recycler.capacity.float`          | 1024          | Recycler capacity for float array blocks                                                                                                                                                            |
+| `array.recycler.capacity.int`            | 1024          | Recycler capacity for integer array blocks                                                                                                                                                          |
+| `array.recycler.capacity.long`           | 1024          | Recycler capacity for long array blocks                                                                                                                                                             |
+| `array.recycler.capacity.short`          | 1024          | Recycler capacity for short array blocks                                                                                                                                                            |
+| `array.recycler.capacity.object`         | 1024          | Recycler capacity for object array blocks                                                                                                                                                           |
+| `array.recycler.maximumCapacity.default` | unlimited     | Default maximum recycler capacity for all array types (used if type-specific property is not set)                                                                                                   |
+| `array.recycler.maximumCapacity.<type>`  | unlimited     | Maximum recycler capacity for blocks of `<type>` — one of `boolean`, `byte`, `char`, `double`, `float`, `int`, `long`, `short`, or `object` — never less than that type's `array.recycler.capacity` |
+
+The "in use" bitmaps, which record which entries of a block hold a previous value, have a recycler of their own that every type shares. Its capacity and maximum are the sums of the types' values, and it has no properties.
 
 ### Sparse array column source recyclers
 
-Sparse array column sources use a multi-level hierarchical structure and maintain separate recyclers at each level. Each level can be configured independently to optimize memory usage for your access patterns.
+Sparse array column sources use a multi-level hierarchical structure and maintain separate recyclers at each level. Each level can be configured independently to optimize memory usage for your access patterns. As for array column sources, each `capacity` property sets the capacity a recycler starts with and never shrinks below, and each `maximumCapacity` property sets the most it grows to.
 
-| Property Name                             | Default Value                | Description                                                      |
-| ----------------------------------------- | ---------------------------- | ---------------------------------------------------------------- |
-| `sparsearray.recycler.capacity.default`   | 1024                         | Default recycler capacity for all sparse array types             |
-| `sparsearray.recycler.capacity.boolean`   | 1024                         | Base recycler capacity for boolean sparse arrays                 |
-| `sparsearray.recycler.capacity.byte`      | 1024                         | Base recycler capacity for byte sparse arrays                    |
-| `sparsearray.recycler.capacity.char`      | 1024                         | Base recycler capacity for character sparse arrays               |
-| `sparsearray.recycler.capacity.double`    | 1024                         | Base recycler capacity for double sparse arrays                  |
-| `sparsearray.recycler.capacity.float`     | 1024                         | Base recycler capacity for float sparse arrays                   |
-| `sparsearray.recycler.capacity.int`       | 1024                         | Base recycler capacity for integer sparse arrays                 |
-| `sparsearray.recycler.capacity.long`      | 1024                         | Base recycler capacity for long sparse arrays                    |
-| `sparsearray.recycler.capacity.short`     | 1024                         | Base recycler capacity for short sparse arrays                   |
-| `sparsearray.recycler.capacity.object`    | 1024                         | Base recycler capacity for object sparse arrays                  |
-| `sparsearray.recycler.capacity.boolean.2` | 1024                         | Level 2 recycler capacity for boolean sparse arrays              |
-| `sparsearray.recycler.capacity.byte.2`    | 1024                         | Level 2 recycler capacity for byte sparse arrays                 |
-| `sparsearray.recycler.capacity.char.2`    | 1024                         | Level 2 recycler capacity for character sparse arrays            |
-| `sparsearray.recycler.capacity.double.2`  | 1024                         | Level 2 recycler capacity for double sparse arrays               |
-| `sparsearray.recycler.capacity.float.2`   | 1024                         | Level 2 recycler capacity for float sparse arrays                |
-| `sparsearray.recycler.capacity.int.2`     | 1024                         | Level 2 recycler capacity for integer sparse arrays              |
-| `sparsearray.recycler.capacity.long.2`    | 1024                         | Level 2 recycler capacity for long sparse arrays                 |
-| `sparsearray.recycler.capacity.short.2`   | 1024                         | Level 2 recycler capacity for short sparse arrays                |
-| `sparsearray.recycler.capacity.object.2`  | 1024                         | Level 2 recycler capacity for object sparse arrays               |
-| `sparsearray.recycler.capacity.boolean.1` | 1024                         | Level 1 recycler capacity for boolean sparse arrays              |
-| `sparsearray.recycler.capacity.byte.1`    | 1024                         | Level 1 recycler capacity for byte sparse arrays                 |
-| `sparsearray.recycler.capacity.char.1`    | 1024                         | Level 1 recycler capacity for character sparse arrays            |
-| `sparsearray.recycler.capacity.double.1`  | 1024                         | Level 1 recycler capacity for double sparse arrays               |
-| `sparsearray.recycler.capacity.float.1`   | 1024                         | Level 1 recycler capacity for float sparse arrays                |
-| `sparsearray.recycler.capacity.int.1`     | 1024                         | Level 1 recycler capacity for integer sparse arrays              |
-| `sparsearray.recycler.capacity.long.1`    | 1024                         | Level 1 recycler capacity for long sparse arrays                 |
-| `sparsearray.recycler.capacity.short.1`   | 1024                         | Level 1 recycler capacity for short sparse arrays                |
-| `sparsearray.recycler.capacity.object.1`  | 1024                         | Level 1 recycler capacity for object sparse arrays               |
-| `sparsearray.recycler.capacity.boolean.0` | 1024                         | Level 0 (top) recycler capacity for boolean sparse arrays        |
-| `sparsearray.recycler.capacity.byte.0`    | 1024                         | Level 0 (top) recycler capacity for byte sparse arrays           |
-| `sparsearray.recycler.capacity.char.0`    | 1024                         | Level 0 (top) recycler capacity for character sparse arrays      |
-| `sparsearray.recycler.capacity.double.0`  | 1024                         | Level 0 (top) recycler capacity for double sparse arrays         |
-| `sparsearray.recycler.capacity.float.0`   | 1024                         | Level 0 (top) recycler capacity for float sparse arrays          |
-| `sparsearray.recycler.capacity.int.0`     | 1024                         | Level 0 (top) recycler capacity for integer sparse arrays        |
-| `sparsearray.recycler.capacity.long.0`    | 1024                         | Level 0 (top) recycler capacity for long sparse arrays           |
-| `sparsearray.recycler.capacity.short.0`   | 1024                         | Level 0 (top) recycler capacity for short sparse arrays          |
-| `sparsearray.recycler.capacity.object.0`  | 1024                         | Level 0 (top) recycler capacity for object sparse arrays         |
-| `sparsearray.recycler.capacity.inuse`     | 9216 (sum of all base types) | Recycler capacity for "in use" bitmap blocks at the lowest level |
-| `sparsearray.recycler.capacity.inuse.2`   | 9216 (max of level 2)        | Recycler capacity for "in use" bitmap blocks at level 2          |
-| `sparsearray.recycler.capacity.inuse.1`   | 9216 (max of level 1)        | Recycler capacity for "in use" bitmap blocks at level 1          |
-| `sparsearray.recycler.capacity.inuse.0`   | 9216 (max of level 0)        | Recycler capacity for "in use" bitmap blocks at level 0 (top)    |
+| Property Name                                   | Default Value | Description                                                                                                                                       |
+| ----------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sparsearray.recycler.capacity.default`         | 1024          | Default recycler capacity for all sparse array types                                                                                              |
+| `sparsearray.recycler.capacity.boolean`         | 1024          | Base recycler capacity for boolean sparse arrays                                                                                                  |
+| `sparsearray.recycler.capacity.byte`            | 1024          | Base recycler capacity for byte sparse arrays                                                                                                     |
+| `sparsearray.recycler.capacity.char`            | 1024          | Base recycler capacity for character sparse arrays                                                                                                |
+| `sparsearray.recycler.capacity.double`          | 1024          | Base recycler capacity for double sparse arrays                                                                                                   |
+| `sparsearray.recycler.capacity.float`           | 1024          | Base recycler capacity for float sparse arrays                                                                                                    |
+| `sparsearray.recycler.capacity.int`             | 1024          | Base recycler capacity for integer sparse arrays                                                                                                  |
+| `sparsearray.recycler.capacity.long`            | 1024          | Base recycler capacity for long sparse arrays                                                                                                     |
+| `sparsearray.recycler.capacity.short`           | 1024          | Base recycler capacity for short sparse arrays                                                                                                    |
+| `sparsearray.recycler.capacity.object`          | 1024          | Base recycler capacity for object sparse arrays                                                                                                   |
+| `sparsearray.recycler.capacity.boolean.2`       | 1024          | Level 2 recycler capacity for boolean sparse arrays                                                                                               |
+| `sparsearray.recycler.capacity.byte.2`          | 1024          | Level 2 recycler capacity for byte sparse arrays                                                                                                  |
+| `sparsearray.recycler.capacity.char.2`          | 1024          | Level 2 recycler capacity for character sparse arrays                                                                                             |
+| `sparsearray.recycler.capacity.double.2`        | 1024          | Level 2 recycler capacity for double sparse arrays                                                                                                |
+| `sparsearray.recycler.capacity.float.2`         | 1024          | Level 2 recycler capacity for float sparse arrays                                                                                                 |
+| `sparsearray.recycler.capacity.int.2`           | 1024          | Level 2 recycler capacity for integer sparse arrays                                                                                               |
+| `sparsearray.recycler.capacity.long.2`          | 1024          | Level 2 recycler capacity for long sparse arrays                                                                                                  |
+| `sparsearray.recycler.capacity.short.2`         | 1024          | Level 2 recycler capacity for short sparse arrays                                                                                                 |
+| `sparsearray.recycler.capacity.object.2`        | 1024          | Level 2 recycler capacity for object sparse arrays                                                                                                |
+| `sparsearray.recycler.capacity.boolean.1`       | 1024          | Level 1 recycler capacity for boolean sparse arrays                                                                                               |
+| `sparsearray.recycler.capacity.byte.1`          | 1024          | Level 1 recycler capacity for byte sparse arrays                                                                                                  |
+| `sparsearray.recycler.capacity.char.1`          | 1024          | Level 1 recycler capacity for character sparse arrays                                                                                             |
+| `sparsearray.recycler.capacity.double.1`        | 1024          | Level 1 recycler capacity for double sparse arrays                                                                                                |
+| `sparsearray.recycler.capacity.float.1`         | 1024          | Level 1 recycler capacity for float sparse arrays                                                                                                 |
+| `sparsearray.recycler.capacity.int.1`           | 1024          | Level 1 recycler capacity for integer sparse arrays                                                                                               |
+| `sparsearray.recycler.capacity.long.1`          | 1024          | Level 1 recycler capacity for long sparse arrays                                                                                                  |
+| `sparsearray.recycler.capacity.short.1`         | 1024          | Level 1 recycler capacity for short sparse arrays                                                                                                 |
+| `sparsearray.recycler.capacity.object.1`        | 1024          | Level 1 recycler capacity for object sparse arrays                                                                                                |
+| `sparsearray.recycler.capacity.boolean.0`       | 1024          | Level 0 (top) recycler capacity for boolean sparse arrays                                                                                         |
+| `sparsearray.recycler.capacity.byte.0`          | 1024          | Level 0 (top) recycler capacity for byte sparse arrays                                                                                            |
+| `sparsearray.recycler.capacity.char.0`          | 1024          | Level 0 (top) recycler capacity for character sparse arrays                                                                                       |
+| `sparsearray.recycler.capacity.double.0`        | 1024          | Level 0 (top) recycler capacity for double sparse arrays                                                                                          |
+| `sparsearray.recycler.capacity.float.0`         | 1024          | Level 0 (top) recycler capacity for float sparse arrays                                                                                           |
+| `sparsearray.recycler.capacity.int.0`           | 1024          | Level 0 (top) recycler capacity for integer sparse arrays                                                                                         |
+| `sparsearray.recycler.capacity.long.0`          | 1024          | Level 0 (top) recycler capacity for long sparse arrays                                                                                            |
+| `sparsearray.recycler.capacity.short.0`         | 1024          | Level 0 (top) recycler capacity for short sparse arrays                                                                                           |
+| `sparsearray.recycler.capacity.object.0`        | 1024          | Level 0 (top) recycler capacity for object sparse arrays                                                                                          |
+| `sparsearray.recycler.maximumCapacity.default`  | unlimited     | Default maximum recycler capacity for all sparse array types                                                                                      |
+| `sparsearray.recycler.maximumCapacity.<type>`   | unlimited     | Maximum base recycler capacity for `<type>` sparse arrays, and the default maximum for its other levels; never less than the type's base capacity |
+| `sparsearray.recycler.maximumCapacity.<type>.2` | unlimited     | Maximum level 2 recycler capacity for `<type>` sparse arrays; never less than its level 2 capacity                                                |
+| `sparsearray.recycler.maximumCapacity.<type>.1` | unlimited     | Maximum level 1 recycler capacity for `<type>` sparse arrays; never less than its level 1 capacity                                                |
+| `sparsearray.recycler.maximumCapacity.<type>.0` | unlimited     | Maximum level 0 (top) recycler capacity for `<type>` sparse arrays; never less than its level 0 capacity                                          |
 
-#### Tuning `SoftRecycler` capacity
+The "in use" bitmaps have a recycler of their own at each level, which every type shares. Each one's capacity and maximum are the sums of the types' values at that level, and none has properties.
 
-The recycler capacity determines how many array blocks are kept in memory for potential reuse. Increasing capacity can improve performance if your workload uses more blocks within an update cycle than the recycler can hold, at the cost of higher baseline memory usage. Decreasing capacity reduces baseline memory requirements, but may increase garbage collection.
+### How recyclers grow and shrink
 
-- **High throughput environments**: Consider increasing capacities to reduce allocation/deallocation overhead.
-- **Type-specific tuning**: If certain types are used more frequently, you can increase their capacity while reducing others.
+A recycler grows during the cycle that needs more arrays than it holds. When a cycle returns arrays to a full recycler, the recycler turns them away and counts them. Each later borrow that finds the recycler empty is an array it could have kept, so the recycler grows by one for each such borrow until the count is spent. Growth therefore never exceeds what some cycle used, and it never exceeds the configured maximum.
+
+A recycler shrinks at the end of each window. A window is sized to span a whole cycle of every update graph in the process: it lasts `SoftRecycler.windowMargin` times the longest interval between consecutive cycle starts among the update graphs, but no less than `SoftRecycler.windowMillis` and no more than `SoftRecycler.maximumWindowMillis`. If the recycler never emptied during the window, the arrays it never lent out were not needed, and it discards the fraction of them set by `SoftRecycler.shrinkFraction`, never shrinking below its configured capacity.
+
+Windows end only when an update graph starts a cycle. In a process whose update graphs never cycle, recyclers never shrink. The recyclers hold their arrays through soft references, so the garbage collector reclaims them under memory pressure in any case.
+
+| Property Name                      | Default Value | Description                                                                                                                                                                                                                                              |
+| ---------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SoftRecycler.windowMillis`        | 1000          | The shortest window, in milliseconds, and the window when no update graph has a longer interval between cycles                                                                                                                                           |
+| `SoftRecycler.maximumWindowMillis` | 60000         | The longest window, in milliseconds, between possibly shrinking the recycler. Even if one of the update graphs has a longer interval between cycles, the next update graph to start a cycle will shrink the recycler after the window exceeds this value |
+| `SoftRecycler.windowMargin`        | 1.5           | The multiple of the longest interval between update graph cycle starts that a window lasts                                                                                                                                                               |
+| `SoftRecycler.shrinkFraction`      | 0.1           | The fraction, from 0 to 1, of the arrays a window never needed that the recycler discards when the window ends; 0 keeps the capacity once grown, and 1 shrinks to what the window needed                                                                 |
+
+### Tuning recyclers
+
+Because recyclers adapt, most workloads need no tuning. The configured capacity sets how many arrays a recycler keeps through quiet periods, and the maximum bounds how many it keeps through busy ones.
+
+- **Workloads that alternate busy and quiet cycles**: Raise `SoftRecycler.windowMillis`, or set `SoftRecycler.shrinkFraction` to 0, so that a recycler keeps what a busy cycle needed through the quiet cycles between.
+- **Memory-constrained environments**: Set a `maximumCapacity` to bound what a recycler holds, or raise `SoftRecycler.shrinkFraction` toward 1 to discard unneeded arrays sooner.
+- **Type-specific tuning**: If certain types dominate, raise their capacity or maximum while reducing others.
 
 ## Stateless by default
 

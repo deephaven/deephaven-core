@@ -16,9 +16,12 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.OperationException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
@@ -41,6 +44,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import static io.deephaven.api.agg.Aggregation.*;
@@ -291,6 +295,22 @@ public class QueryTableRangeJoinTest {
     }
 
     /**
+     * Formula that returns {@code rowKey} once a job is held by {@link #holdJob(long)}, so that an operation computing
+     * it before it waits for the held job finds that job already running on another thread, rather than running it
+     * itself.
+     */
+    @SuppressWarnings("unused")
+    public static int afterHeldJobEntered(final long rowKey) {
+        try {
+            // noinspection ResultOfMethodCallIgnored
+            heldJobEntered.await(JOB_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return (int) rowKey;
+    }
+
+    /**
      * Formula that fails once a job is held by {@link #holdJob(long)}.
      */
     @SuppressWarnings("unused")
@@ -329,8 +349,9 @@ public class QueryTableRangeJoinTest {
         final int heldJobsRunning = runWithHeldJobs(() -> {
             final Table left = TableTools.emptyTable(10).view(
                     "K = holdJob(ii)", "LSV = (int) ii", "LEV = (int) ii + 2");
+            // the right table work, done before the wait, finishes only once a pool thread holds the left grouping job
             final Table right = TableTools.emptyTable(1).view(
-                    "K = (int) 0", "RRV = (int) ii", "Sentinel = (int) ii");
+                    "K = (int) 0", "RRV = afterHeldJobEntered(ii)", "Sentinel = (int) ii");
             left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
         }, QueryTableRangeJoinTest::isWaitingForLeftGroupingJob, CancellationException.class);
         assertThat(heldJobsRunning).as("held jobs running when rangeJoin was cancelled").isZero();
@@ -363,8 +384,11 @@ public class QueryTableRangeJoinTest {
             return false;
         }
         for (final StackTraceElement frame : operationThread.getStackTrace()) {
-            if (!frame.getClassName().startsWith("java.") && !frame.getClassName().startsWith("jdk.")) {
-                return frame.getClassName().endsWith("RangeJoinOperation$StaticRangeJoinPhase1")
+            final String className = frame.getClassName();
+            // the scheduler's wait is entered from the frame that waits for the job
+            if (!className.startsWith("java.") && !className.startsWith("jdk.")
+                    && !className.equals(ExecutorJobScheduler.class.getName())) {
+                return className.endsWith("RangeJoinOperation$StaticRangeJoinPhase1")
                         && frame.getMethodName().equals("start");
             }
         }
@@ -435,6 +459,85 @@ public class QueryTableRangeJoinTest {
             Thread.interrupted();
         }
         return heldJobsRunning;
+    }
+
+    /**
+     * An Error from the right table work, which rangeJoin does on the calling thread while its left grouping job is
+     * queued, reaches the caller once the caller has run that job itself, since no thread of the pool is free to.
+     */
+    @Test
+    public void testErrorFromTheRightTableWorkRunsTheQueuedLeftGroupingJob() throws InterruptedException {
+        final RightTableError rightTableError = new RightTableError();
+        final Table left = TableTools.emptyTable(10).view("K = (int) 0", "LSV = (int) ii", "LEV = (int) ii + 2");
+        final Table right = new CoalesceFailingTable(TableDefinition.of(
+                ColumnDefinition.ofInt("K"), ColumnDefinition.ofInt("RRV"), ColumnDefinition.ofInt("Sentinel")),
+                rightTableError);
+
+        final int poolThreads = 2;
+        final OperationInitializationThreadPool threadPool =
+                new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP, poolThreads);
+        final CountDownLatch releasePool = new CountDownLatch(1);
+        try {
+            final CountDownLatch blocked = new CountDownLatch(poolThreads);
+            for (int ii = 0; ii < poolThreads; ++ii) {
+                threadPool.submit(() -> {
+                    blocked.countDown();
+                    try {
+                        releasePool.await();
+                    } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                });
+            }
+            assertThat(blocked.await(JOB_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+
+            final ExecutionContext parallelContext =
+                    ExecutionContext.getContext().withOperationInitializer(threadPool);
+            final AtomicReference<Throwable> thrown = new AtomicReference<>();
+            final Thread operationThread = new Thread(() -> {
+                try (final SafeCloseable ignored = parallelContext.open()) {
+                    left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
+                } catch (final Throwable t) {
+                    thrown.set(t);
+                }
+            }, "QueryTableRangeJoinTest-operation");
+            operationThread.setDaemon(true);
+            operationThread.start();
+            operationThread.join(TimeUnit.SECONDS.toMillis(JOB_TIMEOUT_SECONDS));
+
+            assertThat(operationThread.isAlive()).as("rangeJoin finished while the pool was blocked").isFalse();
+            assertThat(thrown.get()).isSameAs(rightTableError);
+        } finally {
+            releasePool.countDown();
+            threadPool.shutdown();
+        }
+    }
+
+    private static final class RightTableError extends Error {
+        private RightTableError() {
+            super("right table work failed");
+        }
+    }
+
+    /** A right table whose coalesce, part of the right table work, fails with an Error. */
+    private static final class CoalesceFailingTable extends UncoalescedTable<CoalesceFailingTable> {
+
+        private final Error error;
+
+        private CoalesceFailingTable(@NotNull final TableDefinition definition, @NotNull final Error error) {
+            super(definition, "CoalesceFailingTable");
+            this.error = error;
+        }
+
+        @Override
+        public Table coalesce() {
+            throw error;
+        }
+
+        @Override
+        protected CoalesceFailingTable copy(final Map<String, Object> attributes) {
+            return new CoalesceFailingTable(getDefinition(), error);
+        }
     }
 
     // endregion job lifecycle tests

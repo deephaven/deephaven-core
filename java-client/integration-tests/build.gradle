@@ -34,6 +34,8 @@ dependencies {
     testImplementation project(':java-client-flight')
     testImplementation project(':java-client-barrage')
     testImplementation project(':ssl-config')
+    // CompressionTest checks every built-in compression type
+    testImplementation project(':extensions-grpc-compression')
     // DoExchangeTest builds Barrage flatbuffer messages by hand
     testImplementation libs.deephaven.barrage.format
     testImplementation libs.flatbuffers.java

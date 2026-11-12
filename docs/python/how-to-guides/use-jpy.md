@@ -2,24 +2,31 @@
 title: Use jpy
 ---
 
-[`jpy`](/core/pydoc/code/jpy.html) is a bi-directional Java-Python bridge that facilitates calling Java from Python and vice versa.
+[`jpy`](/core/pydoc/code/jpy.html) is a bidirectional Java-Python bridge. The Deephaven query engine is implemented in Java, and [`jpy`](/core/pydoc/code/jpy.html) is the bridge that lets Deephaven's Python API call it. That makes it relatively easy to use Java from within Python.
 
-- Python programs that use [`jpy`](/core/pydoc/code/jpy.html) can access Java functionalities.
-- Java programs that use [`jpy`](/core/pydoc/code/jpy.html) can access Python functionalities.
+This guide shows how to use Java from Python. You'll learn how to:
+
+- Get Java types.
+- Call their methods.
+- Create Java arrays.
+- Pass Deephaven tables to Java methods and wrap the tables they return.
+- Use Java objects in [query strings](./query-string-overview.md).
+
+It doesn't cover calling Python from Java, which is much less common.
 
 For more details on [`jpy`](/core/pydoc/code/jpy.html), see the [jpy GitHub project](https://github.com/jpy-consortium/jpy), or use `help("jpy")` to see the package documentation.
 
-The Deephaven query engine is implemented in Java, making it relatively easy to use Java from within Python. [`jpy`](/core/pydoc/code/jpy.html) is used as the bridge between the two languages. This guide covers how to use Java from Python. Calling Python from Java is much less common and won't be covered here.
-
 > [!CAUTION]
-> [`jpy`](/core/pydoc/code/jpy.html) is a lower-level tool and is generally only used when Deephaven does not provide Python wrappings for Java objects to accomplish the same tasks. Many of the things done in this document would be better accomplished with the [`deephaven.dtypes`](/core/pydoc/code/deephaven.dtypes.html#module-deephaven.dtypes) Python module, which supports the creation and manipulation of Java primitives, arrays, and many different Java object types. However, much of this document will demonstrate [`jpy`](/core/pydoc/code/jpy.html)'s functionality in the most straightforward cases, with primitive types and simple objects. This is to explain [`jpy`](/core/pydoc/code/jpy.html)'s usage rather than encourage its use in all of these cases.
+> [`jpy`](/core/pydoc/code/jpy.html) is a low-level tool. Use it only when Deephaven has no Python wrapper for the Java objects you need. A Python wrapper is a Python module or class that calls the Java object for you.
+>
+> For many tasks in this guide, the [`deephaven.dtypes`](/core/pydoc/code/deephaven.dtypes.html#module-deephaven.dtypes) module is the better choice. It defines Deephaven's Java data types, including the primitives, and creates Java arrays and instances of many Java object types. This guide uses primitive types and simple objects to show how [`jpy`](/core/pydoc/code/jpy.html) works, not to recommend it for those cases.
 
 > [!NOTE]
-> To request a Python wrapping of a particular Java type or library, file a ticket in the [Deephaven Core GitHub repository](https://github.com/deephaven/deephaven-core).
+> To request a Python wrapper for a particular Java type or library, open an issue in the [Deephaven Core GitHub repository](https://github.com/deephaven/deephaven-core).
 
 ## Get Java types
 
-One of the primary functions of [`jpy`](/core/pydoc/code/jpy.html) is to retrieve Java types from Python. This is useful when the desired types do not have an existing Python wrapping. [`jpy`](/core/pydoc/code/jpy.html) provides the ability to get Java types with [`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type).
+Most tasks on this page start with a Java type, which [`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) retrieves by name.
 
 ### Use `jpy.get_type`
 
@@ -28,11 +35,13 @@ To get a Java type from Python, pass the fully qualified class name of the desir
 ```python test-set=1
 import jpy
 
-# use get_type to get a Python wrapping of a java.lang.String
+# use get_type to get the Python class that jpy generates for java.lang.String
 _JString = jpy.get_type("java.lang.String")
 ```
 
-[`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) can get any valid Java type that is present in the Java classpath, including Deephaven-specific types. Here is an example using Deephaven's [`DoubleVector`](/core/javadoc/io/deephaven/vector/DoubleVector.html).
+By convention, this guide prefixes the names of Java types with `_J` (for example, `_JString`), and the names of Java tables returned by Java methods with `_j` (for example, `_j_merged_t`). [`jpy`](/core/pydoc/code/jpy.html) doesn't require either prefix.
+
+[`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) can get any valid Java type that is present in the Java classpath, including Deephaven-specific types. To make a third-party library available, see [Install and use Java packages](./install-and-use-java-packages.md). Here is an example using Deephaven's [`DoubleVector`](/core/javadoc/io/deephaven/vector/DoubleVector.html).
 
 ```python test-set=1
 # get the Deephaven representation of a vector of doubles
@@ -41,31 +50,36 @@ _JDoubleVector = jpy.get_type("io.deephaven.vector.DoubleVector")
 
 ### What does `get_type` return?
 
-When [`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) is called, it returns a unique Python class that wraps the underlying Java type. You can inspect this class with familiar Python functions.
+[`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) returns a unique Python class that wraps the underlying Java type. You can inspect this class with familiar Python functions.
 
 ```python test-set=2
 import jpy
 
 _JURL = jpy.get_type("java.net.URL")
 
-# the print function is overloaded to print the fully qualified class name of the underlying Java type
+# the class is named after the underlying Java type, so printing it shows the fully qualified Java class name
 print(_JURL)
-# the class gets recognized as a Python type, confirming that this is a Python object
+# type() shows that the wrapper is an ordinary Python class; every wrapped Java type is a subclass of jpy.JType
 print(type(_JURL))
 ```
 
-When this class is created, it defines methods that mirror those of the underlying Java type. Use Python's `help` function to print out all the available methods.
+[`jpy`](/core/pydoc/code/jpy.html) gives this class methods that mirror those of the underlying Java type. To print the full class, including every Java method, call Python's [`help`](https://docs.python.org/3/library/functions.html#help) function: `help(_JURL)`. Its output is long, so the following example prints only the names of the Java methods:
 
 ```python test-set=2
-# print all of the methods with help
-help(_JURL)
+# list the Java methods that jpy exposes on the class
+java_methods = sorted(
+    name
+    for name in dir(_JURL)
+    if not name.startswith("_") and callable(getattr(_JURL, name))
+)
+print(java_methods)
 ```
 
-Check the [Javadoc for `java.net.URL`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/URL.html) to confirm that all of its methods are represented by the Python wrapping.
+Check the [Javadoc for `java.net.URL`](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/URL.html) to confirm that the [`jpy`](/core/pydoc/code/jpy.html) class includes all of its public methods. [`jpy`](/core/pydoc/code/jpy.html) doesn't expose protected or private members.
 
 ### Access nested (inner) classes
 
-In Java, inner classes are accessed with dot notation: `OuterClass.InnerClass`. However, [`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) expects the JVM's internal binary class name, which uses `$` as the separator between outer and inner class names. Using dot notation will fail.
+Java code refers to an inner class with dot notation: `OuterClass.InnerClass`. However, [`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) expects the class's binary name, which separates the outer and inner class names with `$`. This is the same form that `Class.forName` takes. Dot notation fails.
 
 ```python should-fail
 import jpy
@@ -83,7 +97,7 @@ import jpy
 _JMapEntry = jpy.get_type("java.util.Map$Entry")
 ```
 
-The pattern is: `jpy.get_type("fully.qualified.OuterClass$InnerClass")`. This applies to all levels of nesting — `OuterClass$InnerClass$DeepInner` for classes nested two levels deep.
+The pattern is `jpy.get_type("fully.qualified.OuterClass$InnerClass")`. Each additional level of nesting adds another `$`. For example, a class nested two levels deep is `OuterClass$InnerClass$DeepInner`.
 
 Here are examples using Deephaven types:
 
@@ -103,23 +117,23 @@ _JLeaderTableFilterPartitionedTableBuilder = jpy.get_type(
 ```
 
 > [!NOTE]
-> The `$`-separated name is the JVM's internal binary class name. You can find it in the Java source or Javadoc — look for `static class InnerClass` inside the outer class definition. The separator is always `$`, never `.`.
+> To find the outer and inner class names, look in the Java source or [Javadoc](./read-javadocs.md) for the nested class or interface declared inside the outer class definition, such as `interface Entry` inside `Map`.
 
 ## Call methods on Java types
 
-Python code can use Java methods directly. This means you can call any Java function from your Python program.
+Python code can use Java methods directly.
 
 ### Call static methods
 
-Static methods are methods that belong to the type rather than to an instance of the type. Static methods can be called directly from the return value of [`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type). This example uses the [`valueOf`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html#valueOf(int)) static method from the [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) type.
+Static methods are methods that belong to the type rather than to an instance of the type. You can call a static method directly on the type that [`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) returns. This example uses the [`toString`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html#toString(int)) static method from the [`java.lang.Integer`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html) type.
 
 ```python
 import jpy
 
-_JString = jpy.get_type("java.lang.String")
+_JInteger = jpy.get_type("java.lang.Integer")
 
-# the valueOf method is static, so it can be called directly from the type
-int_as_string = _JString.valueOf(123)
+# toString(int) is static, so it can be called directly from the type
+int_as_string = _JInteger.toString(123)
 
 # verify that the returned object is really a string
 print(int_as_string)
@@ -128,46 +142,52 @@ print(type(int_as_string))
 
 ### Create objects and call instance methods
 
-[`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) can be used to create instances of Java data types. The code block below creates an instance of a [java.lang.Float](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html).
+To create an instance of a Java type, call the type that [`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) returns like a function. This invokes one of the type's constructors. The code block below creates a [`java.math.BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) with its `String` constructor.
 
 ```python test-set=3
 import jpy
 
-_JFloat = jpy.get_type("java.lang.Float")
+_JBigDecimal = jpy.get_type("java.math.BigDecimal")
 
-# calling the type like a function with an appropriate argument invokes its constructor
-float_instance = _JFloat(123.456)
+# calling the type invokes the BigDecimal(String) constructor
+decimal_instance = _JBigDecimal("123.456")
 ```
 
-Unlike static methods, instance methods _do_ require data stored in a type to perform their function. Therefore, they belong to the _instance_, rather than the type itself.
+Unlike static methods, which belong to the type, instance methods belong to an _instance_ and operate on the data stored in that object.
 
-`float_instance` is an object and provides many instance methods for operating on the value `123.456`. The [Javadoc for `java.lang.Float`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html) details all of the available methods. This example uses the [`toString`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html#toString()), [`compareTo`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html#compareTo(java.lang.Float)), and [`equals`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html#equals(java.lang.Object)) instance methods.
+`decimal_instance` is a Java object and provides many instance methods for operating on the value `123.456`. The [Javadoc for `java.math.BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) details all of the available methods. This example uses the [`toString`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html#toString()), [`compareTo`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html#compareTo(java.math.BigDecimal)), and [`equals`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html#equals(java.lang.Object)) instance methods.
 
 ```python test-set=3
-# the toString method returns the float represented as a string
-float_instance_as_string = float_instance.toString()
-print(float_instance_as_string)
-print(type(float_instance_as_string))
+# the toString method returns the decimal represented as a string
+decimal_as_string = decimal_instance.toString()
+print(decimal_as_string)
+print(type(decimal_as_string))
 
-# the compareTo method returns -1 if float is less than the argument, 0 if equal, and 1 if greater
-less_than_or_greater_than = float_instance.compareTo(654.321)
+# compareTo returns a negative number if the decimal is less than the argument, 0 if equal, and a positive number if greater
+less_than_or_greater_than = decimal_instance.compareTo(_JBigDecimal("654.321"))
 print(less_than_or_greater_than)
 print(type(less_than_or_greater_than))
 
-# the equals method returns True if the float is equal to the argument, and False otherwise
-are_floats_equal = float_instance.equals(123.456)
-print(are_floats_equal)
-print(type(are_floats_equal))
+# the equals method returns True if the argument is a BigDecimal with the same value and scale, and False otherwise
+are_decimals_equal = decimal_instance.equals(_JBigDecimal("123.456"))
+print(are_decimals_equal)
+print(type(are_decimals_equal))
 ```
 
 ### Return type conversion
 
-When Java methods are called through [`jpy`](/core/pydoc/code/jpy.html), [`jpy`](/core/pydoc/code/jpy.html) attempts to convert the return values to Python types if possible. Here is an example of this behavior.
+[`jpy`](/core/pydoc/code/jpy.html) converts some Java return values to Python values. It converts a value when the method declares one of the types below as its return type, or declares `java.lang.Object` and returns one of them:
+
+- A primitive or a boxed primitive, such as `java.lang.Integer` or `java.lang.Float`, becomes the matching Python `bool`, `int`, or `float`. A `char` or `java.lang.Character` becomes an `int` holding the char's numeric (UTF-16) value, not a `str`.
+- A `java.lang.String` becomes a Python `str`.
+- `null` becomes `None`.
+
+For example, `_JInteger.valueOf(4)` returns a Python `int`, not a `java.lang.Integer` that you can call instance methods on. The next example shows the same conversion for a `double`: `Math.random` returns a Java `double`, which comes back as a Python `float`.
 
 ```python
 import jpy
 
-# import java math library
+# get the Java Math class
 _JMath = jpy.get_type("java.lang.Math")
 
 # generate random float with random method
@@ -177,62 +197,91 @@ float_return = _JMath.random()
 print(type(float_return))
 ```
 
-When the return type of a Java method is a Java object that cannot be directly converted to Python, [`jpy`](/core/pydoc/code/jpy.html) wraps the result so that it can be used in Python.
+When a Java method returns an object that [`jpy`](/core/pydoc/code/jpy.html) can't convert to a Python type, [`jpy`](/core/pydoc/code/jpy.html) wraps the result in a Python object that you can use like any other.
 
 ```python
 import jpy
 
 # get Deephaven date-time utils
-_JTime = jpy.get_type("io.deephaven.time.DateTimeUtils")
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 # create a Java Instant using parseInstant
-java_instant = _JTime.parseInstant("2023-06-30T17:00:00Z")
+java_instant = _JDateTimeUtils.parseInstant("2023-06-30T17:00:00Z")
 
-# the return type is a Java instant, so it is returned in a Python wrapping
+# the return type is a Java Instant, so jpy returns it wrapped in a jpy object
 print(type(java_instant))
 ```
 
 ### Argument type conversion
 
-In the previous examples, Java methods were called with Python objects as arguments. For this to work, [`jpy`](/core/pydoc/code/jpy.html) auto-converts the Python objects to Java objects with the appropriate types. Here is another example of this conversion.
+When you call a Java method with Python arguments, such as `_JInteger.toString(123)`, [`jpy`](/core/pydoc/code/jpy.html) auto-converts the Python objects to Java objects of the appropriate types. Here is another example of this conversion.
 
 ```python
 import jpy
 
-_JInteger = jpy.get_type("java.lang.Integer")
+_JBigInteger = jpy.get_type("java.math.BigInteger")
 
-# construct a java.lang.Integer - the constructor is called with a Python object
-int_instance = _JInteger(4)
+# create a java.math.BigInteger with the static valueOf(long) method, called with a Python object
+big_int_instance = _JBigInteger.valueOf(4)
 
-# call compareTo instance method - also called with a Python object
-int_compare = int_instance.compareTo(5)
+# call the pow(int) instance method, also called with a Python object
+big_int_squared = big_int_instance.pow(2)
+print(big_int_squared.toString())
 ```
 
-Here, `4` and `5` are Python objects, so [`jpy`](/core/pydoc/code/jpy.html) must convert them to Java objects before calling methods.
+Here, `4` and `2` are Python objects, so [`jpy`](/core/pydoc/code/jpy.html) must convert them to Java values before calling methods.
 
-Generally, this kind of auto-conversion is only possible with primitive types. To call a Java method with more complex argument types, objects of those types must first be created with [`jpy`](/core/pydoc/code/jpy.html).
+[`jpy`](/core/pydoc/code/jpy.html) auto-converts these Python arguments:
 
-Here is an example of calling a method with a Java object argument. The [`dayOfWeek`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#dayOfWeek(java.time.LocalDate)) method from [Deephaven's DateTimeUtils](/core/javadoc/io/deephaven/time/DateTimeUtils.html) accepts a Java [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalDate.html) as an argument. [`jpy`](/core/pydoc/code/jpy.html) cannot auto-convert any Python object to a Java `LocalDate`, so use [`jpy`](/core/pydoc/code/jpy.html) to create an instance of that type directly.
+- `int` and `bool` values passed to any numeric, `char`, or `boolean` primitive parameter, or to its boxed type, such as `java.lang.Integer`.
+- `float` values passed to `float` or `double` parameters, or to `java.lang.Float` or `java.lang.Double` parameters. A `float` is never converted to an integer type such as `int` or `long`.
+- `str` values passed to `String` parameters.
+- `int`, `float`, `bool`, and `str` values passed to `Object` parameters, or to another type that the matching Java type extends or implements, such as `Number` or `CharSequence`.
+- `None` passed to any object parameter, which becomes `null`.
+- Python sequences passed to Java array parameters.
+
+[`jpy`](/core/pydoc/code/jpy.html) also passes most other numeric objects, including NumPy scalars such as `np.int32` and `np.float32`, to `float` and `double` parameters. It treats them differently from Python numbers:
+
+- `np.float64` is a subclass of Python `float`, so it converts exactly like one.
+- Other NumPy scalars, including NumPy integers, never convert to integer parameters such as `int` or `long`. For `float` and `double` parameters they rank below a Python `float`, so a method that has both overloads fails as ambiguous. See [Overload resolution errors](#overload-resolution-errors).
+
+Convert NumPy scalars with `int()` or `float()` before passing them.
+
+[`jpy`](/core/pydoc/code/jpy.html) doesn't convert other Python objects, such as a `dict`. The only parameter type that can receive them is `org.jpy.PyObject`, which accepts any Python object. To pass one of those objects to any other parameter type, first create a Java object of the parameter's type.
+
+Passing such an object to a `java.lang.Object` parameter raises a `ValueError` rather than one of the [overload resolution errors](#overload-resolution-errors). For a `dict`, the message is `cannot convert a Python 'dict' to a Java 'java.lang.Object'`.
+
+The [`dayOfWeek`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#dayOfWeek(java.time.LocalDate)) method from Deephaven's [`DateTimeUtils`](/core/javadoc/io/deephaven/time/DateTimeUtils.html) takes a Java [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalDate.html). [`jpy`](/core/pydoc/code/jpy.html) can't convert any Python object to a `LocalDate`, so this example builds one with [`DateTimeUtils.parseLocalDate`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseLocalDate(java.lang.String)).
 
 ```python
 import jpy
 
 # want to use the dayOfWeek static method from DateTimeUtils
-_JTime = jpy.get_type("io.deephaven.time.DateTimeUtils")
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 # create LocalDate argument to pass to dayOfWeek method and get result
-j_local_date = _JTime.parseLocalDate("2021-05-04")
-j_day_of_week = _JTime.dayOfWeek(j_local_date)
+j_local_date = _JDateTimeUtils.parseLocalDate("2021-05-04")
+j_day_of_week = _JDateTimeUtils.dayOfWeek(j_local_date)
+print(j_day_of_week)
 ```
 
 > [!NOTE]
-> This example is only illustrative, and this particular use case is best served by [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time).
+> This example is only illustrative. In practice, create the `LocalDate` with [`to_j_local_date`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_local_date) from [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time), or call [`dayOfWeek`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#dayOfWeek(java.time.LocalDate)) directly in a [query string](./query-string-overview.md).
 
 ### Method overloading
 
-Java (unlike Python) allows method overloading, where multiple methods can have the same name but different signatures.
+Java allows method overloading, where multiple methods have the same name but different signatures. Python does not. When you call an overloaded Java method, [`jpy`](/core/pydoc/code/jpy.html) chooses the overload whose parameter types best match your arguments.
 
-This example calls Java's `max` method on two different sets of inputs. When the inputs are integers, [`max(int, int)`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Math.html#max(int,int)) is invoked. When the inputs are floats, [`max(float, float)`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Math.html#max(float,float)) is invoked.
+The best match is an _exact match_, where every argument has the Python type that fits its parameter best:
+
+- A Python `int` is an exact match for any integer or `char` parameter, such as `int` or `long`.
+- A Python `float` is an exact match for a `double` parameter. It also converts to a `float` parameter, but ranks lower there.
+- A Python `bool` is an exact match for a `boolean` parameter.
+
+This example calls Java's `max` method twice, once with two Python `int` values and once with two Python `float` values:
+
+- For `int` arguments, both [`max(int, int)`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Math.html#max(int,int)) and `max(long, long)` are exact matches. [`jpy`](/core/pydoc/code/jpy.html) calls the first one it finds, and the result is a Python `int` either way.
+- For `float` arguments, [`jpy`](/core/pydoc/code/jpy.html) calls [`max(double, double)`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Math.html#max(double,double)), because `double` is the exact match for a Python `float`. The result is a Python `float`.
 
 ```python
 import jpy
@@ -240,7 +289,7 @@ import jpy
 # get the Java math library
 _JMath = jpy.get_type("java.lang.Math")
 
-# create an int and float representations of 5 and 7
+# create int and float representations of 5 and 7
 x_int, y_int = int(5), int(7)
 x_float, y_float = float(5), float(7)
 
@@ -248,96 +297,113 @@ x_float, y_float = float(5), float(7)
 max_int = _JMath.max(x_int, y_int)
 max_float = _JMath.max(x_float, y_float)
 
-# the int overload returns an int
+# an integer overload returns an int
 print(type(max_int))
-# and the float overload returns a float
+# and the double overload returns a float
 print(type(max_float))
 ```
 
-The same concept applies when both Python and Java objects are passed in as inputs. Here's an example that calls two overloads of the [`minus`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#minus(java.time.Instant,long)) method with different combinations of Python and Java arguments.
+[`jpy`](/core/pydoc/code/jpy.html) uses the same matching when you pass a mix of Python and Java arguments. Here's an example that calls two overloads of the [`minus`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#minus(java.time.Instant,long)) method with different combinations of Python and Java arguments.
 
 ```python
 import jpy
 
 # want to use the minus method to get time differences
-_JTime = jpy.get_type("io.deephaven.time.DateTimeUtils")
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 # create the initial instant and two different types representing 12 hours
-initial_instant = _JTime.parseInstant("2024-02-01T12:30:00Z")
-diff_nanos = int(10e8 * 60 * 60 * 12)  # 12 hours in nanoseconds as a long
-diff_duration = _JTime.parseDuration("PT12h")
+initial_instant = _JDateTimeUtils.parseInstant("2024-02-01T12:30:00Z")
+diff_nanos = 12 * 60 * 60 * 1_000_000_000  # 12 hours in nanoseconds as a long
+diff_duration = _JDateTimeUtils.parseDuration("PT12h")
 
-# invoke two overloads - note that the first involves a Python conversion
-res_1 = _JTime.minus(initial_instant, diff_nanos)
-res_2 = _JTime.minus(initial_instant, diff_duration)
+# invoke two overloads; note that the first involves a Python conversion
+res_1 = _JDateTimeUtils.minus(initial_instant, diff_nanos)
+res_2 = _JDateTimeUtils.minus(initial_instant, diff_duration)
 
 # verify that results are the same
 print(res_1)
 print(res_2)
 ```
 
-### Common errors
+### Overload resolution errors
 
-If [`jpy`](/core/pydoc/code/jpy.html) cannot find an overload matching the argument types provided, a "no matching Java method overloads found" error will be raised:
+If [`jpy`](/core/pydoc/code/jpy.html) cannot find an overload matching the argument types provided, it raises a "no matching Java method overloads found" error:
 
 ```
 Type: <class 'RuntimeError'>
 Value: no matching Java method overloads found
 ```
 
-This error may arise from arguments having mismatched types, calling a method with the wrong number of arguments, or errors in auto-converting from a Python type. Here are examples of each scenario.
+This error occurs when you pass the wrong number of arguments, pass an argument of the wrong type, or pass a Python value that [`jpy`](/core/pydoc/code/jpy.html) can't auto-convert to the parameter type. The following example makes one call of each kind and prints each error.
 
-```python should-fail
+```python
 import jpy
 
 _JMath = jpy.get_type("java.lang.Math")
 
-# addExact takes two arguments, but is only given one
-too_few_args = _JMath.addExact(5)
+failing_calls = {
+    # addExact takes two arguments, but is only given one
+    "too few arguments": lambda: _JMath.addExact(5),
+    # hypot takes two arguments, but is given three
+    "too many arguments": lambda: _JMath.hypot(3, 4, 5),
+    # abs has overloads for int, long, float, and double, not string
+    "wrong type": lambda: _JMath.abs("hello!"),
+    # the most subtle error
+    # incrementExact accepts only an int or a long, and a Python float cannot be auto-converted to either
+    "no conversion": lambda: _JMath.incrementExact(5.0),
+}
 
-# hypot takes two arguments, but is given three
-too_many_args = _JMath.hypot(3, 4, 5)
-
-# abs has overloads for int, long, float, and double, not string
-wrong_type_given = _JMath.abs("hello!")
-
-# the most subtle error
-# incrementExact accepts only an int or a long, and a Python float cannot be auto-converted to either
-wrong_type_converted = _JMath.incrementExact(5.0)
+for label, call in failing_calls.items():
+    try:
+        call()
+    except RuntimeError as e:
+        print(label, "->", e)
 ```
 
-An "ambiguous Java method call" error is thrown if the argument type is too ambiguous to select a particular overload:
+[`jpy`](/core/pydoc/code/jpy.html) raises an "ambiguous Java method call" error if more than one overload matches the arguments equally well and none of them is an exact match:
 
 ```
 Type: <class 'RuntimeError'>
 Value: ambiguous Java method call, too many matching method overloads found
 ```
 
-This can happen when passing non-native Python types, such as `numpy` types, to methods with multiple overloads. Here is an example of such behavior.
+This happens when you pass NumPy scalars, such as `np.int32` values, to a method that has both `float` and `double` overloads. The following example triggers the error, then fixes it by converting the arguments to Python `int` values first.
 
-```python should-fail
+```python
 import numpy as np
 import jpy
 
 _JMath = jpy.get_type("java.lang.Math")
 
-# the operation is defined, but jpy does not know which type to infer
-ambiguous_types = _JMath.min(np.int32(4), np.int32(5))
+try:
+    # np.int32 matches the float and double overloads equally, so jpy can't choose between them
+    _JMath.min(np.int32(4), np.int32(5))
+except RuntimeError as e:
+    print(e)
+
+# converting to Python int first selects an integer overload
+print(_JMath.min(int(np.int32(4)), int(np.int32(5))))
 ```
 
 ## Create Java arrays
 
-[`jpy.array`](/core/pydoc/code/jpy.html#jpy.array) creates Java arrays directly from Python iterables of the appropriate types or an integer indicating the new array length.
+[`jpy.array`](/core/pydoc/code/jpy.html#jpy.array) creates a Java array from either a Python sequence of values or an integer that sets the array length. You don't need it to pass a Python list to a Java array parameter, because [`jpy`](/core/pydoc/code/jpy.html) converts the list for you. Use [`jpy.array`](/core/pydoc/code/jpy.html#jpy.array) when you need the Java array as an object of its own:
 
-### Scalar arrays
+- To build nested arrays.
+- To control the element type exactly.
+- To create the array once and reuse it.
 
-To create arrays of scalars with [`jpy.array`](/core/pydoc/code/jpy.html#jpy.array), pass in the name of the type and a Python iterable containing elements that can be converted to the target type.
+For one-dimensional arrays of Deephaven-supported types, [`deephaven.dtypes.array`](/core/pydoc/code/deephaven.dtypes.html#deephaven.dtypes.array) does the same job through Deephaven's Python API, so use it instead of [`jpy.array`](/core/pydoc/code/jpy.html#jpy.array) where it fits.
+
+### One-dimensional arrays
+
+To create a one-dimensional array with [`jpy.array`](/core/pydoc/code/jpy.html#jpy.array), pass in the name of the type and a Python sequence (such as a list, tuple, or NumPy array) containing elements that can be converted to the target type.
 
 ```python test-set=4
 import numpy as np
 import jpy
 
-# any Python iterable can be used, like tuples...
+# any Python sequence can be used, like tuples...
 int_array = jpy.array("int", (1, 2, 3, 4, 5))
 
 # lists...
@@ -345,34 +411,44 @@ bool_array = jpy.array("boolean", [True, False, True, False])
 
 # or numpy arrays
 double_array = jpy.array("double", np.array([4.5, 5.6, 6.7]))
+
+# list() copies each Java array's elements into a Python list for printing
+print(list(int_array), list(bool_array), list(double_array))
 ```
 
-Arrays can also be specified by providing the number of elements rather than a Python iterable. This yields an array containing all zeros for primitives or `nulls` for objects.
+You can also pass the number of elements instead of a sequence. This yields an array of default values: zeros for numeric primitives, `false` for `boolean`, and `null` for objects.
 
 ```python test-set=4
-# creates an unitialized byte array of 100 elements
+# creates a zero-filled byte array of 100 elements
 byte_array_100_elements = jpy.array("byte", 100)
+
+# print the array's length and its first element
+print(len(byte_array_100_elements), byte_array_100_elements[0])
 ```
 
-If the Python iterable contains elements that cannot be converted to the requested Java type, the conversion will fail.
+If the sequence contains elements that cannot be converted to the requested Java type, the conversion fails.
 
 ```python test-set=4 should-fail
 # 3.3 cannot be converted to an int
 failed_int_array = jpy.array("int", [1, 2, 3.3, 4, 5])
 ```
 
-[`jpy.array`](/core/pydoc/code/jpy.html#jpy.array) can also be used to create arrays of non-primitive types, such as [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) and [`java.lang.Float`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html). The fully-qualified class name must be specified:
+[`jpy.array`](/core/pydoc/code/jpy.html#jpy.array) also creates arrays of non-primitive types, such as [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) and [`java.lang.Float`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html). Specify the fully qualified class name:
 
 ```python test-set=5
 import jpy
 
 string_array = jpy.array("java.lang.String", ["I", "am", "a", "string!"])
 float_array = jpy.array("java.lang.Float", [1.2, 2.3, 3.4, 4.5])
+
+print(list(string_array))
+# java.lang.Float holds 32-bit values, so each one prints as its nearest 32-bit approximation
+print(list(float_array))
 ```
 
 ### Nested arrays
 
-Multi-dimensional arrays, or nested arrays, are common in Java. [`jpy`](/core/pydoc/code/jpy.html) can be used to create nested arrays by using nested calls to [`jpy.array`](/core/pydoc/code/jpy.html#jpy.array). However, the classpath names do not work as they did previously. Consider the following example that attempts to create a nested array of integers.
+Multi-dimensional arrays, or nested arrays, are common in Java. To create one, nest calls to [`jpy.array`](/core/pydoc/code/jpy.html#jpy.array). The outer call can't take an element type name such as `"int"`, which the [One-dimensional arrays](#one-dimensional-arrays) examples use. The following example tries this with a nested array of integers and fails.
 
 ```python test-set=5 should-fail
 # this won't work!
@@ -385,9 +461,14 @@ nested_int_array = jpy.array(
 )
 ```
 
-This code will fail because the outer array's specified type is an `int` but should be an _array_ of `int`s. Here are the rules for specifying nested array types, each followed by simple examples.
+The outer call fails because it names `int` as its type, but its elements are `int` arrays. Name each call's type after what it holds:
 
-- For primitive types, use the [_type signature_](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html). The type signatures for each primitive type are:
+- The innermost calls hold plain values, so they take the element type name, such as `"int"`.
+- Every other call holds arrays, so it takes the name of the array type it holds.
+
+Write an array type name by these rules:
+
+- For primitive types, use the [_type signature_](https://docs.oracle.com/en/java/javase/17/docs/specs/jni/types.html). The type signatures for each primitive type are:
 
   | Primitive Type | Type Signature |
   | -------------- | -------------- |
@@ -400,33 +481,14 @@ This code will fail because the outer array's specified type is an `int` but sho
   | `float`        | `F`            |
   | `double`       | `D`            |
 
-```python test-set=5
-simple_primitive_array = jpy.array("[I", [jpy.array("int", [1])])
-```
-
-- For object types, use the full class name, prepended with `L` and ending with `;`.
-
-```python test-set=5
-simple_object_array = jpy.array(
-    "[Ljava.lang.String;", [jpy.array("java.lang.String", ["Hello!"])]
-)
-```
-
-- The number of open square brackets determines the array's dimension. An `n`-dimensional array requires `n-1` open square brackets.
-
-```python test-set=5
-simple_primitive_array_3d = jpy.array(
-    "[[D", [jpy.array("[D", [jpy.array("double", [1.234])])]
-)
-```
-
-See [the Java documentation](https://docs.oracle.com/en/java/javase/17/docs/specs/jni/types.html) for more information on type signatures.
+- For object types, use the fully qualified class name, prepended with `L` and ending with `;`. Write the class name with dots, as in `Ljava.lang.String;`.
+- For an `n`-dimensional array, prepend `n-1` open square brackets.
 
 To clarify these rules, here are some concrete examples.
 
 #### Example 1: 2D `boolean` array
 
-This example creates a 2D array of boolean values. Since it is a nested array of primitives, the type signature `Z` for the `boolean` type must be used. It is a 2D array, so the type signature must be prepended by a single open square bracket `[`.
+This example creates a 2D array of boolean values. Because the elements are primitives, use the type signature `Z` for `boolean`. Because the array is 2D, prepend one open square bracket: `[Z`.
 
 ```python test-set=5
 bool_array_2d = jpy.array(
@@ -436,11 +498,14 @@ bool_array_2d = jpy.array(
         jpy.array("boolean", [False, True, False]),
     ],
 )
+
+# print the number of inner arrays and the contents of the second one
+print(len(bool_array_2d), list(bool_array_2d[1]))
 ```
 
 #### Example 2: 3D `int` array
 
-This example creates a 3D array of integer values. The `int` is primitive, so the type signature `I` must be used, along with two open square brackets since the array is three-dimensional.
+This example creates a 3D array of integer values. Because `int` is primitive, use the type signature `I`. Because the array is 3D, prepend two open square brackets: `[[I`.
 
 ```python test-set=5
 int_array_3d = jpy.array(
@@ -462,25 +527,31 @@ int_array_3d = jpy.array(
         ),
     ],
 )
+
+# java.util.Arrays.deepToString prints the contents of a nested array
+_JArrays = jpy.get_type("java.util.Arrays")
+print(_JArrays.deepToString(int_array_3d))
 ```
 
 #### Example 3: 2D `java.lang.String` array
 
-This example creates a 2D array of Strings. Since this is a nested array of objects, the class name must be prepended with an `L` and end with a `;`. Since this array is 2D, only one open square bracket is required.
+This example creates a 2D array of `String` values. Because the elements are objects, prepend `L` to the class name and append `;`. Because the array is 2D, prepend one open square bracket.
 
 ```python test-set=5
 string_array_nested = jpy.array(
     "[Ljava.lang.String;",
     [
         jpy.array("java.lang.String", ["I", "am", "a", "string!"]),
-        jpy.array("java.lang.String", ["I", "am", "alsoa", "string!"]),
+        jpy.array("java.lang.String", ["I", "am", "also", "a", "string!"]),
     ],
 )
+
+print(_JArrays.deepToString(string_array_nested))
 ```
 
 #### Example 4: 3D `java.lang.String` array
 
-Finally, this example creates a 3D array of Strings. This will require `L` and `;`, as well as two open square brackets.
+Finally, this example creates a 3D array of `String` values. This needs `L` and `;`, plus two open square brackets.
 
 ```python test-set=5
 string_array_nested_deeper = jpy.array(
@@ -490,7 +561,7 @@ string_array_nested_deeper = jpy.array(
             "[Ljava.lang.String;",
             [
                 jpy.array("java.lang.String", ["I", "am", "a", "string!"]),
-                jpy.array("java.lang.String", ["I", "am", "alsoa", "string!"]),
+                jpy.array("java.lang.String", ["I", "am", "also", "a", "string!"]),
             ],
         ),
         jpy.array(
@@ -504,11 +575,13 @@ string_array_nested_deeper = jpy.array(
         ),
     ],
 )
+
+print(_JArrays.deepToString(string_array_nested_deeper))
 ```
 
-## Use [`jpy`](/core/pydoc/code/jpy.html) with Deephaven
+## Use `jpy` with Deephaven
 
-Because the Deephaven query engine is implemented in Java, all of its core data structures and operations are implemented in Java. Deephaven makes it easy to use Java objects directly with [`jpy`](/core/pydoc/code/jpy.html).
+Because the Deephaven query engine is implemented in Java, Deephaven makes it easy to use Java objects directly. Deephaven's Python objects expose the Java objects they wrap, so you can pass Deephaven tables to Java methods you call through [`jpy`](/core/pydoc/code/jpy.html). In the other direction, Java objects you create with [`jpy`](/core/pydoc/code/jpy.html) can be used directly in [query strings](./query-string-overview.md).
 
 ### The `j_object` property
 
@@ -535,22 +608,22 @@ import jpy
 t = empty_table(5).update(["X1 = i", "X2 = X1 + 2", "X3 = X1 + 3", "X4 = X1 + 4"])
 
 # get the TableTools type
-_TableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
+_JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 
-# use the show method to print the names of columns in the table, note the j_object in the argument
-_TableTools.show(t.j_object)
+# use the show method to print the first rows of the table; note the j_object in the argument
+_JTableTools.show(t.j_object)
 ```
 
-Deephaven libraries often return new Deephaven tables. These Deephaven tables are Java objects. To make them usable with the rest of the Python API, they must be explicitly wrapped in Python using the [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) constructor from [`deephaven.table`](/core/pydoc/code/deephaven.table.html#module-deephaven.table).
+Java methods in Deephaven libraries often return new tables as Java objects. To use one with the rest of the Python API, wrap it with the [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) constructor from [`deephaven.table`](/core/pydoc/code/deephaven.table.html#module-deephaven.table).
 
 ```python test-set=6 order=new_t,merged_t
 from deephaven.table import Table
 
 new_t = empty_table(3).update(["X1 = 10", "X2 = 20", "X3 = 30", "X4 = 40"])
 
-# merge tables with TableTools.merge - this is illustriative, as merge is wrapped in Python
-# _j_merged_t is a Java Deephaven table, prepended with _j by convention
-_j_merged_t = _TableTools.merge(t.j_object, new_t.j_object)
+# merge tables with TableTools.merge; this is illustrative, because Deephaven's Python API already wraps merge
+# _j_merged_t is a Java Deephaven table
+_j_merged_t = _JTableTools.merge(t.j_object, new_t.j_object)
 
 # wrap the result in a Python Deephaven table
 merged_t = Table(_j_merged_t)
@@ -558,7 +631,7 @@ merged_t = Table(_j_merged_t)
 
 ### Use Java values in query strings
 
-Java objects created with [`jpy`](/core/pydoc/code/jpy.html) can be used directly in Deephaven's query strings.
+Java objects created with [`jpy`](/core/pydoc/code/jpy.html) can be used directly in Deephaven's [query strings](./query-string-overview.md). For more on using Java objects and their methods in query strings, see [Java objects and classes in query strings](./java-classes.md).
 
 ```python order=t_meta,t
 import jpy
@@ -574,20 +647,20 @@ t = empty_table(10).update("StringCol = string_instance")
 t_meta = t.meta_table
 ```
 
-When a Java object is constructed, its methods can be called inside and outside query strings, depending on the use case.
+You can call a Java object's methods either outside a [query string](./query-string-overview.md) or inside one.
 
 ```python order=outside_calls,inside_calls
 import jpy
 from deephaven import empty_table
 
-# get URL type and create instance
-_JUrl = jpy.get_type("java.net.URL")
-url_instance = _JUrl("https://deephaven.io")
+# get the URI type and use it to create a URL instance
+_JURI = jpy.get_type("java.net.URI")
+url_instance = _JURI.create("https://deephaven.io").toURL()
 
-# call the methods outide of the query strings
+# call the methods outside of the query strings
 protocol = url_instance.getProtocol()
 host = url_instance.getHost()
-port = url_instance.getPort()
+port = url_instance.getDefaultPort()
 uri = url_instance.toURI()
 
 outside_calls = empty_table(1).update(
@@ -606,32 +679,26 @@ inside_calls = empty_table(1).update(
         "URL = url_instance",
         "Protocol = URL.getProtocol()",
         "Host = URL.getHost()",
-        "Port = URL.getPort()",
+        "Port = URL.getDefaultPort()",
         "URI = URL.toURI()",
     ]
 )
 ```
 
-When Java values are used directly in query strings, they do not require any [Python-Java boundary crossings](../conceptual/python-java-boundary.md) during their execution. Thus, such patterns will be very performant relative to other patterns that require boundary crossings. Here is an example that compares the efficiency of generating random numbers using a Python or a Java approach.
+### Compare Java and Python performance in query strings
 
-> [!IMPORTANT]
-> This example uses [Numba](./use-numba.md), which currently supports NumPy 2.4 and earlier. Deephaven ships with NumPy 2.5, so this example does not run in a default Deephaven deployment unless you reconfigure Deephaven to use a NumPy version below 2.5.
+Java values in [query strings](./query-string-overview.md) don't cross the [Python-Java boundary](../conceptual/python-java-boundary.md) when the query runs. This makes them faster than patterns that do cross it, such as calling a [Python function](./python-functions.md) from a query string. Here is an example that compares the efficiency of generating random numbers using a Python or a Java approach.
 
-```python order=:log,python_gauss,java_gauss docker-config=numba
+```python order=:log,python_gauss,java_gauss
 import time
 from deephaven import empty_table
 
 ### Python approach
 import random
-import os
-
-os.system("pip install numba")
-from numba import jit
 
 random.seed(12345)
 
 
-@jit
 def generate_gaussian() -> float:
     return random.gauss(0.0, 1.0)
 
@@ -643,8 +710,8 @@ python_end = time.time()
 ### Java approach
 import jpy
 
-_Rng = jpy.get_type("java.util.Random")
-rng_instance = _Rng(12345)
+_JRandom = jpy.get_type("java.util.Random")
+rng_instance = _JRandom(12345)
 
 java_start = time.time()
 java_gauss = empty_table(10_000_000).update("X = rng_instance.nextGaussian()")
@@ -655,9 +722,17 @@ print("Python execution time: ", python_end - python_start)
 print("Java execution time: ", java_end - java_start)
 ```
 
+The Java version finishes faster because each row's `nextGaussian` call stays in Java, while the Python version runs Python code for every row.
+
 ## Tie it all together
 
-Finally, here's an example that ties all of these concepts together.
+This example uses [`ColumnsToRowsTransform`](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnsToRowsTransform.html) to turn a table's value columns into labeled rows. It combines these pieces from earlier sections:
+
+- [`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) to get the Java class.
+- A call to the static [`columnsToRows`](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnsToRowsTransform.html#columnsToRows(io.deephaven.engine.table.Table,java.lang.String,java.lang.String,java.lang.String%5B%5D,java.lang.String%5B%5D)) method.
+- [`jpy.array`](/core/pydoc/code/jpy.html#jpy.array) to build the `String[]` arguments.
+- The `j_object` property to pass the table to Java.
+- The [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) constructor to wrap the Java table that comes back.
 
 ```python order=transformed_t,t
 import jpy
@@ -667,31 +742,44 @@ from deephaven.table import Table
 # create table where column names are 'labels', and entries are 'values'
 t = empty_table(3).update(["Value1 = ii", "Value2 = ii + 3"])
 
-# get the ColumnsToRowsTransform to flip this table's rows and columns
-_ColsToRowsTransform = jpy.get_type(
+# get the ColumnsToRowsTransform to turn this table's value columns into rows
+_JColumnsToRowsTransform = jpy.get_type(
     "io.deephaven.engine.table.impl.util.ColumnsToRowsTransform"
 )
 
 # call the static columnsToRows method
-_j_transformed_t = _ColsToRowsTransform.columnsToRows(
+_j_transformed_t = _JColumnsToRowsTransform.columnsToRows(
     # must use j_object to get the underlying Java object, otherwise method will not be found
     t.j_object,
     # labelColumn and valueColumn are String arguments, which jpy knows how to convert
     "LabelCol",
     "ValueCol",
-    # labels and transposeColumns are String[] arguments, which jpy does not know how to convert, so use jpy.array
+    # labels and transposeColumns are String[] arguments
+    # Python lists of str would also convert, but jpy.array creates the String[] arrays explicitly
     jpy.array("java.lang.String", ["Value1", "Value2"]),
     jpy.array("java.lang.String", ["Value1", "Value2"]),
 )
 
-# transform return value to Python value, so that Deephaven Python API can be used
+# wrap the Java table in a Python Table, so that the Deephaven Python API can use it
 transformed_t = Table(_j_transformed_t)
 ```
 
 ## Related documentation
 
-- [Python-Java Boundary](../conceptual/python-java-boundary.md)
+- [Python-Java boundary](../conceptual/python-java-boundary.md)
+- [Java objects and classes in query strings](./java-classes.md)
+- [Install and use Java packages](./install-and-use-java-packages.md)
+- [Javadocs for Python users](./read-javadocs.md)
+- [Python functions in query strings](./python-functions.md)
+- [Query string overview](./query-string-overview.md)
+- [`empty_table`](../reference/table-operations/create/emptyTable.md)
+- [`merge`](../reference/table-operations/merge/merge.md)
+- [`meta_table`](../reference/table-operations/metadata/meta_table.md)
+- [`update`](../reference/table-operations/select/update.md)
 - [jpy GitHub](https://github.com/jpy-consortium/jpy)
 - [jpy documentation](https://jpy.readthedocs.io/en/latest/)
-- [Jpy Pydoc](/core/pydoc/code/jpy.html#module-jpy)
 - [Type signatures](https://docs.oracle.com/en/java/javase/17/docs/specs/jni/types.html)
+- [`jpy` Pydoc](/core/pydoc/code/jpy.html#module-jpy)
+- [`deephaven.dtypes` Pydoc](/core/pydoc/code/deephaven.dtypes.html#module-deephaven.dtypes)
+- [`deephaven.time` Pydoc](/core/pydoc/code/deephaven.time.html#module-deephaven.time)
+- [`deephaven.table.Table` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table)

@@ -1,0 +1,1 @@
+{"file":"conceptual/liveness-scope-concept.md","objects":{"latest_values":{"type":"Table","data":{"columns":[{"name":"Sym","type":"java.lang.String"},{"name":"Timestamp","type":"java.time.Instant"},{"name":"Value","type":"long"}],"rows":[]}}}}

@@ -31,6 +31,14 @@ public interface InMemoryColumnSource {
         return true;
     }
 
+    /**
+     * @param columnSource the column source to check
+     * @return true if {@code columnSource} is an {@link InMemoryColumnSource} that is entirely in memory
+     */
+    static boolean isInMemory(final ColumnSource<?> columnSource) {
+        return columnSource instanceof InMemoryColumnSource && ((InMemoryColumnSource) columnSource).isInMemory();
+    }
+
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
     int TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD = ArrayUtil.MAX_ARRAY_SIZE;
 

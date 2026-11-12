@@ -128,7 +128,7 @@ A new in-memory table from a CSV file.
 ## Examples
 
 > [!NOTE]
-> In this guide, we read data from locations relative to the base of the Docker container. See [Docker data volumes](../../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
+> In this guide, we read data from locations relative to the base of the Docker container. See [Docker bind mounts](../../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
 
 In the following example, [`write_csv`](./writeCsv.md) writes the source table to `/data/file.csv`, and `read_csv` loads the file into a Deephaven table.
 
@@ -184,6 +184,6 @@ result_tsv = read_csv(
 - [CSV import via query](../../../how-to-guides/data-import-export/csv-import.md)
 - [CSV export via query](../../../how-to-guides/data-import-export/csv-export.md)
 - [`write_csv`](./writeCsv.md)
-- [Docker data volumes](../../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/csv/CsvTools.html#readCsv(java.nio.file.Path))
 - [Pydoc](/core/pydoc/code/deephaven.html#deephaven.read_csv)

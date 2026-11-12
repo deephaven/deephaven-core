@@ -10,7 +10,7 @@ These standards apply to customer-facing deephaven-core documentation in `docs/`
 
 **Concept guide:** A resource to study. It is intended to broaden understanding of higher concepts and to explain how or why with contextual explanations. Overview pages may be considered concept guides.
 
-**Reference guide:** A study resource. It is purely informative; its purpose is to describe without extraneous information — very pointed, without advice or general tips. JavaDocs, PyDocs, and other API documentation are reference guides.
+**Reference guide:** A study resource. It describes the thing it documents, without extraneous information or general tips. A reference page may say when to use the documented item, in its own labeled section ("When to use ...") scoped to that item. Guidance about combining several features belongs in a concept guide or how-to guide, linked from the reference page. JavaDocs, PyDocs, and other API documentation are reference guides.
 
 ## Prose quality
 

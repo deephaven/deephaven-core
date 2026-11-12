@@ -478,8 +478,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new int[] {10, 11, NULL_INT}, intColumn(cj, "RightSentinel"));
         // the two wheres check for filling null keys
         final Table cjw = cj.where("RightObjectSentinel = null");
-        final Table cjw2 =
-                left.naturalJoin(SparseSelect.sparseSelect(right), "Symbol").where("RightObjectSentinel = null");
+        final Table cjw2 = left.naturalJoin(right.select(), "Symbol").where("RightObjectSentinel = null");
         TableTools.showWithRowSet(cjw);
         TableTools.showWithRowSet(cjw2);
 

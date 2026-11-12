@@ -55,7 +55,10 @@ public class ArrayWeakReferenceManager<T> implements WeakReferenceManager<T> {
         if (refs.isEmpty()) {
             return;
         }
-        refs.removeIf((ref) -> ref.get() == null || ref.get() == item);
+        refs.removeIf((ref) -> {
+            final T refItem = ref.get();
+            return refItem == null || refItem == item;
+        });
     }
 
     @Override
@@ -65,7 +68,10 @@ public class ArrayWeakReferenceManager<T> implements WeakReferenceManager<T> {
         }
         final Set<T> itemsIdentitySet = Collections.newSetFromMap(new IdentityHashMap<>(items.size()));
         itemsIdentitySet.addAll(items);
-        refs.removeIf(ref -> ref.get() == null || itemsIdentitySet.contains(ref.get()));
+        refs.removeIf(ref -> {
+            final T refItem = ref.get();
+            return refItem == null || itemsIdentitySet.contains(refItem);
+        });
     }
 
     @Override

@@ -44,9 +44,9 @@ Deephaven offers the following pre-built Docker images:
 - `server`: Python
 - `server-slim`: Groovy
 - `server-nltk`: Python with [NLTK](https://www.nltk.org/)
-- `server-pytorch`: Python with [PyTorch](https://pytorch.org/)
+- `server-pytorch`: Python with [PyTorch](https://pytorch.org/) and [TensorBoard](https://www.tensorflow.org/tensorboard)
 - `server-sklearn`: Python with [scikit-learn](https://scikit-learn.org/stable/)
-- `server-tensorflow`: Python with [TensorFlow](https://www.tensorflow.org/)
+- `server-tensorflow`: Python with [TensorFlow](https://www.tensorflow.org/) and [TensorBoard](https://www.tensorflow.org/tensorboard)
 - `server-all-ai`: Python with NLTK, PyTorch, scikit-learn, and TensorFlow
 
 To run one of these images, replace `server` in the [`docker run`](https://docs.docker.com/reference/cli/docker/container/run/) command from [The simplest possible installation](#the-simplest-possible-installation) with that image's name. For example, `ghcr.io/deephaven/server-pytorch:latest` runs the `server-pytorch` image.
@@ -371,7 +371,7 @@ Unless you [disabled authentication](#disable-authentication), the IDE asks for 
 
 The [Deephaven examples repository](https://github.com/deephaven/examples) contains datasets that help you learn Deephaven. Deephaven's documentation uses these datasets extensively, and some examples require them.
 
-If you chose a [deployment](#choose-a-deployment) with example data, the example datasets appear in a `data/examples` directory next to your `docker-compose.yml` file. Inside the container, the same files are at `/data/examples`. See [Docker data volumes](../conceptual/docker-data-volumes.md) for more information on how Docker mounts files.
+If you chose a [deployment](#choose-a-deployment) with example data, the example datasets appear in a `data/examples` directory next to your `docker-compose.yml` file. Inside the container, the same files are at `/data/examples`. See [Docker bind mounts](../conceptual/docker-data-volumes.md) for more information on how Docker mounts files.
 
 ## Next steps
 
@@ -384,5 +384,5 @@ import { TutorialCTA } from '@theme/deephaven/CTA';
 ## Related documentation
 
 - [Pre-shared key authentication](../how-to-guides/authentication/auth-psk.md)
-- [Docker data volumes](../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../conceptual/docker-data-volumes.md)
 - [Build and launch Deephaven from source code](./launch-build.md)

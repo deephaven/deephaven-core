@@ -6,7 +6,7 @@
 as well as a framework for using popular machine-learning / deep-learning libraries with Deephaven tables.
 """
 
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 
 import jpy
 
@@ -22,7 +22,7 @@ _JLearnScatterer = jpy.get_type("io.deephaven.integrations.learn.Scatterer")
 class Input:
     """Input specifies how to gather data from a Deephaven table into an object."""
 
-    def __init__(self, col_names: Union[str, list[str]], gather_func: Callable):
+    def __init__(self, col_names: str | list[str], gather_func: Callable):
         """Initializes an Input object with the given arguments.
 
         Args:
@@ -46,7 +46,8 @@ class Output:
             col_name (str) : name of the new column that will store results.
             scatter_func (Callable): function that determines how data is taken from an object and placed into a
                 Deephaven table column.
-            col_type (type) : desired data type of the new output column, default is None (no explicit type cast).
+            col_type (type) : the type name of the new output column, as a string such as "double". Each value is
+                cast to this type. Pass None for no explicit type cast. This argument has no default.
         """
         self.output = _JLearnOutput(col_name, scatter_func, col_type)
 
@@ -122,10 +123,10 @@ def _create_non_conflicting_col_name(table: Table, base_col_name: str) -> str:
 
 def learn(
     table: Table,
-    model_func: Optional[Callable] = None,
+    model_func: Callable | None = None,
     inputs: list[Input] = [],
     outputs: list[Output] = [],
-    batch_size: Optional[int] = None,
+    batch_size: int | None = None,
 ) -> Table:
     """Learn gathers data from multiple rows of the input table, performs a calculation, and scatters values from the
     calculation into an output table. This is a common computing paradigm for artificial intelligence, machine learning,

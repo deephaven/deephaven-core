@@ -4,17 +4,27 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.TestUseOnly;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
 
 class AsyncErrorImpl {
+    /**
+     * Manages the blink table for the life of the process. The constructor creates the blink table with
+     * {@code livenessScope} on top of the {@link LivenessScopeStack}, so releasing the caller's scope does not destroy
+     * the blink table. Only {@link AsyncErrorLogger#resetForUnitTests()} releases {@code livenessScope}.
+     */
+    private final LivenessScope livenessScope = new LivenessScope();
     private final AsyncErrorStreamPublisher publisher;
     @SuppressWarnings("FieldCanBeLocal")
     private final StreamToBlinkTableAdapter adapter;
@@ -22,12 +32,14 @@ class AsyncErrorImpl {
 
     public AsyncErrorImpl() {
         publisher = new AsyncErrorStreamPublisher();
-        adapter = new StreamToBlinkTableAdapter(
-                AsyncErrorStreamPublisher.definition(),
-                publisher,
-                ExecutionContext.getContext().getUpdateGraph(),
-                AsyncErrorImpl.class.getName());
-        blink = adapter.table();
+        try (final SafeCloseable ignored = LivenessScopeStack.open(livenessScope, false)) {
+            adapter = new StreamToBlinkTableAdapter(
+                    AsyncErrorStreamPublisher.definition(),
+                    publisher,
+                    ExecutionContext.getContext().getUpdateGraph(),
+                    AsyncErrorImpl.class.getName());
+            blink = adapter.table();
+        }
     }
 
     public Table blink() {
@@ -74,5 +86,13 @@ class AsyncErrorImpl {
                 sourceOperationNumber,
                 sourceDescription,
                 originalException);
+    }
+
+    /**
+     * Release {@code livenessScope}, the manager of the blink table.
+     */
+    @TestUseOnly
+    void releaseForUnitTests() {
+        livenessScope.release();
     }
 }

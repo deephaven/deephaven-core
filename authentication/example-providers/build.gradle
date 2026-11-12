@@ -13,6 +13,26 @@ project.subprojects { Project p ->
         shadow project(':authentication')
         shadow project(':Configuration')
         shadow project(':log-factory')
+        // Bundled libraries log through the server's SLF4J, so it is a runtime dependency rather than a bundled copy
+        shadow libs.slf4j.api
+    }
+
+    p.tasks.named('shadowJar') {
+        // Provider jars go on the server's classpath ahead of its own libraries. Relocating every bundled dependency
+        // into a per-provider package keeps a provider's library versions from replacing the server's, and the
+        // server's from replacing the provider's.
+        enableAutoRelocation = true
+        relocationPrefix = "io.deephaven.authentication.${p.name.replace('-', '_')}.shaded"
+        dependencies {
+            exclude(dependency('org.slf4j:.*'))
+        }
+        // Rewrite META-INF/services entries to the relocated class names
+        mergeServiceFiles()
+        // Shadow 9 honors the default EXCLUDE strategy, which would drop all but the first copy of each service file
+        // before mergeServiceFiles sees them.
+        filesMatching('META-INF/services/**') {
+            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        }
     }
 
     // We know all of the subprojects have io.deephaven.project.ProjectType=JAVA_PUBLIC_SHADOW

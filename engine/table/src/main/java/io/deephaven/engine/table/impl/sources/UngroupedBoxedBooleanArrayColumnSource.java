@@ -27,12 +27,12 @@ public class UngroupedBoxedBooleanArrayColumnSource extends UngroupedColumnSourc
             return null;
         }
         long segment = rowKey >> base;
-        int offset = (int) (rowKey & ((1 << base) - 1));
+        long offset = rowKey & ((1L << base) - 1);
         Boolean[] array = innerSource.get(segment);
         if (array == null || offset >= array.length) {
             return null;
         }
-        return array[offset];
+        return array[(int) offset];
     }
 
     @Override
@@ -41,12 +41,12 @@ public class UngroupedBoxedBooleanArrayColumnSource extends UngroupedColumnSourc
             return null;
         }
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
+        long offset = rowKey & ((1L << getPrevBase()) - 1);
         Boolean[] array = innerSource.getPrev(segment);
         if (array == null || offset >= array.length) {
             return null;
         }
-        return array[offset];
+        return array[(int) offset];
     }
 
     @Override

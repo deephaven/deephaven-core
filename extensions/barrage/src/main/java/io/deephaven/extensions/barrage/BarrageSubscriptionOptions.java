@@ -56,7 +56,7 @@ public abstract class BarrageSubscriptionOptions implements BarrageOptions {
      * subscriptions to that table.
      * <p>
      * The default interval can be set on the server with the flag
-     * {@code io.deephaven.server.arrow.ArrowFlightUtil#DEFAULT_UPDATE_INTERVAL_MS}, or
+     * {@code io.deephaven.server.arrow.BarrageRequestHelpers#DEFAULT_MIN_UPDATE_INTERVAL_MS}, or
      * {@code -Dbarrage.minUpdateInterval=1000}.
      * <p>
      * Related, when shortening the minUpdateInterval, you typically want to shorten the server's UGP cycle enough to

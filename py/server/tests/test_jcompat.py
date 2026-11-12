@@ -61,6 +61,10 @@ class JCompatTestCase(BaseTestCase):
         j_set = j_hashset(s)
         self.assertEqual(s, set(j_collection_to_list(j_set)))
 
+    def test_j_array_list_from_generator(self) -> None:
+        j_list = j_array_list(i for i in [2, 1, 3])
+        self.assertEqual([2, 1, 3], j_collection_to_list(j_list))
+
     def assert_json_equals(self, j_object, expected) -> None:
         """Serializes a Java object with Jackson and asserts the resulting JSON matches expected."""
         actual = json.loads(_JObjectMapper().writeValueAsString(j_object))

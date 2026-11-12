@@ -5,7 +5,7 @@ title: add_only_to_blink
 The `add_only_to_blink` method creates a blink table from the supplied add-only or append-only table. The blink table contains the rows added in the latest update cycle.
 
 > [!NOTE]
-> The use of this function should be limited to add-only or append-only tables that are not fully in-memory, or when blink-table specific aggregation semantics are desired. If the table is fully in-memory, creating a downstream blink table is not recommended because it does not achieve the main benefit of blink tables, which is to reduce memory usage but instead increases memory usage.
+> Use this function only on add-only or append-only tables that are not fully in memory, or when you want blink table aggregation semantics. Creating a downstream blink table from a table that is fully in memory is not recommended. It does not achieve the main benefit of blink tables, which is lower memory use. Instead, it increases memory use.
 
 ## Syntax
 
@@ -33,7 +33,7 @@ A blink table.
 
 The following example creates an append-only table with [`time_table`](./timeTable.md) and then converts it to a blink table with `add_only_to_blink`. This example uses `add_only_to_blink` on an in-memory table, which is not recommended, but it illustrates the syntax of the method.
 
-```python order=null
+```python ticking-table order=null
 from deephaven.stream import add_only_to_blink
 from deephaven import time_table
 

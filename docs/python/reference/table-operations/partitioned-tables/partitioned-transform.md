@@ -169,7 +169,7 @@ result = pt_new.merge()
 
 ## Related documentation
 
-- [Execution context](../../../conceptual/execution-context.md)
+- [Execution Context](../../../conceptual/execution-context.md)
 - [`empty_table`](../create/emptyTable.md)
 - [`partition_by`](../group-and-aggregate/partitionBy.md)
 - [`natural_join`](../join/natural-join.md)

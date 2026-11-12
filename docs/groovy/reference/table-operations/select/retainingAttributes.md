@@ -13,7 +13,7 @@ retainingAttributes(toRetain)
 ## Parameters
 
 <ParamTable>
-<Param name="toRetain>" type="Collection<String>">
+<Param name="toRetain" type="Collection<String>">
 
 The keys of attributes to retain.
 

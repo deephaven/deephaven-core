@@ -6,13 +6,13 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.Pair;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.table.impl.NotificationAwareDependency;
+import io.deephaven.engine.table.impl.NotificationStepReceiver;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.WindowCheck;
 import io.deephaven.time.DateTimeUtils;
@@ -36,10 +36,18 @@ import java.util.List;
  * <p>
  * When the filter is not inverted, null rows are not accepted and rows that match the window exactly are accepted.
  * </p>
+ *
+ * <p>
+ * The filter reads the window column of a table that {@link #beginOperation(Table)} adds the window to, so it can
+ * filter previous values as well as current ones. As time passes, rows leave the window, and the filter asks its
+ * operation to recompute them. The filter starts following the windowed table only when its operation's snapshot
+ * commits, and only if the windowed table has not notified since the snapshot began, so that no row leaving the window
+ * is missed.
+ * </p>
  */
 public class TimeSeriesFilter
         extends WhereFilterLivenessArtifactImpl
-        implements NotificationQueue.Dependency {
+        implements NotificationAwareDependency {
     /**
      * A builder to create a TimeSeriesFilter.
      */
@@ -147,7 +155,7 @@ public class TimeSeriesFilter
     private final Clock clock;
     private Boolean isRefreshing;
 
-    private RecomputeListener listener;
+    private volatile RecomputeListener listener;
 
     /**
      * For unit tests, we must be able to cause the window check to update.
@@ -155,8 +163,13 @@ public class TimeSeriesFilter
     private Runnable refreshFunctionForUnitTests;
 
     /**
-     * The listener is responsible for listening to the WindowCheck result, updating our RowSet that contains the rows
-     * in our window, and then notifying the WhereListener that we are requesting recomputation.
+     * The source table with the window column added, created by {@link #beginOperation(Table)}.
+     */
+    private QueryTable tableWithWindow;
+
+    /**
+     * The listener is responsible for listening to the WindowCheck result, and asking the operation to recompute the
+     * rows that leave the window.
      */
     private TimeSeriesFilterWindowListener windowListener;
 
@@ -222,16 +235,14 @@ public class TimeSeriesFilter
             @NotNull final RowSet fullSet,
             @NotNull final Table table,
             final boolean usePrev) {
-        if (usePrev) {
-            throw new PreviousFilteringNotSupported();
-        }
-
         Assert.neqNull(windowListener, "windowListener");
 
-        if (invert) {
-            return selection.minus(windowListener.inWindowRowSet);
-        } else {
-            return selection.intersect(windowListener.inWindowRowSet);
+        final WritableRowSet inWindow = windowListener.matchInWindow(selection, usePrev);
+        if (!invert) {
+            return inWindow;
+        }
+        try (final WritableRowSet ignored = inWindow) {
+            return selection.minus(inWindow);
         }
     }
 
@@ -243,7 +254,7 @@ public class TimeSeriesFilter
 
     @Override
     public void setRecomputeListener(RecomputeListener listener) {
-        Assert.eqNull(this.listener, "this.listener");
+        // each snapshot attempt sets the listener for its own result
         this.listener = listener;
         if (isRefreshing()) {
             listener.setIsRefreshing(true);
@@ -253,6 +264,27 @@ public class TimeSeriesFilter
     @Override
     public boolean satisfied(long step) {
         return windowListener.satisfied(step);
+    }
+
+    @Override
+    public long lastStateChangeStep() {
+        return tableWithWindow.isRefreshing()
+                ? tableWithWindow.getLastNotificationStep()
+                : NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+    }
+
+    @Override
+    public boolean subscribe(final long requiredLastStateChangeStep) {
+        // a static windowed table never changes, so there is nothing to follow and nothing to refuse
+        return !tableWithWindow.isRefreshing()
+                || tableWithWindow.addUpdateListener(windowListener, requiredLastStateChangeStep);
+    }
+
+    @Override
+    public void unsubscribe() {
+        if (tableWithWindow.isRefreshing()) {
+            tableWithWindow.removeUpdateListener(windowListener);
+        }
     }
 
     @Override
@@ -289,9 +321,6 @@ public class TimeSeriesFilter
     }
 
     private class TimeSeriesFilterWindowListener extends InstrumentedTableUpdateListenerAdapter {
-        // the list of rows that exist within our window
-        final WritableRowSet inWindowRowSet = RowSetFactory.empty();
-
         // the columnset that represents our window source
         private final ModifiedColumnSet windowColumnSet;
 
@@ -308,31 +337,24 @@ public class TimeSeriesFilter
 
         @Override
         public void onUpdate(TableUpdate update) {
-            inWindowRowSet.remove(update.removed());
-            final boolean windowModified = update.modifiedColumnSet().containsAny(windowColumnSet);
-            if (windowModified) {
-                // we need to check on the modified rows; they may be in the window,
-                inWindowRowSet.remove(update.getModifiedPreShift());
+            if (!update.modifiedColumnSet().containsAny(windowColumnSet)) {
+                return;
             }
-            update.shifted().apply(inWindowRowSet);
-            if (windowModified) {
-                final RowSet newlyMatched = insertMatched(update.modified());
-                try (final WritableRowSet movedOutOfWindow = update.modified().minus(newlyMatched)) {
-                    if (movedOutOfWindow.isNonempty()) {
-                        listener.requestRecompute(movedOutOfWindow);
-                    }
+            // rows leave the window as time passes, which only this listener sees; the operation sees the source's own
+            // added, removed and modified rows
+            try (final WritableRowSet inWindow = matchInWindow(update.modified(), false);
+                    final WritableRowSet movedOutOfWindow = update.modified().minus(inWindow)) {
+                if (movedOutOfWindow.isNonempty()) {
+                    listener.requestRecompute(movedOutOfWindow);
                 }
             }
-            insertMatched(update.added());
         }
 
-        private RowSet insertMatched(final RowSet rowSet) {
+        private WritableRowSet matchInWindow(final RowSet rowSet, final boolean usePrev) {
             // The original filter did not include nulls for a regular filter, so we do not include them here either to
             // maintain compatibility. That also means the inverted filter is going to include nulls (as the null is
             // less than the current time using Deephaven long comparisons).
-            final RowSet matched = windowColumnSource.match(false, MatchOptions.REGULAR, rowSet, Boolean.TRUE);
-            inWindowRowSet.insert(matched);
-            return matched;
+            return windowColumnSource.match(usePrev, MatchOptions.REGULAR, rowSet, Boolean.TRUE);
         }
     }
 
@@ -346,6 +368,9 @@ public class TimeSeriesFilter
 
     @Override
     public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+        if (windowListener != null) {
+            throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
+        }
         String windowSourceName = "__Window_" + columnName;
         while (sourceTable.hasColumns(windowSourceName)) {
             windowSourceName = "_" + windowSourceName;
@@ -353,15 +378,15 @@ public class TimeSeriesFilter
 
         final Pair<Table, WindowCheck.TimeWindowListener> pair = WindowCheck.addTimeWindowInternal(clock,
                 (QueryTable) sourceTable, columnName, periodNanos + 1, windowSourceName, true);
-        final QueryTable tableWithWindow = (QueryTable) pair.first;
+        tableWithWindow = (QueryTable) pair.first;
 
         windowListener = new TimeSeriesFilterWindowListener(
                 "TimeSeriesFilter(" + columnName + ", " + Duration.ofNanos(periodNanos) + ", " + invert + ")",
                 tableWithWindow, windowSourceName);
 
         if (tableWithWindow.isRefreshing()) {
+            // the listener follows the windowed table once the operation's snapshot commits; see subscribe
             refreshFunctionForUnitTests = pair.second;
-            tableWithWindow.addUpdateListener(windowListener);
             manage(windowListener);
             isRefreshing = true;
         } else {
@@ -369,9 +394,6 @@ public class TimeSeriesFilter
             };
             isRefreshing = false;
         }
-
-        // we are doing the first match, which is based on the entire set of values in the table
-        windowListener.insertMatched(sourceTable.getRowSet());
 
         // the only thing we hold is our listener, which in turn holds the windowed table
         return null;

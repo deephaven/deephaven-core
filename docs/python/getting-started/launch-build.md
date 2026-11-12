@@ -51,7 +51,7 @@ docker version
 
 ### Python
 
-Deephaven requires Python **3.9** or later. See the [version matrix](../reference/version-matrix.md#python-versions) for the Python versions each release supports. You can check your Python version with:
+Deephaven requires Python **3.10** or later. See the [version matrix](../reference/version-matrix.md#python-versions) for the Python versions each release supports. You can check your Python version with:
 
 ```bash
 python3 --version

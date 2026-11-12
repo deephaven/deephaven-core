@@ -16,12 +16,11 @@ public class FlightTokenClient extends DirectClient {
     public static final String FLIGHT_TOKEN_ATTRIBUTE_NAME = "flight-token";
 
     public FlightTokenClient(ProfileCreator profileCreator) {
-        defaultProfileCreator(profileCreator);
-        defaultAuthenticator(Authenticator.ALWAYS_VALIDATE);
-        defaultCredentialsExtractor((context, sessionStore) -> {
-            return context.getRequestAttribute(FLIGHT_TOKEN_ATTRIBUTE_NAME)
-                    .map(token -> new TokenCredentials((String) token));
-        });
+        setProfileCreatorIfUndefined(profileCreator);
+        setAuthenticatorIfUndefined(Authenticator.ALWAYS_VALIDATE);
+        setCredentialsExtractorIfUndefined(ctx -> ctx.webContext()
+                .getRequestAttribute(FLIGHT_TOKEN_ATTRIBUTE_NAME, String.class)
+                .map(TokenCredentials::new));
     }
 
     @Override

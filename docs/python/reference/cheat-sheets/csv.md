@@ -70,6 +70,6 @@ deniro_psv = read_csv(
 - [CSV export via query](../../how-to-guides/data-import-export/csv-export.md)
 - [`read_csv`](../data-import-export/CSV/readCsv.md)
 - [`write_csv`](../data-import-export/CSV/writeCsv.md)
-- [Docker data volumes](../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/csv/CsvTools.html#readCsv(java.nio.file.Path))
 - [Pydoc](/core/pydoc/code/deephaven.html#deephaven.read_csv)

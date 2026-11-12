@@ -174,10 +174,10 @@ public class TestConcurrentInstantiationWhereDynamic extends TestConcurrentInsta
 
         // Add rows to the main table.
         TstUtils.addToTable(table, i(2, 3), col("x", 1, 4), col("y", "a", "d"), col("z", false, true));
-        assertTableEquals(tableStart, prevTable(table1));
+        assertTableEquals(tableStart, prevTableCopy(table1));
 
         final Table table2 = dualPool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        assertTableEquals(tableStart, prevTable(table2));
+        assertTableEquals(tableStart, prevTableCopy(table2));
 
         final Table table3 = dualPool.submit(() -> {
             // Create a dynamic where filter on a worker thread.
@@ -185,7 +185,7 @@ public class TestConcurrentInstantiationWhereDynamic extends TestConcurrentInsta
                     new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z"));
             return table.where(filter3);
         }).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        assertTableEquals(tableStart, prevTable(table3));
+        assertTableEquals(tableStart, prevTableCopy(table3));
 
         // Notify the children of the added / modified rows
         table.notifyListeners(i(3), i(), i(2));
@@ -234,15 +234,15 @@ public class TestConcurrentInstantiationWhereDynamic extends TestConcurrentInsta
 
         // Add rows to the main table.
         TstUtils.addToTable(table, i(2, 3), col("x", 1, 4), col("y", "a", "d"), col("z", false, true));
-        assertTableEquals(tableStart, prevTable(table1));
+        assertTableEquals(tableStart, prevTableCopy(table1));
 
         final Table table2 = dualPool.submit(() -> table.where("!z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        assertTableEquals(tableStart, prevTable(table2));
+        assertTableEquals(tableStart, prevTableCopy(table2));
 
         // Build the exclusion filter through the public API on a worker thread.
         final Table table3 =
                 dualPool.submit(() -> table.whereNotIn(whereTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        assertTableEquals(tableStart, prevTable(table3));
+        assertTableEquals(tableStart, prevTableCopy(table3));
 
         // Notify the children of the added / modified rows
         table.notifyListeners(i(3), i(), i(2));

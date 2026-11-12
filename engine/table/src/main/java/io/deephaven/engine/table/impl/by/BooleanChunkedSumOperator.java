@@ -28,10 +28,15 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
 
     private final String name;
     private final LongArraySource resultColumn = new LongArraySource();
-    private final LongArraySource falseCount = new LongArraySource();
+    /**
+     * The number of false values in each destination, or null when the operator only receives additions; a null result
+     * then means that no non-null value has been added.
+     */
+    private final LongArraySource falseCount;
 
-    BooleanChunkedSumOperator(String name) {
+    BooleanChunkedSumOperator(boolean addOnly, String name) {
         this.name = name;
+        falseCount = addOnly ? null : new LongArraySource();
     }
 
     /**
@@ -179,10 +184,17 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
             modified = true;
         }
         if (chunkFalse.get() > 0) {
-            final long oldFalseCount = getAndAdd(falseCount, destination, chunkFalse.get());
-            if (oldFalseCount == 0 && chunkTrue.get() == 0 && !hasTrue(destination)) {
-                resultColumn.set(destination, 0L);
-                modified = true;
+            if (falseCount == null) {
+                if (chunkTrue.get() == 0 && resultColumn.getUnsafe(destination) == NULL_LONG) {
+                    resultColumn.set(destination, 0L);
+                    modified = true;
+                }
+            } else {
+                final long oldFalseCount = getAndAdd(falseCount, destination, chunkFalse.get());
+                if (oldFalseCount == 0 && chunkTrue.get() == 0 && !hasTrue(destination)) {
+                    resultColumn.set(destination, 0L);
+                    modified = true;
+                }
             }
         }
         // New or resurrected slots will already have null in the result, so we never need to update the result to null
@@ -192,6 +204,7 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
 
     private boolean removeChunk(ObjectChunk<Boolean, ? extends Values> values, long destination, int chunkStart,
             int chunkSize) {
+        requireFalseCount();
         final MutableInt chunkTrue = new MutableInt(0);
         final MutableInt chunkFalse = new MutableInt(0);
         sumChunk(values, chunkStart, chunkSize, chunkTrue, chunkFalse);
@@ -227,6 +240,7 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
 
     private boolean modifyChunk(ObjectChunk<Boolean, ? extends Values> preValues,
             ObjectChunk<Boolean, ? extends Values> postValues, long destination, int chunkStart, int chunkSize) {
+        requireFalseCount();
         final MutableInt preChunkTrue = new MutableInt(0);
         final MutableInt preChunkFalse = new MutableInt(0);
         sumChunk(preValues, chunkStart, chunkSize, preChunkTrue, preChunkFalse);
@@ -275,10 +289,18 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
         return false;
     }
 
+    private void requireFalseCount() {
+        if (falseCount == null) {
+            throw new UnsupportedOperationException("Add-only sum operators do not support removals or modifications");
+        }
+    }
+
     @Override
     public void ensureCapacity(long tableSize) {
         resultColumn.ensureCapacity(tableSize);
-        falseCount.ensureCapacity(tableSize);
+        if (falseCount != null) {
+            falseCount.ensureCapacity(tableSize);
+        }
     }
 
     @Override

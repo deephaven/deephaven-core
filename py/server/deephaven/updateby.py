@@ -3,8 +3,8 @@
 #
 """This module supports building various operations for use with the update-by Table operation."""
 
+from collections.abc import Sequence
 from enum import Enum
-from typing import Optional, Sequence, Union
 
 import jpy
 
@@ -121,8 +121,8 @@ class UpdateByOperation(JObjectWrapper):
 
 def ema_tick(
     decay_ticks: float,
-    cols: Union[str, Sequence[str]],
-    op_control: Optional[OperationControl] = None,
+    cols: str | Sequence[str],
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation:
     """Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
@@ -164,9 +164,9 @@ def ema_tick(
 
 def ema_time(
     ts_col: str,
-    decay_time: Union[int, str],
-    cols: Union[str, Sequence[str]],
-    op_control: Optional[OperationControl] = None,
+    decay_time: int | str,
+    cols: str | Sequence[str],
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation:
     """Creates an EMA(exponential moving average) UpdateByOperation for the supplied column names, using time as the
     decay unit.
@@ -216,8 +216,8 @@ def ema_time(
 
 def ems_tick(
     decay_ticks: float,
-    cols: Union[str, Sequence[str]],
-    op_control: Optional[OperationControl] = None,
+    cols: str | Sequence[str],
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation:
     """Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
@@ -259,9 +259,9 @@ def ems_tick(
 
 def ems_time(
     ts_col: str,
-    decay_time: Union[int, str],
-    cols: Union[str, Sequence[str]],
-    op_control: Optional[OperationControl] = None,
+    decay_time: int | str,
+    cols: str | Sequence[str],
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation:
     """Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
@@ -311,8 +311,8 @@ def ems_time(
 
 def emmin_tick(
     decay_ticks: float,
-    cols: Union[str, Sequence[str]],
-    op_control: Optional[OperationControl] = None,
+    cols: str | Sequence[str],
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation:
     """Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
@@ -356,9 +356,9 @@ def emmin_tick(
 
 def emmin_time(
     ts_col: str,
-    decay_time: Union[int, str],
-    cols: Union[str, Sequence[str]],
-    op_control: Optional[OperationControl] = None,
+    decay_time: int | str,
+    cols: str | Sequence[str],
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation:
     """Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
@@ -410,8 +410,8 @@ def emmin_time(
 
 def emmax_tick(
     decay_ticks: float,
-    cols: Union[str, Sequence[str]],
-    op_control: Optional[OperationControl] = None,
+    cols: str | Sequence[str],
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation:
     """Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
@@ -455,9 +455,9 @@ def emmax_tick(
 
 def emmax_time(
     ts_col: str,
-    decay_time: Union[int, str],
-    cols: Union[str, Sequence[str]],
-    op_control: Optional[OperationControl] = None,
+    decay_time: int | str,
+    cols: str | Sequence[str],
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation:
     """Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
@@ -509,8 +509,8 @@ def emmax_time(
 
 def emstd_tick(
     decay_ticks: float,
-    cols: Union[str, Sequence[str]],
-    op_control: Optional[OperationControl] = None,
+    cols: str | Sequence[str],
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation:
     """Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
     ticks as the decay unit.
@@ -554,9 +554,9 @@ def emstd_tick(
 
 def emstd_time(
     ts_col: str,
-    decay_time: Union[int, str],
-    cols: Union[str, Sequence[str]],
-    op_control: Optional[OperationControl] = None,
+    decay_time: int | str,
+    cols: str | Sequence[str],
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation:
     """Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
     time as the decay unit.
@@ -607,7 +607,7 @@ def emstd_time(
         ) from e
 
 
-def cum_sum(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
+def cum_sum(cols: str | Sequence[str]) -> UpdateByOperation:
     """Creates a cumulative sum UpdateByOperation for the supplied column names.
 
     Args:
@@ -629,7 +629,7 @@ def cum_sum(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         raise DHError(e, "failed to create a cumulative sum UpdateByOperation.") from e
 
 
-def cum_prod(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
+def cum_prod(cols: str | Sequence[str]) -> UpdateByOperation:
     """Creates a cumulative product UpdateByOperation for the supplied column names.
 
     Args:
@@ -652,7 +652,7 @@ def cum_prod(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         ) from e
 
 
-def cum_min(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
+def cum_min(cols: str | Sequence[str]) -> UpdateByOperation:
     """Creates a cumulative minimum UpdateByOperation for the supplied column names.
 
     Args:
@@ -675,7 +675,7 @@ def cum_min(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         ) from e
 
 
-def cum_max(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
+def cum_max(cols: str | Sequence[str]) -> UpdateByOperation:
     """Creates a cumulative maximum UpdateByOperation for the supplied column names.
 
     Args:
@@ -699,7 +699,7 @@ def cum_max(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
 
 
 def cum_count_where(
-    col: str, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
+    col: str, filters: str | Filter | Sequence[str] | Sequence[Filter]
 ) -> UpdateByOperation:
     """Creates a cumulative count where UpdateByOperation that counts the number of values that pass the provided
     filters.
@@ -731,7 +731,7 @@ def cum_count_where(
         ) from e
 
 
-def forward_fill(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
+def forward_fill(cols: str | Sequence[str]) -> UpdateByOperation:
     """Creates a forward fill UpdateByOperation for the supplied column names. Null values in the columns are
     replaced by the last known non-null values. This operation is forward only.
 
@@ -753,7 +753,7 @@ def forward_fill(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
 
 
 def delta(
-    cols: Union[str, Sequence[str]],
+    cols: str | Sequence[str],
     delta_control: DeltaControl = DeltaControl.NULL_DOMINATES,
 ) -> UpdateByOperation:
     """Creates a delta UpdateByOperation for the supplied column names. The Delta operation produces values by computing
@@ -769,8 +769,7 @@ def delta(
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the delta operation on all the applicable
             columns.
-        delta_control (DeltaControl): defines how special cases should behave; when None, the default DeltaControl
-            settings of VALUE_DOMINATES will be used
+        delta_control (DeltaControl): defines how special cases should behave; defaults to NULL_DOMINATES
 
     Returns:
         an UpdateByOperation
@@ -789,7 +788,7 @@ def delta(
 
 
 def rolling_sum_tick(
-    cols: Union[str, Sequence[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: str | Sequence[str], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling sum UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -805,7 +804,7 @@ def rolling_sum_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -833,9 +832,9 @@ def rolling_sum_tick(
 
 def rolling_sum_time(
     ts_col: str,
-    cols: Union[str, Sequence[str]],
-    rev_time: Union[int, str],
-    fwd_time: Union[int, str] = 0,
+    cols: str | Sequence[str],
+    rev_time: int | str,
+    fwd_time: int | str = 0,
 ) -> UpdateByOperation:
     """Creates a rolling sum UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -895,7 +894,7 @@ def rolling_sum_time(
 
 
 def rolling_group_tick(
-    cols: Union[str, Sequence[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: str | Sequence[str], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling group UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -911,7 +910,7 @@ def rolling_group_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -939,9 +938,9 @@ def rolling_group_tick(
 
 def rolling_group_time(
     ts_col: str,
-    cols: Union[str, Sequence[str]],
-    rev_time: Union[int, str],
-    fwd_time: Union[int, str] = 0,
+    cols: str | Sequence[str],
+    rev_time: int | str,
+    fwd_time: int | str = 0,
 ) -> UpdateByOperation:
     """Creates a rolling group UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -1001,7 +1000,7 @@ def rolling_group_time(
 
 
 def rolling_avg_tick(
-    cols: Union[str, Sequence[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: str | Sequence[str], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling average UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -1017,7 +1016,7 @@ def rolling_avg_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1045,9 +1044,9 @@ def rolling_avg_tick(
 
 def rolling_avg_time(
     ts_col: str,
-    cols: Union[str, Sequence[str]],
-    rev_time: Union[int, str],
-    fwd_time: Union[int, str] = 0,
+    cols: str | Sequence[str],
+    rev_time: int | str,
+    fwd_time: int | str = 0,
 ) -> UpdateByOperation:
     """Creates a rolling average UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -1107,7 +1106,7 @@ def rolling_avg_time(
 
 
 def rolling_min_tick(
-    cols: Union[str, Sequence[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: str | Sequence[str], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling minimum UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -1123,7 +1122,7 @@ def rolling_min_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1151,9 +1150,9 @@ def rolling_min_tick(
 
 def rolling_min_time(
     ts_col: str,
-    cols: Union[str, Sequence[str]],
-    rev_time: Union[int, str],
-    fwd_time: Union[int, str] = 0,
+    cols: str | Sequence[str],
+    rev_time: int | str,
+    fwd_time: int | str = 0,
 ) -> UpdateByOperation:
     """Creates a rolling minimum UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -1213,7 +1212,7 @@ def rolling_min_time(
 
 
 def rolling_max_tick(
-    cols: Union[str, Sequence[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: str | Sequence[str], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling maximum UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -1229,7 +1228,7 @@ def rolling_max_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1257,9 +1256,9 @@ def rolling_max_tick(
 
 def rolling_max_time(
     ts_col: str,
-    cols: Union[str, Sequence[str]],
-    rev_time: Union[int, str],
-    fwd_time: Union[int, str] = 0,
+    cols: str | Sequence[str],
+    rev_time: int | str,
+    fwd_time: int | str = 0,
 ) -> UpdateByOperation:
     """Creates a rolling maximum UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -1319,7 +1318,7 @@ def rolling_max_time(
 
 
 def rolling_prod_tick(
-    cols: Union[str, Sequence[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: str | Sequence[str], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling product UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -1335,7 +1334,7 @@ def rolling_prod_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1365,9 +1364,9 @@ def rolling_prod_tick(
 
 def rolling_prod_time(
     ts_col: str,
-    cols: Union[str, Sequence[str]],
-    rev_time: Union[int, str],
-    fwd_time: Union[int, str] = 0,
+    cols: str | Sequence[str],
+    rev_time: int | str,
+    fwd_time: int | str = 0,
 ) -> UpdateByOperation:
     """Creates a rolling product UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -1427,7 +1426,7 @@ def rolling_prod_time(
 
 
 def rolling_count_tick(
-    cols: Union[str, Sequence[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: str | Sequence[str], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling count UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -1443,7 +1442,7 @@ def rolling_count_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1471,9 +1470,9 @@ def rolling_count_tick(
 
 def rolling_count_time(
     ts_col: str,
-    cols: Union[str, Sequence[str]],
-    rev_time: Union[int, str],
-    fwd_time: Union[int, str] = 0,
+    cols: str | Sequence[str],
+    rev_time: int | str,
+    fwd_time: int | str = 0,
 ) -> UpdateByOperation:
     """Creates a rolling count UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -1533,7 +1532,7 @@ def rolling_count_time(
 
 
 def rolling_std_tick(
-    cols: Union[str, Sequence[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: str | Sequence[str], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling sample standard deviation UpdateByOperation for the supplied column names, using ticks as the
     windowing unit. Ticks are row counts, and you may specify the reverse and forward window in number of rows to
@@ -1552,7 +1551,7 @@ def rolling_std_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1580,9 +1579,9 @@ def rolling_std_tick(
 
 def rolling_std_time(
     ts_col: str,
-    cols: Union[str, Sequence[str]],
-    rev_time: Union[int, str],
-    fwd_time: Union[int, str] = 0,
+    cols: str | Sequence[str],
+    rev_time: int | str,
+    fwd_time: int | str = 0,
 ) -> UpdateByOperation:
     """Creates a rolling sample standard deviation UpdateByOperation for the supplied column names, using time as the
     windowing unit. This function accepts nanoseconds or time strings as the reverse and forward window parameters.
@@ -1645,7 +1644,7 @@ def rolling_std_time(
 
 
 def rolling_wavg_tick(
-    wcol: str, cols: Union[str, Sequence[str]], rev_ticks: int, fwd_ticks: int = 0
+    wcol: str, cols: str | Sequence[str], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling weighted average UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -1661,7 +1660,7 @@ def rolling_wavg_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1693,9 +1692,9 @@ def rolling_wavg_tick(
 def rolling_wavg_time(
     ts_col: str,
     wcol: str,
-    cols: Union[str, Sequence[str]],
-    rev_time: Union[int, str],
-    fwd_time: Union[int, str] = 0,
+    cols: str | Sequence[str],
+    rev_time: int | str,
+    fwd_time: int | str = 0,
 ) -> UpdateByOperation:
     """Creates a rolling weighted average UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -1757,8 +1756,8 @@ def rolling_wavg_time(
 
 def rolling_formula_tick(
     formula: str,
-    formula_param: Optional[str] = None,
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    formula_param: str | None = None,
+    cols: str | Sequence[str] | None = None,
     rev_ticks: int = 0,
     fwd_ticks: int = 0,
 ) -> UpdateByOperation:
@@ -1774,7 +1773,7 @@ def rolling_formula_tick(
     set within the formula string.
 
     The second (deprecated) variant allows the user to apply a formula expression to one input column, producing one
-    input column. In this call the `formula_param` is used as a placeholder for the input column name and the `cols`
+    output column. In this call the `formula_param` is used as a placeholder for the input column name and the `cols`
     argument is used to identify the output column name and the input source column when applying the formula. If
     multiple input/output pairs are specified in the `cols` argument, the formula will be applied to each column in the
     list. The format for this call is the following:
@@ -1794,7 +1793,7 @@ def rolling_formula_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1837,10 +1836,10 @@ def rolling_formula_tick(
 def rolling_formula_time(
     ts_col: str,
     formula: str,
-    formula_param: Optional[str] = None,
-    cols: Optional[Union[str, Sequence[str]]] = None,
-    rev_time: Union[int, str] = 0,
-    fwd_time: Union[int, str] = 0,
+    formula_param: str | None = None,
+    cols: str | Sequence[str] | None = None,
+    rev_time: int | str = 0,
+    fwd_time: int | str = 0,
 ) -> UpdateByOperation:
     """Creates a rolling formula UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
@@ -1855,7 +1854,7 @@ def rolling_formula_time(
     set within the formula string.
 
     The second (deprecated) variant allows the user to apply a formula expression to one input column, producing one
-    input column. In this call the `formula_param` is used as a placeholder for the input column name and the `cols`
+    output column. In this call the `formula_param` is used as a placeholder for the input column name and the `cols`
     argument is used to identify the output column name and the input source column when applying the formula. If
     multiple input/output pairs are specified in the `cols` argument, the formula will be applied to each column in the
     list. The format for this call is the following:
@@ -1932,7 +1931,7 @@ def rolling_formula_time(
 
 def rolling_count_where_tick(
     col: str,
-    filters: Union[str, Filter, Sequence[str], Sequence[Filter]],
+    filters: str | Filter | Sequence[str] | Sequence[Filter],
     rev_ticks: int,
     fwd_ticks: int = 0,
 ) -> UpdateByOperation:
@@ -1951,7 +1950,7 @@ def rolling_count_where_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1988,9 +1987,9 @@ def rolling_count_where_tick(
 def rolling_count_where_time(
     ts_col: str,
     col: str,
-    filters: Union[str, Filter, Sequence[str], Sequence[Filter]],
-    rev_time: Union[int, str],
-    fwd_time: Union[int, str] = 0,
+    filters: str | Filter | Sequence[str] | Sequence[Filter],
+    rev_time: int | str,
+    fwd_time: int | str = 0,
 ) -> UpdateByOperation:
     """Creates a rolling count where UpdateByOperation that counts the number of values that pass the provided
     filters, using time as the windowing unit. This function accepts nanoseconds or time strings as the reverse and

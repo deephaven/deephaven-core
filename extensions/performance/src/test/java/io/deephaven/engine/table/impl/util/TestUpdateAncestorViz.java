@@ -4,7 +4,11 @@
 package io.deephaven.engine.table.impl.util;
 
 import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.EngineResult;
 import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.engine.GraphvizEngine;
+import guru.nidi.graphviz.engine.Options;
+import guru.nidi.graphviz.engine.Rasterizer;
 import guru.nidi.graphviz.model.*;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.FileUtils;
@@ -33,6 +37,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -194,6 +199,49 @@ public class TestUpdateAncestorViz {
                 assertEquals(expectedCount, count, () -> "Expected " + expectedCount + " node for " + expectedNode);
             }
         }
+    }
+
+    /**
+     * When no Graphviz engine can be initialized, the library throws once and then renders empty output; svg must
+     * report the failure rather than return an empty image.
+     */
+    @Test
+    public void testSvgWithoutEngine() {
+        try (final SafeCloseable ignored1 = executionContext.open();
+                final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+            final Table upl = TableLoggers.updatePerformanceLog();
+            final Table ua = TableLoggers.updatePerformanceAncestorsLog();
+            Graphviz.useEngine(new UninitializableEngine());
+            try {
+                assertThrows(IllegalStateException.class, () -> UpdateAncestorViz.svg(new long[] {0}, upl, ua, null));
+                // The next call initializes the default engines again: it renders if this machine has Graphviz and
+                // fails again otherwise, but never returns an empty image.
+                try {
+                    assertNotEquals(0, UpdateAncestorViz.svg(new long[] {0}, upl, ua, null).length);
+                } catch (IllegalStateException expected) {
+                    // no Graphviz engine on this machine
+                } catch (IOException e) {
+                    fail(e);
+                }
+            } finally {
+                Graphviz.releaseEngine();
+            }
+        }
+    }
+
+    private static class UninitializableEngine implements GraphvizEngine {
+        @Override
+        public void init(final Consumer<GraphvizEngine> onOk, final Consumer<GraphvizEngine> onError) {
+            onError.accept(this);
+        }
+
+        @Override
+        public EngineResult execute(final String src, final Options options, final Rasterizer rasterizer) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void close() {}
     }
 
     private static boolean safeContains(Object s, String pattern) {

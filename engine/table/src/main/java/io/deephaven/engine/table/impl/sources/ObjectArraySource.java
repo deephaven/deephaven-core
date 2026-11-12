@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.util.SoftRecyclerWindow;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ChunkSource;
@@ -26,8 +27,9 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
         implements MutableColumnSourceGetDefaults.ForObject<T> {
     @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler =
-            new SoftRecycler<>(ArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,
-                    () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill(item, null));
+            SoftRecyclerWindow.register(new SoftRecycler<>(ArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,
+                    ArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY,
+                    () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill(item, null)));
     transient private T[][] prevBlocks;
     private T[][] blocks;
     private final boolean isArrayType;
