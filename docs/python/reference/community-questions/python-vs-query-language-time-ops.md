@@ -35,7 +35,7 @@ source = empty_table(1).update(["Timestamp = parseInstant(`2024-01-01T00:00:00 E
 result = source.update(["MillisSinceEpoch = epochMillis(Timestamp)"])
 ```
 
-If you must call a Python function in a query string, add a return type hint so the engine can infer the column type. For example, `to_j_instant` has a return type of `Instant`, so calling it directly (rather than wrapping it in an unannotated function) produces a properly typed column. The same applies to any Python function called in a query string: prefer a built-in query-language method, and when you need Python, add a return type hint.
+If you must call a Python function in a query string, a return type hint can help the engine infer the column type, but only for types that have a NumPy mapping, such as `Instant`. For example, `to_j_instant` has a return type of `Instant`, so calling it directly (rather than wrapping it in an unannotated function) produces a properly typed column. Other date-time types like `ZonedDateTime` and `LocalDate` do not have NumPy mappings, so their type hints still produce `PyObject` columns. For those types, use the built-in query-language methods instead.
 
 For more information on this topic, see the following guides:
 
