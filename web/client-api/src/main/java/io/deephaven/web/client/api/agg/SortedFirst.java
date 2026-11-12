@@ -5,7 +5,7 @@ package io.deephaven.web.client.api.agg;
 
 import com.vertispan.tsdefs.annotations.TsLiteral;
 import elemental2.core.ReadonlyArray;
-import io.deephaven.web.client.api.Sort;
+import io.deephaven.web.client.api.Column;
 import jsinterop.annotations.JsType;
 
 /**
@@ -18,8 +18,8 @@ public final class SortedFirst extends ColumnAggregation {
     public final String type = "SortedFirst";
 
     /**
-     * The columns to sort by when determining which row is "first" within each group. Sort can only be ascending, and
-     * absolute value is not supported.
+     * The columns, or column names, to sort by in ascending order when determining which row is "first" within each
+     * group.
      */
-    public ReadonlyArray<Sort.SortUnion> sortedColumns;
+    public ReadonlyArray<Column.ColumnOrName> sortedColumns;
 }

@@ -6,8 +6,7 @@ package io.deephaven.web.client.api.agg;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import io.deephaven.proto.backplane.grpc.AggSpec;
-import io.deephaven.proto.backplane.grpc.SortDescriptor;
-import io.deephaven.web.client.api.Sort;
+import io.deephaven.web.client.api.Column;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -230,16 +229,9 @@ public interface AggAllByUnion {
             case "SortedFirst": {
                 SortedFirst sortedFirst = asSortedFirst();
                 AggSpec.AggSpecSorted.Builder sortedBuilder = AggSpec.AggSpecSorted.newBuilder();
-                for (Sort.SortUnion sort : sortedFirst.sortedColumns.asList()) {
-                    SortDescriptor d = sort.makeDescriptor();
-                    if (d.getIsAbsolute()) {
-                        throw new IllegalArgumentException("SortedFirst does not support absolute sorting");
-                    }
-                    if (d.getDirection() == SortDescriptor.SortDirection.DESCENDING) {
-                        throw new IllegalArgumentException("SortedFirst does not support descending sorting");
-                    }
+                for (Column.ColumnOrName sort : sortedFirst.sortedColumns.asList()) {
                     sortedBuilder.addColumns(AggSpec.AggSpecSortedColumn.newBuilder()
-                            .setColumnName(d.getColumnName()));
+                            .setColumnName(sort.columnName()));
                 }
                 spec.setSortedFirst(sortedBuilder);
                 break;
@@ -247,16 +239,9 @@ public interface AggAllByUnion {
             case "SortedLast": {
                 SortedLast sortedLast = asSortedLast();
                 AggSpec.AggSpecSorted.Builder sortedBuilder = AggSpec.AggSpecSorted.newBuilder();
-                for (Sort.SortUnion sort : sortedLast.sortedColumns.asList()) {
-                    SortDescriptor d = sort.makeDescriptor();
-                    if (d.getIsAbsolute()) {
-                        throw new IllegalArgumentException("SortedLast does not support absolute sorting");
-                    }
-                    if (d.getDirection() == SortDescriptor.SortDirection.DESCENDING) {
-                        throw new IllegalArgumentException("SortedLast does not support descending sorting");
-                    }
+                for (Column.ColumnOrName sort : sortedLast.sortedColumns.asList()) {
                     sortedBuilder.addColumns(AggSpec.AggSpecSortedColumn.newBuilder()
-                            .setColumnName(d.getColumnName()));
+                            .setColumnName(sort.columnName()));
                 }
                 spec.setSortedLast(sortedBuilder);
                 break;

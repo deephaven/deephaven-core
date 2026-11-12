@@ -326,7 +326,7 @@ public abstract sealed class Aggregation
      * @return an aggregation
      */
     @JsMethod
-    public static SortedFirst AggSortedFirst(ReadonlyArray<Sort.SortUnion> sortedColumns,
+    public static SortedFirst AggSortedFirst(ReadonlyArray<ColumnOrName> sortedColumns,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns) {
         SortedFirst agg = new SortedFirst();
         agg.sortedColumns = sortedColumns;
@@ -342,7 +342,7 @@ public abstract sealed class Aggregation
      * @return an aggregation
      */
     @JsMethod
-    public static SortedLast AggSortedLast(ReadonlyArray<Sort.SortUnion> sortedColumns,
+    public static SortedLast AggSortedLast(ReadonlyArray<ColumnOrName> sortedColumns,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns) {
         SortedLast agg = new SortedLast();
         agg.sortedColumns = sortedColumns;
