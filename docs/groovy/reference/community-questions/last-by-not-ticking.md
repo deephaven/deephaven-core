@@ -8,7 +8,7 @@ The `lastBy` operation returns the last row for each group as specified by the g
 
 For example:
 
-```groovy
+```groovy ticking-table order=null
 t = timeTable("PT1s").update("Key = ii % 3")
 
 // Shows the OLDEST row per group (not what you want)

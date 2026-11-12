@@ -8,7 +8,7 @@ The `last_by` operation returns the last row for each group as specified by the 
 
 For example:
 
-```python
+```python ticking-table order=null
 from deephaven import time_table
 
 t = time_table("PT1s").update("Key = ii % 3")
