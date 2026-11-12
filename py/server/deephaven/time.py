@@ -438,7 +438,7 @@ def to_j_instant(dt: InstantLike | None) -> Instant | None:
 
     Instant strings can be formatted according to the ISO 8601 date time format
     'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
-    Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
+    Additionally, date time strings can be integer values that are nanoseconds, microseconds, milliseconds, or seconds
     from the Epoch.  Expected date ranges are used to infer the units.
 
     Args:
@@ -486,7 +486,7 @@ def to_j_zdt(dt: ZonedDateTimeLike | None) -> ZonedDateTime | None:
 
     Date time strings can be formatted according to the ISO 8601 date time format
     ``'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ'`` and others.
-    Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
+    Additionally, date time strings can be integer values that are nanoseconds, microseconds, milliseconds, or seconds
     from the Epoch. Expected date ranges are used to infer the units.
 
     Converting a datetime.datetime or pandas.Timestamp to a ZonedDateTime will use the datetime's timezone information.

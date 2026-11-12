@@ -1440,7 +1440,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts an offset from the Epoch to a nanoseconds from the Epoch. The offset can be in milliseconds,
+     * Converts an offset from the Epoch to a nanoseconds from the Epoch. The offset can be in seconds, milliseconds,
      * microseconds, or nanoseconds. Expected date ranges are used to infer the units for the offset.
      *
      * @param epochOffset time offset from the Epoch
@@ -1467,8 +1467,8 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts an offset from the Epoch to an {@link Instant}. The offset can be in milliseconds, microseconds, or
-     * nanoseconds. Expected date ranges are used to infer the units for the offset.
+     * Converts an offset from the Epoch to an {@link Instant}. The offset can be in seconds, milliseconds,
+     * microseconds, or nanoseconds. Expected date ranges are used to infer the units for the offset.
      *
      * @param epochOffset time offset from the Epoch
      * @return {@code null} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input offset from the Epoch
@@ -1484,8 +1484,8 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts an offset from the Epoch to a {@link ZonedDateTime}. The offset can be in milliseconds, microseconds, or
-     * nanoseconds. Expected date ranges are used to infer the units for the offset.
+     * Converts an offset from the Epoch to a {@link ZonedDateTime}. The offset can be in seconds, milliseconds,
+     * microseconds, or nanoseconds. Expected date ranges are used to infer the units for the offset.
      *
      * @param epochOffset time offset from the Epoch
      * @param timeZone time zone
@@ -4709,7 +4709,8 @@ public class DateTimeUtils {
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
      * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others. Additionally, date time strings can be integer values that
-     * are nanoseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer the units.
+     * are nanoseconds, microseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer
+     * the units.
      *
      * @param s date time string
      * @return a long number of nanoseconds since the Epoch, matching the instant represented by the input string
@@ -4741,7 +4742,8 @@ public class DateTimeUtils {
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
      * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others. Additionally, date time strings can be integer values that
-     * are nanoseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer the units.
+     * are nanoseconds, microseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer
+     * the units.
      *
      * @param s date time string
      * @return a long number of nanoseconds since the Epoch, matching the instant represented by the input string, or
@@ -4766,7 +4768,8 @@ public class DateTimeUtils {
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
      * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others. Additionally, date time strings can be integer values that
-     * are nanoseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer the units.
+     * are nanoseconds, microseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer
+     * the units.
      *
      * @param s date time string
      * @return an {@link Instant} represented by the input string
@@ -4799,7 +4802,8 @@ public class DateTimeUtils {
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
      * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others. Additionally, date time strings can be integer values that
-     * are nanoseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer the units.
+     * are nanoseconds, microseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer
+     * the units.
      *
      * @param s date time string
      * @return an {@link Instant} represented by the input string, or {@code null} if the string can not be parsed
