@@ -1087,6 +1087,15 @@ class TableTestCase(BaseTestCase):
                 )
                 self.assertEqual(3, rt.j_table.getColumnSource("R").get(0))
 
+            with self.subTest("PartitionedTableProxy.update_by"):
+                proxy = t.partition_by("B").proxy()
+                rt = proxy.update_by(
+                    rolling_formula_tick(formula="R = sum(A) + local_int", rev_ticks=1)
+                ).target.merge()
+                # rev_ticks=1 sums only the current row, so R is A + 3 on every row.
+                self.assertEqual(10, rt.size)
+                self.assertEqual(0, rt.where("R != A + 3").size)
+
             with self.subTest("PartitionedTable.filter"):
                 pt = t.update("K = i").partition_by("K")
                 self.assertEqual(7, pt.filter("K >= local_int").table.size)
