@@ -46,6 +46,8 @@ println plus(dateTime, periodPositive)
 println plus(dateTime, periodNegative)
 ```
 
+A period added to an `Instant` can contain only days and weeks. To add months or years, add the period to a `ZonedDateTime`.
+
 ## Related Documentation
 
 - [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
