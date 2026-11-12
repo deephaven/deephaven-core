@@ -2,35 +2,35 @@
 title: How do I solve a `hash table exceeds maximum size` error?
 ---
 
-<em>I am getting a `hash table exceeds maximum size` error when trying to perform simple operations on huge tables. What's going on?</em>
+<em>I am getting an `UnsupportedOperationException: Hash table exceeds maximum size!` error when trying to perform key-based operations on tables with many distinct keys. What's going on?</em>
 
 <p></p>
 
-If you see a `hash table exceeds maximum size` error, it means that your table has too many keys for Deephaven to handle - without reducing cardinality. Fortunately, this is easy to do.
+This error means a key-based operation — such as an aggregation, natural join, or as-of join — has more distinct key values than one hash table can hold (roughly 800 million). To avoid it, split the work so each hash table sees fewer keys.
 
-To get around this problem, simply use [`partitionBy`](../../reference/table-operations/group-and-aggregate/partitionBy.md) to create subtables with a lesser key cardinality. Take this example with 100 million rows:
+Use [`partitionBy`](../../reference/table-operations/group-and-aggregate/partitionBy.md) to create subtables with lower key cardinality. The following example shows the pattern, though its key range (10 million) is too small to trigger the error on its own:
 
 ```groovy skip-test
-t = emptyTable(100000000).update("key = randomInt(0, 10000000)")
+t = emptyTable(100000000).update("Key = randomInt(0, 10000000)")
 
-// will cause a "hash table exceeds maximum size" error on very large tables
-rst = t.countBy("Count", "key")
+// With enough distinct key values (roughly 800 million or more), this raises the error
+rst = t.countBy("Count", "Key")
 ```
 
-This can be reformulated using partitioned tables into a form that has lower key cardinality that will avoid the error:
+This can be reformulated using partitioned tables to avoid the error:
 
 ```groovy skip-test
-t = emptyTable(100000000).update("key = randomInt(0, 10000000)")
+t = emptyTable(100000000).update("Key = randomInt(0, 10000000)")
 
-// partition the table to reduce key cardinality
-rst = t.updateView("Partition = key % 100")
+// Partition the table to reduce key cardinality
+rst = t.updateView("Partition = Key % 100")
     .partitionBy("Partition")
     .proxy()
-    .countBy("Count", "key")
-    .target.merge()
+    .countBy("Count", "Key")
+    .target().merge()
 ```
 
-Additionally, working with large data amplifies any inefficiency in your code, so make sure you're using the correct [join](../../how-to-guides/joins-exact-relational.md#which-method-should-you-use) and [selection](../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method) methods for your use case.
+Each of the 100 constituent tables runs its own `countBy` on about 1/100 of the keys, and because each key falls in exactly one partition, `merge` returns the same result as a single `countBy`. For joins, partition both tables on the same derived column before performing the proxy join. See the [partitioned tables guide](../../how-to-guides/partitioned-tables.md) for more detail.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
