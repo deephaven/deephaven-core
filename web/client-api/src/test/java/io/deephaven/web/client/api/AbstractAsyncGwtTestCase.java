@@ -87,10 +87,6 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         errorLogsFailTests = false;
     }
 
-    private static Promise<Void> importDhInternal() {
-        return Promise.resolve((Void) null);
-    }
-
     public static final String localServer = System.getProperty("dh.server", "http://localhost:10000");
 
     public static class TableSourceBuilder {
@@ -171,14 +167,6 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     /**
-     * Imports the webpack content, including protobuf types. Does not connect to the server.
-     */
-    protected Promise<Void> setupDhInternal() {
-        delayTestFinish(504);
-        return importDhInternal();
-    }
-
-    /**
      * Connects and authenticates to the configured server and runs the specified scripts.
      */
     protected Promise<IdeSession> connect(TableSourceBuilder tables) {
@@ -201,28 +189,26 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     protected Promise<IdeSession> connect(TableSourceBuilder tables, ConnectOptions connectOptions) {
         // start by delaying test finish by 1.0s so we fail fast in cases where we aren't set up right
         delayTestFinish(1007);
-        return importDhInternal().then(module -> {
-            CoreClient coreClient = new CoreClient(localServer, connectOptions);
-            lastCoreClient = coreClient;
-            coreClients.add(coreClient);
-            return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
-                    .then(ignore -> coreClient.getAsIdeConnection())
-                    .then(ide -> {
-                        lastIdeConnection = ide;
-                        delayTestFinish(501);
-                        return ide.getConsoleTypes().then(consoleTypes -> {
-                            delayTestFinish(502);
-                            CancellablePromise<IdeSession> ideSession = ide.startSession(consoleTypes.getAt(0));
-                            return ideSession.then(session -> {
+        CoreClient coreClient = new CoreClient(localServer, connectOptions);
+        lastCoreClient = coreClient;
+        coreClients.add(coreClient);
+        return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
+                .then(ignore -> coreClient.getAsIdeConnection())
+                .then(ide -> {
+                    lastIdeConnection = ide;
+                    delayTestFinish(501);
+                    return ide.getConsoleTypes().then(consoleTypes -> {
+                        delayTestFinish(502);
+                        CancellablePromise<IdeSession> ideSession = ide.startSession(consoleTypes.getAt(0));
+                        return ideSession.then(session -> {
 
-                                if (consoleTypes.includes("python")) {
-                                    return runAllScriptsInOrder(session, tables.pythonScripts);
-                                }
-                                throw new IllegalStateException("Unsupported script type " + consoleTypes);
-                            });
+                            if (consoleTypes.includes("python")) {
+                                return runAllScriptsInOrder(session, tables.pythonScripts);
+                            }
+                            throw new IllegalStateException("Unsupported script type " + consoleTypes);
                         });
                     });
-        });
+                });
     }
 
     private Promise<IdeSession> runAllScriptsInOrder(IdeSession session, List<String> code) {
