@@ -84,7 +84,7 @@ write_csv(source, "/data/output.csv", cols=["X", "Z"])
 
 ## Related documentation
 
-- [CSV import via query](../../../how-to-guides/data-import-export/csv-import.md)
-- [CSV export via query](../../../how-to-guides/data-import-export/csv-export.md)
+- [Read CSV or other delimited files](../../../how-to-guides/data-import-export/csv-import.md)
+- [Export data to CSV or other delimited files](../../../how-to-guides/data-import-export/csv-export.md)
 - [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
 - [Pydoc](/core/pydoc/code/deephaven.html#deephaven.write_csv)
