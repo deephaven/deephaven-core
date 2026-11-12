@@ -127,15 +127,34 @@ public class BarrageProcessorTest {
 
   /// <summary>
   /// A full subscription is sent the server's entire removed set, which while the snapshot is still arriving can
-  /// name rows this client has not been given yet. Skipping those is a separate change; until it lands, such a
-  /// remove must be rejected rather than silently applied.
+  /// name rows this client has not been given yet. Those rows are not here to remove, so the table is unchanged,
+  /// and the update says so the way it does for an empty removed set: by handing out the same table.
   /// </summary>
   [Test]
-  public async Task RemoveOfUndeliveredRowsIsRejected() {
+  public async Task RemoveOfUndeliveredRowsLeavesTheTableUntouched() {
     var driver = AfterFirstRound();
     var metadata = BarrageMessages.Metadata(Range(800, 820), None, null, [None, None]);
-    await Assert.That(() => { driver.Feed(metadata, [], []); })
-      .Throws<Exception>()
-      .WithMessageContaining("the set only contains");
+    var update = driver.Feed(metadata, [], []);
+    await Assert.That(update).IsNotNull();
+    await Assert.That(update!.RemovedRowsIndexSpace.IsEmpty).IsTrue();
+    await Assert.That(ReferenceEquals(update.AfterRemoves, update.Prev)).IsTrue();
+    await AssertHolds(update.Current, Range(0, 400));
+  }
+
+  /// <summary>
+  /// A removed set that straddles the delivered region erases only the rows this client holds, and the row count
+  /// drops by that many. The rows that move into the delivered region as a result arrive in the same message, as
+  /// included rows.
+  /// </summary>
+  [Test]
+  public async Task RemoveStraddlingTheDeliveredRegionErasesOnlyHeldRows() {
+    var driver = AfterFirstRound();
+    var metadata = BarrageMessages.Metadata(Range(390, 410), None, Range(410, 420), [None, None]);
+    var update = driver.FeedRows(metadata, Range(410, 420));
+    await Assert.That(update).IsNotNull();
+    await Assert.That(Render(update!.RemovedRowsIndexSpace)).IsEqualTo("[390,400)");
+    await Assert.That(update.AfterRemoves.NumRows).IsEqualTo(390L);
+    await Assert.That(Render(update.AddedRowsIndexSpace)).IsEqualTo("[390,400)");
+    await AssertHolds(update.Current, Range(0, 390), Range(410, 420));
   }
 }
