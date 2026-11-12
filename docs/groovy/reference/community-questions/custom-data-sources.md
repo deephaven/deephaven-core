@@ -3,26 +3,26 @@ id: custom-data-sources
 title: Can I integrate custom data sources with Deephaven?
 ---
 
-Yes, you can integrate custom data sources with Deephaven. While Deephaven includes a proprietary columnar store for persistent historical and intraday data, you can integrate your own data stores to leverage Deephaven's efficient engine, analytics, and data visualization capabilities.
+Yes, you can integrate custom data sources with Deephaven. Deephaven reads common formats such as Parquet, CSV, and Kafka out of the box, and you can also integrate your own data stores to use Deephaven's engine, analytics, and visualization capabilities.
 
 There are three main integration approaches:
 
-- **Static in-memory tables** - Similar to CSV and JDBC imports.
-- **Dynamic in-memory tables** - For real-time data feeds like multicast distribution systems.
-- **Lazily-loaded on-disk tables** - For large datasets like Apache Parquet files.
+- **Static in-memory tables** — Similar to CSV and JDBC imports.
+- **Dynamic in-memory tables** — For real-time data feeds like multicast distribution systems.
+- **Lazily-loaded on-disk tables** — For large datasets like Apache Parquet files.
 
 ## Understanding Deephaven table structure
 
 Each Deephaven table consists of:
 
-- A [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) - An ordered set of long keys representing valid row addresses.
-- Named [`ColumnSources`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) - A Java map from column name to `ColumnSource`, which acts as a dictionary from row key to cell value.
+- A [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) — An ordered set of long keys representing valid row addresses.
+- Named [`ColumnSources`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) — A Java map from column name to `ColumnSource`, which acts as a dictionary from row key to cell value.
 
-To construct a table for use by Deephaven engine operations, create a [`QueryTable`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) by passing in a `RowSet` and `Map<String, ColumnSource>`. We recommend using a LinkedHashMap to preserve column order.
+To construct a table for use by Deephaven engine operations, create a [`QueryTable`](/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) by passing in a [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) and `Map<String, ColumnSource>`. Use a [`LinkedHashMap`](/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) to preserve column order.
 
 ## Static in-memory tables
 
-For simple static data sources, create a table with a flat address space where the `RowSet` includes keys 0 to size-1.
+For simple static data sources, create a table with a flat address space where the [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) includes keys 0 to size-1.
 
 Here's an example of creating a static table from custom data:
 
@@ -54,7 +54,7 @@ The [`ArrayBackedColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/e
 
 ## Dynamic in-memory tables
 
-Dynamic tables allow you to integrate real-time data feeds. These tables update on each Deephaven update cycle and notify downstream operations of changes.
+Dynamic tables allow you to integrate real-time data feeds. These tables change on each Deephaven [update cycle](../../conceptual/table-update-model.md), a periodic pass (once per second by default) in which the engine applies new data and notifies downstream operations of the changes.
 
 For most use cases, [`TablePublisher`](../table-operations/create/TablePublisher.md) is the recommended way to create dynamic tables. It produces a [blink table](../../conceptual/table-types.md#specialization-3-blink) and exposes an `add` method for publishing data. See the [how-to guide](../../how-to-guides/table-publisher.md) for full details.
 
@@ -62,6 +62,7 @@ For most use cases, [`TablePublisher`](../table-operations/create/TablePublisher
 import io.deephaven.engine.table.ColumnDefinition
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.stream.TablePublisher
+import static io.deephaven.engine.util.TableTools.*
 
 definition = TableDefinition.of(
     ColumnDefinition.ofString("Symbol"),
@@ -72,11 +73,12 @@ publisher = TablePublisher.of("Price feed", definition, null, null)
 blinkTable = publisher.table()
 
 // Publish data by calling publisher.add(tableWithData)
+publisher.add(newTable(stringCol("Symbol", "AAPL"), doubleCol("Price", 150.25)))
 ```
 
 ### Advanced: raw QueryTable approach
 
-For cases that require direct control over column sources — such as integrating a custom data store or implementing a lazy-loading `ColumnSource` — you can build a dynamic table manually using `QueryTable` and `notifyListeners`. This is significantly more complex and is not necessary for most use cases.
+For cases that require direct control over column sources — such as integrating a custom data store or implementing a lazy-loading [`ColumnSource`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) — you can build a dynamic table manually using [`QueryTable`](/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) and `notifyListeners`. This approach is significantly more complex than [`TablePublisher`](../table-operations/create/TablePublisher.md), and most use cases do not need it.
 
 ```groovy order=dynamicTable
 import io.deephaven.engine.rowset.RowSetFactory
@@ -122,8 +124,9 @@ import static io.deephaven.engine.util.TableTools.timeTable
 // Create a time table that ticks every second to drive updates
 updateTrigger = timeTable("PT1S")
 
-// Listen to the trigger table and update dynamicTable on each tick
-updateTrigger.addUpdateListener(new io.deephaven.engine.table.impl.InstrumentedTableUpdateListener("DynamicTableUpdater") {
+// Listen to the trigger table and update dynamicTable on each tick.
+// The listener must be stored in a variable so it is not garbage-collected.
+updater = new io.deephaven.engine.table.impl.InstrumentedTableUpdateListener("DynamicTableUpdater") {
     @Override
     public void onUpdate(io.deephaven.engine.table.TableUpdate upstream) {
         // Example update logic: Modify prices for rows 0-9
@@ -152,33 +155,29 @@ updateTrigger.addUpdateListener(new io.deephaven.engine.table.impl.InstrumentedT
     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         originalException.printStackTrace()
     }
-})
+}
+
+updateTrigger.addUpdateListener(updater)
+
+// Register the listener as a parent so the engine knows dynamicTable depends on it
+dynamicTable.addParentReference(updater)
 ```
-
-### Coalesced vs. uncoalesced tables
-
-Deephaven tables can be "coalesced" or "uncoalesced":
-
-- **Uncoalesced tables** - Reference data but cannot be used for most query operations.
-- **Coalesced tables** - Fully formed `QueryTable` instances ready for query operations.
-
-Tables are automatically coalesced when needed. For example, when reading from disk with partitioning filters like `"Date=today()"`, the table remains uncoalesced until the filter is applied, avoiding the need to determine the complete Index upfront.
 
 ## On-disk tables with lazy loading
 
-For large datasets, implement custom [ColumnSource](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) classes that load data on demand rather than loading it all at once.
+For large datasets, implement custom [`ColumnSource`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) classes that load data on demand rather than loading it all at once.
 
 Key implementation points:
 
-- Implement `get` methods for each primitive type (`getByte`, `getShort`, `getInt`, `getLong`, `getChar`, `getFloat`, `getDouble`).
+- Implement `get` and the type-specific getters your column needs (`getBoolean`, `getByte`, `getChar`, `getShort`, `getInt`, `getLong`, `getFloat`, `getDouble`).
 - Implement `fillChunk` for efficient bulk data fetching.
 - Cache data to avoid repeated disk reads.
-- For immutable on-disk data, delegate previous-value calls to current-value calls.
+- For immutable on-disk data, return current values from the previous-value methods (`getPrev`, `getPrevDouble`, and so on). Every column source must report the value a cell had at the start of the current update cycle, and immutable data never changes, so the two are always equal. See [Removed or modified values](../../conceptual/table-update-model.md#removed-or-modified-values).
 
 Here's a conceptual example:
 
 > [!WARNING]
-> This is an **incomplete skeleton** for illustration purposes only and **will not compile or run**. A complete `ColumnSource` implementation requires implementing ~30+ methods from the interface. For production use, extend `AbstractColumnSource` which provides default implementations for most methods.
+> This is an **incomplete skeleton** for illustration purposes only and **will not compile or run**. A complete `ColumnSource` implementation requires implementing ~30+ methods from the interface. For production use, extend [`AbstractColumnSource`](/core/javadoc/io/deephaven/engine/table/impl/AbstractColumnSource.html) which provides default implementations for most methods.
 
 ```groovy skip-test
 import io.deephaven.engine.table.ColumnSource
@@ -222,15 +221,24 @@ class CustomFileColumnSource implements ColumnSource<Double> {
 }
 ```
 
-### Grouping information for performance
+### Coalesced vs. uncoalesced tables
 
-`ColumnSources` can provide grouping information (similar to database indexes) to optimize operations like filtering and joins. Grouping information is represented as a Map from a key to a `RowSet` of matching row keys.
+Deephaven tables can be "coalesced" or "uncoalesced":
 
-Deephaven's Apache Parquet integration uses these techniques:
+- **Uncoalesced tables** — Reference data but cannot be used for most query operations.
+- **Coalesced tables** — Fully formed `QueryTable` instances ready for query operations.
+
+Tables are automatically coalesced when needed. For example, when reading from disk with partitioning filters like `"Date=today()"`, the table remains uncoalesced until the filter is applied, avoiding the need to determine the complete `RowSet` upfront.
+
+### Data indexes for performance
+
+Tables can carry data indexes (similar to database indexes) that map key values to the [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) of matching rows, which speeds up filters, joins, and aggregations. See [Data indexes](../../how-to-guides/data-indexes.md).
+
+Deephaven's Apache Parquet integration combines lazy loading, caching, and data indexes:
 
 - Partition discovery before table coalescing.
 - Buffer caching to avoid re-reading data.
-- Grouping information stored on disk for efficient queries.
+- Data indexes stored alongside the Parquet files.
 
 ## Related documentation
 
