@@ -984,7 +984,8 @@ public class TestFormulaArrayEvaluation {
             final Table result = source.update(formula);
             Assert.assertEquals(formula, 2L, result.getColumnSource("Y").getLong(result.getRowSet().get(12)));
         }
-        for (final String formula : new String[] {"Y = X_[i-07]", "Y = X_[i-0_7]", "Y = X_[ii+010]"}) {
+        for (final String formula : new String[] {"Y = X_[i-07]", "Y = X_[i-0_7]", "Y = X_[ii+010]",
+                "Y = X_[i-099999999999999999999]"}) {
             final RuntimeException ex = Assert.assertThrows(formula, RuntimeException.class,
                     () -> source.update(formula));
             final String trace = org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(ex);
