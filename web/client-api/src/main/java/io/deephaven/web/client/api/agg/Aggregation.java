@@ -271,7 +271,7 @@ public abstract sealed class Aggregation
      * distinct value, the result is {@code nonUniqueSentinel}.
      *
      * @param includeNulls whether null is treated as a value for determining uniqueness. Defaults to {@code false}.
-     * @param nonUniqueSentinel the value for a group without a single unique value. Defaults to {@code null}.
+     * @param nonUniqueSentinel the value for a group with more than one distinct value. Defaults to {@code null}.
      * @param columns the column(s) to aggregate
      * @return an aggregation
      */

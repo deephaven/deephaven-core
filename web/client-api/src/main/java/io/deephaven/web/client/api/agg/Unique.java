@@ -18,8 +18,8 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 /**
- * Computes the single unique value within each aggregation group. If all values in a group are null, or if there is
- * more than one distinct value, the result is {@link #nonUniqueSentinel}.
+ * Computes the single distinct value within each aggregation group. A group with more than one distinct value gives
+ * {@link #nonUniqueSentinel}; a group whose values are all null gives null, whatever the sentinel.
  */
 @JsType(namespace = "dh.agg")
 public final class Unique extends ColumnAggregation {
@@ -35,8 +35,9 @@ public final class Unique extends ColumnAggregation {
     public Boolean includeNulls;
 
     /**
-     * The value to output for a group without a single unique value. Its type must suit the aggregated columns, for
-     * example an {@code "int"} sentinel for an int column. Defaults to {@code null}.
+     * The value to output for a group with more than one distinct value. A group whose values are all null still gives
+     * null. Its type must suit the aggregated columns, for example an {@code "int"} sentinel for an int column.
+     * Defaults to {@code null}.
      */
     @JsNullable
     public NonUniqueSentinelUnion nonUniqueSentinel;
