@@ -128,6 +128,7 @@ import java.lang.reflect.TypeVariable;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -2274,21 +2275,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
          * Also, note that the 'x' and 'b' for hexadecimal/binary literals are _not_ case-sensitive.
          */
 
-        // First, we need to remove underscores from the value before we can parse it.
-        final String value = removeUnderscores(origValue);
-
-        long longValue;
-        String prefix = value.length() > 2 ? value.substring(0, 2) : null;
-        if ("0x".equalsIgnoreCase(prefix)) { // hexadecimal literal
-            longValue = Long.parseLong(value.substring(2), 16);
-        } else if ("0b".equalsIgnoreCase(prefix)) { // binary literal
-            // If a literal has 32 bits, the 32nd (i.e. MSB) is *not* taken as the sign bit!
-            // This follows from the fact that Integer.parseInt(str, 2) will only parse an 'str' up to 31 chars long.
-            longValue = Long.parseLong(value.substring(2), 2);
-        } else { // regular numeric literal
-            checkNotOctal(origValue, value);
-            longValue = Long.parseLong(value);
-        }
+        final long longValue = parseIntegerLiteral(origValue);
 
         if (longValue < Integer.MIN_VALUE || longValue > Integer.MAX_VALUE) {
             LongLiteralExpr newExpr = new LongLiteralExpr(origValue + 'L');
@@ -2305,36 +2292,73 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     @Override
     public Class<?> visit(LongLiteralExpr n, VisitArgs printer) {
         final String origValue = n.getValue();
-        final String value = removeUnderscores(origValue);
-        final String prefix = value.length() > 2 ? value.substring(0, 2) : null;
-        if (!"0x".equalsIgnoreCase(prefix) && !"0b".equalsIgnoreCase(prefix)) {
-            checkNotOctal(origValue, value);
-        }
+        // checked but not parsed: Java reads a 64-bit hexadecimal or binary literal, such as 0xFFFFFFFFFFFFFFFFL, as a
+        // negative long, which Long.parseLong does not
+        integerLiteralRadix(origValue.substring(0, origValue.length() - 1));
         printer.append(origValue);
 
         return long.class;
     }
 
-    private static String removeUnderscores(final String literal) {
-        return literal.chars()
-                .filter((c) -> c != '_')
-                .collect(StringBuilder::new, (sb, c) -> sb.append((char) c), StringBuilder::append)
-                .toString();
+    /**
+     * Parses an integer literal, without an {@code L} or {@code l} suffix, as the query language reads it. A literal
+     * with a {@code 0x} or {@code 0b} prefix, in either case, is hexadecimal or binary; any other literal is decimal.
+     * Underscores between digits are ignored. A hexadecimal or binary literal is read as unsigned, so
+     * {@code 0xFFFFFFFF} is 4294967295 rather than Java's {@code int} -1.
+     *
+     * @param literal the literal as written
+     * @return the value of the literal
+     * @throws UnsupportedOperationException if the literal has a leading zero, which Java reads as octal
+     * @throws NumberFormatException if the literal is malformed or its value does not fit in a {@code long}
+     */
+    public static long parseIntegerLiteral(final String literal) {
+        final int radix = integerLiteralRadix(literal);
+        final String digits = radix == 10 ? literal : literal.substring(2);
+        return Long.parseLong(digits.replace("_", ""), radix);
     }
 
+    /** Decimal, hexadecimal and binary digits, each underscore between two digits. */
+    private static final Pattern DECIMAL_DIGITS = Pattern.compile("[0-9]+(?:_+[0-9]+)*");
+    private static final Pattern HEXADECIMAL_DIGITS = Pattern.compile("[0-9a-fA-F]+(?:_+[0-9a-fA-F]+)*");
+    private static final Pattern BINARY_DIGITS = Pattern.compile("[01]+(?:_+[01]+)*");
+
     /**
-     * Java reads a decimal-looking integer literal with a leading zero, such as {@code 0777}, as octal. The query
-     * language does not support octal literals, so it rejects such a literal.
+     * Determines the radix of an integer literal, without an {@code L} or {@code l} suffix, and checks its form: the
+     * prefix, if any, is exactly {@code 0x} or {@code 0b} in either case, and each underscore lies between two digits.
      *
-     * @param origValue the literal as written, for the error message
-     * @param value the literal without underscores; neither hexadecimal nor binary
+     * @param literal the literal as written
+     * @return 16 for a hexadecimal literal, 2 for a binary literal, or 10
+     * @throws UnsupportedOperationException if the literal has a leading zero, which Java reads as octal
+     * @throws NumberFormatException if the literal is malformed
      */
-    private static void checkNotOctal(final String origValue, final String value) {
-        if (value.length() > 1 && value.charAt(0) == '0' && Character.isDigit(value.charAt(1))) {
-            throw new ParserResolutionFailure("Integer literal " + origValue
+    private static int integerLiteralRadix(final String literal) {
+        final int radix;
+        final String digits;
+        final Pattern digitsPattern;
+        if (literal.length() > 2 && literal.charAt(0) == '0'
+                && (literal.charAt(1) == 'x' || literal.charAt(1) == 'X')) {
+            radix = 16;
+            digits = literal.substring(2);
+            digitsPattern = HEXADECIMAL_DIGITS;
+        } else if (literal.length() > 2 && literal.charAt(0) == '0'
+                && (literal.charAt(1) == 'b' || literal.charAt(1) == 'B')) {
+            radix = 2;
+            digits = literal.substring(2);
+            digitsPattern = BINARY_DIGITS;
+        } else {
+            radix = 10;
+            digits = literal;
+            digitsPattern = DECIMAL_DIGITS;
+        }
+        if (!digitsPattern.matcher(digits).matches()) {
+            throw new NumberFormatException("Invalid integer literal " + literal);
+        }
+        if (radix == 10 && digits.length() > 1 && digits.charAt(0) == '0') {
+            throw new UnsupportedOperationException("Integer literal " + literal
                     + " has a leading zero, so it would be interpreted as octal, which the query language does not"
                     + " support; remove the leading zero for a decimal value");
         }
+        return radix;
     }
 
     @Override

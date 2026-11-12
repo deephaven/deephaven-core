@@ -436,6 +436,33 @@ public class TestQueryLanguageParser {
      * Java reads an integer literal with a leading zero as octal; the query language rejects it.
      */
     @Test
+    public void testParseIntegerLiteral() {
+        assertEquals(0L, QueryLanguageParser.parseIntegerLiteral("0"));
+        assertEquals(10L, QueryLanguageParser.parseIntegerLiteral("1__0"));
+        assertEquals(1_000_000L, QueryLanguageParser.parseIntegerLiteral("1_000_000"));
+        assertEquals(3_000_000_000L, QueryLanguageParser.parseIntegerLiteral("3000000000"));
+        assertEquals(0x0123L, QueryLanguageParser.parseIntegerLiteral("0x0123"));
+        assertEquals(0x1FL, QueryLanguageParser.parseIntegerLiteral("0X1_f"));
+        assertEquals(4294967295L, QueryLanguageParser.parseIntegerLiteral("0xFFFFFFFF"));
+        assertEquals(2L, QueryLanguageParser.parseIntegerLiteral("0b1_0"));
+        assertEquals(5L, QueryLanguageParser.parseIntegerLiteral("0B0101"));
+
+        // a misplaced underscore or prefix, a digit outside the radix, or a value beyond a long
+        for (final String literal : new String[] {"0_x0123", "0x_0123", "0x0123_", "_12", "12_", "0_b1", "0b_1",
+                "0x", "0b", "", "0xG", "0b2", "1a", "0_a", "9223372036854775808", "0x1_0000_0000_0000_0000"}) {
+            assertThrows(literal, NumberFormatException.class, () -> QueryLanguageParser.parseIntegerLiteral(literal));
+        }
+
+        for (final String literal : new String[] {"0777", "0_7", "0__7", "00", "08", "099999999999999999999"}) {
+            final UnsupportedOperationException ex = assertThrows(literal, UnsupportedOperationException.class,
+                    () -> QueryLanguageParser.parseIntegerLiteral(literal));
+            assertEquals("Integer literal " + literal + " has a leading zero, so it would be interpreted as octal,"
+                    + " which the query language does not support; remove the leading zero for a decimal value",
+                    ex.getMessage());
+        }
+    }
+
+    @Test
     public void testOctalLiterals() throws Exception {
         for (final String expression : new String[] {"0777", "03000000000", "040000000000", "0_7", "00", "08",
                 "0777L", "00L", "1 + 010"}) {
