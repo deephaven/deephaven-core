@@ -23,7 +23,6 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
-import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.Formula;
@@ -737,16 +736,16 @@ public class TstUtils {
         return result;
     }
 
-    public static Table prevTableColumnSources(Table table) {
-        final TrackingWritableRowSet rowSet = table.getRowSet().copyPrev().toTracking();
-        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
-        table.getColumnSourceMap().forEach((k, cs) -> {
-            columnSourceMap.put(k, new PrevColumnSource<>(cs));
-        });
-        return new QueryTable(rowSet, columnSourceMap);
-    }
-
-    public static Table prevTable(Table table) {
+    /**
+     * Copy the previous state of {@code table} into a new static in-memory table. The copy keeps the previous values
+     * after the update cycle ends, unlike the view that
+     * {@link io.deephaven.engine.table.impl.PrevTableTools#prevTable(Table) PrevTableTools.prevTable} makes, which is
+     * good only during the updating phase of the cycle that makes the view.
+     *
+     * @param table The table to copy
+     * @return A static table holding the previous rows and values of {@code table}
+     */
+    public static Table prevTableCopy(Table table) {
         final RowSet rowSet = table.getRowSet().copyPrev();
 
         final List<ColumnHolder<?>> cols = new ArrayList<>();

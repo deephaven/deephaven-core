@@ -40,14 +40,14 @@ groovy = "3.0.25"
 # Only bump this in concert with netty (which will update boringssl). See the dependency matrix
 # for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 grpc = "1.85.1"
-netty = "4.2.19.Final"
+netty = "4.2.20.Final"
 
 protobuf-gwt='4.33.4-1'
 grpc-gwt='1.84.0-1'
 
 grpc-web-gwt-fetch='1.4.0'
 
-guava = "33.7.2-jre"
+guava = "33.8.0-jre"
 gwt = "2.13.1"
 # used by GwtTools
 gwtJetty = "9.4.44.v20210927"
@@ -75,8 +75,8 @@ lz4 = "1.12.1"
 mindrot = "0.4"
 nidi = "0.18.1"
 oshi = "7.7.3"
-pac4j = "5.7.9"
-parquet = "1.18.1"
+pac4j = "6.6.0"
+parquet = "1.18.2"
 picocli = "4.7.7"
 postgresql = "42.7.13"
 protobuf = "4.36.2"
@@ -84,7 +84,7 @@ randelshofer = "2.0.1"
 rdblue = "0.1.1"
 rewrite-java = "8.90.4"
 # When bumping selenium, also bump the docker image in docker/registry/selenium/gradle.properties to the same version
-selenium = "4.51.0"
+selenium = "4.52.0"
 slf4j = "2.0.20"
 snappy = "1.1.10.12"
 zstd-jni = "1.5.7-25"
@@ -97,10 +97,11 @@ vertispan-nio = "1.0-alpha-2"
 vertispan-flatbuffers-gwt = "25.2.10-1"
 vertispan-ts-defs = "1.0.0-RC4"
 xerial = "3.53.4.0"
+xz = "1.10"
 
 # test versions
 assertj = "3.27.7"
-h2database = "2.3.232"
+h2database = "2.5.252"
 jmock = "2.13.1"
 junit = "5.12.1"
 junit4 = "4.13.2"
@@ -225,7 +226,7 @@ gwt-user = { module = "org.gwtproject:gwt-user", version.ref = "gwt" }
 hadoop-common = { module = "org.apache.hadoop:hadoop-common", version.ref = "hadoop" }
 # These are transitive, inlined versions; see io.deephaven.hadoop-common-dependencies
 woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version = "6.6.2" }
-hadoop-shaded-guava = { module = "org.apache.hadoop.thirdparty:hadoop-shaded-guava", version = "1.5.0" }
+hadoop-shaded-guava = { module = "org.apache.hadoop.thirdparty:hadoop-shaded-guava", version = "1.6.0" }
 commons-collections4 = { module = "org.apache.commons:commons-collections4", version = "4.6.0" }
 
 hdrhistogram = { module = "org.hdrhistogram:HdrHistogram", version.ref = "hdrhistogram" }
@@ -343,6 +344,8 @@ vertispan-ts-defs-annotations = { module = "com.vertispan.tsdefs:jsinterop-ts-de
 vertispan-ts-defs-doclet = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-doclet", version.ref = "vertispan-ts-defs" }
 
 xerial-sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "xerial" }
+
+xz = { module = "org.tukaani:xz", version.ref = "xz" }
 
 # test libraries
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }

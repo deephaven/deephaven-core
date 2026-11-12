@@ -19,6 +19,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.SoftRecyclerWindow;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.mutable.MutableInt;
@@ -41,8 +42,8 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class FloatArraySource extends ArraySourceHelper<Float, float[]>
         implements MutableColumnSourceGetDefaults.ForFloat /* MIXIN_IMPLS */ {
-    private static final SoftRecycler<float[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY,
-            () -> new float[BLOCK_SIZE], null);
+    private static final SoftRecycler<float[]> recycler = SoftRecyclerWindow.register(new SoftRecycler<>(ArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY,
+            ArrayColumnSourceConfiguration.FLOAT_RECYCLER_MAXIMUM_CAPACITY, () -> new float[BLOCK_SIZE], null));
 
     private float[][] blocks;
     private transient float[][] prevBlocks;

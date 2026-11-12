@@ -71,7 +71,9 @@ def j_array_list(values: Iterable | None = None) -> jpy.JType | None:
     """Creates a Java ArrayList instance from an iterable."""
     if values is None:
         return None
-    r = jpy.get_type("java.util.ArrayList")(len(list(values)))
+    # Read the input once. A generator can be read only once, so reading it again would leave the list empty.
+    values = list(values)
+    r = jpy.get_type("java.util.ArrayList")(len(values))
     for v in values:
         r.add(unwrap(v))
     return r
@@ -385,15 +387,15 @@ def dh_null_to_nan(np_array: np.ndarray, type_promotion: bool = False) -> np.nda
     """Converts Deephaven primitive null values in the given numpy array to np.nan. No conversion is performed on
     non-primitive types.
 
-    Note, the input numpy array is modified in place if it is of a float or double type. If that's not a desired behavior,
-    pass a copy of the array instead. For input arrays of other types, a new array is always returned.
+    The input numpy array is not modified. For primitive types, the result is a new array. An array of a non-primitive
+    type is returned as is.
 
     Args:
         np_array (np.ndarray): The numpy array to convert
         type_promotion (bool): When False, integer, boolean, or character arrays will cause an exception to be raised.
             When True, integer, boolean, or character arrays are converted to new np.float64 arrays and Deephaven null
             values in them are converted to np.nan. Numpy arrays of float or double types are not affected by this flag
-            and Deephaven nulls will always be converted to np.nan in place. Defaults to False.
+            and Deephaven nulls in them are always converted to np.nan in a copy of the array. Defaults to False.
 
     Returns:
         np.ndarray: The numpy array with Deephaven nulls converted to np.nan.

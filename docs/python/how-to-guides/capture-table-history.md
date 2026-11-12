@@ -36,7 +36,7 @@ You can't combine `history=True` with the [`initial` or `incremental`](../refere
 The result records the source table only at trigger events. If the source table changes more than once between two trigger rows, the result keeps only the state at the next trigger.
 
 > [!CAUTION]
-> If the source table has a column with the same name as a stamp column, the result table doesn't keep the trigger table's values for that column. With `history=True`, Deephaven doesn't reliably detect this conflict. The stamp column's values can be silently lost, or the snapshot can fail. To avoid this problem, rename the stamp column, either in the trigger table with [`rename_columns`](../reference/table-operations/select/rename-columns.md) or in `stamp_cols` itself (for example, `stamp_cols=["TriggerTimestamp = Timestamp"]`). You can also pass only the stamp columns you need in `stamp_cols`.
+> If the source table has a column with the same name as a stamp column, `snapshot_when` raises an error. To avoid this, rename the stamp column, either in the trigger table with [`rename_columns`](../reference/table-operations/select/rename-columns.md) or in `stamp_cols` itself (for example, `stamp_cols=["TriggerTimestamp = Timestamp"]`). You can also pass only the stamp columns you need in `stamp_cols`.
 
 > [!CAUTION]
 > When you use [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) to capture full table history, Deephaven stores a copy of the entire source table for every trigger event. A large source table or a frequently ticking trigger table can use a lot of memory.
