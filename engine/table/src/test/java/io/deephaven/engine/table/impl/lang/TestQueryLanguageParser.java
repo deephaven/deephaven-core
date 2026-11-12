@@ -369,6 +369,14 @@ public class TestQueryLanguageParser {
         expression = "0x44332211";
         resultExpression = "0x44332211";
         check(expression, resultExpression, int.class, new String[] {});
+
+        expression = "0X44332211";
+        resultExpression = "0X44332211";
+        check(expression, resultExpression, int.class, new String[] {});
+
+        expression = "0X00L";
+        resultExpression = "0X00L";
+        check(expression, resultExpression, long.class, new String[] {});
     }
 
     /**
@@ -415,6 +423,10 @@ public class TestQueryLanguageParser {
         resultExpression = "0x5544332211L";
         check(expression, resultExpression, long.class, new String[] {});
 
+        expression = "0X5544332211";
+        resultExpression = "0X5544332211L";
+        check(expression, resultExpression, long.class, new String[] {});
+
         expression = "0b11111111000000001111111100000000"; // 32 bits -- must be a long
         resultExpression = "0b11111111000000001111111100000000L";
         check(expression, resultExpression, long.class, new String[] {});
@@ -440,6 +452,8 @@ public class TestQueryLanguageParser {
         check("0x0F", "0x0F", int.class, new String[] {});
         check("0b01", "0b01", int.class, new String[] {});
         check("0x0FL", "0x0FL", long.class, new String[] {});
+        check("0X0777", "0X0777", int.class, new String[] {});
+        check("0X0777L", "0X0777L", long.class, new String[] {});
         check("0b01L", "0b01L", long.class, new String[] {});
         check("00.5", "00.5", double.class, new String[] {});
         check("010.5f", "010.5f", float.class, new String[] {});
