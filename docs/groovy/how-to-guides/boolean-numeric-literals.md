@@ -39,7 +39,6 @@ Numeric literals can also be written in these forms:
 
 - **Hexadecimal**: prefix the digits with `0x` or `0X`, as in `0xABCD` (43981).
 - **Binary**: prefix the digits with `0b` or `0B`, as in `0b1010` (10).
-- **Octal**: start the digits with `0`, so `0123` is the octal number 83, not 123.
 - **Scientific notation**: use `e` or `E` for a decimal exponent, as in `1.23e3` (1230.0).
 - **Hexadecimal floating point**: use `p` or `P` for a binary exponent after `0x`-prefixed hexadecimal digits, as in `0x1.23p3` (9.09375).
 - **Underscores**: place `_` between digits for readability, as in `1_000_000`. The underscores don't change the value.
@@ -49,7 +48,6 @@ The following example constructs a column for each default type, suffix, and for
 ```groovy order=source,sourceMeta
 source = emptyTable(1).update(
     "IntLiteral = 5",
-    "IntOctalLiteral = 0123",
     "IntHexadecimalLiteral = 0xABCD",
     "IntBinaryLiteral = 0b1010",
     "LongLiteral = 123456789L",
@@ -70,7 +68,7 @@ source = emptyTable(1).update(
 sourceMeta = source.meta()
 ```
 
-In `sourceMeta`, each column's type follows the rules above. `PromotedLongLiteral` and `PromotedHexadecimalLiteral` have no suffix, but they are `long` columns because their values are too large for an `int`. `DoubleSuffixLiteral` is a `double` column. In `source`, `PromotedHexadecimalLiteral` holds 4294967295 and `IntOctalLiteral` holds 83.
+In `sourceMeta`, each column's type follows the rules above. `PromotedLongLiteral` and `PromotedHexadecimalLiteral` have no suffix, but they are `long` columns because their values are too large for an `int`. `DoubleSuffixLiteral` is a `double` column. In `source`, `PromotedHexadecimalLiteral` holds 4294967295.
 
 ## Related documentation
 
