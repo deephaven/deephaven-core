@@ -2292,8 +2292,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     @Override
     public Class<?> visit(LongLiteralExpr n, VisitArgs printer) {
         final String origValue = n.getValue();
-        // checked but not parsed: Java reads a 64-bit hexadecimal or binary literal, such as 0xFFFFFFFFFFFFFFFFL, as a
-        // negative long, which Long.parseLong does not
+        // The value is not needed, so only the literal's form is checked. A hexadecimal or binary long literal is a
+        // 64-bit pattern, so 0xFFFFFFFFFFFFFFFFL is -1L, which Long.parseLong rejects as out of range.
         integerLiteralRadix(origValue.substring(0, origValue.length() - 1));
         printer.append(origValue);
 
