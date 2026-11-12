@@ -55,7 +55,7 @@ A `Selectable` has the three methods defined in [`ConcurrencyControl`](./Concurr
 
 Without [`with_serial`](./ConcurrencyControl.md#with_serial), Deephaven can evaluate a column calculation in parallel under these conditions:
 
-- Deephaven considers a column calculation for parallel evaluation once it processes 4,194,304 rows or more. [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) sets the row count.
+- Deephaven usually considers a column calculation for parallel evaluation once it processes 4,194,304 rows or more. [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) sets the row count. A calculation whose result is a `Table` or `RowSet` is the exception: Deephaven considers it for parallel evaluation whenever it processes at least one row.
 - The row count is the whole table on initialization, or the added and modified rows of each cycle on a refreshing table.
 - Deephaven also needs more than one worker thread.
 - A formula backed by a Python callback is eligible only on a free-threaded Python build. On a build that is not free-threaded, Deephaven never splits that column's rows across cores. That alone does not guarantee row set order, which only [`with_serial`](./ConcurrencyControl.md#with_serial) guarantees. See [Python formulas and free-threading](../../../conceptual/query-engine/parallelization.md#python-formulas-and-free-threading).

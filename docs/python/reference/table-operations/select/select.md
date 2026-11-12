@@ -27,7 +27,7 @@ select(formulas: Optional[Union[str, Sequence[str], Selectable, Sequence[Selecta
 ## Parameters
 
 <ParamTable>
-<Param name="formulas" type="Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]]" Optional>
+<Param name="formulas" type="Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]]" optional>
 
 Formulas to compute columns in the new table:
 

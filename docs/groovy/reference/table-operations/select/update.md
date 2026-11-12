@@ -58,7 +58,7 @@ result = source.update("A", "X = B", "Y = sqrt(C)")
 
 ## Run an update serially
 
-A formula that has side effects or depends on row order can use [`withSerial`](../../query-language/types/Selectable.md#withserial) to force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) in row set order. Without it, `update` can split a large input across CPU cores. With default settings, that means 4,194,304 rows or more, as [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) sets.
+A formula that has side effects or depends on row order can use [`withSerial`](../../query-language/types/Selectable.md#withserial) to force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) in row set order. Without it, `update` can split a large input across CPU cores. With default settings, that means 4,194,304 rows or more, as [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) sets. A formula whose result is a `Table` or `RowSet` is the exception, and `update` can split it across cores at any row count.
 
 The following example marks the `ID` column as serial with [`withSerial`](../../query-language/types/Selectable.md#withserial). Each row calls `getAndIncrement` on `counter` in row set order, so the counter increments one row at a time and `ID` holds the values 0 through 9 in row order. The example evaluates 10 rows, far below the parallelization threshold, so it shows the ordering guarantee rather than a speedup.
 
