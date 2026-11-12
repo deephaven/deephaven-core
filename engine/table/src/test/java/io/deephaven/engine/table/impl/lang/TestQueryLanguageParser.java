@@ -323,6 +323,14 @@ public class TestQueryLanguageParser {
         resultExpression = "42f";
         check(expression, resultExpression, float.class, new String[] {});
 
+        expression = "42F";
+        resultExpression = "42F";
+        check(expression, resultExpression, float.class, new String[] {});
+
+        expression = "1.0F";
+        resultExpression = "1.0F";
+        check(expression, resultExpression, float.class, new String[] {});
+
         expression = "1.0";
         resultExpression = "1.0";
         check(expression, resultExpression, double.class, new String[] {});
@@ -1797,6 +1805,43 @@ public class TestQueryLanguageParser {
             expression = "myPyCallable3(myIntCol, 2, 3)";
             resultExpression = "myPyCallable3.call(myIntCol, 2, 3)";
             check(expression, resultExpression, Object.class, new String[] {"myPyCallable3", "myIntCol"});
+        }
+    }
+
+    @Test
+    public void testVectorizedFloatLiteralArgument() throws Exception {
+        final List<PyCallableWrapper.ChunkArgument> chunkArguments = new ArrayList<>();
+        final PyCallableWrapper mockPyCallable = new PyCallableWrapperDummyImpl(List.of(float.class)) {
+            @Override
+            public Signature getSignature() {
+                return new Signature(List.of(new Parameter("x", Set.of(float.class))), Object.class);
+            }
+
+            @Override
+            public boolean isVectorizableReturnType() {
+                return true;
+            }
+
+            @Override
+            public void addChunkArgument(final ChunkArgument chunkArgument) {
+                chunkArguments.add(chunkArgument);
+            }
+        };
+        variables.put("myPyCallable", PyCallableWrapper.class);
+
+        try (SafeCloseable ignored = TestExecutionContext.createForUnitTests().open()) {
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
+            ExecutionContext.getContext().getQueryScope().putParam("myPyCallable", mockPyCallable);
+
+            for (final String literal : new String[] {"1_000f", "1_000F"}) {
+                chunkArguments.clear();
+                check("myPyCallable(" + literal + ")", "myPyCallable.call(" + literal + ")", Object.class,
+                        new String[] {"myPyCallable"});
+                assertFalse(chunkArguments.isEmpty());
+                for (final PyCallableWrapper.ChunkArgument argument : chunkArguments) {
+                    assertEquals(1000f, ((PyCallableWrapper.ConstantChunkArgument) argument).getValue());
+                }
+            }
         }
     }
 

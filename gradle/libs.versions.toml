@@ -76,7 +76,7 @@ mindrot = "0.4"
 nidi = "0.18.1"
 oshi = "7.7.3"
 pac4j = "6.6.0"
-parquet = "1.18.1"
+parquet = "1.18.2"
 picocli = "4.7.7"
 postgresql = "42.7.13"
 protobuf = "4.36.2"
@@ -97,6 +97,7 @@ vertispan-nio = "1.0-alpha-2"
 vertispan-flatbuffers-gwt = "25.2.10-1"
 vertispan-ts-defs = "1.0.0-RC4"
 xerial = "3.53.4.0"
+xz = "1.10"
 
 # test versions
 assertj = "3.27.7"
@@ -343,6 +344,8 @@ vertispan-ts-defs-annotations = { module = "com.vertispan.tsdefs:jsinterop-ts-de
 vertispan-ts-defs-doclet = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-doclet", version.ref = "vertispan-ts-defs" }
 
 xerial-sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "xerial" }
+
+xz = { module = "org.tukaani:xz", version.ref = "xz" }
 
 # test libraries
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }

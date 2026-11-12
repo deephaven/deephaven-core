@@ -28,7 +28,7 @@ Java rejects an integer literal that is too large for an `int`. The engine makes
 You can specify the type of a numeric literal by appending a suffix to the number:
 
 - `L` or `l` for a 64-bit signed integer ([Java primitive](./data-types.md#primitive-types) `long`).
-- `f` for a 32-bit floating-point number ([Java primitive](./data-types.md#primitive-types) `float`). The suffix must be lowercase. With an uppercase `F`, as in `3.14F`, the engine creates a `double` column that holds the `float`-rounded value 3.140000104904175.
+- `f` or `F` for a 32-bit floating-point number ([Java primitive](./data-types.md#primitive-types) `float`).
 - `d` or `D` for a 64-bit floating-point number ([Java primitive](./data-types.md#primitive-types) `double`). This suffix is optional on a literal that already has a decimal point or exponent, since `double` is the default there. On a whole number, `5d` is a `double`, while `5` is an `int`.
 
 Groovy's `G` and `I` suffixes are not valid in DQL. A [query string](./query-string-overview.md) that uses either one fails to compile.

@@ -16,6 +16,8 @@ Pushdown can also change the order in which filters run. Without pushdown, the e
 
 With pushdown, the engine can run a filter that a data source can answer cheaply before a filter listed earlier, so the argument order of pushed-down filters is not guaranteed. Parallelism also happens inside a single filter, which can split its rows across threads, so a filter that Deephaven treats as stateless has no guaranteed order in which it sees rows. [Filter evaluation order](../reference/table-operations/filter/where.md#control-filter-evaluation-order) describes the guarantees that do hold, and [Barriers and serial execution](../conceptual/query-engine/parallelization.md#controlling-execution-order) shows how to enforce an order.
 
+Pushdown works on ticking data too. Each time a refreshing table updates, the engine filters the rows added in that update cycle and the modified rows whose filtered columns changed, and it still pushes those filters down to the table's data sources. Table-level [data indexes](#deephaven-data-indexes) are the exception: the engine uses them only when [`where`](../reference/table-operations/filter/where.md) first filters the table, not on later updates.
+
 ## Filter priority
 
 Filters are prioritized for pushdown in the following order (from highest to lowest):
@@ -43,6 +45,8 @@ from deephaven import empty_table
 source = empty_table(1_000).update_view(formulas=["X = i", "Value = 42"])
 result = source.where(filters="Value = 42")
 ```
+
+The result is the same as filtering without pushdown. Pushdown changes only how many rows the engine reads and tests, which you see as a faster query on large tables.
 
 When working with [partitioned data](./partitioned-tables.md), such as [Parquet](./data-import-export/parquet-import.md) files, regions of the overall table will have a constant value. The engine will also filter these regions efficiently with a single comparison of the constant value.
 
@@ -112,7 +116,7 @@ If desired, you can [disable](#disabling-predicate-pushdown-features) the use of
 
 Deephaven allows users to create [data indexes](./data-indexes.md) for any table. These indexes can be retained in memory or written to storage and can speed up filtering operations significantly by applying the filter to the index instead of the larger table.
 
-Starting in Deephaven v0.40.0, the predicate pushdown framework enables [data indexes](./data-indexes.md) to be used with most filter types (not just exact matches). When a materialized (in-memory) [data index](./data-indexes.md) for a table exists, the engine can leverage it during [`where`](../reference/table-operations/filter/where.md) operations. To avoid unexpected memory usage, filter operations do not automatically materialize table-level [data indexes](./data-indexes.md). However, if an individual file-level [data index](./data-indexes.md) is available on disk, the engine will use it to filter data without loading the entire index into memory.
+When a materialized (in-memory) [data index](./data-indexes.md) for a table exists, the engine can leverage it during [`where`](../reference/table-operations/filter/where.md) operations. To avoid unexpected memory usage, filter operations do not automatically materialize table-level [data indexes](./data-indexes.md). However, if an individual file-level [data index](./data-indexes.md) is available on disk, the engine will use it to filter data without loading the entire index into memory.
 
 This technique is effective even if only a subset of the data files are indexed. The engine will filter non-indexed files using the standard method.
 
@@ -136,7 +140,10 @@ filtered_1 = disk_table.where(filters="X = 5")
 filtered_2 = disk_table.where(filters="X <= 3 && Y > 10")
 ```
 
-If desired, you can [disable](#disabling-predicate-pushdown-features) the use of these file-level [data indexes](./data-indexes.md) during pushdown operations:
+> [!NOTE]
+> Predicate pushdown can use [data indexes](./data-indexes.md) with most filter types, not only exact matches. File-level [data indexes](./data-indexes.md) support this starting in Deephaven 0.40.0, and table-level [data indexes](./data-indexes.md) starting in Deephaven 41.0.
+
+If desired, you can [disable](#disabling-predicate-pushdown-features) the use of these file-level [data indexes](./data-indexes.md) during pushdown operations.
 
 ## Parquet row group metadata
 

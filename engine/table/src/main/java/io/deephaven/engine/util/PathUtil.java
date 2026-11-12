@@ -3,9 +3,8 @@
 //
 package io.deephaven.engine.util;
 
-import io.deephaven.io.InputStreamFactory;
-import io.deephaven.io.streams.SevenZipInputStream;
-import io.deephaven.io.streams.SevenZipInputStream.Behavior;
+import io.deephaven.io.streams.SevenZipEntryInputStream;
+import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream;
@@ -45,18 +44,8 @@ public class PathUtil {
             return fileName.endsWith(".tar.gz") ? untar(in) : in;
         }
         if (fileName.endsWith(".7z")) {
-            final SevenZipInputStream in = new SevenZipInputStream(new InputStreamFactory() {
-                @Override
-                public InputStream createInputStream() throws IOException {
-                    return Files.newInputStream(path);
-                }
-
-                @Override
-                public String getDescription() {
-                    return path.toString();
-                }
-            });
-            in.getNextEntry(Behavior.SKIP_WHEN_NO_STREAM);
+            final SevenZipEntryInputStream in = SevenZipEntryInputStream.openFirstEntry(
+                    SevenZFile.builder().setPath(path).get(), path.toString());
             return fileName.endsWith(".tar.7z") ? untar(in) : in;
         }
         if (fileName.endsWith(".zst")) {

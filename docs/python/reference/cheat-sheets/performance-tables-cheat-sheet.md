@@ -12,10 +12,11 @@ Deephaven makes several performance log tables available.
 > circumstances will be populated with raw performance data
 > pertaining to your running queries and server state.
 
-```python order=upl,qopl,qpl,pml,pil,ssl,qptt,qoptt
+```python order=upl,upal,qopl,qpl,pml,pil,ssl,qptt,qoptt
 import deephaven.perfmon as pm
 
 upl = pm.update_performance_log()
+upal = pm.update_performance_ancestors_log()
 qopl = pm.query_operation_performance_log()
 qpl = pm.query_performance_log()
 pml = pm.process_metrics_log()
@@ -25,12 +26,9 @@ qptt = pm.query_performance_tree_table()
 qoptt = pm.query_operation_performance_tree_table()
 ```
 
-Several derived tables are defined on top of them, typically by removing the suffix `_log` from the name; these derived tables
-accumulate data and present it in more user-friendly column types (e.g., time units in fractional seconds instead of nanoseconds for
-CPU time metrics), and as such are more useful for dashboards, where the `_log` tables are more useful as sources of raw data
-for user-defined computation of performance statistics. For the derived tables in the list below that are related to query performance,
-the functions that create them take one query evaluation number id as a parameter to show results for a particular query (where the `_log`
-tables show data for all queries).
+Several derived tables are defined on top of them. Their names typically drop the `_log` suffix. These derived tables add computed columns, such as the elapsed time in seconds (`TimeSecs`) and memory use as a fraction of the heap. This makes them more useful for dashboards, while the `_log` tables are more useful as sources of raw data for your own performance statistics.
+
+The functions that create the query-related derived tables take a query evaluation number as a parameter. Each of these tables shows results for that one query, where the `_log` tables show data for all queries.
 
 ```python order=qup,qp,qop,ss
 import deephaven.perfmon as pm
