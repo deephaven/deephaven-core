@@ -101,6 +101,9 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
         cases.add(new Case("reverse", (s, r, g) -> s.reverse()));
         cases.add(new Case("snapshot", (s, r, g) -> s.snapshot()));
         cases.add(new Case("snapshotWhen", (s, r, g) -> s.snapshotWhen(JsTableReference.of(r), snapshotWhen)));
+        // Without options every trigger column is stamped, so the trigger keeps only one the base table lacks
+        cases.add(new Case("snapshotWhen without options",
+                (s, r, g) -> s.snapshotWhen(JsTableReference.of(r.operations().view(arr("Z"))), null)));
         cases.add(new Case("sort", (s, r, g) -> s.sort(arr("X"))));
         cases.add(new Case("where", (s, r, g) -> s.where(arr(xIsOne))));
         cases.add(new Case("whereIn", (s, r, g) -> s.whereIn(JsTableReference.of(r), arr("X"))));

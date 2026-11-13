@@ -287,13 +287,15 @@ public interface JsTableOperations extends ServerObject {
      * Creates a table that captures a snapshot of this table whenever the trigger table updates.
      *
      * @param trigger the table to use as a trigger for when to take a snapshot of this table
-     * @param options options controlling when and how the result table updates
+     * @param options options controlling when and how the result table updates. If omitted, every option takes its
+     *        default.
      * @return the snapshot table
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> snapshotWhen(JsTableReference trigger,
-            SnapshotWhenOptions options) {
+            @JsOptional @JsNullable SnapshotWhenOptions options) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
+        SnapshotWhenOptions realOptions = options == null ? new SnapshotWhenOptions() : options;
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setSnapshotWhen(SnapshotWhenTableRequest
                 .newBuilder()
@@ -304,11 +306,11 @@ public interface JsTableOperations extends ServerObject {
                         .setTicket(trigger.typedTicket().getTicket())
                         .build())
                 .setResultId(ticket)
-                .setInitial(options.initial != null && options.initial)
-                .setIncremental(options.incremental != null && options.incremental)
-                .setHistory(options.history != null && options.history)
-                .addAllStampColumns(
-                        options.stampColumns != null ? options.stampColumns.asList() : Collections.emptyList())),
+                .setInitial(realOptions.initial != null && realOptions.initial)
+                .setIncremental(realOptions.incremental != null && realOptions.incremental)
+                .setHistory(realOptions.history != null && realOptions.history)
+                .addAllStampColumns(realOptions.stampColumns != null ? realOptions.stampColumns.asList()
+                        : Collections.emptyList())),
                 trigger);
     }
 
