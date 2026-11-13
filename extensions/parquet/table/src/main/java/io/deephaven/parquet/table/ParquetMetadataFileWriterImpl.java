@@ -123,20 +123,8 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
             throw new UncheckedDeephavenException("No parquet files to write metadata for");
         }
         mergeMetadata();
-        final ParquetMetadata metadataFooter = new ParquetMetadata(new FileMetaData(mergedSchema,
-                mergedKeyValueMetaData, mergedCreatedByString), mergedBlocks);
-        writeMetadataFile(metadataFooter, metadataOutputStream);
-        metadataOutputStream.done();
-
-        // Skip the blocks data and merge schema with partitioning columns' schema to write the common metadata file.
-        // The ordering of arguments in method call is important because we want to keep partitioning columns in the
-        // beginning.
-        mergedSchema = mergeSchemaInto(mergedSchema, partitioningColumnsSchema);
-        final ParquetMetadata commonMetadataFooter =
-                new ParquetMetadata(new FileMetaData(mergedSchema, mergedKeyValueMetaData, mergedCreatedByString),
-                        new ArrayList<>());
-        writeMetadataFile(commonMetadataFooter, commonMetadataOutputStream);
-        commonMetadataOutputStream.done();
+        writeMetadataAndCommonMetadataFiles(mergedSchema, mergedKeyValueMetaData, mergedCreatedByString, mergedBlocks,
+                partitioningColumnsSchema, metadataOutputStream, commonMetadataOutputStream);
 
         // Clear the accumulated metadata
         clear();
@@ -167,13 +155,40 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
             final TableInfo tableInfo = TableInfo.deserializeFromJSON(tableInfoJSON);
             keyValueMetaData.put(METADATA_KEY, mergedTableInfoJSON(tableInfo.columnTypes(), tableInfo.version()));
         }
-        final MessageType schema = fileMetaData.getSchema();
-        final String createdBy = fileMetaData.getCreatedBy();
-        writeMetadataFile(new ParquetMetadata(new FileMetaData(schema, keyValueMetaData, createdBy), new ArrayList<>()),
+        writeMetadataAndCommonMetadataFiles(fileMetaData.getSchema(), keyValueMetaData, fileMetaData.getCreatedBy(),
+                new ArrayList<>(), partitioningColumnsSchema, metadataOutputStream, commonMetadataOutputStream);
+    }
+
+    /**
+     * Write the {@value ParquetUtils#METADATA_FILE_NAME} file with the provided schema and blocks, and the
+     * {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file with the partitioning columns merged into the provided
+     * schema and no blocks. Both files carry the provided key-value metadata and created-by string. The output streams
+     * are marked as {@link CompletableOutputStream#done()} after writing is finished.
+     *
+     * @param schema The schema of the parquet files, without the partitioning columns
+     * @param keyValueMetaData The key-value metadata for both files
+     * @param createdBy The created-by string for both files
+     * @param blocks The row groups of the parquet files, empty for a data set with no parquet files
+     * @param partitioningColumnsSchema The common schema for partitioning columns to be included in the
+     *        {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file, can be null if there are no partitioning columns.
+     * @param metadataOutputStream The output stream for the {@value ParquetUtils#METADATA_FILE_NAME} file
+     * @param commonMetadataOutputStream The output stream for the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
+     */
+    private static void writeMetadataAndCommonMetadataFiles(
+            @NotNull final MessageType schema,
+            @NotNull final Map<String, String> keyValueMetaData,
+            @NotNull final String createdBy,
+            @NotNull final List<BlockMetaData> blocks,
+            @Nullable final MessageType partitioningColumnsSchema,
+            @NotNull final CompletableOutputStream metadataOutputStream,
+            @NotNull final CompletableOutputStream commonMetadataOutputStream) throws IOException {
+        writeMetadataFile(new ParquetMetadata(new FileMetaData(schema, keyValueMetaData, createdBy), blocks),
                 metadataOutputStream);
         metadataOutputStream.done();
 
-        // Keep partitioning columns at the beginning, as writeMetadataFiles does
+        // Skip the blocks data and merge schema with partitioning columns' schema to write the common metadata file.
+        // The ordering of arguments in method call is important because we want to keep partitioning columns in the
+        // beginning.
         final MessageType commonSchema = mergeSchemaInto(schema, partitioningColumnsSchema);
         writeMetadataFile(
                 new ParquetMetadata(new FileMetaData(commonSchema, keyValueMetaData, createdBy), new ArrayList<>()),

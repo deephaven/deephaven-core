@@ -49,6 +49,7 @@ import io.deephaven.parquet.table.location.ParquetTableLocationFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.function.ThrowingBiConsumer;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
@@ -596,29 +597,65 @@ public class ParquetTools {
             try {
                 final ParquetMetadata footer =
                         ParquetTableWriter.getFooterForEmptyTable(leafDefinition, writeInstructions);
-                // Complete the common metadata file first: a failure between the two completions then leaves no
-                // metadata file, rather than a metadata file whose schema lacks the partitioning columns
-                final CompletableOutputStream commonMetadataOutputStream = channelsProvider.getOutputStream(
-                        writeContext, destinationDir.resolve(COMMON_METADATA_FILE_NAME), PARQUET_OUTPUT_BUFFER_SIZE);
-                outputStreams.add(commonMetadataOutputStream);
-                final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
-                        writeContext, destinationDir.resolve(METADATA_FILE_NAME), PARQUET_OUTPUT_BUFFER_SIZE);
-                outputStreams.add(metadataOutputStream);
-                ParquetMetadataFileWriterImpl.writeSchemaOnlyMetadataFiles(footer, partitioningColumnsSchema,
-                        metadataOutputStream, commonMetadataOutputStream);
+                writeMetadataFiles(channelsProvider, writeContext, destinationDir, outputStreams,
+                        (metadataOutputStream, commonMetadataOutputStream) -> ParquetMetadataFileWriterImpl
+                                .writeSchemaOnlyMetadataFiles(footer, partitioningColumnsSchema, metadataOutputStream,
+                                        commonMetadataOutputStream));
                 for (final CompletableOutputStream outputStream : outputStreams) {
                     outputStream.complete();
                 }
             } catch (final Exception e) {
-                // Try to rollback all the output streams in reverse order to undo any writes
-                for (int idx = outputStreams.size() - 1; idx >= 0; idx--) {
-                    try {
-                        outputStreams.get(idx).rollback();
-                    } catch (final IOException | RuntimeException e1) {
-                        log.error().append("Error in rolling back output stream ").append(e1).endl();
-                    }
-                }
+                rollbackAll(outputStreams);
                 throw new UncheckedDeephavenException("Error writing parquet metadata files", e);
+            }
+        }
+    }
+
+    /**
+     * Open the output streams for the {@value ParquetUtils#METADATA_FILE_NAME} and
+     * {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files under the metadata root directory, add both streams to the
+     * list of output streams, and write the two files with the provided writer.
+     * <p>
+     * The {@value ParquetUtils#COMMON_METADATA_FILE_NAME} stream is added first, so a caller that completes the output
+     * streams in list order completes the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file first. A failure between
+     * the two completions then leaves no {@value ParquetUtils#METADATA_FILE_NAME} file, rather than a
+     * {@value ParquetUtils#METADATA_FILE_NAME} file whose schema lacks the partitioning columns.
+     *
+     * @param channelsProvider The channels provider for the metadata root directory
+     * @param writeContext The write context shared by the output streams
+     * @param metadataRootDir The root directory for the metadata files
+     * @param outputStreams The list of output streams created, to complete or to rollback in case of exceptions
+     * @param metadataFilesWriter Writes the two files, given the {@value ParquetUtils#METADATA_FILE_NAME} stream and
+     *        the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} stream, in that order
+     */
+    private static void writeMetadataFiles(
+            @NotNull final SeekableChannelsProvider channelsProvider,
+            @NotNull final SeekableChannelsProvider.WriteContext writeContext,
+            @NotNull final URI metadataRootDir,
+            @NotNull final List<CompletableOutputStream> outputStreams,
+            @NotNull final ThrowingBiConsumer<CompletableOutputStream, CompletableOutputStream, IOException> metadataFilesWriter)
+            throws IOException {
+        final CompletableOutputStream commonMetadataOutputStream = channelsProvider.getOutputStream(
+                writeContext, metadataRootDir.resolve(COMMON_METADATA_FILE_NAME), PARQUET_OUTPUT_BUFFER_SIZE);
+        outputStreams.add(commonMetadataOutputStream);
+        final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
+                writeContext, metadataRootDir.resolve(METADATA_FILE_NAME), PARQUET_OUTPUT_BUFFER_SIZE);
+        outputStreams.add(metadataOutputStream);
+        metadataFilesWriter.accept(metadataOutputStream, commonMetadataOutputStream);
+    }
+
+    /**
+     * Try to roll back all the output streams in reverse order to undo any writes. A failure to roll back an output
+     * stream is logged, and the remaining output streams are still rolled back.
+     *
+     * @param outputStreams The output streams created so far
+     */
+    private static void rollbackAll(@NotNull final List<CompletableOutputStream> outputStreams) {
+        for (int idx = outputStreams.size() - 1; idx >= 0; idx--) {
+            try {
+                outputStreams.get(idx).rollback();
+            } catch (final IOException | RuntimeException e) {
+                log.error().append("Error in rolling back output stream ").append(e).endl();
             }
         }
     }
@@ -824,15 +861,8 @@ public class ParquetTools {
                 }
 
                 if (writeInstructions.generateMetadataFiles()) {
-                    final URI metadataDest = metadataRootDir.resolve(METADATA_FILE_NAME);
-                    final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
-                            writeContext, metadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
-                    outputStreams.add(metadataOutputStream);
-                    final URI commonMetadataDest = metadataRootDir.resolve(COMMON_METADATA_FILE_NAME);
-                    final CompletableOutputStream commonMetadataOutputStream = channelsProvider.getOutputStream(
-                            writeContext, commonMetadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
-                    outputStreams.add(commonMetadataOutputStream);
-                    metadataFileWriter.writeMetadataFiles(metadataOutputStream, commonMetadataOutputStream);
+                    writeMetadataFiles(channelsProvider, writeContext, metadataRootDir, outputStreams,
+                            metadataFileWriter::writeMetadataFiles);
                 }
 
                 // Commit all the writes to underlying file system, to detect any exceptions early before closing
@@ -840,14 +870,7 @@ public class ParquetTools {
                     outputStream.complete();
                 }
             } catch (final Exception e) {
-                // Try to rollback all the output streams in reverse order to undo any writes
-                for (int idx = outputStreams.size() - 1; idx >= 0; idx--) {
-                    try {
-                        outputStreams.get(idx).rollback();
-                    } catch (final IOException | RuntimeException e1) {
-                        log.error().append("Error in rolling back output stream ").append(e1).endl();
-                    }
-                }
+                rollbackAll(outputStreams);
                 throw new UncheckedDeephavenException("Error writing parquet tables", e);
             }
         }
