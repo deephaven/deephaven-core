@@ -16,7 +16,7 @@ source = empty_table(1).update(["Year = 2024", "Month = 3", "Day = 4", "Minute =
 
 result = source.update(
     [
-        "Timestamp = LocalDate.of(Year, Month, Day).atTime(Minute / 60, Minute % 60, 0).atZone('ET')"
+        "Timestamp = LocalDate.of(Year, Month, Day).atStartOfDay().plusMinutes(Minute).atZone('ET').toInstant()"
     ]
 )
 ```
