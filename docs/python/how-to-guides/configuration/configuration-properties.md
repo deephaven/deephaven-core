@@ -218,7 +218,7 @@ Turning on SSL also changes the default `http.port` from `10000` to `443`. In a 
 
 ## Security headers
 
-These properties configure HTTP security headers for production deployments. Each header has an `.enabled` and a `.value` property, and the server sends a header only when both are set. The table lists the headers that `dh-defaults.prop` defines. To send another response header, set `http.add.header.<Header-Name>.enabled=true` and `http.add.header.<Header-Name>.value`.
+These properties configure HTTP security headers for production deployments. Each header has an `.enabled` and a `.value` property, and the server sends a header only when its `.enabled` property is `true` and its `.value` property is set. The table lists the headers that `dh-defaults.prop` defines. To send another response header, set `http.add.header.<Header-Name>.enabled=true` and `http.add.header.<Header-Name>.value`.
 
 Turn on Strict-Transport-Security only after TLS is deployed and working. Browsers remember the header for its `max-age` (one year by default), so turning it off later doesn't reach clients that already received it.
 
