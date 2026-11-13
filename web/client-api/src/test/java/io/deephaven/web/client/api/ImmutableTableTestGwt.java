@@ -255,7 +255,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     delayTestFinish(10_051);
                     // Two groups, each with several distinct Y values, so neither has a unique value
                     AggByOptions aggBy = new AggByOptions();
-                    aggBy.aggregations = arr(Aggregation.AggUnique(null, null, arr("Y")));
+                    aggBy.aggregations = arr(Aggregation.AggUnique(arr("Y"), null, null));
                     aggBy.groupByColumns = arr("G");
                     JsPendingTable<JsResolvedTable> unique;
                     try {
@@ -285,7 +285,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     Unique.IntSentinel sentinel = new Unique.IntSentinel();
                     sentinel.value = -1;
                     AggByOptions aggBy = new AggByOptions();
-                    aggBy.aggregations = arr(Aggregation.AggUnique(null, Js.uncheckedCast(sentinel), arr("Y")));
+                    aggBy.aggregations = arr(Aggregation.AggUnique(arr("Y"), null, Js.uncheckedCast(sentinel)));
                     aggBy.groupByColumns = arr("G");
                     return session.getTable("source", null).update(arr("G = i % 2")).aggBy(aggBy).resolve()
                             .then(table -> {
@@ -310,7 +310,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     Unique.ByteSentinel sentinel = new Unique.ByteSentinel();
                     sentinel.value = 200;
                     AggByOptions aggBy = new AggByOptions();
-                    aggBy.aggregations = arr(Aggregation.AggUnique(null, Js.uncheckedCast(sentinel), arr("Y")));
+                    aggBy.aggregations = arr(Aggregation.AggUnique(arr("Y"), null, Js.uncheckedCast(sentinel)));
                     aggBy.groupByColumns = arr("G");
                     JsPendingTable<JsResolvedTable> source = session.getTable("source", null).update(arr("G = i % 2"));
                     try {

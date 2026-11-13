@@ -98,9 +98,9 @@ public class AggregationTestGwt extends AbstractAsyncGwtTestCase {
                 JsPropertyMap.of("type", "CountDistinct", "columns", arr("CountDistinctX = X")), "CountDistinctX", 3,
                 3));
         // K is constant within each group, so each has a unique value; X never does, giving the null sentinel
-        cases.add(value(Aggregation.AggUnique(null, null, arr("UniqueK = K")),
+        cases.add(value(Aggregation.AggUnique(arr("UniqueK = K"), null, null),
                 JsPropertyMap.of("type", "Unique", "columns", arr("UniqueK = K")), "UniqueK", 0, 10));
-        cases.add(nullValue(Aggregation.AggUnique(null, null, arr("UniqueX = X")),
+        cases.add(nullValue(Aggregation.AggUnique(arr("UniqueX = X"), null, null),
                 JsPropertyMap.of("type", "Unique", "columns", arr("UniqueX = X")), "UniqueX"));
         // Weights W = 1, 3, 5 and W = 2, 4, 6
         cases.add(value(Aggregation.AggWAvg(Js.uncheckedCast("W"), arr("WAvgX = X")),

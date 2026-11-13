@@ -270,15 +270,15 @@ public abstract sealed class Aggregation
      * Creates a Unique aggregation, returning the single unique value within each group. If there is more than one
      * distinct value, the result is {@code nonUniqueSentinel}.
      *
+     * @param columns the column(s) to aggregate
      * @param includeNulls whether null is treated as a value for determining uniqueness. Defaults to {@code false}.
      * @param nonUniqueSentinel the value for a group with more than one distinct value. Defaults to {@code null}.
-     * @param columns the column(s) to aggregate
      * @return an aggregation
      */
     @JsMethod
-    public static Unique AggUnique(@JsOptional @JsNullable Boolean includeNulls,
-            @JsOptional @JsNullable NonUniqueSentinelUnion nonUniqueSentinel,
-            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns) {
+    public static Unique AggUnique(@JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns,
+            @JsOptional @JsNullable Boolean includeNulls,
+            @JsOptional @JsNullable NonUniqueSentinelUnion nonUniqueSentinel) {
         Unique agg = new Unique();
         agg.includeNulls = includeNulls;
         agg.columns = columns;

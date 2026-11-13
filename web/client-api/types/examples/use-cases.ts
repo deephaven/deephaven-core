@@ -47,7 +47,7 @@ async function uniqueWithSentinel() {
     const t = session.emptyTable(6).update(["Key = i % 3", "X = i", "L = (long) i"]);
     const unique = await t.aggBy({
         aggregations: [
-            dh.agg.Aggregation.AggUnique(false, { type: "int", value: -1 }, ["X"]),
+            dh.agg.Aggregation.AggUnique(["X"], false, { type: "int", value: -1 }),
             { type: "Unique", columns: ["L"], nonUniqueSentinel: { type: "long", value: dh.LongWrapper.ofString("-1") } },
         ],
         groupByColumns: ["Key"],
