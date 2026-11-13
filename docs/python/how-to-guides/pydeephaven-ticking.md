@@ -4,9 +4,7 @@ title: Subscribe to ticking tables from a Python client
 
 This guide shows how to receive live updates from a Deephaven table in an external Python application with the `pydeephaven-ticking` package. Use it to build a dashboard, an alerting service, a feed into a downstream system or ML pipeline, or any other application that reacts to table changes without running inside the Deephaven server.
 
-A _ticking_ table is one whose contents can change while the server runs — the server can add, remove, or modify rows at any time. The base [`pydeephaven`](../getting-started/pyclient-quickstart.md) package can only fetch a point-in-time snapshot of such a table, so keeping up with a ticking table means repeatedly re-fetching the whole thing and diffing it yourself. `pydeephaven-ticking` does that work for you: your code receives callbacks that contain just the rows that changed.
-
-Callbacks don't arrive for every individual change — the server batches them, sending at most one callback per update interval, which is one second by default. Configure that interval with the server-side `-Dbarrage.minUpdateInterval` setting (in milliseconds); see [What is Barrage?](../conceptual/what-is-barrage.md) for details. After the initial snapshot, if nothing changed during an interval, no callback arrives.
+A _ticking_ table is one whose contents can change while the server runs — the server can add, remove, or modify rows at any time. The base [`pydeephaven`](../getting-started/pyclient-quickstart.md) package can only fetch a point-in-time snapshot of such a table, so keeping up with a ticking table means repeatedly re-fetching the whole thing and diffing it yourself. `pydeephaven-ticking` does that work for you: your code receives callbacks that contain just the rows that changed. Callbacks don't arrive for every individual change; [see how the server batches them](#read-the-changes-in-a-table-update).
 
 > [!NOTE]
 > This guide covers the _client_ package, which runs outside the Deephaven server. Choose it when your code runs in a separate application or process. If your code already runs on the server — for example, in a query — use [Listen to ticking tables](./table-listeners-python.md) instead; it's simpler there because there's no network or serialization involved.
@@ -20,7 +18,7 @@ Callbacks don't arrive for every individual change — the server batches them, 
 pip install pydeephaven-ticking
 ```
 
-This also installs `pydeephaven`. Install the version that matches your server, for example `pip install pydeephaven-ticking==42.5` for a 42.5 server.
+This also installs `pydeephaven`. Install the version that matches your server, for example `pip install pydeephaven-ticking==42.8` for a 42.8 server.
 
 On other platforms, run your client code in a Linux x86_64 container. For example, this starts a Python shell with the package installed:
 
@@ -46,10 +44,10 @@ If that import fails, run `import pydeephaven_ticking.table_listener` to see why
 
 ## Subscribe with a function
 
-The simplest listener is a function that takes one argument — a `TableUpdate`:
-
 > [!NOTE]
 > The examples in this guide create a `Session` with no `auth_type`, which defaults to [anonymous authentication](./authentication/auth-anon.md). A Deephaven server started from the default configuration instead requires [pre-shared key authentication](./authentication/auth-psk.md); for such a server, pass `auth_type="io.deephaven.authentication.psk.PskAuthenticationHandler"` and `auth_token="<your key>"` to `Session`, as shown in [Capture Python client tables](./capture-tables.md#connect-the-python-client-to-the-remote-deephaven-server).
+
+The simplest listener is a function that takes one argument — a `TableUpdate`:
 
 ```python ticking-table order=null skip-test
 import time
@@ -75,6 +73,8 @@ session.close()
 ```
 
 `listen` takes a [`Table`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table) reference and a listener, and returns a `TableListenerHandle`. Nothing happens until you call `start`. The table can be any table reference — one you create with the session, or an existing server table opened with [`open_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.open_table).
+
+`listen` raises `ValueError` if a function listener or error callback doesn't take exactly one argument, if you pass `on_error` together with a `TableListener` object (use the object's `on_error` method instead), or if the listener is neither a function nor a `TableListener`.
 
 ## Subscribe with a listener class
 
@@ -104,6 +104,8 @@ handle.start()
 
 ## Read the changes in a table update
 
+The server batches changes, sending at most one callback per update interval, which is one second by default. Configure that interval with the server-side `-Dbarrage.minUpdateInterval` setting (in milliseconds); see [What is Barrage?](../conceptual/what-is-barrage.md) for details. After the initial snapshot, if nothing changed during an interval, no callback arrives.
+
 Each call to `on_update` receives a `TableUpdate` that describes the coalesced, net row changes since the previous call — not a log of every intermediate change. Every accessor returns a `dict` that maps column names to [PyArrow arrays](https://arrow.apache.org/docs/python/generated/pyarrow.Array.html). The arrays in one `dict` all have the same length, and position `i` in each array belongs to the same row. If a category has no rows in this update, the accessor returns an empty `dict`.
 
 | Method          | Returns                                                                            |
@@ -115,7 +117,7 @@ Each call to `on_update` receives a `TableUpdate` that describes the coalesced, 
 
 Keep these points in mind:
 
-- **The first update is the initial snapshot.** When the subscription starts, every row currently in the table arrives as an addition. If the table is empty at that moment, the first update has no rows. **Blink tables are the exception**: the server always sends an empty initial snapshot for a blink table, even if rows are present at subscription time. Don't treat that first, empty update as the blink table's current contents — the first real rows arrive in later updates.
+- **The first update is the initial snapshot.** When the subscription starts, every row currently in the table arrives as an addition. If the table is empty at that moment, the first update has no rows. **[Blink tables](../conceptual/table-types.md#specialization-3-blink) are the exception**: the server always sends an empty initial snapshot for a blink table, even if rows are present at subscription time. Don't treat that first, empty update as the blink table's current contents — the first real rows arrive in later updates.
 - **Modified rows include every requested column.** A row is reported as modified if any of its columns changed, and `modified` returns all the columns you ask for, not just the ones that changed. This means you can always read a key column alongside the changed values.
 - **`modified` and `modified_prev` line up by position.** Use them together to see how each row changed — for example, to compute a price move.
 - **One update can combine several changes to the same row.** The server merges all the changes from an update interval, so each row appears at most once per category:
@@ -169,7 +171,9 @@ Deephaven column types map to these PyArrow types. Null values arrive as PyArrow
 
 Other column types, such as enums or other custom objects, are supported too: the server stringifies their values, so they arrive as PyArrow `string`.
 
-A smaller set of types fail instead: the server encodes `byte[]`, `BigDecimal`, `BigInteger`, and `Schema` columns as Arrow `binary`, and `Duration`, `Period`, and `PeriodDuration` columns as Arrow `duration`/`interval` types — none of which this package's schema conversion supports. Because `start` converts the whole schema before it launches the background thread, a column with one of these types makes `start` raise synchronously, the same way `byte[]` does. Nested arrays and vectors (an array of arrays, or a vector of vectors) aren't supported either, for the same reason — only one level of `list` wrapping is supported. Drop or convert those columns on the server first — for example with [`view`](../reference/table-operations/select/view.md) — before you subscribe.
+A smaller set of types fail instead: the server encodes `byte[]`, `BigDecimal`, `BigInteger`, and `Schema` columns as Arrow `binary`, and `Duration`, `Period`, and `PeriodDuration` columns as Arrow `duration`/`interval` types — none of which this package's schema conversion supports.
+
+Because `start` converts the whole schema before it launches the background thread, a column with one of these types makes `start` raise synchronously, the same way `byte[]` does. Nested arrays and vectors (an array of arrays, or a vector of vectors) aren't supported either, for the same reason — only one level of `list` wrapping is supported. Drop or convert those columns on the server first — for example with [`view`](../reference/table-operations/select/view.md) — before you subscribe.
 
 ## Subscribe to less data
 
@@ -200,7 +204,7 @@ If `on_update` raises an exception while the subscription is running, the subscr
 
 `on_error` only covers failures during active background processing, after `start` has launched the background thread:
 
-- **Synchronous setup failures raise directly from `start`.** Opening the connection and writing the subscription request happen on the calling thread, before the background thread exists, so errors there propagate out of `start` as normal exceptions instead of reaching `on_error`.
+- **Synchronous setup failures raise directly from `start`.** Opening the connection and writing the subscription request happen on the calling thread, before the background thread exists, so errors there propagate out of `start` as normal exceptions instead of reaching `on_error`. A table with a column type the package doesn't support fails this way; see [Data types](#data-types).
 - **Background stream failures reach `on_error`.** Once the background thread is running, failures while reading the stream — including a subscription the server rejects — are caught there and passed to `on_error`.
 - **A clean end of the stream is not an error.** The background thread treats it as normal completion and stops quietly without calling `on_error`.
 
@@ -216,11 +220,11 @@ handle = listen(table, on_update, on_error)
 
 To recover, create a new handle and call `start` again. If you'd rather keep the subscription running after a bad update, catch exceptions inside `on_update`.
 
-`listen` itself raises `ValueError` if a function listener or error callback doesn't take exactly one argument, or if you pass `on_error` together with a `TableListener` object. Use the object's `on_error` method instead.
-
 ## Stop the subscription
 
-Call `stop` when you're done. Called from outside the listener thread, it cancels the subscription and waits for the background thread to exit, so no further callbacks run after it returns. Called from inside `on_update` (as described above), it only marks the subscription cancelled and returns immediately without waiting — the current callback keeps running, and the background thread exits on its own once that callback finishes. Close the session after stopping its handles. Use `try`/`finally` so that cleanup happens even when your program fails or is interrupted:
+Call `stop` when you're done. Called from outside the listener thread, it cancels the subscription and waits for the background thread to exit, so no further callbacks run after it returns. Called from inside `on_update` (as described above), it only marks the subscription cancelled and returns immediately without waiting — the current callback keeps running, and the background thread exits on its own once that callback finishes.
+
+Close the session after stopping its handles. Use `try`/`finally` so that cleanup happens even when your program fails or is interrupted:
 
 ```python ticking-table order=null skip-test
 handle = listen(table, on_update)
@@ -306,6 +310,8 @@ finally:
 
 The server table uses [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md), so each new symbol arrives as an added row and later trades for that symbol arrive as modified rows. If a symbol's first trade and later trades fall in the same update interval, only an added row arrives, with the latest trade. The listener handles that case without special code because it stores every added row. The listener reads `Sym` with every modification even though only `Price` and `Size` change, which is what lets it find the right entry in the `dict`.
 
+For a longer version that also reads the initial snapshot in chunks, reports errors through `on_error`, and stops on Ctrl+C or after a time limit, see the [demo script](https://github.com/deephaven/deephaven-core/blob/main/py/client-ticking/demos/demo_python_client_ticking_tables.py).
+
 ## Related documentation
 
 - [Python client quickstart](../getting-started/pyclient-quickstart.md)
@@ -313,6 +319,12 @@ The server table uses [`last_by`](../reference/table-operations/group-and-aggreg
 - [Send data to Deephaven from a Python client](./client-input-tables.md)
 - [What is Barrage?](../conceptual/what-is-barrage.md)
 - [Version matrix](../reference/version-matrix.md)
+- [Anonymous authentication](./authentication/auth-anon.md)
+- [Pre-shared key authentication](./authentication/auth-psk.md)
+- [Capture Python client tables](./capture-tables.md)
+- [`where`](../reference/table-operations/filter/where.md)
+- [`view`](../reference/table-operations/select/view.md)
+- [`tail`](../reference/table-operations/filter/tail.md)
 - [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md)
 - [`time_table`](../reference/table-operations/create/timeTable.md)
 - [Python client API reference](/core/client-api/python/index.html)

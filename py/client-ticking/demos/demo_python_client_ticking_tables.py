@@ -15,7 +15,7 @@ modifies, or both. The listener:
   * shares state with the main thread under a lock
   * reports errors through on_error and stops cleanly on Ctrl+C or after a time limit
 
-Requires Python 3.9 or later, a Deephaven server on localhost:10000, and the
+Requires Python 3.10 or later, a Deephaven server on localhost:10000, and the
 pydeephaven-ticking package.
 
 By default, this connects with anonymous authentication. A Deephaven server started
