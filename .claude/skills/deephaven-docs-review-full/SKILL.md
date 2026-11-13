@@ -252,8 +252,9 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
 - **Does the page work in order, on a clean machine?** Walk the page's snippets top to bottom as a
   reader who pastes each into a fresh environment, and track what each one creates, closes, or
   rebinds: sessions and connections, tables, threads and listeners, variables, imports. A snippet
-  that uses a resource an earlier one closed, or a name an earlier one rebound, fails for that
-  reader even though each snippet runs alone. Then list what the steps assume without saying: which
+  that uses a resource an earlier one closed, or that still expects the previous value or type of a
+  name an earlier one rebound, fails for that reader even though each snippet runs alone. Rebinding
+  a name is fine when every later use expects the new value. Then list what the steps assume without saying: which
   server or dev server must be running and on which port, how the default server expects the reader
   to log in, and any package, codec, or image the default distribution lacks. Each must be stated
   before the step that needs it and agree everywhere on the page (same port, URL, and login). Check
