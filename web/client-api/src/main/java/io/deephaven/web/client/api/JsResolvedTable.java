@@ -38,7 +38,7 @@ public interface JsResolvedTable extends JsITable, JsTableOperations {
     /**
      * A new {@link JsTable} over the same server-side table, the inverse of {@link JsTable#operations()}. The
      * {@link JsTable} can be changed with {@link JsTable#applyFilter applyFilter}, {@link JsTable#applySort applySort}
-     * and the other legacy methods without affecting this table, and the two are closed independently. Like other
+     * and its other mutating methods without affecting this table, and the two are closed independently. Like other
      * tables made by operations, it is not revived if a reconnect needs a new session.
      *
      * @return a new mutable table, which the caller must close

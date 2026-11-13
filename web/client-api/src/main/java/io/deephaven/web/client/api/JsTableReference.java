@@ -15,12 +15,12 @@ import jsinterop.base.Js;
  * Any client object that refers to a table on the server, and so can be the other operand of a table operation: a
  * {@link JsTable}, a {@link JsTotalsTable}, a {@link JsPendingTable} or a {@link JsResolvedTable}. These are the
  * table-shaped members of the union of server objects. The operand must be on the same connection as the table operated
- * on: the operations of {@link JsTableOperations} and the legacy {@code Table} joins throw if it is not, and the other
- * methods taking one reject. A {@link JsTable} contributes its current state, including filters or sorts requested but
- * not yet applied.
+ * on: the operations of {@link JsTableOperations} and the joins of a mutable {@code Table} throw if it is not, and the
+ * other methods taking one reject. A {@link JsTable} contributes its current state, including filters or sorts
+ * requested but not yet applied.
  * <p>
  * Every method that takes a table reference holds it until its result settles, so the caller may close it as soon as
- * the method has been called: the operations of {@link JsTableOperations}, the legacy joins and {@code snapshot} of a
+ * the method has been called: the operations of {@link JsTableOperations}, the joins and {@code snapshot} of a mutable
  * {@code Table}, {@code mergeTables}, the {@code InputTable} add and delete methods, {@code shareObject} and
  * {@code bindTableToVariable}. {@code Widget.sendMessage} is the exception: it does not hold its references.
  */
