@@ -124,7 +124,7 @@ Each call to `on_update` receives a `TableUpdate` that describes the coalesced, 
 | Method          | Returns                                                                            |
 | --------------- | ---------------------------------------------------------------------------------- |
 | `added`         | Rows added in this update.                                                         |
-| `removed`       | Rows removed in this update, with the values they had before removal.              |
+| `removed`       | Rows removed in this update, with the values they had as of the previous update.   |
 | `modified`      | Rows modified in this update, with their new values.                               |
 | `modified_prev` | The same rows as `modified`, in the same order, with the values before the change. |
 
@@ -138,6 +138,7 @@ Keep these points in mind:
   - A row added and then modified appears only in `added`, with its latest values. It isn't also in `modified`.
   - A row added and then removed doesn't appear at all.
   - A row removed and then added again appears in both `removed` and `added`. Apply removals before additions so that the row ends up present.
+  - A row that changed and was then removed during the interval appears in `removed` with its values from before those changes, not its last values before it was removed.
 - **Blink tables aren't coalesced.** The server keeps every row that blinked during an update interval, so a row that appeared and disappeared within the interval still arrives in `added`, and the rows delivered by the previous update arrive in `removed`.
 
 ### Request only the columns you need
