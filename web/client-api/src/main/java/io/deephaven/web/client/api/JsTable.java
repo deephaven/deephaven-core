@@ -434,10 +434,7 @@ public class JsTable extends HasLifecycle
         return Promise.resolve(new JsInputTable(this, keyCols, valueCols));
     }
 
-    /**
-     * Indicates that this {@code Table} instance will no longer be used, and its connection to the server can be
-     * cleaned up.
-     */
+    @Override
     @JsMethod
     public void close() {
         if (currentState == null) {
@@ -460,11 +457,6 @@ public class JsTable extends HasLifecycle
         subscriptions.clear();
     }
 
-    /**
-     * Gets the names of attributes present on this table.
-     *
-     * @return the attribute names.
-     */
     @Override
     @JsMethod
     public JsArray<String> getAttributes() {
@@ -474,13 +466,7 @@ public class JsTable extends HasLifecycle
                 attrs.getRemainingAttributeKeys().stream()).toArray(String[]::new));
     }
 
-    /**
-     * Reads an attribute's value as a string. Only primitive and string values are sent to the client; an attribute
-     * listed by {@link #getAttributes()} with any other value cannot be read here.
-     *
-     * @param attributeName the name of the attribute to read
-     * @return the value of the attribute or null if none with that name exists
-     */
+    @Override
     @JsMethod
     @JsNullable
     public Object getAttribute(String attributeName) {
@@ -1600,13 +1586,6 @@ public class JsTable extends HasLifecycle
         return partitionByPromise.then(ignore -> fetchPromise);
     }
 
-    /**
-     * Computes statistics for one column of this table, such as its count, sum and average for a numeric column, or its
-     * most common values for other types.
-     *
-     * @param column the column, or the name of the column, to compute statistics for
-     * @return a promise of the {@link JsColumnStatistics ColumnStatistics} for that column
-     */
     @Override
     @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column.ColumnOrName column) {

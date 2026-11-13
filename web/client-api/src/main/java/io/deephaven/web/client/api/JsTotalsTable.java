@@ -106,24 +106,12 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
                 .build();
     }
 
-    /**
-     * Gets the names of attributes present on this table.
-     *
-     * @return the attribute names.
-     */
     @Override
     @JsMethod
     public JsArray<String> getAttributes() {
         return wrappedTable.getAttributes();
     }
 
-    /**
-     * Reads an attribute's value as a string. Only primitive and string values are sent to the client; an attribute
-     * listed by {@link #getAttributes()} with any other value cannot be read here.
-     *
-     * @param attributeName the name of the attribute to read
-     * @return the value of the attribute or null if none with that name exists
-     */
     @Override
     @JsMethod
     @JsNullable
@@ -131,13 +119,6 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
         return wrappedTable.getAttribute(attributeName);
     }
 
-    /**
-     * Computes statistics for one column of this totals table, such as its count, sum and average for a numeric column,
-     * or its most common values for other types.
-     *
-     * @param column the column, or the name of the column, to compute statistics for
-     * @return a promise of the {@link JsColumnStatistics ColumnStatistics} for that column
-     */
     @Override
     @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column.ColumnOrName column) {
@@ -194,39 +175,20 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
     }
 
 
-    /**
-     * Creates a subscription to this table, with the given options. See {@link JsTable#createSubscription(Object)} for
-     * more information.
-     *
-     * @param options options for the subscription; see {@link DataOptions.SubscriptionOptions} for details
-     * @return a new {@link TableSubscription}
-     */
+    @Override
     @JsMethod
     public TableSubscription createSubscription(@TsTypeRef(DataOptions.SubscriptionOptions.class) Object options) {
         return wrappedTable.createSubscription(options);
     }
 
-    /**
-     * Creates a viewport subscription to this table, with the given options. See
-     * {@link JsTable#createViewportSubscription(Object)} for more information.
-     *
-     * @param options options for the viewport subscription; see {@link DataOptions.ViewportSubscriptionOptions} for
-     *        details
-     * @return a new {@link TableViewportSubscription}
-     */
+    @Override
     @JsMethod
     public TableViewportSubscription createViewportSubscription(
             @TsTypeRef(DataOptions.ViewportSubscriptionOptions.class) Object options) {
         return wrappedTable.createViewportSubscription(options);
     }
 
-    /**
-     * Creates a snapshot of this table on the server, with the given options. See
-     * {@link JsTable#createSnapshot(Object)} for more information.
-     *
-     * @param options options for the snapshot; see {@link DataOptions.SnapshotOptions} for details
-     * @return Promise of {@link TableData}
-     */
+    @Override
     @JsMethod
     public Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options) {
         return wrappedTable.createSnapshot(options);
@@ -289,9 +251,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
         return wrappedTable.isClosed();
     }
 
-    /**
-     * Indicates that the table will no longer be used, and resources used to provide it can be freed up on the server.
-     */
+    @Override
     @JsMethod
     public void close() {
         wrappedTable.close();
