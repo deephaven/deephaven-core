@@ -356,7 +356,7 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                         (src, f) -> src.whereNotIn(f.ref("some_keys"), arr("Key"))),
                 // A range join needs its right table ordered by the range column
                 parity("windows.range_join(src.sort('I'), on=['Key', 'Lo <= I <= Hi'], aggs=agg.group('Is = I'))",
-                        (src, f) -> f.ops("windows").rangeJoin(Js.uncheckedCast(src.sort(arr("I"))), arr("Key"),
+                        (src, f) -> f.ops("windows").rangeJoin(JsTableReference.of(src.sort(arr("I"))), arr("Key"),
                                 loToHi(), arr(Aggregation.AggGroup(arr("Is = I"))))),
                 parity("src.view(['Key', 'I']).group_by('Key')",
                         src -> src.view(arr("Key", "I")).groupBy(arr("Key"))),
