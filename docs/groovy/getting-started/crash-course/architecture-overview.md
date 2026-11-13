@@ -6,7 +6,7 @@ Deephaven's power is largely due to the concept that _everything_ is a table. Th
 
 ## Tables and table operations
 
-If you're familiar with tabular data (think Excel, pandas, and more), Deephaven feels natural to you. Beyond representing data as tables, Deephaven lets you manipulate, transform, extract, and analyze that data to produce valuable insight. Deephaven represents transformations to the data stored in a table as _operations_ on that table. You can chain these [table operations](./table-ops.md) together to transform the data step by step:
+If you're familiar with tabular data (think Excel, pandas, and more), Deephaven will feel natural to you. Beyond representing data as tables, Deephaven lets you manipulate, transform, extract, and analyze that data to produce valuable insight. Deephaven represents transformations to the data stored in a table as _operations_ on that table. You can chain these [table operations](./table-ops.md) together to transform the data step by step:
 
 ```groovy order=resultTable,sourceTable
 sourceTable = newTable(stringCol("Group", "A", "B", "A", "B"), intCol("Data", 1, 2, 3, 4))
