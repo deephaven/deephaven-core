@@ -7,6 +7,13 @@ import org.apache.iceberg.SortOrder;
 
 /**
  * A specification for providing {@link org.apache.iceberg.SortOrder} while writing to an iceberg table.
+ * <p>
+ * Deephaven sorts new data by the provided sort order with its own comparisons, which differ from the Iceberg
+ * specification's for strings and floating point values. New data files declare the sort order in the Iceberg metadata
+ * only where the two agree: every field of the sort order must be on a boolean, integer, date, time or timestamp
+ * column, and use the identity transform, except that the last field may use any order preserving transform, such as
+ * {@code day}. Otherwise new data files declare no sort order. Either way, Deephaven also records the sort's leading
+ * column in its own metadata in each data file.
  */
 public interface SortOrderProvider {
 
@@ -49,7 +56,9 @@ public interface SortOrderProvider {
      * {@link SortOrder#satisfies(SortOrder) satisfy} the sort order corresponding to the provided sort order ID.
      * <p>
      * For example, this provider might sort by columns {A, B, C}, but the ID written to Iceberg corresponds to a sort
-     * order with columns {A, B}.
+     * order with columns {A, B}, perhaps because C is a string column. The ID is written only where Deephaven can
+     * declare the sort order with that ID, as the {@link SortOrderProvider} documentation describes, and is still
+     * checked otherwise.
      *
      * @param sortOrderId the sort order ID to write to the iceberg table
      */

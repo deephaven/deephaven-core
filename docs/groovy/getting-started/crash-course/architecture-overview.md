@@ -2,7 +2,7 @@
 title: An Overview of Deephaven's Architecture
 ---
 
-Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like DataFrames, except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data for a seamless, integrated experience. This chapter covers the three main pieces of Deephaven's architecture: tables and the operations that act on them, the engine that runs your queries, and the web user interface. Let's look at each one before diving deeper into code.
+Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like [pandas DataFrames](https://pandas.pydata.org/docs/user_guide/dsintro.html#dataframe), except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data for a seamless, integrated experience. This chapter covers the three main pieces of Deephaven's architecture: tables and the operations that act on them, the engine that runs your queries, and the web user interface. Let's look at each one before diving deeper into code.
 
 ## Tables and table operations
 
@@ -95,8 +95,8 @@ For the sake of efficiency and scalability, the engine is implemented mostly in 
 
 The Deephaven user interface (UI) is a web-based application that runs in your browser and communicates with the Deephaven engine using the [JavaScript API](../../how-to-guides/use-jsapi.md). The UI provides a rich experience for exploring tables, writing queries, and visualizing data.
 
-The UI is also highly extensible. You can add custom widgets, visualizations, and functionality with [JavaScript plugins](../../how-to-guides/configuration/js-plugins.md). Create your own plugin starting with one of the [plugin templates](https://github.com/deephaven/deephaven-plugins/tree/main/templates) available on GitHub.
+The UI is also highly extensible. You can add custom widgets, visualizations, and functionality with [JavaScript plugins](../../how-to-guides/configuration/js-plugins.md).
 
-All Core components of the UI are open source on GitHub in the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository, and the source code for the plugins is at [deephaven/deephaven-plugins](https://github.com/deephaven/deephaven-plugins). You can explore the source code, contribute to the project, or even fork it to create your own custom version of the Deephaven UI.
+All Core components of the UI are open source on GitHub in the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository, and the source code for the plugins is at [deephaven/deephaven-plugins](https://github.com/deephaven/deephaven-plugins). You can explore the source code and contribute to the project.
 
 Next, [Create Your First Tables](./create-tables.md) shows how to build static and ticking tables of your own.

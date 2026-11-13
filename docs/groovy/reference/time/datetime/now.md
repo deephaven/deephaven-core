@@ -2,7 +2,7 @@
 title: now
 ---
 
-`now` provides the current [date-time](../../query-language/types/date-time.md) as an Instant. The resultant [date-time](../../query-language/types/date-time.md) has a millisecond resolution according to the current clock.
+`now` provides the current [date-time](../../query-language/types/date-time.md) as an Instant. The resultant [date-time](../../query-language/types/date-time.md) has nanosecond resolution according to the current clock.
 
 ## Syntax
 

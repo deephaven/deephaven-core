@@ -4,7 +4,6 @@
 """This module provides the ability to create, check, and retrieve DataIndex objects from Deephaven tables."""
 
 from collections.abc import Sequence
-from typing import Optional
 
 import jpy
 
@@ -57,7 +56,7 @@ def has_data_index(table: Table, key_cols: Sequence[str]) -> bool:
     return _JDataIndexer.hasDataIndex(table.j_table, key_cols)
 
 
-def _get_data_index(table: Table, key_cols: Sequence[str]) -> Optional[DataIndex]:
+def _get_data_index(table: Table, key_cols: Sequence[str]) -> DataIndex | None:
     """Gets a DataIndex for the given key columns. Returns None if the DataIndex does not exist.
 
     Args:
@@ -73,7 +72,7 @@ def _get_data_index(table: Table, key_cols: Sequence[str]) -> Optional[DataIndex
 
 def data_index(
     table: Table, key_cols: Sequence[str], create_if_absent: bool = True
-) -> Optional[DataIndex]:
+) -> DataIndex | None:
     """Gets the DataIndex for the given key columns on the provided table. When the DataIndex already exists, returns it.
     When the DataIndex doesn't already exist, if create_if_absent is True, creates the DataIndex first then returns it;
     otherwise returns None.

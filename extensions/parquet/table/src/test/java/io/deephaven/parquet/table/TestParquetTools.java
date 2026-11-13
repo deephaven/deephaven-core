@@ -482,6 +482,20 @@ public class TestParquetTools {
     }
 
     @Test
+    public void testRenameSwapping() {
+        final Table source = emptyTable(10).update("A = (int) ii", "B = `s` + ii", "C = ii * 1.5");
+        testWriteRead(source, t -> t.renameColumns("A = B", "B = A"));
+        testWriteRead(source, t -> t.renameColumns("B = A", "C = B"));
+        testWriteRead(source, t -> t.renameColumns("A = B", "B = C", "C = A"));
+        testWriteRead(source, t -> t.renameColumns("A = B", "B = A").where("A == `s3`"));
+        testWriteRead(source, t -> t.renameColumns("A = B", "B = A").where("B > 5"));
+        testWriteRead(source, t -> {
+            final Table swapped = t.renameColumns("A = B", "B = A");
+            return merge(swapped, swapped);
+        });
+    }
+
+    @Test
     public void testColumnRedefineArrayDep() {
         testWriteRead(emptyTable(10).update("X = ii * 2", "Y = ii * 2 + 1"),
                 t -> t.view("T = X_[i-1]"));
@@ -700,7 +714,7 @@ public class TestParquetTools {
         // to know whenever serialization changes in any way.
         // For example, this test can fail when we upgrade the parquet version simply because the "createdBy" field
         // captures this version.
-        assertEquals("fd728e4033d09884569d5cea2f49b619b99e4e3904327c43640aeccfd669d51d", sha256sum(file.toPath()));
+        assertEquals("27f64942a01cc508b0feda886b3236896a2f75ec2aa7578f629e834bf1be483b", sha256sum(file.toPath()));
 
         // This test is a bit circular; but assuming we trust our reading code, we should have relative confidence that
         // we are writing it down correctly if we can read it correctly.

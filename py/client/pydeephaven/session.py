@@ -17,7 +17,7 @@ import weakref
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from random import random
-from typing import Any, NewType, Optional, Union, cast
+from typing import Any, NewType, TypeAlias, cast
 
 import grpc
 import pyarrow as pa
@@ -88,7 +88,7 @@ def _run_release_worker(
     session_ref: weakref.ReferenceType[Session],
     jobs: queue.SimpleQueue[_SessionJob],
 ) -> None:
-    """Runs a session's queued jobs. It ends when the session is closed or reconnects, or when the session is gone.
+    """Runs a session's queued jobs. It ends when the session is closed or when the session is gone.
     While it waits for a job it holds the session only weakly, so a dropped session can be collected. A failing job is
     logged and does not end the thread."""
     while True:
@@ -145,7 +145,7 @@ class _DhClientAuthMiddleware(ClientMiddleware):
         # would keep a dropped session alive.
         self._session_ref = weakref.ref(session)
 
-    def call_completed(self, exception: Optional[Exception]) -> None:
+    def call_completed(self, exception: Exception | None) -> None:
         super().call_completed(exception)
 
     def received_headers(self, headers: dict) -> None:
@@ -173,10 +173,7 @@ def _trace(who: str) -> None:
 
 
 _BidiRpc = NewType("_BidiRpc", grpc.StreamStreamMultiCallable)
-_NotBidiRpc = Union[
-    grpc.UnaryUnaryMultiCallable,
-    grpc.StreamUnaryMultiCallable,
-]
+_NotBidiRpc: TypeAlias = grpc.UnaryUnaryMultiCallable | grpc.StreamUnaryMultiCallable
 
 
 class Session:
@@ -185,7 +182,8 @@ class Session:
     execute queries.
 
     Session objects can be used in Python with statement so that whatever happens in the with statement block, they
-    are guaranteed to be closed upon exit.
+    are guaranteed to be closed upon exit. A closed or disconnected session cannot be used again.
+    Create a new Session instead.
 
     Attributes:
         tables (list[str]): names of the global tables available in the server after running scripts
@@ -194,18 +192,18 @@ class Session:
 
     def __init__(
         self,
-        host: Optional[str] = None,
-        port: Optional[int] = None,
+        host: str | None = None,
+        port: int | None = None,
         auth_type: str = "Anonymous",
         auth_token: str = "",
         never_timeout: bool = True,
         session_type: str = "python",
         use_tls: bool = False,
-        tls_root_certs: Optional[bytes] = None,
-        client_cert_chain: Optional[bytes] = None,
-        client_private_key: Optional[bytes] = None,
-        client_opts: Optional[list[tuple[str, Union[int, str]]]] = None,
-        extra_headers: Optional[dict[bytes, bytes]] = None,
+        tls_root_certs: bytes | None = None,
+        client_cert_chain: bytes | None = None,
+        client_private_key: bytes | None = None,
+        client_opts: list[tuple[str, int | str]] | None = None,
+        extra_headers: dict[bytes, bytes] | None = None,
     ):
         """Initializes a Session object that connects to the Deephaven server
 
@@ -248,7 +246,7 @@ class Session:
         self._services_lock = threading.Lock()  # for lazy initialization of services
         # Before anything that can raise: close() and __del__ use it, and __del__ runs on a partly built session too.
         self._release_queue: queue.SimpleQueue[_SessionJob] = queue.SimpleQueue()
-        self._release_thread: Optional[threading.Thread] = None
+        self._release_thread: threading.Thread | None = None
         self._last_export_ticket_number: int = 0
 
         if not host:
@@ -261,7 +259,7 @@ class Session:
         else:
             self._port = port
 
-        self._logpfx = f"pydh.Session {id(self)} {host}:port: "
+        self._logpfx = f"pydh.Session {id(self)} {self._host}:{self._port}"
         self._use_tls = use_tls
         self._tls_root_certs = tls_root_certs
         self._client_cert_chain = client_cert_chain
@@ -290,31 +288,30 @@ class Session:
         self._auth_header_value: bytes = bytes(auth_header_value, "ascii")
         # Counter for consecutive failures to refresh auth token, used to calculate retry backoff
         self._refresh_failures = 0
-        self.grpc_channel: Optional[grpc.Channel] = None
-        self._session_service: Optional[SessionService] = None
-        self._table_service: Optional[TableService] = None
+        self.grpc_channel: grpc.Channel | None = None
+        self._session_service: SessionService | None = None
+        self._table_service: TableService | None = None
         self._grpc_barrage_stub = None
-        self._console_service: Optional[ConsoleService] = None
-        self._flight_service: Optional[ArrowFlightService] = None
-        self._app_service: Optional[AppService] = None
-        self._input_table_service: Optional[InputTableService] = None
-        self._plugin_obj_service: Optional[PluginObjService] = None
+        self._console_service: ConsoleService | None = None
+        self._flight_service: ArrowFlightService | None = None
+        self._app_service: AppService | None = None
+        self._input_table_service: InputTableService | None = None
+        self._plugin_obj_service: PluginObjService | None = None
         self._never_timeout = never_timeout
         # The time.monotonic() time of the next token refresh, or None for no refresh.
-        self._next_refresh: Optional[float] = None
-        self._refresh_thread: Optional[threading.Thread] = None
+        self._next_refresh: float | None = None
+        self._refresh_thread: threading.Thread | None = None
         self._session_type = session_type
-        self._flight_client: Optional[paflight.FlightClient] = None
+        self._flight_client: paflight.FlightClient | None = None
         self._auth_handler = None
-        self._config_service: Optional[ConfigService] = None
+        self._config_service: ConfigService | None = None
 
         self._connect()
 
     def __enter__(self) -> Session:
+        # A session does not reconnect. Its services and auth token are bound to its first connection.
         if not self.is_connected:
-            # double-checked locking, is_connected is checked inside _connect again, which
-            # may not end up connecting.
-            self._connect()
+            raise DHError("the session is not connected. Create a new Session.")
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -330,9 +327,7 @@ class Session:
             return
         self._release_queue.put(_STOP)
 
-    def update_metadata(
-        self, metadata: Iterable[tuple[str, Union[str, bytes]]]
-    ) -> None:
+    def update_metadata(self, metadata: Iterable[tuple[str, str | bytes]]) -> None:
         for header_tuple in metadata:
             if header_tuple[0] == "authorization":
                 v = header_tuple[1]
@@ -387,6 +382,8 @@ class Session:
 
     @property
     def exportable_objects(self) -> dict[str, ServerObject]:
+        """The objects the server can export to this session, keyed by field name. Each value is a ServerObject
+        holding the object's type and a ticket to it."""
         with self._r_lock:
             fields = self._fetch_fields()
             return {
@@ -401,7 +398,7 @@ class Session:
         )  # ensure it doesn't change while doing multiple reads
         if not header_value_snap or not isinstance(header_value_snap, bytes):
             logger.warning(
-                f"{self._logpfx} internal invariant violated, _auth_header_value={header_value_snap}"
+                f"{self._logpfx}: internal invariant violated, _auth_header_value={header_value_snap}"
             )
             tuple_l = []
         else:
@@ -474,7 +471,7 @@ class Session:
                     self._plugin_obj_service = PluginObjService(self)
         return self._plugin_obj_service
 
-    def make_export_ticket(self, ticket_no: Optional[int] = None) -> ExportTicket:
+    def make_export_ticket(self, ticket_no: int | None = None) -> ExportTicket:
         if not ticket_no:
             ticket_no = self.next_export_ticket_number()
         return ExportTicket.export_ticket(ticket_no)
@@ -503,8 +500,6 @@ class Session:
     def _connect(self) -> None:
         _trace(f"_connect id={id(self)}")
         with self._r_lock:
-            if self.is_connected:
-                return
             _trace(f"_connect id={id(self)} connecting.")
             try:
                 scheme = "grpc+tls" if self._use_tls else "grpc"
@@ -563,11 +558,6 @@ class Session:
             if self._never_timeout:
                 self._next_refresh = time.monotonic() + 0.5 * self._timeout_seconds
 
-            # New threads per connection: tickets from an earlier connection are invalid. Stop the earlier release
-            # thread, which still runs if the session was marked disconnected without close(). The earlier refresh
-            # thread ends when it next wakes.
-            self._release_queue.put(_STOP)
-            self._release_queue = queue.SimpleQueue()
             self._release_thread = threading.Thread(
                 target=_run_release_worker,
                 args=(weakref.ref(self), self._release_queue),
@@ -585,7 +575,7 @@ class Session:
                 )
                 self._refresh_thread.start()
 
-    def _seconds_until_refresh(self) -> Optional[float]:
+    def _seconds_until_refresh(self) -> float | None:
         """The seconds until the next token refresh, or None for no refresh."""
         if self._next_refresh is None:
             return None
@@ -622,7 +612,7 @@ class Session:
             return True
         except Exception as ex:
             logger.warning(
-                f"{self._logpfx} Caught exception while refreshing auth token: {ex}."
+                f"{self._logpfx}: caught exception while refreshing auth token: {ex}."
             )
             return False
 
@@ -679,7 +669,7 @@ class Session:
         self._release_queue.put(_ReleaseTicket(ticket))
 
     # convenience/factory methods
-    def run_script(self, script: str, systemic: Optional[bool] = None) -> None:
+    def run_script(self, script: str, systemic: bool | None = None) -> None:
         """Runs the supplied Python script on the server.
 
         Args:
@@ -812,8 +802,8 @@ class Session:
 
     def time_table(
         self,
-        period: Union[int, str],
-        start_time: Optional[Union[int, str]] = None,
+        period: int | str,
+        start_time: int | str | None = None,
         blink_table: bool = False,
     ) -> Table:
         """Creates a time table on the server.
@@ -854,8 +844,9 @@ class Session:
     def import_table(self, data: pa.Table) -> Table:
         """Imports the pyarrow table as a new Deephaven table on the server.
 
-        Deephaven supports most of the Arrow data types. However, if the pyarrow table contains any field with a data
-        type not supported by Deephaven, the import operation will fail.
+        Deephaven supports most of the Arrow data types. Before sending any data, the client checks each field's data
+        type and rejects the import if it does not map the type. A dictionary-encoded or run-end encoded field is
+        checked by the type of its values.
 
         Args:
             data (pa.Table): a pyarrow Table object
@@ -901,9 +892,9 @@ class Session:
 
     def input_table(
         self,
-        schema: Optional[pa.Schema] = None,
-        init_table: Optional[Table] = None,
-        key_cols: Optional[Union[str, list[str]]] = None,
+        schema: pa.Schema | None = None,
+        init_table: Table | None = None,
+        key_cols: str | list[str] | None = None,
         blink_table: bool = False,
     ) -> InputTable:
         """Creates an InputTable from either Arrow schema or initial table.  When blink_table is True, the InputTable

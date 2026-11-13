@@ -273,7 +273,7 @@ With port 6006 published, your TensorBoard dashboard is now available in the bro
 
 TensorBoard keeps running in the background. If you run this code again, delete the `tensorboard_logs` directory first, or set `log_dir` to a new folder, so the new run's charts don't overlay the old ones.
 
-Second, create a [`SummaryWriter`](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter) instance that writes the logs TensorBoard reads:
+Second, create a [`SummaryWriter`](https://docs.pytorch.org/docs/2.15/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter) instance that writes the logs TensorBoard reads:
 
 ```python skip-test
 from torch.utils.tensorboard import SummaryWriter
@@ -457,10 +457,10 @@ After training the model, you can open the TensorBoard dashboard at [http://loca
 
 This example logs only the training loss, so the dashboard shows a single curve on the Scalars tab. To fill in TensorBoard's other tabs, log more data with `SummaryWriter` in `train_model`:
 
-- [`add_histogram`](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_histogram) logs histograms of weights and biases.
-- [`add_graph`](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_graph) logs the model graph.
-- [`add_embedding`](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_embedding) logs embeddings.
-- [`add_hparams`](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_hparams) logs hyperparameters.
+- [`add_histogram`](https://docs.pytorch.org/docs/2.15/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_histogram) logs histograms of weights and biases.
+- [`add_graph`](https://docs.pytorch.org/docs/2.15/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_graph) logs the model graph.
+- [`add_embedding`](https://docs.pytorch.org/docs/2.15/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_embedding) logs embeddings.
+- [`add_hparams`](https://docs.pytorch.org/docs/2.15/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_hparams) logs hyperparameters.
 
 ## Related documentation
 

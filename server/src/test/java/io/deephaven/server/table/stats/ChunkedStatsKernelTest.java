@@ -29,6 +29,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
 
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 import static org.junit.Assert.assertArrayEquals;
@@ -210,6 +211,53 @@ public class ChunkedStatsKernelTest {
         assertTrue("bigDecimalCol StdDev Accuracy",
                 withinTolerance((Number) stdDev.getColumnSource("bigDecimalCol").get(0),
                         (Number) bigDecimalStats.getColumnSource("STD_DEV").get(0)));
+    }
+
+    /**
+     * A snapshot function that is retried calls {@link ChunkedStatsKernel#processChunks} again on the same kernel, so a
+     * second call must not accumulate onto the first.
+     */
+    @Test
+    public void testRepeatedProcessChunks() {
+        final String[] numericColumns = {"shortCol", "byteCol", "intCol", "longCol", "floatCol", "doubleCol",
+                "bigIntCol", "bigDecimalCol"};
+        final QueryTable queryTable = getTable(100, new Random(0),
+                initColumnInfos(
+                        new String[] {"shortCol", "byteCol", "intCol", "longCol", "floatCol", "doubleCol",
+                                "bigIntCol", "bigDecimalCol", "charCol", "instantCol", "strCol"},
+                        new ShortGenerator((short) -100, (short) 100, 0.1),
+                        new ByteGenerator((byte) -100, (byte) 100, 0.1),
+                        new IntGenerator(-100, 100, 0.1),
+                        new LongGenerator(-100, 100, 0.1),
+                        new FloatGenerator(-100f, 100f, 0.1),
+                        new DoubleGenerator(-100.0, 100.0, 0.1),
+                        new BigIntegerGenerator(0.1),
+                        new BigDecimalGenerator(0.1),
+                        new CharGenerator('a', 'e', 0.1),
+                        new UnsortedInstantGenerator(Instant.ofEpochSecond(0), Instant.ofEpochSecond(1000), 0.1),
+                        new StringGenerator(10, 0.1)));
+
+        for (final String colName : numericColumns) {
+            final ColumnSource<?> colSource = queryTable.getColumnSource(colName);
+            assertRepeatable(colName, ChunkedNumericalStatsKernel.makeChunkedNumericalStats(colSource.getType()),
+                    queryTable, colSource);
+        }
+        assertRepeatable("charCol", new CharacterChunkedStats(1000, 100), queryTable,
+                queryTable.getColumnSource("charCol"));
+        assertRepeatable("instantCol", new DateTimeChunkedStats(), queryTable,
+                ReinterpretUtils.instantToLongSource(queryTable.getColumnSource("instantCol")));
+        assertRepeatable("strCol", new ObjectChunkedStats(1000, 100), queryTable,
+                queryTable.getColumnSource("strCol"));
+    }
+
+    private static void assertRepeatable(
+            final String colName,
+            final ChunkedStatsKernel kernel,
+            final Table queryTable,
+            final ColumnSource<?> colSource) {
+        final Table first = kernel.processChunks(queryTable.getRowSet(), colSource, false);
+        final Table second = kernel.processChunks(queryTable.getRowSet(), colSource, false);
+        assertTableEquals(colName, first, second);
     }
 
     private Table getChunkedNumericalStats(Table queryTable, String colName) {

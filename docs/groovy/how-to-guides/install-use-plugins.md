@@ -2,155 +2,203 @@
 title: Install and use plugins
 ---
 
-This guide covers the installation and use of plugins in Deephaven. A plugin is something that extends the functionality of a software. Groovy packages are a common example of plugins - they extend Groovy's capabilities. Plugins in Deephaven can extend the functionality of a running server, UI, client API, or all of them.
+This guide covers how to install and use pre-built plugins in Deephaven. A plugin extends the functionality of Deephaven, much as a Java library extends what Groovy and Java code can do. A plugin's server-side components are often packaged as Java libraries, but not every Java library is a plugin. Plugins in Deephaven can extend the functionality of a running server, UI, client API, or all of them.
 
-Deephaven offers several pre-built plugins that can extend the platform's functionality. These are available to anyone using Deephaven Community Core. They can be installed easily and provide a range of additional capabilities. For the full list of available plugins, see [available plugins](#available-plugins).
-
-Server-side plugins extend the functionality of the Deephaven server. For instance, plotting plugins add the ability to plot with new APIs such as Plotly Express, Matplotlib, and Seaborn. Authentication plugins add the ability to authenticate users with new authentication methods such as mTLS.
-
-Client-side plugins extend the functionality of any of Deephaven's client APIs. For instance, the Groovy client API can be extended with plugins that allow the client to manage arbitrary objects in the server, or to interact with the server using a different serialization format.
-
-Other plugins may have both a server-side plugin and a client-side plugin, allowing bidirectional communication between the client and server.
+Deephaven offers several pre-built plugins that extend the platform's functionality, and anyone using Deephaven Community Core can install them. For the plugins you can install, see [Available plugins](#available-plugins).
 
 > [!NOTE]
-> In some cases, you'll want to install packages rather than use plugins. Those instructions are covered in [How to install packages](./install-packages.md).
+> To install Linux system packages rather than plugins, see [Install packages](./install-packages.md). To add Java libraries to the server, see [Install and use Java packages](./install-and-use-java-packages.md).
 >
-> To have _complete control_ of the build process, you can [Build and launch Deephaven from source code](../getting-started/launch-build.md).
+> To have _complete control_ of the build process, see [Build and launch Deephaven from source code](../getting-started/launch-build.md).
 
-This guide covers the installation and use of pre-built plugins. For information on building your own plugins, see [Create your own plugin](./create-plugins.md).
+For information on building your own plugins, see [Create your own plugin](./create-plugins.md).
+
+## Types of plugins
+
+Deephaven plugins come in four types:
+
+- **Server-side plugins** extend the Deephaven server. For example, authentication plugins add authentication methods such as [mutual TLS (mTLS)](./authentication/auth-mtls.md). Some server-side plugins, such as the plotting plugins for [Deephaven Express](/core/plotly/docs/) and [Matplotlib](/core/docs/how-to-guides/plotting/matplot-seaborn/), are Python packages that run only on a server with Python as its scripting language.
+- **UI plugins**, also called JavaScript (JS) plugins, extend the Deephaven web IDE. They are JavaScript packages that the server loads and serves to the browser. For example, the [theme pack](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/theme-pack) adds IDE color themes.
+- **Client-side plugins** extend Deephaven's client APIs. For example, a plugin can extend the [Python client](/core/docs/getting-started/pyclient-quickstart/) so it can work with a plugin's objects on the server. The [Java client API](./java-client.md) doesn't load plugins, but it can fetch plugin objects from the server and exchange messages with them in a format the plugin defines. See [Use plugins from the Java client](#use-plugins-from-the-java-client).
+- **Bidirectional plugins** keep a message stream open between a server-side object and a client so that the two can exchange messages. Some, like the Python examples in [Bidirectional plugin examples](#bidirectional-plugin-examples), also ship a client-side plugin. The Java client can talk to a bidirectional plugin directly.
 
 ## Install a plugin
 
 > [!NOTE]
-> Authentication plugins require additional configuration, which is outside the scope of this guide. For more information, see the documentation for each authentication plugin.
+> Authentication plugins need additional configuration. See [Authentication](#authentication) for the guide to each one.
 
-### Extend Deephaven with Docker
+On a Groovy server, how you install a plugin depends on how it is packaged:
 
-First, follow the [Launch Deephaven from pre-built images](../getting-started/docker-install.md) steps from the Docker install guide.
+- **Server-side components** are Java libraries on the server's classpath. To add them, see [Install and use Java packages](./install-and-use-java-packages.md).
+- **JS components published to npm** need packaging. Package them with `pack-plugins.sh` and copy the result to the directory where the server looks for JS plugins. In Docker, build a custom image, as described in the next section. For other installations, see [Configure JS plugins](./configuration/js-plugins.md).
 
-To open a Groovy session, run:
+The server loads plugins only when it starts, so restart the server after you install a plugin.
 
-```bash
-compose_file=https://github.com/deephaven/deephaven-core/blob/main/containers/groovy-examples/docker-compose.yml
-curl  -O "${compose_file}"
-```
+### Extend Docker images for JS plugins
 
-Once you have the `docker-compose.yml` file pulled down, define your own web Docker image in `web/Dockerfile` that includes the plugins you would like to use.
+First, follow the steps in [Launch Deephaven from pre-built images](../getting-started/docker-install.md).
 
-1. Create the subdirectory `web` in the same folder as your `docker-compose.yml`:
-   `mkdir web`
-2. Create the `Dockerfile` for web and open for editing:
-   `vi web/Dockerfile`
-3. Paste the following into the `web/Dockerfile` and save:
+The `server-slim` image runs a Groovy console. To add JS plugins to it, build a custom image in two stages:
 
-   ```bash
-   # Pull the web-plugin-packager image
-   FROM ghcr.io/deephaven/web-plugin-packager:main as build
+1. The first stage uses the `web-plugin-packager` image to download plugins from npm.
+2. The second stage copies them into `server-slim`.
 
-   # Specify the plugins you wish to use. You can specify multiple plugins separated by a space, and optionally include the version number, e.g.
-   # RUN ./pack-plugins.sh <js-plugin-name>[@version] ...
-   # For a list of published plugins, see https://www.npmjs.com/search?q=keywords%3Adeephaven-js-plugin
+Each plugin's npm package name is the `name` field of `src/js/package.json` in its folder of the [plugins repository](#the-plugins-repository). You can also [search npm for the `deephaven-js-plugin` keyword](https://www.npmjs.com/search?q=keywords%3Adeephaven-js-plugin).
 
-   # Here is how you would install the matplotlib and table-example plugins
-   RUN ./pack-plugins.sh @deephaven/js-plugin-matplotlib @deephaven/js-plugin-table-example
-
-   # Copy the packaged plugins over
-   FROM ghcr.io/deephaven/web:${VERSION:-latest}
-   COPY --from=build js-plugins/ /usr/share/nginx/html/js-plugins/
-   ```
-
-Many plugins will also require a server side component. To define the plugins used on the server, create a `server/Dockerfile` similar to above:
-
-1. Create subdirectory `server` in the same folder as your `docker-compose.yml`:
-   `mkdir server`
-2. Create the `Dockerfile` for server and open for editing:
-   `vi server/Dockerfile`
-3. Paste the following into the `server/Dockerfile` and save:
-
-   ```bash
-   FROM ghcr.io/deephaven/server:${VERSION:-latest}
-   # pip install any of the plugins required on the server
-   RUN pip install deephaven-plugin-matplotlib
-   ```
-
-After building, you need to update your `docker-compose` file to specify using that build. Modify the existing `docker-compose.yml` file and replace the web and server definitions with the following:
-
-```yaml
-services:
-  web:
-    build:
-      context: ./web
-    ports:
-      - "${WEB_PORT:-8080}:80"
-  grpc-proxy:
-    image: ghcr.io/deephaven/grpc-proxy:${VERSION:-latest}
-    environment:
-      - BACKEND_ADDR=server:8080
-    depends_on:
-      - server
-    ports:
-      - "${DEEPHAVEN_PORT:-10000}:8080"
-  server:
-    build:
-      context: ./server
-    expose:
-      - "8080"
-    volumes:
-      - ./data:/data
-    environment:
-      - JAVA_TOOL_OPTIONS=-Xmx4g -Ddeephaven.console.type=groovy -Ddeephaven.application.dir=/opt/deephaven/config
-```
-
-When you're done, your directory structure should look like:
-
-```
-.
-├── docker-compose.yml
-├── server
-│   └── Dockerfile
-└── web
-    └── Dockerfile
-```
-
-Everything's ready to go! Now you just need to run `docker compose up` as normal, and you will be using your custom image with your JS plugins installed.
-
-### Alternative Docker template
-
-The following Dockerfile provides an alternative template for installing a plugin containing both Javascript and server components in a Deephaven Docker image:
+The following Dockerfile is the general template:
 
 ```docker title="Dockerfile"
-FROM ghcr.io/deephaven/web-plugin-packager:main as js-plugins
-# 1. Package the NPM deephaven-js-plugin(s)
+FROM ghcr.io/deephaven/web-plugin-packager:latest AS js-plugins
+# 1. Package the npm deephaven-js-plugin(s)
 RUN ./pack-plugins.sh <plugins>
 
-FROM ghcr.io/deephaven/server:main
-# 2. Install the server-side plugin components if necessary (some plugins may be JS only)
-RUN pip install --no-cache-dir <packages>
-# 3. Copy the js-plugins/ directory
+FROM ghcr.io/deephaven/server-slim:latest
+# 2. Copy the js-plugins/ directory
 COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 ```
 
-You can use Docker to build and run the image:
+Replace `<plugins>` with one or more npm package names, separated by spaces. To pin a version, append `@<version>` to a name.
 
-```bash
-docker build -t my-deephaven-image .
-docker run --rm -p 10000:10000 my-deephaven-image
+For more about JS plugin packaging and configuration, see [Configure JS plugins](./configuration/js-plugins.md).
+
+#### Example: install the theme pack
+
+The [theme pack](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/theme-pack) plugin adds UI themes such as Dracula, Night Owl, and Solarized Dark to the Deephaven IDE. The theme pack has no server-side logic. Its npm package, `@deephaven/js-plugin-theme-pack`, needs no Python package, so a Groovy server can use it.
+
+1. Create a directory for your deployment and save the following as `Dockerfile` in it:
+
+   ```docker title="Dockerfile"
+   FROM ghcr.io/deephaven/web-plugin-packager:latest AS js-plugins
+   RUN ./pack-plugins.sh @deephaven/js-plugin-theme-pack
+
+   FROM ghcr.io/deephaven/server-slim:latest
+   COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
+   ```
+
+2. Build the image and run it:
+
+   ```bash
+   docker build -t deephaven-groovy-themes .
+   docker run --rm -p 10000:10000 deephaven-groovy-themes
+   ```
+
+   For more `docker run` options, see [Configure the Deephaven Docker application](./configuration/docker-application.md).
+
+   If you use [Docker Compose](https://docs.docker.com/compose/), save the following as `docker-compose.yml` in the same directory. It builds the image from your Dockerfile rather than pulling one from the registry:
+
+   ```yaml title="docker-compose.yml"
+   services:
+     deephaven:
+       build:
+         context: .
+       ports:
+         - "10000:10000"
+   ```
+
+   Then run `docker compose up --build` instead of the two `docker` commands.
+
+3. Confirm that the server loaded the plugin. The server lists its JS plugins at `http://localhost:10000/js-plugins/manifest.json`:
+
+   ```bash
+   curl http://localhost:10000/js-plugins/manifest.json
+   ```
+
+   The output includes `@deephaven/js-plugin-theme-pack`.
+
+4. Open the IDE at `http://localhost:10000/ide` and log in with the [pre-shared key](./authentication/auth-psk.md) printed in the server log. Then click the gear icon at the top right of the IDE to open the **Settings** menu. Expand the **Theme** section and pick one of the added themes from the **Pick a color scheme** list.
+
+## Use plugins from the Java client
+
+The [Java client](./java-client.md) can interact with plugin objects on the server through the [`fetchable`](/core/javadoc/io/deephaven/client/impl/ObjectService.html#fetchable(io.deephaven.client.impl.HasTypedTicket)) and [`bidirectional`](/core/javadoc/io/deephaven/client/impl/ObjectService.html#bidirectional(io.deephaven.client.impl.HasTypedTicket)) methods of a [`Session`](/core/javadoc/io/deephaven/client/impl/Session.html). Each method takes a [typed ticket](/core/javadoc/io/deephaven/client/impl/TypedTicket.html), which pairs the plugin's object type with a reference to the object, such as a variable name in the server's scope.
+
+### Set up the Java client
+
+To use the [Java client](./java-client.md) in your project, add one client library to your `build.gradle`, replacing `<version>` with your Deephaven version:
+
+- `deephaven-java-client-session` if you create a [`Session`](/core/javadoc/io/deephaven/client/impl/Session.html) directly.
+- `deephaven-java-client-barrage-dagger` if you already use a [`BarrageSession`](/core/javadoc/io/deephaven/client/impl/BarrageSession.html) for table data, as in [Connect to the server](./java-client.md#connect-to-the-server).
+
+The following example adds the session library:
+
+```gradle
+dependencies {
+    implementation 'io.deephaven:deephaven-java-client-session:<version>'
+
+    // Add other plugin-specific dependencies as needed
+}
 ```
 
-If you are using [Docker Compose](https://docs.docker.com/compose/), modify the `docker-compose.yml` file to build from a Dockerfile rather than pull the image from the registry:
+The examples below assume a connected [`Session`](/core/javadoc/io/deephaven/client/impl/Session.html) in a variable named `session`. To get one:
 
-```yaml title="docker-compose.yml"
-services:
-  deephaven:
-    build:
-      context: .
+- With only the session library, create a [`Session`](/core/javadoc/io/deephaven/client/impl/Session.html) from a [`SessionFactoryConfig`](/core/javadoc/io/deephaven/client/impl/SessionFactoryConfig.html), as the [Java client session examples](https://github.com/deephaven/deephaven-core/tree/main/java-client/session-examples/src/main/java/io/deephaven/client/examples) do.
+- With a [`BarrageSession`](/core/javadoc/io/deephaven/client/impl/BarrageSession.html), as in [Connect to the server](./java-client.md#connect-to-the-server), call its [`session`](/core/javadoc/io/deephaven/client/impl/FlightSession.html#session()) method, which it inherits from [`FlightSession`](/core/javadoc/io/deephaven/client/impl/FlightSession.html).
+
+### Fetch a plugin object
+
+For plugins that send their object's contents to the client, use [`fetchable`](/core/javadoc/io/deephaven/client/impl/ObjectService.html#fetchable(io.deephaven.client.impl.HasTypedTicket)):
+
+```java skip-test
+import io.deephaven.client.impl.ObjectService.Fetchable;
+import io.deephaven.client.impl.ScopeId;
+import io.deephaven.client.impl.ServerData;
+import io.deephaven.client.impl.TypedTicket;
+
+// "MyPluginType" is the object type registered by the server-side plugin,
+// and "plugin_object_name" is the variable name of the object on the server.
+TypedTicket typedTicket = new TypedTicket("MyPluginType", new ScopeId("plugin_object_name"));
+
+try (Fetchable fetchable = session.fetchable(typedTicket).get();
+        ServerData serverData = fetchable.fetch().get()) {
+    // The payload's format depends on the plugin implementation
+    System.out.println("Payload size: " + serverData.data().remaining());
+}
 ```
 
-From there, you can build and run with a single command:
+### Work with bidirectional plugins
 
-```bash
-docker compose up
+For bidirectional plugins, use [`bidirectional`](/core/javadoc/io/deephaven/client/impl/ObjectService.html#bidirectional(io.deephaven.client.impl.HasTypedTicket)) to open a message stream to the object. This example reuses the `typedTicket` created in [Fetch a plugin object](#fetch-a-plugin-object). The stream has two directions:
+
+- You supply a [`MessageStream<ServerData>`](/core/javadoc/io/deephaven/client/impl/ObjectService.MessageStream.html) that receives messages from the server.
+- You send messages through the [`MessageStream<ClientData>`](/core/javadoc/io/deephaven/client/impl/ObjectService.MessageStream.html) that [`connect`](/core/javadoc/io/deephaven/client/impl/ObjectService.Bidirectional.html#connect(io.deephaven.client.impl.ObjectService.MessageStream)) returns.
+
+The following example opens a stream, sends one message, and prints the size of each message the server sends back:
+
+```java skip-test
+import io.deephaven.client.impl.ClientData;
+import io.deephaven.client.impl.ObjectService.Bidirectional;
+import io.deephaven.client.impl.ObjectService.MessageStream;
+import io.deephaven.client.impl.ServerData;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+
+try (Bidirectional bidirectional = session.bidirectional(typedTicket).get()) {
+    MessageStream<ServerData> fromServer = new MessageStream<>() {
+        @Override
+        public void onData(ServerData serverData) {
+            // Handle each message from the server; the format depends on the plugin.
+            // Closing the message releases any server objects it exports.
+            try (serverData) {
+                System.out.println("Received " + serverData.data().remaining() + " bytes");
+            }
+        }
+
+        @Override
+        public void onClose() {
+            System.out.println("Stream closed");
+        }
+    };
+
+    MessageStream<ClientData> toServer = bidirectional.connect(fromServer);
+    toServer.onData(new ClientData(
+            ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)),
+            Collections.emptyList()));
+    // ... wait for the server's responses before closing ...
+    toServer.onClose();
+}
 ```
+
+For a complete example, see [`MessageStreamSendReceive.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/session-examples/src/main/java/io/deephaven/client/examples/tools/MessageStreamSendReceive.java).
 
 ## Available plugins
 
@@ -161,24 +209,26 @@ Deephaven hosts a [plugins repository](https://github.com/deephaven/deephaven-pl
 > [!NOTE]
 > Some plugins are not in the plugins repository but are still available for use. For instance, some authentication plugins are JAR files only available on Maven Central.
 
-Two folders in the plugins directory are of particular interest:
+Two folders in the plugins repository are of particular interest:
 
 - [plugins](https://github.com/deephaven/deephaven-plugins/tree/main/plugins): Contains the implementation of the plugins. This is where you can find each plugin's source code and additional documentation.
 - [templates](https://github.com/deephaven/deephaven-plugins/tree/main/templates): Contains templates for creating new plugins. This is a great starting point if you want to [create your own plugin](./create-plugins.md).
 
-The available plugins are divided into sections below based on their functionality.
+The following sections group some of the available plugins by functionality.
 
 ### User interface
 
-All of the following user interface plugins can be installed with `pip` with no extra work.
+The [theme pack](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/theme-pack) has no server-side logic, so a Groovy server can use its npm package. See [Example: install the theme pack](#example-install-the-theme-pack).
 
-- [`deephaven-plugin-ui`](https://pypi.org/project/deephaven-plugin-ui/): A plugin for real-time dashboards.
-- [`deephaven-plugin-plotly-express`](https://pypi.org/project/deephaven-plugin-plotly-express/): A plugin that makes [Plotly Express](https://plotly.com/python/plotly-express/) compatible with Deephaven tables.
+The following user interface plugins are Python packages for servers with Python as their scripting language. The `ghcr.io/deephaven/server` image already includes them, but the Groovy `server-slim` image can't use them:
+
+- [`deephaven-plugin-ui`](https://pypi.org/project/deephaven-plugin-ui/): A plugin for building real-time dashboards with [deephaven.ui](/core/ui/docs/).
+- [`deephaven-plugin-plotly-express`](https://pypi.org/project/deephaven-plugin-plotly-express/): A plugin, [Deephaven Express](/core/plotly/docs/), that makes [Plotly Express](https://plotly.com/python/plotly-express/) compatible with Deephaven tables.
 - [`deephaven-plugin-matplotlib`](https://pypi.org/project/deephaven-plugin-matplotlib/): A plugin that makes [Matplotlib](https://matplotlib.org/) and [Seaborn](https://seaborn.pydata.org/) compatible with Deephaven tables.
 
 ### Authentication
 
-Authentication plugins have a more complex installation process than other plugins. Please refer to the documentation links below for more information.
+Authentication plugins have a more complex installation process than other plugins. See the following guides for details:
 
 - [Keycloak](./authentication/auth-keycloak.md): A plugin that enables the use of [Keycloak](https://www.keycloak.org/) and [OpenID Connect (OIDC)](https://openid.net/developers/how-connect-works/) for authentication.
 - [mTLS](./authentication/auth-mtls.md): A plugin that enables [mutual TLS (mTLS)](https://www.cloudflare.com/learning/access-management/what-is-mutual-tls/) authentication.
@@ -186,91 +236,40 @@ Authentication plugins have a more complex installation process than other plugi
 
 ### Bidirectional plugin examples
 
-[Bidirectional plugins](./create-plugins.md) allow users to create custom RPC methods that enable clients to interact with and return objects on a running server. See the following for an example:
+Bidirectional plugins let you define custom remote procedure call (RPC) methods that clients call to interact with objects on a running server and get objects back. The following examples are Python plugins, with a Python server plugin and a Python client plugin:
 
-- [Pickle RPC plugin](https://github.com/deephaven-examples/plugin-python-rpc-pickle): A plugin to remotely execute methods on a Deephaven server.
-- [Example bidirectional plugin](https://github.com/deephaven-examples/plugin-bidirectional-example): The same plugin presented in the [Bidirectional plugins guide](./create-plugins.md).
+- [Pickle RPC plugin](https://github.com/deephaven-examples/plugin-python-rpc-pickle): A plugin to remotely execute methods on a Deephaven server. Its client code imports `pydeephaven.experimental.server_object`, which `pydeephaven` removed in version 0.37.0, so it needs updating before it runs with current clients. It uses Python's `pickle` module, which is not secure. Read its README before you adapt it.
+- [Example bidirectional plugin](https://github.com/deephaven-examples/plugin-bidirectional-example): A minimal bidirectional plugin and a client that uses it. Its client code imports `pydeephaven.experimental.server_object`, which `pydeephaven` removed in version 0.37.0. For client code that works with current versions, see the [Python version of Create your own plugin](/core/docs/how-to-guides/create-plugins/).
 
-## Using plugins with the Groovy client
+A Groovy server can also host bidirectional plugins written in Java or Groovy. Such a plugin extends [`ObjectTypeBase`](/core/javadoc/io/deephaven/plugin/type/ObjectTypeBase.html) and implements its [`compatibleClientConnection`](/core/javadoc/io/deephaven/plugin/type/ObjectTypeBase.html#compatibleClientConnection(java.lang.Object,io.deephaven.plugin.type.ObjectType.MessageStream)) method to return a [`MessageStream`](/core/javadoc/io/deephaven/plugin/type/ObjectType.MessageStream.html). To learn more:
 
-When working with plugins from the Groovy client API, you'll typically interact with them through the session's plugin client functionality. Here's a general pattern for using plugins:
-
-### Basic plugin usage
-
-```groovy skip-test
-import io.deephaven.client.impl.Session
-import io.deephaven.client.impl.SessionConfig
-import io.deephaven.client.impl.authentication.ConfigAuthenticationHandler
-
-// Create a session configuration
-def config = SessionConfig.builder()
-    .target("localhost:10000")
-    .authenticationHandler(ConfigAuthenticationHandler.anonymous())
-    .build()
-
-// Create and connect the session
-def session = Session.connect(config).get()
-
-try {
-    // List available exportable objects (which may include plugin objects)
-    println("Available objects: ${session.exportableObjects().keySet()}")
-
-    // Get a specific plugin object
-    def pluginObjectTicket = session.exportableObjects().get("plugin_object_name")
-
-    if (pluginObjectTicket != null) {
-        // Create a plugin client for the object
-        def pluginClient = session.pluginClient(pluginObjectTicket)
-
-        // Use the plugin client as needed
-        // (specific usage depends on the plugin implementation)
-
-        pluginClient.close()
-    }
-
-} finally {
-    session.close()
-}
-```
-
-### Working with bidirectional plugins
-
-For bidirectional plugins that support custom RPC methods, you'll typically create a proxy class that wraps the plugin client:
-
-```groovy skip-test
-// Assuming you have a plugin proxy class like ExampleServiceProxy
-def pluginClient = session.pluginClient(pluginObjectTicket)
-def pluginProxy = new ExampleServiceProxy(pluginClient)
-
-try {
-    // Call methods on the plugin
-    def result = pluginProxy.someMethod("parameter")
-    println("Plugin result: ${result}")
-
-} finally {
-    pluginProxy.close()
-}
-```
-
-### Gradle dependencies for plugin development
-
-When developing Groovy clients that use plugins, you'll typically need these dependencies in your `build.gradle`:
-
-```gradle
-dependencies {
-    implementation 'io.deephaven:deephaven-client-api:0.36.1'
-    implementation 'org.apache.groovy:groovy-all:4.0.15'
-    implementation 'org.apache.groovy:groovy-json:4.0.15'
-
-    // Add other plugin-specific dependencies as needed
-}
-```
+- For a fetch-only plugin, and how a bidirectional plugin differs from one, see [Create your own plugin](./create-plugins.md).
+- For a complete bidirectional plugin, see the [Python version of Create your own plugin](/core/docs/how-to-guides/create-plugins/).
+- To use a plugin object from Java, see [Use plugins from the Java client](#use-plugins-from-the-java-client).
 
 ## Related documentation
 
-- [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)
 - [Build and launch Deephaven from source code](../getting-started/launch-build.md)
+- [Configure and use pre-shared key authentication](./authentication/auth-psk.md)
+- [Configure JS plugins](./configuration/js-plugins.md)
+- [Configure Keycloak for authentication](./authentication/auth-keycloak.md)
+- [Configure mTLS for Deephaven](./authentication/auth-mtls.md)
+- [Configure the Deephaven Docker application](./configuration/docker-application.md)
+- [Configure username/password authentication](./authentication/auth-uname-pw.md)
 - [Create your own plugin](./create-plugins.md)
-- [How to install packages](./install-packages.md)
+- [Extract data with a Java client](./java-client.md)
 - [Install and use Java packages](./install-and-use-java-packages.md)
+- [Install packages](./install-packages.md)
 - [Launch Deephaven from pre-built images](../getting-started/docker-install.md)
+- [Python client quickstart](/core/docs/getting-started/pyclient-quickstart/)
+- [`BarrageSession` Javadoc](/core/javadoc/io/deephaven/client/impl/BarrageSession.html)
+- [`ClientData` Javadoc](/core/javadoc/io/deephaven/client/impl/ClientData.html)
+- [`FlightSession` Javadoc](/core/javadoc/io/deephaven/client/impl/FlightSession.html)
+- [`ObjectService` Javadoc](/core/javadoc/io/deephaven/client/impl/ObjectService.html)
+- [`ObjectType.MessageStream` Javadoc](/core/javadoc/io/deephaven/plugin/type/ObjectType.MessageStream.html)
+- [`ObjectTypeBase` Javadoc](/core/javadoc/io/deephaven/plugin/type/ObjectTypeBase.html)
+- [`ScopeId` Javadoc](/core/javadoc/io/deephaven/client/impl/ScopeId.html)
+- [`ServerData` Javadoc](/core/javadoc/io/deephaven/client/impl/ServerData.html)
+- [`Session` Javadoc](/core/javadoc/io/deephaven/client/impl/Session.html)
+- [`SessionFactoryConfig` Javadoc](/core/javadoc/io/deephaven/client/impl/SessionFactoryConfig.html)
+- [`TypedTicket` Javadoc](/core/javadoc/io/deephaven/client/impl/TypedTicket.html)

@@ -2,7 +2,7 @@
 title: garbage_collect
 ---
 
-The `garbage_collect` method runs full garbage collection. It is performed in Python first; then, the underlying JVM runs its garbage collector _twice_ due to the cross-referencing nature of the Python/Java integration in Deephaven.
+The `garbage_collect` method runs full garbage collection in Python first. It then requests that the JVM run its garbage collector twice, because Python and Java objects in Deephaven can hold references to each other.
 
 > [!NOTE]
 > Since there is no way to force the Java garbage collector to run, the effect of calling this function is non-deterministic.
@@ -20,13 +20,13 @@ This method takes no arguments.
 
 ## Example
 
-The following example uses Deephaven's [`perfmon`](/core/pydoc/code/deephaven.perfmon.html?module-deephaven.perfmon=) (performance monitor) library's [`server_state`](/core/pydoc/code/deephaven.perfmon.html?module-deephaven.perfmon=#deephaven.perfmon.server_state) method to print the amount of memory Deephaven is currently using at various points throughout the query - at the beginning, when objects are created and deleted, and finally after `garbage_collect` is called. The data in the `UsedMemMiB` column tracks how much memory is currently being used.
+The following example prints the JVM's used memory at each step: at the start, after each table is created, after the reference is deleted, and after `garbage_collect` is called. It also creates the `mem` table with the [`server_state`](/core/pydoc/code/deephaven.perfmon.html#deephaven.perfmon.server_state) method of Deephaven's [`perfmon`](/core/pydoc/code/deephaven.perfmon.html) (performance monitor) module. The `UsedMemMiB` column in `mem` tracks how much memory is in use over time.
 
 ```python order=mem
 # Segment 1
 from deephaven.perfmon import server_state
 from deephaven import empty_table, garbage_collect
-import gc, jpy
+import jpy
 
 rt = jpy.get_type("java.lang.Runtime").getRuntime()
 mem = server_state().view(["IntervalStart", "UsedMemMiB"]).reverse()
@@ -43,14 +43,14 @@ x[0] = empty_table(100_000_000).update("X = sqrt(i)")
 print(f"CREATE {(rt.totalMemory() - rt.freeMemory()) / 1024 / 1024}")
 del x
 print(f"DELETE {(rt.totalMemory() - rt.freeMemory()) / 1024 / 1024}")
-gc.collect()
 garbage_collect()
 print(f"GC {(rt.totalMemory() - rt.freeMemory()) / 1024 / 1024}")
 ```
 
-![The log readout from the above example](../assets/reference/python/gc-perfmon.png)
+For a step-by-step version of this example, with the printed output and what it shows, see [How to run full garbage collection](../how-to-guides/performance/garbage-collection.md).
 
-## Related Documentation
+## Related documentation
 
-- [Create a time table](../how-to-guides/time-table.md)
+- [How to run full garbage collection](../how-to-guides/performance/garbage-collection.md)
+- [How does memory work in the JVM?](./community-questions/memory-jvm.md)
 - [Pydoc](/core/pydoc/code/deephaven.html#deephaven.garbage_collect)

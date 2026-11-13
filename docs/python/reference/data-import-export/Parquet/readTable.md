@@ -65,7 +65,7 @@ A new table from a Parquet file, metadata file, or directory with a recognized l
 ## Examples
 
 > [!NOTE]
-> All but the final example in this document use data mounted in `/data` in Deephaven. For more information on the relation between this location in Deephaven and on your local file system, see [Docker data volumes](../../../conceptual/docker-data-volumes.md).
+> All but the final example in this document use data mounted in `/data` in Deephaven. For more information on the relation between this location in Deephaven and on your local file system, see [Docker bind mounts](../../../conceptual/docker-data-volumes.md).
 
 ### Single Parquet file
 
@@ -110,7 +110,7 @@ source = read("/data/output_GZIP.parquet")
 - `_metadata`: File containing (1) complete relative pathnames to individual data files, and (2) column statistics, such as min, max, etc., for the individual data files.
 
 > [!WARNING]
-> For a directory of Parquet files, all sub-directories are also searched. Only files with a `.parquet` extension or `_common_metadata` and `_metadata` files should be located in these directories. All files ending with `.parquet` need the same schema.
+> For a directory of Parquet files, all subdirectories are also searched. Files whose names do not end in `.parquet` are ignored, except for the `_metadata` and `_common_metadata` files described above. All files ending with `.parquet` need the same schema.
 
 > [!NOTE]
 > The following examples use data in [Deephaven's example repository](https://github.com/deephaven/examples). Follow the instructions in [`Launch Deephaven from pre-built images`](../../../getting-started/docker-install.md) to download and manage the example data.
@@ -235,6 +235,6 @@ Additionally, the `S3.maxFragmentSize` [configuration property](../../../how-to-
 - [Parquet formats](../../../how-to-guides/data-import-export/parquet-formats.md)
 - [Export Parquet files](../../../how-to-guides/data-import-export/parquet-export.md)
 - [`write_table`](./writeTable.md)
-- [Docker data volumes](../../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(java.lang.String))
 - [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read)

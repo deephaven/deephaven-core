@@ -24,7 +24,6 @@ writeCsv(source, destPath, compressed, timeZone, progress, nullsAsEmpty, columns
 writeCsv(source, destPath, compressed, timeZone, progress, nullsAsEmpty, separator, columns...)
 writeCsv(source, out, timeZone, progress, nullsAsEmpty, columns...)
 writeCsv(source, out, timeZone, progress, nullsAsEmpty, separator, columns...)
-writeCsv(out, columns...)
 ```
 
 ## Parameters
@@ -57,12 +56,12 @@ Whether to compress (bz2) the file being written.
 </Param>
 <Param name="nullsAsEmpty" type="boolean">
 
-Whether nulls should be written as blank instead of `(null)`.
+Whether nulls should be written as blank instead of `(null)`. Overloads without this parameter use `true`.
 
 </Param>
-<Param name="out" type="Writer">
+<Param name="out" type="PrintStream or Writer">
 
-Writer used to write the CSV.
+The stream the CSV is written to. `writeCsv(source, out, columns...)` and `writeCsv(source, out, nullsAsEmpty, columns...)` take a `PrintStream`. The overloads that also take `timeZone` and `progress` take a `Writer`.
 
 </Param>
 <Param name="progress" type="BiConsumer<Long, Long>">
@@ -70,9 +69,9 @@ Writer used to write the CSV.
 A procedure that implements [BiConsumer](https://docs.oracle.com/javase/8/docs/api/java/util/function/BiConsumer.html), and takes a progress Integer and a total size Integer to update progress.
 
 </Param>
-<Param name="timeZone" type="TimeZone">
+<Param name="timeZone" type="ZoneId">
 
-A TimeZone constant relative to which DateTime data should be adjusted.
+The time zone used to format date-time values, such as one returned by [`timeZone`](../../time/datetime/timeZone.md).
 
 </Param>
 <Param name="tableSeparator" type="String">
@@ -99,9 +98,9 @@ A CSV file located in the specified path.
 ## Examples
 
 > [!NOTE]
-> Deephaven writes files to locations relative to the base of its Docker container. See [Docker data volumes](../../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
+> Deephaven writes files to locations relative to the base of its Docker container. See [Docker bind mounts](../../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
 
-In the following example, `write_csv` writes the source table to `/data/output.csv`. All columns are included.
+In the following example, `writeCsv` writes the source table to `/data/output.csv`. All columns are included.
 
 ```groovy
 import static io.deephaven.csv.CsvTools.writeCsv
@@ -221,7 +220,7 @@ result = readCsv("/data/output.csv")
 
 ## Related documentation
 
-- [CSV import via query](../../../how-to-guides/data-import-export/csv-import.md)
-- [CSV export via query](../../../how-to-guides/data-import-export/csv-export.md)
-- [Docker data volumes](../../../conceptual/docker-data-volumes.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/csv/CsvTools.html#writeCsv(io.deephaven.engine.table.Table,java.lang.String,java.lang.String...))
+- [Read CSV or other delimited files](../../../how-to-guides/data-import-export/csv-import.md)
+- [Export data to CSV or other delimited files](../../../how-to-guides/data-import-export/csv-export.md)
+- [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
+- [Javadoc](/core/javadoc/io/deephaven/csv/CsvTools.html#writeCsv(io.deephaven.engine.table.Table,java.lang.String,java.lang.String...))

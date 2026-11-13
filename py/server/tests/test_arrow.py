@@ -3,20 +3,18 @@
 #
 import os
 import unittest
-from collections.abc import Sequence
 from datetime import date
 from decimal import Decimal
 from typing import Any
 
-import jpy
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.feather as feather
 import pyarrow.parquet as papq
 
+from deephaven import DHError, empty_table, new_table, time_table
 from deephaven import arrow as dharrow
-from deephaven import empty_table, new_table, time_table
 from deephaven.column import (
     bool_col,
     byte_col,
@@ -30,22 +28,8 @@ from deephaven.column import (
     string_col,
 )
 from deephaven.table import Table
+from tests.barrage_encodings import with_barrage_encodings
 from tests.testbase import BaseTestCase
-
-_JBarrageUtil = jpy.get_type("io.deephaven.extensions.barrage.util.BarrageUtil")
-_JSchema = jpy.get_type("org.apache.arrow.vector.types.pojo.Schema")
-_JField = jpy.get_type("org.apache.arrow.vector.types.pojo.Field")
-_JFieldType = jpy.get_type("org.apache.arrow.vector.types.pojo.FieldType")
-_JDictionaryEncoding = jpy.get_type(
-    "org.apache.arrow.vector.types.pojo.DictionaryEncoding"
-)
-_JArrowTypeInt = jpy.get_type("org.apache.arrow.vector.types.pojo.ArrowType$Int")
-_JRunEndEncoded = jpy.get_type(
-    "org.apache.arrow.vector.types.pojo.ArrowType$RunEndEncoded"
-)
-_JArrayList = jpy.get_type("java.util.ArrayList")
-_JCollections = jpy.get_type("java.util.Collections")
-_JMap = jpy.get_type("java.util.Map")
 
 
 class ArrowTestCase(BaseTestCase):
@@ -449,7 +433,7 @@ class ArrowTestCase(BaseTestCase):
                 "Both = ((int) (i / 10)) % 2 == 0 ? `X` : null",
             ]
         )
-        encoded = _with_barrage_encodings(
+        encoded = with_barrage_encodings(
             source, dict_cols=["Sym"], ree_cols=["Block"], ree_dict_cols=["Both"]
         )
 
@@ -470,62 +454,89 @@ class ArrowTestCase(BaseTestCase):
                 name,
             )
 
-
-def _with_barrage_encodings(
-    table: Table,
-    dict_cols: Sequence[str] = (),
-    ree_cols: Sequence[str] = (),
-    ree_dict_cols: Sequence[str] = (),
-) -> Table:
-    """Returns the table with a Barrage schema attribute that dictionary encodes dict_cols, run-end encodes ree_cols,
-    and run-end encodes ree_dict_cols over dictionary encoded values."""
-    # makeSchema, unlike schemaFromTable, never infers encodings, so the encodings named here are the only ones
-    j_natural = _JBarrageUtil.makeSchema(
-        _JBarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
-        table.j_table.getDefinition(),
-        _JMap.of(),
-        table.j_table.isFlat(),
-    )
-    j_natural_fields = j_natural.getFields()
-    j_fields = _JArrayList()
-    next_dict_id = 0
-    for i in range(j_natural_fields.size()):
-        j_field = jpy.cast(j_natural_fields.get(i), _JField)
-        name = j_field.getName()
-        j_encoding = None
-        if name in dict_cols or name in ree_dict_cols:
-            j_encoding = _JDictionaryEncoding(
-                next_dict_id, False, _JArrowTypeInt(32, True)
-            )
-            next_dict_id += 1
-        j_values_type = _JFieldType(
-            j_field.isNullable(), j_field.getType(), j_encoding, j_field.getMetadata()
+    def test_to_table_with_barrage_encodings(self) -> None:
+        # to_table accepts the dictionary, run-end, and run-end over dictionary encoded columns that to_arrow returns
+        source = empty_table(100).update(
+            [
+                "Sym = i % 3 == 0 ? `AAPL` : `MSFT`",
+                "Block = (int) (i / 10)",
+                "Both = ((int) (i / 10)) % 2 == 0 ? `X` : null",
+            ]
         )
-        if name in ree_cols or name in ree_dict_cols:
-            j_children = _JArrayList()
-            j_children.add(
-                _JField(
-                    "run_ends",
-                    _JFieldType(False, _JArrowTypeInt(32, True), None),
-                    _JCollections.emptyList(),
-                )
-            )
-            j_children.add(_JField("values", j_values_type, j_field.getChildren()))
-            j_field = _JField(
-                name,
-                _JFieldType(
-                    j_field.isNullable(),
-                    _JRunEndEncoded.INSTANCE,
-                    None,
-                    j_field.getMetadata(),
-                ),
-                j_children,
-            )
-        else:
-            j_field = _JField(name, j_values_type, j_field.getChildren())
-        j_fields.add(j_field)
-    j_schema = _JSchema(j_fields, j_natural.getCustomMetadata())
-    return table.with_attributes({"BarrageSchema": j_schema})
+        encoded = with_barrage_encodings(
+            source, dict_cols=["Sym"], ree_cols=["Block"], ree_dict_cols=["Both"]
+        )
+
+        dh_table = dharrow.to_table(dharrow.to_arrow(encoded))
+
+        self.assertEqual(dh_table.definition, source.definition)
+        self.assert_table_equals(dh_table, source)
+
+    def test_to_table_auto_detected_encodings(self) -> None:
+        # Auto-detection makes this column run-end over dictionary, with a non-nullable field.
+        source = empty_table(26300).update("S = (ii < 13150) ? `A` : `B`")
+        pa_table = dharrow.to_arrow(source)
+        field = pa_table.schema.field("S")
+        self.assertTrue(pa.types.is_run_end_encoded(field.type))
+        self.assertTrue(pa.types.is_dictionary(field.type.value_type))
+
+        dh_table = dharrow.to_table(pa_table)
+
+        self.assert_table_equals(dh_table, source)
+
+    def test_to_table_dictionary_chunks(self) -> None:
+        # Each chunk has its own dictionary, and to_table sends each one.
+        chunks = [
+            pa.array(["a", "b", "a", None]).dictionary_encode(),
+            pa.array(["c", "c", "a"]).dictionary_encode(),
+        ]
+        pa_table = pa.table({"S": pa.chunked_array(chunks)})
+
+        dh_table = dharrow.to_table(pa_table)
+
+        expected = new_table([string_col("S", ["a", "b", "a", None, "c", "c", "a"])])
+        self.assert_table_equals(dh_table, expected)
+
+    def test_to_table_unsupported_dictionary_value_type(self) -> None:
+        # The error names the encoded type from the user's schema.
+        pa_table = pa.table(
+            {"S": pa.array(["a", "b"], type=pa.large_string()).dictionary_encode()}
+        )
+
+        with self.assertRaises(DHError) as cm:
+            dharrow.to_table(pa_table)
+
+        self.assertIn("dictionary<values=large_string", str(cm.exception))
+        self.assertIn("deephaven.arrow.is_deephaven_compatible", str(cm.exception))
+
+    def test_is_deephaven_compatible(self) -> None:
+        # Exact, parameterized, and encoded types pass when their values and elements are supported.
+        string_dict = pa.dictionary(pa.int32(), pa.string())
+        supported = [
+            pa.int64(),
+            pa.decimal128(5, 2),
+            string_dict,
+            pa.run_end_encoded(pa.int32(), string_dict),
+            pa.list_(pa.int64()),
+            pa.list_(string_dict),
+            pa.map_(pa.string(), pa.decimal128(5, 2)),
+        ]
+        unsupported = [
+            pa.large_string(),
+            pa.dictionary(pa.int32(), pa.large_string()),
+            pa.struct([pa.field("a", pa.int64())]),
+            pa.list_(pa.large_string()),
+            pa.list_(pa.struct([pa.field("a", pa.int64())])),
+            pa.map_(pa.string(), pa.large_string()),
+            pa.dense_union(
+                [pa.field("s", pa.string()), pa.field("l", pa.large_string())]
+            ),
+        ]
+
+        for data_type in supported:
+            self.assertTrue(dharrow.is_deephaven_compatible(data_type), data_type)
+        for data_type in unsupported:
+            self.assertFalse(dharrow.is_deephaven_compatible(data_type), data_type)
 
 
 if __name__ == "__main__":

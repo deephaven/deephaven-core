@@ -5,7 +5,6 @@
 
 import io
 from collections.abc import Sequence
-from typing import Optional
 
 import jpy
 import pyarrow as pa
@@ -77,28 +76,74 @@ _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES = {
     pa.SparseUnionType,
 }
 
+#: The pyarrow data types that to_table maps directly to a Deephaven type. Parameterized types, such as decimals and
+#: lists, aren't listed. Use is_deephaven_compatible to check any type.
 SUPPORTED_ARROW_TYPES = [k for k, v in _ARROW_DH_DATA_TYPE_MAPPING.items() if v]
+
+#: The pyarrow type classes of the encodings that to_table accepts. A column with one of these encodings is supported
+#: when the type of its values is. Check a type against them with isinstance, or use is_deephaven_compatible.
+SUPPORTED_ARROW_ENCODINGS = (pa.DictionaryType, pa.RunEndEncodedType)
+
+
+def _element_types(arrow_type: pa.DataType) -> list[pa.DataType]:
+    """Returns the element types of a list, map, or union type, or an empty list for any other type."""
+    if isinstance(arrow_type, (pa.ListType, pa.ListViewType, pa.FixedSizeListType)):
+        return [arrow_type.value_type]
+    if isinstance(arrow_type, pa.MapType):
+        return [arrow_type.key_type, arrow_type.item_type]
+    if isinstance(arrow_type, pa.UnionType):
+        return [arrow_type.field(i).type for i in range(arrow_type.num_fields)]
+    return []
 
 
 def _map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
     """Maps a pyarrow type to the corresponding Deephaven column data type."""
-    dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(arrow_type)
+    # Encoded columns map to the type of their values. The error names arrow_type, the type in the user's schema.
+    # In theory a dictionary's values can be dictionary-encoded too, and the server can't import that. In practice
+    # the server never sends one, and pyarrow makes one only when built by hand, so this doesn't reject it.
+    value_type = arrow_type
+    while isinstance(value_type, SUPPORTED_ARROW_ENCODINGS):
+        value_type = value_type.value_type
+
+    dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(value_type)
 
     if not dh_type:
-        if type(arrow_type) in _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES:
-            # For parameterizable types let the server handle the mapping
+        # For parameterizable types let the server handle the mapping. Check their element types here, so an
+        # unsupported one fails with the error below instead of in the server.
+        if type(value_type) in _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES and all(
+            is_deephaven_compatible(t) for t in _element_types(value_type)
+        ):
             return {}
 
         raise DHError(
-            message=f"unsupported arrow data type : {arrow_type}, refer to "
-            f"deephaven.arrow.SUPPORTED_ARROW_TYPES for the list of supported pyarrow types."
+            message=f"unsupported arrow data type : {arrow_type}. Use deephaven.arrow.is_deephaven_compatible to "
+            f"check a type. A dictionary-encoded or run-end encoded column is checked by the type of its values."
         )
 
     return {"deephaven:type": dh_type}
 
 
-def to_table(pa_table: pa.Table, cols: Optional[Sequence[str]] = None) -> Table:
+def is_deephaven_compatible(data_type: pa.DataType) -> bool:
+    """Checks whether to_table supports a pyarrow data type.
+
+    Args:
+        data_type (pa.DataType): the pyarrow data type
+
+    Returns:
+        True if to_table supports the type, False otherwise
+    """
+    try:
+        _map_arrow_type(data_type)
+        return True
+    except DHError:
+        return False
+
+
+def to_table(pa_table: pa.Table, cols: Sequence[str] | None = None) -> Table:
     """Creates a Deephaven table from a pyarrow table.
+
+    A column with an encoding in SUPPORTED_ARROW_ENCODINGS, such as a dictionary-encoded column, is supported when the
+    type of its values is.
 
     Args:
         pa_table(pa.Table): the pyarrow table
@@ -117,18 +162,38 @@ def to_table(pa_table: pa.Table, cols: Optional[Sequence[str]] = None) -> Table:
 
     dh_fields = []
     for f in pa_table.schema:
+        # Copy nullable from pa_table. pa.field defaults to nullable=True, and the writer below rejects data whose
+        # schema differs from dh_schema. pa_table can have non-nullable fields, such as the REE fields to_arrow()
+        # returns.
         dh_fields.append(
-            pa.field(name=f.name, type=f.type, metadata=_map_arrow_type(f.type))
+            pa.field(
+                name=f.name,
+                type=f.type,
+                nullable=f.nullable,
+                metadata=_map_arrow_type(f.type),
+            )
         )
     dh_schema = pa.schema(dh_fields)
 
     try:
         j_barrage_table_builder.setSchema(jpy.byte_buffer(dh_schema.serialize()))
 
-        record_batches = pa_table.to_batches()
-        j_barrage_table_builder.addRecordBatches(
-            [jpy.byte_buffer(rb.serialize()) for rb in record_batches]
-        )
+        # Stream one batch at a time to bound memory. The writer also emits the dictionary batches that
+        # the server needs to decode dictionary indices.
+        sink = io.BytesIO()
+        with pa.ipc.new_stream(sink, dh_schema) as writer:
+            for record_batch in pa_table.to_batches():
+                writer.write_batch(record_batch)
+                messages = pa.ipc.MessageReader.open_stream(sink.getvalue())
+                j_barrage_table_builder.addRecordBatches(
+                    [
+                        jpy.byte_buffer(m.serialize())
+                        for m in messages
+                        if m.type != "schema"
+                    ]
+                )
+                sink.seek(0)
+                sink.truncate()
         j_barrage_table_builder.onCompleted()
 
         return Table(j_table=j_barrage_table_builder.getResultTable())
@@ -166,7 +231,7 @@ class _ConverterStream(io.RawIOBase):
         return n
 
 
-def to_arrow(table: Table, cols: Optional[Sequence[str]] = None) -> pa.Table:
+def to_arrow(table: Table, cols: Sequence[str] | None = None) -> pa.Table:
     """Creates a pyarrow table from a Deephaven table.
 
     Args:

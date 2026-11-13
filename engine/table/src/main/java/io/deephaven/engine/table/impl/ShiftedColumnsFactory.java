@@ -255,7 +255,8 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
 
         sourceCol = sourceCol.substring(0, sourceCol.length() - 1);
 
-        long rightValue = Long.parseLong(((IntegerLiteralExpr) (binaryExpr.getRight())).getValue());
+        final long rightValue =
+                QueryLanguageParser.parseIntegerLiteral(((IntegerLiteralExpr) (binaryExpr.getRight())).getValue());
         Long shift = binaryExpr.getOperator() == BinaryExpr.Operator.MINUS ? -rightValue : rightValue;
 
         return new ShiftedColumnDefinition(sourceCol, shift);

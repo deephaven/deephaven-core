@@ -56,7 +56,7 @@ See [Read a key-value partitioned Parquet directory](./parquet-import.md#read-a-
 A metadata-partitioned directory is a Parquet dataset with a `_metadata` file, and optionally a `_common_metadata` file, at its root:
 
 - `_metadata` describes every row group in every Parquet file in the dataset. Deephaven reads it to find all of the data files at once, without listing the directory tree.
-- `_common_metadata` supplies the full schema, including the partitioning columns, which `_metadata` does not describe. If a dataset has `_metadata` but no `_common_metadata`, Deephaven reads it without partitioning columns unless you pass a table definition with the `table_definition` argument to `read`.
+- `_common_metadata` supplies the full schema. The partitioning columns are the columns that `_common_metadata` lists and `_metadata` does not, so a `_common_metadata` file that omits them, as some writers produce, gives a table with no partitioning columns. If a dataset has `_metadata` but no `_common_metadata`, Deephaven reads it without partitioning columns unless you pass a table definition with the `table_definition` argument to `read`.
 
 Write these files by passing `generate_metadata_files=True` to [`write`](../../reference/data-import-export/Parquet/writeTable.md) or [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md), as shown in [Export Parquet files](./parquet-export.md).
 

@@ -10,9 +10,11 @@ The filtering engine processes user-supplied filters sequentially in the order y
 
 Storage systems often divide tables into multiple regions. For instance, multiple files frequently compose a Parquet dataset, and multiple row groups further divide each individual file. Storage engines can apply specific optimization techniques to individual files and even to distinct data regions within those files.
 
-Predicate pushdown enhances row elimination by leveraging these underlying data structures. For example, match and range filters may use storage file metadata (such as min/max statistics) to eliminate entire row groups or files. Consequently, the engine avoids loading unnecessary data from storage — a massive advantage for large datasets in formats like Parquet and Iceberg. Although the engine generally processes filters sequentially, the pushdown mechanism may reorder them to maximize efficiency based on the capabilities of the data sources. Therefore, you cannot guarantee the final execution order of pushed-down filters. To enforce a specific order, use [barriers and serial execution](https://deephaven.io/core/docs/conceptual/query-engine/parallelization/#controlling-concurrency-for-select-update-and-where).
+Predicate pushdown enhances row elimination by leveraging these underlying data structures. For example, match and range filters may use storage file metadata (such as min/max statistics) to eliminate entire row groups or files. Consequently, the engine avoids loading unnecessary data from storage — a massive advantage for large datasets in formats like Parquet and Iceberg. Although the engine generally processes filters sequentially, the pushdown mechanism may reorder them to maximize efficiency based on the capabilities of the data sources. Therefore, you cannot guarantee the final execution order of pushed-down filters. To enforce a specific order, use [barriers and serial execution](../conceptual/query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where).
 
-## Filter Priority
+Pushdown works on ticking data too. Each time a refreshing table updates, the engine filters the rows added in that update cycle and the modified rows whose filtered columns changed, and it still pushes those filters down to the table's data sources. Table-level [data indexes](#deephaven-data-indexes) are the exception: the engine uses them only when [`where`](../reference/table-operations/filter/where.md) first filters the table, not on later updates.
+
+## Filter priority
 
 Filters are prioritized for pushdown in the following order (from highest to lowest):
 
@@ -40,13 +42,15 @@ source = empty_table(1_000).update_view(formulas=["X = i", "Value = 42"])
 result = source.where(filters="Value = 42")
 ```
 
+The result is the same as filtering without pushdown. Pushdown changes only how many rows the engine reads and tests, which you see as a faster query on large tables.
+
 When working with partitioned data, such as Parquet files, regions of the overall table will have a constant value. The engine will also filter these regions efficiently with a single comparison of the constant value,
 
 ## Sorted data binary search
 
 Columns or regions with data stored in sorted order (ascending or descending) can efficiently evaluate range and match filters. Rather than scanning every row to evaluate the filter, the engine performs binary search, drastically reducing the number of values to be examined.
 
-Deephaven detects sorted order for a column or region using table metadata. When the Deephaven engine sorts a table or loads a table from storage, the metadata will automatically be set.
+Deephaven detects sorted order for a column or region using table metadata. When the Deephaven engine sorts a table, it sets the metadata automatically. When it loads a Parquet file or Iceberg table that Deephaven wrote from sorted data, it sets the metadata for the leading sort column, which Deephaven records in each file. Deephaven ignores sort orders that other writers declare in Parquet or Iceberg metadata, because their ordering can differ from Deephaven's.
 
 ```python order=source,sorted_source,result_range,result_match
 from deephaven import empty_table
@@ -108,7 +112,7 @@ If desired, you can [disable](#disabling-predicate-pushdown-features) the use of
 
 Deephaven allows users to create data indexes for any table. These indexes can be retained in memory or written to storage and can speed up filtering operations significantly by applying the filter to the index instead of the larger table.
 
-Starting in Deephaven v0.40.0, the predicate pushdown framework enables data indexes to be used with most filter types (not just exact matches). When a materialized (in-memory) data index for a table exists, the engine can leverage it during `where` operations. To avoid unexpected memory usage, filter operations do not automatically materialize table-level data indexes. However, if an individual file-level data index is available on disk, the engine will use it to filter data without loading the entire index into memory.
+When a materialized (in-memory) data index for a table exists, the engine can leverage it during `where` operations. To avoid unexpected memory usage, filter operations do not automatically materialize table-level data indexes. However, if an individual file-level data index is available on disk, the engine will use it to filter data without loading the entire index into memory.
 
 This technique is effective even if only a subset of the data files are indexed. The engine will filter non-indexed files using the standard method.
 
@@ -132,7 +136,10 @@ filtered_1 = disk_table.where(filters="X = 5")
 filtered_2 = disk_table.where(filters="X <= 3 && Y > 10")
 ```
 
-If desired, you can [disable](#disabling-predicate-pushdown-features) the use of these file-level data indexes during pushdown operations:
+> [!NOTE]
+> Predicate pushdown can use data indexes with most filter types, not only exact matches. File-level data indexes support this starting in Deephaven 0.40.0, and table-level data indexes starting in Deephaven 41.0.
+
+If desired, you can [disable](#disabling-predicate-pushdown-features) the use of these file-level data indexes during pushdown operations.
 
 ## Parquet row group metadata
 

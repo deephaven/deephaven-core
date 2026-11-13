@@ -7,7 +7,6 @@ for accessing resources on remote Deephaven servers."""
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import jpy
 
@@ -40,7 +39,7 @@ class BarrageSession:
     def __init__(
         self,
         j_barrage_session: jpy.JType,
-        j_managed_channel: Optional[jpy.JType] = None,
+        j_managed_channel: jpy.JType | None = None,
     ):
         """Initializes a Barrage session.
 
@@ -132,23 +131,25 @@ def barrage_session(
     auth_type: str = "Anonymous",
     auth_token: str = "",
     use_tls: bool = False,
-    tls_root_certs: Optional[bytes] = None,
-    extra_headers: Optional[dict[str, str]] = None,
-    accept_compression: Optional[Union[str, Sequence[str]]] = None,
+    tls_root_certs: bytes | None = None,
+    extra_headers: dict[str, str] | None = None,
+    accept_compression: str | Sequence[str] | None = None,
 ) -> BarrageSession:
-    """Returns a Deephaven gRPC session to a remote server if a cached session is available; otherwise, creates a new
-    session.
+    """Creates a new Deephaven gRPC session to a remote server. Each call returns a new session.
 
-    Note: client authentication is not supported yet.
+    Note: this function has no arguments for a TLS client certificate or private key. For mutual TLS, set the
+    server's outbound SSL identity with the "outbound.ssl.identity.*" configuration properties and pass
+    use_tls=True without tls_root_certs. Passing tls_root_certs replaces the server's outbound SSL configuration,
+    including its client identity.
 
     Args:
         host (str): the host name or IP address of the Deephaven server.
         port (int): the port number that the remote Deephaven server is listening on, default is 10000.
-        auth_type (str): the authentication type string, can be "Anonymous', 'Basic", or any custom-built
+        auth_type (str): the authentication type string, can be 'Anonymous', 'Basic', or any custom-built
             authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler",
             default is 'Anonymous'.
         auth_token (str): the authentication token string. When auth_type is 'Basic', it must be
-            "user:password"; when auth_type is "Anonymous', it will be ignored; when auth_type is a custom-built
+            "user:password"; when auth_type is 'Anonymous', it will be ignored; when auth_type is a custom-built
             authenticator, it must conform to the specific requirement of the authenticator
         use_tls (bool): if True, use a TLS connection.  Defaults to False
         tls_root_certs (Optional[bytes]): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
@@ -253,9 +254,9 @@ def _get_barrage_session_direct(client_config: jpy.JType, auth: str) -> BarrageS
 
 def _build_client_config(
     target_uri: str,
-    tls_root_certs: Optional[bytes],
-    extra_headers: Optional[dict[str, str]] = None,
-    accept_compression: Optional[Union[str, Sequence[str]]] = None,
+    tls_root_certs: bytes | None,
+    extra_headers: dict[str, str] | None = None,
+    accept_compression: str | Sequence[str] | None = None,
 ) -> jpy.JType:
     j_client_config_builder = _JClientConfig.builder()
     j_client_config_builder.target(_JDeephavenTarget.of(_JURI(target_uri)))

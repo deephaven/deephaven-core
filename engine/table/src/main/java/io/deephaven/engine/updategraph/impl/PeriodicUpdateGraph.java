@@ -1017,6 +1017,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
     @Override
     void refreshTablesAndFlushNotifications() {
         final long startTimeNanos = System.nanoTime();
+        reportCycleStartToRecyclers(startTimeNanos);
 
         ScheduledFuture<?> watchdogFuture = null;
         final long localWatchdogMillis = watchDogMillis;

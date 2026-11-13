@@ -237,7 +237,7 @@ convertedMeta = convertedDateTimes.meta()
 
 The [time user guide](../../conceptual/time-in-deephaven.md) provides a comprehensive overview of working with date-time data in Deephaven.
 
-These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
+The numeric and date-time functions in this section provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
 
 ## Java methods
 
@@ -401,7 +401,7 @@ addVarsClass = emptyTable(1).update(
 ```
 
 > [!NOTE]
-> This example uses `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import the class into the query library of the current [`ExecutionContext`](../../conceptual/execution-context.md). This is a quick way to make a user-defined class available in query strings. For production code, see [Import packages with user-defined functions](../../how-to-guides/groovy-closures.md#import-packages-with-user-defined-functions) to put classes in their own Groovy files on the classpath.
+> This example uses `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import the class into the query library of the current [`ExecutionContext`](../../conceptual/execution-context.md). This is a quick way to make a user-defined class available in query strings. For production code, see [Import closures from Groovy files](../../how-to-guides/groovy-closures.md#import-closures-from-groovy-files) to put classes in their own Groovy files on the classpath.
 
 Closures don't expose a return type, and the class methods above don't declare one, so the engine can't infer what data type they return. It stores each result as a Java [`Object`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html). Plain Groovy variables are different: the engine knows their types, so the `Sum` column in `addVars` is an `int`.
 
@@ -430,7 +430,7 @@ To learn more about using Groovy in query strings, see the user guides on [funct
 
 ## Scoping
 
-Query strings resolve names from the [query scope](../../how-to-guides/query-scope.md), the set of variables the engine can see when it compiles a query string. Variables you assign at the top level of a Groovy script without `def` or a type, such as `int1 = 10`, are in the query scope automatically. Variables declared with `def` or a type are not in the query scope, and neither are closure parameters. To use one of those in a query string, add it to the query scope with [`QueryScope.addParam`](../../how-to-guides/query-scope.md#manually).
+Query strings resolve names from the [query scope](../../how-to-guides/query-scope.md), the set of variables the engine can see when it compiles a query string. Variables you assign at the top level of a Groovy script without `def` or a type, such as `int1 = 10`, are in the query scope automatically. Variables declared with `def` or a type are not in the query scope, and neither are closure parameters. To use one of those in a query string, add it to the query scope with [`QueryScope.addParam`](../../how-to-guides/query-scope.md#local-function-scope).
 
 ```groovy test-set=2 order=result1,result2
 // Define the function f

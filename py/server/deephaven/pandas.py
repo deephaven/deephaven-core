@@ -4,12 +4,13 @@
 
 """This module supports the conversion between Deephaven tables and pandas DataFrames."""
 
-from typing import Literal, Optional, Union, cast
+from typing import Literal, cast
 
 import jpy
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.compute as pc
 from pandas.api.extensions import ExtensionArray
 from pandas.api.types import is_object_dtype
 
@@ -100,9 +101,60 @@ _PYARROW_TO_PANDAS_TYPE_MAPPERS = {
 }
 
 
+def _decode_run_end_array(array: pa.RunEndEncodedArray) -> pa.Array:
+    """Decodes one chunk of a run-end encoded column, keeping dictionary-encoded values dictionary-encoded."""
+    values = array.values
+    if not isinstance(values, pa.DictionaryArray):
+        return pc.run_end_decode(array)
+
+    # pyarrow can't run_end_decode dictionary values, so decode the indices and reattach the dictionary.
+    # The children span the unsliced array, hence the slice.
+    indices = pc.run_end_decode(
+        pa.RunEndEncodedArray.from_arrays(array.run_ends, values.indices)
+    )
+    return pa.DictionaryArray.from_arrays(
+        indices.slice(array.offset, len(array)),
+        values.dictionary,
+        ordered=values.type.ordered,
+    )
+
+
+def _decode_for_pandas(pa_table: pa.Table) -> pa.Table:
+    """Decodes the encoded columns that to_pandas mishandles.
+
+    - Run-end encoded columns. to_pandas can't convert one over dictionary values, and its types_mapper never sees
+      the value type of the others.
+    - Dictionary-encoded timestamps with a time zone. to_pandas drops their time zone.
+    """
+    for i, field in enumerate(pa_table.schema):
+        column = pa_table.column(i)
+        if isinstance(column.type, pa.RunEndEncodedType):
+            value_type = column.type.value_type
+            column = pa.chunked_array(
+                [_decode_run_end_array(chunk) for chunk in column.chunks],
+                type=value_type,
+            )
+        if (
+            isinstance(column.type, pa.DictionaryType)
+            and pa.types.is_timestamp(column.type.value_type)
+            and column.type.value_type.tz is not None
+        ):
+            value_type = column.type.value_type
+            column = pa.chunked_array(
+                [chunk.dictionary_decode() for chunk in column.chunks],
+                type=value_type,
+            )
+        if column.type != field.type:
+            # Nulls of a run-end encoded field live in its values, so the decoded field is nullable.
+            pa_table = pa_table.set_column(
+                i, pa.field(field.name, column.type, True, field.metadata), column
+            )
+    return pa_table
+
+
 def to_pandas(
     table: Table,
-    cols: Optional[list[str]] = None,
+    cols: list[str] | None = None,
     dtype_backend: Literal[None, "pyarrow", "numpy_nullable"] = "numpy_nullable",
     conv_null: bool = True,
 ) -> pd.DataFrame:
@@ -115,12 +167,15 @@ def to_pandas(
     Args:
         table (Table): the source table
         cols (Optional[list[str]]): the source column names, default is None which means include all columns
-        dtype_backend (Literal[None, "pyarrow", "numpy_nullable"]): which dtype_backend to use, e.g. whether a DataFrame should have NumPy arrays,
-            nullable dtypes are used for all dtypes that have a nullable implementation when "numpy_nullable" is set,
-            pyarrow is used for all dtypes if "pyarrow" is set. None means Numpy backed DataFrames with no nullable
-            dtypes. Both "numpy_nullable" and "pyarrow" automatically convert Deephaven nulls to Pandas NA and enable
-            Pandas extension types.  Extension types are needed to support types beyond NumPy's type system.  Extension
-            types support operations such as properly mapping Java Strings to Python strings. default is "numpy_nullable".
+        dtype_backend (Literal[None, "pyarrow", "numpy_nullable"]): which dtype backend to use. "numpy_nullable" and
+            "pyarrow" convert the table through pyarrow. "numpy_nullable" uses pandas nullable dtypes for the numeric,
+            boolean, and string types that have one. "pyarrow" uses pd.ArrowDtype for numeric, boolean, string, and
+            timestamp types, and requires pandas 2.0.0 or later. Other types use pyarrow's default conversion.
+            Deephaven nulls become pd.NA in the columns that use these dtypes. Columns that use pyarrow's default
+            conversion get its missing-value marker instead, such as NaT for timestamp columns with "numpy_nullable".
+            None reads the column data into NumPy-backed Series; when conv_null is
+            True, boolean, char, and numeric columns then use pandas nullable dtypes so that Deephaven nulls become
+            pd.NA. Default is "numpy_nullable".
         conv_null (bool): when dtype_backend is set to None, whether to check for Deephaven nulls in the data and
             automatically replace them with pd.NA. default is True.
 
@@ -145,7 +200,7 @@ def to_pandas(
 
         # if nullable dtypes (pandas or pyarrow) is requested
         if type_mapper := _PYARROW_TO_PANDAS_TYPE_MAPPERS.get(str(dtype_backend)):
-            pa_table = arrow.to_arrow(table=table, cols=cols)
+            pa_table = _decode_for_pandas(arrow.to_arrow(table=table, cols=cols))
             df = pa_table.to_pandas(types_mapper=type_mapper)
             del pa_table
             return df
@@ -198,7 +253,7 @@ _PANDAS_EXTYPE_DH_NULL_MAP = {
 }
 
 
-def _map_na(array: Union[np.ndarray, ExtensionArray]) -> np.ndarray:
+def _map_na(array: np.ndarray | ExtensionArray) -> np.ndarray:
     """Replaces the pd.NA values in the array if it is of pandas ExtensionDtype(nullable)."""
     if isinstance(array, np.ndarray):
         return array
@@ -234,9 +289,17 @@ def _map_na(array: Union[np.ndarray, ExtensionArray]) -> np.ndarray:
 
 
 def to_table(
-    df: pd.DataFrame, cols: Optional[list[str]] = None, infer_objects: bool = True
+    df: pd.DataFrame, cols: list[str] | None = None, infer_objects: bool = True
 ) -> Table:
     """Creates a new table from a pandas DataFrame.
+
+    Column names are converted in one of two ways. With pandas 2.0.0 or later, when a selected column has a
+    pd.ArrowDtype, the table is created through pyarrow, which removes characters that aren't allowed in column
+    names: "Shades.1" becomes "Shades1". Otherwise, including when the only pyarrow-backed columns are
+    pd.StringDtype("pyarrow") columns, or if that conversion fails, each run of characters other than letters,
+    digits, and underscores becomes a single underscore, and such characters at the start or end of a name are
+    removed: "Shades.1" becomes "Shades_1". This second conversion changes nothing else, so a name such as "123" or
+    the reserved word "in" is still rejected.
 
     Args:
         df (DataFrame): the pandas DataFrame instance

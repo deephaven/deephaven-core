@@ -171,25 +171,38 @@ public class ParallelTimsort {
         // up to the next level unmerged
         final List<MergeNode> leaves = buildMergeTree(size, segments, segmentSize);
 
-        for (final MergeNode leaf : leaves) {
-            jobScheduler.submit(
-                    executionContext,
-                    () -> {
-                        if (waitForSort.isDone()) {
-                            return; // a sibling task already failed
-                        }
-                        segmentSorter.sortSegment(leaf.start, leaf.totalLength);
-                        completeNode(leaf, runMerger, jobScheduler, executionContext, waitForSort);
-                    },
-                    logOutput -> logOutput.append("ParallelTimsort.segmentSort"),
-                    waitForSort::completeExceptionally);
+        // rethrown once the leaves already submitted have finished with the chunks they sort
+        Error submitError = null;
+        try {
+            for (final MergeNode leaf : leaves) {
+                jobScheduler.submit(
+                        executionContext,
+                        () -> {
+                            if (waitForSort.isDone()) {
+                                return; // a sibling task already failed
+                            }
+                            segmentSorter.sortSegment(leaf.start, leaf.totalLength);
+                            completeNode(leaf, runMerger, jobScheduler, executionContext, waitForSort);
+                        },
+                        logOutput -> logOutput.append("ParallelTimsort.segmentSort"),
+                        waitForSort::completeExceptionally);
+            }
+        } catch (final RuntimeException e) {
+            // the leaves already submitted see the failure and do nothing; the wait below finishes them
+            waitForSort.completeExceptionally(e);
+        } catch (final Error e) {
+            submitError = e;
+            waitForSort.completeExceptionally(e);
         }
 
         try {
-            waitForSort.get();
+            jobScheduler.awaitCompletion(waitForSort);
         } catch (final InterruptedException e) {
             throw new CancellationException("Interrupted during parallel sort");
         } catch (final ExecutionException e) {
+            if (submitError != null) {
+                throw submitError;
+            }
             throw new UncheckedDeephavenException("Exception during parallel sort", e.getCause());
         } finally {
             SortHelpers.accumulateSchedulerPerformance(jobScheduler);
@@ -303,25 +316,35 @@ public class ParallelTimsort {
     private static void runPhase(final JobScheduler jobScheduler, final String description, final int size,
             final int segments, final int segmentSize, final SegmentTask task) {
         final CompletableFuture<Void> waitForPhase = new CompletableFuture<>();
-        jobScheduler.iterateParallel(
-                ExecutionContext.getContext(),
-                logOutput -> logOutput.append(description),
-                JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                0, segments,
-                (context, segment, nestedErrorConsumer) -> {
-                    final int start = segment * segmentSize;
-                    final int end = Math.min(start + segmentSize, size);
-                    task.run(start, end);
-                },
-                () -> waitForPhase.complete(null),
-                () -> {
-                },
-                waitForPhase::completeExceptionally);
+        // an Error starting the iteration is rethrown once the segments already started have finished with the chunk
+        Error startError = null;
         try {
-            waitForPhase.get();
+            jobScheduler.iterateParallel(
+                    ExecutionContext.getContext(),
+                    logOutput -> logOutput.append(description),
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    0, segments,
+                    (context, segment, nestedErrorConsumer) -> {
+                        final int start = segment * segmentSize;
+                        final int end = Math.min(start + segmentSize, size);
+                        task.run(start, end);
+                    },
+                    () -> waitForPhase.complete(null),
+                    () -> {
+                    },
+                    waitForPhase::completeExceptionally);
+        } catch (final Error e) {
+            startError = e;
+            waitForPhase.completeExceptionally(e);
+        }
+        try {
+            jobScheduler.awaitCompletion(waitForPhase);
         } catch (final InterruptedException e) {
             throw new CancellationException("Interrupted during " + description);
         } catch (final ExecutionException e) {
+            if (startError != null) {
+                throw startError;
+            }
             throw new UncheckedDeephavenException("Exception during " + description, e.getCause());
         }
     }
