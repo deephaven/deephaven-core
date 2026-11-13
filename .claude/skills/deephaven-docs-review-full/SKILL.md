@@ -249,8 +249,11 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
   isn't validated by the docs snapshotter; flag it unless the page has a reason.
 - **Is it readable in one view?** Short enough to follow, with realistic names, and with comments
   that explain *why* rather than restating the code.
-- **Does the page work in order, on a clean machine?** Walk the page's snippets top to bottom as a
-  reader who pastes each into a fresh environment, and track what each one creates, closes, or
+- **Does the page work in order, on a clean machine?** Walk each path a reader can actually take,
+  top to bottom, pasting each snippet into a fresh environment. Treat independent examples (each
+  starting from the page's shared setup) and mutually exclusive alternatives as separate paths, and
+  when the text tells the reader to insert a fragment into earlier code (inside an earlier `try`
+  block, say), apply that instruction before judging the snippet. Track what each snippet creates, closes, or
   rebinds: sessions and connections, tables, threads and listeners, variables, imports. A snippet
   that uses a resource an earlier one closed, or that still expects the previous value or type of a
   name an earlier one rebound, fails for that reader even though each snippet runs alone. Rebinding
