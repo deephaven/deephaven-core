@@ -6,7 +6,7 @@ title: How do I automatically execute Python code based on a Deephaven table col
 
 <p></p>
 
-Yes. This is common in algorithmic trading, and you can do it in two ways. Use [`where`](../../reference/table-operations/filter/where.md) and [`update`](../../reference/table-operations/select/update.md) when you want a table that records each trigger. Use a [table listener](../../how-to-guides/table-listeners-python.md) when the action is a side effect outside the query engine, such as sending an alert, and you don't need a result table.
+Yes. This is common in algorithmic trading, and you can do it in two ways. Use [`where`](../../reference/table-operations/filter/where.md) and [`update`](../../reference/table-operations/select/update.md) when you want a live result table of matching rows — on an append-only source like `time_table`, qualifying rows accumulate as a running record. Use a [table listener](../../how-to-guides/table-listeners-python.md) when the action is a side effect outside the query engine, such as sending an alert, and you don't need a result table.
 
 The first approach uses `where` and `update`. The following example prints to the console when new data in the `X` column is greater than 0.5:
 
