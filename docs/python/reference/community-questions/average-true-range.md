@@ -22,7 +22,7 @@ trades = (
             "Timestamp = '2025-05-01T09:30:00 ET' + ii * HOUR",
             "Date = formatDate(Timestamp, 'ET')",
             "Sym = ii % 2 == 0 ? `COS` : `SIN`",
-            "Price = ii % 2 == 0 ? cos(0.000001 * ii) : sin(0.0000001 * ii)",
+            "Price = ii % 2 == 0 ? 50 + 10 * cos(0.1 * ii) : 50 + 10 * sin(0.1 * ii)",
         ]
     )
     .where("cal.isBusinessDay(Date)")

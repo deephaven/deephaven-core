@@ -12,7 +12,7 @@ There are two basic ways to do this. The first uses a [table listener](../../how
 
 The listener approach uses [`snapshot_when`](../table-operations/snapshot/snapshot-when.md) to capture the table's state at regular intervals, and a [table listener](../../how-to-guides/table-listeners-python.md) to convert the snapshot to a pandas DataFrame each time it updates. This is the recommended approach because it avoids managing a dedicated polling thread.
 
-```python ticking-table order=null
+```python ticking-table order=null reset
 import threading
 from deephaven import time_table
 from deephaven.pandas import to_pandas
@@ -55,7 +55,7 @@ timer.start()
 
 The threading approach polls [`to_pandas`](../pandas/to-pandas.md) on a fixed interval. It requires managing the thread's lifecycle.
 
-```python ticking-table order=null
+```python ticking-table order=null reset
 import threading
 from deephaven import time_table
 from deephaven.pandas import to_pandas
