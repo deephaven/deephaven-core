@@ -34,7 +34,7 @@ The example creates a [Keycloak](https://www.keycloak.org/) realm named `deephav
 
 ### docker-compose.yml
 
-The Docker Compose file defines the three services and a bridge network, `dh_auth_ntw`, that connects all three. The `deephaven` service passes its settings to the server through the [`START_OPTS`](../configuration/docker-application.md#construction) environment variable, which appends extra JVM properties to the defaults.
+The Docker Compose file defines the three services and a bridge network, `dh_auth_ntw`, that connects all three. The `deephaven` service passes its settings to the server through the [`START_OPTS`](../configuration/docker-application.md#set-jvm-options) environment variable, which appends extra JVM properties to the defaults.
 
 <details>
 <summary> Expand the YAML file </summary>
@@ -321,7 +321,7 @@ Most people who use a [Keycloak](https://www.keycloak.org/)-protected Deephaven 
 If you are running the example on this page and need to add a user, add a user to the `deephaven_core` realm in the Keycloak admin console:
 
 1. Open the admin console at `http://localhost:8080`. The example publishes this port to the host.
-2. Sign in to the master realm with the administrator account. In this example, that account is `admin`/`admin`, which the `KEYCLOAK_ADMIN` and `KEYCLOAK_ADMIN_PASSWORD` environment variables define.
+2. Sign in to the master realm with the administrator account. In this example, that account is `admin`/`admin`, which the `KC_BOOTSTRAP_ADMIN_USERNAME` and `KC_BOOTSTRAP_ADMIN_PASSWORD` environment variables define.
 3. Switch to the `deephaven_core` realm, create the user, and set a password for them.
 
 In a production Keycloak deployment, use your organization's admin console and realm instead.
