@@ -15,7 +15,7 @@ This means that:
 - The last few days of December can be part of week 1 of the next year. For example, December 30, 2024 is in ISO week 1 of 2025.
 - The first few days of January can be part of week 52 or 53 of the previous year. For example, January 1, 2021 is in ISO week 53 of 2020.
 
-The following formula computes the ISO week number from a timestamp:
+The following formula approximates the ISO week number from a timestamp. It is exact for most dates but can be off at year boundaries, as explained below:
 
 ```python test-set=1 order=source,result
 from deephaven import new_table

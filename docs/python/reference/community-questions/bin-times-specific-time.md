@@ -109,7 +109,7 @@ result = source.update(
 )
 ```
 
-Passing `true` for the `asLocalTime` parameter measures minutes by the local clock, so 9:30AM is always minute 570, even on daylight saving time change days.
+Passing `true` for the `asLocalTime` parameter measures minutes by the local clock, so 9:30AM is always minute 570, even on daylight saving time change days. Note that these are wall-clock bins: during a fall-back transition, two different instants (e.g., 1:30 AM EDT and 1:30 AM EST) produce the same minute-of-day label, so bins in the overlap hour contain data from both offsets.
 
 Since this data is now stored for the correct time zone, we don't need to account for a difference in time zones. NYSE trading start time is 570 minutes into the day.
 
