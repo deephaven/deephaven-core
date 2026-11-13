@@ -15,6 +15,7 @@ import io.deephaven.web.client.api.updateby.UpdateByOptions;
 import io.deephaven.web.client.api.updateby.UpdateByRollingSum;
 import io.deephaven.web.client.api.updateby.UpdateByWindowTicks;
 import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -166,6 +167,72 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
                                                             return Promise.resolve(session);
                                                         });
                                             })));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testUpdateByFromPlainObjects() {
+        // As JS callers write it: the options, operation, spec and window are all object literals
+        JsPropertyMap<Object> spec = JsPropertyMap.of("type", "UpdateByRollingWAvg", "weightColumn", "W",
+                "reverseWindowScale", JsPropertyMap.of("type", "ticks", "ticks", 3.0));
+        JsPropertyMap<Object> operation = JsPropertyMap.of("spec", spec, "matchPairs", arr("RollWAvgX = X"));
+        UpdateByOptions options = Js.uncheckedCast(JsPropertyMap.of("operations", arr(operation)));
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(20_098);
+                    JsPendingTable<JsResolvedTable> rolled;
+                    try {
+                        rolled = session.getTable("source", null).updateBy(options);
+                    } catch (RuntimeException e) {
+                        return Promise.reject("updateBy with a plain-object rolling wavg threw: " + e);
+                    }
+                    return rolled.resolve().then(table -> {
+                        assertEquals(5., table.getSize(), 0);
+                        assertNotNull(table.findColumn("RollWAvgX"));
+                        table.close();
+                        return Promise.resolve(table);
+                    }, err -> Promise.reject("updateBy with a plain-object rolling wavg rejected: " + err));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testUpdateByEmOptionsFromPlainObjects() {
+        // The em options and their math context are object literals too, not instances of their classes
+        JsPropertyMap<Object> emOptions = JsPropertyMap.of("onNullValue", "SKIP",
+                "bigValueContext", JsPropertyMap.of("precision", 10.0, "roundingMode", "HALF_UP"));
+        JsPropertyMap<Object> spec = JsPropertyMap.of("type", "UpdateByEma", "emOptions", emOptions,
+                "windowScale", JsPropertyMap.of("type", "ticks", "ticks", 3.0));
+        JsPropertyMap<Object> operation = JsPropertyMap.of("spec", spec, "matchPairs", arr("EmaX = X"));
+        updateByResolves(Js.uncheckedCast(JsPropertyMap.of("operations", arr(operation))), "EmaX",
+                "plain-object em options", 20_097);
+    }
+
+    public void testUpdateByControlFromPlainObjects() {
+        JsPropertyMap<Object> operation = JsPropertyMap.of("spec", JsPropertyMap.of("type", "UpdateByCumulativeSum"),
+                "matchPairs", arr("SumX = X"));
+        JsPropertyMap<Object> control = JsPropertyMap.of("mathContext",
+                JsPropertyMap.of("precision", 10.0, "roundingMode", "HALF_UP"));
+        updateByResolves(Js.uncheckedCast(JsPropertyMap.of("operations", arr(operation), "control", control)),
+                "SumX", "a plain-object control math context", 20_096);
+    }
+
+    /** Runs updateBy on the source table and checks the result has all its rows and the named column. */
+    private void updateByResolves(UpdateByOptions options, String column, String scenario, int timeout) {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(timeout);
+                    JsPendingTable<JsResolvedTable> result;
+                    try {
+                        result = session.getTable("source", null).updateBy(options);
+                    } catch (RuntimeException e) {
+                        return Promise.reject("updateBy with " + scenario + " threw: " + e);
+                    }
+                    return result.resolve().then(table -> {
+                        assertEquals(5., table.getSize(), 0);
+                        assertNotNull(table.findColumn(column));
+                        table.close();
+                        return Promise.resolve(table);
+                    }, err -> Promise.reject("updateBy with " + scenario + " rejected: " + err));
                 })
                 .then(this::finish).catch_(this::report);
     }

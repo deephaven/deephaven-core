@@ -12,10 +12,10 @@ public class MathContext {
     public RoundingMode roundingMode;
 
     @JsIgnore
-    public io.deephaven.proto.backplane.grpc.MathContext.Builder toProto() {
+    public static io.deephaven.proto.backplane.grpc.MathContext.Builder toProto(MathContext context) {
         return io.deephaven.proto.backplane.grpc.MathContext.newBuilder()
-                .setPrecision(precision)
+                .setPrecision(context.precision)
                 .setRoundingMode(io.deephaven.proto.backplane.grpc.MathContext.RoundingMode
-                        .valueOf(roundingMode.toString()));
+                        .valueOf(context.roundingMode.toString()));
     }
 }

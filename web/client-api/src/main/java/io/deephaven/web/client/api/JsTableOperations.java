@@ -1012,13 +1012,14 @@ public interface JsTableOperations extends ServerObject {
                 controlBuilder.setTargetLoadFactor(options.control.targetLoadFactor);
             }
             if (options.control.mathContext != null) {
-                controlBuilder.setMathContext(options.control.mathContext.toProto());
+                controlBuilder.setMathContext(MathContext.toProto(options.control.mathContext));
             }
             builder.setOptions(controlBuilder);
         }
 
         for (int i = 0; i < options.operations.getLength(); i++) {
-            UpdateByOperation op = options.operations.getAt(i);
+            // Not getAt: its checked cast throws on a plain object shaped like the class
+            UpdateByOperation op = options.operations.getAtAsAny(i).uncheckedCast();
             UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.Builder spec = op.spec.makeOperation();
             builder.addOperations(UpdateByRequest.UpdateByOperation.newBuilder()
                     .setColumn(UpdateByRequest.UpdateByOperation.UpdateByColumn.newBuilder()

@@ -190,7 +190,7 @@ public interface UpdateBySpecUnion {
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.newBuilder()
                                 .setWindowScale(ema.windowScale.toProto());
                 if (ema.emOptions != null) {
-                    b.setOptions(ema.emOptions.toProto());
+                    b.setOptions(UpdateByEmOptions.toProto(ema.emOptions));
                 }
                 builder.setEma(b);
                 break;
@@ -201,7 +201,7 @@ public interface UpdateBySpecUnion {
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.newBuilder()
                                 .setWindowScale(ems.windowScale.toProto());
                 if (ems.emOptions != null) {
-                    b.setOptions(ems.emOptions.toProto());
+                    b.setOptions(UpdateByEmOptions.toProto(ems.emOptions));
                 }
                 builder.setEms(b);
                 break;
@@ -212,7 +212,7 @@ public interface UpdateBySpecUnion {
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.newBuilder()
                                 .setWindowScale(emMin.windowScale.toProto());
                 if (emMin.emOptions != null) {
-                    b.setOptions(emMin.emOptions.toProto());
+                    b.setOptions(UpdateByEmOptions.toProto(emMin.emOptions));
                 }
                 builder.setEmMin(b);
                 break;
@@ -223,7 +223,7 @@ public interface UpdateBySpecUnion {
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.newBuilder()
                                 .setWindowScale(emMax.windowScale.toProto());
                 if (emMax.emOptions != null) {
-                    b.setOptions(emMax.emOptions.toProto());
+                    b.setOptions(UpdateByEmOptions.toProto(emMax.emOptions));
                 }
                 builder.setEmMax(b);
                 break;
@@ -234,7 +234,7 @@ public interface UpdateBySpecUnion {
                         UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.newBuilder()
                                 .setWindowScale(emStd.windowScale.toProto());
                 if (emStd.emOptions != null) {
-                    b.setOptions(emStd.emOptions.toProto());
+                    b.setOptions(UpdateByEmOptions.toProto(emStd.emOptions));
                 }
                 builder.setEmStd(b);
                 break;

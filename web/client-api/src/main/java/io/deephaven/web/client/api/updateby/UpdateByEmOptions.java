@@ -25,31 +25,34 @@ public class UpdateByEmOptions {
     @JsNullable
     public MathContext bigValueContext;
 
-    io.deephaven.proto.backplane.grpc.UpdateByEmOptions.Builder toProto() {
+    /**
+     * Static, so that a plain JS object can be passed: it has none of this class's methods.
+     */
+    static io.deephaven.proto.backplane.grpc.UpdateByEmOptions.Builder toProto(UpdateByEmOptions options) {
         io.deephaven.proto.backplane.grpc.UpdateByEmOptions.Builder b =
                 io.deephaven.proto.backplane.grpc.UpdateByEmOptions.newBuilder();
-        if (onNullValue != null) {
+        if (options.onNullValue != null) {
             b.setOnNullValue(io.deephaven.proto.backplane.grpc.BadDataBehavior
-                    .valueOf(onNullValue.toString()));
+                    .valueOf(options.onNullValue.toString()));
         }
-        if (onNaNValue != null) {
+        if (options.onNaNValue != null) {
             b.setOnNanValue(io.deephaven.proto.backplane.grpc.BadDataBehavior
-                    .valueOf(onNaNValue.toString()));
+                    .valueOf(options.onNaNValue.toString()));
         }
-        if (onNullTime != null) {
+        if (options.onNullTime != null) {
             b.setOnNullTime(io.deephaven.proto.backplane.grpc.BadDataBehavior
-                    .valueOf(onNullTime.toString()));
+                    .valueOf(options.onNullTime.toString()));
         }
-        if (onNegativeDeltaTime != null) {
+        if (options.onNegativeDeltaTime != null) {
             b.setOnNegativeDeltaTime(io.deephaven.proto.backplane.grpc.BadDataBehavior
-                    .valueOf(onNegativeDeltaTime.toString()));
+                    .valueOf(options.onNegativeDeltaTime.toString()));
         }
-        if (onZeroDeltaTime != null) {
+        if (options.onZeroDeltaTime != null) {
             b.setOnZeroDeltaTime(io.deephaven.proto.backplane.grpc.BadDataBehavior
-                    .valueOf(onZeroDeltaTime.toString()));
+                    .valueOf(options.onZeroDeltaTime.toString()));
         }
-        if (bigValueContext != null) {
-            b.setBigValueContext(bigValueContext.toProto());
+        if (options.bigValueContext != null) {
+            b.setBigValueContext(MathContext.toProto(options.bigValueContext));
         }
         return b;
     }
