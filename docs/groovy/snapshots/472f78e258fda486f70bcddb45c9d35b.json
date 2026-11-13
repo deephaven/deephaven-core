@@ -1,0 +1,1 @@
+{"file":"how-to-guides/data-import-export/kafka-stream.md","objects":{"resultNoPartition":{"type":"Table","data":{"columns":[{"name":"KafkaOffset","type":"long"},{"name":"KafkaTimestamp","type":"java.time.Instant"},{"name":"Command","type":"java.lang.String"}],"rows":[]}}}}
