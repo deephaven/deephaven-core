@@ -485,7 +485,7 @@ def to_j_zdt(dt: ZonedDateTimeLike | None) -> ZonedDateTime | None:
     a numpy.datetime64, or a pandas.Timestamp.
 
     Date time strings can be formatted according to the ISO 8601 date time format
-    from the Epoch. Expected date ranges are used to infer the units.
+    ``'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ'`` and others.
 
     Converting a datetime.datetime or pandas.Timestamp to a ZonedDateTime will use the datetime's timezone information.
     Converting a numpy.datetime64 to a ZonedDateTime will use the Deephaven default time zone.
