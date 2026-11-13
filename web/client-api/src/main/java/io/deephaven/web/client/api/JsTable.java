@@ -3,20 +3,13 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.protobuf.ByteStringAccess;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import elemental2.core.ReadonlyArray;
-import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
-import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.flightjs.protocol.BrowserFlight;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
@@ -43,13 +36,7 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TreeRequest;
 import io.deephaven.proto.backplane.grpc.TreeResponse;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
-import io.deephaven.util.mutable.MutableLong;
-import io.deephaven.web.client.api.barrage.WebBarrageMessage;
-import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
-import io.deephaven.web.client.api.barrage.WebBarrageUtils;
-import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
-import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.console.JsVariableType;
@@ -59,7 +46,6 @@ import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.api.subscription.DataOptions;
-import io.deephaven.web.client.api.subscription.SubscriptionType;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.api.subscription.ViewportData;
@@ -74,7 +60,8 @@ import io.deephaven.web.client.state.ActiveTableBinding;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.Revivable;
-import io.deephaven.web.shared.data.*;
+import io.deephaven.web.shared.data.CustomColumnDescriptor;
+import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsProvider;
 import io.deephaven.web.shared.fu.JsRunnable;
@@ -90,15 +77,17 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
-import org.apache.arrow.flight.impl.Flight;
 import org.jspecify.annotations.Nullable;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 import static io.deephaven.web.client.fu.LazyPromise.logError;
 
 /**
