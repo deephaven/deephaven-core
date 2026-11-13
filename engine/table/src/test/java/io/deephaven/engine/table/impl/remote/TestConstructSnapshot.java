@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.remote;
 
 import io.deephaven.base.SleepUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
@@ -17,12 +18,19 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.thread.NamingThreadFactory;
 import io.deephaven.util.mutable.MutableLong;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.BitSet;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.deephaven.engine.table.impl.SnapshotTestUtils.verifySnapshotBarrageMessage;
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
@@ -141,5 +149,232 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
         }
 
         executor.shutdownNow();
+    }
+
+    private static final long TIMEOUT_SECONDS = 30;
+
+    private static ConstructSnapshot.SnapshotControl makeCurrentValuesControl(@NotNull final UpdateGraph updateGraph) {
+        return new ConstructSnapshot.SnapshotControl() {
+
+            @Override
+            public Boolean usePreviousValues(final long beforeClockValue) {
+                // noinspection AutoBoxing
+                return false;
+            }
+
+            @Override
+            public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+                return true;
+            }
+
+            @Override
+            public UpdateGraph getUpdateGraph() {
+                return updateGraph;
+            }
+        };
+    }
+
+    /**
+     * Make a snapshot function that refuses to run concurrently, forcing its snapshot to fall back to a locked snapshot
+     * (which acquires the shared update graph lock if it is not already held).
+     */
+    private static ConstructSnapshot.SnapshotFunction makeLockForcingFunction(
+            @NotNull final UpdateGraph updateGraph,
+            @NotNull final AtomicInteger concurrentCalls,
+            @NotNull final AtomicInteger lockedCalls) {
+        return (final boolean usePrev, final long beforeClockValue) -> {
+            if (!updateGraph.sharedLock().isHeldByCurrentThread()) {
+                concurrentCalls.incrementAndGet();
+                throw new ConstructSnapshot.NoSnapshotAllowedException();
+            }
+            lockedCalls.incrementAndGet();
+            return true;
+        };
+    }
+
+    /**
+     * Assert that the (single) thread of {@code executor} does not hold the shared update graph lock, and that it can
+     * still perform a concurrent snapshot.
+     */
+    private static void assertLockReleased(
+            @NotNull final ExecutorService executor,
+            @NotNull final ExecutionContext executionContext,
+            @NotNull final UpdateGraph updateGraph,
+            @NotNull final ConstructSnapshot.SnapshotControl control)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        assertFalse(executor.submit(() -> updateGraph.sharedLock().isHeldByCurrentThread())
+                .get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+
+        final AtomicBoolean subsequentSnapshotConcurrent = new AtomicBoolean();
+        executor.submit(() -> {
+            try (final SafeCloseable ignored = executionContext.open()) {
+                return ConstructSnapshot.callDataSnapshotFunction("subsequent", control,
+                        (final boolean usePrev, final long beforeClockValue) -> {
+                            subsequentSnapshotConcurrent.set(!updateGraph.sharedLock().isHeldByCurrentThread());
+                            return true;
+                        });
+            }
+        }).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertTrue(subsequentSnapshotConcurrent.get());
+    }
+
+    /**
+     * Regression test for DH-23460.
+     *
+     * <p>
+     * A nested snapshot that falls back to a locked snapshot acquires the shared update graph lock, and (by design)
+     * keeps it held until the outermost snapshot on the thread completes. If the enclosing concurrent attempt then
+     * turns out to be inconsistent, the retry loop must fall back to a locked snapshot rather than attempting another
+     * concurrent snapshot while holding the lock, and the lock must be released once the outermost snapshot exits.
+     */
+    public void testNestedLockedSnapshotWithinInconsistentConcurrentAttempt()
+            throws InterruptedException, ExecutionException, TimeoutException {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final ExecutorService executor = Executors.newSingleThreadExecutor(
+                new NamingThreadFactory(TestConstructSnapshot.class, "TestConstructSnapshot Executor"));
+        try {
+            final ConstructSnapshot.SnapshotControl control = makeCurrentValuesControl(updateGraph);
+
+            final CountDownLatch outerAttemptStarted = new CountDownLatch(1);
+            final CountDownLatch cycleCompleted = new CountDownLatch(1);
+            final AtomicInteger outerCalls = new AtomicInteger();
+            final AtomicInteger innerConcurrentCalls = new AtomicInteger();
+            final AtomicInteger innerLockedCalls = new AtomicInteger();
+
+            final ConstructSnapshot.SnapshotFunction inner =
+                    makeLockForcingFunction(updateGraph, innerConcurrentCalls, innerLockedCalls);
+
+            final ConstructSnapshot.SnapshotFunction outer = (final boolean usePrev, final long beforeClockValue) -> {
+                if (outerCalls.getAndIncrement() == 0) {
+                    // First (concurrent) attempt: let the test thread run a full update cycle, so that this attempt
+                    // will be inconsistent once the nested snapshot has completed.
+                    outerAttemptStarted.countDown();
+                    try {
+                        cycleCompleted.await();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                ConstructSnapshot.callDataSnapshotFunction("inner", control, inner);
+                return true;
+            };
+
+            final Future<Long> snapshotStep = executor.submit(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    return ConstructSnapshot.callDataSnapshotFunction("outer", control, outer);
+                }
+            });
+
+            assertTrue(outerAttemptStarted.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            updateGraph.startCycleForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+            final long expectedStep = updateGraph.clock().currentStep();
+            cycleCompleted.countDown();
+
+            assertEquals(expectedStep, snapshotStep.get(TIMEOUT_SECONDS, TimeUnit.SECONDS).longValue());
+            // The outer snapshot makes one (inconsistent) concurrent attempt, then one locked attempt
+            assertEquals(2, outerCalls.get());
+            // The inner snapshot makes one concurrent attempt within the outer concurrent attempt, and then locked
+            // attempts within each of the outer attempts
+            assertEquals(1, innerConcurrentCalls.get());
+            assertEquals(2, innerLockedCalls.get());
+
+            assertLockReleased(executor, executionContext, updateGraph, control);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    /**
+     * Companion to {@link #testNestedLockedSnapshotWithinInconsistentConcurrentAttempt()}: if the enclosing concurrent
+     * attempt succeeds after a nested locked snapshot acquired the shared update graph lock, the lock must be released
+     * when the outermost snapshot exits.
+     */
+    public void testLockReleasedAfterSuccessfulConcurrentAttemptWithNestedLockedSnapshot()
+            throws InterruptedException, ExecutionException, TimeoutException {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final ExecutorService executor = Executors.newSingleThreadExecutor(
+                new NamingThreadFactory(TestConstructSnapshot.class, "TestConstructSnapshot Executor"));
+        try {
+            final ConstructSnapshot.SnapshotControl control = makeCurrentValuesControl(updateGraph);
+
+            final AtomicInteger outerCalls = new AtomicInteger();
+            final AtomicInteger innerConcurrentCalls = new AtomicInteger();
+            final AtomicInteger innerLockedCalls = new AtomicInteger();
+            final ConstructSnapshot.SnapshotFunction inner =
+                    makeLockForcingFunction(updateGraph, innerConcurrentCalls, innerLockedCalls);
+
+            final ConstructSnapshot.SnapshotFunction outer = (final boolean usePrev, final long beforeClockValue) -> {
+                outerCalls.incrementAndGet();
+                ConstructSnapshot.callDataSnapshotFunction("inner", control, inner);
+                assertTrue(updateGraph.sharedLock().isHeldByCurrentThread());
+                return true;
+            };
+
+            final long expectedStep = updateGraph.clock().currentStep();
+            final Future<Long> snapshotStep = executor.submit(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    return ConstructSnapshot.callDataSnapshotFunction("outer", control, outer);
+                }
+            });
+            assertEquals(expectedStep, snapshotStep.get(TIMEOUT_SECONDS, TimeUnit.SECONDS).longValue());
+            assertEquals(1, outerCalls.get());
+            assertEquals(1, innerConcurrentCalls.get());
+            assertEquals(1, innerLockedCalls.get());
+
+            assertLockReleased(executor, executionContext, updateGraph, control);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    /**
+     * Companion to {@link #testNestedLockedSnapshotWithinInconsistentConcurrentAttempt()}: if an exception escapes a
+     * concurrent attempt after a nested locked snapshot acquired the shared update graph lock, the lock must still be
+     * released when the outermost snapshot exits.
+     */
+    public void testLockReleasedWhenExceptionEscapesConcurrentAttempt()
+            throws InterruptedException, ExecutionException, TimeoutException {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final ExecutorService executor = Executors.newSingleThreadExecutor(
+                new NamingThreadFactory(TestConstructSnapshot.class, "TestConstructSnapshot Executor"));
+        try {
+            final ConstructSnapshot.SnapshotControl control = makeCurrentValuesControl(updateGraph);
+
+            final AtomicInteger innerConcurrentCalls = new AtomicInteger();
+            final AtomicInteger innerLockedCalls = new AtomicInteger();
+            final ConstructSnapshot.SnapshotFunction inner =
+                    makeLockForcingFunction(updateGraph, innerConcurrentCalls, innerLockedCalls);
+
+            final ConstructSnapshot.SnapshotFunction outer = (final boolean usePrev, final long beforeClockValue) -> {
+                ConstructSnapshot.callDataSnapshotFunction("inner", control, inner);
+                assertTrue(updateGraph.sharedLock().isHeldByCurrentThread());
+                // SnapshotUnsuccessfulException is propagated from a concurrent attempt without any retry
+                throw new SnapshotUnsuccessfulException("Deliberate failure after nested locked snapshot");
+            };
+
+            final Future<Long> snapshotStep = executor.submit(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    return ConstructSnapshot.callDataSnapshotFunction("outer", control, outer);
+                }
+            });
+            try {
+                snapshotStep.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                fail("Expected SnapshotUnsuccessfulException");
+            } catch (ExecutionException e) {
+                if (!(e.getCause() instanceof SnapshotUnsuccessfulException)) {
+                    throw e;
+                }
+            }
+            assertEquals(1, innerConcurrentCalls.get());
+            assertEquals(1, innerLockedCalls.get());
+
+            assertLockReleased(executor, executionContext, updateGraph, control);
+        } finally {
+            executor.shutdownNow();
+        }
     }
 }
