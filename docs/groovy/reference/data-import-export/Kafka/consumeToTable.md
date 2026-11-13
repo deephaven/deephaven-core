@@ -64,7 +64,7 @@ An in-memory table.
 
 ## Examples
 
-In the following example, `consumeToTable` is used to read the Kafka topic `test.topic` into a Deephaven table. `KafkaTools.Consume.FROM_PROPERTIES` allows the key and value column types to be inferred by the properties passed in.
+In the following example, `consumeToTable` is used to read the Kafka topic `test.topic` into a Deephaven table. [`KafkaTools.FROM_PROPERTIES`](/core/javadoc/io/deephaven/kafka/KafkaTools.html#FROM_PROPERTIES) takes the key and value column types from the `deephaven.key.column.type` and `deephaven.value.column.type` properties.
 
 - The host and port for the Kafka server to use to bootstrap are specified by `kafkaProps`.
   - The value `redpanda:9092` corresponds to the current setup for development testing with Docker images (which uses an instance of [redpanda](https://github.com/redpanda-data/redpanda)).
@@ -83,8 +83,8 @@ result = KafkaTools.consumeToTable(
     'testTopic',
     KafkaTools.ALL_PARTITIONS,
     KafkaTools.ALL_PARTITIONS_DONT_SEEK,
-    KafkaTools.Consume.FROM_PROPERTIES,
-    KafkaTools.Consume.FROM_PROPERTIES,
+    KafkaTools.FROM_PROPERTIES,
+    KafkaTools.FROM_PROPERTIES,
     KafkaTools.TableType.append()
 )
 ```

@@ -77,30 +77,27 @@ services:
       - dh_auth_ntw
 
   keycloak:
-    image: quay.io/keycloak/keycloak:19.0.3
+    image: quay.io/keycloak/keycloak:26.8.1
     container_name: keycloak
     environment:
-      - KEYCLOAK_LOGLEVEL=ALL
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
-      - DB_VENDOR=postgres
-      - DB_ADDR=postgres
-      - DB_DATABASE=postgres
-      - DB_USER=postgres
-      - DB_SCHEMA=keycloak
-      - DB_PASSWORD=password
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
     command:
       - start-dev
-      - --db postgres
-      - --db-url-host postgres
-      - --db-url-database postgres
-      - --db-username postgres
-      - --db-password password
-      - --db-schema keycloak
+      - --db=postgres
+      - --db-url-host=postgres
+      - --db-url-database=postgres
+      - --db-username=postgres
+      - --db-password=password
+      - --db-schema=keycloak
       - --import-realm
       - --health-enabled=true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q ' 200 '",
+        ]
       interval: 3s
       timeout: 2s
       retries: 60
@@ -129,7 +126,7 @@ There's a lot going on in this file. Here's what it all means:
 - The `deephaven` service is built from the Dockerfile in `docker/deephaven`, mounts `data/deephaven` as `/data`, the server's data directory, and starts only after the `keycloak` service is healthy.
 - The `database` service uses the [`postgres`](https://hub.docker.com/_/postgres) image, mounts the SQL file to initialize the Keycloak database, exposes port 5432, and sets the password for the database to `password`.
 - The `database` service also turns off `fsync` and `synchronous_commit`.
-- The `keycloak` service uses the [Keycloak image](https://quay.io/repository/keycloak/keycloak). It sets various environment variables, runs some commands, creates a health check that runs once per 3 seconds, publishes port 8080 to the host, and mounts the Deephaven realm file as read-only into the container.
+- The `keycloak` service uses the [Keycloak image](https://quay.io/repository/keycloak/keycloak). It sets the initial admin credentials, runs some commands, creates a health check that queries Keycloak's management port (9000) once per 3 seconds, publishes port 8080 to the host, and mounts the Deephaven realm file as read-only into the container.
 - The `deephaven`, `database`, and `keycloak` services are all attached to the `dh_auth_ntw` network.
 
 The `START_OPTS` properties set up the login. The `AuthHandlers` property tells Deephaven to use the OIDC authentication handler. The three `authentication.oidc.keycloak.*` properties set the following:
@@ -154,18 +151,16 @@ RUN ./pack-plugins.sh @deephaven/js-plugin-auth-keycloak@0.2.0
 
 FROM ghcr.io/deephaven/server:${VERSION}
 ARG VERSION
-RUN  apt-get update \
-  && apt-get install -y wget \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN wget https://repo1.maven.org/maven2/io/deephaven/deephaven-oidc-authentication-provider/${VERSION}/deephaven-oidc-authentication-provider-${VERSION}.jar -P /apps/libs/
+ADD https://repo1.maven.org/maven2/io/deephaven/deephaven-oidc-authentication-provider/${VERSION}/deephaven-oidc-authentication-provider-${VERSION}.jar /apps/libs/
 COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 ```
 
-The first stage packages the `@deephaven/js-plugin-auth-keycloak` JS plugin, which adds Keycloak sign-in to the web UI. The second stage starts from the Deephaven server image and installs `wget`. It downloads the [Deephaven OIDC authentication provider JAR](https://repo1.maven.org/maven2/io/deephaven/deephaven-oidc-authentication-provider/) into `/apps/libs`, which is on the server's classpath. It then copies the packaged JS plugin into `/opt/deephaven/config/js-plugins/`. For more on how the server loads JS plugins, see [Configure JS plugins](../configuration/js-plugins.md).
+The first stage packages the `@deephaven/js-plugin-auth-keycloak` JS plugin, which adds Keycloak sign-in to the web UI. The second stage starts from the Deephaven server image and downloads the matching [Deephaven OIDC authentication provider JAR](https://repo1.maven.org/maven2/io/deephaven/deephaven-oidc-authentication-provider/) into `/apps/libs`, which is on the server's classpath. It then copies the packaged JS plugin into `/opt/deephaven/config/js-plugins/`. For more on how the server loads JS plugins, see [Configure JS plugins](../configuration/js-plugins.md).
+
+To use a different Deephaven release, pass it when building, for example `docker compose build --build-arg VERSION=42.8`. `VERSION` must be a release number such as `42.8`; Maven Central has no `latest` version of the JAR.
 
 > [!IMPORTANT]
-> Set `VERSION` to the same Deephaven release for both the server image and the JAR file. Use the same release for both, or the server and the JAR may not load together.
+> The server image and the JAR file must use the same Deephaven release, or the server and the JAR may not load together. The `VERSION` argument sets both.
 
 ### deephaven_realm.json
 
@@ -182,6 +177,10 @@ To configure Keycloak with users and passwords, create a `deephaven_realm.json` 
     {
       "username": "user",
       "enabled": true,
+      "email": "user@example.com",
+      "emailVerified": true,
+      "firstName": "Example",
+      "lastName": "User",
       "credentials": [
         {
           "type": "password",
@@ -193,6 +192,10 @@ To configure Keycloak with users and passwords, create a `deephaven_realm.json` 
     {
       "username": "admin",
       "enabled": true,
+      "email": "admin@example.com",
+      "emailVerified": true,
+      "firstName": "Example",
+      "lastName": "Admin",
       "credentials": [
         {
           "type": "password",

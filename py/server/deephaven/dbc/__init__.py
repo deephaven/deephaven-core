@@ -19,7 +19,7 @@ def read_sql(
         conn (Any): must either be a connection string for the given driver or a Turbodbc/ADBC DBAPI Connection
             object; when it is a Connection object, the driver argument will be ignored.
         query (str): SQL query statement
-        driver: (str): the driver to use, supported drivers are "odbc", "adbc", "connectorx", default is "connectorx"
+        driver (str): the driver to use, supported drivers are "odbc", "adbc", "connectorx", default is "connectorx"
 
     Returns:
         a new Table
@@ -62,7 +62,11 @@ def read_sql(
             elif conn.strip().startswith("postgresql:"):
                 import adbc_driver_postgresql.dbapi as dbapi
             else:
-                raise DHError(message=f"unsupported ADBC connection string {conn}")
+                # The message leaves out conn, which can hold a password.
+                raise DHError(
+                    message="unsupported ADBC connection string; expected a postgresql: URI, or an empty string "
+                    "for SQLite"
+                )
 
             with dbapi.connect(conn) as dbconn, dbconn.cursor() as cursor:
                 cursor.execute(query)
@@ -94,4 +98,8 @@ def read_sql(
         except ImportError:
             pass
 
-        raise DHError(message=f"invalid conn argument {conn}")
+        # The message names the type of conn, never its value, which can hold a password.
+        raise DHError(
+            message=f"invalid conn argument of type {type(conn).__name__}; expected a connection string, an ADBC "
+            "connection, or a turbodbc connection"
+        )

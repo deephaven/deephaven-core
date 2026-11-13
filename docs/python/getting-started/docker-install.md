@@ -41,13 +41,15 @@ Once the container is running, [open the Deephaven IDE](#open-the-deephaven-ide)
 
 Deephaven offers the following pre-built Docker images:
 
-- `server`: Python
+- `server`: Python, with the [Deephaven Express](/core/plotly/docs/), [`deephaven.ui`](/core/ui/docs/), and [Matplotlib](../how-to-guides/plotting/matplot-seaborn.md) plugins
 - `server-slim`: Groovy
 - `server-nltk`: Python with [NLTK](https://www.nltk.org/)
 - `server-pytorch`: Python with [PyTorch](https://pytorch.org/) and [TensorBoard](https://www.tensorflow.org/tensorboard)
 - `server-sklearn`: Python with [scikit-learn](https://scikit-learn.org/stable/)
 - `server-tensorflow`: Python with [TensorFlow](https://www.tensorflow.org/) and [TensorBoard](https://www.tensorflow.org/tensorboard)
 - `server-all-ai`: Python with NLTK, PyTorch, scikit-learn, and TensorFlow
+
+The other Python images include [`deephaven-core`](../reference/cheat-sheets/choose-python-packages.md#deephaven-core) and the listed libraries, but not those plugins.
 
 To run one of these images, replace `server` in the [`docker run`](https://docs.docker.com/reference/cli/docker/container/run/) command from [The simplest possible installation](#the-simplest-possible-installation) with that image's name. For example, `ghcr.io/deephaven/server-pytorch:latest` runs the `server-pytorch` image.
 

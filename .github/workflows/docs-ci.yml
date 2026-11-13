@@ -21,7 +21,7 @@ jobs:
           
       - name: Deploy Directories
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@c8300118e5f66a3fe187f35763d7e65848ae205a # 9.0.3
         with:
           switches: -rlptDvz
           path: tmp-deephaven-core-v2/
@@ -45,7 +45,7 @@ jobs:
           ln -s ../main latest
           
       - name: Deploy Symlinks
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@c8300118e5f66a3fe187f35763d7e65848ae205a # 9.0.3
         with:
           switches: -rlptDvz
           path: tmp-deephaven-core-v2/
@@ -136,7 +136,7 @@ jobs:
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Setup gradle properties
         run: |
@@ -159,7 +159,7 @@ jobs:
 
       - name: Deploy Javadoc
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@c8300118e5f66a3fe187f35763d7e65848ae205a # 9.0.3
         with:
           switches: -rlptDvz --delete
           path: combined-javadoc/build/docs/javadoc/
@@ -188,7 +188,7 @@ jobs:
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Setup gradle properties
         run: |
@@ -211,7 +211,7 @@ jobs:
 
       - name: Deploy JavaScript/TypeScript docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@c8300118e5f66a3fe187f35763d7e65848ae205a # 9.0.3
         with:
           switches: -rlptDvz --delete
           path: web/client-api/types/build/documentation/
@@ -240,7 +240,7 @@ jobs:
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Setup gradle properties
         run: |
@@ -270,7 +270,7 @@ jobs:
 
       - name: Deploy Python Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@c8300118e5f66a3fe187f35763d7e65848ae205a # 9.0.3
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/docs/
@@ -282,7 +282,7 @@ jobs:
 
       - name: Deploy Client Python Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@c8300118e5f66a3fe187f35763d7e65848ae205a # 9.0.3
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/pyclient-docs/
@@ -319,7 +319,7 @@ jobs:
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Setup gradle properties
         run: |
@@ -349,7 +349,7 @@ jobs:
 
       - name: Deploy Client C++ Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@c8300118e5f66a3fe187f35763d7e65848ae205a # 9.0.3
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/cppClientDocs/
@@ -361,7 +361,7 @@ jobs:
 
       - name: Deploy Client C++ Example Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@c8300118e5f66a3fe187f35763d7e65848ae205a # 9.0.3
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/cppExamplesDocs/
@@ -390,7 +390,7 @@ jobs:
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Setup gradle properties
         run: |
@@ -413,7 +413,7 @@ jobs:
 
       - name: Deploy R Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@c8300118e5f66a3fe187f35763d7e65848ae205a # 9.0.3
         with:
           switches: -rlptDvz --delete
           path: R/rdeephaven/docs/
@@ -449,7 +449,7 @@ jobs:
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Setup gradle properties
         run: |
@@ -472,7 +472,7 @@ jobs:
 
       - name: Deploy Protobuf Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@c8300118e5f66a3fe187f35763d7e65848ae205a # 9.0.3
         with:
           switches: -rlptDvz --delete
           path: proto/proto-backplane-grpc/build/protoc-output/proto-doc/single-html/index.html

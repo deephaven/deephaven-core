@@ -106,8 +106,8 @@ The Deephaven user interface (UI) is a web-based application that runs in your b
 
 Using [`deephaven.ui`](./deephaven-ui.md), you can build interactive web applications that leverage the power of Deephaven tables directly from your Python code. The `deephaven.ui` library provides Python components that make it easy to build custom dashboards, data explorers, and visualizations, with an API modeled on the [React](https://react.dev/) JavaScript library. You can use these components to display tables, create charts, and interact with data in real time.
 
-The UI is also highly extensible. You can add custom widgets, visualizations, and functionality with [JavaScript plugins](../../how-to-guides/configuration/js-plugins.md). Create your own plugin starting with one of the [plugin templates](https://github.com/deephaven/deephaven-plugins/tree/main/templates) available on GitHub.
+The UI is also highly extensible. You can add custom widgets, visualizations, and functionality with [JavaScript plugins](../../how-to-guides/configuration/js-plugins.md).
 
-All Core components of the UI are open source on GitHub in the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository, and the source code for the plugins is at [deephaven/deephaven-plugins](https://github.com/deephaven/deephaven-plugins). You can explore the source code, contribute to the project, or even fork it to create your own custom version of the Deephaven UI.
+All Core components of the UI are open source on GitHub in the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository, and the source code for the plugins is at [deephaven/deephaven-plugins](https://github.com/deephaven/deephaven-plugins). You can explore the source code and contribute to the project.
 
 Next, [Create Your First Tables](./create-tables.md) shows how to build static and ticking tables of your own.

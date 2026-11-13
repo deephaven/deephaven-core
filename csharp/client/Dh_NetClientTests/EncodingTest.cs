@@ -11,9 +11,10 @@ public class EncodingTest {
   // encoded by handing the server a BarrageSchema attribute whose field of the same name carries
   // the desired encoding; columns absent from that schema keep their natural (unencoded) type.
   private const string EncodingPreamble = """
-    import datetime
     import jpy
-    from deephaven import empty_table, new_table, time_table
+    import threading
+    import time
+    from deephaven import DynamicTableWriter, dtypes, empty_table, new_table, time_table
     from deephaven.column import string_col
 
     _JIntCls      = jpy.get_type('org.apache.arrow.vector.types.pojo.ArrowType$Int')
@@ -141,17 +142,24 @@ public class EncodingTest {
     reedict_ticking_table = _ticking_src.with_attributes(
         {'BarrageSchema': _encoded_schema(_ticking_src, 'Sym', _to_ree_dict_field)})
 
-    # The same table once more, but starting empty: its time_table's start_time is a few seconds
-    # in the future, so the subscription's initial snapshot has no rows by construction and the
-    # server sends an empty isDelta=false base dictionary with it, every value then arriving by
-    # isDelta=true delta. That is the sequence FlightIpcReader.NormalizeEmptyDictionaries exists
-    # for, which the tables above reach only by timing luck.
-    _empty_start = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=3)
-    _empty_start_src = (time_table('PT0.1S', start_time=_empty_start)
-                        .update(_ticking_columns)
-                        .drop_columns(['Timestamp']))
-    dict_empty_start_ticking_table = _empty_start_src.with_attributes(
-        {'BarrageSchema': _encoded_schema(_empty_start_src, 'Sym', _to_dict_field)})
+    # The same dictionary-encoded data, but empty until start() is called, so a subscription's initial
+    # snapshot carries an empty base dictionary and every value arrives by delta -- the sequence
+    # FlightIpcReader.NormalizeEmptyDictionaries handles. Callers bind the result to unique names,
+    # as concurrent tests share the global scope.
+    def _make_dict_empty_start_ticking_table(num_rows):
+        writer = DynamicTableWriter({'Tick': dtypes.bool_})
+        src = writer.table.update(_ticking_columns).drop_columns(['Tick'])
+        table = src.with_attributes({'BarrageSchema': _encoded_schema(src, 'Sym', _to_dict_field)})
+
+        def write_rows():
+            for _ in range(num_rows):
+                time.sleep(0.1)
+                writer.write_row(True)
+
+        def start():
+            threading.Thread(target=write_rows, daemon=True).start()
+
+        return table, start
 
     """;
 
@@ -268,21 +276,27 @@ public class EncodingTest {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var thm = ctx.Client.Manager;
 
-    thm.RunScript(TickingSetupScript);
-    await SubscribeAndValidate(thm, "dict_empty_start_ticking_table", requireEmptyInitialSnapshot: true);
+    // A per-run name, so that no concurrently running test can rebind or start this table.
+    var tableName = $"dict_empty_start_ticking_table_{Guid.NewGuid():N}";
+    var startName = $"{tableName}_start";
+    thm.RunScript(TickingSetupScript +
+      $"{tableName}, {startName} = _make_dict_empty_start_ticking_table({TargetRows})\n");
+    await SubscribeAndValidate(thm, tableName, startScriptAfterInitialSnapshot: $"{startName}()");
   }
 
   /// <summary>
   /// Subscribes to the named ticking table and validates every update until the table has grown
   /// by TargetRows rows beyond its initial snapshot, so that post-snapshot updates (and the
   /// dictionary deltas they carry) are always exercised, however many rows the snapshot held.
-  /// With requireEmptyInitialSnapshot the first update must be empty, which pins down that the
-  /// snapshot carried an empty base dictionary and every value arrived by delta.
+  /// With startScriptAfterInitialSnapshot the table must not grow until that script is run, which
+  /// happens once the initial snapshot has arrived; the snapshot must then be empty, which pins
+  /// down that it carried an empty base dictionary and every value arrived by delta.
   /// </summary>
   private static async Task SubscribeAndValidate(TableHandleManager thm, string tableName,
-    bool requireEmptyInitialSnapshot = false) {
+    string? startScriptAfterInitialSnapshot = null) {
     using var table = thm.FetchTable(tableName);
-    var callback = new EncodedTickingCallback(TargetRows, requireEmptyInitialSnapshot);
+    var callback = new EncodedTickingCallback(TargetRows,
+      requireEmptyInitialSnapshot: startScriptAfterInitialSnapshot != null);
     using var cookie = table.Subscribe(callback);
 
     while (true) {
@@ -292,6 +306,11 @@ public class EncodingTest {
       }
       if (done) {
         break;
+      }
+      // The only other message is the callback's notice that the initial snapshot has arrived.
+      if (startScriptAfterInitialSnapshot != null) {
+        thm.RunScript(startScriptAfterInitialSnapshot);
+        startScriptAfterInitialSnapshot = null;
       }
     }
   }
@@ -309,7 +328,8 @@ public class EncodingTest {
   /// contents of the entire table from the current row count and compares. Validating on each tick,
   /// rather than only once at the end, means a bad dictionary delta or a mis-expanded run is caught
   /// on the update that carries it. Finishes once the table has grown by 'targetAdditionalRows'
-  /// rows beyond its initial snapshot.
+  /// rows beyond its initial snapshot. It also reports the arrival of the initial snapshot, so that
+  /// the test can start a table that is held empty until then.
   ///
   /// A mismatch throws out of OnNext, which the subscription machinery reports through OnError;
   /// the test body then rethrows it on the main thread.
@@ -326,9 +346,9 @@ public class EncodingTest {
       if (_initialRows == null) {
         _initialRows = numRows;
         if (requireEmptyInitialSnapshot && numRows != 0) {
-          throw new Exception($"Expected an empty initial snapshot but got {numRows} rows: " +
-            "the table's start_time margin is too small for this machine");
+          throw new Exception($"Expected an empty initial snapshot but got {numRows} rows");
         }
+        NotifyInitialSnapshot();
       }
       if (numRows == 0) {
         // The initial snapshot of a fresh time table can be empty.

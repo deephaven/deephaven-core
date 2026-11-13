@@ -174,7 +174,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
 
             // Within the cycle: current reflects rows {1,2} -> 20, 30; previous reflects rows {0,1} -> 10, 20.
             assertTableEquals(newTable(intCol("Value", 20, 30)), functionBacked);
-            assertTableEquals(newTable(intCol("Value", 10, 20)), prevTable(functionBacked));
+            assertTableEquals(newTable(intCol("Value", 10, 20)), prevTableCopy(functionBacked));
         } finally {
             updateGraph.completeCycleForUnitTests();
         }

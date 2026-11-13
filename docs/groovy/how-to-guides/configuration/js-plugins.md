@@ -6,17 +6,15 @@ The Deephaven server supports custom JS plugins that extend the functionality of
 
 ## Quickstart
 
-Installing a JS plugin involves up to 3 steps:
+Installing a JS plugin involves 2 steps:
 
 ```docker title="Dockerfile"
-FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
-# 1. Package the NPM deephaven-js-plugin(s)
+FROM ghcr.io/deephaven/web-plugin-packager:latest AS js-plugins
+# 1. Package the npm deephaven-js-plugin(s)
 RUN ./pack-plugins.sh <plugins>
 
 FROM ghcr.io/deephaven/server-slim:latest
-# 2. Install the python js-plugin(s) if necessary (some plugins may be JS only)
-RUN pip install --no-cache-dir <packages>
-# 3. Copy the js-plugins/ directory
+# 2. Copy the js-plugins/ directory
 COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 ```
 

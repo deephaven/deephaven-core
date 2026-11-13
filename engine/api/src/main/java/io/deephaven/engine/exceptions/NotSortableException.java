@@ -11,12 +11,9 @@ public class NotSortableException extends RuntimeException {
     }
 
     private static String buildErrorMessage(Collection<String> unsortableColumns, Collection<String> sortableColumns) {
-        String message = sortableColumns.isEmpty() ? "Sorting is not allowed on this table"
-                : "Sorting is not allowed on this table, but was attempted on: "
-                        + String.join(", ", unsortableColumns);
-
-        message += " but was attempted on: " + String.join(", ", unsortableColumns);
-
-        return message;
+        final String message = "Sorting is not allowed on this table, but was attempted on: "
+                + String.join(", ", unsortableColumns);
+        return sortableColumns.isEmpty() ? message
+                : message + "; sortable columns: " + String.join(", ", sortableColumns);
     }
 }

@@ -56,7 +56,7 @@ public class JdbcToTableAdapterTest {
                 "   \"Big_Int_Type\" BIGINT," +
                 "   \"Decimal_Type\" FLOAT," +
                 "   \"String Type\" VARCHAR(80)," +
-                "   \"DateTime Type\" DATETIME NULL" +
+                "   \"DateTime Type\" TIMESTAMP NULL" +
                 ");");
 
         final DateTimeFormatter dtf = DateTimeFormatters.NONISO9.getFormatter();

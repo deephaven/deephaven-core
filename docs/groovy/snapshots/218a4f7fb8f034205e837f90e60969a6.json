@@ -1,0 +1,1 @@
+{"file":"reference/cheat-sheets/cheat-sheet.md","objects":{"waveforms":{"type":"Table","data":{"columns":[{"name":"X","type":"double"},{"name":"SawToothWave","type":"double"},{"name":"SquareWave","type":"double"},{"name":"TriangleWave","type":"double"}],"rows":[]}}}}

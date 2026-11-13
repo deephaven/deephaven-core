@@ -135,20 +135,20 @@
         </div>
         <div style="box-sizing:border-box;margin-top:10px;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);display:flex;gap:8px;align-items:flex-start;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dh-primary-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"></path><path d="M7 3v4a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V3.13"></path></svg>
-          <div style="font-size:11px;color:var(--dh-text-secondary);"><span style="font-weight:700;color:var(--dh-text-primary);">Zero-copy optimization:</span> filters/views share ColumnSources &#8594; 50-90% memory savings</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);"><span style="font-weight:700;color:var(--dh-text-primary);">Zero-copy optimization:</span> filters and views share ColumnSources instead of copying column data</div>
         </div>
       </div>
 
       <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:4px solid var(--dh-logo-yellow);border-radius:var(--dh-radius-md);">
         <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);margin-bottom:10px;">Chunk-Oriented Processing</div>
         <div style="box-sizing:border-box;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-warn-500);border-radius:var(--dh-radius-md);">
-          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">Chunks (4096 elements)</div>
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">Chunks (thousands of elements)</div>
           <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">Bulk data transfer: getChunk(), fillChunk()</div>
-          <div style="font-size:11px;color:var(--dh-text-secondary);">Enables SIMD vectorization, reduces method calls 1000x</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);">Enables SIMD vectorization, one call per chunk instead of per cell</div>
         </div>
         <div style="box-sizing:border-box;margin-top:10px;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);display:flex;gap:8px;align-items:flex-start;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dh-warn-200)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
-          <div style="font-size:11px;color:var(--dh-text-secondary);white-space:nowrap;"><span style="font-weight:700;color:var(--dh-text-primary);">Performance:</span> 1M rows filtered with ~244 calls vs 1M individual calls</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);white-space:nowrap;"><span style="font-weight:700;color:var(--dh-text-primary);">Performance:</span> a filter makes one call per chunk, not one per row</div>
         </div>
       </div>
 
@@ -158,7 +158,7 @@
       <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
         <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);margin-bottom:8px;">Formula Engine</div>
         <div style="font-size:11px;color:var(--dh-text-secondary);">JavaParser &#8594; Compiled classes</div>
-        <div style="font-size:11px;color:var(--dh-text-secondary);">Numba for Python expressions</div>
+        <div style="font-size:11px;color:var(--dh-text-secondary);">Chunked kernels for Python function calls (Python sessions)</div>
         <div style="font-size:11px;color:var(--dh-text-secondary);">Parameter substitution &amp; reuse</div>
       </div>
       <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
@@ -182,8 +182,8 @@
       </div>
       <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-relaxed);">
         <div><span style="font-weight:700;color:var(--dh-text-primary);">Incremental updates:</span> only the rows a change affects are recomputed</div>
-        <div><span style="font-weight:700;color:var(--dh-text-primary);">Shared structures:</span> 50-90% memory reduction for filtered/joined views</div>
-        <div><span style="font-weight:700;color:var(--dh-text-primary);">Chunk processing:</span> ~1000x fewer method calls, 4-8x SIMD speedup</div>
+        <div><span style="font-weight:700;color:var(--dh-text-primary);">Shared structures:</span> filtered and joined views reuse their source's column data</div>
+        <div><span style="font-weight:700;color:var(--dh-text-primary);">Chunk processing:</span> orders of magnitude fewer method calls, and SIMD processes several values per instruction</div>
       </div>
     </div>
 
@@ -195,11 +195,11 @@
       <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);margin-bottom:12px;">Language Integration</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div style="box-sizing:border-box;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
-          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">JPY (Python &#8596; Java)</div>
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">jpy (Python &#8596; Java)</div>
           <div style="font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">JNI bridge, minimal crossings</div>
         </div>
         <div style="box-sizing:border-box;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
-          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">Native Java API</div>
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">Java and Groovy</div>
           <div style="font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">Direct engine access</div>
         </div>
       </div>

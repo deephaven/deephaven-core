@@ -114,7 +114,8 @@ def time_table(
 
         builder.period(to_j_duration(period))
 
-        if start_time:
+        # An int start_time of 0 is the Epoch, so test for None rather than for truth.
+        if start_time is not None:
             builder.startTime(to_j_instant(start_time))
 
         if blink_table:
@@ -159,7 +160,7 @@ def new_table(cols: Sequence[InputColumn] | Mapping[str, Sequence]) -> Table:
 
 def merge(tables: Sequence[Table]) -> Table:
     """Combines two or more tables into one aggregate table. This essentially appends the tables one on top of the
-    other. Null tables are ignored.
+    other.
 
     Args:
         tables (Sequence[Table]): the source tables
@@ -179,7 +180,7 @@ def merge(tables: Sequence[Table]) -> Table:
 
 def merge_sorted(tables: Sequence[Table], order_by: str) -> Table:
     """Combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top
-    of the other and sorts the result. Null tables are ignored. merge_sorted is more efficient than using merge
+    of the other and sorts the result. merge_sorted is more efficient than using merge
     followed by sort. The input tables must be already sorted on the order_by column.
 
     Args:

@@ -70,36 +70,31 @@ def table_to_numpy_2d(
 
     try:
         np_type = _convert_to_numpy_dtype(np_type)
+        # The Java gatherer takes a columnMajorOrder flag, the opposite of is_row_major.
+        column_major = not order.is_row_major
 
         if np_type == np.byte:
-            buffer = _JGatherer.tensorBuffer2DByte(row_set, col_set, order.is_row_major)
+            buffer = _JGatherer.tensorBuffer2DByte(row_set, col_set, column_major)
         elif np_type == np.short:
-            buffer = _JGatherer.tensorBuffer2DShort(
-                row_set, col_set, order.is_row_major
-            )
+            buffer = _JGatherer.tensorBuffer2DShort(row_set, col_set, column_major)
         elif np_type == np.intc:
-            buffer = _JGatherer.tensorBuffer2DInt(row_set, col_set, order.is_row_major)
+            buffer = _JGatherer.tensorBuffer2DInt(row_set, col_set, column_major)
         elif np_type == np.int_:
-            buffer = _JGatherer.tensorBuffer2DLong(row_set, col_set, order.is_row_major)
+            buffer = _JGatherer.tensorBuffer2DLong(row_set, col_set, column_major)
         elif np_type == np.single:
-            buffer = _JGatherer.tensorBuffer2DFloat(
-                row_set, col_set, order.is_row_major
-            )
+            buffer = _JGatherer.tensorBuffer2DFloat(row_set, col_set, column_major)
         elif np_type == np.double:
-            buffer = _JGatherer.tensorBuffer2DDouble(
-                row_set, col_set, order.is_row_major
-            )
+            buffer = _JGatherer.tensorBuffer2DDouble(row_set, col_set, column_major)
         else:
             raise ValueError(f"Data type {np_type} is not supported.")
 
         tensor: np.ndarray = np.frombuffer(buffer, dtype=np_type)
 
         if order.is_row_major:
-            tensor.shape = (len(col_set), row_set.intSize())
-            return tensor.T
+            return tensor.reshape(row_set.intSize(), len(col_set))
         else:
-            tensor.shape = (row_set.intSize(), len(col_set))
-            return tensor
+            # The buffer holds one column after another. Its transpose is the requested Fortran-ordered array.
+            return tensor.reshape(len(col_set), row_set.intSize()).T
     except Exception as e:
         raise DHError(
             e,
