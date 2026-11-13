@@ -322,8 +322,6 @@ finally:
 
 The server table uses [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md), so each new symbol arrives as an added row and later trades for that symbol arrive as modified rows. If a symbol's first trade and later trades fall in the same update interval, only an added row arrives, with the latest trade. The listener handles that case without special code because it stores every added row. The listener reads `Sym` with every modification even though only `Price` and `Size` change, which is what lets it find the right entry in the `dict`.
 
-For a longer version that also reads the initial snapshot in chunks, reports errors through `on_error`, and stops on Ctrl+C or after a time limit, see the [demo script](https://github.com/deephaven/deephaven-core/blob/main/py/client-ticking/demos/demo_python_client_ticking_tables.py).
-
 ## Related documentation
 
 - [Python client quickstart](../getting-started/pyclient-quickstart.md)
