@@ -322,7 +322,7 @@ If you are running the example on this page and need to add a user, add a user t
 
 1. Open the admin console at `http://localhost:8080`. The example publishes this port to the host.
 2. Sign in to the master realm with the administrator account. In this example, that account is `admin`/`admin`, which the `KC_BOOTSTRAP_ADMIN_USERNAME` and `KC_BOOTSTRAP_ADMIN_PASSWORD` environment variables define.
-3. Switch to the `deephaven_core` realm, create the user, and set a password for them.
+3. Switch to the `deephaven_core` realm and create the user. Fill in the email, first name, and last name, and set a password. Keycloak rejects logins from a user whose profile is incomplete with the error `Account is not fully set up`.
 
 In a production Keycloak deployment, use your organization's admin console and realm instead.
 
