@@ -4,7 +4,7 @@ title: Is it possible to convert one or more columns of a Deephaven table to JSO
 
 Yes. Convert the column(s) to a NumPy array with [`deephaven.numpy.to_numpy`](/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_numpy), then serialize the array to JSON with Python's [`json`](https://docs.python.org/3/library/json.html#json.JSONEncoder) module. `to_numpy` converts one column, or several columns of the same type, into a NumPy array. For columns of mixed types, use [`deephaven.pandas.to_pandas`](../pandas/to-pandas.md) and the DataFrame's `to_json` method instead.
 
-```python
+```python order=source,df
 import json
 from deephaven import empty_table
 from deephaven.numpy import to_numpy
