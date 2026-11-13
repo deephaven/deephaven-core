@@ -72,7 +72,7 @@ custom_table = dhpd.to_table(df)
 
 ## Dynamic in-memory tables
 
-Dynamic tables allow you to integrate real-time data feeds. These tables change on each Deephaven [update cycle](../../conceptual/table-update-model.md), a periodic pass (once per second by default) in which the engine applies new data and notifies downstream operations of the changes.
+Dynamic tables allow you to integrate real-time data feeds. These tables are processed during each Deephaven [update cycle](../../conceptual/table-update-model.md), a periodic pass (targeting once per second by default) in which the engine processes any pending changes and notifies downstream operations.
 
 For most use cases, [`table_publisher`](../table-operations/create/TablePublisher.md) is the recommended way to create dynamic tables in Python. It produces a [blink table](../../conceptual/table-types.md#specialization-3-blink) and exposes an `add` method for publishing data. See the [how-to guide](../../how-to-guides/table-publisher.md) for full details.
 

@@ -35,7 +35,7 @@ Set the `grpc.maxInboundMessageSize` [configuration property](../../how-to-guide
 
 ### Alternative: fetch less data
 
-Instead of raising the limit, you can reduce message sizes by filtering data or selecting fewer columns before fetching. For example, apply `.where()` or `.select()` on the server side so each message carries less data.
+Instead of raising the limit, you can reduce message sizes by filtering data or selecting fewer columns before fetching. For example, apply `where` or `select` on the server side so each message carries less data.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

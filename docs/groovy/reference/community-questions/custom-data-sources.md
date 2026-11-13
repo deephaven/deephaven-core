@@ -18,7 +18,7 @@ Each Deephaven table consists of:
 - A [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) — An ordered set of long keys representing valid row addresses.
 - Named [`ColumnSources`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) — A Java map from column name to `ColumnSource`, which acts as a dictionary from row key to cell value.
 
-To construct a table for use by Deephaven engine operations, create a [`QueryTable`](/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) by passing in a [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) and `Map<String, ColumnSource>`. Use a [`LinkedHashMap`](/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) to preserve column order.
+To construct a table for use by Deephaven engine operations, create a [`QueryTable`](/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) by passing in a [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) and `Map<String, ColumnSource>`. Use a `LinkedHashMap` to preserve column order.
 
 ## Static in-memory tables
 
@@ -54,7 +54,7 @@ The [`ArrayBackedColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/e
 
 ## Dynamic in-memory tables
 
-Dynamic tables allow you to integrate real-time data feeds. These tables change on each Deephaven [update cycle](../../conceptual/table-update-model.md), a periodic pass (once per second by default) in which the engine applies new data and notifies downstream operations of the changes.
+Dynamic tables allow you to integrate real-time data feeds. These tables are processed during each Deephaven [update cycle](../../conceptual/table-update-model.md), a periodic pass (targeting once per second by default) in which the engine processes any pending changes and notifies downstream operations.
 
 For most use cases, [`TablePublisher`](../table-operations/create/TablePublisher.md) is the recommended way to create dynamic tables. It produces a [blink table](../../conceptual/table-types.md#specialization-3-blink) and exposes an `add` method for publishing data. See the [how-to guide](../../how-to-guides/table-publisher.md) for full details.
 
@@ -225,10 +225,10 @@ class CustomFileColumnSource implements ColumnSource<Double> {
 
 Deephaven tables can be "coalesced" or "uncoalesced":
 
-- **Uncoalesced tables** — Reference data but cannot be used for most query operations.
+- **Uncoalesced tables** — Reference data but defer the work of assembling a full `QueryTable` until it is needed. Query operations like `where`, `select`, and `update` automatically coalesce the table before executing.
 - **Coalesced tables** — Fully formed `QueryTable` instances ready for query operations.
 
-Tables are automatically coalesced when needed. For example, when reading from disk with partitioning filters like `"Date=today()"`, the table remains uncoalesced until the filter is applied, avoiding the need to determine the complete `RowSet` upfront.
+For example, when reading from disk with partitioning filters like `"Date=today()"`, the table remains uncoalesced until a query operation triggers coalescing, avoiding the need to determine the complete `RowSet` upfront.
 
 ### Data indexes for performance
 
