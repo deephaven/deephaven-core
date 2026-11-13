@@ -1,0 +1,1 @@
+{"file":"reference/community-questions/automatically-execute-python-code.md","objects":{"t":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"double"}],"rows":[[{"value":"2026-11-13 10:57:59.000"},{"value":"0.5167"}]]}},":log":{"type":"Log","data":"Doing stuff\n"}}}
