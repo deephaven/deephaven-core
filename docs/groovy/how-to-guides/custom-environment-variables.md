@@ -55,7 +55,7 @@ Substitution keeps the value out of the file, but anyone who can run `docker ins
 
 There are many ways to set environment variables locally. This section shows two common ones for Docker Compose.
 
-Docker Compose reads your shell variables and your `.env` file only to fill in `${...}` references in the Compose file. It doesn't [pass them into the container](https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/) on its own. The `MY_VALUE=${MY_VALUE}` entry from [Parameterize the variables](#parameterize-the-variables) is what passes `MY_VALUE` in, so both methods below rely on it.
+Docker Compose doesn't [pass your shell variables or your `.env` file into the container](https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/) on its own. The `environment` section has to name each variable, either with a `${...}` reference, like the `MY_VALUE=${MY_VALUE}` entry from [Parameterize the variables](#parameterize-the-variables), or as a name-only entry, such as `- MY_VALUE`. Both methods below rely on the `MY_VALUE=${MY_VALUE}` entry.
 
 ### Use a `.env` file
 
