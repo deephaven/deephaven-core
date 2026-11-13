@@ -3053,7 +3053,7 @@
                 "label": "Console and IDE",
                 "items": [
                   {
-                    "label": "Is there a utility to pretty print a table to log?",
+                    "label": "Is there a utility to pretty-print a table to the log?",
                     "path": "reference/community-questions/utility-to-pretty-print-table.md"
                   },
                   {
