@@ -34,6 +34,10 @@ public class TypedAggregationFactory {
         builder.addStatement("throw new IllegalStateException($S)", "Missing value in probe");
     }
 
+    public static void lookupMissing(CodeBlock.Builder builder) {
+        builder.addStatement("outputPositions.set(chunkPosition, UNKNOWN_ROW)");
+    }
+
     static void buildFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
         builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
     }

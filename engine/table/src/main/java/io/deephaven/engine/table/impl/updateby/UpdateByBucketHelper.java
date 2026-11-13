@@ -192,10 +192,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
 
             // shifts
             if (upstream.shifted().nonempty()) {
-                if (!resetToSource) {
-                    upstream.shifted().apply(timestampValidRowSet);
-                }
-
                 final int size = Math.max(
                         upstream.modified().intSize() + Math.max(upstream.added().intSize(),
                                 upstream.removed().intSize()),
@@ -203,6 +199,13 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
 
                 try (final WritableRowSet previousToShift = source.getRowSet().prev().minus(restampRemovals);
                         final ColumnSource.GetContext getContext = timestampColumnSource.makeGetContext(size)) {
+
+                    if (!resetToSource) {
+                        // Rows with a null timestamp are not in the SSA. Before the shift is applied,
+                        // timestampValidRowSet holds exactly the remaining rows that are, so only those are shifted.
+                        previousToShift.retain(timestampValidRowSet);
+                        upstream.shifted().apply(timestampValidRowSet);
+                    }
 
                     final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
                     while (sit.hasNext()) {

@@ -1,8 +1,7 @@
 ## Deephaven barrage examples
 
-Deephaven barrage examples is a collection of example applications built using `java-client-barrage`,
-`java-client-barrage-dagger`, `java-client-flight`, `java-client-flight-dagger`, `java-client-session`,
-and `java-client-session-dagger`.
+Deephaven barrage examples is a collection of example applications built using `java-client-barrage`. Each is
+one readable file; see [java-client/README.md](../README.md) for how they are structured and tested.
 
 ### Local build
 

@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -21,6 +22,9 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Arrays;
+
+import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * This is the base class of {@link UpdateByWindowRollingTicks} and {@link UpdateByWindowRollingTime}.
@@ -131,10 +135,19 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
         final boolean operatorsRequirePositions = Arrays.stream(opIndices)
                 .anyMatch(opIdx -> operators[opIdx].requiresRowPositions());
 
+        final boolean hasNullTimestampRows = bucketRowSet.size() != ctx.sourceRowSet.size();
+
         try (final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
                 final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator();
+                final RowSet validAffectedRows = operatorsRequirePositions && hasNullTimestampRows
+                        ? ctx.affectedRows.intersect(bucketRowSet)
+                        : null;
+                final WritableLongChunk<OrderedRowKeys> alignedAffectedPosChunk =
+                        operatorsRequirePositions && hasNullTimestampRows
+                                ? WritableLongChunk.makeWritableChunk(ctx.workingChunkSize)
+                                : null;
                 final RowSet affectedPosRs = operatorsRequirePositions
-                        ? bucketRowSet.invert(ctx.affectedRows)
+                        ? bucketRowSet.invert(hasNullTimestampRows ? validAffectedRows : ctx.affectedRows)
                         : null;
                 final RowSequence.Iterator affectedPosRsIt = operatorsRequirePositions
                         ? affectedPosRs.getRowSequenceIterator()
@@ -167,18 +180,41 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
                 final int affectedChunkSize = affectedRs.intSize();
 
-                // create influencer position chunks when needed
+                // create affected and influencer position chunks when needed
                 final LongChunk<OrderedRowKeys> affectedPosChunk;
                 final LongChunk<OrderedRowKeys> influencePosChunk;
-                if (operatorsRequirePositions) {
+                if (hasNullTimestampRows && operatorsRequirePositions) {
+                    final WritableIntChunk<Values> pushChunk = ctx.pushChunks[affectedChunkOffset];
+                    // computeWindows() marked each null-timestamp row with a NULL_INT
+                    int validCount = 0;
+                    for (int ai = 0; ai < affectedChunkSize; ai++) {
+                        if (pushChunk.get(ai) != NULL_INT) {
+                            validCount++;
+                        }
+                    }
+                    // we have a count for the valid positions, get them as a chunk
+                    final LongChunk<OrderedRowKeys> validPositions =
+                            affectedPosRsIt.getNextRowSequenceWithLength(validCount).asRowKeyChunk();
+                    int vi = 0;
+                    for (int ai = 0; ai < affectedChunkSize; ai++) {
+                        // write NULL_LONG for null-timestamp rows, otherwise the next valid position
+                        alignedAffectedPosChunk.set(ai,
+                                pushChunk.get(ai) == NULL_INT ? NULL_LONG : validPositions.get(vi++));
+                    }
+                    alignedAffectedPosChunk.setSize(affectedChunkSize);
+                    affectedPosChunk = alignedAffectedPosChunk;
+                } else if (operatorsRequirePositions) {
                     final RowSequence chunkAffectedPosRs =
                             affectedPosRsIt.getNextRowSequenceWithLength(affectedChunkSize);
                     affectedPosChunk = chunkAffectedPosRs.asRowKeyChunk();
+                } else {
+                    affectedPosChunk = null;
+                }
+                if (operatorsRequirePositions) {
                     final RowSequence chunkInfluencerPosRs =
                             influencerPosIt.getNextRowSequenceWithLength(influencerCount);
                     influencePosChunk = chunkInfluencerPosRs.asRowKeyChunk();
                 } else {
-                    affectedPosChunk = null;
                     influencePosChunk = null;
                 }
 

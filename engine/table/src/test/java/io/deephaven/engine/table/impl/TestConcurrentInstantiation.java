@@ -6,8 +6,12 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -22,6 +26,7 @@ import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
@@ -37,6 +42,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -126,16 +132,16 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         final Table flat2 = pool.submit(table::flatten).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(prevTable(flat), tableStart);
-        TstUtils.assertTableEquals(prevTable(flat2), tableStart);
+        TstUtils.assertTableEquals(prevTableCopy(flat), tableStart);
+        TstUtils.assertTableEquals(prevTableCopy(flat2), tableStart);
 
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
 
         final Table flat3 = pool.submit(table::flatten).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(prevTable(flat), tableStart);
-        TstUtils.assertTableEquals(prevTable(flat2), tableStart);
+        TstUtils.assertTableEquals(prevTableCopy(flat), tableStart);
+        TstUtils.assertTableEquals(prevTableCopy(flat2), tableStart);
 
         updateGraph.completeCycleForUnitTests();
 
@@ -169,8 +175,8 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         // the rolling group has not yet processed the update, so instantiation must use previous values
         final Table ungroup2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        assertTableEquals(expect1, prevTable(ungroup1));
-        assertTableEquals(expect1, prevTable(ungroup2));
+        assertTableEquals(expect1, prevTableCopy(ungroup1));
+        assertTableEquals(expect1, prevTableCopy(ungroup2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -219,8 +225,8 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         // the rolling group has not yet processed the update, so instantiation must use previous values
         final Table ungroup2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        assertTableEquals(expect1, prevTable(ungroup1));
-        assertTableEquals(expect1, prevTable(ungroup2));
+        assertTableEquals(expect1, prevTableCopy(ungroup1));
+        assertTableEquals(expect1, prevTableCopy(ungroup2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -250,15 +256,15 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         final Table updateView2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(updateView1));
-        TstUtils.assertTableEquals(tableStart, prevTable(updateView2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(updateView1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(updateView2));
 
         table.notifyListeners(i(3), i(), i());
 
         final Table updateView3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(updateView1));
-        TstUtils.assertTableEquals(tableStart, prevTable(updateView2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(updateView1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(updateView2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -288,15 +294,15 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         final Table updateView2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(updateView1));
-        TstUtils.assertTableEquals(tableStart, prevTable(updateView2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(updateView1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(updateView2));
 
         table.notifyListeners(i(3), i(), i());
 
         final Table updateView3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(updateView1));
-        TstUtils.assertTableEquals(tableStart, prevTable(updateView2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(updateView1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(updateView2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -342,7 +348,7 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         // Pre-notification view of `shifted` should reflect the source's
         // pre-cycle state.
-        TstUtils.assertTableEquals(tableStart, prevTable(shifted));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(shifted));
 
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
@@ -374,16 +380,16 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         final Table view2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(view1));
-        TstUtils.assertTableEquals(tableStart, prevTable(view2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(view1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(view2));
 
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
 
         final Table view3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(view1));
-        TstUtils.assertTableEquals(tableStart, prevTable(view2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(view1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(view2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -414,15 +420,15 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         final Table dropColumns2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(dropColumns1));
-        TstUtils.assertTableEquals(tableStart, prevTable(dropColumns2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(dropColumns1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(dropColumns2));
 
         table.notifyListeners(i(3), i(), i());
 
         final Table dropColumns3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(dropColumns1));
-        TstUtils.assertTableEquals(tableStart, prevTable(dropColumns2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(dropColumns1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(dropColumns2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -445,8 +451,10 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
             throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
-        if (indexed) {
-            DataIndexer.getOrCreateDataIndex(table, "z");
+        // where uses only data indexes whose tables are populated, and finds an index only while it is retained
+        final DataIndex dataIndex = indexed ? DataIndexer.getOrCreateDataIndex(table, "z") : null;
+        if (dataIndex != null) {
+            dataIndex.table();
         }
         final Table tableStart =
                 TstUtils.testRefreshingTable(i(2, 6).toTracking(),
@@ -462,8 +470,8 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         final Table filter2 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(filter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(filter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter2));
 
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
@@ -480,9 +488,12 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         }
 
         final Table filter3 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        if (dataIndex != null) {
+            assertSame(dataIndex, DataIndexer.getDataIndex(table, "z"));
+        }
 
-        TstUtils.assertTableEquals(tableStart, prevTable(filter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(filter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -513,16 +524,16 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         final Table filter2 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(filter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(filter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter2));
 
         table.notifyListeners(i(3), i(), i(2));
         updateGraph.markSourcesRefreshedForUnitTests();
 
         final Table filter3 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(filter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(filter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -619,12 +630,12 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         final Table matchFilter2 = pool.submit(() -> sorted.where(matchFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         // All filters' prev-state snapshots must equal the pre-cycle data {5, 7} in sort order.
-        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(intRangeFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter2));
-        TstUtils.assertTableEquals(tableStart, prevTable(intRangeFilter2));
-        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(rangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(intRangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(matchFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(rangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(intRangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(matchFilter2));
 
         source.notifyListeners(i(12, 14), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
@@ -635,12 +646,12 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         final Table intRangeFilter3 = pool.submit(() -> sorted.where(intRangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         final Table matchFilter3 = pool.submit(() -> sorted.where(matchFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(intRangeFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter2));
-        TstUtils.assertTableEquals(tableStart, prevTable(intRangeFilter2));
-        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(rangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(intRangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(matchFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(rangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(intRangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(matchFilter2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -715,12 +726,12 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         final Table matchFilter2 = pool.submit(() -> sorted.where(matchFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         // All filters' prev-state snapshots must equal the pre-cycle data {"e","g"} in sort order.
-        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(comparableRangeFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter2));
-        TstUtils.assertTableEquals(tableStart, prevTable(comparableRangeFilter2));
-        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(rangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(comparableRangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(matchFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(rangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(comparableRangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(matchFilter2));
 
         source.notifyListeners(i(12, 14), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
@@ -732,12 +743,12 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
                 pool.submit(() -> sorted.where(comparableRangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         final Table matchFilter3 = pool.submit(() -> sorted.where(matchFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(comparableRangeFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter2));
-        TstUtils.assertTableEquals(tableStart, prevTable(comparableRangeFilter2));
-        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(rangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(comparableRangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(matchFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(rangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(comparableRangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(matchFilter2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -791,8 +802,8 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         final Table filter2 =
                 pool.submit(() -> toFilter.where(releaseFilterSupplier.get())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(filter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(filter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter2));
 
         table.notifyListeners(addRows, i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
@@ -800,8 +811,8 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         final Table filter3 =
                 pool.submit(() -> table.where(releaseFilterSupplier.get())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(filter1));
-        TstUtils.assertTableEquals(tableStart, prevTable(filter2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(filter2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -843,8 +854,8 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         final Table sort2 = pool.submit(() -> table.sortDescending("x")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(sort1));
-        TstUtils.assertTableEquals(tableStart, prevTable(sort2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(sort1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(sort2));
 
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
@@ -853,8 +864,8 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         final Table sort3 = pool.submit(() -> table.sortDescending("x")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(sort1));
-        TstUtils.assertTableEquals(tableStart, prevTable(sort2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(sort1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(sort2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -886,16 +897,16 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         final Table reverse2 = pool.submit(table::reverse).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(reverse1));
-        TstUtils.assertTableEquals(tableStart, prevTable(reverse2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(reverse1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(reverse2));
 
         table.notifyListeners(i(8), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
 
         final Table reverse3 = pool.submit(table::reverse).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(reverse1));
-        TstUtils.assertTableEquals(tableStart, prevTable(reverse2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(reverse1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(reverse2));
 
         updateGraph.completeCycleForUnitTests();
 
@@ -954,10 +965,10 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         final Table ungroup2 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         final Table ungroupv2 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv1));
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroup1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroup2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroupv1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroup2));
 
         table.notifyListeners(i(8), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
@@ -965,13 +976,13 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         final Table ungroup3 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         final Table ungroupv3 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroup1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroup2));
         TstUtils.assertTableEquals(tableUpdate, ungroup3);
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv1));
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroupv1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroupv2));
         // ungroup v3 doesn't actually have the data yet
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv3));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroupv3));
 
         while (((BaseTable) withVector).getLastNotificationStep() < updateGraph.clock().currentStep()) {
             updateGraph.flushOneNotificationForUnitTests();
@@ -1128,10 +1139,10 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         TableTools.showWithRowSet(ungroup2);
         TableTools.showWithRowSet(ungroupv2);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv1));
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroup1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroup2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroupv1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroupv2));
 
         table.notifyListeners(i(), i(), i(2, 4));
         updateGraph.markSourcesRefreshedForUnitTests();
@@ -1139,13 +1150,13 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         final Table ungroup3 = pool.submit(() -> table.ungroup(nullFill)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         final Table ungroupv3 = pool.submit(() -> withVector.ungroup(nullFill)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroup1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroup2));
         TstUtils.assertTableEquals(tableUpdate, ungroup3);
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv1));
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroupv1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroupv2));
         // ungroup v3 doesn't actually have the data yet
-        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv3));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(ungroupv3));
 
         while (((BaseTable) withVector).getLastNotificationStep() < updateGraph.clock().currentStep()) {
             updateGraph.flushOneNotificationForUnitTests();
@@ -1296,22 +1307,67 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
 
         final Table snap2 = pool.submit(() -> table.snapshot()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(snap1));
-        TstUtils.assertTableEquals(tableStart, prevTable(snap2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(snap1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(snap2));
 
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
 
         final Table snap3 = pool.submit(() -> table.snapshot()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TstUtils.assertTableEquals(tableStart, prevTable(snap1));
-        TstUtils.assertTableEquals(tableStart, prevTable(snap2));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(snap1));
+        TstUtils.assertTableEquals(tableStart, prevTableCopy(snap2));
 
         updateGraph.completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableStart, snap1);
         TstUtils.assertTableEquals(tableStart, snap2);
         TstUtils.assertTableEquals(tableUpdate, snap3);
+    }
+
+    @Test
+    public void testStaticSnapshotRetry() throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), col("x", 1, 2, 3));
+
+        // The first snapshot attempt reads previous values; it holds there until the cycle completes, so the attempt
+        // is inconsistent and ConstructSnapshot retries it with current values.
+        final CountDownLatch readingPrev = new CountDownLatch(1);
+        final CountDownLatch cycleCompleted = new CountDownLatch(1);
+        final AtomicBoolean prevRead = new AtomicBoolean();
+        final ColumnSource<Integer> blockingSource =
+                new DelegatingColumnSource<>(int.class, null, table.getColumnSource("x", int.class)) {
+                    @Override
+                    public Chunk<? extends Values> getPrevChunk(
+                            @NotNull final GetContext context,
+                            @NotNull final RowSequence rowSequence) {
+                        if (prevRead.compareAndSet(false, true)) {
+                            readingPrev.countDown();
+                            try {
+                                Assert.eqTrue(cycleCompleted.await(TIMEOUT_LENGTH, TIMEOUT_UNIT),
+                                        "cycleCompleted.await(TIMEOUT_LENGTH, TIMEOUT_UNIT)");
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                        return super.getPrevChunk(context, rowSequence);
+                    }
+                };
+        final QueryTable base = new QueryTable(table.getRowSet(), Map.of("x", blockingSource));
+        table.addUpdateListener(new BaseTable.ListenerImpl("blocking source", table, base));
+
+        updateGraph.startCycleForUnitTests(false);
+        TstUtils.addToTable(table, i(3), col("x", 4));
+
+        final Future<Table> snapshotFuture = pool.submit(base::snapshot);
+        assertTrue(readingPrev.await(TIMEOUT_LENGTH, TIMEOUT_UNIT));
+
+        table.notifyListeners(i(3), i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+        updateGraph.completeCycleForUnitTests();
+        cycleCompleted.countDown();
+
+        final Table snapshot = snapshotFuture.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        TstUtils.assertTableEquals(TableTools.newTable(intCol("x", 1, 4, 2, 3)), snapshot);
     }
 
     @Test
@@ -1338,7 +1394,7 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
             TstUtils.addToTable(base, downstream1.added(), col("x", 2));
             base.notifyListeners(downstream1);
         });
-        TstUtils.assertTableEquals(snap, prevTable(base));
+        TstUtils.assertTableEquals(snap, prevTableCopy(base));
 
         updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdate downstream = new TableUpdateImpl(i(1), i(), i(),
@@ -1347,6 +1403,85 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
             trigger.notifyListeners(downstream);
         });
         TstUtils.assertTableEquals(snap, base);
+    }
+
+    @Test
+    public void testStaticTriggerSnapshotLiveness() {
+        final QueryTable base;
+        final SingletonLivenessManager baseManager;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            base = TstUtils.testRefreshingTable(i(0).toTracking(), col("x", 1));
+            baseManager = new SingletonLivenessManager(base);
+        }
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Table snapshot = base.snapshot();
+            final Table snapshotWhen = base.snapshotWhen(TableTools.emptyTable(1), Flag.INITIAL);
+            TstUtils.assertTableEquals(base, snapshot);
+            TstUtils.assertTableEquals(base, snapshotWhen);
+
+            // the static results hold copies of the data, so the base is free to go once its own manager releases it
+            updateGraph.exclusiveLock().doLocked(baseManager::release);
+            assertFalse(base.tryRetainReference());
+            TstUtils.assertTableEquals(TableTools.newTable(intCol("x", 1)), snapshot);
+        }
+    }
+
+    @Test
+    public void testIncrementalSnapshotOfStaticBaseLiveness() {
+        final QueryTable trigger;
+        final SingletonLivenessManager triggerManager;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            trigger = TstUtils.testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+            triggerManager = new SingletonLivenessManager(trigger);
+        }
+        final Table base = TableTools.newTable(intCol("A", 1, 2));
+
+        final Table snapshot;
+        final SingletonLivenessManager snapshotManager;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            snapshot = base.snapshotWhen(trigger, Flag.INCREMENTAL);
+            snapshotManager = new SingletonLivenessManager(snapshot);
+        }
+        assertEquals(0, snapshot.size());
+
+        // the first trigger tick copies the static base, after which the result can never change
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(trigger, i(1), intCol("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+        TstUtils.assertTableEquals(base.updateView("T=2"), snapshot);
+        assertFalse(trigger.hasListeners());
+
+        updateGraph.exclusiveLock().doLocked(triggerManager::release);
+        assertFalse(trigger.tryRetainReference());
+        TstUtils.assertTableEquals(base.updateView("T=2"), snapshot);
+        updateGraph.exclusiveLock().doLocked(snapshotManager::release);
+    }
+
+    @Test
+    public void testSnapshotHistoryLiveness() {
+        final QueryTable trigger, source, history;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            source = TstUtils.testRefreshingTable(i(0).toTracking(), col("x", 1));
+            trigger = TstUtils.testRefreshingTable(i(0).toTracking(), col("T", 1));
+            final Table base = source.update("y = x * 2");
+            history = (QueryTable) base.snapshotWhen(trigger, Flag.HISTORY);
+            history.retainReference();
+        }
+
+        TstUtils.assertTableEquals(TableTools.newTable(intCol("T", 1), intCol("x", 1), intCol("y", 2)), history);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(0), col("x", 5));
+            source.notifyListeners(i(), i(), i(0));
+            TstUtils.addToTable(trigger, i(1), col("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+        TstUtils.assertTableEquals(
+                TableTools.newTable(intCol("T", 1, 2), intCol("x", 1, 5), intCol("y", 2, 10)), history);
+
+        history.dropReference();
     }
 
     @Test

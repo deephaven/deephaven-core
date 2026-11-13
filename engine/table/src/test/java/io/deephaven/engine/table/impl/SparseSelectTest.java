@@ -30,6 +30,7 @@ import static io.deephaven.engine.testutil.TstUtils.i;
 import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
+@SuppressWarnings("removal")
 public class SparseSelectTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
@@ -184,7 +185,7 @@ public class SparseSelectTest {
 
         final Table selected = SparseSelect.sparseSelect(table);
         assertTableEquals(selected, table);
-        assertTableEquals(TstUtils.prevTable(selected), TstUtils.prevTable(table));
+        assertTableEquals(TstUtils.prevTableCopy(selected), TstUtils.prevTableCopy(table));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -193,7 +194,7 @@ public class SparseSelectTest {
         });
 
         assertTableEquals(selected, table);
-        assertTableEquals(TstUtils.prevTable(selected), TstUtils.prevTable(table));
+        assertTableEquals(TstUtils.prevTableCopy(selected), TstUtils.prevTableCopy(table));
 
         TableTools.show(table);
         TableTools.show(selected);
@@ -207,6 +208,6 @@ public class SparseSelectTest {
         TableTools.show(selected);
 
         assertTableEquals(selected, table);
-        assertTableEquals(TstUtils.prevTable(selected), TstUtils.prevTable(table));
+        assertTableEquals(TstUtils.prevTableCopy(selected), TstUtils.prevTableCopy(table));
     }
 }

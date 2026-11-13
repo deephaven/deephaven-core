@@ -388,10 +388,10 @@ public class FunctionGeneratedTableFactory {
             destColumnsArray[cc++] = destColumn;
         }
 
-        // noinspection unchecked
-        ChunkUtils.copyData(sourceColumnsArray, sourceRowSet, destColumnsArray,
-                RowSequenceFactory.forRange(0, sourceRowSet.size() - 1),
-                false);
+        try (final RowSequence destRows = RowSequenceFactory.flat(sourceRowSet.size())) {
+            // noinspection unchecked
+            ChunkUtils.copyData(sourceColumnsArray, sourceRowSet, destColumnsArray, destRows, false);
+        }
     }
 
     /**

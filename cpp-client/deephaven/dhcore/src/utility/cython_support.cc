@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -328,6 +329,37 @@ CythonSupport::ContainerToColumnSource(std::shared_ptr<ContainerBase> data) {
 }
 
 namespace {
+template<typename T>
+void StreamValue(std::ostream &os, const T &value) {
+  os << value;
+}
+
+// A char16_t is a UTF-16 code unit, which a char stream cannot print directly
+// (C++20 deleted that operator<<). Print it as UTF-8, so a char column shows
+// the same glyphs a string column would. Two kinds of value have no readable
+// UTF-8 form and are shown as 0xABCD instead: control characters (the C0
+// block, DEL, and the C1 block), and surrogates (one half of a character
+// outside the BMP, which a single code unit cannot represent).
+void StreamValue(std::ostream &os, char16_t value) {
+  const auto v = static_cast<uint32_t>(value);
+  const bool is_control = v < 0x20 || (v >= 0x7F && v <= 0x9F);
+  const bool is_surrogate = v >= 0xD800 && v <= 0xDFFF;
+  if (is_control || is_surrogate) {
+    char buf[8];
+    std::snprintf(buf, sizeof(buf), "0x%04X", v);
+    os << buf;
+  } else if (v < 0x80) {
+    os << static_cast<char>(v);
+  } else if (v < 0x800) {
+    os << static_cast<char>(0xC0 | (v >> 6))
+       << static_cast<char>(0x80 | (v & 0x3F));
+  } else {
+    os << static_cast<char>(0xE0 | (v >> 12))
+       << static_cast<char>(0x80 | ((v >> 6) & 0x3F))
+       << static_cast<char>(0x80 | (v & 0x3F));
+  }
+}
+
 struct ContainerPrinter final : public ContainerVisitor {
   explicit ContainerPrinter(std::ostream *output) : output_(output) {}
 
@@ -389,7 +421,7 @@ struct ContainerPrinter final : public ContainerVisitor {
       if (container->IsNull(i)) {
         *output_ << "null";
       } else {
-        *output_ << (*container)[i];
+        StreamValue(*output_, (*container)[i]);
       }
     }
     *output_ << ']';
@@ -485,7 +517,7 @@ struct ColumnSourcePrinter final : public ColumnSourceVisitor {
       if (nulls[i]) {
         *output_ << "(null)";
       } else {
-        *output_ << data[i];
+        StreamValue(*output_, data[i]);
       }
     }
   }

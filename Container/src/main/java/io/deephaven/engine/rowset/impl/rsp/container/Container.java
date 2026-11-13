@@ -207,10 +207,10 @@ public abstract class Container {
      * its backing storage along the way.
      *
      * <p>
-     * {@code iappend} sizes its backing array to exactly what is needed, so growing a container one range at a time
-     * reallocates and copies on every append, which is quadratic in the container's final cardinality. Callers that
-     * know what a container will hold before they start filling it (for example, when converting an
-     * already-materialized ordered set into containers) should start from this instead.
+     * Growing a container one range at a time reallocates and copies its backing storage each time it fills, may pass
+     * through representations it does not end in, and can leave spare capacity behind. Callers that know what a
+     * container will hold before they start filling it (for example, when converting an already-materialized ordered
+     * set into containers) should start from this instead.
      *
      * <p>
      * Both arguments are only hints and neither can affect contents: too small merely reverts to growing as needed, and
@@ -510,7 +510,8 @@ public abstract class Container {
     public abstract boolean contains(short x);
 
     /**
-     * Checks whether the container contains the entire range
+     * Checks whether the container contains the entire range. Every container contains an empty range, one where
+     * {@code rangeEnd <= rangeStart}.
      *
      * @param rangeStart the inclusive lower bound of the range
      * @param rangeEnd the exclusive upper bound of the range
@@ -1172,7 +1173,8 @@ public abstract class Container {
      *
      * @param startRank rank for the start of the range
      * @param endRank rank for the end of the range, exclusive
-     * @return a new Container with all the values between ranks [startPos, endPos)
+     * @return a new Container with all the values between ranks [startPos, endPos); empty when
+     *         {@code endRank <= startRank}
      */
     public abstract Container select(int startRank, int endRank);
 
@@ -1194,7 +1196,7 @@ public abstract class Container {
      * As select but for all the positions in a range.
      *
      * @param outValues accept is called in this consumer for each resulting range.
-     * @param inPositions input iterator that provides the position ranges.
+     * @param inPositions input iterator that provides the position ranges; an empty range selects nothing.
      */
     public abstract void selectRanges(RangeConsumer outValues, RangeIterator inPositions);
 
@@ -1202,7 +1204,8 @@ public abstract class Container {
      * As find but for all the values in a range.
      *
      * @param outPositions accept is called in this consumer for each resulting position range.
-     * @param inValues input iterator that provides the key ranges; these must each exist in the container.
+     * @param inValues input iterator that provides the key ranges; these must each exist in the container. An empty
+     *        range finds nothing.
      * @param maxPos maximum position to add to outPositions; values of position &gt; maxPos are not added.
      * @return true if maxPos was reached, false otherwise.
      */
@@ -1437,7 +1440,8 @@ public abstract class Container {
     /**
      * @param start the beginning of the range, as an int.
      * @param end the end of the range (exclusive), as an int.
-     * @return true if there is any element in this container in the range provided.
+     * @return true if there is any element in this container in the range provided; false for an empty range, one
+     *         where {@code end <= start}.
      */
     public abstract boolean overlapsRange(int start, int end);
 

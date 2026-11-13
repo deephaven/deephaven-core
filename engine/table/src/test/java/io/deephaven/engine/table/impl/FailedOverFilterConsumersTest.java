@@ -7,6 +7,7 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
@@ -18,9 +19,12 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 
+import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -45,9 +49,10 @@ public class FailedOverFilterConsumersTest {
 
     @Test
     public void pushdownChunkFilteringSeesAMatchFilterFailover() {
-        // 1.5 cannot be read as an int, so the filter fails over
-        final Table t = newTable(intCol("X", 1, 2));
-        final WhereFilter filter = initialized(t, "X == 1.5");
+        // the query language's == rounds the largest longs to 2^63, so the filter fails over
+        QueryScope.addParam("failoverVal", 0x1p63);
+        final Table t = newTable(longCol("X", 1L, Long.MAX_VALUE));
+        final WhereFilter filter = initialized(t, "X == failoverVal");
         assertNotNull(((MatchFilter) filter).getFailoverFilter());
 
         try (final BasePushdownFilterContextImpl context =
@@ -58,26 +63,32 @@ public class FailedOverFilterConsumersTest {
 
     @Test
     public void pushdownChunkFilteringSeesARangeFilterFailover() {
-        // 1.5 cannot be read as an int, so the filter fails over
-        final Table t = newTable(intCol("X", 1, 2));
-        final WhereFilter filter = initialized(t, "X < 1.5");
+        // the query language compares a double with a BigDecimal through BigDecimal.valueOf, the double's shortest
+        // decimal, and no double's shortest decimal is the exact binary value of 1.1, so the filter fails over
+        QueryScope.addParam("failoverVal", new BigDecimal(1.1));
+        final Table t = newTable(doubleCol("D", 1.0, 2.0));
+        final WhereFilter filter = initialized(t, "D < failoverVal");
         assertTrue(((RangeFilter) filter).getRealFilter() instanceof ConditionFilter);
 
         try (final BasePushdownFilterContextImpl context =
-                new BasePushdownFilterContextImpl(filter, List.of(t.getColumnSource("X")))) {
+                new BasePushdownFilterContextImpl(filter, List.of(t.getColumnSource("D")))) {
             assertTrue(context.supportsChunkFiltering());
         }
     }
 
     @Test
     public void pushdownRefusesAFailoverThatDoesNotPermitParallelization() {
-        final Table t = newTable(intCol("X", 1, 2));
+        QueryScope.addParam("failoverLong", 0x1p63);
+        QueryScope.addParam("failoverDecimal", new BigDecimal(1.1));
+        final Table longs = newTable(longCol("X", 1L, Long.MAX_VALUE));
+        final Table doubles = newTable(doubleCol("X", 1.0, 2.0));
         final boolean statelessByDefault = QueryTable.STATELESS_FILTERS_BY_DEFAULT;
         QueryTable.STATELESS_FILTERS_BY_DEFAULT = false;
         try {
             // each fails over to a ConditionFilter, which is not stateless by default now, so neither may be pushed
             // down
-            for (final String expression : new String[] {"X == 1.5", "X < 1.5"}) {
+            for (final Table t : new Table[] {longs, doubles}) {
+                final String expression = t == longs ? "X == failoverLong" : "X < failoverDecimal";
                 final WhereFilter filter = initialized(t, expression);
                 assertFalse(expression, filter.permitParallelization());
                 assertThrows(expression, IllegalArgumentException.class,
@@ -120,6 +131,26 @@ public class FailedOverFilterConsumersTest {
         assertEquals(rootCause(plain).getMessage(), rootCause(failedOver).getMessage());
     }
 
+    /**
+     * A column array reads every row of the column, a cross-row dependency like {@code i}, so count-where refuses a
+     * filter that reads one, rather than evaluating the column array against its own chunks.
+     */
+    @Test
+    public void countWhereRefusesColumnArrays() {
+        final Table t = newTable(intCol("X", 0, 1, 5));
+
+        final Exception plain =
+                assertThrows(Exception.class, () -> t.aggBy(Aggregation.AggCountWhere("C", "X == i + 0")));
+        final Exception agg =
+                assertThrows(Exception.class, () -> t.aggBy(Aggregation.AggCountWhere("C", "X == X_[0] + 0")));
+        assertEquals(rootCause(plain).getMessage(), rootCause(agg).getMessage());
+        final Exception updateBy = assertThrows(Exception.class,
+                () -> t.updateBy(UpdateByOperation.CumCountWhere("C", "X == X_[0] + 0")));
+        assertEquals(
+                "UpdateBy CountWhere filters cannot use cross-row dependencies (virtual row variables or column arrays)",
+                rootCause(updateBy).getMessage());
+    }
+
     /** A wrapper or a composed filter answers for the filters inside it, and so must be refused too. */
     @Test
     public void countWhereRefusesWrappedAndComposedVirtualRowVariables() {
@@ -135,7 +166,7 @@ public class FailedOverFilterConsumersTest {
             final Exception updateBy = assertThrows(filter.toString(), Exception.class,
                     () -> t.updateBy(UpdateByOperation.CumCountWhere("C", filter)));
             assertEquals(
-                    "UpdateBy CountWhere operator does not support filters that reference virtual row variables (i, ii, k)",
+                    "UpdateBy CountWhere filters cannot use cross-row dependencies (virtual row variables or column arrays)",
                     rootCause(updateBy).getMessage());
         }
     }

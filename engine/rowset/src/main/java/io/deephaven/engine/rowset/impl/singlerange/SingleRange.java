@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
@@ -837,6 +838,21 @@ public abstract class SingleRange implements OrderedLongSet {
             }
         }
         return b.getOrderedLongSet();
+    }
+
+    @Override
+    public final void ixInvert(
+            final LongChunk<OrderedRowKeys> keys,
+            final WritableLongChunk<? super OrderedRowKeys> positions) {
+        final int size = keys.size();
+        for (int ki = 0; ki < size; ++ki) {
+            final long key = keys.get(ki);
+            if (key < rangeStart() || rangeEnd() < key) {
+                throw new IllegalArgumentException("invert for non-existing key:" + key);
+            }
+            positions.set(ki, key - rangeStart());
+        }
+        positions.setSize(size);
     }
 
     public final RspBitmap toRsp() {

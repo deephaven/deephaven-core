@@ -420,6 +420,30 @@ class TableIteratorTestCase(BaseTestCase):
                 for a, b, c, d, e, f in test_table.iter_tuple():
                     ...
 
+    def test_iteration_tuple_cols_order(self) -> None:
+        test_table = new_table([int_col("A", [1, 2]), string_col("B", ["x", "y"])])
+
+        with self.subTest("iter_tuple"):
+            rows = list(test_table.iter_tuple(cols=["B", "A"]))
+            self.assertEqual(rows[0]._fields, ("B", "A"))
+            self.assertEqual((rows[0].B, rows[0].A), ("x", 1))
+            self.assertEqual(tuple(rows[1]), ("y", 2))
+
+        with self.subTest("iter_chunk_tuple"):
+            chunk = next(test_table.iter_chunk_tuple(cols=["B", "A"]))
+            self.assertEqual(chunk._fields, ("B", "A"))
+            self.assertEqual(list(chunk.B), ["x", "y"])
+            self.assertEqual(list(chunk.A), [1, 2])
+
+        with self.subTest("iter_dict"):
+            row = next(test_table.iter_dict(cols=["B", "A"]))
+            self.assertEqual(row, {"B": "x", "A": 1})
+            self.assertEqual(list(row), ["B", "A"])
+
+        with self.subTest("duplicate column"):
+            with self.assertRaises(ValueError):
+                list(test_table.iter_dict(cols=["A", "A"]))
+
     def test_iteration_errors(self):
         test_table = time_table("PT00:00:00.001").update(["from = i%11"])
         with self.assertRaises(ValueError) as cm:

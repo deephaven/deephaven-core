@@ -36,6 +36,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -88,10 +89,20 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     private final QueryTable parentTable;
     private final String resultName;
     private final Map<String, Object> subTableAttributes;
+    /**
+     * Whether this operator was created on a systemic thread. Sub-tables are made with the current thread's systemic
+     * marking set accordingly, so that they match the creator of the operation whichever thread makes them.
+     */
+    private final boolean systemic;
 
     private final String callSite;
 
     private final ObjectArraySource<QueryTable> tables;
+    /**
+     * Whether the parent only adds rows. Each update then appends each destination's added rows in increasing row key
+     * order, so they accumulate in sequential builders, and no removed, modified, or shift builders are kept.
+     */
+    private final boolean addOnly;
     private final ObjectArraySource<Object> addedBuilders;
     private final ObjectArraySource<Object> removedBuilders;
     private final ObjectArraySource<Object> modifiedBuilders;
@@ -148,12 +159,14 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         callSite = QueryPerformanceRecorder.getCallerLine();
 
         tables = new ObjectArraySource<>(QueryTable.class);
+        addOnly = parentTable.isAddOnly();
         addedBuilders = new ObjectArraySource<>(Object.class);
 
         // Note: Sub-tables always share their ColumnSource map with the parent table, so they can all use this result
         // MCS.
         resultModifiedColumnSet = new ModifiedColumnSet(parentTable.getModifiedColumnSetForUpdates());
 
+        systemic = SystemicObjectTracker.isSystemicThread();
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             // noinspection resource
             final QueryTable attributeDestination = parentTable.getSubTable(RowSetFactory.empty().toTracking());
@@ -163,9 +176,15 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
 
         if (parentTable.isRefreshing()) {
-            removedBuilders = new ObjectArraySource<>(Object.class);
-            modifiedBuilders = new ObjectArraySource<>(Object.class);
-            shiftDataBuilders = new ObjectArraySource<>(RowSetShiftData.SmartCoalescingBuilder.class);
+            if (addOnly) {
+                removedBuilders = null;
+                modifiedBuilders = null;
+                shiftDataBuilders = null;
+            } else {
+                removedBuilders = new ObjectArraySource<>(Object.class);
+                modifiedBuilders = new ObjectArraySource<>(Object.class);
+                shiftDataBuilders = new ObjectArraySource<>(RowSetShiftData.SmartCoalescingBuilder.class);
+            }
 
             final Set<String> keyColumnNameSet = Arrays.stream(keyColumnNames).collect(Collectors.toSet());
             final Set<String> unadjustedParentColumnNameSet = unadjustedParentTable.getDefinition().getColumnNameSet();
@@ -203,8 +222,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             final int startPosition = startPositions.get(di);
             final int runLength = length.get(di);
             final long destination = destinations.get(startPosition);
-            if (!initialized) {
-                // during initialization, all rows are guaranteed to be in-order
+            if (!initialized || addOnly) {
+                // during initialization, and for add-only parents, all rows are guaranteed to be in-order
                 accumulateToBuilderSequential(addedBuilders, inputRowKeysAsOrdered, startPosition,
                         runLength, destination);
             } else {
@@ -230,6 +249,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
         Assert.neqNull(stepUpdatedDestinations, "stepUpdatedDestinations");
+        requireRemovalBuilders();
         final AdaptiveOrderedLongSetBuilderRandom chunkDestinationsBuilder = new AdaptiveOrderedLongSetBuilderRandom();
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
@@ -319,7 +339,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         Assert.eqNull(values, "values");
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
-        if (!initialized) {
+        if (!initialized || addOnly) {
             accumulateToBuilderSequential(addedBuilders, inputRowKeysAsOrdered, 0, chunkSize, destination);
         } else {
             accumulateToBuilderRandom(addedBuilders, inputRowKeysAsOrdered, 0, chunkSize, destination);
@@ -332,7 +352,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public boolean addRowSet(SingletonContext context, RowSet rowSet, long destination) {
-        if (!initialized) {
+        if (!initialized || addOnly) {
             accumulateToBuilderSequential(addedBuilders, rowSet, destination);
         } else {
             accumulateToBuilderRandom(addedBuilders, rowSet, destination);
@@ -349,6 +369,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
         Assert.eqNull(values, "values");
         Assert.neqNull(stepUpdatedDestinations, "stepUpdatedDestinations");
+        requireRemovalBuilders();
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
         accumulateToBuilderRandom(removedBuilders, inputRowKeysAsOrdered, 0, chunkSize, destination);
@@ -397,7 +418,11 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             @NotNull final ObjectArraySource<Object> rowSetBuilderColumn,
             @NotNull final LongChunk<OrderedRowKeys> rowKeysToAdd,
             final int start, final int length, final long destination) {
-        final RowSetBuilderSequential builder = (RowSetBuilderSequential) rowSetBuilderColumn.getUnsafe(destination);
+        final Object existingBuilder = rowSetBuilderColumn.getUnsafe(destination);
+        if (existingBuilder == NONEXISTENT_TABLE_ROW_SET_BUILDER) {
+            return;
+        }
+        final RowSetBuilderSequential builder = (RowSetBuilderSequential) existingBuilder;
         if (builder == null) {
             // create (and store) a new builder, fill with these keys
             final RowSetBuilderSequential newBuilder = RowSetFactory.builderSequential();
@@ -413,7 +438,11 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             @NotNull final ObjectArraySource<Object> rowSetBuilderColumn,
             @NotNull final RowSet rowSetToAdd,
             final long destination) {
-        final RowSetBuilderSequential builder = (RowSetBuilderSequential) rowSetBuilderColumn.getUnsafe(destination);
+        final Object existingBuilder = rowSetBuilderColumn.getUnsafe(destination);
+        if (existingBuilder == NONEXISTENT_TABLE_ROW_SET_BUILDER) {
+            return;
+        }
+        final RowSetBuilderSequential builder = (RowSetBuilderSequential) existingBuilder;
         if (builder == null) {
             // create (and store) a new builder, fill with this rowset
             final RowSetBuilderSequential newBuilder = RowSetFactory.builderSequential();
@@ -466,6 +495,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     private boolean appendShifts(@NotNull final LongChunk<? extends RowKeys> preShiftRowKeys,
             @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
             final int startPosition, final int runLength, final long destination) {
+        requireRemovalBuilders();
         RowSetShiftData.SmartCoalescingBuilder builder = shiftDataBuilders.getUnsafe(destination);
         if (builder == NONEXISTENT_TABLE_SHIFT_BUILDER) {
             return false;
@@ -510,11 +540,18 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         return true;
     }
 
+    private void requireRemovalBuilders() {
+        if (removedBuilders == null) {
+            throw new UnsupportedOperationException(
+                    "Add-only partition operators do not support removals, modifications, or shifts");
+        }
+    }
+
     @Override
     public void ensureCapacity(final long tableSize) {
         tables.ensureCapacity(tableSize);
         addedBuilders.ensureCapacity(tableSize);
-        if (parentTable.isRefreshing()) {
+        if (removedBuilders != null) {
             removedBuilders.ensureCapacity(tableSize);
             modifiedBuilders.ensureCapacity(tableSize);
             shiftDataBuilders.ensureCapacity(tableSize);
@@ -661,7 +698,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
         try (final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
                 ResettableWritableObjectChunk.makeResettableChunk();
-                final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersResettableChunk =
+                final ResettableWritableObjectChunk<Object, Values> addedBuildersResettableChunk =
                         ResettableWritableObjectChunk.makeResettableChunk();
                 final RowSequence.Iterator resurrectedDestinationsIterator =
                         resurrectedDestinations.getRowSequenceIterator()) {
@@ -669,9 +706,13 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
             // noinspection unchecked
             final ObjectChunk<QueryTable, Values> tablesBackingChunk = tablesResettableChunk.asObjectChunk();
+            // added rows accumulate in sequential builders for an add-only parent, and in random builders otherwise
             // noinspection unchecked
-            final WritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersBackingChunk =
-                    addedBuildersResettableChunk.asWritableObjectChunk();
+            final WritableObjectChunk<RowSetBuilderSequential, Values> sequentialAddedBuildersBackingChunk =
+                    addOnly ? addedBuildersResettableChunk.asWritableObjectChunk() : null;
+            // noinspection unchecked
+            final WritableObjectChunk<RowSetBuilderRandom, Values> randomAddedBuildersBackingChunk =
+                    addOnly ? null : addedBuildersResettableChunk.asWritableObjectChunk();
 
             while (resurrectedDestinationsIterator.hasMore()) {
                 final long firstSliceDestination = resurrectedDestinationsIterator.peekNextKey();
@@ -700,8 +741,9 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
                     final TableUpdateImpl downstream = new TableUpdateImpl();
 
-                    downstream.added =
-                            nullToEmpty(extractAndClearBuilderRandom(addedBuildersBackingChunk, backingChunkOffset));
+                    downstream.added = nullToEmpty(addOnly
+                            ? extractAndClearBuilderSequential(sequentialAddedBuildersBackingChunk, backingChunkOffset)
+                            : extractAndClearBuilderRandom(randomAddedBuildersBackingChunk, backingChunkOffset));
                     downstream.removed = RowSetFactory.empty();
                     downstream.modified = RowSetFactory.empty();
                     downstream.shifted = RowSetShiftData.EMPTY;
@@ -727,31 +769,35 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         final boolean setCallSite = QueryPerformanceRecorder.setCallsite(callSite);
         try (final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
                 ResettableWritableObjectChunk.makeResettableChunk();
-                final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersResettableChunk =
+                final ResettableWritableObjectChunk<Object, Values> addedBuildersResettableChunk =
                         ResettableWritableObjectChunk.makeResettableChunk();
                 final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersResettableChunk =
-                        allowCreation ? null : ResettableWritableObjectChunk.makeResettableChunk();
+                        allowCreation || addOnly ? null : ResettableWritableObjectChunk.makeResettableChunk();
                 final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> modifiedBuildersResettableChunk =
-                        allowCreation ? null : ResettableWritableObjectChunk.makeResettableChunk();
+                        allowCreation || addOnly ? null : ResettableWritableObjectChunk.makeResettableChunk();
                 final ResettableWritableObjectChunk<RowSetShiftData.SmartCoalescingBuilder, Values> shiftDataBuildersResettableChunk =
-                        allowCreation ? null : ResettableWritableObjectChunk.makeResettableChunk();
+                        allowCreation || addOnly ? null : ResettableWritableObjectChunk.makeResettableChunk();
                 final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
 
             // noinspection unchecked
             final WritableObjectChunk<QueryTable, Values> tablesBackingChunk =
                     tablesResettableChunk.asWritableObjectChunk();
+            // added rows accumulate in sequential builders for an add-only parent, and in random builders otherwise
             // noinspection unchecked
-            final WritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersBackingChunk =
-                    addedBuildersResettableChunk.asWritableObjectChunk();
+            final WritableObjectChunk<RowSetBuilderSequential, Values> sequentialAddedBuildersBackingChunk =
+                    addOnly ? addedBuildersResettableChunk.asWritableObjectChunk() : null;
+            // noinspection unchecked
+            final WritableObjectChunk<RowSetBuilderRandom, Values> randomAddedBuildersBackingChunk =
+                    addOnly ? null : addedBuildersResettableChunk.asWritableObjectChunk();
             // noinspection unchecked
             final WritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersBackingChunk =
-                    allowCreation ? null : removedBuildersResettableChunk.asWritableObjectChunk();
+                    allowCreation || addOnly ? null : removedBuildersResettableChunk.asWritableObjectChunk();
             // noinspection unchecked
             final WritableObjectChunk<RowSetBuilderRandom, Values> modifiedBuildersBackingChunk =
-                    allowCreation ? null : modifiedBuildersResettableChunk.asWritableObjectChunk();
+                    allowCreation || addOnly ? null : modifiedBuildersResettableChunk.asWritableObjectChunk();
             // noinspection unchecked
             final WritableObjectChunk<RowSetShiftData.SmartCoalescingBuilder, Values> shiftDataBuildersBackingChunk =
-                    allowCreation ? null : shiftDataBuildersResettableChunk.asWritableObjectChunk();
+                    allowCreation || addOnly ? null : shiftDataBuildersResettableChunk.asWritableObjectChunk();
 
             while (newDestinationsIterator.hasMore()) {
                 final long firstSliceDestination = newDestinationsIterator.peekNextKey();
@@ -759,7 +805,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                         tables.resetWritableChunkToBackingStore(tablesResettableChunk, firstSliceDestination);
                 addedBuilders.resetWritableChunkToBackingStore(addedBuildersResettableChunk,
                         firstSliceDestination);
-                if (!allowCreation) {
+                if (!allowCreation && !addOnly) {
                     removedBuilders.resetWritableChunkToBackingStore(removedBuildersResettableChunk,
                             firstSliceDestination);
                     modifiedBuilders.resetWritableChunkToBackingStore(modifiedBuildersResettableChunk,
@@ -774,18 +820,22 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                 newDestinationsSlice.forAllRowKeys((final long newDestination) -> {
                     final int backingChunkOffset = Math.toIntExact(newDestination - firstBackingChunkDestination);
                     if (allowCreation) {
-                        final WritableRowSet newRowSet =
-                                extractAndClearBuilderRandom(addedBuildersBackingChunk, backingChunkOffset);
+                        final WritableRowSet newRowSet = addOnly
+                                ? extractAndClearBuilderSequential(sequentialAddedBuildersBackingChunk,
+                                        backingChunkOffset)
+                                : extractAndClearBuilderRandom(randomAddedBuildersBackingChunk, backingChunkOffset);
                         final QueryTable newTable = makeSubTable(newRowSet);
                         linkTableReferences(newTable);
                         tablesBackingChunk.set(backingChunkOffset, newTable);
                     } else {
                         // We will never try to create this table again, or accumulate further state for it.
                         tablesBackingChunk.set(backingChunkOffset, NONEXISTENT_TABLE);
-                        addedBuildersBackingChunk.set(backingChunkOffset, NONEXISTENT_TABLE_ROW_SET_BUILDER);
-                        removedBuildersBackingChunk.set(backingChunkOffset, NONEXISTENT_TABLE_ROW_SET_BUILDER);
-                        modifiedBuildersBackingChunk.set(backingChunkOffset, NONEXISTENT_TABLE_ROW_SET_BUILDER);
-                        shiftDataBuildersBackingChunk.set(backingChunkOffset, NONEXISTENT_TABLE_SHIFT_BUILDER);
+                        addedBuildersResettableChunk.set(backingChunkOffset, NONEXISTENT_TABLE_ROW_SET_BUILDER);
+                        if (!addOnly) {
+                            removedBuildersBackingChunk.set(backingChunkOffset, NONEXISTENT_TABLE_ROW_SET_BUILDER);
+                            modifiedBuildersBackingChunk.set(backingChunkOffset, NONEXISTENT_TABLE_ROW_SET_BUILDER);
+                            shiftDataBuildersBackingChunk.set(backingChunkOffset, NONEXISTENT_TABLE_SHIFT_BUILDER);
+                        }
                     }
                 });
             }
@@ -804,8 +854,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     private QueryTable makeSubTable(@NotNull final WritableRowSet initialRowSetToInsert) {
         initialRowSetToInsert.compact();
-        final QueryTable subTable = parentTable.getSubTable(
-                initialRowSetToInsert.toTracking(), resultModifiedColumnSet, subTableAttributes);
+        final QueryTable subTable = SystemicObjectTracker.executeSystemically(systemic, () -> parentTable.getSubTable(
+                initialRowSetToInsert.toTracking(), resultModifiedColumnSet, subTableAttributes));
         subTable.setRefreshing(parentTable.isRefreshing());
         return subTable;
     }
@@ -872,7 +922,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
         try (final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
                 ResettableWritableObjectChunk.makeResettableChunk();
-                final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersResettableChunk =
+                final ResettableWritableObjectChunk<Object, Values> addedBuildersResettableChunk =
                         ResettableWritableObjectChunk.makeResettableChunk();
                 final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersResettableChunk =
                         ResettableWritableObjectChunk.makeResettableChunk();
@@ -885,9 +935,13 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
             // noinspection unchecked
             final ObjectChunk<QueryTable, Values> tablesBackingChunk = tablesResettableChunk.asObjectChunk();
+            // added rows accumulate in sequential builders for an add-only parent, and in random builders otherwise
             // noinspection unchecked
-            final WritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersBackingChunk =
-                    addedBuildersResettableChunk.asWritableObjectChunk();
+            final WritableObjectChunk<RowSetBuilderSequential, Values> sequentialAddedBuildersBackingChunk =
+                    addOnly ? addedBuildersResettableChunk.asWritableObjectChunk() : null;
+            // noinspection unchecked
+            final WritableObjectChunk<RowSetBuilderRandom, Values> randomAddedBuildersBackingChunk =
+                    addOnly ? null : addedBuildersResettableChunk.asWritableObjectChunk();
 
             // noinspection unchecked
             final WritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersBackingChunk =
@@ -906,12 +960,14 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                 // The (valid) assumption is that the other write-through resets will address the same range.
                 addedBuilders.resetWritableChunkToBackingStore(addedBuildersResettableChunk,
                         firstSliceDestination);
-                removedBuilders.resetWritableChunkToBackingStore(removedBuildersResettableChunk,
-                        firstSliceDestination);
-                modifiedBuilders.resetWritableChunkToBackingStore(modifiedBuildersResettableChunk,
-                        firstSliceDestination);
-                shiftDataBuilders.resetWritableChunkToBackingStore(shiftDataBuildersResettableChunk,
-                        firstSliceDestination);
+                if (!addOnly) {
+                    removedBuilders.resetWritableChunkToBackingStore(removedBuildersResettableChunk,
+                            firstSliceDestination);
+                    modifiedBuilders.resetWritableChunkToBackingStore(modifiedBuildersResettableChunk,
+                            firstSliceDestination);
+                    shiftDataBuilders.resetWritableChunkToBackingStore(shiftDataBuildersResettableChunk,
+                            firstSliceDestination);
+                }
                 final long lastBackingChunkDestination = firstBackingChunkDestination + tablesBackingChunk.size() - 1;
                 final RowSequence modifiedDestinationsSlice =
                         modifiedDestinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
@@ -929,16 +985,20 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
                     final TableUpdateImpl downstream = new TableUpdateImpl();
 
-                    downstream.added =
-                            nullToEmpty(extractAndClearBuilderRandom(addedBuildersBackingChunk, backingChunkOffset));
-                    downstream.removed =
-                            nullToEmpty(extractAndClearBuilderRandom(removedBuildersBackingChunk, backingChunkOffset));
+                    downstream.added = nullToEmpty(addOnly
+                            ? extractAndClearBuilderSequential(sequentialAddedBuildersBackingChunk, backingChunkOffset)
+                            : extractAndClearBuilderRandom(randomAddedBuildersBackingChunk, backingChunkOffset));
+                    downstream.removed = addOnly
+                            ? RowSetFactory.empty()
+                            : nullToEmpty(
+                                    extractAndClearBuilderRandom(removedBuildersBackingChunk, backingChunkOffset));
                     downstream.modified = stepValuesModified
                             ? nullToEmpty(
                                     extractAndClearBuilderRandom(modifiedBuildersBackingChunk, backingChunkOffset))
                             : RowSetFactory.empty();
-                    downstream.shifted =
-                            extractAndClearShiftDataBuilder(shiftDataBuildersBackingChunk, backingChunkOffset);
+                    downstream.shifted = addOnly
+                            ? RowSetShiftData.EMPTY
+                            : extractAndClearShiftDataBuilder(shiftDataBuildersBackingChunk, backingChunkOffset);
                     downstream.modifiedColumnSet =
                             downstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY : resultModifiedColumnSet;
 

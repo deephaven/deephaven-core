@@ -7,7 +7,6 @@ critical for applications to correctly launch deferred query evaluations, such a
 
 from collections.abc import Sequence
 from contextlib import ContextDecorator
-from typing import Optional, Union
 
 import jpy
 
@@ -21,8 +20,8 @@ _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext"
 
 
 class ExecutionContext(JObjectWrapper, ContextDecorator):
-    """An ExecutionContext represents a specific combination of query library, query compiler, and query scope under
-    which a query is evaluated.
+    """An ExecutionContext represents a specific combination of query library, query compiler, query scope, and update
+    graph under which a query is evaluated.
 
     A default, systemic ExecutionContext is created when a Deephaven script session is initialized, and it is used to
     evaluate queries submitted through this script session. However, to be able to evaluate a query in a deferred
@@ -55,7 +54,7 @@ class ExecutionContext(JObjectWrapper, ContextDecorator):
 
 
 def make_user_exec_ctx(
-    freeze_vars: Optional[Union[str, Sequence[str]]] = None,
+    freeze_vars: str | Sequence[str] | None = None,
 ) -> ExecutionContext:
     """Makes a new ExecutionContext based off the current thread's ExecutionContext. The optional parameter
     freeze_vars should be a list of names in the current query scope. If it is provided, the resulting ExecutionContext
@@ -86,7 +85,6 @@ def make_user_exec_ctx(
                     .captureQueryCompiler()
                     .captureQueryLibrary()
                     .captureQueryScopeVars(*freeze_vars)
-                    .captureUpdateGraph()
                     .build()
                 )
                 return ExecutionContext(j_exec_ctx=j_exec_ctx)

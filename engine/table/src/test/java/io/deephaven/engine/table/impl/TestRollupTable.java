@@ -15,17 +15,24 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
+import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.ByteGenerator;
+import io.deephaven.engine.testutil.generator.DoubleGenerator;
+import io.deephaven.engine.testutil.generator.FloatGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.generator.ShortGenerator;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
 import io.deephaven.vector.LongVector;
@@ -288,6 +295,48 @@ public class TestRollupTable extends RefreshingTableTestCase {
     }
 
     /**
+     * Like {@link #testRollupMultiKeyVsZeroKeyIncremental()}, but counting distinct byte, short, float, and double
+     * values, whose re-aggregation reads the changes to each child level's distinct-value sets.
+     */
+    @Test
+    public void testRollupCountDistinctVsZeroKeyIncremental() {
+        final Random random = new Random(0);
+
+        final ColumnInfo[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "Sym2", "byteCol", "shortCol", "floatCol", "doubleCol"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new SetGenerator<>("u", "v", "w"),
+                new ByteGenerator((byte) 0, (byte) 20, 0.1),
+                new ShortGenerator((short) 0, (short) 30, 0.1),
+                new FloatGenerator(0, 4, 0.1, 0.05),
+                new DoubleGenerator(0, 4, 0.1, 0.05));
+
+        final QueryTable testTable = getTable(true, INCREMENTAL_TABLE_SIZE, random, columnInfo);
+
+        final List<Aggregation> countDistincts = List.of(
+                AggCountDistinct("cdByte=byteCol", "cdShort=shortCol", "cdFloat=floatCol", "cdDouble=doubleCol"),
+                AggCountDistinct(true, "cdnByte=byteCol", "cdnShort=shortCol", "cdnFloat=floatCol",
+                        "cdnDouble=doubleCol"));
+        final String[] countDistinctColumns = {"cdByte", "cdShort", "cdFloat", "cdDouble", "cdnByte", "cdnShort",
+                "cdnFloat", "cdnDouble"};
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new RollupCompareNugget(
+                        testTable.rollup(countDistincts, false, "Sym", "Sym2"),
+                        testTable.aggBy(countDistincts),
+                        countDistinctColumns)
+        };
+
+        final int steps = 100;
+        for (int step = 0; step < steps; step++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step = " + step);
+            }
+            simulateShiftAwareStep("step == " + step, 100, random, testTable, columnInfo, en);
+        }
+    }
+
+    /**
      * Like {@link #testRollupVsZeroKeyStatic()}, but aggregating an {@link Instant} column with every aggregation that
      * accepts one. An Instant aggregation result is exposed as an {@code Instant} column backed by {@code long}
      * storage, so a re-aggregation that reads the child level's value column must reinterpret it back to {@code long}
@@ -494,9 +543,42 @@ public class TestRollupTable extends RefreshingTableTestCase {
         final Table snapshot4 = snapshotFilteredRollup(rollup4);
         assertTableEquals(snapshot2, snapshot4);
 
+        // a filter may apply to the base level, one row per bucket, so a filter with cross-row dependencies would read
+        // buckets rather than source rows; such a filter is refused, also after an earlier group-by filter
+        for (final RollupTable rollup : List.of(rollup1, rollup2)) {
+            for (final String formula : new String[] {"ii >= 2 && ii <= 3", "i + 0 < 2", "k + 0 < 2",
+                    "CONST_[0] == 11", "CONST_[i - 1] == 11"}) {
+                final IllegalArgumentException ex = Assert.assertThrows(formula, IllegalArgumentException.class,
+                        () -> rollup.withFilter(WhereFilterFactory.getExpression(formula)));
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains(
+                        "cannot use cross-row dependencies (virtual row variables or column arrays)"));
+            }
+        }
+
         freeSnapshotTableChunks(snapshot2);
         freeSnapshotTableChunks(snapshot3);
         freeSnapshotTableChunks(snapshot4);
+    }
+
+    /**
+     * Filtering a rollup on its group-by columns filters its base level's row lookup, which has no state change step to
+     * report, since the filtered rows change with the filter's result rather than the aggregation's hash table.
+     */
+    @Test
+    public void testFilteredBaseLevelLookupHasNoStateChangeStep() {
+        final Table source = emptyTable(12).update("Key = (int) (ii % 3)", "Value = ii");
+        final RollupTableImpl rollup = (RollupTableImpl) source.rollup(List.of(AggSum("Value")), false, "Key");
+        final AggregationRowLookup lookup = rollup.baseLevelRowLookup();
+        assertTrue(lookup.get(2) >= 0);
+        // the aggregation of a static source never changes
+        assertEquals(QueryConstants.NULL_LONG, lookup.lastStateChangeStep());
+
+        final RollupTableImpl filtered =
+                (RollupTableImpl) rollup.withFilter(WhereFilterFactory.getExpression("Key = 1"));
+        final AggregationRowLookup filteredLookup = filtered.baseLevelRowLookup();
+        assertTrue(filteredLookup.get(1) >= 0);
+        assertEquals(AggregationRowLookup.DEFAULT_UNKNOWN_ROW, filteredLookup.get(2));
+        Assert.assertThrows(UnsupportedOperationException.class, filteredLookup::lastStateChangeStep);
     }
 
     private Table snapshotFilteredRollup(RollupTable rollup) {

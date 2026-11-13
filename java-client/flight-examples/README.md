@@ -1,7 +1,7 @@
 ## Flight examples
 
-Flight examples is a collection of example applications built using `client-flight`, `client-flight-dagger`,
-`client-session`, and `client-session-dagger`.
+Flight examples is a collection of example applications built using `java-client-flight`. Each is one
+readable file; see [java-client/README.md](../README.md) for how they are structured and tested.
 
 ### Local build
 

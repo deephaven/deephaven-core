@@ -52,14 +52,14 @@ The following example constructs an `IcebergCatalogAdapter` using the Docker dep
 import io.deephaven.iceberg.util.*
 
 restAdapter = IcebergTools.createAdapter(
-    "minio-iceberg",
+    "rustfs-iceberg",
     [
         "type": "rest",
         "uri": "http://rest:8181",
         "client.region": "us-east-1",
         "s3.access-key-id": "admin",
         "s3.secret-access-key": "password",
-        "s3.endpoint": "http://minio:9000",
+        "s3.endpoint": "http://rustfs:9000",
         "io-impl": "org.apache.iceberg.aws.s3.S3FileIO"
     ]
 )

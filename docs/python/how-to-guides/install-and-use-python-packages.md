@@ -2,162 +2,146 @@
 title: Install and use Python packages
 ---
 
-This guide discusses how to install and use Python packages in Deephaven. Packages can be installed programmatically for use in a Deephaven instance or added to Deephaven Docker images to be available every time Deephaven is launched.
+This guide explains how to install Python packages for Deephaven and use them in queries. Where and how you install a package decides whether it persists:
 
-If you wish to do machine learning in Python, Deephaven has several pre-built Docker images for AI in Python. Refer to the [Choose a Deployment](../getting-started/docker-install.md#choose-a-deployment) section of the [Docker install guide](../getting-started/docker-install.md) to see what's currently available.
+- If you run Deephaven from a virtual environment with `pip` or from source code, packages persist across server restarts.
+- If you install packages from a Python script or the Deephaven console, they persist in the environment where Deephaven runs. If Deephaven runs in a Docker container, a new container doesn't have them.
+- If you install packages in a running Docker container, they stay in that container only. See [install in a running container](#install-packages-in-a-running-docker-container-from-the-command-line).
+- If you build packages into a custom Docker image, every container started from it has them.
 
-Once installed, a package can be imported and used like any other Python package. For an index of available Python packages and more information on them, visit the [Python Package Index](https://pypi.org/) or check out our [choosing the right Python package](../reference/cheat-sheets/choose-python-packages.md) cheat sheet.
+Once installed, a package can be imported and used like any other Python package. For an index of available Python packages and more information on them, visit the [Python Package Index](https://pypi.org/) or check out our [Choose Python packages to install](../reference/cheat-sheets/choose-python-packages.md) cheat sheet. This guide covers Python packages only. To install Unix packages in the Deephaven container, see [Install Unix packages in the Deephaven container](./install-packages.md).
 
-## List all available Python packages
+## Install packages in a virtual environment
 
-Python's `help` function can list the packages available to Python. Run the following command from a Python session:
+If you run Deephaven from a Python virtual environment, install packages into that environment with [`pip`](https://pip.pypa.io/). You might have created the environment by [installing Deephaven](../getting-started/pip-install.md) with pip or by [building it from source code](../getting-started/launch-build.md). Activate the environment, then run:
 
-```python
-help("modules")
+```shell
+pip install pendulum
 ```
 
 ## Install packages from within a Python script
 
-Python packages can be installed using [`pip`](https://www.datacamp.com/tutorial/pip-python-package-manager) from within a Python script or the Deephaven Python console. The following code block imports the [`Pendulum`](https://pypi.org/project/pendulum/) package and uses it to print the current time in Paris:
+You can install Python packages with [`pip`](https://pip.pypa.io/) from within a Python script or the Deephaven Python console. The following code block installs the [`pendulum`](https://pypi.org/project/pendulum/) package into the same Python that runs Deephaven, then imports it.
 
 ```python order=null
 import os
+import shlex
+import sys
 
-os.system("pip install Pendulum")
+os.system(f"{shlex.quote(sys.executable)} -m pip install pendulum")
 
 import pendulum
-
-now = pendulum.now("Europe/Paris")
-print(now)
 ```
 
-> [!WARNING]
-> Packages installed this way are not guaranteed to persist across restarts of the Deephaven Docker container. If the container changes at all between restarts, packages _will not_ persist.
+The example ignores the exit status that `os.system` returns. If the install fails, the console shows only an `ImportError` on the `import pendulum` line, and pip's error text goes to the server's process output. To check the result and capture the error output, use the [`subprocess`](https://docs.python.org/3/library/subprocess.html) module instead.
 
-The [`subprocess`](https://docs.python.org/3/library/subprocess.html) module can also be used to save the output in case the installation fails.
-
-```python order=null
-from subprocess import Popen, PIPE
-
-proc = Popen(["pip", "install", "nonexistent-package"], stdout=PIPE, stderr=PIPE)
-stdout, stderr = proc.communicate()
-
-print(stderr)
-```
+Packages installed this way persist in the environment where Deephaven runs. If Deephaven runs in a Docker container, they have the same persistence limits as [packages installed in a running container](#install-packages-in-a-running-docker-container-from-the-command-line).
 
 ## Install packages in a running Docker container from the command line
 
-Python packages can be installed using [`pip`](https://www.datacamp.com/tutorial/pip-python-package-manager) via [`docker exec`](https://docs.docker.com/engine/reference/commandline/exec/).
+Use [`docker exec`](https://docs.docker.com/reference/cli/docker/container/exec/) to run `pip install` in the running container.
 
 > [!WARNING]
-> If this method is used with Deephaven Docker images, Python package installs do not persist after the Docker container exits. The package installation must be repeated each time the container is started.
+> Docker stores packages installed in a running container only in that container. They survive `docker stop` and `docker start`, but a new container doesn't have them. Running `docker run` again, or running `docker compose down` followed by `docker compose up`, creates a new container. To keep packages, [build a custom image](#permanently-add-packages-to-a-custom-docker-image).
 
-Here [`docker exec`](https://docs.docker.com/engine/reference/commandline/exec/) is used to run a [`pip`](https://www.datacamp.com/tutorial/pip-python-package-manager) install on the running Deephaven Docker image, which is named `deephaven`.
+The following command uses `docker exec` to run `pip install` in the running Deephaven container. The container name `deephaven` comes from `docker run --name deephaven`:
 
 ```shell
-docker exec deephaven pip install Pendulum
+docker exec deephaven pip install pendulum
 ```
 
-After installing the Pendulum package, we can use it within our script to print the current time in Paris.
+With Docker Compose, use the service name in place of the container name: `docker compose exec deephaven pip install pendulum`.
 
-```python
-import pendulum
-
-now = pendulum.now("Europe/Paris")
-
-print(now)
-```
+Once `pendulum` is installed in the container, you can run `import pendulum` in the Deephaven console. You don't need the `pip install` line from [the script example](#install-packages-from-within-a-python-script).
 
 ## Permanently add packages to a custom Docker image
 
-To import packages and have the installations persist between sessions, you can create a custom Docker image and then use that image to start Deephaven. Let's start with the steps that are common between both.
+To install packages that every new container has, create a custom Docker image and use it to start Deephaven. If you want to use a pre-built image, see [Choose a Deployment](../getting-started/docker-install.md#choose-a-deployment); pre-built images don't include packages you install here.
 
 ### Prerequisites
 
-You must acquire the necessary base images before a custom Docker image can be built. This process differs based on how you launch Deephaven:
+A custom image is built on top of a base image, which is the image Deephaven publishes. For this guide, the base image is `ghcr.io/deephaven/server:latest`. `docker build` downloads the base image if it isn't already on your machine, so you don't need to download it first.
 
-- If you [launch from pre-built images](../getting-started/docker-install.md), ensure you have run the following command to download the necessary base images:
-
-```shell
-docker compose pull
-```
-
-- If you [launch from source code](../getting-started/launch-build.md), ensure you have built the project with the necessary base images.
+You need Docker installed before you start. See the [Docker install guide](../getting-started/docker-install.md) for setup.
 
 ### Create a custom Dockerfile
 
-To begin with, create a new directory. This directory should not be in a Deephaven deployment directory. You can name it whatever you'd like. For this guide, we'll name ours `deephaven-custom`.
+To begin with, create a new directory. This directory should not be in a Deephaven deployment directory. You can name it whatever you'd like. For this guide, we use the name `deephaven-custom`.
 
 ```shell
 mkdir deephaven-custom
 cd deephaven-custom
 ```
 
-Now, in this directory, create a file called `Dockerfile`. `Dockerfile` should use `ghcr.io/deephaven/server` as the base image and contain a recipe for installing the new package. When adding Pendulum, it looks like this:
+Now, in this directory, create a file called `Dockerfile`. `Dockerfile` should use `ghcr.io/deephaven/server:latest` as the base image and contain a recipe for installing the new package. To add `pendulum`, the `Dockerfile` looks like this:
 
+```Dockerfile
+FROM ghcr.io/deephaven/server:latest
+RUN pip install pendulum
 ```
-FROM ghcr.io/deephaven/server
-RUN pip3 install pendulum
-```
+
+To build on a specific release, replace `latest` in the `FROM` line with that release tag, such as `42.6`.
 
 ### Create a custom Docker image
 
-Now that we have the `Dockerfile` in place, we need to create the custom Docker image. To do so, run a command from the directory with `Dockerfile` that looks like:
+Now that you have the `Dockerfile`, build the custom image. Run this command from the directory that contains the `Dockerfile`:
 
 ```shell
 docker build --tag <user>/server-<custom> .
 ```
 
-This will create a new Docker image called `<user>/server-<custom>`. For this guide, we will call the image `guide/server-pendulum`:
+This creates a new Docker image called `<user>/server-<custom>`. For this guide, we call the image `guide/server-pendulum`:
 
 ```shell
 docker build --tag guide/server-pendulum .
 ```
 
-When the command finishes running, you can see the new image in your system:
+When the command finishes running, you can see the image in your system:
 
 ```shell
 docker image ls
 ```
 
-### Reference the new image
+> [!CAUTION]
+> A custom image keeps the base image it was built from. To include base image updates, rebuild the custom image with `docker build --pull --tag guide/server-pendulum .`.
 
-To put it all together, we now need to reference this new image in the `docker-compose` file we use to launch Deephaven. The file name depends on how you build and launch Deephaven:
+### Start Deephaven from the custom image
 
-- If you [launch from pre-built images](../getting-started/docker-install.md), the file is `docker-compose.yml`, and can be found in your `deephaven-deployment` directory.
+If a container named `deephaven` already exists, you can remove it with `docker rm -f deephaven`, but only if it holds nothing you need. Removing it deletes packages installed in its writable layer. A new container doesn't reattach the existing `/data` and `/cache` volumes, so back up any data you need before you replace the container.
 
-- If you [launch from source code](../getting-started/launch-build.md), the file is `docker-compose-common.yml`, and can be found in your `deephaven-core` directory.
+To start Deephaven from `guide/server-pendulum` with Docker, run:
 
-In the Docker Compose file, see three lines of text that look like:
-
+```shell
+docker run --name deephaven -p 10000:10000 guide/server-pendulum
 ```
+
+With Docker Compose, change the `image` line of the `deephaven` service in your `docker-compose.yml` file to use `guide/server-pendulum`:
+
+```yaml
 services:
-  server:
-    image: <IMAGE_NAME>
-```
-
-The image used by default depends on how you build and launch Deephaven. Regardless, you need to insert your custom image name in this line. Modify the `image` line to use your new image:
-
-```
-services:
-  server:
+  deephaven:
     image: guide/server-pendulum:latest
 ```
 
-Now, when you launch Deephaven again, you can use the package!
+The [Docker install guide](../getting-started/docker-install.md#build-a-custom-image) shows a Compose file that builds the custom image from a `Dockerfile` instead.
 
-> [!CAUTION]
-> When base images are updated by rebuilding source code or redownloading pre-built images, custom images must be rebuilt to incorporate the base image changes.
+When you start Deephaven from `guide/server-pendulum`, you can use `pendulum`.
 
-## Use Python packages in Deephaven
+## List the modules Python can import
 
-Once installed, a package can be imported and used like any other Python package. For an index of available Python packages and more information on Python packages, visit the [Python Package Index](https://pypi.org/) and our [Choose Python packages](../reference/cheat-sheets/choose-python-packages.md) cheat sheet.
+After you install a package, you can confirm that Python can import it. Python's [`help`](https://docs.python.org/3/library/functions.html#help) function can list the modules Python can import in the current session. The list includes the standard library and installed packages. Run the following command from a Python session:
+
+```python syntax
+help("modules")
+```
 
 ## Use packages in query strings
 
-Installed Python packages can be used in query strings. Let's use the Pendulum package, which we [installed](#install-packages-from-within-a-python-script) earlier in this guide.
+You can use installed Python packages in [query strings](./query-string-overview.md). Query strings are the formulas you pass to [table operations](../conceptual/table-operations-overview.md), such as [`update`](../reference/table-operations/select/update.md). This example uses the `pendulum` package. You can install it in any of the ways described above.
 
-```python syntax
+<!-- Maintainer: skip-test because the snapshot test server doesn't have pendulum installed, so this block fails there. Remove skip-test once the test environment installs pendulum. -->
+
+```python skip-test ticking-table order=times_in_paris
 import pendulum
 from deephaven import time_table
 
@@ -169,28 +153,23 @@ def get_paris_time():
 times_in_paris = time_table("PT5S").update(formulas=["Paris = get_paris_time()"])
 ```
 
+The example calls `pendulum` from a Python function, which [query strings](./query-string-overview.md) can call directly. For how Deephaven types these results and the performance cost of Python functions, see [Python functions in query strings](./python-functions.md).
+
 <LoopedVideo src='../assets/how-to/pendulum_timeTableExample.mp4' />
-
-## `deephaven.learn`
-
-Python packages are commonly used with [`deephaven.learn`](./use-deephaven-learn.md). The [`deephaven.learn`](./use-deephaven-learn.md) package provides utilities for efficient data transfer between Deephaven tables and Python data structures, particularly [NumPy arrays](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) and other data structures used by popular AI and machine learning packages.
-
-## `deephaven.numpy`
-
-The [`deephaven.numpy`](./use-numpy.md) module contains functions that convert between Deephaven tables and [NumPy arrays](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html). [NumPy](https://numpy.org/) is commonly used in Deephaven Python queries.
-
-## `deephaven.pandas`
-
-The [`deephaven.pandas`](./use-pandas.md) module contains functions that convert between Deephaven tables and [Pandas DataFrames](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html). [Pandas](https://pandas.pydata.org/docs/index.html) is another package that is commonly used in queries.
 
 ## Related documentation
 
-- [How to install packages](./install-packages.md)
-- [Choose Python packages to install](../reference/cheat-sheets/choose-python-packages.md)
+- [Table operations overview](../conceptual/table-operations-overview.md)
+- [An overview of query strings](./query-string-overview.md)
+- [Python functions in query strings](./python-functions.md)
+- [Install Unix packages in the Deephaven container](./install-packages.md)
+- [Create a time table](./time-table.md)
 - [Launch Deephaven from pre-built images](../getting-started/docker-install.md)
 - [Build and launch Deephaven from source code](../getting-started/launch-build.md)
-- [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)
-- [Create a time table](./time-table.md)
-- [Use `deephaven.learn`](./use-deephaven-learn.md)
-- [Use `deephaven.numpy`](./use-numpy.md)
-- [Use `deephaven.pandas`](./use-pandas.md)
+- [Install Deephaven with pip](../getting-started/pip-install.md)
+- [`time_table`](../reference/table-operations/create/timeTable.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [Choose Python packages to install](../reference/cheat-sheets/choose-python-packages.md)
+- [`time_table` Pydoc](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.time_table)
+- [`Table.update` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update)
+- [Access your file system with Docker bind mounts](../conceptual/docker-data-volumes.md)

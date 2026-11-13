@@ -3,10 +3,22 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.liveness.DelegatingLivenessReferent;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import static org.junit.Assert.*;
 
@@ -22,10 +34,84 @@ public class TestLiveAttributeMap {
         }
 
         @Override
-        protected AttrMap copy() {
-            return new AttrMap(getAttributes());
+        protected AttrMap copy(@NotNull final Map<String, Object> attributes) {
+            return new AttrMap(attributes);
+        }
+    }
+
+    private final List<LivenessScope> scopes = new ArrayList<>();
+
+    @After
+    public void tearDown() {
+        scopes.forEach(LivenessScope::release);
+    }
+
+    private void release(@NotNull final LivenessScope scope) {
+        assertTrue(scopes.remove(scope));
+        scope.release();
+    }
+
+    private LivenessScope newScope() {
+        final LivenessScope scope = new LivenessScope();
+        scopes.add(scope);
+        return scope;
+    }
+
+    private static <T> T inScope(@NotNull final LivenessScope scope, @NotNull final Supplier<T> supplier) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
+            return supplier.get();
+        }
+    }
+
+    private AttrMap newMap(@NotNull final LivenessScope scope, @Nullable final Map<String, Object> initialAttributes) {
+        return inScope(scope, () -> new AttrMap(initialAttributes));
+    }
+
+    /**
+     * Set a new {@link LivenessArtifact} as the value for {@code key} in {@code map}, leaving {@code map} as its only
+     * manager.
+     */
+    private static LivenessArtifact setReferent(@NotNull final AttrMap map, @NotNull final String key) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final LivenessArtifact value = new LivenessArtifact() {};
+            map.setAttribute(key, value);
+            return value;
+        }
+    }
+
+    /**
+     * A referent that counts the references retained and dropped on it.
+     */
+    private static final class CountingReferent implements DelegatingLivenessReferent {
+
+        private final LivenessArtifact delegate = new LivenessArtifact() {};
+        private int retained;
+        private int dropped;
+
+        @Override
+        public LivenessReferent asLivenessReferent() {
+            return delegate;
         }
 
+        @Override
+        public boolean tryRetainReference() {
+            ++retained;
+            return delegate.tryRetainReference();
+        }
+
+        @Override
+        public void dropReference() {
+            ++dropped;
+            delegate.dropReference();
+        }
+    }
+
+    private static boolean isLive(@NotNull final LivenessReferent referent) {
+        if (referent.tryRetainReference()) {
+            referent.dropReference();
+            return true;
+        }
+        return false;
     }
 
     @Test
@@ -33,5 +119,138 @@ public class TestLiveAttributeMap {
         final AttrMap empty = new AttrMap(null);
         final Map<String, Object> emptyAttrs = empty.getAttributes();
         assertTrue(emptyAttrs.isEmpty());
+    }
+
+    @Test
+    public void testSetAttributeReplacementUnmanages() {
+        final AttrMap map = newMap(newScope(), null);
+        final LivenessArtifact value = setReferent(map, "k");
+        assertTrue(isLive(value));
+        map.setAttribute("k", "replacement");
+        assertFalse(isLive(value));
+    }
+
+    @Test
+    public void testSetAttributeSameValueManagesOnce() {
+        final AttrMap map = newMap(newScope(), null);
+        final LivenessArtifact value = setReferent(map, "k");
+        map.setAttribute("k", value);
+        map.setAttribute("k", (Object existing) -> value);
+        map.setAttribute("k", "replacement");
+        assertFalse(isLive(value));
+    }
+
+    @Test
+    public void testSetAttributeUpdaterReplacementUnmanages() {
+        final AttrMap map = newMap(newScope(), null);
+        final LivenessArtifact value = setReferent(map, "k");
+        map.setAttribute("k", (Object existing) -> "replacement");
+        assertFalse(isLive(value));
+    }
+
+    @Test
+    public void testInitialAttributesManaged() {
+        final LivenessScope mapScope = newScope();
+        final LivenessArtifact value;
+        final AttrMap map;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            value = new LivenessArtifact() {};
+            map = newMap(mapScope, Map.of("k", value));
+        }
+        assertTrue(isLive(value));
+        assertSame(value, map.getAttribute("k"));
+        release(mapScope);
+        assertFalse(isLive(value));
+    }
+
+    @Test
+    public void testCopyManagesRetainedValuesOnce() {
+        final LivenessScope originalScope = newScope();
+        final AttrMap original = newMap(originalScope, null);
+        final LivenessArtifact value = setReferent(original, "k");
+
+        final AttrMap copy = inScope(newScope(), () -> original.withAttributes(Map.of("other", "o")));
+        assertNotSame(original, copy);
+        release(originalScope);
+        assertTrue(isLive(value));
+        copy.setAttribute("k", "replacement");
+        assertFalse(isLive(value));
+    }
+
+    @Test
+    public void testWithAttributesReplacementReleases() {
+        checkCopyReleases(original -> original.withAttributes(Map.of("k", "replacement")));
+    }
+
+    @Test
+    public void testWithAttributesRemovalReleases() {
+        checkCopyReleases(original -> original.withAttributes(Map.of("other", "o"), List.of("k")));
+    }
+
+    @Test
+    public void testWithAttributesAddAndRemoveReplacementReleases() {
+        checkCopyReleases(original -> original.withAttributes(Map.of("k", "replacement"), List.of("k")));
+    }
+
+    @Test
+    public void testWithoutAttributesReleases() {
+        checkCopyReleases(original -> original.withoutAttributes(List.of("k")));
+    }
+
+    @Test
+    public void testRetainingAttributesReleases() {
+        checkCopyReleases(original -> original.retainingAttributes(List.of("other")));
+    }
+
+    /**
+     * Verify that a copy made by {@code operation} that drops or replaces the referent at {@code "k"} does not keep it
+     * live after the original is released.
+     */
+    private void checkCopyReleases(@NotNull final UnaryOperator<AttrMap> operation) {
+        final LivenessScope originalScope = newScope();
+        final AttrMap original = newMap(originalScope, null);
+        final LivenessArtifact value = setReferent(original, "k");
+        original.setAttribute("other", "o");
+
+        final AttrMap copy = inScope(newScope(), () -> operation.apply(original));
+        assertNotSame(original, copy);
+        assertNotSame(value, copy.getAttribute("k"));
+        assertTrue(isLive(value));
+        release(originalScope);
+        assertFalse(isLive(value));
+    }
+
+    @Test
+    public void testCopyDoesNotManageDroppedValues() {
+        checkCopyDoesNotManage(original -> original.withAttributes(Map.of("k", "replacement")));
+        checkCopyDoesNotManage(original -> original.withAttributes(Map.of("other", "o2"), List.of("k")));
+        checkCopyDoesNotManage(original -> original.withoutAttributes(List.of("k")));
+        checkCopyDoesNotManage(original -> original.retainingAttributes(List.of("other")));
+    }
+
+    /**
+     * Verify that a copy made by {@code operation} that drops or replaces the referent at {@code "k"} never retains or
+     * drops a reference to it.
+     */
+    private void checkCopyDoesNotManage(@NotNull final UnaryOperator<AttrMap> operation) {
+        final AttrMap original = newMap(newScope(), null);
+        final CountingReferent value = new CountingReferent();
+        original.setAttribute("k", value);
+        original.setAttribute("other", "o");
+        assertEquals(1, value.retained);
+
+        final AttrMap copy = inScope(newScope(), () -> operation.apply(original));
+        assertNotSame(original, copy);
+        assertFalse(copy.getAttributes().containsValue(value));
+        assertEquals(1, value.retained);
+        assertEquals(0, value.dropped);
+    }
+
+    @Test
+    public void testGetAttributesToCopy() {
+        final AttrMap map = newMap(newScope(), Map.of("a", "1", "b", "2"));
+        assertSame(map.getAttributes(), map.getAttributesToCopy(ak -> true));
+        assertEquals(Map.of("a", "1"), map.getAttributesToCopy("a"::equals));
+        assertTrue(map.getAttributesToCopy(ak -> false).isEmpty());
     }
 }

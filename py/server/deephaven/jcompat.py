@@ -7,12 +7,10 @@ data structures from corresponding Python ones in order to be able to call Java 
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
     TypeVar,
     Union,
 )
@@ -69,17 +67,19 @@ def is_java_type(obj: Any) -> bool:
     return isinstance(obj, jpy.JType)
 
 
-def j_array_list(values: Optional[Iterable] = None) -> Optional[jpy.JType]:
+def j_array_list(values: Iterable | None = None) -> jpy.JType | None:
     """Creates a Java ArrayList instance from an iterable."""
     if values is None:
         return None
-    r = jpy.get_type("java.util.ArrayList")(len(list(values)))
+    # Read the input once. A generator can be read only once, so reading it again would leave the list empty.
+    values = list(values)
+    r = jpy.get_type("java.util.ArrayList")(len(values))
     for v in values:
         r.add(unwrap(v))
     return r
 
 
-def j_hashmap(d: Optional[dict] = None) -> Optional[jpy.JType]:
+def j_hashmap(d: dict | None = None) -> jpy.JType | None:
     """Creates a Java HashMap from a dict."""
     if d is None:
         return None
@@ -92,7 +92,7 @@ def j_hashmap(d: Optional[dict] = None) -> Optional[jpy.JType]:
     return r
 
 
-JsonValue = Union[
+JsonValue = Union[  # noqa: UP007 - the string forward refs need Union
     None,
     bool,
     int,
@@ -105,7 +105,7 @@ JsonValue = Union[
 """A JSON-compatible Python value: a scalar, or a dict/list/tuple of them."""
 
 
-def j_json_value(value: JsonValue) -> Union[jpy.JType, None, bool, int, float, str]:
+def j_json_value(value: JsonValue) -> jpy.JType | None | bool | int | float | str:
     """Recursively converts a JSON-compatible Python value into Java objects.
 
     A dict is converted to a java.util.LinkedHashMap and a list or tuple is converted to a
@@ -128,7 +128,7 @@ def j_json_value(value: JsonValue) -> Union[jpy.JType, None, bool, int, float, s
     return unwrap(value)
 
 
-def j_hashset(s: Optional[Union[set, Sequence]] = None) -> Optional[jpy.JType]:
+def j_hashset(s: set | Sequence | None = None) -> jpy.JType | None:
     """Creates a Java HashSet from a set."""
     if s is None:
         return None
@@ -139,7 +139,7 @@ def j_hashset(s: Optional[Union[set, Sequence]] = None) -> Optional[jpy.JType]:
     return r
 
 
-def j_properties(d: Optional[dict] = None) -> Optional[jpy.JType]:
+def j_properties(d: dict | None = None) -> jpy.JType | None:
     """Creates a Java Properties from a dict."""
     if d is None:
         return None
@@ -151,7 +151,7 @@ def j_properties(d: Optional[dict] = None) -> Optional[jpy.JType]:
     return r
 
 
-def j_map_to_dict(m: Optional[jpy.JType]) -> dict[Any, Any]:
+def j_map_to_dict(m: jpy.JType | None) -> dict[Any, Any]:
     """Converts a java map to a python dictionary."""
     if not m:
         return {}
@@ -159,7 +159,7 @@ def j_map_to_dict(m: Optional[jpy.JType]) -> dict[Any, Any]:
     return {e.getKey(): wrap_j_object(e.getValue()) for e in m.entrySet().toArray()}
 
 
-def j_list_to_list(jlist: Optional[jpy.JType]) -> list[Any]:
+def j_list_to_list(jlist: jpy.JType | None) -> list[Any]:
     """Converts a java list to a python list."""
     if not jlist:
         return []
@@ -167,7 +167,7 @@ def j_list_to_list(jlist: Optional[jpy.JType]) -> list[Any]:
     return [wrap_j_object(jlist.get(i)) for i in range(jlist.size())]
 
 
-def j_collection_to_list(jcollection: Optional[jpy.JType]) -> list[Any]:
+def j_collection_to_list(jcollection: jpy.JType | None) -> list[Any]:
     """Converts a java Collection to a python list."""
     if not jcollection:
         return []
@@ -246,7 +246,7 @@ def j_binary_operator(func: Callable[[T, T], T], dtype: DType) -> jpy.JType:
 
 
 def j_lambda(
-    func: Callable, lambda_jtype: jpy.JType, return_dtype: Optional[DType] = None
+    func: Callable, lambda_jtype: jpy.JType, return_dtype: DType | None = None
 ):
     """Wraps a Python Callable as a Java "lambda" type.
 
@@ -265,7 +265,7 @@ def j_lambda(
     )
 
 
-def to_sequence(v: Optional[Any] = None, wrapped: bool = False) -> Sequence[Any]:
+def to_sequence(v: Any | None = None, wrapped: bool = False) -> Sequence[Any]:
     """A convenience function to create a sequence of wrapped or unwrapped object from either one or a sequence of
     input values to help JPY find the matching Java overloaded method to call.
 
@@ -296,6 +296,28 @@ def to_sequence(v: Optional[Any] = None, wrapped: bool = False) -> Sequence[Any]
         return (unwrap(v),)
     else:
         return tuple(unwrap(o) for o in v)
+
+
+def to_str_sequence(v: str | Sequence[str], what: str = "value") -> Sequence[str]:
+    """Returns one value, or a sequence of values, as a sequence of strings. Unlike :func:`to_sequence`, a lone
+    string is one value even when it is empty, so that an empty string reaches the Java method as a value for it to
+    reject rather than as an empty sequence, and every element must be a string.
+
+    Args:
+        v (Union[str, Sequence[str]]): one string, or a sequence of strings
+        what (str): what each value is, for the error message. Defaults to "value"
+
+    Returns:
+        Sequence[str]: the values
+
+    Raises:
+        TypeError: if an element is not a string
+    """
+    values = (v,) if isinstance(v, str) else to_sequence(v)
+    for value in values:
+        if not isinstance(value, str):
+            raise TypeError(f"expected a {what}, not {type(value).__name__}: {value!r}")
+    return values
 
 
 def _j_array_to_sequence(j_array: jpy.JType) -> Sequence[Any]:
@@ -365,15 +387,15 @@ def dh_null_to_nan(np_array: np.ndarray, type_promotion: bool = False) -> np.nda
     """Converts Deephaven primitive null values in the given numpy array to np.nan. No conversion is performed on
     non-primitive types.
 
-    Note, the input numpy array is modified in place if it is of a float or double type. If that's not a desired behavior,
-    pass a copy of the array instead. For input arrays of other types, a new array is always returned.
+    The input numpy array is not modified. For primitive types, the result is a new array. An array of a non-primitive
+    type is returned as is.
 
     Args:
         np_array (np.ndarray): The numpy array to convert
         type_promotion (bool): When False, integer, boolean, or character arrays will cause an exception to be raised.
             When True, integer, boolean, or character arrays are converted to new np.float64 arrays and Deephaven null
             values in them are converted to np.nan. Numpy arrays of float or double types are not affected by this flag
-            and Deephaven nulls will always be converted to np.nan in place. Defaults to False.
+            and Deephaven nulls in them are always converted to np.nan in a copy of the array. Defaults to False.
 
     Returns:
         np.ndarray: The numpy array with Deephaven nulls converted to np.nan.
@@ -423,7 +445,7 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
     """
     if conv_null and dtype == dtypes.bool_:
         j_array = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)
-        np_array: Optional[np.ndarray[Any, Any]] = np.frombuffer(j_array, dtype=np.byte)
+        np_array: np.ndarray[Any, Any] | None = np.frombuffer(j_array, dtype=np.byte)
         s: pd.Series = pd.Series(data=np_array, dtype=pd.Int8Dtype(), copy=False)
         s.mask(s == _NULL_BOOLEAN_AS_BYTE, inplace=True)
         return s.astype(pd.BooleanDtype())
@@ -444,14 +466,12 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
 
 # Note: unable to import TableDefinitionLike due to circular ref (table.py -> agg.py -> jcompat.py)
 def j_table_definition(
-    table_definition: Union[
-        TableDefinition,
-        Mapping[str, dtypes.DType],
-        Iterable[ColumnDefinition],
-        jpy.JType,
-        None,
-    ],
-) -> Optional[jpy.JType]:
+    table_definition: TableDefinition
+    | Mapping[str, dtypes.DType]
+    | Iterable[ColumnDefinition]
+    | jpy.JType
+    | None,
+) -> jpy.JType | None:
     """Deprecated for removal next release, prefer TableDefinition. Produce a Deephaven TableDefinition from user input.
 
     Args:

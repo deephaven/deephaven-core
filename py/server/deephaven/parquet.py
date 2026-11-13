@@ -10,7 +10,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Union
 
 import jpy
 
@@ -58,20 +57,20 @@ class UnsignedLongTarget(Enum):
 class ColumnInstruction:
     """This class specifies the instructions for reading/writing a Parquet column."""
 
-    column_name: Optional[str] = None
+    column_name: str | None = None
     """ The Deephaven column name. Required when writing. """
-    parquet_column_name: Optional[str] = None
+    parquet_column_name: str | None = None
     """ The corresponding column name in the Parquet file. Required when reading. """
-    codec_name: Optional[str] = None
+    codec_name: str | None = None
     """ The fully qualified name of an ObjectCodec class that serializes this column's values to and from bytes, for
     types with no language-agnostic Parquet representation. This is not the compression codec, which is set per file
     with the compression_codec_name argument. """
-    codec_args: Optional[str] = None
+    codec_args: str | None = None
     """ An implementation-specific argument string passed to codec_name. """
     use_dictionary: bool = False
     """ Whether the writer should use dictionary-based encoding for this column; never evaluated for non-String
     columns. """
-    unsigned_long_target: Optional[UnsignedLongTarget] = None
+    unsigned_long_target: UnsignedLongTarget | None = None
     """ Applies only to reads, and only to columns with a UINT_64 logical type; it is ignored when writing, since
     Deephaven never writes UINT_64. """
 
@@ -144,9 +143,7 @@ class RowGroupInfo(JObjectWrapper):
         return cls(_JRowGroupInfo.maxRows(max_rows))
 
     @classmethod
-    def by_groups(
-        cls, groups: list[str], max_rows: Optional[int] = None
-    ) -> RowGroupInfo:
+    def by_groups(cls, groups: list[str], max_rows: int | None = None) -> RowGroupInfo:
         """
         Splits each unique group into a RowGroup. If the table does not have all values for the group(s)
         contiguously, then an error will be raised. If max_rows is set and a given RowGroup yields a row count greater
@@ -166,22 +163,22 @@ class RowGroupInfo(JObjectWrapper):
 
 
 def _build_parquet_instructions(
-    col_instructions: Optional[list[ColumnInstruction]] = None,
-    compression_codec_name: Optional[str] = None,
-    max_dictionary_keys: Optional[int] = None,
-    max_dictionary_size: Optional[int] = None,
+    col_instructions: list[ColumnInstruction] | None = None,
+    compression_codec_name: str | None = None,
+    max_dictionary_keys: int | None = None,
+    max_dictionary_size: int | None = None,
     is_legacy_parquet: bool = False,
-    target_page_size: Optional[int] = None,
+    target_page_size: int | None = None,
     is_refreshing: bool = False,
     for_read: bool = True,
     force_build: bool = False,
-    generate_metadata_files: Optional[bool] = None,
-    base_name: Optional[str] = None,
-    file_layout: Optional[ParquetFileLayout] = None,
-    table_definition: Optional[TableDefinitionLike] = None,
-    index_columns: Optional[Sequence[Sequence[str]]] = None,
-    row_group_info: Optional[RowGroupInfo] = None,
-    special_instructions: Optional[s3.S3Instructions] = None,
+    generate_metadata_files: bool | None = None,
+    base_name: str | None = None,
+    file_layout: ParquetFileLayout | None = None,
+    table_definition: TableDefinitionLike | None = None,
+    index_columns: Sequence[Sequence[str]] | None = None,
+    row_group_info: RowGroupInfo | None = None,
+    special_instructions: s3.S3Instructions | None = None,
 ):
     if not any(
         [
@@ -264,7 +261,7 @@ def _build_parquet_instructions(
     return builder.build()
 
 
-def _j_file_layout(file_layout: Optional[ParquetFileLayout]) -> Optional[jpy.JType]:
+def _j_file_layout(file_layout: ParquetFileLayout | None) -> jpy.JType | None:
     if file_layout is None:
         return None
     if file_layout == ParquetFileLayout.SINGLE_FILE:
@@ -280,12 +277,12 @@ def _j_file_layout(file_layout: Optional[ParquetFileLayout]) -> Optional[jpy.JTy
 
 def read(
     path: str,
-    col_instructions: Optional[list[ColumnInstruction]] = None,
+    col_instructions: list[ColumnInstruction] | None = None,
     is_legacy_parquet: bool = False,
     is_refreshing: bool = False,
-    file_layout: Optional[ParquetFileLayout] = None,
-    table_definition: Optional[TableDefinitionLike] = None,
-    special_instructions: Optional[s3.S3Instructions] = None,
+    file_layout: ParquetFileLayout | None = None,
+    table_definition: TableDefinitionLike | None = None,
+    special_instructions: s3.S3Instructions | None = None,
 ) -> Table:
     """Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
@@ -353,16 +350,16 @@ def delete(path: str) -> None:
 def write(
     table: Table,
     path: str,
-    table_definition: Optional[TableDefinitionLike] = None,
-    col_instructions: Optional[list[ColumnInstruction]] = None,
-    compression_codec_name: Optional[str] = None,
-    max_dictionary_keys: Optional[int] = None,
-    max_dictionary_size: Optional[int] = None,
-    target_page_size: Optional[int] = None,
-    generate_metadata_files: Optional[bool] = None,
-    index_columns: Optional[Sequence[Sequence[str]]] = None,
-    row_group_info: Optional[RowGroupInfo] = None,
-    special_instructions: Optional[s3.S3Instructions] = None,
+    table_definition: TableDefinitionLike | None = None,
+    col_instructions: list[ColumnInstruction] | None = None,
+    compression_codec_name: str | None = None,
+    max_dictionary_keys: int | None = None,
+    max_dictionary_size: int | None = None,
+    target_page_size: int | None = None,
+    generate_metadata_files: bool | None = None,
+    index_columns: Sequence[Sequence[str]] | None = None,
+    row_group_info: RowGroupInfo | None = None,
+    special_instructions: s3.S3Instructions | None = None,
 ) -> None:
     """Write a table to a Parquet file.
 
@@ -383,7 +380,7 @@ def write(
             before switching to non-dictionary encoding, never evaluated for non-String columns, defaults to 2^20 (1,048,576)
         max_dictionary_size (Optional[int]): the maximum number of bytes the writer should add to the dictionary before
             switching to non-dictionary encoding, never evaluated for non-String columns, defaults to 2^20 (1,048,576)
-        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
+        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^16 bytes (64 KiB)
         generate_metadata_files (Optional[bool]): whether to generate parquet _metadata and _common_metadata files,
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some
@@ -421,19 +418,19 @@ def write(
 
 
 def write_partitioned(
-    table: Union[Table, PartitionedTable],
+    table: Table | PartitionedTable,
     destination_dir: str,
-    table_definition: Optional[TableDefinitionLike] = None,
-    col_instructions: Optional[list[ColumnInstruction]] = None,
-    compression_codec_name: Optional[str] = None,
-    max_dictionary_keys: Optional[int] = None,
-    max_dictionary_size: Optional[int] = None,
-    target_page_size: Optional[int] = None,
-    base_name: Optional[str] = None,
-    generate_metadata_files: Optional[bool] = None,
-    index_columns: Optional[Sequence[Sequence[str]]] = None,
-    row_group_info: Optional[RowGroupInfo] = None,
-    special_instructions: Optional[s3.S3Instructions] = None,
+    table_definition: TableDefinitionLike | None = None,
+    col_instructions: list[ColumnInstruction] | None = None,
+    compression_codec_name: str | None = None,
+    max_dictionary_keys: int | None = None,
+    max_dictionary_size: int | None = None,
+    target_page_size: int | None = None,
+    base_name: str | None = None,
+    generate_metadata_files: bool | None = None,
+    index_columns: Sequence[Sequence[str]] | None = None,
+    row_group_info: RowGroupInfo | None = None,
+    special_instructions: s3.S3Instructions | None = None,
 ) -> None:
     """Write table to disk in parquet format with the partitioning columns written as "key=value" format in a nested
     directory structure. For example, for a partitioned column "date", we will have a directory structure like
@@ -458,7 +455,7 @@ def write_partitioned(
             before switching to non-dictionary encoding; never evaluated for non-String columns , defaults to 2^20 (1,048,576)
         max_dictionary_size (Optional[int]): the maximum number of bytes the writer should add to the dictionary before
             switching to non-dictionary encoding, never evaluated for non-String columns, defaults to 2^20 (1,048,576)
-        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
+        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^16 bytes (64 KiB)
         base_name (Optional[str]): The base name for the individual partitioned tables, if not specified, defaults to
             `{uuid}`, so files will have names of the format `<uuid>.parquet` where `uuid` is a randomly generated UUID.
             Users can provide the following tokens in the base_name:
@@ -478,8 +475,9 @@ def write_partitioned(
         index_columns (Optional[Sequence[Sequence[str]]]): sequence of sequence containing the column names for indexes
             to persist. The write operation will store the index info for the provided columns as sidecar tables. For
             example, if the input is [["Col1"], ["Col1", "Col2"]], the write operation will store the index info for
-            ["Col1"] and for ["Col1", "Col2"]. By default, data indexes to write are determined by those present on the
-            source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
+            ["Col1"] and for ["Col1", "Col2"]. By default, when the source is a Table, data indexes to write are
+            determined by those present on the source table; when the source is a PartitionedTable, no indexes are
+            written. This argument can be used to narrow the set of indexes to write, or to be explicit about the
             expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
             demand.
         row_group_info (Optional[RowGroupInfo]): requested RowGroup instructions, as returned by a call against RowGroupInfo
@@ -514,16 +512,16 @@ def write_partitioned(
 def batch_write(
     tables: list[Table],
     paths: list[str],
-    table_definition: Optional[TableDefinitionLike] = None,
-    col_instructions: Optional[list[ColumnInstruction]] = None,
-    compression_codec_name: Optional[str] = None,
-    max_dictionary_keys: Optional[int] = None,
-    max_dictionary_size: Optional[int] = None,
-    target_page_size: Optional[int] = None,
-    generate_metadata_files: Optional[bool] = None,
-    index_columns: Optional[Sequence[Sequence[str]]] = None,
-    row_group_info: Optional[RowGroupInfo] = None,
-    special_instructions: Optional[s3.S3Instructions] = None,
+    table_definition: TableDefinitionLike | None = None,
+    col_instructions: list[ColumnInstruction] | None = None,
+    compression_codec_name: str | None = None,
+    max_dictionary_keys: int | None = None,
+    max_dictionary_size: int | None = None,
+    target_page_size: int | None = None,
+    generate_metadata_files: bool | None = None,
+    index_columns: Sequence[Sequence[str]] | None = None,
+    row_group_info: RowGroupInfo | None = None,
+    special_instructions: s3.S3Instructions | None = None,
 ):
     """Writes tables to disk in parquet format to a supplied set of paths.
 
@@ -545,7 +543,7 @@ def batch_write(
             before switching to non-dictionary encoding; never evaluated for non-String columns , defaults to 2^20 (1,048,576)
         max_dictionary_size (Optional[int]): the maximum number of bytes the writer should add to the dictionary before
             switching to non-dictionary encoding, never evaluated for non-String columns, defaults to 2^20 (1,048,576)
-        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
+        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^16 bytes (64 KiB)
         generate_metadata_files (Optional[bool]): whether to generate parquet _metadata and _common_metadata files,
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some

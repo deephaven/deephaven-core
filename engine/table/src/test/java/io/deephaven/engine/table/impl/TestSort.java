@@ -16,9 +16,11 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -106,6 +108,38 @@ public class TestSort extends RefreshingTableTestCase {
 
         temp = (QueryTable) temp.clearSortingRestrictions();
         temp.assertSortable(temp.getDefinition().getColumnNamesArray());
+    }
+
+    @Test
+    public void testNotSortableMessage() {
+        final Table source = TableTools.emptyTable(1).update("A = 1", "B = 2");
+
+        final NotSortableException restricted = assertThrows(NotSortableException.class,
+                () -> source.restrictSortTo("A").sort("B"));
+        assertEquals("Sorting is not allowed on this table, but was attempted on: B; sortable columns: A",
+                restricted.getMessage());
+
+        final NotSortableException none = assertThrows(NotSortableException.class,
+                () -> source.restrictSortTo().sort("B"));
+        assertEquals("Sorting is not allowed on this table, but was attempted on: B", none.getMessage());
+    }
+
+    @Test
+    public void testRestrictSortToNoColumns() {
+        final QueryTable source = (QueryTable) TableTools.emptyTable(10)
+                .update("ID = i", "Parent = i == 0 ? NULL_INT : i - 1")
+                .restrictSortTo();
+        assertEquals(Collections.emptySet(), source.getSortableColumns());
+        assertException(source, (t) -> t.sort("ID"), "Should not be able to sort by ID",
+                NotSortableException.class);
+
+        final QueryTable viewed = (QueryTable) source.view("ID", "Parent");
+        assertEquals(Collections.emptySet(), viewed.getSortableColumns());
+        assertException(viewed, (t) -> t.sort("Parent"), "Should not be able to sort by Parent",
+                NotSortableException.class);
+
+        final TreeTableImpl tree = (TreeTableImpl) source.tree("ID", "Parent");
+        assertEquals(Collections.emptySet(), tree.getSortableColumns());
     }
 
     @Test

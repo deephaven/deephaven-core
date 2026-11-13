@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -103,7 +104,7 @@ public abstract class UpdateBy {
         @Nullable
         private final RowRedirection rowRedirection;
         private final WritableRowSet freeRows;
-        private long maxInnerRowKey;
+        private long innerRowKeyCapacity;
 
         private UpdateByRedirectionHelper(@Nullable final RowRedirection rowRedirection) {
             this.rowRedirection = rowRedirection;
@@ -111,7 +112,7 @@ public abstract class UpdateBy {
             this.freeRows = rowRedirection == null || !rowRedirection.isWritable()
                     ? null
                     : RowSetFactory.empty().toTracking();
-            this.maxInnerRowKey = 0;
+            this.innerRowKeyCapacity = 0;
         }
 
         boolean isRedirected() {
@@ -119,7 +120,7 @@ public abstract class UpdateBy {
         }
 
         private long requiredCapacity() {
-            return maxInnerRowKey;
+            return innerRowKeyCapacity;
         }
 
         /**
@@ -133,7 +134,7 @@ public abstract class UpdateBy {
 
             if (!rowRedirection.isWritable()) {
                 // The inner row key space is always a flattened view of the outer row key space in this case.
-                maxInnerRowKey = sourceRowSet.size() - 1;
+                innerRowKeyCapacity = sourceRowSet.size();
                 final WritableRowSet denseRowsToClear = sourceRowSet.prev().invert(upstream.removed());
                 if (denseRowsToClear.isNonempty() && upstream.added().isNonempty()) {
                     try (final RowSet invertedAdds = sourceRowSet.invert(upstream.added())) {
@@ -167,7 +168,7 @@ public abstract class UpdateBy {
             if (upstream.added().isNonempty()) {
                 final WritableRowSet.Iterator freeIt = freeRows.iterator();
                 upstream.added().forAllRowKeys(outerKey -> {
-                    final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : maxInnerRowKey++;
+                    final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : innerRowKeyCapacity++;
                     writableRowRedirection.put(outerKey, innerKey);
                 });
                 if (freeIt.hasNext()) {
@@ -434,6 +435,14 @@ public abstract class UpdateBy {
                                             }))));
 
             return waitForResult;
+        }
+
+        /**
+         * Wait for the processing that {@link #processUpdate()} began to complete, running on this thread any of the
+         * scheduler's jobs that no other thread has started.
+         */
+        void awaitResult() throws InterruptedException, ExecutionException {
+            jobScheduler.awaitCompletion(waitForResult);
         }
 
         /**
@@ -956,7 +965,8 @@ public abstract class UpdateBy {
             SafeCloseable.closeAll(changedRows, toClear);
             upstream.release();
 
-            // accumulate performance data
+            // accumulate performance data, in a terminal notification: this runs on the last job to finish, which adds
+            // its own only after this returns
             if (!initialStep) {
                 final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
                 if (accumulated != null) {

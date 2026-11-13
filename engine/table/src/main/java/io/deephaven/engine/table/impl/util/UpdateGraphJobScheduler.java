@@ -9,11 +9,9 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class UpdateGraphJobScheduler implements JobScheduler {
@@ -30,7 +28,7 @@ public class UpdateGraphJobScheduler implements JobScheduler {
     }
 
     @Override
-    public void submit(
+    public Submission submit(
             final ExecutionContext executionContext,
             final Runnable runnable,
             final LogOutputAppendable description,
@@ -45,22 +43,8 @@ public class UpdateGraphJobScheduler implements JobScheduler {
             public void run() {
                 final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
                 baseEntry.onBaseEntryStart();
-                try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
-                    runnable.run();
-                } catch (Exception e) {
-                    onError.accept(e);
-                } catch (Error e) {
-                    // Deliver the error before reporting it. Anything waiting on this job's completion has no other
-                    // way to learn that the job failed, and would otherwise wait forever for a completion that cannot
-                    // happen.
-                    try {
-                        onError.accept(JobScheduler.asDeliverableException(e));
-                    } catch (Throwable t) {
-                        e.addSuppressed(t);
-                    }
-                    final String logMessage = new LogOutputStringImpl().append(description).append(" Error").toString();
-                    ProcessEnvironment.getGlobalFatalErrorReporter().report(logMessage, e);
-                    throw e;
+                try {
+                    JobScheduler.runJob(executionContext, runnable, description, onError);
                 } finally {
                     baseEntry.onBaseEntryEnd();
                     accumulatedBaseEntry.accumulate(baseEntry);
@@ -73,6 +57,20 @@ public class UpdateGraphJobScheduler implements JobScheduler {
                         .append(description).append("}");
             }
         });
+        // nothing waits for a notification's performance, so there is no need to withdraw one
+        return Submission.NOT_WITHDRAWABLE;
+    }
+
+    /**
+     * Not supported: this scheduler's jobs are update graph notifications, which a thread must not block for. A
+     * listener that submits them completes its work from their callbacks instead.
+     *
+     * @throws UnsupportedOperationException always
+     */
+    @Override
+    public <T> T awaitCompletion(@NotNull final CompletableFuture<T> future) {
+        throw new UnsupportedOperationException(
+                "UpdateGraphJobScheduler jobs are update graph notifications, which a thread must not block for");
     }
 
     @Override

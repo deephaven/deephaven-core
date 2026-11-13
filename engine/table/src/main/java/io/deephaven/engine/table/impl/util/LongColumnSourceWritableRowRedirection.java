@@ -85,6 +85,14 @@ public final class LongColumnSourceWritableRowRedirection
     }
 
     @Override
+    public void fillFromChunkUnordered(
+            @NotNull final ChunkSink.FillFromContext context,
+            @NotNull final Chunk<? extends RowKeys> innerRowKeys,
+            @NotNull final LongChunk<RowKeys> outerRowKeys) {
+        columnSource.fillFromChunkUnordered(context, innerRowKeys, outerRowKeys);
+    }
+
+    @Override
     public void startTrackingPrevValues() {
         columnSource.startTrackingPrevValues();
     }

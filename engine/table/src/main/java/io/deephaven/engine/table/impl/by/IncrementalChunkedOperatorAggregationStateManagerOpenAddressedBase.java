@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -19,13 +20,15 @@ import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
+
+import java.lang.invoke.VarHandle;
 
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
@@ -46,6 +49,12 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     /** Should we rehash the entire table fully ({@code true}) or incrementally ({@code false})? */
     protected boolean fullRehash = true;
+
+    /** The step of the update cycle that began last, written and read only by the update. */
+    private long updateCycleStep = QueryConstants.NULL_LONG;
+
+    /** The step of the last update cycle that began changing the hash table; see {@link #lastStateChangeStep()}. */
+    private volatile long lastStateChangeStep = QueryConstants.NULL_LONG;
 
     /** How much of the alternate sources are necessary to rehash? */
     protected int rehashPointer = 0;
@@ -280,6 +289,13 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
+        if (alternatingColumnSources != null) {
+            // Every state is in the main table now, so neither side of an alternating source is read through the
+            // alternate; pointing both at the main table lets the drained alternate's keys be collected.
+            for (int ai = 0; ai < alternatingColumnSources.length; ++ai) {
+                alternatingColumnSources[ai].setSources(mainKeySources[ai], mainKeySources[ai]);
+            }
+        }
         this.alternateOutputPosition = null;
     }
 
@@ -357,6 +373,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         if (rowSequence.isEmpty()) {
             return;
         }
+        // a build may rehash, grow the table or insert states
+        beginStateChange();
         this.nextOutputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
         buildTable((BuildContext) bc, rowSequence, sources, this::build);
@@ -390,14 +408,36 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     }
 
     @Override
-    public void beginUpdateCycle() {
+    public void beginUpdateCycle(final long step) {
+        updateCycleStep = step;
         // Once we're past initial state processing, we want to rehash incrementally.
         fullRehash = false;
         // At the beginning of the update cycle, we always want to do some rehash work so that we can eventually ditch
         // the alternate table.
         if (rehashPointer > 0) {
+            beginStateChange();
             rehashInternalPartial(CHUNK_SIZE);
+            if (rehashPointer == 0) {
+                clearAlternate();
+            }
         }
+    }
+
+    /**
+     * Record that this update cycle changes the hash table, before its first change. The initial build, which precedes
+     * the first update cycle, records nothing.
+     */
+    private void beginStateChange() {
+        if (lastStateChangeStep != updateCycleStep) {
+            lastStateChangeStep = updateCycleStep;
+            // a volatile write does not keep the hash table writes that follow from becoming visible before it
+            VarHandle.storeStoreFence();
+        }
+    }
+
+    @Override
+    public long lastStateChangeStep() {
+        return lastStateChangeStep;
     }
 
     protected abstract void probe(RowSequence chunkOk, Chunk[] sourceKeyChunks);
@@ -434,4 +474,19 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     public void startTrackingPrevValues() {}
+
+    protected abstract void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            WritableLongChunk<RowKeys> outputPositions);
+
+    /**
+     * Search the table for a chunk of keys, without changing it. The search keeps no state in this manager, so that any
+     * number of readers may search at once.
+     */
+    @Override
+    public void findPositionsForKeys(
+            @NotNull final Chunk<? extends Values>[] keyChunks,
+            @NotNull final WritableLongChunk<RowKeys> positions) {
+        positions.setSize(keyChunks[0].size());
+        lookup(null, keyChunks, positions);
+    }
 }

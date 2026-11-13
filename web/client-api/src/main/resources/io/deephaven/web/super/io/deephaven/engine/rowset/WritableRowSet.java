@@ -6,6 +6,7 @@ package io.deephaven.engine.rowset;
 public interface WritableRowSet extends RowSet {
     void insert(long key);
     void insert(RowSet rowSet);
+    void subsume(WritableRowSet other);
 
     void shiftInPlace(long shiftAmount);
 

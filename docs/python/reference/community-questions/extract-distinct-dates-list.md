@@ -4,7 +4,7 @@ title: How do I extract a list of distinct dates from a table?
 
 _I have a table with a date column that contains many repeated dates. How can I get a list of the unique dates?_
 
-Use [`select_distinct`](../table-operations/select/select-distinct.md) to get the unique dates, then convert the result to a Python list, NumPy array, or Pandas DataFrame:
+Use [`select_distinct`](../table-operations/select/select-distinct.md) to get the unique dates, then extract them into a Python list, NumPy array, or Pandas DataFrame:
 
 ```python test-set=dates order=source,distinct_dates
 from deephaven import empty_table
@@ -25,15 +25,23 @@ source = empty_table(50).update(
 distinct_dates = source.select_distinct("Date")
 ```
 
+## Convert to a Python list
+
+Use [`iter_tuple`](../../how-to-guides/iterate-table-data.md) to iterate over the table and collect the dates directly:
+
+```python test-set=dates
+date_list = [row.Date for row in distinct_dates.iter_tuple()]
+print(f"Date list length: {len(date_list)}")
+```
+
 ## Convert to NumPy array
 
-Use [`deephaven.numpy.to_numpy`](../../how-to-guides/use-numpy.md) to convert to a NumPy array:
+Use [`deephaven.numpy.to_numpy`](../numpy/to-numpy.md) to convert to a NumPy array:
 
 ```python test-set=dates
 from deephaven import numpy as dhnp
-import numpy as np
 
-# Convert to NumPy array
+# Convert to NumPy array - result has one column per table column
 date_array = dhnp.to_numpy(distinct_dates)
 print(f"Date array shape: {date_array.shape}")
 print(f"First date: {date_array[0][0]}")
@@ -41,11 +49,10 @@ print(f"First date: {date_array[0][0]}")
 
 ## Convert to Pandas DataFrame
 
-Use [`deephaven.pandas.to_pandas`](../../how-to-guides/use-pandas.md) to convert to a Pandas DataFrame:
+Use [`deephaven.pandas.to_pandas`](../pandas/to-pandas.md) to convert to a Pandas DataFrame:
 
 ```python test-set=dates
 from deephaven import pandas as dhpd
-import pandas as pd
 
 # Convert to Pandas DataFrame
 date_df = dhpd.to_pandas(distinct_dates)

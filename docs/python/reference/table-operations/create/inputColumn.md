@@ -10,7 +10,13 @@ The `InputColumn` class represents a column of data that can be used as input wh
 ## Syntax
 
 ```python syntax
-InputColumn(name: str, data: Sequence[Any], dtype: Optional[type] = None) -> InputColumn
+InputColumn(
+    name: str,
+    data_type: DType,
+    component_type: Optional[DType] = None,
+    column_type: ColumnType = ColumnType.NORMAL,
+    input_data: Optional[Any] = None,
+) -> InputColumn
 ```
 
 ## Parameters
@@ -19,11 +25,17 @@ InputColumn(name: str, data: Sequence[Any], dtype: Optional[type] = None) -> Inp
 <Param name="name" type="str">
 The name of the new column.
 </Param>
-<Param name="data" type="Sequence[Any]">
-The column values. This can be any sequence of compatible data, such as a list, tuple, NumPy ndarray, pandas Series, etc.
+<Param name="data_type" type="DType">
+The column data type.
 </Param>
-<Param name="dtype" type="Optional[type]">
-(Optional) The data type for the column. If not specified, the type is inferred from the data.
+<Param name="component_type" type="Optional[DType]" optional>
+The column component type. The default is `None`.
+</Param>
+<Param name="column_type" type="ColumnType" optional>
+The column type: `ColumnType.NORMAL` or `ColumnType.PARTITIONING`. The default is `ColumnType.NORMAL`.
+</Param>
+<Param name="input_data" type="Optional[Any]" optional>
+The column values, such as a list, tuple, NumPy ndarray, or pandas Series. The default is `None`, which creates an empty column.
 </Param>
 </ParamTable>
 
@@ -50,7 +62,7 @@ from deephaven.column import InputColumn
 from deephaven.table_factory import new_table
 from deephaven.dtypes import double
 
-# Create an InputColumn with integer data
+# Create an InputColumn with floating-point data
 ic = InputColumn(name="floats", data_type=double, input_data=[1.1, 2.2, 3.3])
 
 # Use InputColumn to create a new table

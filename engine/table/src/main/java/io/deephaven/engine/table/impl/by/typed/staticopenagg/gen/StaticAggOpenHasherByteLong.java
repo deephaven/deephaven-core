@@ -14,10 +14,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ByteChunkHasher;
 import io.deephaven.chunk.util.hashing.LongChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
@@ -79,6 +81,36 @@ final class StaticAggOpenHasherByteLong extends StaticChunkedOperatorAggregation
                         throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
                     }
                 }
+            }
+        }
+    }
+
+    protected void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            WritableLongChunk<RowKeys> outputPositions) {
+        final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
+        final LongChunk<Values> keyChunk1 = sourceKeyChunks[1].asLongChunk();
+        final int chunkSize = keyChunk0.size();
+        for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
+            final byte k0 = keyChunk0.get(chunkPosition);
+            final long k1 = keyChunk1.get(chunkPosition);
+            final int hash = hash(k0, k1);
+            final int firstTableLocation = hashToTableLocation(hash);
+            boolean found = false;
+            int tableLocation = firstTableLocation;
+            int outputPosition;
+            while (!isStateEmpty(outputPosition = mainOutputPosition.getUnsafe(tableLocation))) {
+                if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
+                    outputPositions.set(chunkPosition, outputPosition);
+                    found = true;
+                    break;
+                }
+                tableLocation = nextTableLocation(tableLocation);
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
+            }
+            if (!found) {
+                outputPositions.set(chunkPosition, UNKNOWN_ROW);
             }
         }
     }

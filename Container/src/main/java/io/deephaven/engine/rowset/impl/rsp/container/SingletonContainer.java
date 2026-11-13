@@ -481,6 +481,9 @@ public final class SingletonContainer extends ImmutableContainer {
 
     @Override
     public Container select(final int startRank, final int endRank) {
+        if (endRank <= startRank) {
+            return Container.empty();
+        }
         if (startRank != 0 || endRank != 1) {
             throw new IllegalStateException("startRank=" + startRank + ", endRank=" + endRank);
         }
@@ -502,36 +505,43 @@ public final class SingletonContainer extends ImmutableContainer {
 
     @Override
     public void selectRanges(final RangeConsumer outValues, final RangeIterator inPositions) {
-        if (!inPositions.hasNext()) {
-            return;
-        }
-        inPositions.next();
-        final int start = inPositions.start();
-        final int end = inPositions.end();
-        if (start != 0 || end != 1) {
-            throw new IllegalArgumentException("start=" + start + ", end=" + end);
-        }
-        final int intValue = intValue();
-        outValues.accept(intValue, intValue + 1);
-        if (inPositions.hasNext()) {
-            throw new IllegalArgumentException("hasNext=true");
+        boolean accepted = false;
+        while (inPositions.hasNext()) {
+            inPositions.next();
+            final int start = inPositions.start();
+            final int end = inPositions.end();
+            if (end <= start) {
+                continue;
+            }
+            if (accepted || start != 0 || end != 1) {
+                throw new IllegalArgumentException("start=" + start + ", end=" + end);
+            }
+            final int intValue = intValue();
+            outValues.accept(intValue, intValue + 1);
+            accepted = true;
         }
     }
 
     @Override
     public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
-        if (maxPos < 0 || !inValues.hasNext()) {
+        if (maxPos < 0) {
             return false;
         }
-        inValues.next();
-        final int start = inValues.start();
-        final int end = inValues.end();
         final int intValue = intValue();
-        if (start == intValue && end == intValue + 1) {
-            outPositions.accept(0, 1);
-            return maxPos == 0;
+        while (inValues.hasNext()) {
+            inValues.next();
+            final int start = inValues.start();
+            final int end = inValues.end();
+            if (end <= start) {
+                continue;
+            }
+            if (start == intValue && end == intValue + 1) {
+                outPositions.accept(0, 1);
+                return maxPos == 0;
+            }
+            throw new IllegalArgumentException("start=" + start + ", end=" + end);
         }
-        throw new IllegalArgumentException("start=" + start + ", end=" + end);
+        return false;
     }
 
     @Override

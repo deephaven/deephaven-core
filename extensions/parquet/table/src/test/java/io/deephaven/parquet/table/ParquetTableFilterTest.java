@@ -11,6 +11,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
@@ -22,9 +23,12 @@ import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.filters.ParallelizedRowSetCapturingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -36,6 +40,7 @@ import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -57,6 +62,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import static io.deephaven.engine.table.impl.select.WhereFilterFactory.getExpression;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -621,6 +628,103 @@ public final class ParquetTableFilterTest {
 
         complexFilter = Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+    }
+
+    @Test
+    public void partitionedColumnSwapTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_partitionedColumnSwapTest").toString();
+        final Table source = TableTools.emptyTable(10_000).update(
+                "Part = `p` + (ii % 5)",
+                "Data = `d` + (ii % 7)",
+                "Value = ii");
+        ParquetTools.writeKeyValuePartitionedTable(source.partitionBy("Part"), destPath, EMPTY);
+
+        // swap the partitioning column with a data column of the same type; rename the materialized table for the
+        // expected result, since select() on the renamed disk table would coalesce the rename under test
+        final Table diskTable = ParquetTools.readTable(destPath).renameColumns("Part = Data", "Data = Part");
+        final Table memTable = ParquetTools.readTable(destPath).select().renameColumns("Part = Data", "Data = Part");
+
+        assertTableEquals(memTable, diskTable);
+
+        filterAndVerifyResults(diskTable, memTable, "Part = `d3`");
+        filterAndVerifyResults(diskTable, memTable, "Data = `p2`");
+        filterAndVerifyResults(diskTable, memTable, "Data = `p2`", "Part = `d3`");
+        filterAndVerifyResults(diskTable, memTable, "Data.startsWith(`p`) && Part == `d1`");
+        filterAndVerifyResults(diskTable, memTable, Filter.or(Filter.from("Data = `p2`", "Part = `d3`")));
+    }
+
+    @Test
+    public void partitionedSelectDistinctKeepsQueryScopeVariableTest() {
+        final String destPath =
+                Path.of(rootFile.getPath(), "ParquetTest_partitionedSelectDistinctKeepsQueryScopeVariableTest")
+                        .toString();
+        final Table source = TableTools.emptyTable(10_000).update(
+                "Part = `p` + (ii % 3)",
+                "Other = `o` + (ii % 2)",
+                "Value = ii");
+        ParquetTools.writeKeyValuePartitionedTable(source.partitionBy("Part", "Other"), destPath, EMPTY);
+
+        // after each operation, Part names the query-scope variable; before the operation, Part names the partitioning
+        // column that the operation hides
+        ExecutionContext.getContext().getQueryScope().putParam("Part", "x");
+        final List<Function<Table, Table>> hidingPart = List.of(
+                t -> t.renameColumns("Renamed = Part"),
+                t -> t.dropColumns("Part"));
+        for (final Function<Table, Table> hidePart : hidingPart) {
+            // select() materializes the table before the operation, so the expected result coalesces no operation
+            final Table memTable = hidePart.apply(ParquetTools.readTable(destPath).select());
+            for (final String column : new String[] {"Z = Part", "Z = Other + Part"}) {
+                // a new disk table for each column, since a coalesced table answers every later selectDistinct
+                final Table diskTable = hidePart.apply(ParquetTools.readTable(destPath));
+                assertTableEquals(memTable.selectDistinct(column), diskTable.selectDistinct(column));
+            }
+        }
+    }
+
+    @Test
+    public void partitionedFilterWithCrossRowDependenciesTest() {
+        final String destPath =
+                Path.of(rootFile.getPath(), "ParquetTest_partitionedFilterWithCrossRowDependenciesTest").toString();
+        // the partitions hold consecutive rows: p0 holds Value 0 to 3, p1 holds 4 to 7, and p2 holds 8 to 11
+        final Table source = TableTools.emptyTable(12).update("Part = `p` + (int) (ii / 4)", "Value = ii");
+        ParquetTools.writeKeyValuePartitionedTable(source.partitionBy("Part"), destPath, EMPTY);
+
+        // A filter that depends on other rows sees every row that the filter's where receives, as on a memory table, so
+        // a partition filter in the same where, or in a later where, must not prune ahead of the filter: Value 4, the
+        // first row of p1, has the previous row Value 3, from p0. A partition filter in an earlier where still prunes.
+        final List<Function<Table, Table>> operations = List.of(
+                t -> t.where("Value_[i - 1] == 3").where("Part == `p1`"),
+                t -> t.where("Part == `p1`", "Value_[i - 1] == 3"),
+                t -> t.where("Value_[i - 1] == 3", "Part == `p1`"),
+                t -> t.where("i == 4").where("Part == `p1`"),
+                t -> t.where("Value_[0] == Value - 4").where("Part == `p1`"),
+                t -> t.renameColumns("V = Value").where("V_[i - 1] == 3").where("Part == `p1`"),
+                t -> t.where(new IncrementalReleaseFilter(6, 1)).where("Part == `p1`"),
+                t -> t.where(new RollingReleaseFilter(6, 1)).where("Part == `p1`"),
+                t -> t.where("Part == `p1`").where("Value_[i - 1] == 4"));
+        final Table memTable = ParquetTools.readTable(destPath).select();
+        for (final Function<Table, Table> operation : operations) {
+            assertTableEquals(operation.apply(memTable), operation.apply(ParquetTools.readTable(destPath)));
+        }
+    }
+
+    @Test
+    public void partitionedSelectDistinctWithCrossRowDependenciesTest() {
+        final String destPath = Path.of(rootFile.getPath(),
+                "ParquetTest_partitionedSelectDistinctWithCrossRowDependenciesTest").toString();
+        final Table source = TableTools.emptyTable(12).update("Part = `p` + (int) (ii / 4)", "Value = ii");
+        ParquetTools.writeKeyValuePartitionedTable(source.partitionBy("Part"), destPath, EMPTY);
+
+        // A partitioned table answers a selectDistinct that reads only partitioning columns from the location table,
+        // which has one row per location, so a column with cross-row dependencies must read the rows of the table
+        // instead: i is a row position, not a location position.
+        final Table memTable = ParquetTools.readTable(destPath).select();
+        for (final String column : new String[] {"Z = i", "Z = ii % 5", "Z = Part + `-` + i"}) {
+            assertTableEquals(memTable.selectDistinct(column), ParquetTools.readTable(destPath).selectDistinct(column));
+            // a deferred view asks the partitioned table to select distinct values
+            assertTableEquals(memTable.renameColumns("V = Value").selectDistinct(column),
+                    ParquetTools.readTable(destPath).renameColumns("V = Value").selectDistinct(column));
+        }
     }
 
     @Test
@@ -1415,6 +1519,41 @@ public final class ParquetTableFilterTest {
         assertPrunes("lval < 10000", diskTable, tableSize);
         assertPrunes("dval < 10000.0", diskTable, tableSize);
         assertPrunes("dval > 90000.0", diskTable, tableSize);
+    }
+
+    /**
+     * An {@link Instant} column is served by a region that wraps the native long region, and that wrapper must still
+     * expose its column location; otherwise a single-column filter on it never reaches the location's statistics and
+     * scans every row group.
+     */
+    @Test
+    public void instantFiltersPrune() {
+        final String destPath = Path.of(rootFile.getPath(), "instantPruning").toString();
+        final int tableSize = 100_000;
+        final long baseNanos = 1_700_000_000_000_000_000L;
+        final Table source = TableTools.emptyTable(tableSize).update(
+                "tval = epochNanosToInstant(" + baseNanos + "L + ii * 1_000_000L)");
+        writeTables(destPath, splitTable(source, 10, false), EMPTY);
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        final Function<Integer, String> instantAtRow =
+                row -> "'" + DateTimeUtils.epochNanosToInstant(baseNanos + row * 1_000_000L) + "'";
+        final String[] exprs = {
+                "tval < " + instantAtRow.apply(10_000),
+                "tval >= " + instantAtRow.apply(90_000),
+                "tval == " + instantAtRow.apply(55_555),
+                "tval in " + instantAtRow.apply(5) + ", " + instantAtRow.apply(99_990)};
+
+        // Correctness first: every one of these must agree with the in-memory oracle.
+        for (final String expr : exprs) {
+            filterAndVerifyResults(diskTable, memTable, expr);
+        }
+
+        // Then pruning: each filter can only match rows in one or two of the ten files.
+        for (final String expr : exprs) {
+            assertPrunes(expr, diskTable, tableSize);
+        }
     }
 
     private static void assertPrunes(final String expr, final Table diskTable, final int tableSize) {
@@ -2849,19 +2988,74 @@ public final class ParquetTableFilterTest {
         }
 
         @Override
+        public WhereFilter maybeUnwrapFilter() {
+            // it throws rather than accept the inner filter's rows, so a pushdown must not answer for it
+            return this;
+        }
+
+        @Override
         public WhereFilter copy() {
             return this;
         }
     }
 
-    private static PushdownResult pushdownDataIndexFailingWith(final RuntimeException failure) {
+    private PushdownResult pushdownDataIndexFailingWith(final RuntimeException failure) {
         final Table table = TableTools.emptyTable(1000).update("A = ii % 10");
+        // The index is the engine's, so the location is only the receiver: any location will do.
+        final File file = new File(rootFile, "pushdownDataIndexFailingWith.parquet");
+        writeTable(table, file.getPath());
+        final ParquetTableLocation location = new ParquetTableLocation(StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(file.toURI(), 0, null, ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY);
         final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
         final WhereFilter filter = new FailingFilter(failure);
         filter.init(table.getDefinition());
         try (final RowSet selection = table.getRowSet().copy();
                 final PushdownResult input = PushdownResult.allMaybeMatch(selection)) {
-            return ParquetTableLocation.pushdownDataIndex(selection, filter, Map.of(), dataIndex, input);
+            return location.pushdownDataIndex(selection, filter, false, Map.of(), dataIndex, input);
+        }
+    }
+
+    /**
+     * A filter that reads an indexed column under two names, as when the filter reads the column and an alias of the
+     * column, reaches the location's index with both names mapped to the one index column.
+     */
+    @Test
+    public void testLocationDataIndexFilterOnAliasedColumn() {
+        final Table table = TableTools.emptyTable(1000).update("A = ii % 10");
+        // The index is the engine's, so the location is only the receiver: any location will do.
+        final File file = new File(rootFile, "locationDataIndexFilterOnAliasedColumn.parquet");
+        writeTable(table, file.getPath());
+        final ParquetTableLocation location = new ParquetTableLocation(StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(file.toURI(), 0, null, ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY);
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+
+        // The indexed column's own name and an alias of the column.
+        checkLocationDataIndexFilter(location, dataIndex, table.updateView("A2 = A"),
+                "A == 5 && A2 == A", Map.of("A2", "A"));
+        // Two aliases, neither of which is the indexed column's name.
+        checkLocationDataIndexFilter(location, dataIndex, table.updateView("Col1 = A", "dup0_Col1 = A"),
+                "Col1 == 5 && dup0_Col1 == Col1", Map.of("Col1", "A", "dup0_Col1", "A"));
+    }
+
+    private static void checkLocationDataIndexFilter(
+            final ParquetTableLocation location,
+            final DataIndex dataIndex,
+            final Table aliased,
+            final String expression,
+            final Map<String, String> renameMap) {
+        final WhereFilter filter = getExpression(expression);
+        filter.init(aliased.getDefinition());
+        try (final RowSet selection = aliased.getRowSet().copy();
+                final PushdownResult input = PushdownResult.allMaybeMatch(selection);
+                final PushdownResult result =
+                        location.pushdownDataIndex(selection, filter, false, renameMap, dataIndex, input);
+                // Apply the filter itself, since aliased.where could push down to the same index.
+                final RowSet expected = filter.filter(selection, selection, aliased, false)) {
+            assertEquals(0, result.maybeMatch().size());
+            assertFalse(expected.isEmpty());
+            assertEquals(expected, result.match());
         }
     }
 
@@ -2883,7 +3077,7 @@ public final class ParquetTableFilterTest {
                 new TableDataException("reading the index", new ClosedByInterruptException()));
     }
 
-    private static void assertPushdownDataIndexPropagates(final RuntimeException failure) {
+    private void assertPushdownDataIndexPropagates(final RuntimeException failure) {
         final Exception thrown = Assert.assertThrows(Exception.class,
                 () -> pushdownDataIndexFailingWith(failure).close());
         Throwable cause = thrown;
@@ -2903,6 +3097,46 @@ public final class ParquetTableFilterTest {
             assertEquals(0, result.match().size());
             assertEquals(1000, result.maybeMatch().size());
         }
+    }
+
+    /**
+     * A location applies whatever data index the caller passes, and a refreshing index updates the index table's row
+     * sets in place. During an update cycle, after the index has updated, a pushdown that uses previous values still
+     * finds the previous matches.
+     */
+    @Test
+    public void testLocationDataIndexUsesPreviousValues() {
+        final QueryTable table = TstUtils.testRefreshingTable(RowSetFactory.flat(100).toTracking(),
+                intCol("A", IntStream.range(0, 100).map(ii -> ii % 2 == 0 ? 1 : 2).toArray()));
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+        final Table indexTable = dataIndex.table();
+        // The index is the engine's, so the location is only the receiver: any location will do.
+        final File file = new File(rootFile, "locationDataIndexUsesPreviousValues.parquet");
+        writeTable(TableTools.emptyTable(1).update("A = 1"), file.getPath());
+        final ParquetTableLocation location = new ParquetTableLocation(StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(file.toURI(), 0, null, ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY);
+        final WhereFilter filter = new MatchFilter(MatchOptions.REGULAR, "A", 1);
+        filter.init(table.getDefinition());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // Row 0 leaves A = 1, and row 1 joins A = 1.
+            TstUtils.addToTable(table, TstUtils.i(0, 1), intCol("A", 2, 1));
+            table.notifyListeners(TstUtils.i(), TstUtils.i(), TstUtils.i(0, 1));
+            updateGraph.flushAllNormalNotificationsForUnitTests();
+            assertTrue(indexTable.satisfied(updateGraph.clock().currentStep()));
+
+            try (final RowSet previousMatches = RowSetFactory.fromKeys(
+                    LongStream.range(0, 100).filter(k -> k % 2 == 0).toArray());
+                    final RowSet selection = table.getRowSet().copyPrev();
+                    final PushdownResult input = PushdownResult.allMaybeMatch(selection);
+                    final PushdownResult result =
+                            location.pushdownDataIndex(selection, filter, true, Map.of(), dataIndex, input)) {
+                assertEquals(previousMatches, result.match());
+                assertEquals(0, result.maybeMatch().size());
+            }
+        });
     }
 
     /**

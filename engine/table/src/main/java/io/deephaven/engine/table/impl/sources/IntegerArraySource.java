@@ -19,6 +19,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.SoftRecyclerWindow;
 import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.mutable.MutableInt;
@@ -41,8 +42,8 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
         implements MutableColumnSourceGetDefaults.ForInt /* MIXIN_IMPLS */ {
-    private static final SoftRecycler<int[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.INT_RECYCLER_CAPACITY,
-            () -> new int[BLOCK_SIZE], null);
+    private static final SoftRecycler<int[]> recycler = SoftRecyclerWindow.register(new SoftRecycler<>(ArrayColumnSourceConfiguration.INT_RECYCLER_CAPACITY,
+            ArrayColumnSourceConfiguration.INT_RECYCLER_MAXIMUM_CAPACITY, () -> new int[BLOCK_SIZE], null));
 
     private int[][] blocks;
     private transient int[][] prevBlocks;
@@ -581,10 +582,10 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
                 chunk.set(ii, NULL_INT);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_INT);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final int[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -611,11 +612,11 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
                 chunk.set(ii, NULL_INT);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_INT);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final int[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);

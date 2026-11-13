@@ -64,7 +64,7 @@ An in-memory table.
 
 ## Examples
 
-In the following example, `consumeToTable` is used to read the Kafka topic `test.topic` into a Deephaven table. `KafkaTools.Consume.FROM_PROPERTIES` allows the key and value column types to be inferred by the properties passed in.
+In the following example, `consumeToTable` is used to read the Kafka topic `test.topic` into a Deephaven table. [`KafkaTools.FROM_PROPERTIES`](/core/javadoc/io/deephaven/kafka/KafkaTools.html#FROM_PROPERTIES) takes the key and value column types from the `deephaven.key.column.type` and `deephaven.value.column.type` properties.
 
 - The host and port for the Kafka server to use to bootstrap are specified by `kafkaProps`.
   - The value `redpanda:9092` corresponds to the current setup for development testing with Docker images (which uses an instance of [redpanda](https://github.com/redpanda-data/redpanda)).
@@ -83,8 +83,8 @@ result = KafkaTools.consumeToTable(
     'testTopic',
     KafkaTools.ALL_PARTITIONS,
     KafkaTools.ALL_PARTITIONS_DONT_SEEK,
-    KafkaTools.Consume.FROM_PROPERTIES,
-    KafkaTools.Consume.FROM_PROPERTIES,
+    KafkaTools.FROM_PROPERTIES,
+    KafkaTools.FROM_PROPERTIES,
     KafkaTools.TableType.append()
 )
 ```
@@ -115,7 +115,7 @@ result = KafkaTools.consumeToTable(
 
 ![The above `result` table](../../../assets/reference/data-import-export/kafka2.png)
 
-The following example sets the `deephaven.partition.column.name` as `null`, which ignores it.
+The following example sets the `deephaven.partition.column.name` to an empty string (`''`), which ignores it.
 
 - This results in the table not having a column for the partition field.
 - The key specification is also set to `IGNORE`, so `result` does not contain the Kafka key column.
@@ -125,7 +125,7 @@ import io.deephaven.kafka.KafkaTools
 
 kafkaProps = new Properties()
 kafkaProps.put('bootstrap.servers', 'redpanda:9092')
-kafkaProps.put('deephaven.partition.column.name', null)
+kafkaProps.put('deephaven.partition.column.name', '')
 
 result = KafkaTools.consumeToTable(
     kafkaProps,

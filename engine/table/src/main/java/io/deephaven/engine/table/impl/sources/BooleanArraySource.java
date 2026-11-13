@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.util.SoftRecyclerWindow;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -29,8 +30,10 @@ import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
  */
 public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
         implements MutableColumnSourceGetDefaults.ForBoolean {
-    private static final SoftRecycler<byte[]> recycler = new SoftRecycler<>(1024, () -> new byte[BLOCK_SIZE],
-            null);
+    private static final SoftRecycler<byte[]> recycler =
+            SoftRecyclerWindow.register(new SoftRecycler<>(ArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_CAPACITY,
+                    ArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_MAXIMUM_CAPACITY, () -> new byte[BLOCK_SIZE],
+                    null));
     private byte[][] blocks;
     transient private byte[][] prevBlocks;
 
@@ -331,10 +334,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                 dest.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 dest.set(ii, null);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final byte[] currentBlock = blocks[blockNo];
                 dest.set(ii, BooleanUtils.byteAsBoolean(currentBlock[(int) (fromIndex & INDEX_MASK)]));
             }
@@ -353,11 +356,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                 dest.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 dest.set(ii, null);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final byte[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             dest.set(ii, BooleanUtils.byteAsBoolean(currentBlock[(int) (fromIndex & INDEX_MASK)]));
         }
@@ -676,10 +679,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
-                final int blockNo = getBlockNo(fromIndex);
-                if (blockNo >= blocks.length) {
+                if (fromIndex > maxIndex) {
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                 } else {
+                    final int blockNo = getBlockNo(fromIndex);
                     final byte[] currentBlock = blocks[blockNo];
                     dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
                 }
@@ -697,11 +700,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
-                final int blockNo = getBlockNo(fromIndex);
-                if (blockNo >= blocks.length) {
+                if (fromIndex > maxIndex) {
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
+                final int blockNo = getBlockNo(fromIndex);
                 final byte[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
                 dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
             }

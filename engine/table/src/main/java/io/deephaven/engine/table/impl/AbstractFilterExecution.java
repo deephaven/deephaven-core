@@ -23,16 +23,20 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -152,6 +156,8 @@ abstract class AbstractFilterExecution {
 
         // noinspection resource
         final WritableRowSet filterResult = RowSetFactory.empty();
+        // Whether filterResult has been handed to onComplete, which owns it from then on, even if it throws.
+        final MutableBoolean filterResultDelivered = new MutableBoolean();
 
         jobScheduler().iterateParallel(
                 ExecutionContext.getContext(),
@@ -172,10 +178,16 @@ abstract class AbstractFilterExecution {
                     }
                     resume.run();
                 },
-                () -> onComplete.accept(filterResult),
+                () -> {
+                    filterResultDelivered.setTrue();
+                    onComplete.accept(filterResult);
+                },
                 inputCopy::close,
                 exception -> {
                     try (inputCopy) {
+                        if (filterResultDelivered.isFalse()) {
+                            filterResult.close();
+                        }
                         onError.accept(exception);
                     }
                 });
@@ -194,7 +206,7 @@ abstract class AbstractFilterExecution {
     /**
      * Simple class to hold a stateless filter and some metadata about it.
      */
-    private class StatelessFilter implements Comparable<StatelessFilter>, SafeCloseable {
+    private class StatelessFilter implements SafeCloseable {
         /**
          * The index of this filter in the order supplied by the user.
          */
@@ -272,26 +284,6 @@ abstract class AbstractFilterExecution {
         }
 
         @Override
-        public int compareTo(@NotNull StatelessFilter o) {
-            // Does other filter respect a barrier that exists on this filter?
-            if (declaredBarriers.stream().anyMatch(o.respectedBarriers::contains)) {
-                return -1;
-            }
-            // Does this filter respect a barrier that exists on the other filter?
-            if (o.declaredBarriers.stream().anyMatch(respectedBarriers::contains)) {
-                return 1;
-            }
-
-            // Primarily sort by push-down cost.
-            if (pushdownFilterCost != o.pushdownFilterCost) {
-                return Long.compare(pushdownFilterCost, o.pushdownFilterCost);
-            }
-
-            // Break ties via original index to preserve the original order of execution for similar cost filters.
-            return Integer.compare(filterIdx, o.filterIdx);
-        }
-
-        @Override
         public void close() {
             if (context != null) {
                 context.close();
@@ -303,11 +295,12 @@ abstract class AbstractFilterExecution {
     }
 
     /**
-     * Updates and sorts the filters according to the estimated pushdown cost, starting at the given index.
-     * {@code onComplete} is invoked once this is done. If there is an exception during the estimation, sorting, or
-     * invocation of {@code onComplete}, {@code onError} will be called with that error.
+     * Updates the estimated pushdown cost of the filters starting at the given index, and moves the filter to run next
+     * into that index (see {@link #selectNextFilter}). {@code onComplete} is invoked once this is done. If there is an
+     * exception during the estimation, selection, or invocation of {@code onComplete}, {@code onError} will be called
+     * with that error.
      */
-    private void scheduleAndSortCostEstimates(
+    private void scheduleCostEstimatesAndSelectNext(
             final StatelessFilter[] filters,
             final int startIndex,
             final RowSet selection,
@@ -323,13 +316,93 @@ abstract class AbstractFilterExecution {
                     filters[index].scheduleUpdatePushdownFilterCost(selection, resume, nestedErrorConsumer);
                 },
                 () -> {
-                    // Sort the filters by non-descending cost, starting at the given index.
-                    Arrays.sort(filters, startIndex, filters.length);
+                    selectNextFilter(filters, startIndex);
                     onComplete.run();
                 },
                 () -> {
                 },
                 onError);
+    }
+
+    /**
+     * Moves the filter to run next into {@code filters[startIndex]}: the cheapest of {@code filters[startIndex..]}, per
+     * {@link #COST_ORDER}, that is {@link #isFreeToRun free to run}. The rest of the range is left in no particular
+     * order; costs change as the selection shrinks, so they are estimated again, and the next filter selected again,
+     * after each filter runs.
+     *
+     * <p>
+     * Barriers are a partial order, so they cannot be folded into a comparator alongside cost; such a comparator is not
+     * transitive, and a sort may then run a respecter before its declarer without ever comparing the two, or throw. The
+     * order supplied by the user satisfies every barrier (each respected barrier is declared by the filter itself or an
+     * earlier one), so some filter is always free to run.
+     * </p>
+     */
+    private static void selectNextFilter(final StatelessFilter[] filters, final int startIndex) {
+        if (startIndex >= filters.length) {
+            return;
+        }
+        final Set<Object> pendingBarriers = declaredBarriers(filters, startIndex);
+        int next = -1;
+        for (int ii = startIndex; ii < filters.length; ++ii) {
+            if (isFreeToRun(filters[ii], pendingBarriers)
+                    && (next < 0 || COST_ORDER.compare(filters[ii], filters[next]) < 0)) {
+                next = ii;
+            }
+        }
+        if (next < 0) {
+            throw new IllegalStateException("No filter is free to run among " + Arrays.stream(filters, startIndex,
+                    filters.length).map(sf -> sf.filter).collect(Collectors.toList()));
+        }
+        final StatelessFilter selected = filters[next];
+        filters[next] = filters[startIndex];
+        filters[startIndex] = selected;
+    }
+
+    /**
+     * The barriers declared by {@code filters[startIndex..]}.
+     */
+    private static Set<Object> declaredBarriers(final StatelessFilter[] filters, final int startIndex) {
+        final Set<Object> barriers = new HashSet<>();
+        for (int ii = startIndex; ii < filters.length; ++ii) {
+            barriers.addAll(filters[ii].declaredBarriers);
+        }
+        return barriers;
+    }
+
+    /**
+     * Whether {@code filter} may run now: no other pending filter declares a barrier it respects. Barriers are unique,
+     * so a pending barrier {@code filter} declares itself is not another filter's.
+     *
+     * @param filter the filter to check
+     * @param pendingBarriers the barriers declared by the filters that have not run yet, {@code filter} included
+     */
+    private static boolean isFreeToRun(final StatelessFilter filter, final Set<Object> pendingBarriers) {
+        return filter.respectedBarriers.stream()
+                .noneMatch(barrier -> pendingBarriers.contains(barrier) && !filter.declaredBarriers.contains(barrier));
+    }
+
+    /**
+     * Orders stateless filters by pushdown cost, breaking ties by the order supplied by the user. This is a total order
+     * that ignores barriers; {@link #selectNextFilter} applies it only among filters that barriers allow to run.
+     */
+    private static final Comparator<StatelessFilter> COST_ORDER = Comparator
+            .comparingLong((StatelessFilter sf) -> sf.pushdownFilterCost)
+            .thenComparingInt(sf -> sf.filterIdx);
+
+    /**
+     * The cost ceiling for the pushdown of {@code filters[filterIdx]}: the cost of the cheapest later filter that could
+     * run in its place, that is, one that is free to run while {@code filters[filterIdx]} is still pending. A filter
+     * that must wait for it does not lower the ceiling.
+     */
+    private static long costCeiling(final StatelessFilter[] filters, final int filterIdx) {
+        final Set<Object> pendingBarriers = declaredBarriers(filters, filterIdx);
+        long ceiling = Long.MAX_VALUE;
+        for (int ii = filterIdx + 1; ii < filters.length; ++ii) {
+            if (filters[ii].pushdownFilterCost < ceiling && isFreeToRun(filters[ii], pendingBarriers)) {
+                ceiling = filters[ii].pushdownFilterCost;
+            }
+        }
+        return ceiling;
     }
 
     /**
@@ -394,19 +467,17 @@ abstract class AbstractFilterExecution {
 
         final StatelessFilter sf = Objects.requireNonNull(statelessFilters[filterIdx]);
 
-        // Our ceiling cost is the cost of the next filter in the list, or Long.MAX_VALUE if this is the last filter.
-        // This will limit the pushdown filters excecuted during this cycle to this maximum cost.
-        final long costCeiling = filterIdx + 1 < statelessFilters.length
-                ? statelessFilters[filterIdx + 1].pushdownFilterCost
-                : Long.MAX_VALUE;
+        // Our ceiling cost is the cost of the cheapest filter that could run instead of this one, or Long.MAX_VALUE if
+        // there is none. This will limit the pushdown filters executed during this cycle to this maximum cost.
+        final long costCeiling = costCeiling(statelessFilters, filterIdx);
 
         // Result consumer for normal filtering.
         final Consumer<WritableRowSet> onFilterComplete = (result) -> {
             // Clean up the row sets created by the filter.
             // Store the output as the next filter input.
             replace(localInput, result);
-            // This filter is complete, sort the remaining filters and conclude.
-            scheduleAndSortCostEstimates(statelessFilters, filterIdx + 1, localInput.get(), filterComplete,
+            // This filter is complete, select the next filter and conclude.
+            scheduleCostEstimatesAndSelectNext(statelessFilters, filterIdx + 1, localInput.get(), filterComplete,
                     filterNec);
         };
 
@@ -416,28 +487,34 @@ abstract class AbstractFilterExecution {
             sf.context.updateExecutedFilterCost(costCeiling);
 
             if (pushdownResult.maybeMatch().isEmpty()) {
-                localInput.setValue(pushdownResult.match().copy());
-                scheduleAndSortCostEstimates(statelessFilters, filterIdx + 1, localInput.get(),
+                try (pushdownResult) {
+                    replace(localInput, pushdownResult.match().copy());
+                }
+                scheduleCostEstimatesAndSelectNext(statelessFilters, filterIdx + 1, localInput.get(),
                         filterComplete, filterNec);
                 return;
             }
 
-            // We still have some maybe rows, sort the filters again, including the current index.
-            scheduleAndSortCostEstimates(statelessFilters, filterIdx, localInput.get(), () -> {
+            // Store the result for later use by the companion regular filter. The stateless filter owns it from here,
+            // and closes it when the collection completes or fails.
+            if (sf.pushdownResult != null) {
+                sf.pushdownResult.close();
+            }
+            sf.pushdownResult = pushdownResult;
+
+            // We still have some maybe rows, select the next filter again, including the current index.
+            scheduleCostEstimatesAndSelectNext(statelessFilters, filterIdx, localInput.get(), () -> {
                 // If there is a new filter at the current index, need to evaluate it.
                 if (!sf.equals(statelessFilters[filterIdx])) {
                     // Use the union of the match and maybe rows as the input for the next filter.
-                    localInput.setValue(pushdownResult.match().union(pushdownResult.maybeMatch()));
-
-                    // Store the result for later use by the companion regular filter.
-                    sf.pushdownResult = pushdownResult;
+                    replace(localInput, pushdownResult.match().union(pushdownResult.maybeMatch()));
 
                     // Do the next round of filtering with the new filter that bubbled up to the current index.
                     executeStatelessFilter(statelessFilters, filterIdx, localInput, filterComplete, filterNec);
                 } else {
                     // Leverage push-down results to reduce the chunk filter input.
                     final Consumer<WritableRowSet> localConsumer = (rows) -> {
-                        try (final RowSet ignored = rows; final PushdownResult ignored2 = pushdownResult) {
+                        try (final RowSet ignored = rows) {
                             onFilterComplete.accept(rows.union(pushdownResult.match()));
                         }
                     };
@@ -458,7 +535,9 @@ abstract class AbstractFilterExecution {
         if (sf.pushdownResult != null) {
             // Leverage push-down results to reduce the chunk filter input before the final filter.
             final Consumer<WritableRowSet> localConsumer = (rows) -> {
-                onFilterComplete.accept(rows.union(sf.pushdownResult.match()));
+                try (final RowSet ignored = rows) {
+                    onFilterComplete.accept(rows.union(sf.pushdownResult.match()));
+                }
             };
 
             sf.pushdownResult.match().retain(input);
@@ -568,9 +647,9 @@ abstract class AbstractFilterExecution {
             throw err;
         }
 
-        // Sort the filters by cost, with the lowest cost first.
-        scheduleAndSortCostEstimates(statelessFilters, 0, localInput.get(),
-                // Update and sorting is completed
+        // Estimate the filters' costs, and select the first to run.
+        scheduleCostEstimatesAndSelectNext(statelessFilters, 0, localInput.get(),
+                // Cost estimation and selection are complete
                 () -> {
                     // Iterate serially through the stateless filters in this set. Each filter will successively
                     // restrict the input to the next filter, until we reach the end of the filter chain or no rows
@@ -599,7 +678,7 @@ abstract class AbstractFilterExecution {
                             // Jobs, or collectionResume, has had an error
                             e -> informAndCloseAll(collectionNec, e, statelessFilters));
                 },
-                // Update and sort, or _orchestration_ of inner scheduling, failed
+                // Cost estimation and selection, or _orchestration_ of inner scheduling, failed
                 e -> informAndCloseAll(collectionNec, e, statelessFilters));
     }
 

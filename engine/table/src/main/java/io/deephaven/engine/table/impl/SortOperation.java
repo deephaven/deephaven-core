@@ -340,17 +340,6 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
             String sortMappingColumnName = populateRedirectedColumns(resultMap, sortMapping);
 
-            // noinspection unchecked
-            final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy =
-                    Arrays.stream(sortColumnNames).map(resultMap::get).toArray(ColumnSource[]::new);
-            // we also reinterpret our sortedColumnsToSortBy, which are guaranteed to be redirected sources of the inner
-            // source
-            for (int ii = 0; ii < sortedColumnsToSortBy.length; ++ii) {
-                // noinspection unchecked
-                sortedColumnsToSortBy[ii] = (ColumnSource<Comparable<?>>) ReinterpretUtils
-                        .maybeConvertToPrimitive(sortedColumnsToSortBy[ii]);
-            }
-
             resultTable = new QueryTable(resultRowSet, resultMap);
             parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
             resultTable.setAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE, sortMappingColumnName);
@@ -362,7 +351,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             final SortListener listener = new SortListener(parent, resultTable, reverseLookup,
                     originalSortColumns, sortColumns, sortOrder, comparators,
                     comparatorsRespectEquality,
-                    sortMapping.writableCast(), sortedColumnsToSortBy,
+                    sortMapping.writableCast(),
                     parent.newModifiedColumnSetIdentityTransformer(resultTable),
                     parent.newModifiedColumnSet(sortColumnNames));
 

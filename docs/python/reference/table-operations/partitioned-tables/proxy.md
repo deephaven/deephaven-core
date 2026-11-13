@@ -27,7 +27,7 @@ Whether to ensure that both `PartitionedTable`s have all the same keys present w
 </Param>
 <Param name="sanity_check_joins" type="bool">
 
-Whether to check that for proxied join operations, a given join key only occurs in exactly one constituent table of the underlying `PartitionedTable`. If the other table argument is also a `PartitionedTableProxy`, its constituents will be subjected to this sanity check.
+Whether to check that for proxied join operations, a given join key only occurs in exactly one constituent table of the underlying `PartitionedTable`. If the other table argument is also a `PartitionedTableProxy`, its constituents will be subjected to this sanity check. The default is `False`, which skips the check. The check adds work and reduces parallelism. Set it to `True` to run the check.
 
 </Param>
 </ParamTable>
@@ -35,7 +35,7 @@ Whether to check that for proxied join operations, a given join key only occurs 
 > [!CAUTION]
 > `PartitionedTable` transforms and proxies produce different results than on a single-table join (e.g., `natural_join`), `where_in`, or `where_not_in` when the filter or join keys span partitions. You must ensure that your data's keys map to appropriate partitions to enable correct answers.
 >
-> When the argument `sanityCheckJoins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition, but it does not validate that a key exists in the same partition in both the left and right table.
+> When the `sanity_check_joins` argument to the `proxy` method is `True`, the engine validates that join keys exist only in a single partition. This check also applies to `where_in` and `where_not_in`. As of Deephaven Core 43.0, the check is off by default. Earlier versions default to `True`. The engine does not validate that a key exists in the same partition in both the left and right table.
 
 ## Returns
 

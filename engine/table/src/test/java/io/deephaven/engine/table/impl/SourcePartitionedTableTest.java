@@ -21,6 +21,7 @@ import io.deephaven.engine.testutil.locations.TableBackedTableLocationKey;
 import io.deephaven.engine.testutil.locations.TableBackedTableLocationProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.FindExceptionCause;
@@ -565,6 +566,24 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
                 registrar.run();
                 checkPrev.run();
             }, false);
+        }
+    }
+
+    @Test
+    public void testConstituentsFollowCreatorSystemicMarking() {
+        for (final boolean systemic : new boolean[] {true, false}) {
+            setUpData(false);
+            final SourcePartitionedTable spt = SystemicObjectTracker.executeSystemically(systemic,
+                    () -> new SourcePartitionedTable(p1.getDefinition(), t -> t.update("Doubled = intCol * 2"),
+                            tlp, false, false, null));
+            // Constituents are made when first read, which here is with the opposite systemic marking
+            final Table[] constituents = SystemicObjectTracker.executeSystemically(!systemic, spt::constituents);
+            assertEquals(2, constituents.length);
+            for (final Table constituent : constituents) {
+                assertTrue(constituent.hasColumns("Doubled"));
+                assertEquals(systemic,
+                        Boolean.TRUE.equals(constituent.getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE)));
+            }
         }
     }
 }

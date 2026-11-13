@@ -10,7 +10,10 @@ import io.deephaven.api.agg.AggregationPairs;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -28,6 +31,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -241,6 +245,14 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 .collect(Collectors.toList());
     }
 
+    /**
+     * @return the row lookup of this rollup's base level
+     */
+    @VisibleForTesting
+    public AggregationRowLookup baseLevelRowLookup() {
+        return levelRowLookups[numLevels - 1];
+    }
+
     @Override
     public RollupTable withFilter(@NotNull final Filter filter) {
         final WhereFilter[] filters = WhereFilter.fromInternal(filter);
@@ -261,13 +273,37 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final QueryTable filteredBaseLevel = (QueryTable) levelTables[numLevels - 1].where(Filter.and(whereFilters));
         final AggregationRowLookup baseLevelRowLookup = levelRowLookups[numLevels - 1];
         final RowSet filteredBaseLevelRowSet = filteredBaseLevel.getRowSet();
-        final AggregationRowLookup filteredBaseLevelRowLookup = nodeKey -> {
-            final int unfilteredRowKey = baseLevelRowLookup.get(nodeKey);
-            // NB: Rollup snapshot patterns allow us to safely always use current, here.
-            if (filteredBaseLevelRowSet.find(unfilteredRowKey) >= 0) {
-                return unfilteredRowKey;
+        // NB: Rollup snapshot patterns allow us to safely always use current, here.
+        final AggregationRowLookup filteredBaseLevelRowLookup = new AggregationRowLookup() {
+            @Override
+            public int get(@Nullable final Object nodeKey) {
+                final int unfilteredRowKey = baseLevelRowLookup.get(nodeKey);
+                if (filteredBaseLevelRowSet.find(unfilteredRowKey) >= 0) {
+                    return unfilteredRowKey;
+                }
+                return DEFAULT_UNKNOWN_ROW;
             }
-            return DEFAULT_UNKNOWN_ROW;
+
+            @Override
+            public void get(
+                    @NotNull final Chunk<? extends Values>[] keyChunks,
+                    @NotNull final WritableLongChunk<RowKeys> rowKeys) {
+                baseLevelRowLookup.get(keyChunks, rowKeys);
+                final int size = rowKeys.size();
+                for (int ii = 0; ii < size; ++ii) {
+                    if (filteredBaseLevelRowSet.find(rowKeys.get(ii)) < 0) {
+                        rowKeys.set(ii, DEFAULT_UNKNOWN_ROW);
+                    }
+                }
+            }
+
+            @Override
+            public long lastStateChangeStep() {
+                // Read only under rollup snapshot control. The filtered row set changes with the filtered base level,
+                // which the base level's step does not track.
+                throw new UnsupportedOperationException(
+                        "A filtered rollup's base level lookup is read only under rollup snapshot control");
+            }
         };
         final QueryTable[] levelTables = makeLevelTablesArray(numLevels, filteredBaseLevel);
         final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, filteredBaseLevelRowLookup);
@@ -330,10 +366,12 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                         "Invalid filter found: " + whereFilter + " may only use non-aggregation columns, which are "
                                 + validColumns + ", but has used " + invalidColumnsUsed);
             }
-            final boolean usesArrays = !whereFilter.getColumnArrays().isEmpty();
-            if (usesArrays) {
-                throw exceptionFactory.apply("Invalid filter found: " + whereFilter
-                        + " may not use column arrays, but uses column arrays from " + whereFilter.getColumnArrays());
+            // a filter may apply to the base level, one row per bucket, rather than to the source rows, so the filter
+            // must decide each row from that row alone
+            if (whereFilter.hasCrossRowDependencies()) {
+                throw exceptionFactory.apply("Invalid filter found: " + whereFilter + " cannot use cross-row "
+                        + "dependencies (virtual row variables or column arrays); filter the source table before the "
+                        + "rollup instead");
             }
         }
         compilationProcessor.compile();
@@ -524,8 +562,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    protected RollupTableImpl copy() {
-        return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
+    protected RollupTableImpl copy(@NotNull final Map<String, Object> attributes) {
+        return new RollupTableImpl(attributes, source, aggregations, includesConstituents,
+                groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
                 aggregatedNodeDefinition, aggregatedNodeOperations,
                 constituentNodeDefinition, constituentNodeOperations,

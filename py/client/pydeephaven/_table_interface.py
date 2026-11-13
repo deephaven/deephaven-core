@@ -3,16 +3,16 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generic
 
 from pydeephaven.filters import Filter
 
 if TYPE_CHECKING:
     from pydeephaven import Table
 from abc import ABC, abstractmethod
-from typing import Union
 
 from pydeephaven import agg
+from pydeephaven._doc_template import T, copy_ops
 from pydeephaven._table_ops import (
     AggregateAllOp,
     AggregateOp,
@@ -50,19 +50,34 @@ from pydeephaven.agg import Aggregation, _AggregationColumns
 from pydeephaven.dherror import DHError
 from pydeephaven.updateby import UpdateByOperation
 
-T = TypeVar("T")
-
 
 class TableInterface(ABC, Generic[T]):
     """TableInterface defines and implements a set of Table operations that eventually are performed on tables in
     the Deephaven server. It is inherited by the Table and Query classes for single table operations on a Table or a
     batch of operations that are defined by a Query.
+
+    A subclass that sets ``_doc_vars`` gets its own copy of every public op, with the op's docstring filled in from
+    those values. ``returns`` is required and fills the ``{returns}`` placeholder. ``raises`` fills a ``{raises}``
+    line, which ops that raise only once the operation runs on the server use. ``intro``, when not empty, becomes the
+    first paragraph of the docstring.
     """
+
+    _doc_vars: ClassVar[dict[str, str]] = {}
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        copy_ops(
+            TableInterface,
+            cls,
+            required=("returns",),
+            defaults={"raises": ""},
+            skip=frozenset({"table_op_handler"}),
+        )
 
     @abstractmethod
     def table_op_handler(self, table_op: TableOp) -> T: ...
 
-    def drop_columns(self, cols: Union[str, list[str]]) -> T:
+    def drop_columns(self, cols: str | list[str]) -> T:
         """The drop_column method creates a new table with the same size as this table but omits any of the specified
         columns.
 
@@ -70,75 +85,70 @@ class TableInterface(ABC, Generic[T]):
             cols (Union[str, list[str]]) : the column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = DropColumnsOp(column_names=to_list(cols))
         return self.table_op_handler(table_op)
 
-    def update(self, formulas: Union[str, list[str]]) -> T:
+    def update(self, formulas: str | list[str]) -> T:
         """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
             formulas (Union[str, list[str]]): the column formula(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = UpdateOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
 
-    def lazy_update(self, formulas: Union[str, list[str]]) -> T:
+    def lazy_update(self, formulas: str | list[str]) -> T:
         """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
 
         Args:
             formulas (Union[str, list[str]]): the column formula(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = LazyUpdateOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
 
-    def view(self, formulas: Union[str, list[str]]) -> T:
+    def view(self, formulas: str | list[str]) -> T:
         """The view method creates a new formula table that includes one column for each formula.
 
         Args:
             formulas (Union[str, list[str]]): the column formula(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = ViewOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
 
-    def update_view(self, formulas: Union[str, list[str]]) -> T:
+    def update_view(self, formulas: str | list[str]) -> T:
         """The update_view method creates a new table containing a new, formula column for each formula.
 
         Args:
             formulas (Union[str, list[str]]): the column formula(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = UpdateViewOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
 
-    def select(self, formulas: Optional[Union[str, list[str]]] = None) -> T:
+    def select(self, formulas: str | list[str] | None = None) -> T:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
 
@@ -146,15 +156,14 @@ class TableInterface(ABC, Generic[T]):
             formulas (Optional[Union[str, list[str]]]): the column formula(s), default is None
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = SelectOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
 
-    def select_distinct(self, cols: Optional[Union[str, list[str]]] = None) -> T:
+    def select_distinct(self, cols: str | list[str] | None = None) -> T:
         """The select_distinct method creates a new table containing all the unique values for a set of key columns.
         When the selectDistinct method is used on multiple columns, it looks for distinct sets of values in the
         selected columns.
@@ -163,18 +172,17 @@ class TableInterface(ABC, Generic[T]):
             cols (Optional[Union[str, list[str]]]): the column name(s), default is None
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = SelectDistinctOp(column_names=to_list(cols))
         return self.table_op_handler(table_op)
 
     def sort(
         self,
-        order_by: Union[str, list[str]],
-        order: Optional[Union[SortDirection, list[SortDirection]]] = None,
+        order_by: str | list[str],
+        order: SortDirection | list[SortDirection] | None = None,
     ) -> T:
         """The sort method creates a new table where the rows are ordered based on values in the specified set of
         columns.
@@ -186,15 +194,14 @@ class TableInterface(ABC, Generic[T]):
                 ascending order.
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = SortOp(column_names=to_list(order_by), directions=to_list(order))
         return self.table_op_handler(table_op)
 
-    def where(self, filters: Union[str, list[str], Filter, list[Filter]]) -> T:
+    def where(self, filters: str | list[str] | Filter | list[Filter]) -> T:
         """The where method creates a new table with only the rows meeting the filter criteria in the column(s) of
         the table.
 
@@ -202,7 +209,7 @@ class TableInterface(ABC, Generic[T]):
             filters (Union[str, list[str], Filter, list[Filter]]): the filter condition expression(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
         Raises:
             DHError
@@ -212,8 +219,13 @@ class TableInterface(ABC, Generic[T]):
         if not filters_list:
             raise DHError("filters cannot be empty")
 
-        # Check if we have Filter objects or strings based on the first element
-        if isinstance(filters_list[0], Filter):
+        # The request carries either Filter objects or strings, not both.
+        n_filters = sum(isinstance(f, Filter) for f in filters_list)
+        if 0 < n_filters < len(filters_list):
+            raise DHError(
+                "filters must be all strings or all Filter objects, not a mix of both."
+            )
+        if n_filters:
             table_op: TableOp = FilterOp(filters=filters_list)
         else:
             table_op = UnstructuredFilterOp(filters=filters_list)
@@ -227,10 +239,9 @@ class TableInterface(ABC, Generic[T]):
             num_rows (int): the number of rows at the head of table
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = HeadOp(num_rows=num_rows)
         return self.table_op_handler(table_op)
@@ -242,10 +253,9 @@ class TableInterface(ABC, Generic[T]):
             num_rows (int): the number of rows at the end of table
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = TailOp(num_rows=num_rows)
         return self.table_op_handler(table_op)
@@ -253,8 +263,8 @@ class TableInterface(ABC, Generic[T]):
     def natural_join(
         self,
         table: Table,
-        on: Union[str, list[str]],
-        joins: Optional[Union[str, list[str]]] = None,
+        on: str | list[str],
+        joins: str | list[str] | None = None,
         type: NaturalJoinType = NaturalJoinType.ERROR_ON_DUPLICATE,
     ) -> T:
         """The natural_join method creates a new table containing all the rows and columns of this table,
@@ -269,12 +279,13 @@ class TableInterface(ABC, Generic[T]):
             joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
+            type (NaturalJoinType): the action to be taken when duplicate right hand rows are
+                encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = NaturalJoinOp(
             table=table, keys=to_list(on), columns_to_add=to_list(joins), type=type
@@ -284,8 +295,8 @@ class TableInterface(ABC, Generic[T]):
     def exact_join(
         self,
         table: Table,
-        on: Union[str, list[str]],
-        joins: Optional[Union[str, list[str]]] = None,
+        on: str | list[str],
+        joins: str | list[str] | None = None,
     ) -> T:
         """The exact_join method creates a new table containing all the rows and columns of this table plus
         additional columns containing data from the right table. For columns appended to the left table (joins),
@@ -301,10 +312,9 @@ class TableInterface(ABC, Generic[T]):
                 from the right table, excluding those specified in 'on'
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = ExactJoinOp(
             table=table, keys=to_list(on), columns_to_add=to_list(joins)
@@ -314,8 +324,8 @@ class TableInterface(ABC, Generic[T]):
     def join(
         self,
         table: Table,
-        on: Optional[Union[str, list[str]]] = None,
-        joins: Optional[Union[str, list[str]]] = None,
+        on: str | list[str] | None = None,
+        joins: str | list[str] | None = None,
         reserve_bits: int = 10,
     ) -> T:
         """The join method creates a new table containing rows that have matching values in both tables. Rows that do
@@ -333,10 +343,9 @@ class TableInterface(ABC, Generic[T]):
             reserve_bits(int): the number of bits of key-space to initially reserve per group; default is 10
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = CrossJoinOp(
             table=table,
@@ -349,8 +358,8 @@ class TableInterface(ABC, Generic[T]):
     def aj(
         self,
         table: Table,
-        on: Union[str, list[str]],
-        joins: Optional[Union[str, list[str]]] = None,
+        on: str | list[str],
+        joins: str | list[str] | None = None,
     ) -> T:
         """The aj (as-of join) method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
@@ -369,19 +378,23 @@ class TableInterface(ABC, Generic[T]):
                 from the right table, excluding those specified in 'on'
 
         Returns:
-            a Table or Query object
+            {returns}
 
         Raises:
             DHError
         """
-        table_op = AjOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
+        keys = to_list(on)
+        # The last 'on' column is the as-of match, which the request requires.
+        if not keys:
+            raise DHError("on must name at least one column.")
+        table_op = AjOp(table=table, keys=keys, columns_to_add=to_list(joins))
         return self.table_op_handler(table_op)
 
     def raj(
         self,
         table: Table,
-        on: Union[str, list[str]],
-        joins: Optional[Union[str, list[str]]] = None,
+        on: str | list[str],
+        joins: str | list[str] | None = None,
     ) -> T:
         """The raj (reverse as-of join) method creates a new table containing all the rows and columns of the left
         table, plus additional columns containing data from the right table. For columns appended to the left table (
@@ -400,15 +413,19 @@ class TableInterface(ABC, Generic[T]):
                 from the right table, excluding those specified in 'on'
 
         Returns:
-            a Table or Query object
+            {returns}
 
         Raises:
             DHError
         """
-        table_op = RajOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
+        keys = to_list(on)
+        # The last 'on' column is the as-of match, which the request requires.
+        if not keys:
+            raise DHError("on must name at least one column.")
+        table_op = RajOp(table=table, keys=keys, columns_to_add=to_list(joins))
         return self.table_op_handler(table_op)
 
-    def head_by(self, num_rows: int, by: Union[str, list[str]]) -> T:
+    def head_by(self, num_rows: int, by: str | list[str]) -> T:
         """The head_by method creates a new table containing the first number of rows for each group.
 
         Args:
@@ -416,15 +433,14 @@ class TableInterface(ABC, Generic[T]):
             by (Union[str, list[str]]): the group-by column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = HeadByOp(num_rows=num_rows, column_names=to_list(by))
         return self.table_op_handler(table_op)
 
-    def tail_by(self, num_rows: int, by: Union[str, list[str]]) -> T:
+    def tail_by(self, num_rows: int, by: str | list[str]) -> T:
         """The tail_by method creates a new table containing the last number of rows for each group.
 
         Args:
@@ -432,15 +448,14 @@ class TableInterface(ABC, Generic[T]):
             by (Union[str, list[str]]): the group-by column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = TailByOp(num_rows=num_rows, column_names=to_list(by))
         return self.table_op_handler(table_op)
 
-    def group_by(self, by: Optional[Union[str, list[str]]] = None) -> T:
+    def group_by(self, by: str | list[str] | None = None) -> T:
         """The group_by method creates a new table containing grouping columns and grouped data, column content is
         grouped into arrays.
 
@@ -451,17 +466,14 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.group(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def ungroup(
-        self, cols: Optional[Union[str, list[str]]] = None, null_fill: bool = True
-    ) -> T:
+    def ungroup(self, cols: str | list[str] | None = None, null_fill: bool = True) -> T:
         """The ungroup method creates a new table in which array columns from the source table are unwrapped into
         separate rows. The ungroup columns should be of array types.
 
@@ -471,15 +483,14 @@ class TableInterface(ABC, Generic[T]):
             null_fill (bool): indicates whether null should be used to fill missing cells, default is True
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = UngroupOp(column_names=to_list(cols), null_fill=null_fill)
         return self.table_op_handler(table_op)
 
-    def first_by(self, by: Optional[Union[str, list[str]]] = None) -> T:
+    def first_by(self, by: str | list[str] | None = None) -> T:
         """The first_by method creates a new table which contains the first row of each distinct group.
 
         Args:
@@ -487,15 +498,14 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.first(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def last_by(self, by: Optional[Union[str, list[str]]] = None) -> T:
+    def last_by(self, by: str | list[str] | None = None) -> T:
         """The last_by method creates a new table which contains the last row of each distinct group.
 
         Args:
@@ -503,15 +513,14 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.last(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def sum_by(self, by: Optional[Union[str, list[str]]] = None) -> T:
+    def sum_by(self, by: str | list[str] | None = None) -> T:
         """The sum_by method creates a new table containing the sum for each group. Columns not used in the grouping
         must be of numeric types.
 
@@ -520,15 +529,14 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.sum_(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def avg_by(self, by: Optional[Union[str, list[str]]] = None) -> T:
+    def avg_by(self, by: str | list[str] | None = None) -> T:
         """The avg_by method creates a new table containing the average for each group. Columns not used in the
         grouping must be of numeric types.
 
@@ -537,15 +545,14 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.avg(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def std_by(self, by: Optional[Union[str, list[str]]] = None) -> T:
+    def std_by(self, by: str | list[str] | None = None) -> T:
         """The std_by method creates a new table containing the sample standard deviation for each group. Columns not
         used in the grouping must be of numeric types.
 
@@ -557,15 +564,14 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.std(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def var_by(self, by: Optional[Union[str, list[str]]] = None) -> T:
+    def var_by(self, by: str | list[str] | None = None) -> T:
         """The var_by method creates a new table containing the sample variance for each group. Columns not used in the
         grouping must be of numeric types.
 
@@ -577,15 +583,14 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.var(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def median_by(self, by: Optional[Union[str, list[str]]] = None) -> T:
+    def median_by(self, by: str | list[str] | None = None) -> T:
         """The median_by method creates a new table containing the median for each group. Columns not used in the
         grouping must be of numeric types.
 
@@ -594,15 +599,14 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.median(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def min_by(self, by: Optional[Union[str, list[str]]] = None) -> T:
+    def min_by(self, by: str | list[str] | None = None) -> T:
         """The min_by method creates a new table containing the minimum value for each group. Columns not used in the
         grouping must be of numeric types.
 
@@ -611,15 +615,14 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.min_(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def max_by(self, by: Optional[Union[str, list[str]]] = None) -> T:
+    def max_by(self, by: str | list[str] | None = None) -> T:
         """The max_by method creates a new table containing the maximum value for each group. Columns not used in the
         grouping must be of numeric types.
 
@@ -628,15 +631,14 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateAllOp(agg=agg.max_(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def count_by(self, col: str, by: Optional[Union[str, list[str]]] = None) -> T:
+    def count_by(self, col: str, by: str | list[str] | None = None) -> T:
         """The count_by method creates a new table containing the number of rows for each group. The count of each
         group is stored in a new column named after the 'col' parameter.
 
@@ -646,17 +648,14 @@ class TableInterface(ABC, Generic[T]):
                 all the rows into one group
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = AggregateOp(aggs=[agg.count_(col=col)], by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def agg_by(
-        self, aggs: Union[Aggregation, list[Aggregation]], by: Union[str, list[str]]
-    ) -> T:
+    def agg_by(self, aggs: Aggregation | list[Aggregation], by: str | list[str]) -> T:
         """The agg_by method creates a new table containing grouping columns and grouped data. The resulting grouped
         data is defined by the aggregation(s) specified.
 
@@ -665,7 +664,7 @@ class TableInterface(ABC, Generic[T]):
             by (Union[str, list[str]]): the group-by column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
         Raises:
             DHError
@@ -674,13 +673,13 @@ class TableInterface(ABC, Generic[T]):
         for agg in aggs:  # noqa: F402
             if hasattr(agg, "cols") and not agg.cols:
                 raise DHError(
-                    message="No columns specified for the aggregation operation {agg}."
+                    message=f"No columns specified for the aggregation operation {agg}."
                 )
 
         table_op = AggregateOp(aggs=aggs, by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def agg_all_by(self, agg: Aggregation, by: Union[str, list[str]]) -> T:
+    def agg_all_by(self, agg: Aggregation, by: str | list[str]) -> T:
         """The agg_all_by method creates a new table containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregation specified.
 
@@ -692,7 +691,7 @@ class TableInterface(ABC, Generic[T]):
             by (Union[str, list[str]]): the group-by column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
         Raises:
             DHError
@@ -705,8 +704,8 @@ class TableInterface(ABC, Generic[T]):
 
     def update_by(
         self,
-        ops: Union[UpdateByOperation, list[UpdateByOperation]],
-        by: Optional[Union[str, list[str]]] = None,
+        ops: UpdateByOperation | list[UpdateByOperation],
+        by: str | list[str] | None = None,
     ) -> T:
         """The update_by method creates a table with additional columns calculated from
         window-based aggregations of columns in this table. The aggregations are defined by the provided operations,
@@ -720,10 +719,9 @@ class TableInterface(ABC, Generic[T]):
                 performed over the entire table
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = UpdateByOp(operations=to_list(ops), by=to_list(by))
         return self.table_op_handler(table_op)
@@ -732,10 +730,9 @@ class TableInterface(ABC, Generic[T]):
         """The snapshot method creates a static snapshot table.
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = SnapshotTableOp()
         return self.table_op_handler(table_op)
@@ -743,7 +740,7 @@ class TableInterface(ABC, Generic[T]):
     def snapshot_when(
         self,
         trigger_table: Table,
-        stamp_cols: Optional[Union[str, list[str]]] = None,
+        stamp_cols: str | list[str] | None = None,
         initial: bool = False,
         incremental: bool = False,
         history: bool = False,
@@ -769,10 +766,9 @@ class TableInterface(ABC, Generic[T]):
                 must be False.
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = SnapshotWhenTableOp(
             trigger_table=trigger_table,
@@ -783,7 +779,7 @@ class TableInterface(ABC, Generic[T]):
         )
         return self.table_op_handler(table_op)
 
-    def where_in(self, filter_table: Table, cols: Union[str, list[str]]) -> T:
+    def where_in(self, filter_table: Table, cols: str | list[str]) -> T:
         """The where_in method creates a new table containing rows from the source table, where the rows match values
         in the filter table.
 
@@ -792,17 +788,16 @@ class TableInterface(ABC, Generic[T]):
             cols (Union[str, list[str]]): the column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = WhereInTableOp(
             filter_table=filter_table, cols=to_list(cols), inverted=False
         )
         return self.table_op_handler(table_op)
 
-    def where_not_in(self, filter_table: Table, cols: Union[str, list[str]]) -> T:
+    def where_not_in(self, filter_table: Table, cols: str | list[str]) -> T:
         """The where_not_in method creates a new table containing rows from the source table, where the rows do not
         match values in the filter table.
 
@@ -811,10 +806,9 @@ class TableInterface(ABC, Generic[T]):
             cols (Union[str, list[str]]): the column name(s)
 
         Returns:
-            a Table or Query object
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
         """
         table_op = WhereInTableOp(
             filter_table=filter_table, cols=to_list(cols), inverted=True
@@ -825,7 +819,8 @@ class TableInterface(ABC, Generic[T]):
         """Extracts a subset of a table by row positions into a new Table.
 
         If both the start and the stop are positive, then both are counted from the beginning of the table.
-        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
+        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to
+        :meth:`~pydeephaven.table.Table.head` (N)
         The start must be less than or equal to the stop.
 
         If the start is positive and the stop is negative, then the start is counted from the beginning of the
@@ -833,20 +828,20 @@ class TableInterface(ABC, Generic[T]):
         rows but the first and last. If the stop is before the start, the result is an empty table.
 
         If the start is negative, and the stop is zero, then the start is counted from the end of the table,
-        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
+        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to
+        :meth:`~pydeephaven.table.Table.tail` (N).
 
         If the start is negative and the stop is negative, they are both counted from the end of the
         table. For example, slice(-2, -1) returns the second to last row of the table.
 
         Args:
             start (int): the first row position to include in the result
-            stop (int): the last row position to include in the result
+            stop (int): the row position to stop before, exclusive
 
         Returns:
-            a new Table
+            {returns}
 
-        Raises:
-            DHError
+        {raises}
 
         Examples:
             >>> table.slice(0, 5)    # first 5 rows

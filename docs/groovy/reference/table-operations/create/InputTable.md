@@ -14,18 +14,14 @@ Input Tables are in-memory Deephaven tables that allow users to manually edit th
 
 ```groovy syntax
 AppendOnlyArrayBackedInputTable.make(definition)
-AppendOnlyArrayBackedInputTable.make(definition, enumValues)
 AppendOnlyArrayBackedInputTable.make(initialTable)
-AppendOnlyArrayBackedInputTable.make(initialTable, enumValues)
 ```
 
 ### Keyed
 
 ```groovy syntax
-KeyedArrayBackedInputTable.make(definition)
-KeyedArrayBackedInputTable.make(definition, enumValues)
-KeyedArrayBackedInputTable.make(initialTable)
-KeyedArrayBackedInputTable.make(initialTable, enumValues)
+KeyedArrayBackedInputTable.make(definition, keyColumnNames...)
+KeyedArrayBackedInputTable.make(initialTable, keyColumnNames...)
 ```
 
 ## Parameters
@@ -36,14 +32,14 @@ KeyedArrayBackedInputTable.make(initialTable, enumValues)
 The definition of the new table.
 
 </Param>
-<Param name="enumValues" type="Map<String, Object[]>">
-
-A map of column names to enum values.
-
-</Param>
 <Param name="initialTable" type="Table">
 
-The initial Table to copy into the append-only or keyed Input Table.
+The initial `Table` to copy into the append-only or keyed Input Table.
+
+</Param>
+<Param name="keyColumnNames" type="String...">
+
+The names of the key columns. Keyed Input Tables only.
 
 </Param>
 </ParamTable>
@@ -82,7 +78,7 @@ result = KeyedArrayBackedInputTable.make(source, "Strings")
 
 ## Add data to the table
 
-To [manually add data](../../../how-to-guides/input-tables.md#add-data-to-the-table) to an input table, simply click on the cell in which you wish to enter data. Type the value into the cell, hit enter, and it will appear.
+To [manually add data](../../../how-to-guides/input-tables.md#add-data-to-the-table) to an input table, click the cell in which you wish to enter data, type the value, and press **Enter**.
 
 ![A user manually adds data to an input table](../../../assets/how-to/groovy-input-table-ui.gif)
 

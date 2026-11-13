@@ -65,3 +65,6 @@ node_modules
 skills-lock.json
 .agents/
 .claude/skills/skill-creator
+
+# skill-creator eval run outputs (grading, benchmarks, snapshots); only evals/evals.json and evals/files/ are committed
+.claude/skills/*-workspace/

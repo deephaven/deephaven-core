@@ -1,6 +1,7 @@
 ## Session examples
 
-Session examples is a collection of example applications built using `client-session` and `client-session-dagger`.
+Session examples is a collection of example applications built using `java-client-session`. Each is one
+readable file; see [java-client/README.md](../README.md) for how they are structured and tested.
 
 ### Local build
 
@@ -21,7 +22,7 @@ java-client/session-examples/build/install/java-client-session-examples/bin/<pro
 ### Build
 
 ```shell
-./gradlew client-session-examples:build
+./gradlew java-client-session-examples:build
 ```
 
 produces:

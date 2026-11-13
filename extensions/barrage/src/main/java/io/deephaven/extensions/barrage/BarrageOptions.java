@@ -25,7 +25,8 @@ public interface BarrageOptions {
     }
 
     /**
-     * @return the ideal number of records to send per record batch
+     * @return the ideal number of records to send per record batch, which is also the most values a dictionary batch
+     *         carries
      */
     int batchSize();
 

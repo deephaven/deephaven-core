@@ -301,6 +301,10 @@ public class DoubleChunkedCountDistinctOperator implements IterativeChunkedAggre
     @Override
     public void startTrackingPrevValues() {
         resultColumn.startTrackingPrevValues();
+        if (!exposeInternal) {
+            // previous SSM states and deltas are read only through the exposed SSM column
+            return;
+        }
 
         if (prevFlusher != null) {
             throw new IllegalStateException("startTrackingPrevValues must only be called once");

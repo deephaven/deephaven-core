@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.util.SoftRecyclerWindow;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ChunkSource;
@@ -26,8 +27,9 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
         implements MutableColumnSourceGetDefaults.ForObject<T> {
     @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler =
-            new SoftRecycler<>(ArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,
-                    () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill(item, null));
+            SoftRecyclerWindow.register(new SoftRecycler<>(ArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,
+                    ArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY,
+                    () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill(item, null)));
     transient private T[][] prevBlocks;
     private T[][] blocks;
     private final boolean isArrayType;
@@ -458,10 +460,10 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                 dest.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 dest.set(ii, null);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final T[] currentBlock = blocks[blockNo];
                 dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
             }
@@ -481,12 +483,12 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                 continue;
             }
 
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 dest.set(ii, null);
                 continue;
             }
 
+            final int blockNo = getBlockNo(fromIndex);
             final T[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
         }

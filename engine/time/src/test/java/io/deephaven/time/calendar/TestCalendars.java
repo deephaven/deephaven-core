@@ -93,6 +93,24 @@ public class TestCalendars {
     }
 
     @Test
+    public void testRemoveMixedCase() throws URISyntaxException {
+        final String path = Paths
+                .get(Objects.requireNonNull(TestBusinessCalendarXMLParser.class.getResource("/PARSER-TEST.calendar"))
+                        .toURI())
+                .toString();
+        Calendars.addCalendarFromFile(path);
+        try {
+            assertNotNull(Calendars.calendar("PARSER_TEST_CAL"));
+
+            Calendars.removeCalendar("Parser_Test_Cal");
+
+            assertThrows(IllegalArgumentException.class, () -> Calendars.calendar("PARSER_TEST_CAL"));
+        } finally {
+            Calendars.removeCalendar("PARSER_TEST_CAL");
+        }
+    }
+
+    @Test
     public void testUTCDayLength() {
         final BusinessCalendar cal = Calendars.calendar("UTC");
         assertEquals(DateTimeUtils.DAY, cal.standardBusinessDay().businessNanos());

@@ -937,28 +937,31 @@ public class PythonTableDataService extends AbstractTableDataService {
                         key, (TableLocationKeyImpl) location.getKey(), columnDefinition,
                         firstRowPosition, minimumSize, destination.capacity());
 
-                final int numRows = values.stream().mapToInt(WritableChunk::size).sum();
+                // The chunks are ours to close once copied, or when they are rejected.
+                try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(values.iterator())) {
+                    final int numRows = values.stream().mapToInt(WritableChunk::size).sum();
 
-                if (numRows < minimumSize) {
-                    throw new TableDataException(String.format("%s:%s: column_values(%s, %d, %d, %d) did not return "
-                            + "enough data. Read %d rows but expected row range was %d to %d.",
-                            key, location, columnDefinition.getName(), firstRowPosition, minimumSize,
-                            destination.capacity(), numRows, minimumSize, destination.capacity()));
-                }
-                if (numRows > destination.capacity()) {
-                    throw new TableDataException(String.format("%s:%s: column_values(%s, %d, %d, %d) returned too much "
-                            + "data. Read %d rows but maximum allowed is %d.", key, location,
-                            columnDefinition.getName(), firstRowPosition, minimumSize, destination.capacity(), numRows,
-                            destination.capacity()));
-                }
+                    if (numRows < minimumSize) {
+                        throw new TableDataException(String.format("%s:%s: column_values(%s, %d, %d, %d) did not "
+                                + "return enough data. Read %d rows but expected row range was %d to %d.",
+                                key, location, columnDefinition.getName(), firstRowPosition, minimumSize,
+                                destination.capacity(), numRows, minimumSize, destination.capacity()));
+                    }
+                    if (numRows > destination.capacity()) {
+                        throw new TableDataException(String.format("%s:%s: column_values(%s, %d, %d, %d) returned "
+                                + "too much data. Read %d rows but maximum allowed is %d.", key, location,
+                                columnDefinition.getName(), firstRowPosition, minimumSize, destination.capacity(),
+                                numRows, destination.capacity()));
+                    }
 
-                int offset = 0;
-                for (final Chunk<Values> rbChunk : values) {
-                    final int length = Math.min(destination.capacity() - offset, rbChunk.size());
-                    destination.copyFromChunk(rbChunk, 0, offset, length);
-                    offset += length;
+                    int offset = 0;
+                    for (final Chunk<Values> rbChunk : values) {
+                        final int length = Math.min(destination.capacity() - offset, rbChunk.size());
+                        destination.copyFromChunk(rbChunk, 0, offset, length);
+                        offset += length;
+                    }
+                    destination.setSize(offset);
                 }
-                destination.setSize(offset);
             }
 
             @Override

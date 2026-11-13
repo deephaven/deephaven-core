@@ -11,6 +11,7 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
     long NULL_ROW_KEY = -1L;
     boolean isEmpty();
+    long firstRowKey();
     long lastRowKey();
     boolean forEachRowKey(LongAbortableConsumer lac);
     default void forAllRowKeys(java.util.function.LongConsumer lc) {

@@ -5,7 +5,6 @@
 import unittest
 from dataclasses import dataclass
 
-import jpy
 import numpy as np
 
 from deephaven import DHError, dtypes, new_table
@@ -27,7 +26,7 @@ from deephaven.column import (
 from deephaven.constants import MAX_LONG, NULL_LONG
 from deephaven.jcompat import j_array_list
 from deephaven.numpy import to_np_busdaycalendar, to_numpy, to_table
-from tests.testbase import BaseTestCase
+from tests.testbase import BaseTestCase, java_resource_path
 
 
 @dataclass
@@ -167,21 +166,11 @@ class NumpyTestCase(BaseTestCase):
                 tmp_table3 = to_table(np_array[:, [0, 1, 3]], tmp_table.column_names)
             self.assertIn("doesn't match", cm.exception.root_cause)
 
-    def get_resource_path(self, resource_path) -> str:
-        obj = jpy.get_type(
-            "io.deephaven.integrations.python.PythonTimeComponentsTest"
-        )()
-        Paths = jpy.get_type("java.nio.file.Paths")
-        Objects = jpy.get_type("java.util.Objects")
-        return Paths.get(
-            Objects.requireNonNull(obj.getClass().getResource(resource_path)).toURI()
-        ).toString()
-
     def test_to_np_busdaycalendar(self):
         with self.assertRaises(DHError) as cm:
             to_np_busdaycalendar("test")
 
-        add_calendar(self.get_resource_path("/NUMPY_TEST.calendar"))
+        add_calendar(java_resource_path("/NUMPY_TEST.calendar"))
         jcal = calendar("NUMPY_TEST")
 
         # Include partial days
@@ -238,7 +227,7 @@ class NumpyTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             to_np_busdaycalendar("test")
 
-        add_calendar(self.get_resource_path("/EMPTY.calendar"))
+        add_calendar(java_resource_path("/EMPTY.calendar"))
         jcal = calendar("EMPTY")
 
         # Include partial days

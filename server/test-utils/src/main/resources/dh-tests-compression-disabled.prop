@@ -1,0 +1,6 @@
+# The unit test configuration, plus the compression types that the testCompressionDisabled tasks disable, as a
+# server's deephaven.prop would
+includefiles=dh-tests.prop
+
+TransportCompression.gzip.enabled=false
+TransportCompression.zstd.enabled=false

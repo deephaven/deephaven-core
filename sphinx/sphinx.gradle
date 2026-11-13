@@ -46,7 +46,7 @@ def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
     // compatible with the breaking sphinx change.
     runCommand '''set -eux; \\
                   mkdir /tmp/workspace; \\
-                  python -m pip install sphinx==7.1.2 sphinx-autodoc-typehints pyarrow protobuf grpcio bitstring /wheel/*.whl breathe furo
+                  python -m pip install sphinx==7.1.2 sphinx-autodoc-typehints pyarrow protobuf grpcio /wheel/*.whl breathe furo
                   '''
 }
 

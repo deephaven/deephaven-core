@@ -143,6 +143,55 @@ public class RowSetShiftDataKeySpaceTest {
         }
     }
 
+    /**
+     * With several windows, the first holds the smallest keys and the last the largest, before and after the shift; an
+     * offset that carries only one of them out of the key space is rejected before any key of the rowset moves, even
+     * when the rowset holds keys in the windows that stay inside the key space. An offset that keeps every window
+     * inside the key space, including ones that land the windows on either edge, moves every window's keys.
+     */
+    @Test
+    public void testUnapplyRejectsOffsetCarryingOnlyAnOuterWindowOut() {
+        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+        builder.shiftRange(100, 300, 3);
+        builder.shiftRange(1000, 1100, -50);
+        builder.shiftRange(5000, 5100, 2);
+        final RowSetShiftData shiftData = builder.build();
+
+        // the first window begins below zero; the rowset holds keys at both ends of the other two post-shift windows
+        try (final WritableRowSet rowSet = RowSetFactory.fromKeys(849, 949, 4901, 5001);
+                final RowSet original = rowSet.copy()) {
+            assertThrows(IllegalArgumentException.class, () -> shiftData.unapply(rowSet, -101));
+            assertEquals(original, rowSet);
+        }
+
+        // the last window's post-shift image ends past the maximum; the rowset holds keys at both ends of the other
+        // two post-shift windows
+        final long pastMaximum = MAX - 5101;
+        try (final WritableRowSet rowSet = RowSetFactory.fromKeys(pastMaximum + 103, pastMaximum + 303,
+                pastMaximum + 950, pastMaximum + 1050);
+                final RowSet original = rowSet.copy()) {
+            assertThrows(IllegalArgumentException.class, () -> shiftData.unapply(rowSet, pastMaximum));
+            assertEquals(original, rowSet);
+        }
+
+        // the first window begins on zero
+        try (final WritableRowSet rowSet = RowSetFactory.fromKeys(3, 203, 850, 950, 4902, 5002);
+                final RowSet expected = RowSetFactory.fromKeys(0, 200, 900, 1000, 4900, 5000)) {
+            shiftData.unapply(rowSet, -100);
+            assertEquals(expected, rowSet);
+        }
+
+        // the last window's post-shift image ends on the maximum
+        final long onMaximum = MAX - 5102;
+        try (final WritableRowSet rowSet = RowSetFactory.fromKeys(onMaximum + 103, onMaximum + 303, onMaximum + 950,
+                onMaximum + 1050, onMaximum + 5002, MAX);
+                final RowSet expected = RowSetFactory.fromKeys(onMaximum + 100, onMaximum + 300, onMaximum + 1000,
+                        onMaximum + 1100, onMaximum + 5000, onMaximum + 5100)) {
+            shiftData.unapply(rowSet, onMaximum);
+            assertEquals(expected, rowSet);
+        }
+    }
+
     @Test
     public void testUnapplyAcceptsOffsetLandingTheWindowOnZero() {
         final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();

@@ -13,25 +13,71 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.reverse.ReverseKernel;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
 /**
  * This column source wraps another column source, and returns the values in the opposite order. It must be paired with
  * a ReverseOperation (that can be shared among reversed column sources) that implements the RowSet transformations for
  * this source.
+ * <p>
+ * Reinterpretation and time conversion delegate to the wrapped source, and the results are reversed views of the
+ * wrapped source's results. A source wrapping a {@link ConvertibleTimeSource.Zoned} is itself
+ * {@link ConvertibleTimeSource.Zoned}, with the same zone; use {@link #create(ColumnSource, ReverseOperation)} to
+ * construct instances.
  */
-public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
+public class ReversedColumnSource<T> extends AbstractColumnSource<T> implements ConvertibleTimeSource {
     private final ColumnSource<T> innerSource;
     private final ReverseOperation indexReverser;
-    private long maxInnerIndex = 0;
 
     @Override
     public Class<?> getComponentType() {
         return innerSource.getComponentType();
     }
 
-    public ReversedColumnSource(@NotNull ColumnSource<T> innerSource, @NotNull ReverseOperation indexReverser) {
+    /**
+     * Create a reversed view of {@code innerSource}.
+     *
+     * @param innerSource the source to reverse
+     * @param indexReverser the operation that transforms row keys between the reversed and inner sources
+     * @return a reversed view of {@code innerSource}, which is a {@link ConvertibleTimeSource.Zoned} if and only if
+     *         {@code innerSource} is
+     */
+    public static <T> ReversedColumnSource<T> create(
+            @NotNull final ColumnSource<T> innerSource,
+            @NotNull final ReverseOperation indexReverser) {
+        if (innerSource instanceof ConvertibleTimeSource.Zoned) {
+            return new ZonedReversedColumnSource<>(innerSource, indexReverser,
+                    ((ConvertibleTimeSource.Zoned) innerSource).getZone());
+        }
+        return new ReversedColumnSource<>(innerSource, indexReverser);
+    }
+
+    private ReversedColumnSource(@NotNull ColumnSource<T> innerSource, @NotNull ReverseOperation indexReverser) {
         super(innerSource.getType());
         this.innerSource = innerSource;
         this.indexReverser = indexReverser;
+    }
+
+    private static final class ZonedReversedColumnSource<T> extends ReversedColumnSource<T>
+            implements ConvertibleTimeSource.Zoned {
+        private final ZoneId zone;
+
+        private ZonedReversedColumnSource(
+                @NotNull final ColumnSource<T> innerSource,
+                @NotNull final ReverseOperation indexReverser,
+                @NotNull final ZoneId zone) {
+            super(innerSource, indexReverser);
+            this.zone = zone;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return zone;
+        }
     }
 
     @Override
@@ -178,5 +224,48 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
     @Override
     public boolean isStateless() {
         return innerSource.isStateless();
+    }
+
+    @Override
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        return innerSource.allowsReinterpret(alternateDataType);
+    }
+
+    @Override
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        return create(innerSource.reinterpret(alternateDataType), indexReverser);
+    }
+
+    @Override
+    public boolean supportsTimeConversion() {
+        return innerSource instanceof ConvertibleTimeSource
+                && ((ConvertibleTimeSource) innerSource).supportsTimeConversion();
+    }
+
+    @Override
+    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
+        return create(((ConvertibleTimeSource) innerSource).toZonedDateTime(zone), indexReverser);
+    }
+
+    @Override
+    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {
+        return create(((ConvertibleTimeSource) innerSource).toLocalDate(zone), indexReverser);
+    }
+
+    @Override
+    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {
+        return create(((ConvertibleTimeSource) innerSource).toLocalTime(zone), indexReverser);
+    }
+
+    @Override
+    public ColumnSource<Instant> toInstant() {
+        return create(((ConvertibleTimeSource) innerSource).toInstant(), indexReverser);
+    }
+
+    @Override
+    public ColumnSource<Long> toEpochNano() {
+        return create(((ConvertibleTimeSource) innerSource).toEpochNano(), indexReverser);
     }
 }

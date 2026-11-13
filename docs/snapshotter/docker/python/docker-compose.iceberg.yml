@@ -2,8 +2,10 @@ services:
   spark-iceberg:
     build: ./Iceberg
     depends_on:
-      - rest
-      - minio
+      rest:
+        condition: service_started
+      create-bucket:
+        condition: service_completed_successfully
     volumes:
       - ./warehouse:/home/iceberg/warehouse
       - ./notebooks:/home/iceberg/notebooks/notebooks
@@ -26,36 +28,34 @@ services:
       - AWS_REGION=us-east-1
       - CATALOG_WAREHOUSE=s3://warehouse/
       - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
-      - CATALOG_S3_ENDPOINT=http://minio:9000
-  minio:
-    image: ghcr.io/deephaven/minio:RELEASE.2025-09-07T16-13-09Z@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2
+      - CATALOG_S3_ENDPOINT=http://rustfs:9000
+  rustfs:
+    image: rustfs/rustfs:1.0.1@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
     environment:
-      - MINIO_ROOT_USER=admin
-      - MINIO_ROOT_PASSWORD=password
-      - MINIO_DOMAIN=minio
+      - RUSTFS_ACCESS_KEY=admin
+      - RUSTFS_SECRET_KEY=password
+      - RUSTFS_SERVER_DOMAINS=rustfs
     networks:
       default:
         aliases:
-          - warehouse.minio
+          - warehouse.rustfs
     expose:
-      - 9001
       - 9000
-    command: ["server", "/data", "--console-address", ":9001"]
-  mc:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  create-bucket:
     depends_on:
-      - minio
-    image: ghcr.io/deephaven/mc:RELEASE.2025-08-13T08-35-41Z@sha256:eb4ea9884b77704230e2423e9004d2fa738dc272876b9cc41a297d29443b8780
+      rustfs:
+        condition: service_healthy
+    image: amazon/aws-cli:2.27.50@sha256:48c3d4212e2f5b0e24bdc6af7708f9412ce65425a79575e0f78b8f8c0dcd70ab
     environment:
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=password
       - AWS_REGION=us-east-1
-    entrypoint: >
-      /bin/sh -c "
-      until (/usr/bin/mc alias set minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
-      /usr/bin/mc mb minio/warehouse;
-      /usr/bin/mc anonymous set public minio/warehouse;
-      tail -f /dev/null
-      "
+    command: ["--endpoint-url", "http://rustfs:9000", "s3", "mb", "s3://warehouse"]
   server:
     depends_on:
       spark-iceberg:
@@ -67,6 +67,6 @@ services:
       - AWS_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=password
-      - S3_ENDPOINT=http://minio:9000
+      - S3_ENDPOINT=http://rustfs:9000
       - CATALOG_URI=http://rest:8181
       - WAREHOUSE_LOCATION=s3://warehouse/

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
@@ -77,6 +78,7 @@ public class AsOfJoinHelper {
 
     private static QueryTable asOfJoinInternal(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
+        QueryTable.checkJoinInputsNotFailed(leftTable, rightTable);
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         if (columnsToMatch.length == 0) {
@@ -116,6 +118,11 @@ public class AsOfJoinHelper {
         if (leftStampType != rightStampType) {
             throw new MismatchedJoinKeyException("Can not " + (order == SortingOrder.Descending ? "raj" : "aj")
                     + "() with different stamp types: left=" + leftStampType + ", right=" + rightStampType);
+        }
+        // the stamp kernels and SSAs order by the natural order of the stamp type, as sort does
+        if (!leftStampType.isPrimitive() && !Comparable.class.isAssignableFrom(leftStampType)) {
+            throw new NotSortableColumnException("Can not " + (order == SortingOrder.Descending ? "raj" : "aj")
+                    + "() with stamp " + stampPair + ", " + leftStampType + " is not a sortable type");
         }
 
         if (!leftTable.isRefreshing() && leftTable.isEmpty()) {
@@ -226,9 +233,18 @@ public class AsOfJoinHelper {
         }
         // endregion This block is mostly copied to other entry points
 
+        // the build reserves room for a whole chunk of new entries before each chunk, so the table starts large enough
+        // to hold the first build chunk at the maximum load factor
+        final boolean buildFromLeft = buildParameters.firstBuildFrom() == JoinControl.BuildParameters.From.LeftInput
+                || buildParameters.firstBuildFrom() == JoinControl.BuildParameters.From.LeftDataIndex;
+        final long firstBuildChunkSize =
+                Math.min(JoinControl.CHUNK_SIZE, (buildFromLeft ? leftRowSetToUse : rightRowSetToUse).size());
+        final int hashTableSize = (int) Math.min(JoinControl.MAX_TABLE_SIZE,
+                Math.max(buildParameters.hashTableSize(), MathUtil.roundUpPowerOf2(
+                        (long) Math.ceil(firstBuildChunkSize / control.getMaximumLoadFactor()))));
         final StaticHashedAsOfJoinStateManager asOfJoinStateManager = TypedHasherFactory.make(
                 StaticAsOfJoinStateManagerTypedBase.class, leftSources, originalLeftSources,
-                buildParameters.hashTableSize(), control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+                hashTableSize, control.getMaximumLoadFactor(), control.getTargetLoadFactor());
         final IntegerArraySource slots = new IntegerArraySource();
 
         final int slotCount;
@@ -721,7 +737,9 @@ public class AsOfJoinHelper {
                 }
 
                 try (final SafeCloseable ignoredAdditions = keysModified || stampModified ? restampAdditions : null;
-                        final SafeCloseable ignoredRemovals = keysModified || stampModified ? restampRemovals : null) {
+                        final SafeCloseable ignoredRemovals = keysModified || stampModified ? restampRemovals : null;
+                        final ChunkSsaStamp.RestampContext restampContext =
+                                new ChunkSsaStamp.RestampContext(rowRedirection)) {
                     // We first do a probe pass, adding all of the removals to a builder in the as of join state manager
                     final int removedSlotCount =
                             asOfJoinStateManager.markForRemoval(restampRemovals, rightSources, slots,
@@ -763,8 +781,8 @@ public class AsOfJoinHelper {
                                         priorRedirections.get());
 
                                 chunkSsaStamp.processRemovals(leftValuesChunk, leftKeyChunk, rightValues.get(),
-                                        rightKeyIndices.get(), priorRedirections.get(), rowRedirection, modifiedBuilder,
-                                        disallowExactMatch);
+                                        rightKeyIndices.get(), priorRedirections.get(), rowRedirection, restampContext,
+                                        modifiedBuilder, disallowExactMatch);
                             }
                         }
                     }
@@ -936,8 +954,8 @@ public class AsOfJoinHelper {
 
                             // noinspection unchecked
                             chunkSsaStamp.processInsertion(leftValuesChunk, leftKeyChunk, rightStampChunk.get(),
-                                    insertedIndices.get(), nextRightValue.get(), rowRedirection, modifiedBuilder,
-                                    endsWithLastValue, disallowExactMatch);
+                                    insertedIndices.get(), nextRightValue.get(), rowRedirection, restampContext,
+                                    modifiedBuilder, endsWithLastValue, disallowExactMatch);
                         }
 
                         // and then finally we handle the case where the keys and stamps were not modified, but we must
@@ -1189,8 +1207,7 @@ public class AsOfJoinHelper {
         leftRecorder.setMergedListener(mergedJoinListener);
         rightRecorder.setMergedListener(mergedJoinListener);
 
-        leftTable.addUpdateListener(leftRecorder);
-        rightTable.addUpdateListener(rightRecorder);
+        mergedJoinListener.addRecordersToParents();
 
         result.addParentReference(mergedJoinListener);
 
@@ -1238,8 +1255,7 @@ public class AsOfJoinHelper {
         leftRecorder.setMergedListener(mergedJoinListener);
         rightRecorder.setMergedListener(mergedJoinListener);
 
-        leftTable.addUpdateListener(leftRecorder);
-        rightTable.addUpdateListener(rightRecorder);
+        mergedJoinListener.addRecordersToParents();
 
         result.addParentReference(mergedJoinListener);
 
@@ -1402,7 +1418,9 @@ public class AsOfJoinHelper {
                         try (final ColumnSource.FillContext fillContext =
                                 rightStampSource.makeFillContext(cycleChunkSize);
                                 final LongSortKernel<Values, RowKeys> sortKernel =
-                                        LongSortKernel.makeContext(stampChunkType, order, cycleChunkSize, true)) {
+                                        LongSortKernel.makeContext(stampChunkType, order, cycleChunkSize, true);
+                                final ChunkSsaStamp.RestampContext restampContext =
+                                        new ChunkSsaStamp.RestampContext(rowRedirection)) {
 
                             final RowSet restampRemovals;
                             final RowSet restampAdditions;
@@ -1436,8 +1454,8 @@ public class AsOfJoinHelper {
 
                                         ssa.removeAndGetPrior(rightStampChunk, rightKeyIndices, priorRedirections);
                                         chunkSsaStamp.processRemovals(leftStampValues, leftStampKeys, rightStampChunk,
-                                                rightKeyIndices, priorRedirections, rowRedirection, modifiedBuilder,
-                                                disallowExactMatch);
+                                                rightKeyIndices, priorRedirections, rowRedirection, restampContext,
+                                                modifiedBuilder, disallowExactMatch);
                                     }
                                 }
 
@@ -1497,8 +1515,8 @@ public class AsOfJoinHelper {
                                             stampCompact.compact(stampChunk, retainStamps);
 
                                             chunkSsaStamp.processInsertion(leftStampValues, leftStampKeys, stampChunk,
-                                                    insertedIndices, nextRightValue, rowRedirection, modifiedBuilder,
-                                                    endsWithLastValue, disallowExactMatch);
+                                                    insertedIndices, nextRightValue, rowRedirection, restampContext,
+                                                    modifiedBuilder, endsWithLastValue, disallowExactMatch);
                                         }
                                     }
                                 }

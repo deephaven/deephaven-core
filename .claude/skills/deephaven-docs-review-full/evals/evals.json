@@ -1,0 +1,105 @@
+{
+  "skill_name": "deephaven-docs-review-full",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Do a full review of this parallelization concept guide before we merge it: .claude/skills/deephaven-docs-review-full/evals/files/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "expected_output": "A prioritized editorial report: summary with verdict, developmental notes first, per-dimension findings, style as patterns, author queries — and it catches the view/update_view deferred-evaluation error.",
+      "files": [
+        "evals/files/parallelization-pre-review.md"
+      ],
+      "expectations": [
+        "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+        "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+        "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+        "Includes an author-queries section listing questions the review couldn't resolve from source",
+        "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+        "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
+        "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+        "Includes at least one example-quality finding from the examples pass: an example that doesn't illustrate the concept its lead-in names, or a concept that is described but never shown",
+        "The report has a Coverage section with the claim ledger as a table (one row per claim with its location, verdict, and source checked), and states how many claims were enumerated, how many were verified against source, and how many are author queries"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Do a full review of the liveness scopes concept guide and apply the fixes. Work on the copies at .claude/skills/deephaven-docs-review-full/evals/files/liveness/python-liveness-scope-concept.md and .claude/skills/deephaven-docs-review-full/evals/files/liveness/groovy-liveness-scope-concept.md, which stand for docs/python/conceptual/liveness-scope-concept.md and docs/groovy/conceptual/liveness-scope-concept.md (resolve relative links from those paths). Edit only the two copies, never the files under docs/. Fix the Groovy copy too where the same problem appears there. When you're done, tell me what you changed and anything you couldn't resolve.",
+      "mode": "edit",
+      "expected_output": "Edit-mode full review of a page unrelated to parallelization (liveness scopes). Checks that fixes land in both languages, that correct-but-unusual code isn't 'fixed', that edits don't break links or leave debris, and that re-verification and style run after the edits.",
+      "files": [
+        "evals/files/liveness/python-liveness-scope-concept.md",
+        "evals/files/liveness/groovy-liveness-scope-concept.md"
+      ],
+      "expectations": [
+        "Corrects the demo description in both languages: the tree table is not 'grouped by Sym', and the tables left open are not 'crypto and data'",
+        "Removes or corrects `scope_from_method = liveness_scope()` (calling the context-manager function outside a `with` block or decorator, which the page itself says not to do)",
+        "Fixes the invalid example code: `return table` at module level (outside any function) and the undefined `some_ticking_table` in the class example",
+        "Does not change the decorator `@liveness_scope()` to `@liveness_scope` (the doc's form is the correct one for a contextlib.contextmanager factory, even though the module docstring shows it without parentheses)",
+        "Addresses that the LivenessScope demo never releases the scope (adds release()/preserve, or corrects the text claiming the scope releases the objects), in Python and in the Groovy sibling where the same demo appears",
+        "Does not leave the claim that reference counting 'will only clean up objects created purely for the GUI' silently unchanged: corrects it against source, removes it, or records an author query (verifying it with a quoted source and keeping it also passes)",
+        "Makes the terminology consistent: `liveness_scope` is a function, so headings and prose don't call it 'the method' while the intro calls it a function",
+        "Doesn't rename or move either file, and every link in the edited files resolves (no new link to a nonexistent file or anchor)",
+        "Doesn't add configuration property names, hedges, or parenthetical caveats to the concept-guide narrative",
+        "The final report lists what changed and says moved, merged, or reworded passages were re-verified against source (or equivalent evidence the re-verify and style steps ran after the edits)",
+        "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections",
+        "Keeps the edits targeted: doesn't retitle the page, replace the existing demo examples with new ones, or reorder its sections, and puts any restructuring it recommends in the report instead (added in iteration 4 after iteration 3 showed wholesale rewrites)"
+      ]
+    },
+    {
+      "prompt": "This is a DOC-1560 audit fix: overhaul the Groovy rollup tables how-to guide and apply the fixes. Work on the copy at .claude/skills/deephaven-docs-review-full/evals/files/rollup/groovy-rollup-table.md, which stands for docs/groovy/how-to-guides/rollup-table.md (resolve relative links from that path). The recorded audit findings for the Python and Groovy rollup pages (from Jira DOC-1620 and DOC-1908) are in .claude/skills/deephaven-docs-review-full/evals/files/rollup-findings/rollup-table-recorded-findings.md. Edit only that copy, never the files under docs/ or the findings file. When you're done, tell me what you changed and anything you couldn't resolve.",
+      "expected_output": "Fixes the page's wrong claims, including the aggregations marked unsupported that rollup supports, while keeping accurate content: the TODO (or retargets it), the root node / leaf node / constituent vocabulary, and the null-value NOTE. Lists problems found on other pages, such as the rollup reference page, as follow-up instead of editing them.",
+      "files": [
+        "evals/files/rollup/groovy-rollup-table.md",
+        "evals/files/rollup-findings/rollup-table-recorded-findings.md"
+      ],
+      "expectations": [
+        "Corrects the aggregations table where it marks as unsupported an aggregation rollup supports (for example AggGroup), against source",
+        "Applies the recorded minor and style findings for the Groovy page that hold up against source, not only the wrong ones: for example adds the AggApproxPct row to the table and gives the syntax block a syntax tag",
+        "Keeps the TODO comment about a hierarchy concept guide (unchanged, or retargeted to a live ticket), rather than deleting it",
+        "Keeps the vocabulary the page defines: root node, leaf nodes, and constituents all still appear and are defined (a corrected definition passes)",
+        "Keeps the NOTE that a column no longer part of the aggregation key is replaced with null on each level (verbatim or with the same meaning)",
+        "Does not edit any file other than the copy, and lists problems it found on other pages (such as the rollup reference page) or in source as follow-up work",
+        "Every change the report lists traces to a stated problem; the report doesn't describe rewording correct sentences without a reason"
+      ],
+      "id": 3
+    },
+    {
+      "prompt": "Apply the reviewer's recorded findings to the query parallelization concept guide. Work on the copy at .claude/skills/deephaven-docs-review-full/evals/files/parallelization/python-parallelization.md, which stands for docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). The findings are in .claude/skills/deephaven-docs-review-full/evals/files/parallelization-findings/parallelization-review-findings.md. Edit only that copy, never the files under docs/ or the findings file. When you're done, tell me what you changed and how you verified the text you wrote.",
+      "mode": "edit",
+      "expected_output": "Applies the four findings (a levels-and-controls summary at the top of 'What is and isn't parallelized', one count framing, deferred evaluation moved out from under 'What you can control', a parallel operations list), then spot-checks every sentence it wrote against source before reporting. The new summary describes `with_serial` within its contract (never invoked concurrently with itself; rows in row-set order) and does not say it runs on one thread or single-threaded.",
+      "files": [
+        "evals/files/parallelization/python-parallelization.md",
+        "evals/files/parallelization-findings/parallelization-review-findings.md"
+      ],
+      "expectations": [
+        "Adds a summary (table or list) at the start of 'What is and isn't parallelized' that pairs each level (tables, columns, rows) with its default behavior and its control",
+        "The report says it verified the sentences it wrote or rewrote against source (for example by running the accuracy spot-check or by citing ConcurrencyControl for the new with_serial wording), not only the findings it applied",
+        "The new or rewritten text describing `with_serial` does not say it runs on one thread, a single thread, or single-threaded; it stays within never-invoked-concurrently-with-itself and row-set order",
+        "Moves the deferred evaluation text out from under the 'What you can control' label, and makes the intro and the section agree on one count",
+        "Rewrites the operations list so every item has the same shape (operation name first), and keeps every operation the list already names",
+        "Does not edit any file other than the copy, and every change the report lists traces to a finding or to a problem the report states"
+      ],
+      "id": 4,
+      "notes": "DOC-1990 round 5 (PR #8897): new 17/18, baseline 18/18. The baseline skill's re-verify step already produces a per-sentence verification on a page this size, so this eval does not separate the configurations; it documents the case that motivated the post-fix spot-check rule."
+    },
+    {
+      "prompt": "A PR changes the files listed in .claude/skills/deephaven-docs-review-full/evals/files/pr-coverage/changed-files.txt (that file is the unfiltered output of git diff --name-status -M <base>...HEAD -- docs for the PR base, before the skill's Markdown-only filter is applied). Do not review the pages. Following the skill's rule for reviewing a PR, write only the discovery command, the page list, and the table that go at the top of the full-review report.",
+      "expected_output": "Copilot's third, tenth, and eleventh reviews of #8910 asked for coverage of the PR-wide rule, deleted pages, and renames. A reviewer applying the rule gives the git diff --name-status discovery command, lists every changed Markdown page in both languages, drops snapshots and sidebar.json, keeps the lightly touched and configuration pages, builds a page-by-step table (a Category column from the directory, a check only for steps that have run, and pending or a reason for the rest), reviews the new path of a rename as a page, and gives the deleted page and the old path of the rename their own rows with a removed-page reason instead of step marks. The fixture is the unfiltered name-status diff of docs, so it holds snapshot and sidebar.json entries that the skill's Markdown-only pathspec would drop. The discovery command itself cannot be run on a fixture file, and running every step on every page is not tested here; only the discovery filter, the removed-page handling, and the report table are.",
+      "files": [
+        "evals/files/pr-coverage/changed-files.txt"
+      ],
+      "expectations": [
+        "Lists the six modified pages (Python and Groovy for each of the parallelization concept guide, the query-table-configuration page, and the update reference page) as pages to review",
+        "Does not list sidebar.json or any snapshots/*.json file as a page to review",
+        "Keeps the configuration page and the update reference page in the list (does not narrow the review to the headline concept guide)",
+        "Gives the table one row per page, a Category column, and one column per step: developmental pass, accuracy, structure, re-verify, examples, and style",
+        "Every cell holds a check only for a step that has actually run, and otherwise a stated status or reason such as pending or not run; no check marks for steps that have not run, since nothing has been reviewed yet",
+        "Names git diff --name-status -M (status-aware, with rename detection) as the discovery command in its output, not --name-only, which cannot distinguish a deletion from a rename, and not gh pr view",
+        "Reviews the new path of the rename (docs/python/how-to-guides/parallel-select.md) as a page, and gives the old path (use-parallel-select.md) its own row with a removed-page reason, such as inbound links and sidebar entries checked, instead of step marks",
+        "Gives the deleted page (obsolete-parallel-notes.md) its own row with a removed-page reason instead of step marks, and does not run the review steps on it",
+        "Identifies each page's category from its directory in the Category column: Concept guide for the two conceptual pages, Reference guide for the two update pages, and How-to guide for the renamed parallel-select page"
+      ],
+      "id": 5,
+      "notes": "PR #8910: tests the page list, the removed-page handling, and the page-by-step table only, not that every step is then run on every page. One run per configuration, author-graded, not blind. The fixture is unfiltered git diff --name-status output (modified pages, one rename, one deletion, plus sidebar.json and snapshot entries). Changed skill: the first run pre-filled check marks for steps nobody had run and scored 7/8; after the rule was changed to say a cell gets a check only once its step has run (otherwise pending), and a Category column was added after a later review, the rerun scored 9/9. Baseline: 6/9. It produces no per-step columns and gives the rename's old path no row of its own. The category expectation does not separate the two versions; it guards against dropping the prerequisite step. Expectations were added or tightened after earlier runs, so results on the earlier name-only fixture are superseded."
+    }
+  ]
+}

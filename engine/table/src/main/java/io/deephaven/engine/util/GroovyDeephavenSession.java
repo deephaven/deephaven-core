@@ -155,9 +155,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
 
         public SafeCloseable setScriptPrefix(final String newPrefix) {
+            final String oldPrefix = scriptPrefix;
             scriptPrefix = newPrefix;
             return () -> {
-                scriptPrefix = newPrefix;
+                scriptPrefix = oldPrefix;
             };
         }
     }

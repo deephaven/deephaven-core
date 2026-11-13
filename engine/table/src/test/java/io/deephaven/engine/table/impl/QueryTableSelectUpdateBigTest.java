@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.test.types.SerialTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -18,7 +18,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Test QueryTable select and update operations.
  */
-@Category(OutOfBandTest.class)
+@Category(SerialTest.class)
 public class QueryTableSelectUpdateBigTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();

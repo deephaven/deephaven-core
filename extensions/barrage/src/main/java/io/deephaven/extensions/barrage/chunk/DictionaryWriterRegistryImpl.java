@@ -6,11 +6,13 @@ package io.deephaven.extensions.barrage.chunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.annotations.InternalUseOnly;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.function.LongUnaryOperator;
 
 /**
  * The server-side {@link DictionaryWriterRegistry} implementation, backed by fastutil maps.
@@ -45,7 +47,9 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
     /**
      * Creates a shared-backed registry for full subscriptions and growing subscriptions targeting a full subscription.
      * The {@code sharedDictionaries} map is owned by the {@code io.deephaven.server.barrage.BarrageMessageProducer} and
-     * lives for the lifetime of the table's producer; it is never cleared.
+     * lives for the lifetime of the table's producer; it is never cleared. Registries over the same map are used by
+     * different subscribers simultaneously, and add to it only while holding its lock. The producer resets dictionaries
+     * that have outgrown the table *before* a propagation phase's writes begin, when no registry is adding to it.
      */
     public DictionaryWriterRegistryImpl(
             @NotNull final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries) {
@@ -62,12 +66,8 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
         if (entry == null) {
             final DictionaryWriterState state;
             if (sharedDictionaries != null) {
-                SharedWriterDictionary shared = sharedDictionaries.get(dictId);
-                if (shared == null) {
-                    shared = new SharedWriterDictionary(dictId, valuesChunkType);
-                    sharedDictionaries.put(dictId, shared);
-                }
-                state = new SharedDictionaryWriterState(shared);
+                state = new SharedDictionaryWriterState(
+                        getOrCreateShared(sharedDictionaries, dictId, valuesChunkType));
             } else {
                 state = new LocalDictionaryWriterState(dictId, valuesChunkType);
             }
@@ -75,6 +75,43 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
             entries.put(dictId, entry);
         }
         return entry.state;
+    }
+
+    /**
+     * Returns (or creates) the producer-level {@link SharedWriterDictionary} for {@code dictId} in
+     * {@code sharedDictionaries}. Full subscribers write in parallel, and any of their registries may be the first to
+     * need an id, so the lookup and insert happen under the map's monitor.
+     */
+    @NotNull
+    private static SharedWriterDictionary getOrCreateShared(
+            @NotNull final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries,
+            final long dictId,
+            @NotNull final ChunkType valuesChunkType) {
+        synchronized (sharedDictionaries) {
+            SharedWriterDictionary shared = sharedDictionaries.get(dictId);
+            if (shared == null) {
+                shared = new SharedWriterDictionary(dictId, valuesChunkType);
+                sharedDictionaries.put(dictId, shared);
+            }
+            return shared;
+        }
+    }
+
+    /**
+     * The producer's shared dictionaries that this registry's states are backed by, or {@code null} for a local
+     * registry.
+     */
+    @InternalUseOnly
+    @Nullable
+    public Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries() {
+        return sharedDictionaries;
+    }
+
+    /** Returns the entry registered for {@code dictId}, or {@code null} if there is none yet. */
+    @InternalUseOnly
+    @Nullable
+    public Entry getEntry(final long dictId) {
+        return entries.get(dictId);
     }
 
     @Override
@@ -91,16 +128,18 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
     @Override
     public void resetDeltas() {
         for (final Entry e : entries.values()) {
-            if (e.state.hasDelta()) {
-                e.state.resetDelta();
-            }
+            e.state.resetDelta();
         }
     }
 
     @Override
-    public void resetOverflowedEntries(final long liveRowCount) {
+    public void maybeResetEntries(@NotNull final LongUnaryOperator maxSizeForDictId) {
+        if (sharedDictionaries != null) {
+            // the producer resets shared dictionaries itself, before a propagation phase's writes begin
+            return;
+        }
         for (final Entry e : entries.values()) {
-            if (e.state.totalSize() > liveRowCount) {
+            if (e.state.totalSize() > maxSizeForDictId.applyAsLong(e.state.getDictId())) {
                 e.state.reset();
             }
         }

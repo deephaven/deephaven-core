@@ -9,8 +9,12 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.DeferredViewTable.TableReference;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -43,36 +47,59 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
             SourceTableComponentFactory componentFactory,
             TableLocationProvider locationProvider,
             UpdateSourceRegistrar updateSourceRegistrar) {
-        super(checkSimple(tableDefinition), description, componentFactory, locationProvider, updateSourceRegistrar);
+        this(tableDefinition, description, componentFactory, locationProvider, updateSourceRegistrar, null);
+    }
+
+    /**
+     * @param tableDefinition A TableDefinition
+     * @param description A human-readable description for this table
+     * @param componentFactory A component factory for creating column source managers
+     * @param locationProvider A TableLocationProvider, for use in discovering the locations that compose this table
+     * @param updateSourceRegistrar Callback for registering live tables for refreshes, null if this table is not live
+     * @param attributes The attributes map to use, or else {@code null} to allocate a new one
+     */
+    public SimpleSourceTable(TableDefinition tableDefinition,
+            String description,
+            SourceTableComponentFactory componentFactory,
+            TableLocationProvider locationProvider,
+            UpdateSourceRegistrar updateSourceRegistrar,
+            @Nullable Map<String, Object> attributes) {
+        super(checkSimple(tableDefinition), description, componentFactory, locationProvider, updateSourceRegistrar,
+                attributes);
     }
 
     protected SimpleSourceTable newInstance(TableDefinition tableDefinition,
             String description,
             SourceTableComponentFactory componentFactory,
             TableLocationProvider locationProvider,
-            UpdateSourceRegistrar updateSourceRegistrar) {
+            UpdateSourceRegistrar updateSourceRegistrar,
+            @Nullable Map<String, Object> attributes) {
         return new SimpleSourceTable(tableDefinition, description, componentFactory, locationProvider,
-                updateSourceRegistrar);
+                updateSourceRegistrar, attributes);
     }
 
     @Override
-    protected SimpleSourceTable copy() {
-        final SimpleSourceTable result = newInstance(definition, getDescription(), componentFactory, locationProvider,
-                updateSourceRegistrar);
-        LiveAttributeMap.copyAttributes(this, result, ak -> true);
-        return result;
+    protected SimpleSourceTable copy(@NotNull final Map<String, Object> attributes) {
+        return newInstance(definition, getDescription(), componentFactory, locationProvider, updateSourceRegistrar,
+                attributes);
     }
 
     @Override
     protected final SourceTable<?> redefineImpl(TableDefinition newDefinition) {
         return newInstance(newDefinition, getDescription() + "-retainColumns", componentFactory, locationProvider,
-                updateSourceRegistrar);
+                updateSourceRegistrar, null);
     }
 
     @Override
     protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
-        return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
-                new TableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
+        return DeferredViewTable.withView(newDefinitionExternal, getDescription() + "-redefined",
+                new TableReference(redefine(newDefinitionInternal)), viewColumns);
+    }
+
+    @Override
+    protected final Table redefineWithRename(TableDefinition newDefinitionExternal, SourceColumn[] renameColumns) {
+        return DeferredViewTable.withRename(newDefinitionExternal, getDescription() + "-redefined",
+                new TableReference(this), renameColumns);
     }
 }

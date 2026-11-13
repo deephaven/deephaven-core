@@ -131,7 +131,11 @@ public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
                         rowSetChangeRecorder.addRowKey(rowNumber);
                         destinations.set(ii, rowNumber);
                     } else {
-                        rowSetChangeRecorder.modifyRowKey(rowNumber);
+                        // A row allocated earlier in this table (a repeated new key) is recorded as an addition
+                        // after this loop; marking it modified too would report it as both added and modified.
+                        if (rowNumber < nextRow) {
+                            rowSetChangeRecorder.modifyRowKey(rowNumber);
+                        }
                         destinations.set(ii, rowNumber);
                     }
                 }

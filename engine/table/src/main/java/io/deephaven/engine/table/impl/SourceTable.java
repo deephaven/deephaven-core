@@ -28,10 +28,12 @@ import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -95,7 +97,27 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             @NotNull final SourceTableComponentFactory componentFactory,
             @NotNull final TableLocationProvider locationProvider,
             final UpdateSourceRegistrar updateSourceRegistrar) {
-        super(tableDefinition, description);
+        this(tableDefinition, description, componentFactory, locationProvider, updateSourceRegistrar, null);
+    }
+
+    /**
+     * Construct a new disk-backed table.
+     *
+     * @param tableDefinition A TableDefinition
+     * @param description A human-readable description for this table
+     * @param componentFactory A component factory for creating column source managers
+     * @param locationProvider A TableLocationProvider, for use in discovering the locations that compose this table
+     * @param updateSourceRegistrar Callback for registering update sources for refreshes, null if this table is not
+     *        refreshing
+     * @param attributes The attributes map to use, or else {@code null} to allocate a new one
+     */
+    SourceTable(@NotNull final TableDefinition tableDefinition,
+            @NotNull final String description,
+            @NotNull final SourceTableComponentFactory componentFactory,
+            @NotNull final TableLocationProvider locationProvider,
+            final UpdateSourceRegistrar updateSourceRegistrar,
+            @Nullable final Map<String, Object> attributes) {
+        super(tableDefinition, description, attributes);
 
         this.componentFactory = Require.neqNull(componentFactory, "componentFactory");
         this.locationProvider = Require.neqNull(locationProvider, "locationProvider");
@@ -115,10 +137,15 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
 
         setRefreshing(isRefreshing);
-        // Given the location provider's update modes, retrieve and set applicable table attributes from the CSM
+        // Given the location provider's update modes, retrieve and set applicable table attributes from the CSM. The
+        // supplied attributes take precedence, so that a copy keeps the values of the table it was copied from.
         columnSourceManager.getTableAttributes(
                 locationProvider.getUpdateMode(),
-                locationProvider.getLocationUpdateMode()).forEach(this::setAttribute);
+                locationProvider.getLocationUpdateMode()).forEach((ak, av) -> {
+                    if (attributes == null || !attributes.containsKey(ak)) {
+                        setAttribute(ak, av);
+                    }
+                });
     }
 
     /**

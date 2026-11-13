@@ -28,6 +28,10 @@ import java.util.stream.Collectors;
  *           convention must only be done before the result is published. No mutation is permitted after first access
  *           using any of {@link #getAttribute(String)}, {@link #getAttributeKeys()}, {@link #hasAttribute(String)},
  *           {@link #getAttributes()}, or {@link AttributeMap#getAttributes(Predicate)}.
+ *           <p>
+ *           Each attribute value that is a {@link LivenessReferent} and is either static or refreshing is managed by
+ *           this map exactly once for as long as it remains in the map, including values supplied as initial
+ *           attributes.
  */
 public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYPE>, IMPL_TYPE extends LiveAttributeMap<IFACE_TYPE, IMPL_TYPE>>
         extends LivenessArtifact
@@ -67,6 +71,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         super(enforceStrongReachability);
         this.mutableAttributes = this.initialAttributes =
                 Objects.requireNonNullElse(initialAttributes, EMPTY_ATTRIBUTES);
+        this.initialAttributes.values().forEach(this::manageIfNeeded);
     }
 
     /**
@@ -80,10 +85,11 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
     public void setAttribute(@NotNull final String key, @NotNull final Object object) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(object);
-        if (needsManagement(object)) {
-            manage((LivenessReferent) object);
+        final Object currentValue = currentAttributes().get(key);
+        if (currentValue == object) {
+            return;
         }
-        ensureAttributes().put(key, object);
+        replaceAttribute(key, currentValue, object);
     }
 
     /**
@@ -97,19 +103,28 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
     public void setAttribute(@NotNull final String key, @NotNull final UnaryOperator<Object> updater) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(updater);
-        final Map<String, Object> localAttributes = ensureAttributes();
-        final Object currentValue = localAttributes.get(key);
+        final Object currentValue = currentAttributes().get(key);
         final Object updatedValue = Objects.requireNonNull(updater.apply(currentValue));
         if (currentValue == updatedValue) {
             return;
         }
-        if (needsManagement(updatedValue)) {
-            manage((LivenessReferent) updatedValue);
-        }
-        if (needsManagement(currentValue)) {
-            unmanage((LivenessReferent) currentValue);
-        }
-        localAttributes.put(key, updatedValue);
+        replaceAttribute(key, currentValue, updatedValue);
+    }
+
+    /**
+     * Assign {@code newValue} to {@code key}, managing it and unmanaging {@code currentValue}, which it replaces.
+     *
+     * @param key The name of the attribute
+     * @param currentValue The value currently assigned to {@code key}, or {@code null} if there is none
+     * @param newValue The value to assign, which must not be {@code currentValue}
+     */
+    private void replaceAttribute(
+            @NotNull final String key,
+            @Nullable final Object currentValue,
+            @NotNull final Object newValue) {
+        manageIfNeeded(newValue);
+        ensureAttributes().put(key, newValue);
+        unmanageIfNeeded(currentValue);
     }
 
     /**
@@ -156,12 +171,11 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
     }
 
     /**
-     * Access our own {@link #mutableAttributes} storage, requiring that {@link #ensureAttributes()} has been previously
-     * invoked.
+     * Access our {@link #mutableAttributes} for reading, without ensuring that they are specific to {@code this}.
      *
-     * @return The {@link #mutableAttributes} specific to {@code this}
+     * @return The current {@link #mutableAttributes}, which may still be the (possibly shared) initial attributes
      */
-    private Map<String, Object> expectAttributes() {
+    private Map<String, Object> currentAttributes() {
         checkMutable();
         return Objects.requireNonNull(mutableAttributes);
     }
@@ -246,16 +260,6 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         return (IFACE_TYPE) this;
     }
 
-    protected IFACE_TYPE prepareReturnCopy() {
-        expectAttributes().values().forEach(av -> {
-            if (needsManagement(av)) {
-                manage((LivenessReferent) av);
-            }
-        });
-        // noinspection unchecked
-        return (IFACE_TYPE) this;
-    }
-
     @Override
     public IFACE_TYPE withAttributes(
             @NotNull final Map<String, Object> toAdd,
@@ -263,21 +267,16 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         final Set<String> effectiveRemoves = new HashSet<>(toRemove);
         effectiveRemoves.removeAll(toAdd.keySet());
 
-        final boolean addsSuperfluous = addsSuperfluous(toAdd);
-        final boolean removesSuperfluous = removesSuperfluous(effectiveRemoves);
-        if (addsSuperfluous && removesSuperfluous) {
+        if (addsSuperfluous(toAdd) && removesSuperfluous(effectiveRemoves)) {
             return prepareReturnThis();
         }
 
-        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy();
-        if (!removesSuperfluous) {
-            result.ensureAttributes().keySet().removeAll(effectiveRemoves);
-        }
-        if (!addsSuperfluous) {
-            result.expectAttributes().putAll(toAdd);
-        }
-
-        return result.prepareReturnCopy();
+        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result =
+                copy(buildAttributes(ak -> !effectiveRemoves.contains(ak), toAdd));
+        result.reapplyAttributes(toAdd);
+        result.removeAttributes(effectiveRemoves::contains);
+        // noinspection unchecked
+        return (IFACE_TYPE) result;
     }
 
     @Override
@@ -286,10 +285,10 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
             return prepareReturnThis();
         }
 
-        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy();
-        result.ensureAttributes().putAll(toAdd);
-
-        return result.prepareReturnCopy();
+        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy(buildAttributes(ak -> true, toAdd));
+        result.reapplyAttributes(toAdd);
+        // noinspection unchecked
+        return (IFACE_TYPE) result;
     }
 
     @Override
@@ -298,10 +297,12 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
             return prepareReturnThis();
         }
 
-        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy();
-        result.ensureAttributes().keySet().removeAll(toRemove);
-
-        return result.prepareReturnCopy();
+        final Set<String> toRemoveSet = new HashSet<>(toRemove);
+        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result =
+                copy(buildAttributes(ak -> !toRemoveSet.contains(ak), Map.of()));
+        result.removeAttributes(toRemoveSet::contains);
+        // noinspection unchecked
+        return (IFACE_TYPE) result;
     }
 
     @Override
@@ -310,16 +311,101 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
             return prepareReturnThis();
         }
 
-        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy();
-        result.ensureAttributes().keySet().retainAll(toRetain);
-
-        return result.prepareReturnCopy();
+        final Set<String> toRetainSet = new HashSet<>(toRetain);
+        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy(buildAttributes(toRetainSet::contains, Map.of()));
+        result.removeAttributes(ak -> !toRetainSet.contains(ak));
+        // noinspection unchecked
+        return (IFACE_TYPE) result;
     }
 
     /**
-     * Create a copy of {@code this} with initially-shared {@link #mutableAttributes}.
+     * Get our attributes whose keys satisfy {@code shouldCopy}, for another map to use as its initial attributes.
+     *
+     * @param shouldCopy Should we copy the attribute with this key?
+     * @return Our own published attributes if every key satisfies {@code shouldCopy}, else a new map of those that do,
+     *         which is never mutated, since {@link #ensureAttributes()} replaces initial attributes before any change
      */
-    protected abstract IMPL_TYPE copy();
+    protected final Map<String, Object> getAttributesToCopy(@NotNull final Predicate<String> shouldCopy) {
+        final Map<String, Object> localImmutableAttributes = immutableAttributes();
+        if (localImmutableAttributes.keySet().stream().allMatch(shouldCopy)) {
+            return localImmutableAttributes;
+        }
+        return buildAttributes(shouldCopy, Map.of());
+    }
+
+    /**
+     * Build the attributes for a copy of {@code this}: our attributes whose keys satisfy {@code shouldKeep}, overlaid
+     * with {@code toAdd}.
+     *
+     * @param shouldKeep Should we keep our attribute with this key?
+     * @param toAdd Attributes to add, replacing any of ours with the same keys
+     * @return A new map of the resulting attributes, which only the copy's constructor receives and which is never
+     *         mutated, since {@link #ensureAttributes()} replaces initial attributes before any change
+     */
+    private Map<String, Object> buildAttributes(
+            @NotNull final Predicate<String> shouldKeep,
+            @NotNull final Map<String, Object> toAdd) {
+        final Map<String, Object> localImmutableAttributes = immutableAttributes();
+        final Map<String, Object> result = new HashMap<>(localImmutableAttributes.size() + toAdd.size());
+        localImmutableAttributes.forEach((ak, av) -> {
+            if (shouldKeep.test(ak)) {
+                result.put(ak, av);
+            }
+        });
+        result.putAll(toAdd);
+        return result.isEmpty() ? EMPTY_ATTRIBUTES : result;
+    }
+
+    /**
+     * Assign each of {@code toAdd}'s values to its key. A copy's constructor may replace or drop attributes it was
+     * given, as {@code BaseTable} does with {@link io.deephaven.engine.table.Table#SYSTEMIC_TABLE_ATTRIBUTE} according
+     * to whether the current thread is systemic; this restores any such attribute that the caller asked to add. It does
+     * nothing, and in particular does not call {@link #ensureAttributes()}, when every value is already assigned.
+     *
+     * @param toAdd The attributes that the caller asked to add
+     */
+    private void reapplyAttributes(@NotNull final Map<String, Object> toAdd) {
+        toAdd.forEach(this::setAttribute);
+    }
+
+    /**
+     * Remove the attributes whose keys satisfy {@code shouldRemove}, unmanaging their values. A copy's constructor may
+     * add attributes beyond the ones it was given, as {@code BaseTable} does with
+     * {@link io.deephaven.engine.table.Table#SYSTEMIC_TABLE_ATTRIBUTE} on a systemic thread; this removes any such
+     * attribute that the caller asked to be absent. It does nothing, and in particular does not call
+     * {@link #ensureAttributes()}, when no key satisfies {@code shouldRemove}.
+     *
+     * @param shouldRemove Should we remove the attribute with this key?
+     */
+    private void removeAttributes(@NotNull final Predicate<String> shouldRemove) {
+        if (currentAttributes().keySet().stream().noneMatch(shouldRemove)) {
+            return;
+        }
+        final List<LivenessReferent> removedReferents = new ArrayList<>();
+        for (final Iterator<Map.Entry<String, Object>> it = ensureAttributes().entrySet().iterator(); it.hasNext();) {
+            final Map.Entry<String, Object> attrEntry = it.next();
+            if (!shouldRemove.test(attrEntry.getKey())) {
+                continue;
+            }
+            final Object removedValue = attrEntry.getValue();
+            it.remove();
+            if (needsManagement(removedValue)) {
+                removedReferents.add((LivenessReferent) removedValue);
+            }
+        }
+        if (!removedReferents.isEmpty()) {
+            unmanage(removedReferents.stream());
+        }
+    }
+
+    /**
+     * Create a copy of {@code this} that is constructed with {@code attributes} as its initial attributes.
+     *
+     * @param attributes The attributes for the copy, which implementations must pass to its constructor without
+     *        modifying
+     * @return The copy
+     */
+    protected abstract IMPL_TYPE copy(@NotNull Map<String, Object> attributes);
 
     @Override
     @ConcurrentMethod
@@ -358,7 +444,19 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
                         Collections::unmodifiableMap));
     }
 
-    private static boolean needsManagement(@NotNull final Object object) {
+    private void manageIfNeeded(@Nullable final Object object) {
+        if (needsManagement(object)) {
+            manage((LivenessReferent) object);
+        }
+    }
+
+    private void unmanageIfNeeded(@Nullable final Object object) {
+        if (needsManagement(object)) {
+            unmanage((LivenessReferent) object);
+        }
+    }
+
+    private static boolean needsManagement(@Nullable final Object object) {
         return object instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(object);
     }
 }

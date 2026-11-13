@@ -9,10 +9,10 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.TableTransformationColumn;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
@@ -24,7 +24,6 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
-import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -78,6 +77,10 @@ public class UnionSourceManager implements PushdownPredicateManager {
     private final ConstituentChangesListenerRecorder constituentChangesListener;
     private final UpdateCommitter<UnionSourceManager> updateCommitter;
     private final ExecutionContext executionContext;
+    /**
+     * The callsite of the merge, shared by the listeners for constituents added after construction.
+     */
+    private final String callsite;
 
     public UnionSourceManager(@NotNull final PartitionedTable partitionedTable) {
         constituentChangesPermitted = partitionedTable.constituentChangesPermitted();
@@ -123,12 +126,14 @@ public class UnionSourceManager implements PushdownPredicateManager {
             executionContext = ExecutionContext.newBuilder()
                     .markSystemic()
                     .build();
+            callsite = QueryPerformanceRecorder.getCallerLine();
         } else {
             listenerRecorders = null;
             mergedListener = null;
             constituentChangesListener = null;
             updateCommitter = null;
             executionContext = null;
+            callsite = null;
         }
 
         try (final Stream<Table> initialConstituents = currConstituents()) {
@@ -570,7 +575,10 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         private void processAdd(@NotNull final Table addedConstituent) {
             if (addedConstituent.isRefreshing()) {
-                final ConstituentListenerRecorder addedListener = new ConstituentListenerRecorder(addedConstituent);
+                final ConstituentListenerRecorder addedListener;
+                try (final SafeCloseable ignored = QueryPerformanceRecorder.setCallsiteWithCloseable(callsite)) {
+                    addedListener = new ConstituentListenerRecorder(addedConstituent);
+                }
                 addedConstituent.addUpdateListener(addedListener);
                 addedListeners.add(addedListener);
                 synchronized (listenerRecorders) {
@@ -793,7 +801,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
-        final MutableLong minCost = new MutableLong(PushdownResult.UNSUPPORTED_ACTION_COST);
+        if (ctx.matchers.isEmpty()) {
+            // No constituent that overlaps the selection can push the filter down.
+            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
+            return;
+        }
+
+        final long[] costs = new long[ctx.matchers.size()];
+        Arrays.fill(costs, PushdownResult.UNSUPPORTED_ACTION_COST);
+        final WritableRowSet[] localSelections = new WritableRowSet[ctx.matchers.size()];
+        // Close on success and failure to ensure no resource leaks.
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -805,30 +822,28 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
                     final long firstRowKey = ctx.firstRowKeys.getLong(idx);
                     final long lastRowKey = ctx.lastRowKeys.getLong(idx);
-                    try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
-                        if (localSelection.isEmpty()) {
-                            // No rows remain for this constituent, so we can skip it.
-                            resume.run();
-                            return;
-                        }
-                        // Shift to local space and delegate to the constituent matcher.
-                        localSelection.shiftInPlace(-firstRowKey);
-                        final RowSet localSelectionCopy = localSelection.copy();
-                        matcher.estimatePushdownFilterCost(
-                                filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), jobScheduler,
-                                cost -> {
-                                    synchronized (minCost) {
-                                        minCost.set(Math.min(minCost.get(), cost));
-                                    }
-                                    localSelectionCopy.close();
-                                    resume.run();
-                                }, nec);
+                    final WritableRowSet localSelection =
+                            localSelections[idx] = selection.subSetByKeyRange(firstRowKey, lastRowKey);
+                    if (localSelection.isEmpty()) {
+                        // No rows remain for this constituent, so we can skip it.
+                        resume.run();
+                        return;
                     }
+                    // Shift to local space and delegate to the constituent matcher.
+                    localSelection.shiftInPlace(-firstRowKey);
+                    matcher.estimatePushdownFilterCost(
+                            filter, localSelection, usePrev, ctx.contexts.get(idx), jobScheduler,
+                            cost -> {
+                                costs[idx] = cost;
+                                resume.run();
+                            }, nec);
                 },
-                () -> onComplete.accept(minCost.get()),
-                () -> {
-                }, // no cleanup needed
-                onError);
+                () -> onComplete.accept(Arrays.stream(costs).min().getAsLong()),
+                () -> SafeCloseableArray.close(localSelections),
+                e -> {
+                    SafeCloseable.closeAllDuringFailure(e, localSelections);
+                    onError.accept(e);
+                });
     }
 
     @Override
@@ -844,9 +859,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
+        if (ctx.matchers.isEmpty()) {
+            // No constituent that overlaps the selection can push the filter down, so every row is a maybe.
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+            return;
+        }
 
         final WritableRowSet[] matches = new WritableRowSet[ctx.matchers.size()];
         final WritableRowSet[] maybeMatches = new WritableRowSet[ctx.matchers.size()];
+        final WritableRowSet[] localSelections = new WritableRowSet[ctx.matchers.size()];
+        // Close on success and failure to ensure no resource leaks.
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -858,28 +880,26 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
                     final long firstRowKey = ctx.firstRowKeys.getLong(idx);
                     final long lastRowKey = ctx.lastRowKeys.getLong(idx);
-                    try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
-                        if (localSelection.isEmpty()) {
-                            matches[idx] = RowSetFactory.empty();
-                            maybeMatches[idx] = RowSetFactory.empty();
-                            resume.run();
-                            return;
-                        }
-                        localSelection.shiftInPlace(-firstRowKey);
-                        final RowSet localSelectionCopy = localSelection.copy();
-                        matcher.pushdownFilter(
-                                filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), costCeiling, jobScheduler,
-                                result -> {
-                                    result.match().shiftInPlace(firstRowKey);
-                                    result.maybeMatch().shiftInPlace(firstRowKey);
-
-                                    matches[idx] = result.match();
-                                    maybeMatches[idx] = result.maybeMatch();
-
-                                    localSelectionCopy.close();
-                                    resume.run();
-                                }, nec);
+                    final WritableRowSet localSelection =
+                            localSelections[idx] = selection.subSetByKeyRange(firstRowKey, lastRowKey);
+                    if (localSelection.isEmpty()) {
+                        matches[idx] = RowSetFactory.empty();
+                        maybeMatches[idx] = RowSetFactory.empty();
+                        resume.run();
+                        return;
                     }
+                    localSelection.shiftInPlace(-firstRowKey);
+                    matcher.pushdownFilter(
+                            filter, localSelection, usePrev, ctx.contexts.get(idx), costCeiling, jobScheduler,
+                            result -> {
+                                result.match().shiftInPlace(firstRowKey);
+                                result.maybeMatch().shiftInPlace(firstRowKey);
+
+                                matches[idx] = result.match();
+                                maybeMatches[idx] = result.maybeMatch();
+
+                                resume.run();
+                            }, nec);
                 },
                 () -> {
                     // The per constituent results are ordered and non-overlapping, which RowSetFactory.union merges
@@ -895,10 +915,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     }
                 },
                 () -> {
+                    SafeCloseableArray.close(localSelections);
                     SafeCloseableArray.close(matches);
                     SafeCloseableArray.close(maybeMatches);
                 },
-                onError);
+                e -> {
+                    SafeCloseable.closeAllDuringFailure(e, localSelections);
+                    SafeCloseable.closeAllDuringFailure(e, matches);
+                    SafeCloseable.closeAllDuringFailure(e, maybeMatches);
+                    onError.accept(e);
+                });
     }
 
     /**

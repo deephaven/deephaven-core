@@ -42,7 +42,19 @@ import java.util.function.Function;
 public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_TYPE>> extends BaseTable<IMPL_TYPE> {
 
     public UncoalescedTable(@NotNull final TableDefinition definition, @NotNull final String description) {
-        super(definition, description, null);
+        this(definition, description, null);
+    }
+
+    /**
+     * @param definition The definition for this table
+     * @param description A description of this table
+     * @param attributes The attributes map to use, or else {@code null} to allocate a new one
+     */
+    public UncoalescedTable(
+            @NotNull final TableDefinition definition,
+            @NotNull final String description,
+            @Nullable final Map<String, Object> attributes) {
+        super(definition, description, attributes);
     }
 
     // region coalesce support

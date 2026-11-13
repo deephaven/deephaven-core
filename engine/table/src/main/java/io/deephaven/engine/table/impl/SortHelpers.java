@@ -1093,22 +1093,27 @@ public class SortHelpers {
         final int sortSize = LongSizedDataStructure.intSize("SortHelper.makeAndFillValues", ok.size());
 
         final WritableChunk<Values> values = columnSource.getChunkType().makeWritableChunk(sortSize);
-
-        final int fillSegments = parallelFillSegments(sortSize);
-        if (fillSegments > 1) {
-            fillValuesParallel(usePrev, ok, columnSource, values, sortSize, fillSegments);
-            return values;
-        }
-
-        try (final ColumnSource.FillContext primaryColumnSourceContext = columnSource.makeFillContext(sortSize)) {
-            if (usePrev) {
-                columnSource.fillPrevChunk(primaryColumnSourceContext, values, ok);
-            } else {
-                columnSource.fillChunk(primaryColumnSourceContext, values, ok);
+        try {
+            final int fillSegments = parallelFillSegments(sortSize);
+            if (fillSegments > 1) {
+                fillValuesParallel(usePrev, ok, columnSource, values, sortSize, fillSegments);
+                return values;
             }
-        }
 
-        return values;
+            try (final ColumnSource.FillContext primaryColumnSourceContext =
+                    columnSource.makeFillContext(sortSize)) {
+                if (usePrev) {
+                    columnSource.fillPrevChunk(primaryColumnSourceContext, values, ok);
+                } else {
+                    columnSource.fillChunk(primaryColumnSourceContext, values, ok);
+                }
+            }
+            return values;
+        } catch (final Throwable t) {
+            // the caller takes ownership of the chunk only once it is filled
+            values.close();
+            throw t;
+        }
     }
 
     /**
@@ -1186,36 +1191,47 @@ public class SortHelpers {
             // may not run on the threads a listener-initiated sort blocks; see ParallelTimsort.sortTree
             final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
             final CompletableFuture<Void> waitForFill = new CompletableFuture<>();
-            jobScheduler.iterateParallel(
-                    ExecutionContext.getContext(),
-                    logOutput -> logOutput.append("SortHelpers.fillValuesParallel"),
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                    0, fillSegments,
-                    (context, segment, nestedErrorConsumer) -> {
-                        final int startPosition = segment * segmentSize;
-                        final int sliceSize = Math.min(segmentSize, sortSize - startPosition);
-                        try (final ColumnSource.FillContext fillContext = columnSource.makeFillContext(sliceSize);
-                                final ResettableWritableChunk<Any> resettableSlice =
-                                        columnSource.getChunkType().makeResettableWritableChunk()) {
-                            // noinspection unchecked
-                            final WritableChunk<Any> slice = resettableSlice.resetFromChunk(
-                                    (WritableChunk<Any>) (WritableChunk<?>) values, startPosition, sliceSize);
-                            if (usePrev) {
-                                columnSource.fillPrevChunk(fillContext, slice, segmentRows[segment]);
-                            } else {
-                                columnSource.fillChunk(fillContext, slice, segmentRows[segment]);
-                            }
-                        }
-                    },
-                    () -> waitForFill.complete(null),
-                    () -> {
-                    },
-                    waitForFill::completeExceptionally);
+            // an Error starting the iteration is rethrown once the segments already started have finished with the
+            // chunk and the row sequences
+            Error startError = null;
             try {
-                waitForFill.get();
+                jobScheduler.iterateParallel(
+                        ExecutionContext.getContext(),
+                        logOutput -> logOutput.append("SortHelpers.fillValuesParallel"),
+                        JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                        0, fillSegments,
+                        (context, segment, nestedErrorConsumer) -> {
+                            final int startPosition = segment * segmentSize;
+                            final int sliceSize = Math.min(segmentSize, sortSize - startPosition);
+                            try (final ColumnSource.FillContext fillContext = columnSource.makeFillContext(sliceSize);
+                                    final ResettableWritableChunk<Any> resettableSlice =
+                                            columnSource.getChunkType().makeResettableWritableChunk()) {
+                                // noinspection unchecked
+                                final WritableChunk<Any> slice = resettableSlice.resetFromChunk(
+                                        (WritableChunk<Any>) (WritableChunk<?>) values, startPosition, sliceSize);
+                                if (usePrev) {
+                                    columnSource.fillPrevChunk(fillContext, slice, segmentRows[segment]);
+                                } else {
+                                    columnSource.fillChunk(fillContext, slice, segmentRows[segment]);
+                                }
+                            }
+                        },
+                        () -> waitForFill.complete(null),
+                        () -> {
+                        },
+                        waitForFill::completeExceptionally);
+            } catch (final Error e) {
+                startError = e;
+                waitForFill.completeExceptionally(e);
+            }
+            try {
+                jobScheduler.awaitCompletion(waitForFill);
             } catch (final InterruptedException e) {
                 throw new CancellationException("Interrupted while filling sort values in parallel");
             } catch (final ExecutionException e) {
+                if (startError != null) {
+                    throw startError;
+                }
                 throw new UncheckedDeephavenException("Exception while filling sort values in parallel", e.getCause());
             } finally {
                 accumulateSchedulerPerformance(jobScheduler);
@@ -1227,7 +1243,8 @@ public class SortHelpers {
 
     /**
      * Fold the performance of a scheduler's off-thread tasks into the enclosing operation's performance entry, so that
-     * parallel sort work is attributed to the sort.
+     * parallel sort work is attributed to the sort. On an {@link OperationInitializerJobScheduler} this waits for every
+     * job submitted, which the callers rely on: they release what the jobs use only after calling this.
      */
     public static void accumulateSchedulerPerformance(final JobScheduler jobScheduler) {
         final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
