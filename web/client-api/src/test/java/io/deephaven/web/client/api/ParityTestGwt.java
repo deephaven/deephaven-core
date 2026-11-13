@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api;
 
-import elemental2.core.Global;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.agg.AggByOptions;
@@ -171,67 +170,65 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                 parity(NUMERIC + ".sum_by()", src -> numeric(src).sumBy(null)),
 
                 parity("src.agg_by([agg.sum_(['SumI = I', 'SumD = D'])], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggSum(arr("SumI = I", "SumD = D")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggSum(arr("SumI = I", "SumD = D")))),
                 parity("src.agg_by([agg.abs_sum('AbsD = D')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggAbsSum(arr("AbsD = D")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggAbsSum(arr("AbsD = D")))),
                 parity("src.agg_by([agg.avg(['AvgI = I', 'AvgL = L'])], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggAvg(arr("AvgI = I", "AvgL = L")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggAvg(arr("AvgI = I", "AvgL = L")))),
                 parity("src.agg_by([agg.count_('N')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggCount("N"))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggCount("N"))),
                 parity("src.agg_by([agg.count_where('Big', 'I > 500')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggCountWhere("Big", arr("I > 500")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggCountWhere("Big", arr("I > 500")))),
                 parity("src.agg_by([agg.count_distinct('CD = Sym')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggCountDistinct(null, arr("CD = Sym")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggCountDistinct(null, arr("CD = Sym")))),
                 parity("src.agg_by([agg.count_distinct('CD = Sym', count_nulls=True)], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggCountDistinct(true, arr("CD = Sym")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggCountDistinct(true, arr("CD = Sym")))),
                 parity("src.agg_by([agg.distinct('DW = W')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggDistinct(null, arr("DW = W")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggDistinct(null, arr("DW = W")))),
                 parity("src.agg_by([agg.first(['FI = I', 'FS = Sym']), agg.last('LT = T')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggFirst(arr("FI = I", "FS = Sym")),
+                        src -> aggBy(src, by("Key"), Aggregation.AggFirst(arr("FI = I", "FS = Sym")),
                                 Aggregation.AggLast(arr("LT = T")))),
                 parity("src.agg_by([agg.min_('MinD = D'), agg.max_('MaxT = T')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggMin(arr("MinD = D")),
+                        src -> aggBy(src, by("Key"), Aggregation.AggMin(arr("MinD = D")),
                                 Aggregation.AggMax(arr("MaxT = T")))),
                 parity("src.agg_by([agg.median('MedI = I')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggMed(null, arr("MedI = I")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggMed(null, arr("MedI = I")))),
                 parity("src.agg_by([agg.median('MedI = I', average_evenly_divided=False)], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggMed(false, arr("MedI = I")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggMed(false, arr("MedI = I")))),
                 parity("src.agg_by([agg.pct(0.25, 'P25 = D')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggPct(0.25, null, arr("P25 = D")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggPct(0.25, null, arr("P25 = D")))),
                 parity("src.agg_by([agg.pct(0.25, 'P25 = I', average_evenly_divided=True)], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggPct(0.25, true, arr("P25 = I")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggPct(0.25, true, arr("P25 = I")))),
                 parity("src.agg_by([agg.std('StdD = D'), agg.var('VarI = I')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggStd(arr("StdD = D")),
+                        src -> aggBy(src, by("Key"), Aggregation.AggStd(arr("StdD = D")),
                                 Aggregation.AggVar(arr("VarI = I")))),
                 parity("src.agg_by([agg.weighted_avg('W', 'WAvgD = D'), agg.weighted_sum('W', 'WSumI = I')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggWAvg(lit("W"), arr("WAvgD = D")),
+                        src -> aggBy(src, by("Key"), Aggregation.AggWAvg(lit("W"), arr("WAvgD = D")),
                                 Aggregation.AggWSum(lit("W"), arr("WSumI = I")))),
                 // As in the weighted average example in types/examples/use-cases.ts, factories and a literal mixed
                 parity("src.agg_by([agg.weighted_avg('W', 'WAvgX = I'), agg.avg('AvgX = I'), agg.count_('N')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggWAvg(lit("W"), arr("WAvgX = I")),
+                        src -> aggBy(src, by("Key"), Aggregation.AggWAvg(lit("W"), arr("WAvgX = I")),
                                 Aggregation.AggAvg(arr("AvgX = I")), JsPropertyMap.of("type", "Count", "col", "N"))),
                 parity("src.agg_by([agg.sorted_first('D', 'SF = I'), agg.sorted_last('D', 'SL = I')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggSortedFirst(arr("D"), arr("SF = I")),
+                        src -> aggBy(src, by("Key"), Aggregation.AggSortedFirst(arr("D"), arr("SF = I")),
                                 Aggregation.AggSortedLast(arr("D"), arr("SL = I")))),
                 parity("src.agg_by([agg.unique('UW = W', non_unique_sentinel=-1.0)], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggUnique(null,
+                        src -> aggBy(src, by("Key"), Aggregation.AggUnique(null,
                                 Js.uncheckedCast(JsPropertyMap.of("type", "double", "value", -1.0)), arr("UW = W")))),
                 parity("src.agg_by([agg.unique('UI = I', non_unique_sentinel=-1)], by=['Key', 'L'])",
-                        src -> aggBy(src, "Key", Aggregation.AggUnique(null,
-                                Js.uncheckedCast(JsPropertyMap.of("type", "int", "value", -1.0)), arr("UI = I")),
-                                "L")),
+                        src -> aggBy(src, by("Key", "L"), Aggregation.AggUnique(null,
+                                Js.uncheckedCast(JsPropertyMap.of("type", "int", "value", -1.0)), arr("UI = I")))),
                 parity("src.agg_by([agg.unique('US = Sym', include_nulls=True, non_unique_sentinel='many')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggUnique(true,
+                        src -> aggBy(src, by("Key"), Aggregation.AggUnique(true,
                                 Js.uncheckedCast(JsPropertyMap.of("type", "string", "value", "many")),
                                 arr("US = Sym")))),
                 parity("src.agg_by([agg.group('GI = I')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggGroup(arr("GI = I")))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggGroup(arr("GI = I")))),
                 // Freeze has no Python agg; AggregationTestGwt covers it
-
                 parity("src.agg_by([agg.formula('MaxW = max(W)')], by='Key')",
-                        src -> aggBy(src, "Key", Aggregation.AggFormula("MaxW = max(W)"))),
+                        src -> aggBy(src, by("Key"), Aggregation.AggFormula("MaxW = max(W)"))),
                 parity("src.agg_by([agg.sum_('S = I'), agg.count_('N')])",
-                        src -> aggBy(src, null, Aggregation.AggSum(arr("S = I")), Aggregation.AggCount("N"))),
+                        src -> aggBy(src, by(), Aggregation.AggSum(arr("S = I")), Aggregation.AggCount("N"))),
 
                 parity(NUMERIC + ".agg_all_by(agg.sum_(), by='Key')",
                         src -> numeric(src).aggAllBy(Js.uncheckedCast(Aggregation.AggSum(null)), arr("Key"))),
@@ -242,24 +239,17 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                                 .aggAllBy(Js.uncheckedCast(Aggregation.AggCountDistinct(null, null)), arr("Key"))));
     }
 
-    /** aggBy over the given aggregations, grouped by {@code key} (and {@code extraKey}, if given) or not at all. */
-    private static JsPendingTable<JsResolvedTable> aggBy(JsTableOperations src, String key, Object... aggregations) {
-        return aggBy(src, key, aggregations, null);
-    }
-
-    private static JsPendingTable<JsResolvedTable> aggBy(JsTableOperations src, String key, Object aggregation,
-            String extraKey) {
-        return aggBy(src, key, new Object[] {aggregation}, extraKey);
-    }
-
-    private static JsPendingTable<JsResolvedTable> aggBy(JsTableOperations src, String key, Object[] aggregations,
-            String extraKey) {
+    /** aggBy over the given aggregations, grouped by the {@link #by} columns. */
+    private static JsPendingTable<JsResolvedTable> aggBy(JsTableOperations src, String[] by, Object... aggregations) {
         AggByOptions options = new AggByOptions();
         options.aggregations = Js.uncheckedCast(aggregations);
-        if (key != null) {
-            options.groupByColumns = extraKey == null ? arr(key) : arr(key, extraKey);
-        }
+        options.groupByColumns = Js.uncheckedCast(by);
         return src.aggBy(options);
+    }
+
+    /** The group-by columns, as Python's {@code by=}; none for one group of all rows. */
+    private static String[] by(String... columns) {
+        return columns;
     }
 
     private static <T> T lit(String literal) {
@@ -273,8 +263,8 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                 parity("src.update_by(ub.cum_prod('CP = W'), by='Key')",
                         src -> updateBy(src, "Key", spec("UpdateByCumulativeProduct"), "CP = W")),
                 parity("src.update_by([ub.cum_min('Lo = D'), ub.cum_max('Hi = D')], by='Key')",
-                        src -> updateBy(src, "Key", spec("UpdateByCumulativeMin"), "Lo = D")
-                                .updateBy(options("Key", spec("UpdateByCumulativeMax"), "Hi = D"))),
+                        src -> src.updateBy(options("Key", op(spec("UpdateByCumulativeMin"), "Lo = D"),
+                                op(spec("UpdateByCumulativeMax"), "Hi = D")))),
                 parity("src.update_by(ub.forward_fill('FS = Sym'), by='Key')",
                         src -> updateBy(src, "Key", spec("UpdateByFill"), "FS = Sym")),
                 parity("src.update_by(ub.delta('DL = L'))",
@@ -377,8 +367,10 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                                 JsPropertyMap.of("columnsToUngroup", arr("I"))))),
                 parity("merge([src.head(5), src.tail(5)])",
                         (src, f) -> f.session.mergeTables(arr(src.head(rows(5)), src.tail(rows(5))))),
-                parity("src.snapshot_when(tick)",
-                        (src, f) -> src.snapshotWhen(f.ref("tick"), new JsTableOperations.SnapshotWhenOptions())));
+                // tick is static and never ticks, so only the initial snapshot has rows
+                parity("src.snapshot_when(tick, initial=True)",
+                        (src, f) -> src.snapshotWhen(f.ref("tick"),
+                                Js.uncheckedCast(JsPropertyMap.of("initial", true)))));
     }
 
     /** Lo &lt;= I &lt;= Hi, for a range join from the windows table onto src. */
@@ -395,16 +387,21 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
     /** One updateBy operation applying {@code spec} to {@code pairs}, grouped by {@code key} or not at all. */
     private static JsPendingTable<JsResolvedTable> updateBy(JsTableOperations src, String key, Object spec,
             String... pairs) {
-        return src.updateBy(options(key, spec, pairs));
+        return src.updateBy(options(key, op(spec, pairs)));
     }
 
-    private static UpdateByOptions options(String key, Object spec, String... pairs) {
-        JsPropertyMap<Object> options = JsPropertyMap.of(
-                "operations", arr(JsPropertyMap.of("spec", spec, "matchPairs", Js.uncheckedCast(pairs))));
+    /** updateBy options for the given operations, grouped by {@code key} or not at all. */
+    private static UpdateByOptions options(String key, Object... operations) {
+        JsPropertyMap<Object> options = JsPropertyMap.of("operations", Js.uncheckedCast(operations));
         if (key != null) {
             options.set("groupByColumns", arr(key));
         }
         return Js.uncheckedCast(options);
+    }
+
+    /** One updateBy operation: a spec applied to the given match pairs. */
+    private static Object op(Object spec, String... pairs) {
+        return JsPropertyMap.of("spec", spec, "matchPairs", Js.uncheckedCast(pairs));
     }
 
     /** An updateBy spec object literal: its type, then property names and values in turn. */
@@ -432,7 +429,7 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
     private void runAll(int timeout, Case... cases) {
         connect(tables)
                 .then(session -> {
-                    delayTestFinish(timeout);
+                    delayTestFinish(timeout * TIMEOUT_SCALE);
                     Fixture fixture = new Fixture(session);
                     List<String> failures = new ArrayList<>();
                     return fetchFixtures(fixture, 0)
@@ -467,8 +464,9 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
         }
         Case c = cases[index];
         IdeSession session = fixture.session;
-        delayTestFinish(timeout);
-        return session.runCode("result = " + c.python).then(run -> {
+        delayTestFinish(timeout * TIMEOUT_SCALE);
+        boolean[] settled = {false};
+        Promise<Object> attempt = session.runCode("result = " + c.python).then(run -> {
             if (run.getError() != null) {
                 failures.add(c.python + ": Python failed: " + run.getError());
                 return Promise.resolve((Object) null);
@@ -482,8 +480,7 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                 return Promise.resolve((Object) null);
             }
             Promise<JsTable> py = session.getTable("result", null).asPromise();
-            return js.then(jsTable -> py.then(pyTable -> compare(c.python, pyTable.getColumns(), pyTable.getSize(),
-                    pyTable::createSnapshot, jsTable.getColumns(), jsTable.getSize(), jsTable::createSnapshot)
+            return js.then(jsTable -> py.then(pyTable -> compareTables(c.python, pyTable, jsTable)
                     .then(differences -> {
                         pyTable.close();
                         jsTable.close();
@@ -500,9 +497,45 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                         return py.then(pyTable -> {
                             pyTable.close();
                             return Promise.resolve((Object) null);
-                        });
+                        }, pyErr -> Promise.resolve((Object) null));
                     });
-        }).then(ignore -> runFrom(fixture, cases, index + 1, timeout, failures));
+        }).catch_(err -> {
+            // Anything not recorded above, so that one case cannot stop the rest or lose their results
+            failures.add(c.python + ": " + err);
+            return Promise.resolve((Object) null);
+        }).then(ignore -> {
+            settled[0] = true;
+            return Promise.resolve((Object) null);
+        });
+        // A case that never settles is reported by name, well before the test's own timeout. The run stops there: the
+        // case may still be running, and the next would reassign the result it reads.
+        Promise<Object> deadline = delay(CASE_TIMEOUT_MS * TIMEOUT_SCALE)
+                .then(ignore -> Promise.resolve(settled[0] ? null : TIMED_OUT));
+        return Promise.race(attempt, deadline).then(winner -> {
+            if (winner == TIMED_OUT) {
+                failures.add(c.python + ": no result after " + CASE_TIMEOUT_MS + " ms; the "
+                        + (cases.length - index - 1) + " cases after it were not run");
+                return Promise.resolve((Object) null);
+            }
+            return runFrom(fixture, cases, index + 1, timeout, failures);
+        });
+    }
+
+    /** How long one case may take; less than each test's timeout, which every case resets. */
+    private static final int CASE_TIMEOUT_MS = 15_000;
+    private static final Object TIMED_OUT = new Object();
+
+    /** As {@link #compare}, with a failure to read either table reported as a difference. */
+    private static Promise<String> compareTables(String name, JsTable py, JsResolvedTable js) {
+        Promise<String> comparison;
+        try {
+            comparison = compare(name, py.getColumns(), py.getSize(), py::createSnapshot, js.getColumns(),
+                    js.getSize(), js::createSnapshot);
+        } catch (RuntimeException e) {
+            return Promise.resolve(name + ": comparing failed: " + e);
+        }
+        return comparison.then(differences -> Promise.resolve(differences),
+                err -> Promise.resolve(name + ": comparing failed: " + err));
     }
 
     private interface Snapshotter {
@@ -527,7 +560,7 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
             return Promise.resolve(name + ": size differs, Python " + pySize + " vs JS " + jsSize);
         }
         if (pySize == 0) {
-            return Promise.resolve((String) null);
+            return Promise.resolve(name + ": both results are empty, so no values were compared");
         }
         // Not Promise.all: its result is typed as a Java array, which the plain JS array it resolves with is not
         return py.snapshot(allRows(pyColumns, pySize)).then(pyData -> js.snapshot(allRows(jsColumns, jsSize))
@@ -577,7 +610,13 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
             return String.valueOf(Js.asBoolean(v));
         }
         if (JsArray.isArray(v)) {
-            return Global.JSON.stringify(v);
+            // Element by element: JSON.stringify would write NaN and null alike
+            JsArray<Any> array = Js.uncheckedCast(v);
+            List<String> items = new ArrayList<>();
+            for (int i = 0; i < array.length; i++) {
+                items.add(cell(array.getAt(i)));
+            }
+            return "[" + String.join(", ", items) + "]";
         }
         return String.valueOf(v);
     }

@@ -97,7 +97,7 @@ async function rollingUpdateBy() {
 
 // py: t.weighted_avg_by("W", by=["Key"])
 //     t.agg_by([agg.weighted_avg("W", ["WAvgX = X"]), agg.avg(["AvgX = X"]), agg.count_("N")], by=["Key"])
-//     t.update_by(rolling_wavg_tick("W", ["RollWAvgX = X"], rev_ticks=3), by=["Key"])
+//     t.update_by(ops=[rolling_wavg_tick("W", ["RollWAvgX = X"], rev_ticks=3)], by=["Key"])
 async function weightedAverages() {
     const t = session.emptyTable(12).update(["Key = i % 3", "X = i", "W = i % 4 + 1"]);
     // t is never awaited, so all three use it in this task: one batch, one await
