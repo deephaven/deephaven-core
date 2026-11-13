@@ -199,21 +199,26 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         protected abstract void cancel(String message);
 
         /**
-         * Cancels this pending table when the signal in {@code options} aborts, until {@code settles} does. An already
-         * aborted signal cancels at once.
+         * Cancels this pending table when the signal in {@code options} aborts, until {@code resolving} settles. An
+         * already aborted signal cancels at once. Once the table is delivered an abort does nothing, even before the
+         * listener is removed: another resolve() of this pending may already hold the table.
          */
-        protected void cancelOnAbort(@Nullable Object options, Promise<?> settles) {
+        protected void cancelOnAbort(@Nullable Object options, LazyPromise<?> resolving) {
             AbortSignal signal = options == null ? null : new ResolveOptions(options).signal;
-            if (signal == null) {
+            if (signal == null || resolving.isSuccess()) {
                 return;
             }
             if (signal.aborted) {
                 cancel(abortMessage(signal));
                 return;
             }
-            EventListener onAbort = e -> cancel(abortMessage(signal));
+            EventListener onAbort = e -> {
+                if (!resolving.isSuccess()) {
+                    cancel(abortMessage(signal));
+                }
+            };
             signal.addEventListener("abort", onAbort);
-            settles.then(ignore -> {
+            resolving.asPromise().then(ignore -> {
                 signal.removeEventListener("abort", onAbort);
                 return null;
             }, ignore -> {
@@ -276,7 +281,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 resolving = whenRunning(owner, state, describe());
                 resolved = resolving.asPromise();
             }
-            cancelOnAbort(options, resolved);
+            cancelOnAbort(options, resolving);
             return resolved;
         }
 
@@ -606,7 +611,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 resolving = whenRunning(owner, state, describe());
             }
             Promise<JsResolvedTable> promise = resolving.asPromise();
-            cancelOnAbort(options, promise);
+            cancelOnAbort(options, resolving);
             return promise;
         }
 

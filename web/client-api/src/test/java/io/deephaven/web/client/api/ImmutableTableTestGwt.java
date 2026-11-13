@@ -1146,6 +1146,44 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testAbortAfterAnotherResolveWasDelivered() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_055);
+                    return session.getTable("source", null).asPromise()
+                            .then(table -> abortAfterOtherResolve("an operation's table",
+                                    table.operations().head(Js.uncheckedCast(2.0)))
+                                    .then(ignore -> abortAfterOtherResolve("a fetched table",
+                                            session.getTable("source", null)))
+                                    .then(ignore -> {
+                                        table.close();
+                                        return Promise.resolve(table);
+                                    }));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Resolves {@code pending} twice in this task, the second time with a signal the first caller aborts once it has
+     * the table. Aborting after delivery does nothing, so that table must still be open.
+     */
+    private static Promise<Object> abortAfterOtherResolve(String what, JsPendingTable<?> pending) {
+        AbortController controller = new AbortController();
+        Promise<Object> checked = pending.resolve().then(table -> {
+            controller.abort();
+            try {
+                table.head(Js.uncheckedCast(1.0)).cancel();
+            } catch (IllegalStateException e) {
+                return Promise.reject(what + ", delivered to one resolve(), was closed by aborting another resolve()'s"
+                        + " signal: " + e.getMessage());
+            }
+            table.close();
+            return Promise.resolve((Object) null);
+        });
+        pending.resolve(withSignal(controller));
+        return checked;
+    }
+
     /** Rejects naming {@code what} unless {@code dependent} rejects because its source was canceled. */
     private static Promise<Object> expectSourceCanceled(String what, Promise<?> dependent) {
         return dependent.then(
