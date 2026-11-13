@@ -110,7 +110,7 @@ source = read("/data/output_GZIP.parquet")
 - `_metadata`: File containing (1) complete relative pathnames to individual data files, and (2) column statistics, such as min, max, etc., for the individual data files.
 
 > [!WARNING]
-> For a directory of Parquet files, all sub-directories are also searched. Only files with a `.parquet` extension or `_common_metadata` and `_metadata` files should be located in these directories. All files ending with `.parquet` need the same schema.
+> For a directory of Parquet files, all subdirectories are also searched. Files whose names do not end in `.parquet` are ignored, except for the `_metadata` and `_common_metadata` files described above. All files ending with `.parquet` need the same schema.
 
 > [!NOTE]
 > The following examples use data in [Deephaven's example repository](https://github.com/deephaven/examples). Follow the instructions in [`Launch Deephaven from pre-built images`](../../../getting-started/docker-install.md) to download and manage the example data.

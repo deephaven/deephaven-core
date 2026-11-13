@@ -68,7 +68,7 @@ An in-memory partitioned table.
 
 ## Examples
 
-In the following example, `consumeToPartitionedTable` is used to read the Kafka topic `orders` into a Deephaven table. `KafkaTools.Consume.FROM_PROPERTIES` allows the key and value column types to be inferred by the properties passed in.
+In the following example, `consumeToPartitionedTable` is used to read the Kafka topic `orders` into a Deephaven table. The example ignores the Kafka key with [`KafkaTools.Consume.IGNORE`](/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#IGNORE) and reads the value as JSON with [`KafkaTools.Consume.jsonSpec`](/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html), which maps the JSON fields `jsymbol`, `jside`, `jprice`, and `jqty` to the `Symbol`, `Side`, `Price`, and `Qty` columns.
 
 - The host and port for the Kafka server to use to bootstrap are specified by `kafkaProps`.
   - The value `redpanda:9092` corresponds to the current setup for development testing with Docker images (which uses an instance of [redpanda](https://github.com/redpanda-data/redpanda)).

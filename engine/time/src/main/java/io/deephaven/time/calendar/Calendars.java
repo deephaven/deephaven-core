@@ -83,7 +83,7 @@ public class Calendars {
      */
     public synchronized static void removeCalendar(final String name) {
         Require.neqNull(name, "name");
-        calMap.remove(name);
+        calMap.remove(name.toUpperCase());
     }
 
     /**

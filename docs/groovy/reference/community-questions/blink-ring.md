@@ -13,9 +13,10 @@ To achieve this:
 Here's a complete example:
 
 ```groovy order=source,result,resultRing
+import io.deephaven.engine.table.ColumnDefinition
+import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.table.impl.util.DynamicTableWriter
 import io.deephaven.engine.updategraph.DynamicNode
-import io.deephaven.time.DateTimeUtils
 import static io.deephaven.api.agg.Aggregation.*
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools
 import static io.deephaven.engine.util.TableTools.*
@@ -26,8 +27,10 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 source = timeTableBuilder().period("PT0.2S").blinkTable(true).build().update("X = (double)ii")
 
 tableWriter = new DynamicTableWriter(
-    ["Timestamp", "X"] as String[],
-    [DateTimeUtils.now().getClass(), double.class] as Class[]
+    TableDefinition.of(
+        ColumnDefinition.ofTime("Timestamp"),
+        ColumnDefinition.ofDouble("X")
+    )
 )
 
 result = tableWriter.getTable()

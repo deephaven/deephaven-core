@@ -19,7 +19,8 @@ def import_class(name: str) -> None:
     and conditional expressions). The class must be reachable in the Deephaven server's classpath.
 
     Args:
-        name (str): the fully qualified name of the Java class
+        name (str): the binary name of the Java class, which is its fully qualified name except that nested
+            classes use '$', e.g. "java.util.Map$Entry"
 
     Raises:
         DHError
@@ -37,7 +38,8 @@ def import_static(name: str) -> None:
     classpath.
 
     Args:
-        name (str): the fully qualified name of the Java class
+        name (str): the binary name of the Java class, which is its fully qualified name except that nested
+            classes use '$', e.g. "java.util.Map$Entry"
 
     Raises:
         DHError

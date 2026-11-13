@@ -36,7 +36,7 @@ public class UngroupedByteVectorColumnSource extends UngroupedColumnSource<Byte>
             return null;
         }
         long segment = rowKey >> base;
-        int offset = (int) (rowKey & ((1 << base) - 1));
+        long offset = rowKey & ((1L << base) - 1);
         final Byte result;
         if (isUngroupable) {
             result = (Byte) ((UngroupableColumnSource) innerSource).getUngrouped(segment, offset);
@@ -57,7 +57,7 @@ public class UngroupedByteVectorColumnSource extends UngroupedColumnSource<Byte>
         }
 
         long segment = rowKey >> base;
-        int offset = (int) (rowKey & ((1 << base) - 1));
+        long offset = rowKey & ((1L << base) - 1);
         if (isUngroupable) {
             return ((UngroupableColumnSource) innerSource).getUngroupedByte(segment, offset);
         }
@@ -74,7 +74,7 @@ public class UngroupedByteVectorColumnSource extends UngroupedColumnSource<Byte>
         }
 
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
+        long offset = rowKey & ((1L << getPrevBase()) - 1);
         final Byte result;
         if (isUngroupable) {
             result = (Byte) ((UngroupableColumnSource) innerSource).getUngroupedPrev(segment, offset);
@@ -96,7 +96,7 @@ public class UngroupedByteVectorColumnSource extends UngroupedColumnSource<Byte>
         }
 
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
+        long offset = rowKey & ((1L << getPrevBase()) - 1);
 
         if (isUngroupable) {
             return ((UngroupableColumnSource) innerSource).getUngroupedPrevByte(segment, offset);

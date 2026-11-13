@@ -96,6 +96,20 @@ class PartitionedTableTestCase(BaseTestCase):
             pt = self.partitioned_table.filter(filters)
         self.assertIn("RuntimeError", str(cm.exception))
 
+    def test_filter_empty_and_mixed(self) -> None:
+        key_cols = self.partitioned_table.key_columns
+        # An empty list keeps every partition, as Java's PartitionedTable.filter does.
+        self.assert_table_equals(
+            self.partitioned_table.table.view(key_cols),
+            self.partitioned_table.filter([]).table.view(key_cols),
+        )
+        # A list may mix strings and Filter objects.
+        mixed = self.partitioned_table.filter(["c < 0", Filter.from_("e > 0")])
+        strings = self.partitioned_table.filter(["c < 0", "e > 0"])
+        self.assert_table_equals(
+            strings.table.view(key_cols), mixed.table.view(key_cols)
+        )
+
     def test_sort(self):
         new_pt = self.partitioned_table.sort(order_by=["c"])
         self.assertIsNotNone(new_pt)

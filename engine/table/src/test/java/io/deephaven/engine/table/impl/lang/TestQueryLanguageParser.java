@@ -323,6 +323,14 @@ public class TestQueryLanguageParser {
         resultExpression = "42f";
         check(expression, resultExpression, float.class, new String[] {});
 
+        expression = "42F";
+        resultExpression = "42F";
+        check(expression, resultExpression, float.class, new String[] {});
+
+        expression = "1.0F";
+        resultExpression = "1.0F";
+        check(expression, resultExpression, float.class, new String[] {});
+
         expression = "1.0";
         resultExpression = "1.0";
         check(expression, resultExpression, double.class, new String[] {});
@@ -369,6 +377,14 @@ public class TestQueryLanguageParser {
         expression = "0x44332211";
         resultExpression = "0x44332211";
         check(expression, resultExpression, int.class, new String[] {});
+
+        expression = "0X44332211";
+        resultExpression = "0X44332211";
+        check(expression, resultExpression, int.class, new String[] {});
+
+        expression = "0X00L";
+        resultExpression = "0X00L";
+        check(expression, resultExpression, long.class, new String[] {});
     }
 
     /**
@@ -415,9 +431,67 @@ public class TestQueryLanguageParser {
         resultExpression = "0x5544332211L";
         check(expression, resultExpression, long.class, new String[] {});
 
+        expression = "0X5544332211";
+        resultExpression = "0X5544332211L";
+        check(expression, resultExpression, long.class, new String[] {});
+
         expression = "0b11111111000000001111111100000000"; // 32 bits -- must be a long
         resultExpression = "0b11111111000000001111111100000000L";
         check(expression, resultExpression, long.class, new String[] {});
+    }
+
+    /**
+     * Java reads an integer literal with a leading zero as octal; the query language rejects it.
+     */
+    @Test
+    public void testParseIntegerLiteral() {
+        assertEquals(0L, QueryLanguageParser.parseIntegerLiteral("0"));
+        assertEquals(10L, QueryLanguageParser.parseIntegerLiteral("1__0"));
+        assertEquals(1_000_000L, QueryLanguageParser.parseIntegerLiteral("1_000_000"));
+        assertEquals(3_000_000_000L, QueryLanguageParser.parseIntegerLiteral("3000000000"));
+        assertEquals(0x0123L, QueryLanguageParser.parseIntegerLiteral("0x0123"));
+        assertEquals(0x1FL, QueryLanguageParser.parseIntegerLiteral("0X1_f"));
+        assertEquals(4294967295L, QueryLanguageParser.parseIntegerLiteral("0xFFFFFFFF"));
+        assertEquals(2L, QueryLanguageParser.parseIntegerLiteral("0b1_0"));
+        assertEquals(5L, QueryLanguageParser.parseIntegerLiteral("0B0101"));
+
+        // a misplaced underscore or prefix, a digit outside the radix, or a value beyond a long
+        for (final String literal : new String[] {"0_x0123", "0x_0123", "0x0123_", "_12", "12_", "0_b1", "0b_1",
+                "0x", "0b", "", "0xG", "0b2", "1a", "0_a", "9223372036854775808", "0x1_0000_0000_0000_0000"}) {
+            assertThrows(literal, NumberFormatException.class, () -> QueryLanguageParser.parseIntegerLiteral(literal));
+        }
+
+        for (final String literal : new String[] {"0777", "0_7", "0__7", "00", "08", "099999999999999999999"}) {
+            final UnsupportedOperationException ex = assertThrows(literal, UnsupportedOperationException.class,
+                    () -> QueryLanguageParser.parseIntegerLiteral(literal));
+            assertEquals("Integer literal " + literal + " has a leading zero, so it would be interpreted as octal,"
+                    + " which the query language does not support; remove the leading zero for a decimal value",
+                    ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testOctalLiterals() throws Exception {
+        for (final String expression : new String[] {"0777", "03000000000", "040000000000", "0_7", "00", "08",
+                "0777L", "00L", "1 + 010"}) {
+            final QueryLanguageParseException ex = assertThrows(expression, QueryLanguageParseException.class,
+                    () -> check(expression, expression, int.class, new String[] {}));
+            if (!ex.getMessage().contains("would be interpreted as octal, which the query language does not support")) {
+                fail("Unexpected exception message for " + expression + ":\n" + ExceptionUtils.getStackTrace(ex));
+            }
+        }
+
+        // a lone zero, and hexadecimal, binary and floating point literals with leading zeros, are not octal
+        check("0", "0", int.class, new String[] {});
+        check("0L", "0L", long.class, new String[] {});
+        check("0x0F", "0x0F", int.class, new String[] {});
+        check("0b01", "0b01", int.class, new String[] {});
+        check("0x0FL", "0x0FL", long.class, new String[] {});
+        check("0X0777", "0X0777", int.class, new String[] {});
+        check("0X0777L", "0X0777L", long.class, new String[] {});
+        check("0b01L", "0b01L", long.class, new String[] {});
+        check("00.5", "00.5", double.class, new String[] {});
+        check("010.5f", "010.5f", float.class, new String[] {});
     }
 
     @Test
@@ -1797,6 +1871,43 @@ public class TestQueryLanguageParser {
             expression = "myPyCallable3(myIntCol, 2, 3)";
             resultExpression = "myPyCallable3.call(myIntCol, 2, 3)";
             check(expression, resultExpression, Object.class, new String[] {"myPyCallable3", "myIntCol"});
+        }
+    }
+
+    @Test
+    public void testVectorizedFloatLiteralArgument() throws Exception {
+        final List<PyCallableWrapper.ChunkArgument> chunkArguments = new ArrayList<>();
+        final PyCallableWrapper mockPyCallable = new PyCallableWrapperDummyImpl(List.of(float.class)) {
+            @Override
+            public Signature getSignature() {
+                return new Signature(List.of(new Parameter("x", Set.of(float.class))), Object.class);
+            }
+
+            @Override
+            public boolean isVectorizableReturnType() {
+                return true;
+            }
+
+            @Override
+            public void addChunkArgument(final ChunkArgument chunkArgument) {
+                chunkArguments.add(chunkArgument);
+            }
+        };
+        variables.put("myPyCallable", PyCallableWrapper.class);
+
+        try (SafeCloseable ignored = TestExecutionContext.createForUnitTests().open()) {
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
+            ExecutionContext.getContext().getQueryScope().putParam("myPyCallable", mockPyCallable);
+
+            for (final String literal : new String[] {"1_000f", "1_000F"}) {
+                chunkArguments.clear();
+                check("myPyCallable(" + literal + ")", "myPyCallable.call(" + literal + ")", Object.class,
+                        new String[] {"myPyCallable"});
+                assertFalse(chunkArguments.isEmpty());
+                for (final PyCallableWrapper.ChunkArgument argument : chunkArguments) {
+                    assertEquals(1000f, ((PyCallableWrapper.ConstantChunkArgument) argument).getValue());
+                }
+            }
         }
     }
 

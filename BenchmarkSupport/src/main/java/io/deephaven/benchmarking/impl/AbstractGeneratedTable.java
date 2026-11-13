@@ -3,12 +3,14 @@
 //
 package io.deephaven.benchmarking.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.SparseSelect;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -32,9 +34,15 @@ public abstract class AbstractGeneratedTable extends AbstractBenchmarkTable {
     }
 
     protected Table generateTable() {
-        return SparseSelect.sparseSelect(TableTools.emptyTable(nRows).updateView(
-                getGeneratorMap().entrySet().stream().map(ent -> ent.getValue().getUpdateString(ent.getKey()))
-                        .toArray(String[]::new)));
+        // the generators share one random number generator and keep unsynchronized state, so their columns must be
+        // evaluated serially, one column at a time, for a seed to reproduce the same table
+        try (final SafeCloseable ignored = ExecutionContext.getContext()
+                .withOperationInitializer(OperationInitializer.NON_PARALLELIZABLE).open()) {
+            return TableTools.emptyTable(nRows).updateView(
+                    getGeneratorMap().entrySet().stream().map(ent -> ent.getValue().getUpdateString(ent.getKey()))
+                            .toArray(String[]::new))
+                    .select();
+        }
     }
 
     @Override

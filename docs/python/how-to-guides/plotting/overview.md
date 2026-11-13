@@ -1,30 +1,65 @@
 ---
-title: How to plot real-time data
-sidebar-label: Plotting Overview
+title: Plotting overview
 ---
 
-This section explores various methods for visualizing data in Deephaven, catering to real-time and static scenarios. Deephaven comes with support for five libraries for plotting. [Deephaven Express](/core/plotly/docs/), built on top of Plotly Express, offers a seamless solution for effortlessly plotting real-time data directly from Deephaven tables. We support three additional methods for those working with static or snapshotted data: Matplotlib, Seaborn, and Plotly. Each method provides a unique set of features and capabilities, allowing users to choose the most suitable approach for their specific visualization needs.
+In Deephaven, plots can be as live as your data. A [Deephaven Express](/core/plotly/docs/) figure updates by itself as its table ticks, so you don't poll for new data or rebuild the figure.
 
-Our how-to guides delve into the supported methods, showcasing their advantages and use cases. Deephaven has you covered whether you require dynamic visualizations with real-time data streaming or static visualizations for historical analysis. Each method offers flexibility, interactivity, and high-quality visuals, ensuring you can effectively explore and communicate insights from your data.
+Deephaven supports several ways to plot table data. They differ most in how they handle [real-time (ticking) tables](../../conceptual/table-types.md), which update as new data arrives:
 
-## Plotting Library Support
+- [Deephaven Express](/core/plotly/docs/), built on top of [Plotly Express](https://plotly.com/python/plotly-express/), plots real-time data directly from Deephaven tables. For examples, see the [Deephaven Express plot types](/core/plotly/docs#plot-types).
+- [Deephaven's built-in plotting API](./api-plotting.md) also plots ticking tables natively, but it is no longer under active development.
+- [Matplotlib and Seaborn](./matplot-seaborn.md) plot a copy of the table's data. For ticking tables, the Matplotlib plugin's [`TableAnimation`](./matplot-seaborn.md#real-time-plotting-with-tableanimation) class copies the data and redraws the whole figure on each update. See [Limitations of copy-based plotting](#limitations-of-copy-based-plotting).
+- [Plotly](https://plotly.com/python/) plots a snapshot, such as a pandas DataFrame from [`to_pandas`](../../reference/pandas/to-pandas.md), so the figure doesn't change when the table ticks.
 
-| Library                                     | Real-Time     | Static        | Ease of Use   | Deephaven Tables | Pip Install                                                  |
-| ------------------------------------------- | ------------- | ------------- | ------------- | ---------------- | ------------------------------------------------------------ |
-| **[Deephaven Express](/core/plotly/docs/)** | **Excellent** | **Excellent** | **Excellent** | **Native**       | `pip install deephaven-plugin-plotly-express`\*              |
-| **[Seaborn](./matplot-seaborn.md)**         | Snapshots     | Good          | Excellent     | via Pandas       | `pip install deephaven-plugin-matplotlib matplotlib seaborn` |
-| **[Matplotlib](./matplot-seaborn.md)**      | Snapshots     | Good          | Okay          | via Pandas       | `pip install deephaven-plugin-matplotlib matplotlib`         |
-| **[Plotly](https://plotly.com/python/)**    | Snapshots     | Good          | Good          | via Pandas       | Installed with Deephaven Express                             |
-| **[Legacy Figure API](./api-plotting.md)**  | **Excellent** | Good          | Good          | **Native**       | **Built in**                                                 |
+For most plotting tasks, use [Deephaven Express](/core/plotly/docs/). If you'd rather build a chart from the UI without writing code, see [Chart Builder](../user-interface/chart-builder.md).
+
+## Plot a ticking table
+
+Let's plot a ticking table. This example uses [`time_table`](../../reference/table-operations/create/timeTable.md) to create a table that adds a row every second, then plots it with [`dx.line`](/core/plotly/docs/line/) from [Deephaven Express](/core/plotly/docs/). The line grows each time a new row arrives, with no extra code:
+
+```python ticking-table order=null
+from deephaven import time_table
+import deephaven.plot.express as dx
+
+source = time_table("PT1S").update("Y = Math.sin(0.1 * i)")
+line_plot = dx.line(source, x="Timestamp", y="Y")
+```
+
+## Plotting library support
+
+The table below compares the options for [ticking tables](../../conceptual/table-types.md) and for static tables, such as historical data. Each library name links to its documentation.
+
+| Library                                                 | Ticking tables                                       | Static tables | Ease of use   | Installation                                           |
+| ------------------------------------------------------- | ---------------------------------------------------- | ------------- | ------------- | ------------------------------------------------------ |
+| **[Deephaven Express](/core/plotly/docs/)**             | **Updates natively**                                 | **Excellent** | **Excellent** | `pip install deephaven-plugin-plotly-express`\*        |
+| **[Built-in plotting API (legacy)](./api-plotting.md)** | **Updates natively**                                 | Good          | Good          | **Built in**                                           |
+| **[Matplotlib](./matplot-seaborn.md)**                  | [Full redraw](#limitations-of-copy-based-plotting)   | Good          | Fair          | `pip install deephaven-plugin-matplotlib`\*            |
+| **[Seaborn](./matplot-seaborn.md)**                     | [Full redraw](#limitations-of-copy-based-plotting)   | Good          | Excellent     | `pip install "deephaven-plugin-matplotlib[seaborn]"`\* |
+| **[Plotly](https://plotly.com/python/)**                | [Snapshot only](#limitations-of-copy-based-plotting) | Good          | Good          | Installed with [Deephaven Express](/core/plotly/docs/) |
 
 <small>
 
-\*Deephaven Express is built into the Deephaven `server` docker image. Deephaven Express is the recommended choice for most plotting tasks. See the [examples section](/core/plotly/docs#plot-types) for a showcase of its versatile usage and advantages.
+\*The `ghcr.io/deephaven/server` Docker image includes [Deephaven Express](/core/plotly/docs/) and the [Matplotlib plugin](./matplot-seaborn.md). The machine-learning images don't include them, and neither does a pip install of Deephaven. To add them, see [Install and use plugins](../install-use-plugins.md). The `server-slim` image runs a Groovy console and has no Python, so it can't use either plugin.
 
 </small>
 
-### Snapshot limitations
+## Limitations of copy-based plotting
 
-One limitation of plotting with snapshots is the need to take a full snapshot of the data at regular intervals. This approach requires storing the entire dataset in memory, leading to increased memory usage, especially for large datasets. Additionally, since the snapshots are taken periodically, the visualizations may not always reflect real-time changes, resulting in slower updates and potentially missing dynamic patterns in the data.
+[Matplotlib](./matplot-seaborn.md), [Seaborn](./matplot-seaborn.md), and [Plotly](https://plotly.com/python/) don't read Deephaven tables directly. They plot a copy of the data, which has two costs:
 
-In contrast, Deephaven Express is specifically designed to leverage Deephaven table updates natively. By directly connecting to real-time Deephaven tables from the client, Deephaven Express can dynamically visualize data as it updates in real time, eliminating the need for periodic snapshots and ensuring more efficient memory usage and faster updates. This allows users to gain immediate insights into dynamic data changes and maintain interactive and responsive visualizations without the overhead of taking snapshots.
+- **Memory and redraw time**: Each update copies table data into Python. By default, [`TableAnimation`](./matplot-seaborn.md#real-time-plotting-with-tableanimation) and [`to_pandas`](../../reference/pandas/to-pandas.md) copy every column. Pass only the columns you plot to reduce the copy. [`TableAnimation`](./matplot-seaborn.md#real-time-plotting-with-tableanimation) also redraws the whole figure on every update, so each update gets slower as the table grows.
+- **Stale figures**: A Plotly figure built from a snapshot shows the data as it was when the snapshot was taken. To see new data, you must build the figure again.
+
+[Deephaven Express](/core/plotly/docs/) subscribes to table updates directly, so its figures update as the table ticks without copying the whole table into Python on every change.
+
+## Related documentation
+
+- [Table types](../../conceptual/table-types.md)
+- [Deephaven Express](/core/plotly/docs/)
+- [Built-in plotting API](./api-plotting.md)
+- [Matplotlib and Seaborn](./matplot-seaborn.md)
+- [Install and use plugins](../install-use-plugins.md)
+- [Chart Builder](../user-interface/chart-builder.md)
+- [`time_table`](../../reference/table-operations/create/timeTable.md)
+- [`to_pandas`](../../reference/pandas/to-pandas.md)
+- [Pydoc](/core/pydoc/code/deephaven.pandas.html#deephaven.pandas.to_pandas)

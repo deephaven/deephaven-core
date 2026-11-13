@@ -134,7 +134,7 @@ result = assigned.exactJoin(departments, "DeptID")
 result = employees.naturalJoin(departments, "DeptID")
 ```
 
-By default, `naturalJoin` fails if a left-table row matches more than one right-table row. Duplicate right-table keys that no left-table row matches don't cause an error. To keep one of the matching rows instead, pass [`NaturalJoinType`](/core/javadoc/io/deephaven/api/NaturalJoinType.html) `.FIRST_MATCH` or `NaturalJoinType.LAST_MATCH` as the last argument. The following example swaps the tables, using `departments` as the left table, and adds the first matching employee to each department. Departments 33 and 34 each have two employees, so the default join type would fail. Marketing has no employees, so its employee columns are null:
+By default, `naturalJoin` fails if a left-table row matches more than one right-table row. Duplicate right-table keys that no left-table row matches don't cause an error. To keep one of the matching rows instead, pass [`NaturalJoinType.FIRST_MATCH`](/core/javadoc/io/deephaven/api/NaturalJoinType.html#FIRST_MATCH) or [`NaturalJoinType.LAST_MATCH`](/core/javadoc/io/deephaven/api/NaturalJoinType.html#LAST_MATCH) as the last argument. The following example swaps the tables, using `departments` as the left table, and adds the first matching employee to each department. Departments 33 and 34 each have two employees, so the default join type would fail. Marketing has no employees, so its employee columns are null:
 
 ```groovy test-set=1 order=result
 import io.deephaven.api.NaturalJoinType

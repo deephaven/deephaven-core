@@ -36,7 +36,7 @@ public class UngroupedDoubleVectorColumnSource extends UngroupedColumnSource<Dou
             return null;
         }
         long segment = rowKey >> base;
-        int offset = (int) (rowKey & ((1 << base) - 1));
+        long offset = rowKey & ((1L << base) - 1);
         final Double result;
         if (isUngroupable) {
             result = (Double) ((UngroupableColumnSource) innerSource).getUngrouped(segment, offset);
@@ -57,7 +57,7 @@ public class UngroupedDoubleVectorColumnSource extends UngroupedColumnSource<Dou
         }
 
         long segment = rowKey >> base;
-        int offset = (int) (rowKey & ((1 << base) - 1));
+        long offset = rowKey & ((1L << base) - 1);
         if (isUngroupable) {
             return ((UngroupableColumnSource) innerSource).getUngroupedDouble(segment, offset);
         }
@@ -74,7 +74,7 @@ public class UngroupedDoubleVectorColumnSource extends UngroupedColumnSource<Dou
         }
 
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
+        long offset = rowKey & ((1L << getPrevBase()) - 1);
         final Double result;
         if (isUngroupable) {
             result = (Double) ((UngroupableColumnSource) innerSource).getUngroupedPrev(segment, offset);
@@ -96,7 +96,7 @@ public class UngroupedDoubleVectorColumnSource extends UngroupedColumnSource<Dou
         }
 
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
+        long offset = rowKey & ((1L << getPrevBase()) - 1);
 
         if (isUngroupable) {
             return ((UngroupableColumnSource) innerSource).getUngroupedPrevDouble(segment, offset);

@@ -1,0 +1,1 @@
+{"file":"conceptual/query-engine/engine-locking.md","objects":{"myTable":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},":log":{"type":"Log","data":"myIndependentThread - 2026-11-10T00:07:08.579807593Z - Acquiring UpdateGraph exclusive lock...\nmyIndependentThread - 2026-11-10T00:07:08.614960593Z - Waiting for condition...\n"}}}

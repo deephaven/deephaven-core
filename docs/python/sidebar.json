@@ -9,7 +9,7 @@
         "path": "intro.md"
       },
       {
-        "label": "Deephaven Overview",
+        "label": "Deephaven overview",
         "path": "conceptual/deephaven-overview.md"
       },
       {
@@ -687,7 +687,7 @@
                     "path": "how-to-guides/user-interface/markdown-widget.md"
                   },
                   {
-                    "label": "Format tables in the UI",
+                    "label": "Use table tools in the UI",
                     "path": "how-to-guides/user-interface/formatting-tables.md"
                   },
                   {
@@ -2815,7 +2815,7 @@
                 "label": "Install and upgrade",
                 "items": [
                   {
-                    "label": "How can I find which Core version to which a feature or fix was added?",
+                    "label": "How can I find which Core version added a particular feature or fix?",
                     "path": "reference/community-questions/how-do-i-find-a-specific-build.md"
                   },
                   {
