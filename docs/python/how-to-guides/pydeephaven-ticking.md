@@ -11,6 +11,8 @@ A _ticking_ table is one whose contents can change while the server runs — the
 
 ## Install the package
 
+Install `pydeephaven-ticking` from PyPI with `pip`. Check the platform requirement first, because the prebuilt packages cover only one platform.
+
 > [!IMPORTANT]
 > `pydeephaven-ticking` wraps Deephaven's C++ client with Cython, and is published to PyPI as prebuilt packages for **Linux on x86_64 only**. No macOS, Windows, or Linux ARM packages are available. See the [version matrix](../reference/version-matrix.md) for details.
 
