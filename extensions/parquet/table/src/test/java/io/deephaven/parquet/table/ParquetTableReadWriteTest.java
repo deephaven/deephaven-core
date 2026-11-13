@@ -34,6 +34,7 @@ import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.impl.ForceReadUtility;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
+import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
@@ -1644,6 +1645,9 @@ public final class ParquetTableReadWriteTest {
             final Table fromDisk = readTable(parentDir.getPath(), readInstructions.withTableDefinition(definition));
             assertEquals(definition, fromDisk.getDefinition());
             assertTableEquals(inputData, fromDisk);
+            // The read is a partitioned source table with no partitions
+            assertTrue(fromDisk instanceof PartitionAwareSourceTable);
+            assertTrue(((PartitionAwareSourceTable) fromDisk).tableLocationProvider().getTableLocationKeys().isEmpty());
         }
     }
 
@@ -1657,8 +1661,15 @@ public final class ParquetTableReadWriteTest {
         // Read both with the layout inferred and with the key-value layout named
         for (final ParquetInstructions readInstructions : List.of(EMPTY,
                 EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED))) {
-            final Table fromDisk = readTable(parentDir.getPath(), readInstructions).select();
+            final Table fromDisk = readTable(parentDir.getPath(), readInstructions);
             assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
+            // The read is a partitioned source table holding only the partitions of the first write
+            assertTrue(fromDisk instanceof PartitionAwareSourceTable);
+            final Set<Object> partitionValues = ((PartitionAwareSourceTable) fromDisk).tableLocationProvider()
+                    .getTableLocationKeys().stream()
+                    .map(key -> key.getPartitionValue("PC1"))
+                    .collect(Collectors.toSet());
+            assertEquals(Set.of("aa", "bb"), partitionValues);
         }
     }
 
