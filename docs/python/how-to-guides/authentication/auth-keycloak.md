@@ -16,9 +16,12 @@ This guide assumes you have [Docker and Docker Compose](../../getting-started/do
 > [!WARNING]
 > The [example configuration](#set-up-the-project) given in this guide is _not_ recommended for use in a production environment. For instance, it creates two users: `admin` and `user`, with passwords the same as the usernames. Additionally, the example disables [fsync](https://man7.org/linux/man-pages/man2/fsync.2.html) and `synchronous_commit`, which are not recommended for production. The example is only meant to show a basic implementation that can be used as a template.
 
+> [!WARNING]
+> **Known issue:** In testing with Deephaven 42.8 and 42.9, the web UI doesn't show the Keycloak login screen. The latest published version of the `@deephaven/js-plugin-auth-keycloak` plugin, 0.2.0, fails to load in the web UI, and the IDE shows "No login plugins found". Keycloak and the server's OIDC authentication handler start normally, and users can sign in to Keycloak itself, but until a compatible plugin is published, the example can't sign users in to the IDE.
+
 ## Set up the project
 
-The example creates a [Keycloak](https://www.keycloak.org/) realm named `deephaven_core` with the placeholder users described in the warning at the top of this guide. [Docker Compose](../../getting-started/docker-install.md) runs three services, `deephaven`, `database`, and `keycloak`, and the example uses four files in this layout:
+The example creates a [Keycloak](https://www.keycloak.org/) realm named `deephaven_core` with the placeholder users described in the production warning at the top of this guide. [Docker Compose](../../getting-started/docker-install.md) runs three services, `deephaven`, `database`, and `keycloak`, and the example uses four files in this layout:
 
 ```text
 .
@@ -291,7 +294,7 @@ To configure Keycloak with users and passwords, create a `deephaven_realm.json` 
 </details>
 
 > [!IMPORTANT]
-> This file configures the placeholder users described in the warning at the top of this guide.
+> This file configures the placeholder users described in the production warning at the top of this guide.
 
 ### init-keycloak.sql
 
@@ -312,7 +315,7 @@ docker compose up
 
 The first command builds the Docker images (not using a cache), and the second starts the containers from the built images.
 
-Navigate to `http://localhost:10000/ide` and you'll be greeted with a login screen prompting for a username and password. Log in with `user`/`user` or `admin`/`admin`.
+Navigate to `http://localhost:10000/ide`. With a working Keycloak plugin, you're greeted with a login screen prompting for a username and password. Log in with `user`/`user` or `admin`/`admin`. See the known issue at the top of this guide.
 
 ## Granting access to users
 
