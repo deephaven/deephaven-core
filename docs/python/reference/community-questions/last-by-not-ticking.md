@@ -8,7 +8,7 @@ The [`last_by`](../table-operations/group-and-aggregate/lastBy.md) operation ret
 
 If you [`reverse`](../table-operations/sort/reverse.md) a ticking table, use [`first_by`](../table-operations/group-and-aggregate/firstBy.md) instead. Alternatively, call `last_by` first and reverse the result, or don't reverse the table at all.
 
-```python order=source,reversed_first,last_reversed
+```python ticking-table order=null
 from deephaven import time_table
 
 source = time_table("PT1s").update(["Key = ii % 3", "Value = ii"])

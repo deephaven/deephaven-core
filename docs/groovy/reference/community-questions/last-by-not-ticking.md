@@ -8,7 +8,7 @@ The [`lastBy`](../table-operations/group-and-aggregate/lastBy.md) operation retu
 
 If you [`reverse`](../table-operations/sort/reverse.md) a ticking table, use [`firstBy`](../table-operations/group-and-aggregate/firstBy.md) instead. Alternatively, call `lastBy` first and reverse the result, or don't reverse the table at all.
 
-```groovy order=source,reversedFirst,lastReversed
+```groovy ticking-table order=null
 source = timeTable("PT1s").update("Key = ii % 3", "Value = ii")
 
 // Use firstBy after reverse to get the newest row per key
