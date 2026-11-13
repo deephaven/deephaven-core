@@ -28,14 +28,18 @@ final ExecutionContext dhEngineContext = ExecutionContext.newBuilder()
     .markSystemic()
     .build();
 
+final TableDefinition definition = TableDefinition.of(
+        ColumnDefinition.ofString("Symbol"),
+        ColumnDefinition.ofDouble("Price"));
+
+// Declared outside the try block so the application keeps a reference to the publisher:
+// publisher.table() is the blink table, and publisher.add(...) publishes new data to it.
+final TablePublisher publisher;
+
 // Every thread that performs Deephaven table operations must have this execution context open.
 // open() returns a SafeCloseable that restores the previous context when closed.
 try (final SafeCloseable ignored = dhEngineContext.open()) {
-    final TableDefinition definition = TableDefinition.of(
-            ColumnDefinition.ofString("Symbol"),
-            ColumnDefinition.ofDouble("Price"));
-
-    final TablePublisher publisher = TablePublisher.of(
+    publisher = TablePublisher.of(
             "SymbolIndex",
             definition,
             null,  // optional flush callback
