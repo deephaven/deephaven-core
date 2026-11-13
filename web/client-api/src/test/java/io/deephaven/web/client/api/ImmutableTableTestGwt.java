@@ -303,7 +303,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    public void testUniqueSentinelOutOfRangeThrows() {
+    public void testUniqueSentinelOutOfRangeRejects() {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(10_053);
@@ -313,13 +313,8 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     aggBy.aggregations = arr(Aggregation.AggUnique(arr("Y"), null, Js.uncheckedCast(sentinel)));
                     aggBy.groupByColumns = arr("G");
                     JsPendingTable<JsResolvedTable> source = session.getTable("source", null).update(arr("G = i % 2"));
-                    try {
-                        source.aggBy(aggBy);
-                        fail("a byte sentinel of 200 did not throw");
-                    } catch (IllegalArgumentException expected) {
-                        assertTrue(expected.getMessage(), expected.getMessage().contains("byte"));
-                    }
-                    return Promise.resolve(session);
+                    return expectRejection(source.aggBy(aggBy).resolve(), "byte")
+                            .then(ignore -> Promise.resolve(session));
                 })
                 .then(this::finish).catch_(this::report);
     }
@@ -373,7 +368,8 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                         // cancel() after delivery closes what the pending produced
                         pending.cancel();
                         try {
-                            ((JsResolvedTable) resolved).head(Js.uncheckedCast(1.0));
+                            // copy() still throws on a closed table; the operations reject instead
+                            ((JsResolvedTable) resolved).copy();
                             fail("Expected the resolved table to be closed by cancel()");
                         } catch (IllegalStateException expected) {
                             assertTrue(expected.getMessage(), expected.getMessage().contains("closed"));
@@ -422,18 +418,13 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    public void testOperandFromAnotherConnectionThrows() {
+    public void testOperandFromAnotherConnectionRejects() {
         connect(tables).then(first -> connect(tables).then(second -> {
             delayTestFinish(10_029);
             JsPendingTable<JsTable> left = first.getTable("source", null);
             JsPendingTable<JsTable> right = second.getTable("source", null);
-            try {
-                left.naturalJoin(JsTableReference.of(right), arr("X"), null, null);
-                fail("Expected an operand from another connection to throw");
-            } catch (IllegalArgumentException expected) {
-                assertTrue(expected.getMessage(), expected.getMessage().contains("connection"));
-            }
-            return Promise.resolve(first);
+            return expectRejection(left.naturalJoin(JsTableReference.of(right), arr("X"), null, null).resolve(),
+                    "connection").then(ignore -> Promise.resolve(first));
         })).then(this::finish).catch_(this::report);
     }
 
@@ -1150,7 +1141,8 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
         Promise<Object> checked = pending.resolve().then(table -> {
             controller.abort();
             try {
-                table.head(Js.uncheckedCast(1.0)).cancel();
+                // copy() still throws on a closed table; the operations reject instead
+                table.copy().close();
             } catch (IllegalStateException e) {
                 return Promise.reject(what + ", delivered to one resolve(), was closed by aborting another resolve()'s"
                         + " signal: " + e.getMessage());
@@ -1213,7 +1205,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                         return view.resolve().then(owned -> {
                             view.cancel();
                             try {
-                                owned.head(Js.uncheckedCast(1.0));
+                                owned.copy().close();
                                 return Promise.reject("the table the view handed out was still open after cancel");
                             } catch (IllegalStateException expected) {
                                 // closed, as for a canceled operation
@@ -1249,7 +1241,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                 // Cancel after delivery releases the delivered table
                                 pending.cancel();
                                 try {
-                                    head.createSnapshot(new DataOptions.SnapshotOptions());
+                                    head.copy().close();
                                     fail("Expected the delivered table to be closed");
                                 } catch (IllegalStateException expected) {
                                     // closed by the cancel
@@ -1723,30 +1715,20 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     return session.getTable("source", null).asPromise();
                 })
                 .then(table -> {
-                    // Invalid arguments throw when the method is called, before anything reaches the server, as the
-                    // TableOperations docs say
+                    // Invalid arguments reject, before anything reaches the server, as the TableOperations docs say
                     JsTableOperations.DownsampleTableOptions noWidth = downsampleOptions();
                     noWidth.width = 0;
-                    try {
-                        table.operations().downsample(noWidth);
-                        fail("Expected a zero width to throw");
-                    } catch (IllegalArgumentException expected) {
-                        assertTrue(expected.getMessage(), expected.getMessage().contains("width"));
-                    }
-                    try {
-                        table.operations().downsample(downsampleOptions(LongWrapper.of(SERIES_START)));
-                        fail("Expected a one-element range to throw");
-                    } catch (IllegalArgumentException expected) {
-                        assertTrue(expected.getMessage(), expected.getMessage().contains("xRange"));
-                    }
-                    try {
-                        table.operations().downsample(downsampleOptions(LongWrapper.of(SERIES_START), null));
-                        fail("Expected a range with no end to throw");
-                    } catch (IllegalArgumentException expected) {
-                        assertTrue(expected.getMessage(), expected.getMessage().contains("xRange"));
-                    }
-                    table.close();
-                    return Promise.resolve(table);
+                    Promise<Object> zeroWidth = expectRejection(table.operations().downsample(noWidth).resolve(),
+                            "width");
+                    Promise<Object> oneElement = expectRejection(
+                            table.operations().downsample(downsampleOptions(LongWrapper.of(SERIES_START))).resolve(),
+                            "xRange");
+                    Promise<Object> noEnd = expectRejection(table.operations()
+                            .downsample(downsampleOptions(LongWrapper.of(SERIES_START), null)).resolve(), "xRange");
+                    return zeroWidth.then(ignore -> oneElement).then(ignore -> noEnd).then(ignore -> {
+                        table.close();
+                        return Promise.resolve(table);
+                    });
                 })
                 .then(this::finish).catch_(this::report);
     }

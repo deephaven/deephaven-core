@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.gwt.core.client.JavaScriptException;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.agg.AggByOptions;
 import io.deephaven.web.client.api.agg.Aggregation;
@@ -14,15 +15,19 @@ import io.deephaven.web.client.api.updateby.UpdateByOperation;
 import io.deephaven.web.client.api.updateby.UpdateByOptions;
 import io.deephaven.web.client.api.updateby.UpdateByRollingSum;
 import io.deephaven.web.client.api.updateby.UpdateByWindowTicks;
+import io.deephaven.web.client.fu.LazyPromise;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Calls every operation on {@link JsTableOperations} once with trivial arguments and checks that each one resolves to a
- * table. Not a test of the operations' results, only that each call reaches the server and comes back.
+ * table. Not a test of the operations' results, only that each call reaches the server and comes back. Also checks that
+ * invalid calls reject instead of throwing.
  */
 public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
     private final TableSourceBuilder tables = new TableSourceBuilder()
@@ -268,6 +273,143 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
             failures.add(c.name + ": " + err);
             return Promise.resolve((Object) null);
         }).then(ignore -> runFrom(cases, index + 1, source, right, grouped, failures));
+    }
+
+    /** A call that must return, then reject with the exception it found, rather than throw. */
+    private static final class Invalid {
+        final String name;
+        final Supplier<Promise<?>> call;
+        final Class<? extends Throwable> type;
+        final @Nullable String fragment;
+
+        Invalid(String name, Supplier<Promise<?>> call, Class<? extends Throwable> type, @Nullable String fragment) {
+            this.name = name;
+            this.call = call;
+            this.type = type;
+            this.fragment = fragment;
+        }
+    }
+
+    private static List<Invalid> invalidCalls(JsTable source, JsTable right, JsTable foreign,
+            JsResolvedTable closed) {
+        AggByOptions noAggregations = new AggByOptions();
+        noAggregations.groupByColumns = arr("X");
+
+        AggByOptions initialGroupsAlone = new AggByOptions();
+        initialGroupsAlone.aggregations = arr(Aggregation.AggSum(arr("Y")));
+        initialGroupsAlone.initialGroups = JsTableReference.of(right);
+
+        JsTableOperations.RangeJoinMatch unknownRule = new JsTableOperations.RangeJoinMatch();
+        unknownRule.leftStartColumn = lit("X");
+        unknownRule.rangeStartRule = lit("NOT_A_RULE");
+        unknownRule.rightRangeColumn = lit("X");
+        unknownRule.rangeEndRule = lit("GREATER_THAN_OR_EQUAL");
+        unknownRule.leftEndColumn = lit("Y");
+
+        JsTableOperations.DownsampleTableOptions zeroWidth = new JsTableOperations.DownsampleTableOptions();
+        zeroWidth.xColumn = lit("X");
+        zeroWidth.yColumns = arr("Y");
+        zeroWidth.width = 0;
+
+        JsTableOperations.DownsampleTableOptions oneEnded = new JsTableOperations.DownsampleTableOptions();
+        oneEnded.xColumn = lit("X");
+        oneEnded.yColumns = arr("Y");
+        oneEnded.width = 100;
+        oneEnded.xRange = arr(LongWrapper.of(0));
+
+        // Each takes the source's operations in the call, the task it is used in
+        List<Invalid> calls = new ArrayList<>();
+        calls.add(new Invalid("sort(null)", () -> source.operations().sort(null).resolve(),
+                NullPointerException.class, null));
+        // Reading the missing array's length is a JS TypeError, caught in Java as a JavaScriptException; its wording
+        // differs between browsers
+        calls.add(new Invalid("aggBy without aggregations", () -> source.operations().aggBy(noAggregations).resolve(),
+                JavaScriptException.class, null));
+        calls.add(new Invalid("aggBy, initialGroups without groupByColumns",
+                () -> source.operations().aggBy(initialGroupsAlone).resolve(), IllegalArgumentException.class,
+                "initialGroups requires groupByColumns"));
+        calls.add(new Invalid("aj without match columns",
+                () -> source.operations().aj(JsTableReference.of(right), arr(), null).resolve(),
+                IllegalArgumentException.class, "at least one match column"));
+        calls.add(new Invalid("naturalJoin, unknown join type",
+                () -> source.operations().naturalJoin(JsTableReference.of(right), arr("X"), arr("Z"), lit("NOT_A_TYPE"))
+                        .resolve(),
+                IllegalArgumentException.class, "Unknown natural join type"));
+        calls.add(new Invalid("rangeJoin, unknown start rule",
+                () -> source.operations().rangeJoin(JsTableReference.of(right), arr(), unknownRule,
+                        TableOperationsSmokeTestGwt.<AggregationUnion>arr(Aggregation.AggGroup(arr("Z")))).resolve(),
+                IllegalArgumentException.class, "Unknown range start rule"));
+        calls.add(new Invalid("downsample, zero width", () -> source.operations().downsample(zeroWidth).resolve(),
+                IllegalArgumentException.class, "width must be positive"));
+        calls.add(new Invalid("downsample, xRange with one end",
+                () -> source.operations().downsample(oneEnded).resolve(), IllegalArgumentException.class,
+                "xRange must be [start, end]"));
+        calls.add(new Invalid("whereIn, operand from another connection",
+                () -> source.operations().whereIn(JsTableReference.of(foreign), arr("X")).resolve(),
+                IllegalArgumentException.class, "not from the same connection"));
+        calls.add(new Invalid("head on a closed resolved table", () -> closed.head(row(1)).resolve(),
+                IllegalStateException.class, "Table is closed"));
+        calls.add(new Invalid("seekRow on a closed resolved table", () -> closed.seekRow(null),
+                IllegalStateException.class, "Table is closed"));
+        calls.add(new Invalid("createSnapshot on a closed resolved table", () -> closed.createSnapshot(null),
+                IllegalStateException.class, "Table is closed"));
+        calls.add(new Invalid("getColumnStatistics on a closed resolved table",
+                () -> closed.getColumnStatistics(lit("X")), IllegalStateException.class, "Table is closed"));
+        return calls;
+    }
+
+    public void testInvalidCallsReject() {
+        connect(tables)
+                .then(session -> connect(tables).then(other -> {
+                    delayTestFinish(20_090);
+                    return session.getTable("source", null).asPromise()
+                            .then(source -> session.getTable("right", null).asPromise()
+                                    .then(right -> other.getTable("right", null).asPromise()
+                                            .then(foreign -> source.operations().resolve().then(closed -> {
+                                                closed.close();
+                                                List<String> failures = new ArrayList<>();
+                                                return rejectFrom(invalidCalls(source, right, foreign, closed), 0,
+                                                        failures).then(ignore -> {
+                                                            source.close();
+                                                            right.close();
+                                                            foreign.close();
+                                                            if (!failures.isEmpty()) {
+                                                                fail(String.join("\n", failures));
+                                                            }
+                                                            return Promise.resolve(session);
+                                                        });
+                                            }))));
+                }))
+                .then(this::finish).catch_(this::report);
+    }
+
+    /** As {@link #runFrom}, expecting each call to reject with its exception; timeouts are 20300 plus the index. */
+    private Promise<Object> rejectFrom(List<Invalid> calls, int index, List<String> failures) {
+        if (index == calls.size()) {
+            return Promise.resolve((Object) null);
+        }
+        Invalid c = calls.get(index);
+        delayTestFinish(20_300 + index);
+        Promise<Object> result;
+        try {
+            result = Js.uncheckedCast(c.call.get());
+        } catch (Exception e) {
+            failures.add(c.name + ": threw " + e + " instead of rejecting");
+            return rejectFrom(calls, index + 1, failures);
+        }
+        return result.then(value -> {
+            failures.add(c.name + ": resolved instead of rejecting");
+            return Promise.resolve((Object) null);
+        }, err -> {
+            // The rejection is the exception's JS error, which maps back to the Java exception
+            Throwable thrown = LazyPromise.ofObject(err);
+            if (thrown.getClass() != c.type
+                    || c.fragment != null && !String.valueOf(thrown.getMessage()).contains(c.fragment)) {
+                failures.add(c.name + ": rejected with " + thrown + ", expected " + c.type.getName()
+                        + (c.fragment == null ? "" : " containing \"" + c.fragment + "\""));
+            }
+            return Promise.resolve((Object) null);
+        }).then(ignore -> rejectFrom(calls, index + 1, failures));
     }
 
     @Override

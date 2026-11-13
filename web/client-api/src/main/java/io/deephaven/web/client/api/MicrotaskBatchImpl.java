@@ -245,6 +245,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         private @Nullable String cancelMessage;
         private @Nullable LazyPromise<JsResolvedTable> resolving;
         private @Nullable Resolved owner;
+        /** What a failed-at-birth pending rejects with in place of its message, the JS error of what was thrown. */
+        protected @Nullable Object rejection;
 
         protected OverState(WorkerConnection connection, Ticket ticket) {
             super(connection, ticket);
@@ -271,7 +273,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             // answer, and after its task even an awaited pending is not to be used again
             String misuse = misuse();
             if (misuse != null) {
-                return Promise.reject(misuse);
+                return Promise.reject(rejection != null ? rejection : misuse);
             }
             if (resolving == null) {
                 // The Resolved retains the state from now on; the caller owns it and must close it, or cancel() does
@@ -703,44 +705,57 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
         @Override
         public Promise<TableData> createSnapshot(Object options) {
-            checkOpen();
-            return AbstractTableSubscription.createSnapshot(connection, state, options);
+            try {
+                checkOpen();
+                return AbstractTableSubscription.createSnapshot(connection, state, options);
+            } catch (RuntimeException e) {
+                return Promise.reject(LazyPromise.toJsError(e));
+            }
         }
 
         @Override
         public Promise<JsColumnStatistics> getColumnStatistics(Column.ColumnOrName column) {
-            checkOpen();
-            Ticket ticket = connection.getTickets().newExportTicket();
-            // Awaited in this task, so the one-row statistics table is held until it is read, then closed
-            Promise<JsResolvedTable> statistics = call(ticket, BatchTableRequest.Operation.newBuilder()
-                    .setColumnStatistics(ColumnStatisticsRequest.newBuilder()
-                            .setResultId(ticket)
-                            .setSourceId(TableReference.newBuilder().setTicket(typedTicket().getTicket()))
-                            .setColumnName(column.columnName())))
-                    .resolve();
-            return statistics.then(table -> {
-                DataOptions.SnapshotOptions options = new DataOptions.SnapshotOptions();
-                options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 0));
-                options.columns = Js.cast(table.getColumns());
-                return table.createSnapshot(options).then(data -> {
-                    table.close();
-                    return Promise.resolve(new JsColumnStatistics(data));
-                }, failure -> {
-                    table.close();
-                    return Promise.reject(failure);
+            try {
+                checkOpen();
+                Ticket ticket = connection.getTickets().newExportTicket();
+                // Awaited in this task, so the one-row statistics table is held until it is read, then closed
+                Promise<JsResolvedTable> statistics = call(ticket, BatchTableRequest.Operation.newBuilder()
+                        .setColumnStatistics(ColumnStatisticsRequest.newBuilder()
+                                .setResultId(ticket)
+                                .setSourceId(TableReference.newBuilder().setTicket(typedTicket().getTicket()))
+                                .setColumnName(column.columnName())))
+                        .resolve();
+                return statistics.then(table -> {
+                    DataOptions.SnapshotOptions options = new DataOptions.SnapshotOptions();
+                    options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 0));
+                    options.columns = Js.cast(table.getColumns());
+                    return table.createSnapshot(options).then(data -> {
+                        table.close();
+                        return Promise.resolve(new JsColumnStatistics(data));
+                    }, failure -> {
+                        table.close();
+                        return Promise.reject(failure);
+                    });
                 });
-            });
+            } catch (RuntimeException e) {
+                return Promise.reject(LazyPromise.toJsError(e));
+            }
         }
 
         @Override
         public Promise<Double> seekRow(SeekRowOptions options) {
-            checkOpen();
-            // Field reads only, so an object literal works as well as an instance
-            TableData.RowPositionUnion startingRow = options.startingRow;
-            long start = startingRow.isLongWrapper() ? startingRow.asLongWrapper().getWrapped()
-                    : (long) Js.asDouble(startingRow);
-            return JsTable.seekRow(connection, typedTicket().getTicket(), start, options.column,
-                    options.valueType, options.seekValue, options.insensitive, options.contains, options.isBackwards);
+            try {
+                checkOpen();
+                // Field reads only, so an object literal works as well as an instance
+                TableData.RowPositionUnion startingRow = options.startingRow;
+                long start = startingRow.isLongWrapper() ? startingRow.asLongWrapper().getWrapped()
+                        : (long) Js.asDouble(startingRow);
+                return JsTable.seekRow(connection, typedTicket().getTicket(), start, options.column,
+                        options.valueType, options.seekValue, options.insensitive, options.contains,
+                        options.isBackwards);
+            } catch (RuntimeException e) {
+                return Promise.reject(LazyPromise.toJsError(e));
+            }
         }
 
         @Override
@@ -1092,6 +1107,16 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         Operation failed = new Operation(connection, new TableTicket(resultId), operation);
         failed.failedAtBirth = true;
         failed.cancel(message);
+        return failed;
+    }
+
+    @Override
+    public JsPendingTable<JsResolvedTable> rejected(Throwable failure) {
+        // Never sent, so it needs no operation; a table chained on it fails with the message
+        String message = failure.getMessage() != null ? failure.getMessage() : String.valueOf(failure);
+        Operation failed = failed(connection, connection.getTickets().newExportTicket(),
+                BatchTableRequest.Operation.newBuilder(), message);
+        failed.rejection = LazyPromise.toJsError(failure);
         return failed;
     }
 

@@ -30,6 +30,14 @@ public class LazyPromise<T> {
       return @java.lang.Throwable::of(*)(obj);
     }-*/;
 
+    /**
+     * The JS error behind {@code throwable}, which {@link #ofObject(Object)} maps back to it: what JS sees when Java
+     * throws.
+     */
+    public static native Object toJsError(Throwable throwable) /*-{
+      return throwable.@java.lang.Throwable::getBackingJsObject()();
+    }-*/;
+
     private T succeeded;
     private boolean isSuccess;
     private Object failed;

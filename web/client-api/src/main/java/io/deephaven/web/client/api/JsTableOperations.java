@@ -90,9 +90,10 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * t.close();
  * </pre>
  * <p>
- * Each method checks its arguments when called and throws for invalid ones. If the operation itself fails, on the
- * server or because a table it uses was canceled, failed, or used too late, the pending table it returns rejects.
- * {@link JsPendingTable} describes how long a pending table may be used.
+ * No method throws: as from an async function, every failure rejects the pending table it returns. That includes
+ * invalid arguments, an operand from another connection and a closed table, which reject with the error and send
+ * nothing to the server, as well as a failure on the server or of a table the operation uses, if it was canceled,
+ * failed, or used too late. {@link JsPendingTable} describes how long a pending table may be used.
  * <p>
  *
  * <pre>
@@ -175,6 +176,12 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
+     * Internal method: a pending table that rejects with {@code failure}, which each operation returns instead of
+     * throwing, as an async function would.
+     */
+    JsPendingTable<JsResolvedTable> rejected(Throwable failure);
+
+    /**
      * Creates a table with the given number of rows from the beginning of this table.
      *
      * @param size the number of rows to keep from the beginning of this table
@@ -182,15 +189,19 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> head(TableData.RowPositionUnion size) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder()
-                .setHead(HeadOrTailRequest.newBuilder()
-                        .setSourceId(TableReference.newBuilder()
-                                .setTicket(typedTicket().getTicket())
-                                .build())
-                        .setResultId(ticket)
-                        .setNumRows(size.asInt())));
+            return call(ticket, BatchTableRequest.Operation.newBuilder()
+                    .setHead(HeadOrTailRequest.newBuilder()
+                            .setSourceId(TableReference.newBuilder()
+                                    .setTicket(typedTicket().getTicket())
+                                    .build())
+                            .setResultId(ticket)
+                            .setNumRows(size.asInt())));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -201,15 +212,19 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> tail(TableData.RowPositionUnion size) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder()
-                .setTail(HeadOrTailRequest.newBuilder()
-                        .setSourceId(TableReference.newBuilder()
-                                .setTicket(typedTicket().getTicket())
-                                .build())
-                        .setResultId(ticket)
-                        .setNumRows(size.asInt())));
+            return call(ticket, BatchTableRequest.Operation.newBuilder()
+                    .setTail(HeadOrTailRequest.newBuilder()
+                            .setSourceId(TableReference.newBuilder()
+                                    .setTicket(typedTicket().getTicket())
+                                    .build())
+                            .setResultId(ticket)
+                            .setNumRows(size.asInt())));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -219,16 +234,20 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> reverse() {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder()
-                .setSort(SortTableRequest.newBuilder()
-                        .setSourceId(TableReference.newBuilder()
-                                .setTicket(typedTicket().getTicket())
-                                .build())
-                        .setResultId(ticket)
-                        .addSorts(SortDescriptor.newBuilder()
-                                .setDirection(SortDescriptor.SortDirection.REVERSE))));
+            return call(ticket, BatchTableRequest.Operation.newBuilder()
+                    .setSort(SortTableRequest.newBuilder()
+                            .setSourceId(TableReference.newBuilder()
+                                    .setTicket(typedTicket().getTicket())
+                                    .build())
+                            .setResultId(ticket)
+                            .addSorts(SortDescriptor.newBuilder()
+                                    .setDirection(SortDescriptor.SortDirection.REVERSE))));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -239,13 +258,17 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> snapshot() {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setSnapshot(SnapshotTableRequest.newBuilder()
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setSnapshot(SnapshotTableRequest.newBuilder()
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     @TsInterface
@@ -296,24 +319,28 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> snapshotWhen(JsTableReference trigger,
             @JsOptional @JsNullable SnapshotWhenOptions options) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
-        SnapshotWhenOptions realOptions = options == null ? new SnapshotWhenOptions() : options;
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
+            SnapshotWhenOptions realOptions = options == null ? new SnapshotWhenOptions() : options;
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setSnapshotWhen(SnapshotWhenTableRequest
-                .newBuilder()
-                .setBaseId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setTriggerId(TableReference.newBuilder()
-                        .setTicket(trigger.typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)
-                .setInitial(realOptions.initial != null && realOptions.initial)
-                .setIncremental(realOptions.incremental != null && realOptions.incremental)
-                .setHistory(realOptions.history != null && realOptions.history)
-                .addAllStampColumns(realOptions.stampColumns != null ? realOptions.stampColumns.asList()
-                        : Collections.emptyList())),
-                trigger);
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setSnapshotWhen(SnapshotWhenTableRequest
+                    .newBuilder()
+                    .setBaseId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setTriggerId(TableReference.newBuilder()
+                            .setTicket(trigger.typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)
+                    .setInitial(realOptions.initial != null && realOptions.initial)
+                    .setIncremental(realOptions.incremental != null && realOptions.incremental)
+                    .setHistory(realOptions.history != null && realOptions.history)
+                    .addAllStampColumns(realOptions.stampColumns != null ? realOptions.stampColumns.asList()
+                            : Collections.emptyList())),
+                    trigger);
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -325,14 +352,18 @@ public interface JsTableOperations extends ServerObject {
     // omitting sortDescending, sort objects have this for us
     @JsMethod
     default JsPendingTable<JsResolvedTable> sort(ReadonlyArray<Sort.SortUnion> sorts) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setSort(SortTableRequest.newBuilder()
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)
-                .addAllSorts(sorts.asList().stream().map(Sort.SortUnion::makeDescriptor).toList())));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setSort(SortTableRequest.newBuilder()
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)
+                    .addAllSorts(sorts.asList().stream().map(Sort.SortUnion::makeDescriptor).toList())));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -344,14 +375,18 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> where(ReadonlyArray<FilterCondition> conditions) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setFilter(FilterTableRequest.newBuilder()
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)
-                .addAllFilters(conditions.asList().stream().map(FilterCondition::makeDescriptor).toList())));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setFilter(FilterTableRequest.newBuilder()
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)
+                    .addAllFilters(conditions.asList().stream().map(FilterCondition::makeDescriptor).toList())));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -366,17 +401,21 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> whereIn(JsTableReference rightTable,
             ReadonlyArray<Column.ColumnOrName> columnsToMatch) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setWhereIn(WhereInRequest.newBuilder()
-                .setResultId(ticket)
-                .setLeftId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket()))
-                .setRightId(TableReference.newBuilder()
-                        .setTicket(rightTable.typedTicket().getTicket()))
-                .addAllColumnsToMatch(columnsToNameList(columnsToMatch))
-                .setInverted(false)
-                .build()), rightTable);
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setWhereIn(WhereInRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setLeftId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket()))
+                    .setRightId(TableReference.newBuilder()
+                            .setTicket(rightTable.typedTicket().getTicket()))
+                    .addAllColumnsToMatch(columnsToNameList(columnsToMatch))
+                    .setInverted(false)
+                    .build()), rightTable);
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -391,17 +430,21 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> whereNotIn(JsTableReference rightTable,
             ReadonlyArray<Column.ColumnOrName> columnsToMatch) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setWhereIn(WhereInRequest.newBuilder()
-                .setResultId(ticket)
-                .setLeftId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket()))
-                .setRightId(TableReference.newBuilder()
-                        .setTicket(rightTable.typedTicket().getTicket()))
-                .addAllColumnsToMatch(columnsToNameList(columnsToMatch))
-                .setInverted(true)
-                .build()), rightTable);
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setWhereIn(WhereInRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setLeftId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket()))
+                    .setRightId(TableReference.newBuilder()
+                            .setTicket(rightTable.typedTicket().getTicket()))
+                    .addAllColumnsToMatch(columnsToNameList(columnsToMatch))
+                    .setInverted(true)
+                    .build()), rightTable);
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -433,16 +476,20 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> slice(TableData.RowPositionUnion firstPositionInclusive,
             TableData.RowPositionUnion lastPositionExclusive) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setSlice(SliceRequest.newBuilder()
-                .setResultId(ticket)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setFirstPositionInclusive(firstPositionInclusive.getLongValue())
-                .setLastPositionExclusive(lastPositionExclusive.getLongValue())
-                .build()));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setSlice(SliceRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setFirstPositionInclusive(firstPositionInclusive.getLongValue())
+                    .setLastPositionExclusive(lastPositionExclusive.getLongValue())
+                    .build()));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     private static SelectOrUpdateRequest.Builder selectOrUpdate(
@@ -462,13 +509,17 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> view(ReadonlyArray<JsTable.CustomColumnArgUnionType> columns) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setView(selectOrUpdate(columns)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setView(selectOrUpdate(columns)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -481,13 +532,17 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> updateView(
             ReadonlyArray<JsTable.CustomColumnArgUnionType> columns) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setUpdateView(selectOrUpdate(columns)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setUpdateView(selectOrUpdate(columns)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -499,13 +554,17 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> update(ReadonlyArray<JsTable.CustomColumnArgUnionType> columns) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setUpdate(selectOrUpdate(columns)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setUpdate(selectOrUpdate(columns)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -520,13 +579,17 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> lazyUpdate(
             ReadonlyArray<JsTable.CustomColumnArgUnionType> columns) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setLazyUpdate(selectOrUpdate(columns)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setLazyUpdate(selectOrUpdate(columns)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -538,13 +601,17 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> select(ReadonlyArray<JsTable.CustomColumnArgUnionType> columns) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setSelect(selectOrUpdate(columns)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setSelect(selectOrUpdate(columns)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -595,35 +662,41 @@ public interface JsTableOperations extends ServerObject {
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable NaturalJoinType joinType) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
-        NaturalJoinTablesRequest.Builder join = NaturalJoinTablesRequest.newBuilder()
-                .setResultId(ticket)
-                .setLeftId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setRightId(TableReference.newBuilder()
-                        .setTicket(rightTable.typedTicket().getTicket())
-                        .build())
-                .addAllColumnsToMatch(JsTable.MatchPairUnion.toStringArray(columnsToMatch))
-                .addAllColumnsToAdd(columnsToAdd != null ? JsTable.MatchPairUnion.toStringArray(columnsToAdd)
-                        : Collections.emptyList());
-        if (joinType != null) {
-            switch (joinType.toString()) {
-                case ERROR_ON_DUPLICATE:
-                    join.setJoinType(NaturalJoinTablesRequest.JoinType.ERROR_ON_DUPLICATE);
-                    break;
-                case FIRST_MATCH:
-                    join.setJoinType(NaturalJoinTablesRequest.JoinType.FIRST_MATCH);
-                    break;
-                case LAST_MATCH:
-                    join.setJoinType(NaturalJoinTablesRequest.JoinType.LAST_MATCH);
-                    break;
-                case EXACTLY_ONE_MATCH:
-                    join.setJoinType(NaturalJoinTablesRequest.JoinType.EXACTLY_ONE_MATCH);
-                    break;
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
+            NaturalJoinTablesRequest.Builder join = NaturalJoinTablesRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setLeftId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setRightId(TableReference.newBuilder()
+                            .setTicket(rightTable.typedTicket().getTicket())
+                            .build())
+                    .addAllColumnsToMatch(JsTable.MatchPairUnion.toStringArray(columnsToMatch))
+                    .addAllColumnsToAdd(columnsToAdd != null ? JsTable.MatchPairUnion.toStringArray(columnsToAdd)
+                            : Collections.emptyList());
+            if (joinType != null) {
+                switch (joinType.toString()) {
+                    case ERROR_ON_DUPLICATE:
+                        join.setJoinType(NaturalJoinTablesRequest.JoinType.ERROR_ON_DUPLICATE);
+                        break;
+                    case FIRST_MATCH:
+                        join.setJoinType(NaturalJoinTablesRequest.JoinType.FIRST_MATCH);
+                        break;
+                    case LAST_MATCH:
+                        join.setJoinType(NaturalJoinTablesRequest.JoinType.LAST_MATCH);
+                        break;
+                    case EXACTLY_ONE_MATCH:
+                        join.setJoinType(NaturalJoinTablesRequest.JoinType.EXACTLY_ONE_MATCH);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown natural join type: " + joinType);
+                }
             }
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setNaturalJoin(join), rightTable);
+        } catch (RuntimeException e) {
+            return rejected(e);
         }
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setNaturalJoin(join), rightTable);
     }
 
     /**
@@ -639,19 +712,23 @@ public interface JsTableOperations extends ServerObject {
     default JsPendingTable<JsResolvedTable> exactJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
-        ExactJoinTablesRequest.Builder request = ExactJoinTablesRequest.newBuilder()
-                .setResultId(ticket)
-                .setLeftId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setRightId(TableReference.newBuilder()
-                        .setTicket(rightTable.typedTicket().getTicket())
-                        .build())
-                .addAllColumnsToMatch(JsTable.MatchPairUnion.toStringArray(columnsToMatch))
-                .addAllColumnsToAdd(columnsToAdd != null ? JsTable.MatchPairUnion.toStringArray(columnsToAdd)
-                        : Collections.emptyList());
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setExactJoin(request), rightTable);
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
+            ExactJoinTablesRequest.Builder request = ExactJoinTablesRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setLeftId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setRightId(TableReference.newBuilder()
+                            .setTicket(rightTable.typedTicket().getTicket())
+                            .build())
+                    .addAllColumnsToMatch(JsTable.MatchPairUnion.toStringArray(columnsToMatch))
+                    .addAllColumnsToAdd(columnsToAdd != null ? JsTable.MatchPairUnion.toStringArray(columnsToAdd)
+                            : Collections.emptyList());
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setExactJoin(request), rightTable);
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -669,22 +746,26 @@ public interface JsTableOperations extends ServerObject {
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
-        CrossJoinTablesRequest.Builder request = CrossJoinTablesRequest.newBuilder()
-                .setResultId(ticket)
-                .setLeftId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setRightId(TableReference.newBuilder()
-                        .setTicket(rightTable.typedTicket().getTicket())
-                        .build())
-                .addAllColumnsToMatch(JsTable.MatchPairUnion.toStringArray(columnsToMatch))
-                .addAllColumnsToAdd(columnsToAdd != null ? JsTable.MatchPairUnion.toStringArray(columnsToAdd)
-                        : Collections.emptyList());
-        if (reserveBits != null) {
-            request.setReserveBits((int) (double) reserveBits);
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
+            CrossJoinTablesRequest.Builder request = CrossJoinTablesRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setLeftId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setRightId(TableReference.newBuilder()
+                            .setTicket(rightTable.typedTicket().getTicket())
+                            .build())
+                    .addAllColumnsToMatch(JsTable.MatchPairUnion.toStringArray(columnsToMatch))
+                    .addAllColumnsToAdd(columnsToAdd != null ? JsTable.MatchPairUnion.toStringArray(columnsToAdd)
+                            : Collections.emptyList());
+            if (reserveBits != null) {
+                request.setReserveBits((int) (double) reserveBits);
+            }
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setCrossJoin(request), rightTable);
+        } catch (RuntimeException e) {
+            return rejected(e);
         }
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setCrossJoin(request), rightTable);
     }
 
     /**
@@ -702,10 +783,14 @@ public interface JsTableOperations extends ServerObject {
     default JsPendingTable<JsResolvedTable> aj(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsNullable @JsOptional ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setAj(builder), rightTable);
+            AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setAj(builder), rightTable);
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -723,10 +808,14 @@ public interface JsTableOperations extends ServerObject {
     default JsPendingTable<JsResolvedTable> raj(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsNullable @JsOptional ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setRaj(builder), rightTable);
+            AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setRaj(builder), rightTable);
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     private AjRajTablesRequest.Builder makeAjReq(JsTableReference table,
@@ -841,45 +930,49 @@ public interface JsTableOperations extends ServerObject {
     default JsPendingTable<JsResolvedTable> rangeJoin(JsTableReference rightTable,
             ReadonlyArray<String> exactMatches,
             RangeJoinMatch rangeMatch, ReadonlyArray<AggregationUnion> aggregations) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        RangeJoinTablesRequest.Builder request = RangeJoinTablesRequest.newBuilder()
-                .setResultId(ticket)
-                .setLeftId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setRightId(TableReference.newBuilder()
-                        .setTicket(rightTable.typedTicket().getTicket())
-                        .build());
+            RangeJoinTablesRequest.Builder request = RangeJoinTablesRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setLeftId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setRightId(TableReference.newBuilder()
+                            .setTicket(rightTable.typedTicket().getTicket())
+                            .build());
 
-        request.addAllExactMatchColumns(exactMatches.asList());
-        request.setLeftStartColumn(rangeMatch.leftStartColumn.columnName());
+            request.addAllExactMatchColumns(exactMatches.asList());
+            request.setLeftStartColumn(rangeMatch.leftStartColumn.columnName());
 
-        request.setRangeStartRule(switch (rangeMatch.rangeStartRule.toString()) {
-            case RangeStartRule.LESS_THAN -> RangeJoinTablesRequest.RangeStartRule.LESS_THAN;
-            case RangeStartRule.LESS_THAN_OR_EQUAL -> RangeJoinTablesRequest.RangeStartRule.LESS_THAN_OR_EQUAL;
-            case RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING ->
-                RangeJoinTablesRequest.RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING;
-            default -> throw new IllegalArgumentException("Unknown range start rule: " + rangeMatch.rangeStartRule);
-        });
-        request.setRightRangeColumn(rangeMatch.rightRangeColumn.columnName());
-        request.setRangeEndRule(switch (rangeMatch.rangeEndRule.toString()) {
-            case RangeEndRule.GREATER_THAN -> RangeJoinTablesRequest.RangeEndRule.GREATER_THAN;
-            case RangeEndRule.GREATER_THAN_OR_EQUAL -> RangeJoinTablesRequest.RangeEndRule.GREATER_THAN_OR_EQUAL;
-            case RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING ->
-                RangeJoinTablesRequest.RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING;
-            default -> throw new IllegalArgumentException("Unknown range end rule: " + rangeMatch.rangeEndRule);
-        });
+            request.setRangeStartRule(switch (rangeMatch.rangeStartRule.toString()) {
+                case RangeStartRule.LESS_THAN -> RangeJoinTablesRequest.RangeStartRule.LESS_THAN;
+                case RangeStartRule.LESS_THAN_OR_EQUAL -> RangeJoinTablesRequest.RangeStartRule.LESS_THAN_OR_EQUAL;
+                case RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING ->
+                    RangeJoinTablesRequest.RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING;
+                default -> throw new IllegalArgumentException("Unknown range start rule: " + rangeMatch.rangeStartRule);
+            });
+            request.setRightRangeColumn(rangeMatch.rightRangeColumn.columnName());
+            request.setRangeEndRule(switch (rangeMatch.rangeEndRule.toString()) {
+                case RangeEndRule.GREATER_THAN -> RangeJoinTablesRequest.RangeEndRule.GREATER_THAN;
+                case RangeEndRule.GREATER_THAN_OR_EQUAL -> RangeJoinTablesRequest.RangeEndRule.GREATER_THAN_OR_EQUAL;
+                case RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING ->
+                    RangeJoinTablesRequest.RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING;
+                default -> throw new IllegalArgumentException("Unknown range end rule: " + rangeMatch.rangeEndRule);
+            });
 
-        request.setLeftEndColumn(rangeMatch.leftEndColumn.columnName());
+            request.setLeftEndColumn(rangeMatch.leftEndColumn.columnName());
 
-        for (int i = 0; i < aggregations.getLength(); i++) {
-            AggregationUnion aggUnion = aggregations.getAt(i);
-            io.deephaven.proto.backplane.grpc.Aggregation.Builder agg = aggUnion.makeAggregation();
-            request.addAggregations(agg);
+            for (int i = 0; i < aggregations.getLength(); i++) {
+                AggregationUnion aggUnion = aggregations.getAt(i);
+                io.deephaven.proto.backplane.grpc.Aggregation.Builder agg = aggUnion.makeAggregation();
+                request.addAggregations(agg);
+            }
+
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setRangeJoin(request), rightTable);
+        } catch (RuntimeException e) {
+            return rejected(e);
         }
-
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setRangeJoin(request), rightTable);
     }
 
     /**
@@ -892,16 +985,21 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> groupBy(
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest.newBuilder()
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)
-                .setSpec(AggSpec.newBuilder().setGroup(AggSpec.AggSpecGroup.getDefaultInstance()))
-                .addAllGroupByColumns(
-                        groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest
+                    .newBuilder()
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)
+                    .setSpec(AggSpec.newBuilder().setGroup(AggSpec.AggSpecGroup.getDefaultInstance()))
+                    .addAllGroupByColumns(
+                            groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -914,17 +1012,22 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> aggAllBy(AggAllByUnion aggUnion,
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        AggSpec.Builder spec = aggUnion.makeAggSpec();
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest.newBuilder()
-                .setResultId(ticket)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setSpec(spec)
-                .addAllGroupByColumns(
-                        groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
+            AggSpec.Builder spec = aggUnion.makeAggSpec();
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest
+                    .newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setSpec(spec)
+                    .addAllGroupByColumns(
+                            groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -947,33 +1050,38 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> aggBy(AggByOptions options) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        AggregateRequest.Builder aggBuilder = AggregateRequest.newBuilder()
-                .setResultId(ticket)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setPreserveEmpty(options.preserveEmpty != null && options.preserveEmpty);
+            AggregateRequest.Builder aggBuilder = AggregateRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setPreserveEmpty(options.preserveEmpty != null && options.preserveEmpty);
 
-        for (int i = 0; i < options.aggregations.getLength(); i++) {
-            AggregationUnion aggUnion = options.aggregations.getAt(i);
-            io.deephaven.proto.backplane.grpc.Aggregation.Builder agg = aggUnion.makeAggregation();
-            aggBuilder.addAggregations(agg);
-        }
-
-        if (options.initialGroups != null) {
-            aggBuilder.setInitialGroupsId(TableReference.newBuilder()
-                    .setTicket(options.initialGroups.typedTicket().getTicket())
-                    .build());
-            if (options.groupByColumns == null || options.groupByColumns.getLength() == 0) {
-                throw new IllegalArgumentException("initialGroups requires groupByColumns");
+            for (int i = 0; i < options.aggregations.getLength(); i++) {
+                AggregationUnion aggUnion = options.aggregations.getAt(i);
+                io.deephaven.proto.backplane.grpc.Aggregation.Builder agg = aggUnion.makeAggregation();
+                aggBuilder.addAggregations(agg);
             }
+
+            if (options.initialGroups != null) {
+                aggBuilder.setInitialGroupsId(TableReference.newBuilder()
+                        .setTicket(options.initialGroups.typedTicket().getTicket())
+                        .build());
+                if (options.groupByColumns == null || options.groupByColumns.getLength() == 0) {
+                    throw new IllegalArgumentException("initialGroups requires groupByColumns");
+                }
+            }
+            if (options.groupByColumns != null) {
+                aggBuilder.addAllGroupByColumns(columnsToNameList(options.groupByColumns));
+            }
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder),
+                    options.initialGroups);
+        } catch (RuntimeException e) {
+            return rejected(e);
         }
-        if (options.groupByColumns != null) {
-            aggBuilder.addAllGroupByColumns(columnsToNameList(options.groupByColumns));
-        }
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder), options.initialGroups);
     }
 
     /**
@@ -1002,56 +1110,60 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> updateBy(UpdateByOptions options) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        UpdateByRequest.Builder builder = UpdateByRequest.newBuilder()
-                .setResultId(ticket)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build());
+            UpdateByRequest.Builder builder = UpdateByRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build());
 
-        if (options.control != null) {
-            UpdateByRequest.UpdateByOptions.Builder controlBuilder = UpdateByRequest.UpdateByOptions.newBuilder();
-            if (options.control.useRedirection != null) {
-                controlBuilder.setUseRedirection(options.control.useRedirection);
+            if (options.control != null) {
+                UpdateByRequest.UpdateByOptions.Builder controlBuilder = UpdateByRequest.UpdateByOptions.newBuilder();
+                if (options.control.useRedirection != null) {
+                    controlBuilder.setUseRedirection(options.control.useRedirection);
+                }
+                if (options.control.chunkCapacity != null) {
+                    controlBuilder.setChunkCapacity((int) (double) options.control.chunkCapacity);
+                }
+                if (options.control.maxStaticSparseMemoryOverhead != null) {
+                    controlBuilder.setMaxStaticSparseMemoryOverhead(options.control.maxStaticSparseMemoryOverhead);
+                }
+                if (options.control.initialHashTableSize != null) {
+                    controlBuilder.setInitialHashTableSize((int) (double) options.control.initialHashTableSize);
+                }
+                if (options.control.maximumLoadFactor != null) {
+                    controlBuilder.setMaximumLoadFactor(options.control.maximumLoadFactor);
+                }
+                if (options.control.targetLoadFactor != null) {
+                    controlBuilder.setTargetLoadFactor(options.control.targetLoadFactor);
+                }
+                if (options.control.mathContext != null) {
+                    controlBuilder.setMathContext(MathContext.toProto(options.control.mathContext));
+                }
+                builder.setOptions(controlBuilder);
             }
-            if (options.control.chunkCapacity != null) {
-                controlBuilder.setChunkCapacity((int) (double) options.control.chunkCapacity);
+
+            for (int i = 0; i < options.operations.getLength(); i++) {
+                // Not getAt: its checked cast throws on a plain object shaped like the class
+                UpdateByOperation op = options.operations.getAtAsAny(i).uncheckedCast();
+                UpdateByRequest.UpdateByOperation.UpdateByColumn.Builder column =
+                        UpdateByRequest.UpdateByOperation.UpdateByColumn.newBuilder()
+                                .setSpec(op.spec.makeOperation());
+                if (op.matchPairs != null) {
+                    column.addAllMatchPairs(JsTable.MatchPairUnion.toStringArray(op.matchPairs));
+                }
+                builder.addOperations(UpdateByRequest.UpdateByOperation.newBuilder().setColumn(column));
             }
-            if (options.control.maxStaticSparseMemoryOverhead != null) {
-                controlBuilder.setMaxStaticSparseMemoryOverhead(options.control.maxStaticSparseMemoryOverhead);
+            if (options.groupByColumns != null) {
+                builder.addAllGroupByColumns(columnsToNameList(options.groupByColumns));
             }
-            if (options.control.initialHashTableSize != null) {
-                controlBuilder.setInitialHashTableSize((int) (double) options.control.initialHashTableSize);
-            }
-            if (options.control.maximumLoadFactor != null) {
-                controlBuilder.setMaximumLoadFactor(options.control.maximumLoadFactor);
-            }
-            if (options.control.targetLoadFactor != null) {
-                controlBuilder.setTargetLoadFactor(options.control.targetLoadFactor);
-            }
-            if (options.control.mathContext != null) {
-                controlBuilder.setMathContext(MathContext.toProto(options.control.mathContext));
-            }
-            builder.setOptions(controlBuilder);
+
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setUpdateBy(builder));
+        } catch (RuntimeException e) {
+            return rejected(e);
         }
-
-        for (int i = 0; i < options.operations.getLength(); i++) {
-            // Not getAt: its checked cast throws on a plain object shaped like the class
-            UpdateByOperation op = options.operations.getAtAsAny(i).uncheckedCast();
-            UpdateByRequest.UpdateByOperation.UpdateByColumn.Builder column =
-                    UpdateByRequest.UpdateByOperation.UpdateByColumn.newBuilder()
-                            .setSpec(op.spec.makeOperation());
-            if (op.matchPairs != null) {
-                column.addAllMatchPairs(JsTable.MatchPairUnion.toStringArray(op.matchPairs));
-            }
-            builder.addOperations(UpdateByRequest.UpdateByOperation.newBuilder().setColumn(column));
-        }
-        if (options.groupByColumns != null) {
-            builder.addAllGroupByColumns(columnsToNameList(options.groupByColumns));
-        }
-
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setUpdateBy(builder));
     }
 
     @TsInterface
@@ -1089,29 +1201,33 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> downsample(DownsampleTableOptions options) {
-        if (options.width <= 0) {
-            throw new IllegalArgumentException("width must be positive, was " + options.width);
-        }
-        if (options.xRange != null && (options.xRange.getLength() != 2 || options.xRange.getAt(0) == null
-                || options.xRange.getAt(1) == null)) {
-            throw new IllegalArgumentException("xRange must be [start, end] with both set, was " + options.xRange);
-        }
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            if (options.width <= 0) {
+                throw new IllegalArgumentException("width must be positive, was " + options.width);
+            }
+            if (options.xRange != null && (options.xRange.getLength() != 2 || options.xRange.getAt(0) == null
+                    || options.xRange.getAt(1) == null)) {
+                throw new IllegalArgumentException("xRange must be [start, end] with both set, was " + options.xRange);
+            }
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        RunChartDownsampleRequest.Builder request = RunChartDownsampleRequest.newBuilder()
-                .setResultId(ticket)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setPixelCount((int) options.width)
-                .setXColumnName(options.xColumn.columnName())
-                .addAllYColumnNames(columnsToNameList(options.yColumns));
-        if (options.xRange != null) {
-            request.setZoomRange(RunChartDownsampleRequest.ZoomRange.newBuilder()
-                    .setMinDateNanos(options.xRange.getAt(0).getWrapped())
-                    .setMaxDateNanos(options.xRange.getAt(1).getWrapped()));
+            RunChartDownsampleRequest.Builder request = RunChartDownsampleRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setPixelCount((int) options.width)
+                    .setXColumnName(options.xColumn.columnName())
+                    .addAllYColumnNames(columnsToNameList(options.yColumns));
+            if (options.xRange != null) {
+                request.setZoomRange(RunChartDownsampleRequest.ZoomRange.newBuilder()
+                        .setMinDateNanos(options.xRange.getAt(0).getWrapped())
+                        .setMaxDateNanos(options.xRange.getAt(1).getWrapped()));
+            }
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setRunChartDownsample(request));
+        } catch (RuntimeException e) {
+            return rejected(e);
         }
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setRunChartDownsample(request));
     }
 
     /**
@@ -1124,14 +1240,18 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> selectDistinct(
             @JsNullable @JsOptional ReadonlyArray<Column.ColumnOrName> columnNames) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setSelectDistinct(SelectDistinctRequest
-                .newBuilder()
-                .addAllColumnNames(columnNames == null ? Collections.emptyList() : columnsToNameList(columnNames))
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)));
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setSelectDistinct(SelectDistinctRequest
+                    .newBuilder()
+                    .addAllColumnNames(columnNames == null ? Collections.emptyList() : columnsToNameList(columnNames))
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -1144,20 +1264,24 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> countBy(String columnName,
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        AggregateRequest.Builder aggBuilder = AggregateRequest.newBuilder()
-                .setResultId(ticket)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .addAggregations(io.deephaven.proto.backplane.grpc.Aggregation.newBuilder()
-                        .setCount(io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount.newBuilder()
-                                .setColumnName(columnName)));
-        if (groupByColumns != null) {
-            aggBuilder.addAllGroupByColumns(columnsToNameList(groupByColumns));
+            AggregateRequest.Builder aggBuilder = AggregateRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .addAggregations(io.deephaven.proto.backplane.grpc.Aggregation.newBuilder()
+                            .setCount(io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount.newBuilder()
+                                    .setColumnName(columnName)));
+            if (groupByColumns != null) {
+                aggBuilder.addAllGroupByColumns(columnsToNameList(groupByColumns));
+            }
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder));
+        } catch (RuntimeException e) {
+            return rejected(e);
         }
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder));
     }
 
     /**
@@ -1292,8 +1416,12 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> wsumBy(Column.ColumnOrName weightColumn,
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
-        return aggAllBySpec(AggSpec.newBuilder().setWeightedSum(
-                AggSpec.AggSpecWeighted.newBuilder().setWeightColumn(weightColumn.columnName())), groupByColumns);
+        try {
+            return aggAllBySpec(AggSpec.newBuilder().setWeightedSum(
+                    AggSpec.AggSpecWeighted.newBuilder().setWeightColumn(weightColumn.columnName())), groupByColumns);
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -1313,8 +1441,12 @@ public interface JsTableOperations extends ServerObject {
     @JsMethod
     default JsPendingTable<JsResolvedTable> wavgBy(Column.ColumnOrName weightColumn,
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
-        return aggAllBySpec(AggSpec.newBuilder().setWeightedAvg(
-                AggSpec.AggSpecWeighted.newBuilder().setWeightColumn(weightColumn.columnName())), groupByColumns);
+        try {
+            return aggAllBySpec(AggSpec.newBuilder().setWeightedAvg(
+                    AggSpec.AggSpecWeighted.newBuilder().setWeightColumn(weightColumn.columnName())), groupByColumns);
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     @TsInterface
@@ -1344,17 +1476,21 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> ungroup(@JsOptional @JsNullable UngroupOptions options) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setUngroup(UngroupRequest.newBuilder()
-                .setResultId(ticket)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setNullFill(options != null && options.nullFill != null && options.nullFill)
-                .addAllColumnsToUngroup(options != null && options.columnsToUngroup != null
-                        ? columnsToNameList(options.columnsToUngroup)
-                        : Collections.emptyList())));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setUngroup(UngroupRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setNullFill(options != null && options.nullFill != null && options.nullFill)
+                    .addAllColumnsToUngroup(options != null && options.columnsToUngroup != null
+                            ? columnsToNameList(options.columnsToUngroup)
+                            : Collections.emptyList())));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -1365,13 +1501,17 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> dropColumns(ReadonlyArray<Column.ColumnOrName> columnsToDrop) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setDropColumns(DropColumnsRequest.newBuilder()
-                .setResultId(ticket)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket()))
-                .addAllColumnNames(columnsToNameList(columnsToDrop))));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setDropColumns(DropColumnsRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket()))
+                    .addAllColumnNames(columnsToNameList(columnsToDrop))));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     private static List<String> columnsToNameList(ReadonlyArray<Column.ColumnOrName> columns) {
@@ -1380,19 +1520,24 @@ public interface JsTableOperations extends ServerObject {
 
     /**
      * Helper for convenience aggregation methods that build an {@link AggregateAllRequest} with a pre-built
-     * {@link AggSpec}.
+     * {@link AggSpec}. Rejects rather than throws, so a caller whose spec cannot throw needs no handling of its own.
      */
     private JsPendingTable<JsResolvedTable> aggAllBySpec(AggSpec.Builder spec,
             ReadonlyArray<Column.ColumnOrName> groupByColumns) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest.newBuilder()
-                .setResultId(ticket)
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setSpec(spec)
-                .addAllGroupByColumns(
-                        groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest
+                    .newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setSpec(spec)
+                    .addAllGroupByColumns(
+                            groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 
     /**
@@ -1402,12 +1547,16 @@ public interface JsTableOperations extends ServerObject {
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> flatten() {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
+        try {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setFlatten(FlattenRequest.newBuilder()
-                .setSourceId(TableReference.newBuilder()
-                        .setTicket(typedTicket().getTicket())
-                        .build())
-                .setResultId(ticket)));
+            return call(ticket, BatchTableRequest.Operation.newBuilder().setFlatten(FlattenRequest.newBuilder()
+                    .setSourceId(TableReference.newBuilder()
+                            .setTicket(typedTicket().getTicket())
+                            .build())
+                    .setResultId(ticket)));
+        } catch (RuntimeException e) {
+            return rejected(e);
+        }
     }
 }

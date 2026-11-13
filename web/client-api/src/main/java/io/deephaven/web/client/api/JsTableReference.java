@@ -15,7 +15,7 @@ import jsinterop.base.Js;
  * Any client object that refers to a table on the server, and so can be the other operand of a table operation: a
  * {@link JsTable}, a {@link JsTotalsTable}, a {@link JsPendingTable} or a {@link JsResolvedTable}. These are the
  * table-shaped members of the union of server objects. The operand must be on the same connection as the table operated
- * on: the operations of {@link JsTableOperations} and the joins of a mutable {@code Table} throw if it is not, and the
+ * on: the joins of a mutable {@code Table} throw if it is not, and the operations of {@link JsTableOperations} and the
  * other methods taking one reject. A {@link JsTable} contributes its current state, including filters or sorts
  * requested but not yet applied.
  * <p>
