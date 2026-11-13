@@ -187,6 +187,14 @@ up front, rather than re-deriving them per check.
   separately in full much later. Fix: add a brief compare/contrast at first joint mention; a
   fuller comparison later is fine as reinforcement, not as the reader's only orientation.
 
+- **Offered alternatives with no reason to choose them:** When a page shows two or more ways to do
+  the same thing (two code paths, two settings, two tools), check that it says what makes the
+  second one worth choosing: a capability the first lacks, a cost it avoids, or a case it handles.
+  A reader who asks "why would I use this one?" and can't answer from the page has found a gap.
+  Fix: add a one-sentence reason where the alternative is introduced, or cut the alternative if
+  there isn't one. Branching is expected in a How-to guide, but each branch still needs its reason;
+  in a Reference guide the reason belongs in the page's "When to use" section.
+
 - **Orphaned asides:** A subsection covering an advanced or niche topic with no clear transition
   from what precedes it, and no connection to a nearby reference/summary table that would
   naturally include it. If deleting the sentence before it wouldn't be missed, the section is
