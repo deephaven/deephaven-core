@@ -8,6 +8,7 @@ import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsString;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.console.JsVariableType;
@@ -52,7 +53,7 @@ import jsinterop.base.Js;
  */
 @TsInterface
 @TsName(namespace = "dh", name = "TotalsTable")
-public class JsTotalsTable implements JoinableTable, ServerObject {
+public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
     private final JsTable wrappedTable;
     private final String directive;
     private final JsArray<JsString> groupBy;
@@ -105,6 +106,25 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
                 .build();
     }
 
+    @Override
+    @JsMethod
+    public JsArray<String> getAttributes() {
+        return wrappedTable.getAttributes();
+    }
+
+    @Override
+    @JsMethod
+    @JsNullable
+    public Object getAttribute(String attributeName) {
+        return wrappedTable.getAttribute(attributeName);
+    }
+
+    @Override
+    @JsMethod
+    public Promise<JsColumnStatistics> getColumnStatistics(Column.ColumnOrName column) {
+        return wrappedTable.getColumnStatistics(column);
+    }
+
     /**
      * Gets the configuration used when creating this Totals Table.
      *
@@ -155,40 +175,22 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
 
-    /**
-     * Creates a subscription to this table, with the given options. See {@link JsTable#createSubscription(Object)} for
-     * more information.
-     *
-     * @param options options for the subscription; see {@link DataOptions.SubscriptionOptions} for details
-     * @return a new {@link TableSubscription}
-     */
+    @Override
     @JsMethod
-    public TableSubscription createSubscription(Object options) {
+    public TableSubscription createSubscription(@TsTypeRef(DataOptions.SubscriptionOptions.class) Object options) {
         return wrappedTable.createSubscription(options);
     }
 
-    /**
-     * Creates a viewport subscription to this table, with the given options. See
-     * {@link JsTable#createViewportSubscription(Object)} for more information.
-     *
-     * @param options options for the viewport subscription; see {@link DataOptions.ViewportSubscriptionOptions} for
-     *        details
-     * @return a new {@link TableViewportSubscription}
-     */
+    @Override
     @JsMethod
-    public TableViewportSubscription createViewportSubscription(Object options) {
+    public TableViewportSubscription createViewportSubscription(
+            @TsTypeRef(DataOptions.ViewportSubscriptionOptions.class) Object options) {
         return wrappedTable.createViewportSubscription(options);
     }
 
-    /**
-     * Creates a snapshot of this table on the server, with the given options. See
-     * {@link JsTable#createSnapshot(Object)} for more information.
-     *
-     * @param options options for the snapshot; see {@link DataOptions.SnapshotOptions} for details
-     * @return Promise of {@link TableData}
-     */
+    @Override
     @JsMethod
-    public Promise<TableData> createSnapshot(Object options) {
+    public Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options) {
         return wrappedTable.createSnapshot(options);
     }
 
@@ -249,9 +251,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         return wrappedTable.isClosed();
     }
 
-    /**
-     * Indicates that the table will no longer be used, and resources used to provide it can be freed up on the server.
-     */
+    @Override
     @JsMethod
     public void close() {
         wrappedTable.close();
@@ -417,7 +417,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      * snapshot table will not update. This does not change the original table, and the new table will not have any of
      * the client side sorts/filters/columns. New client side sorts/filters/columns can be added to the snapshot copy.
      * 
-     * @return A promise that resolves to the snapshot table.
+     * @return a promise of the snapshot table
      */
     @Override
     @JsMethod
@@ -430,13 +430,14 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      *
      * @param baseTable The table to snapshot.
      * @param doInitialSnapshot Whether to create an initial snapshot immediately.
-     * @param stampColumns Optional list of column names to include in the result.
-     * @return A promise that resolves to the snapshot table.
+     * @param stampColumns Optional list of stamp column match pairs to include in the result.
+     * @return a promise of the snapshot table
      */
     @Override
     @JsMethod
-    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
-            @JsOptional @JsNullable String[] stampColumns) {
+    public Promise<JsTable> snapshot(JsTableReference baseTable,
+            @JsOptional @JsNullable Boolean doInitialSnapshot,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> stampColumns) {
         return wrappedTable.snapshot(baseTable, doInitialSnapshot, stampColumns);
     }
 
@@ -448,12 +449,14 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
      * @param asOfMatchRule If joinType is {@code AJ}/{@code RAJ}/{@code ReverseAJ}, the match rule to use.
-     * @return A promise that resolves to the joined table.
+     * @return a promise of the joined table
      */
     @Override
     @JsMethod
-    public Promise<JsTable> join(String joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
+    public Promise<JsTable> join(String joinType, JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
+            @JsOptional @JsNullable String asOfMatchRule) {
         return wrappedTable.join(joinType, rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 
@@ -464,12 +467,14 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
      * @param asOfMatchRule The match rule to use.
-     * @return A promise that resolves to the joined table.
+     * @return a promise of the joined table
      */
     @Override
     @JsMethod
-    public Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
+    public Promise<JsTable> asOfJoin(JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
+            @JsOptional @JsNullable String asOfMatchRule) {
         return wrappedTable.asOfJoin(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 
@@ -480,12 +485,14 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
      * @param reserveBits Optional reserve bits for the join.
-     * @return A promise that resolves to the joined table.
+     * @return a promise of the joined table
      */
     @Override
     @JsMethod
-    public Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable Double reserveBits) {
+    public Promise<JsTable> crossJoin(JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
+            @JsOptional @JsNullable Double reserveBits) {
         return wrappedTable.crossJoin(rightTable, columnsToMatch, columnsToAdd, reserveBits);
     }
 
@@ -495,12 +502,13 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      * @param rightTable The table to join to.
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
-     * @return A promise that resolves to the joined table.
+     * @return a promise of the joined table
      */
     @Override
     @JsMethod
-    public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd) {
+    public Promise<JsTable> exactJoin(JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         return wrappedTable.exactJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
@@ -510,12 +518,13 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      * @param rightTable The table to join to.
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
-     * @return A promise that resolves to the joined table.
+     * @return a promise of the joined table
      */
     @Override
     @JsMethod
-    public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd) {
+    public Promise<JsTable> naturalJoin(JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         return wrappedTable.naturalJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 }

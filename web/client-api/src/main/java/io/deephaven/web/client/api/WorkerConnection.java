@@ -25,7 +25,6 @@ import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
-import io.deephaven.io.streams.ByteBufferOutputStream;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc;
@@ -107,6 +106,7 @@ import io.grpc.stub.StreamObserver;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsNullable;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -115,7 +115,6 @@ import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jspecify.annotations.Nullable;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -264,6 +263,13 @@ public class WorkerConnection {
      * Once the table has been successfully fetched, after each reconnect until the table is close()d we'll attempt to
      * restore the table by re-fetching the table, then reapplying all operations on it.
      */
+    /** How many sessions this connection has had; a new session has none of the previous one's exports. */
+    private int sessions;
+
+    public int getSessions() {
+        return sessions;
+    }
+
     private void connectToWorker() {
         info.onReady()
                 .then(queryWorkerRunning -> authUpdate()).then(newSession -> {
@@ -277,6 +283,7 @@ public class WorkerConnection {
                     newSessionReconnect.success();
 
                     if (newSession) {
+                        sessions++;
                         // assert false : "Can't yet rebuild connections with new auth, please log in again";
                         // nuke pending callbacks, we'll remake them
                         handleCallbacks = new JsWeakMap<>();
@@ -313,7 +320,8 @@ public class WorkerConnection {
 
                         reviver.revive(hasActiveSubs);
 
-                        simpleReconnectableInstances.forEach((item, index, arr) -> item.refetch());
+                        // Each object reports its own failure with reconnectfailed
+                        simpleReconnectableInstances.forEach((item, index, arr) -> item.refetch().catch_(err -> null));
                     } else {
                         // wire up figures to attempt to reconnect when ready
                         simpleReconnectableInstances.forEach((item, index, arr) -> {
@@ -406,10 +414,7 @@ public class WorkerConnection {
             // fire deprecated event for now
             info.notifyConnectionError(status);
 
-            // signal that there has been a connection failure of some kind and attempt to reconnect
-            info.fireEvent(CoreClient.EVENT_DISCONNECT);
-
-            // Try again after a backoff, this may happen several times
+            // Try again after a backoff, this may happen several times; connectionLost() reports the disconnect
             connectionLost();
         } // others probably are meaningful to the caller
         return false;
@@ -518,12 +523,23 @@ public class WorkerConnection {
     }
 
     private void subscribeToTerminationNotification() {
-        terminationStream = Context.current().withCancellation();
-        terminationStream.run(
+        // A reconnect within the session can leave the previous stream open; replace it rather than add to it. The
+        // new stream is current before the old one is canceled, so the old one's end is ignored even if it is
+        // delivered synchronously, and it hangs off the root context so it cannot be canceled along with the old one.
+        final Context.CancellableContext previous = terminationStream;
+        final Context.CancellableContext context = Context.ROOT.withCancellation();
+        terminationStream = context;
+        if (previous != null) {
+            previous.cancel(null);
+        }
+        context.run(
                 () -> sessionServiceClient.terminationNotification(TerminationNotificationRequest.getDefaultInstance(),
                         new StreamObserver<TerminationNotificationResponse>() {
                             @Override
                             public void onNext(TerminationNotificationResponse success) {
+                                if (terminationStream != context) {
+                                    return;
+                                }
                                 // welp; the server is gone -- let everyone know
                                 connectionLost();
 
@@ -532,6 +548,10 @@ public class WorkerConnection {
 
                             @Override
                             public void onError(Throwable fail) {
+                                if (terminationStream != context) {
+                                    // Superseded or closed; this stream's end is not news
+                                    return;
+                                }
                                 // Errors are treated like connection issues, won't signal any shutdown
                                 if (checkStatus(fail)) {
                                     // restart the termination notification
@@ -559,6 +579,10 @@ public class WorkerConnection {
     // @Override
 
     public void connectionLost() {
+        if (state == State.Reconnecting) {
+            // Every open stream fails when the connection goes; the first one already did all of this
+            return;
+        }
         // notify all active tables and widgets that the connection is closed
         // TODO(deephaven-core#3604) when a new session is created, refetch all widgets and use that to drive reconnect
         simpleReconnectableInstances.forEach((item, index, array) -> {
@@ -681,41 +705,107 @@ public class WorkerConnection {
     }
 
     public Promise<JsTable> getTable(JsVariableDefinition varDef, @Nullable Boolean applyPreviewColumns) {
+        return getTable(varDef, applyPreviewColumns, tickets.newTableTicket());
+    }
+
+    /**
+     * As {@link #getTable(JsVariableDefinition, Boolean)}, into a ticket the caller already allocated so that
+     * operations can be chained on the table before it is fetched.
+     */
+    public Promise<JsTable> getTable(JsVariableDefinition varDef, @Nullable Boolean applyPreviewColumns,
+            TableTicket handle) {
+        return pendingTable(fetchTableState(Promise.resolve(varDef), applyPreviewColumns, handle)).asPromise();
+    }
+
+    /**
+     * Creates the state for a named table and issues nothing yet: the fetch waits for the server to be ready and for
+     * {@code definition} to resolve, so the state exists, and operations can be chained on its ticket, before either
+     * has happened.
+     */
+    public ClientTableState fetchTableState(Promise<JsVariableDefinition> definition,
+            @Nullable Boolean applyPreviewColumns, TableTicket handle) {
         if (applyPreviewColumns != null && applyPreviewColumns) {
             JsLog.warn("applyPreviewColumns is deprecated, and will be removed in a future release");
         }
-        return whenServerReady("get a table").then(serve -> {
-            JsLog.debug("innerGetTable", varDef.getTitle(), " started");
-            return newState((c, cts) -> {
-                JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
-                        " (" + cts.getHandle() + ")");
-                // Only apply preview if specifically requested
-                if (applyPreviewColumns != null && applyPreviewColumns) {
-                    ApplyPreviewColumnsRequest req = ApplyPreviewColumnsRequest.newBuilder()
-                            .setSourceId(Tickets.createTableRef(varDef))
-                            .setResultId(cts.getHandle().makeTicket())
-                            .build();
-                    tableServiceClient.applyPreviewColumns(req, c);
-                } else {
-                    FetchTableRequest req = FetchTableRequest.newBuilder()
-                            .setSourceId(Tickets.createTableRef(varDef))
-                            .setResultId(cts.getHandle().makeTicket())
-                            .build();
-                    tableServiceClient.fetchTable(req, c);
+        return newState((c, cts) -> {
+            // The call is made later, so it is made in this fetch's context, where a cancel reaches it
+            Context fetchContext = Context.current();
+            whenServerReady("get a table").then(serve -> definition).then(varDef -> {
+                JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts, " (" + cts.getHandle() + ")");
+                Context previous = fetchContext.attach();
+                try {
+                    // Only apply preview if specifically requested
+                    if (applyPreviewColumns != null && applyPreviewColumns) {
+                        ApplyPreviewColumnsRequest req = ApplyPreviewColumnsRequest.newBuilder()
+                                .setSourceId(Tickets.createTableRef(varDef))
+                                .setResultId(cts.getHandle().makeTicket())
+                                .build();
+                        tableServiceClient.applyPreviewColumns(req, c);
+                    } else {
+                        FetchTableRequest req = FetchTableRequest.newBuilder()
+                                .setSourceId(Tickets.createTableRef(varDef))
+                                .setResultId(cts.getHandle().makeTicket())
+                                .build();
+                        tableServiceClient.fetchTable(req, c);
+                    }
+                } finally {
+                    fetchContext.detach(previous);
                 }
-            }, "fetch table " + varDef.getTitle())
-                    .refetch()
-                    .then(cts -> {
-                        JsLog.debug("innerGetTable", varDef.getTitle(), " succeeded ", cts);
-                        JsTable table = new JsTable(this, cts);
-                        return Promise.resolve(table);
-                    });
-        });
+                return null;
+            }).catch_(error -> {
+                c.onError(asThrowable(error));
+                return null;
+            });
+        }, "fetch table", handle);
     }
 
-    public Promise<?> getObject(JsVariableDefinition definition) {
+    /**
+     * The definition a {@code getObject} argument names: the argument itself if it is a {@link JsVariableDefinition},
+     * otherwise looked up by name, or taken as given by id.
+     */
+    public Promise<JsVariableDefinition> lookupDefinition(JsPropertyMap<Object> definitionObject) {
+        if (definitionObject instanceof JsVariableDefinition) {
+            return Promise.resolve((JsVariableDefinition) definitionObject);
+        }
+        String type = definitionType(definitionObject);
+        boolean hasName = definitionObject.has("name");
+        boolean hasId = definitionObject.has("id");
+        if (hasName && hasId) {
+            throw new IllegalArgumentException("has both name and id field; could not getObject");
+        } else if (hasName) {
+            return getVariableDefinition(definitionObject.getAsAny("name").asString(), type);
+        } else if (hasId) {
+            return Promise.resolve(new JsVariableDefinition(type, null, definitionObject.getAsAny("id").asString(),
+                    null));
+        } else {
+            throw new IllegalArgumentException("no name/id field; could not construct getObject");
+        }
+    }
+
+    private static Throwable asThrowable(Object error) {
+        return error instanceof Throwable ? (Throwable) error : new RuntimeException(String.valueOf(error));
+    }
+
+    public JsPendingObject getObject(JsVariableDefinition definition) {
+        return getObject(definition, null);
+    }
+
+    /**
+     * Fetches the object a definition names. A table comes back as a {@link JsPendingTable}, so that operations can be
+     * chained on it before it arrives; {@code handle} is the ticket it will occupy, allocated by the caller when it
+     * needed the ticket even earlier, or null to allocate one here. Other object types come back as a promise.
+     */
+    public JsPendingObject getObject(JsVariableDefinition definition, @Nullable TableTicket handle) {
         if (JsVariableType.TABLE.equalsIgnoreCase(definition.getType())) {
-            return getTable(definition, null);
+            TableTicket tableHandle = handle != null ? handle : tickets.newTableTicket();
+            return JsPendingObject.of(pendingTable(fetchTableState(Promise.resolve(definition), null, tableHandle)));
+        }
+        return JsPendingObject.of(getNonTableObject(definition));
+    }
+
+    private Promise<?> getNonTableObject(JsVariableDefinition definition) {
+        if (JsVariableType.TABLE.equalsIgnoreCase(definition.getType())) {
+            throw new IllegalArgumentException("tables are fetched as pending tables");
         } else if (JsVariableType.FIGURE.equalsIgnoreCase(definition.getType())) {
             return getFigure(definition);
         } else if (JsVariableType.PANDAS.equalsIgnoreCase(definition.getType())) {
@@ -723,7 +813,8 @@ public class WorkerConnection {
                     .then(JsWidget::refetch)
                     .then(widget -> {
                         widget.close();
-                        return widget.getExportedObjects()[0].fetch();
+                        // A pandas widget exports exactly one object, its table
+                        return Js.<Promise<JsTable>>uncheckedCast(widget.getExportedObjects()[0].fetch());
                     });
         } else if (JsVariableType.PARTITIONEDTABLE.equalsIgnoreCase(definition.getType())) {
             return getPartitionedTable(definition);
@@ -735,30 +826,39 @@ public class WorkerConnection {
         }
     }
 
-    public Promise<?> getJsObject(JsPropertyMap<Object> definitionObject) {
+    /**
+     * The type named by a definition, whether it is a {@link JsVariableDefinition} or a plain JS object.
+     */
+    public static String definitionType(JsPropertyMap<Object> definitionObject) {
         if (definitionObject instanceof JsVariableDefinition) {
-            return getObject((JsVariableDefinition) definitionObject);
+            return ((JsVariableDefinition) definitionObject).getType();
         }
-
         if (!definitionObject.has("type")) {
             throw new IllegalArgumentException("no type field; could not getObject");
         }
-        String type = definitionObject.getAsAny("type").asString();
+        return definitionObject.getAsAny("type").asString();
+    }
 
-        boolean hasName = definitionObject.has("name");
-        boolean hasId = definitionObject.has("id");
-        if (hasName && hasId) {
-            throw new IllegalArgumentException("has both name and id field; could not getObject");
-        } else if (hasName) {
-            String name = definitionObject.getAsAny("name").asString();
-            return getVariableDefinition(name, type)
-                    .then(this::getObject);
-        } else if (hasId) {
-            String id = definitionObject.getAsAny("id").asString();
-            return getObject(new JsVariableDefinition(type, null, id, null));
-        } else {
-            throw new IllegalArgumentException("no name/id field; could not construct getObject");
+    public JsPendingObject getJsObject(JsPropertyMap<Object> definitionObject) {
+        return getJsObject(definitionObject, null);
+    }
+
+    /**
+     * As {@link #getObject(JsVariableDefinition, TableTicket)}, for a definition that may still need its name resolved
+     * to an id. The table's ticket is known before that lookup completes, so a table can be chained on immediately.
+     */
+    public JsPendingObject getJsObject(JsPropertyMap<Object> definitionObject, @Nullable TableTicket handle) {
+        if (definitionObject instanceof JsVariableDefinition) {
+            return getObject((JsVariableDefinition) definitionObject, handle);
         }
+
+        String type = definitionType(definitionObject);
+        Promise<JsVariableDefinition> lookup = lookupDefinition(definitionObject);
+        if (JsVariableType.TABLE.equalsIgnoreCase(type)) {
+            TableTicket tableHandle = handle != null ? handle : tickets.newTableTicket();
+            return JsPendingObject.of(pendingTable(fetchTableState(lookup, null, tableHandle)));
+        }
+        return JsPendingObject.of(lookup.then(definition -> getNonTableObject(definition)));
     }
 
     public Promise<?> getObject(TypedTicket typedTicket) {
@@ -774,7 +874,8 @@ public class WorkerConnection {
                     .then(JsWidget::refetch)
                     .then(widget -> {
                         widget.close();
-                        return widget.getExportedObjects()[0].fetch();
+                        // A pandas widget exports exactly one object, its table
+                        return Js.<Promise<JsTable>>uncheckedCast(widget.getExportedObjects()[0].fetch());
                     });
         } else if (JsVariableType.PARTITIONEDTABLE.equalsIgnoreCase(typedTicket.getType())) {
             return new JsPartitionedTable(this, new JsWidget(this, typedTicket)).refetch();
@@ -801,14 +902,19 @@ public class WorkerConnection {
         if (object.getConnection() != this) {
             return Promise.reject("Cannot share an object that comes from another server instance");
         }
+        String failure = MicrotaskBatchImpl.operandFailure(JsTableReference.of(object));
+        if (failure != null) {
+            return Promise.reject(failure);
+        }
         Ticket ticket = sharedTicketFromStringOrBytes(sharedTicketBytes);
         PublishRequest request = PublishRequest.newBuilder()
                 .setSourceId(object.typedTicket().getTicket())
                 .setResultId(ticket).build();
 
-        return Callbacks.<PublishResponse>grpcUnaryPromise(c -> {
-            sessionServiceClient().publishFromTicket(request, c);
-        }).then(ignore -> Promise.resolve(sharedTicketBytes));
+        return MicrotaskBatchImpl.holdUntil(this, new Ticket[] {request.getSourceId()},
+                () -> Callbacks.<PublishResponse>grpcUnaryPromise(c -> {
+                    sessionServiceClient().publishFromTicket(request, c);
+                })).then(ignore -> Promise.resolve(sharedTicketBytes));
     }
 
     private Ticket sharedTicketFromStringOrBytes(SharedExportBytesUnion sharedTicketBytes) {
@@ -823,9 +929,9 @@ public class WorkerConnection {
         return tickets.sharedTicket(array);
     }
 
-    public Promise<?> getSharedObject(SharedExportBytesUnion sharedExportBytes, String type) {
+    public JsPendingObject getSharedObject(SharedExportBytesUnion sharedExportBytes, String type) {
         if (type.equalsIgnoreCase(JsVariableType.TABLE)) {
-            return newState((callback, newState) -> {
+            return JsPendingObject.of(pendingTable((callback, newState) -> {
                 Ticket ticket = newState.getHandle().makeTicket();
 
                 ExportRequest request = ExportRequest.newBuilder()
@@ -847,9 +953,7 @@ public class WorkerConnection {
                     return null;
                 });
 
-            }, "getSharedObject")
-                    .refetch()
-                    .then(state -> Promise.resolve(new JsTable(this, state)));
+            }, "getSharedObject"));
         }
 
         TypedTicket result = TypedTicket.newBuilder()
@@ -864,9 +968,9 @@ public class WorkerConnection {
                 .build();
 
 
-        return Callbacks.<ExportResponse>grpcUnaryPromise(c -> {
+        return JsPendingObject.of(Callbacks.<ExportResponse>grpcUnaryPromise(c -> {
             sessionServiceClient().exportFromTicket(request, c);
-        }).then(ignore -> getObject(result));
+        }).then(ignore -> getObject(result)));
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -936,10 +1040,11 @@ public class WorkerConnection {
     public Promise<Object> whenServerReady(String operationName) {
         switch (state) {
             case Disconnected:
-                throw new IllegalStateException("Can't " + operationName + " while connection is closed");
+                return Promise.reject("Can't " + operationName + " while connection is closed");
             case Failed:
                 state = State.Reconnecting;
-                newSessionReconnect.initialConnection();
+                // Shared by every caller, so a caller's cancellable context (a fetch's) must not reach its calls
+                Context.ROOT.run(newSessionReconnect::initialConnection);
                 // deliberate fall-through
             case Connecting:
             case Reconnecting:
@@ -1081,7 +1186,8 @@ public class WorkerConnection {
         return new BiDiStream.Factory<>(info.supportsClientStreaming(), tickets::newTicketInt);
     }
 
-    public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone) {
+    public JsPendingTable<JsTable> newTable(String[] columnNames, String[] types, Object[][] data,
+            String userTimeZone) {
         JsDataHandler.ParseContext context = new JsDataHandler.ParseContext();
         if (userTimeZone != null) {
             context.timeZone = JsTimeZone.getTimeZone(userTimeZone);
@@ -1101,12 +1207,12 @@ public class WorkerConnection {
         return newTable(columnTypes, chunks);
     }
 
-    public Promise<JsTable> newTable(List<BarrageColumnType> columnTypes, Chunk<Values>[] data) {
+    public JsPendingTable<JsTable> newTable(List<BarrageColumnType> columnTypes, Chunk<Values>[] data) {
         // Store the data using a reference we can clear out, so the data is garbage collected later
         // This means the table can only be created once, but that's probably what we want in this case anyway
         AtomicReference<Chunk<Values>[]> chunkRef = new AtomicReference<>(data);
 
-        return newState((c, cts) -> {
+        return pendingTable((c, cts) -> {
             final Chunk<Values>[] d = chunkRef.get();
             if (d == null) {
                 c.onError(new IllegalStateException("Data already released, cannot re-create table"));
@@ -1119,9 +1225,7 @@ public class WorkerConnection {
             Flight.FlightDescriptor flightDescriptor = cts.getHandle().makeFlightDescriptor();
 
             writeTableToStream(columnTypes, listener, flightDescriptor, d);
-        }, "creating new table")
-                .refetch()
-                .then(cts -> Promise.resolve(new JsTable(this, cts)));
+        }, "creating new table");
     }
 
     private void writeTableToStream(List<BarrageColumnType> columnTypes,
@@ -1370,16 +1474,16 @@ public class WorkerConnection {
         };
     }
 
-    public Promise<JsTable> mergeTables(JsTable[] tables, HasEventHandling failHandler) {
-        return newState((c, cts) -> {
+    public JsPendingTable<JsTable> mergeTables(JsTableReference[] tables, HasEventHandling failHandler) {
+        return pendingTable((c, cts) -> {
             final List<TableReference> tableHandles = new ArrayList<>();
             for (int i = 0; i < tables.length; i++) {
-                final JsTable table = tables[i];
+                final JsTableReference table = tables[i];
                 if (!table.getConnection().equals(this)) {
                     throw new IllegalStateException("Table in merge is not on the worker for this connection");
                 }
                 tableHandles.add(TableReference.newBuilder()
-                        .setTicket(tables[i].getHandle().makeTicket())
+                        .setTicket(table.typedTicket().getTicket())
                         .build());
             }
             JsLog.debug("Merging tables: ", LazyString.of(cts.getHandle()), " for ", cts.getHandle().isResolved(),
@@ -1389,9 +1493,7 @@ public class WorkerConnection {
                     .addAllSourceIds(tableHandles)
                     .build();
             tableServiceClient.mergeTables(requestMessage, c);
-        }, "merging tables")
-                .refetch()
-                .then(cts -> Promise.resolve(new JsTable(this, cts)));
+        }, "merging tables", tables);
     }
 
     /**
@@ -1442,8 +1544,78 @@ public class WorkerConnection {
     }
 
     public ClientTableState newState(JsTableFetch fetcher, String fetchSummary) {
-        return cache.create(tickets.newTableTicket(),
-                handle -> new ClientTableState(this, handle, fetcher, fetchSummary));
+        return newState(fetcher, fetchSummary, tickets.newTableTicket());
+    }
+
+    /**
+     * As {@link #newState(JsTableFetch, String)}, for a ticket the caller already allocated so that operations could be
+     * chained on it before the state exists.
+     */
+    public ClientTableState newState(JsTableFetch fetcher, String fetchSummary, TableTicket handle) {
+        return cache.create(handle, h -> new ClientTableState(this, h, fetcher, fetchSummary));
+    }
+
+    /**
+     * Creates a state for a fetcher-produced table and presents it as a pending table: the ticket is allocated before
+     * the fetch is issued, so operations can be chained on the result immediately.
+     */
+    public JsPendingTable<JsTable> pendingTable(JsTableFetch fetcher, String fetchSummary) {
+        return pendingTable(newState(fetcher, fetchSummary, tickets.newTableTicket()));
+    }
+
+    /**
+     * As {@link #pendingTable(JsTableFetch, String)}, for a fetch whose request names {@code operands}' tickets. The
+     * operands are checked and held as a batch operation's are; see {@link MicrotaskBatchImpl#wrapWithOperands}.
+     */
+    public JsPendingTable<JsTable> pendingTable(JsTableFetch fetcher, String fetchSummary,
+            JsTableReference... operands) {
+        ClientTableState state = newState(fetcher, fetchSummary, tickets.newTableTicket());
+        return MicrotaskBatchImpl.wrapWithOperands(this, state, operands, cts -> new JsTable(this, cts));
+    }
+
+    /**
+     * As {@link #pendingTable(JsTableFetch, String)}, but the fetch waits for the server to be ready. The state and its
+     * ticket exist immediately.
+     */
+    public JsPendingTable<JsTable> pendingTable(String operationName, JsTableFetch fetcher, String fetchSummary) {
+        return pendingTable((c, cts) -> {
+            // The inner fetch runs later, so it runs in this fetch's context, where a cancel reaches it
+            Context fetchContext = Context.current();
+            whenServerReady(operationName).then(server -> {
+                Context previous = fetchContext.attach();
+                try {
+                    fetcher.fetch(c, cts);
+                } finally {
+                    fetchContext.detach(previous);
+                }
+                return null;
+            }).catch_(error -> {
+                c.onError(asThrowable(error));
+                return null;
+            });
+        }, fetchSummary);
+    }
+
+    /**
+     * Issues the fetch of {@code state} and presents it as a pending table whose {@link JsTable} is built on the first
+     * await. A pending nobody awaits or chains on is released when the fetch completes.
+     */
+    public JsPendingTable<JsTable> pendingTable(ClientTableState state) {
+        return pendingTable(state, null);
+    }
+
+    /**
+     * As {@link #pendingTable(ClientTableState)}, with a callback for the moment the table is built, which is when it
+     * counts as opened.
+     */
+    public JsPendingTable<JsTable> pendingTable(ClientTableState state, @Nullable Consumer<JsTable> onCreated) {
+        return MicrotaskBatchImpl.wrap(this, state, state.refetch(), cts -> {
+            JsTable table = new JsTable(this, cts);
+            if (onCreated != null) {
+                onCreated.accept(table);
+            }
+            return table;
+        });
     }
 
     public ClientTableState newState(ClientTableState from, TableConfig to) {
@@ -1623,27 +1795,25 @@ public class WorkerConnection {
         }
     }
 
-    public Promise<JsTable> emptyTable(double size) {
-        return whenServerReady("create emptyTable").then(server -> newState((c, cts) -> {
+    public JsPendingTable<JsTable> emptyTable(double size) {
+        return pendingTable("create emptyTable", (c, cts) -> {
             EmptyTableRequest emptyTableRequest = EmptyTableRequest.newBuilder()
                     .setResultId(cts.getHandle().makeTicket())
                     .setSize((long) size)
                     .build();
             tableServiceClient.emptyTable(emptyTableRequest, c);
-        }, "emptyTable(" + size + ")").refetch())
-                .then(cts -> Promise.resolve(new JsTable(this, cts)));
+        }, "emptyTable(" + size + ")");
     }
 
-    public Promise<JsTable> timeTable(double periodNanos, DateWrapper startTime) {
+    public JsPendingTable<JsTable> timeTable(double periodNanos, DateWrapper startTime) {
         final long startTimeNanos = startTime == null ? -1 : startTime.getWrapped();
-        return whenServerReady("create timetable").then(server -> newState((c, cts) -> {
+        return pendingTable("create timetable", (c, cts) -> {
             TimeTableRequest timeTableRequest = TimeTableRequest.newBuilder()
                     .setResultId(cts.getHandle().makeTicket())
                     .setPeriodNanos((long) periodNanos)
                     .setStartTimeNanos(startTimeNanos)
                     .build();
             tableServiceClient.timeTable(timeTableRequest, c);
-        }, "create timetable(" + periodNanos + ", " + startTime + ")").refetch())
-                .then(cts -> Promise.resolve(new JsTable(this, cts)));
+        }, "create timetable(" + periodNanos + ", " + startTime + ")");
     }
 }

@@ -4,6 +4,7 @@
 package io.deephaven.api.updateby.spec;
 
 import io.deephaven.annotations.BuildableStyle;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Duration;
@@ -15,6 +16,7 @@ import java.time.Duration;
 @BuildableStyle
 public abstract class RollingWAvgSpec extends RollingOpSpec {
 
+    @Value.Parameter
     public abstract String weightCol();
 
     public static RollingWAvgSpec ofTicks(long revTicks, final String weightCol) {

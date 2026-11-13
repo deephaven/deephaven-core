@@ -5,17 +5,19 @@ package io.deephaven.web.client.fu;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsIIterableResult;
+import elemental2.core.JsIterator;
 import elemental2.core.JsIteratorIterable;
 import elemental2.core.JsMap;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.MappedIterable;
+import jsinterop.annotations.JsMethod;
 import jsinterop.base.Js;
 
 import java.util.Iterator;
 import java.util.List;
 
 /**
- * Some shorthand utils for getting java iterables out of javascript generated iterable types.
+ * Some shorthand utils for getting java iterables out of javascript generated iterable types and vice versa.
  */
 public class JsItr {
     private static final Iterator NO_REUSE = new Iterator() {
@@ -72,5 +74,35 @@ public class JsItr {
 
     public static <T> JsArray<T> slice(List<T> currentSort) {
         return Js.uncheckedCast(Js.<JsArray<T>>uncheckedCast(currentSort.toArray()).slice());
+    }
+
+    /**
+     * Rewrites a Java Iterator into a JS iterator.
+     */
+    public static <T> JsIterator<T, Void, Void> jsIterator(Iterator<T> iterator) {
+        return Js.uncheckedCast(new IteratorWrapper<>(iterator));
+    }
+
+    private static class IteratorWrapper<T> {
+        private final Iterator<T> wrapped;
+
+        private IteratorWrapper(Iterator<T> wrapped) {
+            this.wrapped = wrapped;
+        }
+
+        public boolean hasNext() {
+            return wrapped.hasNext();
+        }
+
+        @JsMethod
+        public JsIIterableResult<T> next() {
+            JsIIterableResult<T> result = JsIIterableResult.create();
+            if (hasNext()) {
+                result.setValue(wrapped.next());
+            }
+            result.setDone(hasNext());
+
+            return Js.uncheckedCast(result);
+        }
     }
 }

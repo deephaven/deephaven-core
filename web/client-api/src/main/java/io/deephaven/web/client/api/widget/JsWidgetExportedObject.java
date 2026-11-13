@@ -3,13 +3,14 @@
 //
 package io.deephaven.web.client.api.widget;
 
+import elemental2.core.ReadonlyArray;
+import io.deephaven.web.client.api.TableTicket;
+
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.ExportRequest;
 import io.deephaven.proto.backplane.grpc.ExportResponse;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
@@ -46,16 +47,16 @@ public class JsWidgetExportedObject implements ServerObject {
                 return Promise.reject("Exported object has no type, can't be fetched");
             }
             if (getType().equals(JsVariableType.TABLE)) {
-                return Callbacks.<ExportedTableCreationResponse>grpcUnaryPromise(c -> {
-                    connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
-                            c);
-                }).then(etcr -> {
-                    ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for widget");
-                    JsTable table = new JsTable(connection, cts);
-                    // never attempt a reconnect, since we might have a different widget schema entirely
-                    table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
-                    return Promise.resolve(table);
-                });
+                ClientTableState state = connection.newState(
+                        (c, cts) -> connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
+                                c),
+                        "table for widget", new TableTicket(ticket.getTicket()));
+                // Awaited at once: every call returns this one table, so it must be held from the first, not lapse
+                // with an unawaited pending
+                return connection.pendingTable(state,
+                        // never attempt a reconnect, since we might have a different widget schema entirely
+                        table -> table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close()))
+                        .asPromise();
             } else {
                 return this.connection.getObject(ticket);
             }
@@ -70,7 +71,7 @@ public class JsWidgetExportedObject implements ServerObject {
     /**
      * Returns the type of this export, typically one of {@link JsVariableType}, but may also include plugin types. If
      * null, this object cannot be fetched, but can be passed to the server, such as via
-     * {@link JsWidget#sendMessage(JsWidget.MessageUnion, JsArray)}.
+     * {@link JsWidget#sendMessage(JsWidget.MessageUnion, ReadonlyArray)}.
      *
      * @return the string type of this server-side object, or null.
      */

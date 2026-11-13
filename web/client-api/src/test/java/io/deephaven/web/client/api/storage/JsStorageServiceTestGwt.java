@@ -15,11 +15,9 @@ import java.util.Set;
 public class JsStorageServiceTestGwt extends AbstractAsyncGwtTestCase {
 
     public void testStorageService() {
-        setupDhInternal().then(ignore -> {
-            CoreClient coreClient = new CoreClient(localServer, null);
-            return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
-                    .then(ignore2 -> Promise.resolve(coreClient));
-        }).then(coreClient -> {
+        delayTestFinish(504);
+        CoreClient coreClient = new CoreClient(localServer, null);
+        coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS)).then(loggedIn -> {
             JsStorageService storageService = coreClient.getStorageService();
             delayTestFinish(20_000);
 

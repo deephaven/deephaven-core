@@ -4,12 +4,18 @@
 package io.deephaven.web.client.ide;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.web.client.api.ConnectOptions;
+import io.deephaven.web.client.api.JsPendingObject;
+import io.deephaven.web.client.api.JsPendingTable;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.JsTableReference;
+import io.deephaven.web.client.api.MicrotaskBatchImpl;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.ServerObject;
+import io.deephaven.web.client.api.TableTicket;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
@@ -26,6 +32,7 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.List;
@@ -127,25 +134,48 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      *
      * @param name the name of the table to fetch.
      * @param applyPreviewColumns {@code false} to disable previews. Defaults to {@code true}.
-     * @return a {@link Promise} that will resolve to the table, or reject with an error if it cannot be loaded.
+     * @return the table, as a pending table that rejects with an error if it cannot be loaded
      * @deprecated Added to resolve a specific issue, in the future preview will be applied as part of the subscription.
      */
     @Deprecated
-    public Promise<JsTable> getTable(String name, @JsOptional @JsNullable Boolean applyPreviewColumns) {
+    public JsPendingTable<JsTable> getTable(String name, @JsOptional @JsNullable Boolean applyPreviewColumns) {
         if (applyPreviewColumns == Boolean.FALSE) {
             JsLog.warn(
                     "getTable is deprecated, please use getObject instead. The applyPreviewColumns parameter no longer applies, the new APIs to access data from the resulting Table should be used instead.");
         }
-        return connection.get().getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
-            final Promise<JsTable> table = connection.get().getTable(varDef, applyPreviewColumns);
-            fireEvent(EVENT_TABLE_OPENED, table);
-            return table;
-        });
+        // The ticket and state exist now, so operations can be chained on the result before the fetch has been sent;
+        // the table itself, and the opened event, come with the first await
+        final WorkerConnection workerConnection = connection.get();
+        final TableTicket handle = workerConnection.getTickets().newTableTicket();
+        return workerConnection.pendingTable(
+                workerConnection.fetchTableState(
+                        workerConnection.getVariableDefinition(name, JsVariableType.TABLE), applyPreviewColumns,
+                        handle),
+                table -> fireEvent(EVENT_TABLE_OPENED, table));
     }
 
-    public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
+    /**
+     * Fetches the object a variable descriptor names.
+     *
+     * @param definitionObject the variable descriptor
+     * @return a pending table if the object is a table, otherwise a promise of the object
+     */
+    public JsPendingObject getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
         WorkerConnection conn = connection.get();
-        return onConnected().then(e -> conn.getJsObject(definitionObject));
+        String type;
+        try {
+            type = WorkerConnection.definitionType(definitionObject);
+        } catch (IllegalArgumentException e) {
+            // As before this returned a pending object, a bad definition rejects rather than throws
+            return JsPendingObject.of(Promise.reject(e));
+        }
+        if (JsVariableType.TABLE.equalsIgnoreCase(type)) {
+            // The ticket and state exist now, so operations can be chained on the table before we have even connected
+            TableTicket handle = conn.getTickets().newTableTicket();
+            return JsPendingObject.of(conn.pendingTable(conn.fetchTableState(
+                    onConnected().then(e -> conn.lookupDefinition(definitionObject)), null, handle)));
+        }
+        return JsPendingObject.of(onConnected().then(e -> conn.getJsObject(definitionObject).asPromise()));
     }
 
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
@@ -168,7 +198,9 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * <p>
      * Shared objects will remain available using the {@code sharedTicketBytes} until the client that first shared them
      * releases/closes their copy of the object. Whatever side-channel is used to share the bytes, be sure to wait until
-     * the remote end has signaled that it has successfully fetched the object before releasing it from this client.
+     * the remote end has signaled that it has successfully fetched the object before releasing it from this client. A
+     * pending table that nothing awaits is released once its result arrives and the share has been made, so keep it by
+     * awaiting it, or share the table that awaiting gives.
      * <p>
      * Be sure to use an unpredictable value for the shared ticket bytes, like a UUID or other large, random value to
      * prevent access by unauthorized clients.
@@ -194,9 +226,9 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * @param sharedTicketBytes The value provided by another client/user to obtain the object. It may be a unicode
      *        string (will be encoded as utf8 bytes), or a {@link elemental2.core.Uint8Array} value.
      * @param type The type of the object, so it can be correctly read from the server.
-     * @return A promise that will resolve to the shared object, or will reject with an error if it cannot be read.
+     * @return the shared object, as a pending object that rejects with an error if it cannot be read
      */
-    public Promise<?> getSharedObject(SharedExportBytesUnion sharedTicketBytes, String type) {
+    public JsPendingObject getSharedObject(SharedExportBytesUnion sharedTicketBytes, String type) {
         return connection.get().getSharedObject(sharedTicketBytes, type);
     }
 
@@ -240,25 +272,27 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         notifyConnectionError(new StatusRuntimeException(Status.UNAVAILABLE.withDescription(details)));
     }
 
-    public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
-        return connection.get().newTable(columnNames, types, data, userTimeZone).then(table -> {
-            fireEvent(EVENT_TABLE_OPENED, table);
-
-            return Promise.resolve(table);
-        });
+    /**
+     * Creates a table on the server from the given column data.
+     *
+     * @param columnNames the name of each column
+     * @param types the type of each column
+     * @param data the values of each column, as strings
+     * @param userTimeZone the time zone to read date-time values in
+     * @return the new table, as a pending table
+     */
+    public JsPendingTable<JsTable> newTable(String[] columnNames, String[] types, String[][] data,
+            String userTimeZone) {
+        return connection.get().newTable(columnNames, types, data, userTimeZone);
     }
 
     /**
      * Merges the given tables into a single table. Assumes all tables have the same structure.
      * 
-     * @param tables
-     * @return {@link Promise} of {@link JsTable}
+     * @param tables the tables to merge, which must have the same columns and be from this connection
+     * @return the merged table, as a pending table
      */
-    public Promise<JsTable> mergeTables(JsTable[] tables) {
-        return connection.get().mergeTables(tables, this).then(table -> {
-            fireEvent(EVENT_TABLE_OPENED, table);
-
-            return Promise.resolve(table);
-        });
+    public JsPendingTable<JsTable> mergeTables(ReadonlyArray<JsTableReference> tables) {
+        return connection.get().mergeTables(Js.uncheckedCast(tables), this);
     }
 }

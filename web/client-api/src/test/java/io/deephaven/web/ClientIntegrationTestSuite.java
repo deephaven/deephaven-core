@@ -8,6 +8,7 @@ import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.grpc.GrpcTransportTestGwt;
 import io.deephaven.web.client.api.storage.JsStorageServiceTestGwt;
 import io.deephaven.web.client.api.subscription.ConcurrentTableTestGwt;
+import io.deephaven.web.client.api.subscription.TableSubscriptionTestGwt;
 import io.deephaven.web.client.api.subscription.ViewportTestGwt;
 import io.deephaven.web.client.api.widget.plot.ChartDataTestGwt;
 import io.deephaven.web.client.api.widget.plot.JsFigureTestGwt;
@@ -19,12 +20,13 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
     public static Test suite() {
         TestSuite suite = new TestSuite("Deephaven JS API Integration Test Suite");
 
-        // This test doesn't actually talk to the server, but it requires the dh-internal library be available.
+        // This test doesn't actually talk to the server.
         // Disabled for now, we don't have good toString on the FilterCondition/FilterValue types.
         // suite.addTestSuite(FilterConditionTestGwt.class);
 
         // Actual integration tests
         suite.addTestSuite(ViewportTestGwt.class);
+        suite.addTestSuite(TableSubscriptionTestGwt.class);
         suite.addTestSuite(TableManipulationTestGwt.class);
         suite.addTestSuite(ConcurrentTableTestGwt.class);
         suite.addTestSuite(NullValueTestGwt.class);
@@ -41,6 +43,11 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
         suite.addTestSuite(DictionaryEncodedTestGwt.class);
         suite.addTestSuite(DoPutTestGwt.class);
         suite.addTestSuite(TotalsTableTestGwt.class);
+        suite.addTestSuite(ImmutableTableTestGwt.class);
+        suite.addTestSuite(PendingTableMisuseTestGwt.class);
+        suite.addTestSuite(TableOperationsSmokeTestGwt.class);
+        suite.addTestSuite(AggregationTestGwt.class);
+        suite.addTestSuite(ParityTestGwt.class);
 
         // This should be a unit test, but it requires a browser environment to run on GWT 2.9
         // GWT 2.9 doesn't have proper bindings for Promises in HtmlUnit, so we need to use the IntegrationTest suite

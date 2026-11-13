@@ -29,7 +29,7 @@ public interface ViewportData extends TableData {
 
     @JsProperty
     @Override
-    JsArray<TableData.@TsTypeRef(ViewportRow.class) Row> getRows();
+    JsArray<@TsTypeRef(ViewportRow.class) ? extends TableData.Row> getRows();
 
     /**
      * Reads a row object from the viewport, based on its position in the table.

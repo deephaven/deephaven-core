@@ -8,6 +8,7 @@ import com.google.gwt.junit.client.GWTTestCase;
 import elemental2.core.JsArray;
 import elemental2.core.JsError;
 import elemental2.core.JsString;
+import elemental2.core.ReadonlyArray;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
@@ -17,7 +18,9 @@ import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.CancellablePromise;
+import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.client.ide.IdeSession;
+import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
 import javaemul.internal.annotations.DoNotAutobox;
@@ -33,6 +36,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.StreamSupport;
 
 import static elemental2.dom.DomGlobal.console;
 
@@ -63,6 +67,13 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
 
     @Override
     protected void gwtTearDown() throws Exception {
+        // Shut every stream of this test's connections, pass or fail, so nothing leaks into the next test
+        for (CoreClient client : coreClients) {
+            client.disconnect();
+        }
+        coreClients.clear();
+        lastCoreClient = null;
+        lastIdeConnection = null;
         super.gwtTearDown();
         errorLogsSeen.clear();
         Js.asPropertyMap(console).set("error", originalConsoleError);
@@ -74,10 +85,6 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
      */
     protected void errorLogsDontFail() {
         errorLogsFailTests = false;
-    }
-
-    private static Promise<Void> importDhInternal() {
-        return Promise.resolve((Void) null);
     }
 
     public static final String localServer = System.getProperty("dh.server", "http://localhost:10000");
@@ -160,14 +167,6 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     /**
-     * Imports the webpack content, including protobuf types. Does not connect to the server.
-     */
-    protected Promise<Void> setupDhInternal() {
-        delayTestFinish(504);
-        return importDhInternal();
-    }
-
-    /**
      * Connects and authenticates to the configured server and runs the specified scripts.
      */
     protected Promise<IdeSession> connect(TableSourceBuilder tables) {
@@ -175,30 +174,41 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     /**
+     * The client and connection behind the most recent {@link #connect}, for tests that listen to connection-level
+     * events.
+     */
+    protected CoreClient lastCoreClient;
+    protected IdeConnection lastIdeConnection;
+
+    /** Every client {@link #connect} created in this test, disconnected in teardown. */
+    private final List<CoreClient> coreClients = new ArrayList<>();
+
+    /**
      * Connects and authenticates to the configured server with the given options, and runs the specified scripts.
      */
     protected Promise<IdeSession> connect(TableSourceBuilder tables, ConnectOptions connectOptions) {
         // start by delaying test finish by 1.0s so we fail fast in cases where we aren't set up right
         delayTestFinish(1007);
-        return importDhInternal().then(module -> {
-            CoreClient coreClient = new CoreClient(localServer, connectOptions);
-            return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
-                    .then(ignore -> coreClient.getAsIdeConnection())
-                    .then(ide -> {
-                        delayTestFinish(501);
-                        return ide.getConsoleTypes().then(consoleTypes -> {
-                            delayTestFinish(502);
-                            CancellablePromise<IdeSession> ideSession = ide.startSession(consoleTypes.getAt(0));
-                            return ideSession.then(session -> {
+        CoreClient coreClient = new CoreClient(localServer, connectOptions);
+        lastCoreClient = coreClient;
+        coreClients.add(coreClient);
+        return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
+                .then(ignore -> coreClient.getAsIdeConnection())
+                .then(ide -> {
+                    lastIdeConnection = ide;
+                    delayTestFinish(501);
+                    return ide.getConsoleTypes().then(consoleTypes -> {
+                        delayTestFinish(502);
+                        CancellablePromise<IdeSession> ideSession = ide.startSession(consoleTypes.getAt(0));
+                        return ideSession.then(session -> {
 
-                                if (consoleTypes.includes("python")) {
-                                    return runAllScriptsInOrder(session, tables.pythonScripts);
-                                }
-                                throw new IllegalStateException("Unsupported script type " + consoleTypes);
-                            });
+                            if (consoleTypes.includes("python")) {
+                                return runAllScriptsInOrder(session, tables.pythonScripts);
+                            }
+                            throw new IllegalStateException("Unsupported script type " + consoleTypes);
                         });
                     });
-        });
+                });
     }
 
     private Promise<IdeSession> runAllScriptsInOrder(IdeSession session, List<String> code) {
@@ -220,7 +230,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsTable> table(String tableName) {
-        return session -> session.getTable(tableName, null);
+        return session -> session.getTable(tableName, null).asPromise();
     }
 
     public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsTreeTable> treeTable(String tableName) {
@@ -257,6 +267,34 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     protected Promise<?> finish(Object input) {
         finishTest();
         return Promise.resolve(input);
+    }
+
+    /** Resolves after {@code millis}, in a later task. */
+    protected static Promise<Object> delay(int millis) {
+        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
+    }
+
+    /**
+     * Resolves a few microtasks later, still in this task: after the client's release flush, which runs on a microtask,
+     * has dropped any state nothing holds.
+     */
+    protected static Promise<Object> afterReleaseFlush() {
+        return Promise.resolve((Object) null)
+                .then(ignore -> Promise.resolve((Object) null))
+                .then(ignore -> Promise.resolve((Object) null));
+    }
+
+    /** A JS array of {@code items}, typed as whichever array the caller needs. */
+    protected static <T> ReadonlyArray<T> arr(Object... items) {
+        return Js.uncheckedCast(JsArray.of(items));
+    }
+
+    /** How many states made by batched table operations the connection still holds, unreleased. */
+    protected static long batchStates(WorkerConnection connection) {
+        return StreamSupport.stream(connection.getCache().getAllStates().spliterator(), false)
+                .filter(s -> "batch operation".equals(s.getFetchSummary()))
+                .filter(s -> s.getResolution() != ClientTableState.ResolutionState.RELEASED)
+                .count();
     }
 
     /**
@@ -368,6 +406,12 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
             schedule(predicate, checkInterval, () -> resolve.onInvoke(result),
                     () -> reject.onInvoke("timeout of " + timeout + " exceeded"), timeout);
         });
+    }
+
+    /** Resolves once {@code condition} holds; fails with {@code failure} if it does not within 2s. */
+    protected Promise<Object> within(String failure, BooleanSupplier condition) {
+        return Promise.resolve(waitFor(condition, 50, 2_000, (Object) null))
+                .then(ok -> Promise.resolve(ok), err -> Promise.reject(failure));
     }
 
     protected <T> IThenable.ThenOnFulfilledCallbackFn<T, T> waitFor(int millis) {

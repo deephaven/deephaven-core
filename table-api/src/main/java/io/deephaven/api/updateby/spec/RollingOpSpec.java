@@ -18,10 +18,8 @@ public abstract class RollingOpSpec extends UpdateBySpecBase {
     /**
      * Provide a default reverse-looking timescale
      */
-    @Value.Default
-    public WindowScale revWindowScale() {
-        return WindowScale.ofTicks(0);
-    }
+    @Value.Parameter
+    public abstract WindowScale revWindowScale();
 
     /**
      * Provide a default forward-looking timescale

@@ -48,10 +48,24 @@ public class FilterValue {
     protected final Value descriptor;
 
     /**
+     * Constructs a column reference for the filter API from the given parameter.
+     *
+     * @param columnName the name of the column
+     * @return a FilterValue representing the column reference
+     */
+    public static FilterValue ofColumn(String columnName) {
+        Objects.requireNonNull(columnName);
+        Reference ref = Reference.newBuilder()
+                .setColumnName(columnName)
+                .build();
+        return new FilterValue(ref);
+    }
+
+    /**
      * Constructs a string for the filter API from the given parameter.
      *
-     * @param input
-     * @return
+     * @param input the string to wrap as a FilterValue
+     * @return a FilterValue representing the string
      */
     @JsMethod(namespace = "dh.FilterValue")
     public static FilterValue ofString(@TsTypeRef(Any.class) Object input) {
@@ -164,10 +178,9 @@ public class FilterValue {
     }
 
     @JsIgnore
-    public FilterValue(Column column) {
+    public FilterValue(Reference column) {
         descriptor = Value.newBuilder()
-                .setReference(Reference.newBuilder()
-                        .setColumnName(column.getName()))
+                .setReference(column)
                 .build();
     }
 

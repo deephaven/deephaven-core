@@ -13,4 +13,11 @@ repositories {
             includeGroup 'org.apache.kafka'
         }
     }
+    mavenLocal()
+    maven {
+        url 'https://central.sonatype.com/repository/maven-snapshots/'
+        content {
+            includeGroup 'com.vertispan.tsdefs'
+        }
+    }
 }

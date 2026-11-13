@@ -7,6 +7,7 @@ import com.google.gwt.user.client.Timer;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
@@ -30,9 +31,14 @@ import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.JsPartitionedTable;
+import io.deephaven.web.client.api.JsPendingObject;
+import io.deephaven.web.client.api.JsPendingTable;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.JsTableReference;
 import io.deephaven.web.client.api.LogItem;
+import io.deephaven.web.client.api.MicrotaskBatchImpl;
 import io.deephaven.web.client.api.ServerObject;
+import io.deephaven.web.client.api.TableTicket;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.console.JsCommandResult;
@@ -121,20 +127,22 @@ public class IdeSession extends HasEventHandling {
      *
      * @param name the name of the table to fetch
      * @param applyPreviewColumns false to disable previews, defaults to true
-     * @return a {@link Promise} that will resolve to the table, or reject with an error if it cannot be loaded.
+     * @return the table, as a pending table that rejects with an error if it cannot be loaded
      * @deprecated Added to resolve a specific issue, in the future preview will be applied as part of the subscription.
      */
     @Deprecated
-    public Promise<JsTable> getTable(String name, @JsOptional @JsNullable Boolean applyPreviewColumns) {
+    public JsPendingTable<JsTable> getTable(String name, @JsOptional @JsNullable Boolean applyPreviewColumns) {
         if (applyPreviewColumns == Boolean.FALSE) {
             JsLog.warn(
                     "getTable is deprecated, please use getObject instead. The applyPreviewColumns parameter no longer applies, the new APIs to access data from the resulting Table should be used instead.");
         }
-        return connection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
-            final Promise<JsTable> table = connection.getTable(varDef, applyPreviewColumns);
-            fireEvent(EVENT_TABLE_OPENED, table);
-            return table;
-        });
+        // The ticket and state exist now, so operations can be chained on the result before the fetch has been sent;
+        // the table itself, and the opened event, come with the first await
+        final TableTicket handle = connection.getTickets().newTableTicket();
+        return connection.pendingTable(
+                connection.fetchTableState(connection.getVariableDefinition(name, JsVariableType.TABLE),
+                        applyPreviewColumns, handle),
+                table -> fireEvent(EVENT_TABLE_OPENED, table));
     }
 
     /**
@@ -169,39 +177,52 @@ public class IdeSession extends HasEventHandling {
                 .then(connection::getPartitionedTable);
     }
 
-    public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
+    /**
+     * Fetches the object a variable descriptor names.
+     *
+     * @param definitionObject the variable descriptor
+     * @return a pending table if the object is a table, otherwise a promise of the object
+     */
+    public JsPendingObject getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
         return connection.getJsObject(definitionObject);
     }
 
-    public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
-        return connection.newTable(columnNames, types, data, userTimeZone).then(table -> {
-            fireEvent(EVENT_TABLE_OPENED, table);
-
-            return Promise.resolve(table);
-        });
+    /**
+     * Creates a table on the server from the given column data.
+     *
+     * @param columnNames the name of each column
+     * @param types the type of each column
+     * @param data the values of each column, as strings
+     * @param userTimeZone the time zone to read date-time values in
+     * @return the new table, as a pending table
+     */
+    public JsPendingTable<JsTable> newTable(String[] columnNames, String[] types, String[][] data,
+            String userTimeZone) {
+        return connection.newTable(columnNames, types, data, userTimeZone);
     }
 
     /**
      * Merges the given tables into a single table. Assumes all tables have the same structure.
      * 
-     * @param tables
-     * @return {@link Promise} of {@link JsTable}
+     * @param tables the tables to merge, which must have the same columns and be from this connection
+     * @return the merged table, as a pending table
      */
-    public Promise<JsTable> mergeTables(JsTable[] tables) {
-        return connection.mergeTables(tables, this).then(table -> {
-            fireEvent(EVENT_TABLE_OPENED, table);
-
-            return Promise.resolve(table);
-        });
+    public JsPendingTable<JsTable> mergeTables(ReadonlyArray<JsTableReference> tables) {
+        return connection.mergeTables(Js.uncheckedCast(tables), this);
     }
 
     public Promise<Void> bindTableToVariable(JsTable table, String name) {
+        String failure = MicrotaskBatchImpl.foreignOperand(connection, JsTableReference.of(table));
+        if (failure != null) {
+            return Promise.reject(failure);
+        }
         BindTableToVariableRequest bindRequest = BindTableToVariableRequest.newBuilder()
                 .setTableId(table.getHandle().makeTicket())
                 .setVariableName(name)
                 .build();
-        return Callbacks.<BindTableToVariableResponse>grpcUnaryPromise(
-                c -> connection.consoleServiceClient().bindTableToVariable(bindRequest, c))
+        return MicrotaskBatchImpl.holdUntil(connection, new Ticket[] {bindRequest.getTableId()},
+                () -> Callbacks.<BindTableToVariableResponse>grpcUnaryPromise(
+                        c -> connection.consoleServiceClient().bindTableToVariable(bindRequest, c)))
                 .then(ignore -> Promise.resolve((Void) null));
     }
 
@@ -212,7 +233,9 @@ public class IdeSession extends HasEventHandling {
      * <p>
      * Shared objects will remain available using the {@code sharedTicketBytes} until the client that first shared them
      * releases/closes their copy of the object. Whatever side-channel is used to share the bytes, be sure to wait until
-     * the remote end has signaled that it has successfully fetched the object before releasing it from this client.
+     * the remote end has signaled that it has successfully fetched the object before releasing it from this client. A
+     * pending table that nothing awaits is released once its result arrives and the share has been made, so keep it by
+     * awaiting it, or share the table that awaiting gives.
      * <p>
      * Be sure to use an unpredictable value for the shared ticket bytes, like a UUID or other large, random value to
      * prevent access by unauthorized clients.
@@ -238,9 +261,9 @@ public class IdeSession extends HasEventHandling {
      * @param sharedTicketBytes The value provided by another client/user to obtain the object. It may be a unicode
      *        string (will be encoded as utf8 bytes), or a {@link elemental2.core.Uint8Array} value.
      * @param type The type of the object, so it can be correctly read from the server.
-     * @return A promise that will resolve to the shared object, or will reject with an error if it cannot be read.
+     * @return the shared object, as a pending object that rejects with an error if it cannot be read
      */
-    public Promise<?> getSharedObject(SharedExportBytesUnion sharedTicketBytes, String type) {
+    public JsPendingObject getSharedObject(SharedExportBytesUnion sharedTicketBytes, String type) {
         return connection.getSharedObject(sharedTicketBytes, type);
     }
 
@@ -539,9 +562,9 @@ public class IdeSession extends HasEventHandling {
      * values will be null.
      * 
      * @param size
-     * @return {@link Promise} of {@link JsTable}
+     * @return the empty table, as a pending table
      */
-    public Promise<JsTable> emptyTable(double size) {
+    public JsPendingTable<JsTable> emptyTable(double size) {
         return connection.emptyTable(size);
     }
 
@@ -551,9 +574,9 @@ public class IdeSession extends HasEventHandling {
      * 
      * @param periodNanos
      * @param startTime
-     * @return {@link Promise} of {@link JsTable}
+     * @return the time table, as a pending table
      */
-    public Promise<JsTable> timeTable(double periodNanos, @JsOptional @JsNullable DateWrapper startTime) {
+    public JsPendingTable<JsTable> timeTable(double periodNanos, @JsOptional @JsNullable DateWrapper startTime) {
         return connection.timeTable(periodNanos, startTime);
     }
 }

@@ -50,7 +50,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static io.deephaven.web.client.ide.IdeConnection.HACK_CONNECTION_FAILURE;
-import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
+import static io.deephaven.web.client.fu.LazyPromise.CANCELLATION_MESSAGE;
 
 /**
  * JS-exposed supertype handling details about connecting to a deephaven query worker. Wraps the WorkerConnection

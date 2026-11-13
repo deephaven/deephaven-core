@@ -26,7 +26,7 @@ public interface TreeViewportData extends TableData {
 
     @JsProperty
     @Override
-    JsArray<TableData.@TsTypeRef(TreeRow.class) Row> getRows();
+    JsArray<TreeRow> getRows();
 
     /**
      * The position of the first returned row within the tree.
