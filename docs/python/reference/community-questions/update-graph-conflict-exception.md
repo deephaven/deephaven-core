@@ -10,7 +10,7 @@ An [`UpdateGraphConflictException`](https://docs.deephaven.io/core/javadoc/io/de
 
 > **Error message:** `Table was constructed with a static-only UpdateGraph.`
 
-This applies to Java applications that embed the Deephaven engine directly. Python code running in a Deephaven server or console already has an [update graph](../../conceptual/dag.md#update-graph-cycles) in its [execution context](../../conceptual/execution-context.md).
+This applies to Java applications that embed the Deephaven engine directly. In a Deephaven server or console, Python code on the script session's thread already has an [update graph](../../conceptual/dag.md#update-graph-cycles) in its [execution context](../../conceptual/execution-context.md). A thread that your Python code starts has no execution context until you open one in it. Get the script session's context with `get_exec_ctx`, then open it in the thread with a `with` statement, as shown in [Table operations in a separate thread](../../conceptual/execution-context.md#table-operations-in-a-separate-thread).
 
 The Deephaven engine can run outside of a Deephaven server, such as in a standalone Java application. When run this way, the current thread must have an execution context that holds an [update graph](../../conceptual/dag.md#update-graph-cycles) before it constructs a refreshing (ticking) table. An update graph is the engine component that processes each ticking table's changes in cycles. If the thread has no real update graph, the table is created against a static-only placeholder and the engine throws an `UpdateGraphConflictException`.
 
