@@ -40,7 +40,7 @@ jobs:
               - 'docs/groovy/**'
 
       - name: No changes comment
-        if: ${{ !contains(steps.filter.outputs.*, 'true') }}
+        if: ${{ !github.event.pull_request.locked && !contains(steps.filter.outputs.*, 'true') }}
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           message: |
@@ -57,6 +57,7 @@ jobs:
 
     steps:
       - name: Deploy preview comment
+        if: ${{ !github.event.pull_request.locked }}
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           message: |
@@ -87,7 +88,7 @@ jobs:
           temporary: true
           aws-role: ${{ vars.DOCS_AWS_ROLE }}
       - name: Update PR comment
-        if: ${{ steps.sync-python.outcome == 'success' }}
+        if: ${{ !github.event.pull_request.locked && steps.sync-python.outcome == 'success' }}
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           append: true
@@ -105,7 +106,7 @@ jobs:
           temporary: true
           aws-role: ${{ vars.DOCS_AWS_ROLE }}
       - name: Update PR comment
-        if: ${{ steps.sync-groovy.outcome == 'success' }}
+        if: ${{ !github.event.pull_request.locked && steps.sync-groovy.outcome == 'success' }}
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           append: true
@@ -113,7 +114,7 @@ jobs:
             [Groovy](${{ vars.DOCS_PREVIEW_URL }}/core/groovy/pr-${{ github.event.number }}/docs/)
 
       - name: Update PR comment on fail
-        if: ${{ failure() }}
+        if: ${{ failure() && !github.event.pull_request.locked }}
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           message: |
