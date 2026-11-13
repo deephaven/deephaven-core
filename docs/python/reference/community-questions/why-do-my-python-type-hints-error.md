@@ -50,7 +50,7 @@ t_optional = source.update("Z = f_optional_int(Y)")
 
 To handle nulls in numeric columns, either:
 
-1. **Use `Optional[...]`** to convert nulls to `None`, then handle `None` in the function body.
+1. **Wrap a numeric type hint in `Optional`**, such as `Optional[int]` or `Optional[float]`, to convert nulls to `None`, then handle `None` in the function body. `Optional[object]` does not convert null sentinels.
 2. **Filter out nulls** before applying the function, for example with `where("Y != null")`.
 
 ## Related documentation
