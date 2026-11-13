@@ -5,31 +5,44 @@ package io.deephaven.server.table.validation.methodlist;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.validation.MethodInvocationValidator;
-import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.tree.JavaType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.util.*;
 
 /**
  * An invocation validator that has a hardcoded list of classes and methods to permit.
  *
  * <p>
- * The methods to permit are encoded using an AspectJ method pattern, as implemented by the <a href=
- * "https://javadoc.io/static/org.openrewrite/rewrite-java/8.6.2/org/openrewrite/java/MethodMatcher.html"></a>OpenRewrite
- * MethodMatcher</a>, which are documented as follows:
+ * The methods to permit are encoded using a method pattern adapted from AspectJ:
  * </p>
  *
  * <P>
  * <B> #declaring class# #method name#(#argument list#) </B>
  * <ul>
- * <li>The declaring class must be fully qualified.</li>
- * <li>A wildcard character, "*", may be used in either the declaring class or method name.</li>
- * <li>The argument list is expressed as a comma-separated list of the argument types</li>
- * <li>".." can be used in the argument list to match zero or more arguments of any type.</li>
- * <li>"&lt;constructor&gt;" can be used as the method name to match a constructor.</li>
+ * <li>The declaring class is separated from the method name by spaces or by "#", as in
+ * {@code java.lang.String#length()}.</li>
+ * <li>The declaring class must be fully qualified, except that a class in the {@code java.lang} package may be
+ * unqualified. A nested class may be written as {@code java.util.Map.Entry} or {@code java.util.Map$Entry}. Only a name
+ * without dots or wildcards is taken to be in {@code java.lang}, so an unqualified nested class must use the binary
+ * form, as in {@code Thread$State}; {@code Thread.State} is taken as a fully qualified name, so it does not match
+ * {@code java.lang.Thread.State}.</li>
+ * <li>A wildcard character, "*", may be used in the declaring class or method name. In the declaring class it matches
+ * within a single package or class name, which includes the binary name of a nested class, so {@code java.util.*}
+ * matches {@code java.util.Map$Entry}. "..", as in {@code java..*}, matches any number of intermediate package or
+ * enclosing class names, so {@code java.util..Entry} matches {@code java.util.Map.Entry}, and {@code *..*} matches
+ * every class. A declaring class of only "*" is rejected.</li>
+ * <li>The argument list is expressed as a comma-separated list of the argument types. A type in the {@code java.lang}
+ * package may be unqualified, and "*" matches any single argument, while {@code *..*} matches any argument that is not
+ * an array. An array argument is written {@code T[]}, in any position; only the last argument may instead be written
+ * {@code T...}, which is the same as {@code T[]}.</li>
+ * <li>".." can be used once in the argument list to match zero or more arguments of any type.</li>
+ * <li>"&lt;constructor&gt;" can be used as the method name to match a constructor. A method name of only wildcards also
+ * matches constructors.</li>
+ * <li>An instance method also matches when it overrides a method declared by a matching class or interface. For
+ * example, {@code java.lang.Object toString()} matches {@link Integer#toString()} and
+ * {@code java.lang.CharSequence length()} matches {@link String#length()}. Static methods only match their own
+ * declaring class, and a bridge method declared by a matching class is never the method overridden.</li>
  * </ul>
  * 
  * <table>
@@ -39,36 +52,49 @@ import java.util.*;
  * </tr>
  * <tr>
  * <td>*..* *(..)</td>
- * <td>All method invocations</td>
+ * <td>Every method and constructor of every class</td>
  * </tr>
  * <tr>
  * <td>java.util.* *(..)</td>
- * <td>All method invocations to classes belonging to java.util (including sub-packages)</td>
+ * <td>Every method and constructor of the classes in java.util and their nested classes, but not of sub-packages, and
+ * every instance method, in any class, that overrides one of those methods</td>
+ * </tr>
+ * <tr>
+ * <td>java.util..* *(..)</td>
+ * <td>Every method and constructor of the classes in java.util, its sub-packages, and their nested classes, and every
+ * instance method, in any class, that overrides one of those methods</td>
  * </tr>
  * <tr>
  * <td>java.util.Collections *(..)</td>
- * <td>All method invocations on java.util.Collections class</td>
+ * <td>Every method and constructor declared by java.util.Collections, and every instance method that overrides one of
+ * its methods</td>
  * </tr>
  * <tr>
  * <td>java.util.Collections unmodifiable*(..)</td>
- * <td>All method invocations starting with "unmodifiable" on java.util.Collections</td>
+ * <td>The methods declared by java.util.Collections whose names start with "unmodifiable"</td>
  * </tr>
  * <tr>
  * <td>java.util.Collections min(..)</td>
- * <td>All method invocations for all overloads of "min"</td>
+ * <td>Every overload of java.util.Collections.min</td>
  * </tr>
  * <tr>
  * <td>java.util.Collections emptyList()</td>
- * <td>All method invocations on java.util.Collections.emptyList()</td>
+ * <td>java.util.Collections.emptyList()</td>
  * </tr>
  * <tr>
  * <td>my.org.MyClass *(boolean, ..)</td>
- * <td>All method invocations where the first arg is a boolean in my.org.MyClass</td>
+ * <td>The methods and constructors of my.org.MyClass whose first parameter is a boolean, and every instance method that
+ * overrides one of those methods</td>
+ * </tr>
+ * <tr>
+ * <td>java.lang.Number intValue()</td>
+ * <td>{@link Number#intValue()} and every implementation of it, such as {@link Integer#intValue()}</td>
  * </tr>
  * </table>
  */
 public class MethodListInvocationValidator implements MethodInvocationValidator {
-    private final List<MethodMatcher> methodMatchers;
+    private final List<MethodPattern> methodPatterns;
+    private final List<ConstructorPattern> constructorPatterns;
 
     /**
      * Create a new MethodInvocationValidator that permits any of the provided pointcut patterns.
@@ -76,23 +102,30 @@ public class MethodListInvocationValidator implements MethodInvocationValidator 
      * @param pointCuts the patterns to permit
      */
     public MethodListInvocationValidator(final Collection<String> pointCuts) {
-        final List<MethodMatcher> list = new ArrayList<>();
+        final List<MethodPattern> methods = new ArrayList<>();
+        final List<ConstructorPattern> constructors = new ArrayList<>();
         for (final String pointCut : pointCuts) {
-            final MethodMatcher methodMatcher;
+            final List<MemberPattern> parsed;
             try {
-                methodMatcher = new MethodMatcher(pointCut, true);
+                parsed = MemberPattern.parse(pointCut);
             } catch (Exception e) {
                 throw new UncheckedDeephavenException("Could not parse method pattern: '" + pointCut + "'", e);
             }
-            list.add(methodMatcher);
+            for (final MemberPattern memberPattern : parsed) {
+                if (memberPattern instanceof MethodPattern) {
+                    methods.add((MethodPattern) memberPattern);
+                } else {
+                    constructors.add((ConstructorPattern) memberPattern);
+                }
+            }
         }
-        methodMatchers = Collections.unmodifiableList(list);
+        methodPatterns = Collections.unmodifiableList(methods);
+        constructorPatterns = Collections.unmodifiableList(constructors);
     }
 
     @Override
     public Boolean permitConstructor(final Constructor<?> constructor) {
-        final JavaType.Method jtm = toJavaType(constructor);
-        if (methodMatchers.stream().anyMatch(mm -> mm.matches(jtm))) {
+        if (constructorPatterns.stream().anyMatch(cp -> cp.matches(constructor))) {
             return true;
         }
         return null;
@@ -100,81 +133,9 @@ public class MethodListInvocationValidator implements MethodInvocationValidator 
 
     @Override
     public Boolean permitMethod(final Method method) {
-        final JavaType.Method jtm = toJavaType(method);
-        if (methodMatchers.stream().anyMatch(mm -> mm.matches(jtm))) {
+        if (methodPatterns.stream().anyMatch(mp -> mp.matches(method))) {
             return true;
         }
         return null;
-    }
-
-    /**
-     * We need to convert the method we have from reflection to an open rewrite JavaType. There is no direct conversion
-     * available in the API, but internally the <a href=
-     * "https://github.com/openrewrite/rewrite/blob/main/rewrite-java/src/main/java/org/openrewrite/java/internal/JavaReflectionTypeMapping.java">org.openrewrite.java.internal.JavaReflectionTypeMapping</a>
-     * class gives us clues on how to make this work. (Note the openrewrite project is Apache licensed.)
-     *
-     * @param method the method to convert
-     * @return the converted method
-     */
-    static JavaType.Method toJavaType(final Method method) {
-        final JavaType declaringClass = classType(method.getDeclaringClass());
-
-        final String[] parameterNames =
-                Arrays.stream(method.getParameters()).map(Parameter::getName).toArray(String[]::new);
-        final JavaType[] parameterTypes = Arrays.stream(method.getParameters()).map(Parameter::getType)
-                .map(MethodListInvocationValidator::classType)
-                .toArray(JavaType[]::new);
-        // exceptions, annotations, defaultValue, declaredFormalTypes ignored
-        return new JavaType.Method(null, method.getModifiers(), (JavaType.FullyQualified) declaringClass,
-                method.getName(), classType(method.getReturnType()), parameterNames, parameterTypes, null, null, null,
-                null);
-    }
-
-    /**
-     * We need to convert the constructor we have from reflection to an open rewrite JavaType. There is no direct
-     * conversion available in the API, but internally the <a href=
-     * "https://github.com/openrewrite/rewrite/blob/main/rewrite-java/src/main/java/org/openrewrite/java/internal/JavaReflectionTypeMapping.java">org.openrewrite.java.internal.JavaReflectionTypeMapping</a>
-     * class gives us clues on how to make this work. (Note the openrewrite project is Apache licensed.)
-     *
-     * @param method the method to convert
-     * @return the converted method
-     */
-    static JavaType.Method toJavaType(final Constructor<?> method) {
-        final JavaType declaringClass = classType(method.getDeclaringClass());
-
-        final String[] parameterNames =
-                Arrays.stream(method.getParameters()).map(Parameter::getName).toArray(String[]::new);
-        final JavaType[] parameterTypes = Arrays.stream(method.getParameters()).map(Parameter::getType)
-                .map(MethodListInvocationValidator::classType)
-                .toArray(JavaType[]::new);
-        // exceptions, annotations, defaultValue, declaredFormalTypes ignored
-        return new JavaType.Method(null, method.getModifiers(), (JavaType.FullyQualified) declaringClass,
-                "<constructor>", null, parameterNames, parameterTypes, null, null, null,
-                null);
-    }
-
-    private static JavaType classType(Class<?> declaringClass) {
-        if (declaringClass.isArray()) {
-            final Class<?> elementType = declaringClass.getComponentType();
-            return new JavaType.Array(null, classType(elementType), null);
-        }
-        if (declaringClass.isPrimitive()) {
-            return JavaType.Primitive.fromKeyword(declaringClass.getSimpleName());
-        }
-
-        JavaType.Class.Kind kind;
-        final int modifiers = declaringClass.getModifiers();
-        if (declaringClass.isEnum()) {
-            kind = JavaType.Class.Kind.Enum;
-        } else if (declaringClass.isAnnotation()) {
-            kind = JavaType.Class.Kind.Annotation;
-        } else if (declaringClass.isInterface()) {
-            kind = JavaType.Class.Kind.Interface;
-        } else {
-            kind = JavaType.Class.Kind.Class;
-        }
-
-        return new JavaType.Class(null, modifiers, declaringClass.getCanonicalName(), kind, null, null, null, null,
-                null, null, null);
     }
 }
