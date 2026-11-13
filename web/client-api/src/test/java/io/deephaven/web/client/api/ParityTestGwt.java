@@ -17,7 +17,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Checks that the JS API produces the same tables as the server's Python API. Each case pairs a Python expression on
@@ -27,7 +29,7 @@ import java.util.List;
 public class ParityTestGwt extends AbstractAsyncGwtTestCase {
     /** A thousand rows: a few keys, every common column type, nulls in each value column, NaN in D. */
     private final TableSourceBuilder tables = new TableSourceBuilder()
-            .script("from deephaven import empty_table, agg")
+            .script("from deephaven import empty_table, agg, merge")
             .script("from deephaven import updateby as ub")
             .script("src", "empty_table(1000).update(["
                     + "\"Key = i % 7\","
@@ -37,18 +39,50 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                     + "\"D = (i % 19 == 0) ? NULL_DOUBLE : (i % 23 == 0) ? Double.NaN : i * 1.5 - 300\","
                     + "\"W = (double) (i % 4 + 1)\","
                     + "\"B = (i % 13 == 0) ? null : (i % 2 == 0)\","
-                    + "\"T = '2024-01-01T00:00:00 UTC' + i * MINUTE\"])");
+                    + "\"T = '2024-01-01T00:00:00 UTC' + i * MINUTE\"])")
+            // Operands for the joins: one row per key, a time series per key, some keys, ranges of I, a trigger
+            .script("keys", "empty_table(7).update([\"Key = i\", \"Name = `K` + i\"])")
+            .script("quotes", "empty_table(200).update([\"Key = i % 7\","
+                    + "\"T = '2024-01-01T00:00:00 UTC' + i * 5 * MINUTE\", \"Px = i * 0.25\"])")
+            .script("some_keys", "empty_table(3).update([\"Key = i * 2\"])")
+            .script("windows", "empty_table(20).update([\"Key = i % 7\", \"Lo = i * 40\", \"Hi = Lo + 30\"])")
+            .script("tick", "empty_table(1).update([\"Tick = 1\"])");
+
+    private static final String[] FIXTURE_TABLES = {"src", "keys", "quotes", "some_keys", "windows", "tick"};
+
+    /** The fixture tables, fetched once per test, for cases that join or merge. */
+    private static final class Fixture {
+        final IdeSession session;
+        final Map<String, JsTable> tables = new HashMap<>();
+
+        Fixture(IdeSession session) {
+            this.session = session;
+        }
+
+        JsTableReference ref(String name) {
+            return JsTableReference.of(tables.get(name));
+        }
+
+        JsTableOperations ops(String name) {
+            return tables.get(name).operations();
+        }
+    }
 
     /** The JS calls for one case, made on a fresh operations view of {@code src}. */
     private interface JsCall {
-        JsPendingTable<JsResolvedTable> on(JsTableOperations src);
+        JsPendingTable<?> on(JsTableOperations src);
+    }
+
+    /** As {@link JsCall}, for a case that also uses the other fixture tables or the session. */
+    private interface JsFixtureCall {
+        JsPendingTable<?> on(JsTableOperations src, Fixture fixture);
     }
 
     private static final class Case {
         final String python;
-        final JsCall js;
+        final JsFixtureCall js;
 
-        Case(String python, JsCall js) {
+        Case(String python, JsFixtureCall js) {
             this.python = python;
             this.js = js;
         }
@@ -56,6 +90,10 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
 
     /** A case: the Python expression, which names the case in failures, and the JS calls that should match it. */
     private static Case parity(String python, JsCall js) {
+        return new Case(python, (src, fixture) -> js.on(src));
+    }
+
+    private static Case parity(String python, JsFixtureCall js) {
         return new Case(python, js);
     }
 
@@ -300,6 +338,56 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                                 "filters", arr("I > 500"), "reverseWindowScale", ticks(5)))));
     }
 
+    public void testJoinsGroupingAndMerge() {
+        runAll(20_004,
+                parity("src.natural_join(keys, on='Key', joins='Name')",
+                        (src, f) -> src.naturalJoin(f.ref("keys"), arr("Key"), arr("Name"), null)),
+                parity("src.exact_join(keys, on='Key', joins='Name')",
+                        (src, f) -> src.exactJoin(f.ref("keys"), arr("Key"), arr("Name"))),
+                parity("src.where('I < 100').join(keys, on='Key', joins='Name')",
+                        (src, f) -> src.where(arr(FilterValue.ofColumn("I").lessThan(FilterValue.ofNumber(100))))
+                                .join(f.ref("keys"), arr("Key"), arr("Name"), null)),
+                parity("src.where('I < 20').join(some_keys, joins='Picked = Key')",
+                        (src, f) -> src.where(arr(FilterValue.ofColumn("I").lessThan(FilterValue.ofNumber(20))))
+                                .join(f.ref("some_keys"), arr(), arr("Picked = Key"), null)),
+                parity("src.aj(quotes, on=['Key', 'T'], joins='Px')",
+                        (src, f) -> src.aj(f.ref("quotes"), arr("Key", "T"), arr("Px"))),
+                parity("src.aj(quotes, on=['Key', 'T > T'], joins=['QT = T', 'Px'])",
+                        (src, f) -> src.aj(f.ref("quotes"), arr("Key", "T > T"), arr("QT = T", "Px"))),
+                parity("src.raj(quotes, on=['Key', 'T'], joins='Px')",
+                        (src, f) -> src.raj(f.ref("quotes"), arr("Key", "T"), arr("Px"))),
+                parity("src.where_in(some_keys, 'Key')",
+                        (src, f) -> src.whereIn(f.ref("some_keys"), arr("Key"))),
+                parity("src.where_not_in(some_keys, 'Key')",
+                        (src, f) -> src.whereNotIn(f.ref("some_keys"), arr("Key"))),
+                // A range join needs its right table ordered by the range column
+                parity("windows.range_join(src.sort('I'), on=['Key', 'Lo <= I <= Hi'], aggs=agg.group('Is = I'))",
+                        (src, f) -> f.ops("windows").rangeJoin(Js.uncheckedCast(src.sort(arr("I"))), arr("Key"),
+                                loToHi(), arr(Aggregation.AggGroup(arr("Is = I"))))),
+                parity("src.view(['Key', 'I']).group_by('Key')",
+                        src -> src.view(arr("Key", "I")).groupBy(arr("Key"))),
+                parity("src.view(['Key', 'I', 'D']).group_by('Key').ungroup()",
+                        src -> src.view(arr("Key", "I", "D")).groupBy(arr("Key")).ungroup(null)),
+                parity("src.view(['Key', 'I', 'D']).group_by('Key').ungroup('I')",
+                        src -> src.view(arr("Key", "I", "D")).groupBy(arr("Key")).ungroup(Js.uncheckedCast(
+                                JsPropertyMap.of("columnsToUngroup", arr("I"))))),
+                parity("merge([src.head(5), src.tail(5)])",
+                        (src, f) -> f.session.mergeTables(arr(src.head(rows(5)), src.tail(rows(5))))),
+                parity("src.snapshot_when(tick)",
+                        (src, f) -> src.snapshotWhen(f.ref("tick"), new JsTableOperations.SnapshotWhenOptions())));
+    }
+
+    /** Lo &lt;= I &lt;= Hi, for a range join from the windows table onto src. */
+    private static JsTableOperations.RangeJoinMatch loToHi() {
+        JsTableOperations.RangeJoinMatch range = new JsTableOperations.RangeJoinMatch();
+        range.leftStartColumn = lit("Lo");
+        range.rangeStartRule = lit("LESS_THAN_OR_EQUAL");
+        range.rightRangeColumn = lit("I");
+        range.rangeEndRule = lit("GREATER_THAN_OR_EQUAL");
+        range.leftEndColumn = lit("Hi");
+        return range;
+    }
+
     /** One updateBy operation applying {@code spec} to {@code pairs}, grouped by {@code key} or not at all. */
     private static JsPendingTable<JsResolvedTable> updateBy(JsTableOperations src, String key, Object spec,
             String... pairs) {
@@ -341,29 +429,40 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayTestFinish(timeout);
-                    return session.getTable("src", null).asPromise().then(src -> {
-                        List<String> failures = new ArrayList<>();
-                        return runFrom(session, src, cases, 0, timeout, failures)
-                                .then(ignore -> session.runCode("result = None"))
-                                .then(ignore -> {
-                                    src.close();
-                                    if (!failures.isEmpty()) {
-                                        fail(failures.size() + " of " + cases.length + " cases differ:\n"
-                                                + String.join("\n", failures));
-                                    }
-                                    return Promise.resolve(src);
-                                });
-                    });
+                    Fixture fixture = new Fixture(session);
+                    List<String> failures = new ArrayList<>();
+                    return fetchFixtures(fixture, 0)
+                            .then(ignore -> runFrom(fixture, cases, 0, timeout, failures))
+                            .then(ignore -> session.runCode("result = None"))
+                            .then(ignore -> {
+                                fixture.tables.values().forEach(JsTable::close);
+                                if (!failures.isEmpty()) {
+                                    fail(failures.size() + " of " + cases.length + " cases differ:\n"
+                                            + String.join("\n", failures));
+                                }
+                                return Promise.resolve(session);
+                            });
                 })
                 .then(this::finish).catch_(this::report);
     }
 
-    private Promise<Object> runFrom(IdeSession session, JsTable src, Case[] cases, int index, int timeout,
-            List<String> failures) {
+    private static Promise<Object> fetchFixtures(Fixture fixture, int index) {
+        if (index == FIXTURE_TABLES.length) {
+            return Promise.resolve((Object) null);
+        }
+        String name = FIXTURE_TABLES[index];
+        return fixture.session.getTable(name, null).asPromise().then(table -> {
+            fixture.tables.put(name, table);
+            return fetchFixtures(fixture, index + 1);
+        });
+    }
+
+    private Promise<Object> runFrom(Fixture fixture, Case[] cases, int index, int timeout, List<String> failures) {
         if (index == cases.length) {
             return Promise.resolve((Object) null);
         }
         Case c = cases[index];
+        IdeSession session = fixture.session;
         delayTestFinish(timeout);
         return session.runCode("result = " + c.python).then(run -> {
             if (run.getError() != null) {
@@ -373,7 +472,7 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
             // Both are made in this task: the JS chain on a fresh view of src, and the fetch of the Python result
             Promise<JsResolvedTable> js;
             try {
-                js = c.js.on(src.operations()).resolve();
+                js = c.js.on(fixture.ops("src"), fixture).resolve();
             } catch (RuntimeException e) {
                 failures.add(c.python + ": JS threw " + e);
                 return Promise.resolve((Object) null);
@@ -399,7 +498,7 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                             return Promise.resolve((Object) null);
                         });
                     });
-        }).then(ignore -> runFrom(session, src, cases, index + 1, timeout, failures));
+        }).then(ignore -> runFrom(fixture, cases, index + 1, timeout, failures));
     }
 
     private interface Snapshotter {
