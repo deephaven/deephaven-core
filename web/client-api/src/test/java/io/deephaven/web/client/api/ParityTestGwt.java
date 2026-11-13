@@ -227,6 +227,9 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                 // Freeze has no Python agg; AggregationTestGwt covers it
                 parity("src.agg_by([agg.formula('MaxW = max(W)')], by='Key')",
                         src -> aggBy(src, by("Key"), Aggregation.AggFormula("MaxW = max(W)"))),
+                // As in the Formula docs: two vector functions, then arithmetic on their results
+                parity("src.agg_by([agg.formula('Spread = max(W) - min(W)')], by='Key')",
+                        src -> aggBy(src, by("Key"), Aggregation.AggFormula("Spread = max(W) - min(W)"))),
                 parity("src.agg_by([agg.sum_('S = I'), agg.count_('N')])",
                         src -> aggBy(src, by(), Aggregation.AggSum(arr("S = I")), Aggregation.AggCount("N"))),
 

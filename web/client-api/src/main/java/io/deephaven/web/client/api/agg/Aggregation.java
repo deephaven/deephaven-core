@@ -367,9 +367,10 @@ public abstract sealed class Aggregation
     }
 
     /**
-     * Creates a Formula aggregation, evaluating a user-defined formula.
+     * Creates a Formula aggregation, computing one output column per group from a formula such as
+     * {@code "MaxW = max(W)"}. See {@link Formula} for what the column names in the expression stand for.
      *
-     * @param formula the formula to evaluate
+     * @param formula the output column's name and the expression that computes it, as {@code "Out = expression"}
      * @return an aggregation
      */
     @JsMethod
