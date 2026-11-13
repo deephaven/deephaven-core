@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.ReadonlyArray;
+import elemental2.promise.Promise;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
@@ -21,7 +22,7 @@ public interface JoinableTable {
     ClientTableState state();
 
     @JsMethod
-    JsPendingTable<JsTable> freeze();
+    Promise<JsTable> freeze();
 
     /**
      * Creates a server-side snapshot of {@code baseTable} when this table updates.
@@ -29,10 +30,10 @@ public interface JoinableTable {
      * @param baseTable The table to snapshot.
      * @param doInitialSnapshot Whether to create an initial snapshot immediately.
      * @param stampColumns Optional list of stamp column match pairs to include in the result.
-     * @return the snapshot table, as a pending table
+     * @return A promise that resolves to the snapshot table.
      */
     @JsMethod
-    JsPendingTable<JsTable> snapshot(JsTableReference baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
+    Promise<JsTable> snapshot(JsTableReference baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> stampColumns);
 
     /**
@@ -58,11 +59,11 @@ public interface JoinableTable {
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result - empty/null/absent to add all columns.
      * @param asOfMatchRule If joinType is {@code AJ}/{@code RAJ}/{@code ReverseAJ}, the match rule to use.
-     * @return the joined table, as a pending table
+     * @return A promise that will resolve to the joined table.
      */
     @JsMethod
     @Deprecated
-    JsPendingTable<JsTable> join(String joinType, JsTableReference rightTable,
+    Promise<JsTable> join(String joinType, JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule);
@@ -84,10 +85,10 @@ public interface JoinableTable {
      * @param columnsToAdd Columns from the right table to add to the resulting table, empty/null/absent to add all
      *        columns.
      * @param asOfMatchRule The match rule to use, see above.
-     * @return the joined table, as a pending table
+     * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    JsPendingTable<JsTable> asOfJoin(JsTableReference rightTable,
+    Promise<JsTable> asOfJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule);
@@ -104,10 +105,10 @@ public interface JoinableTable {
      *        columns.
      * @param reserveBits The number of bits of key-space to initially reserve per group, null/absent will let the
      *        server select a value.
-     * @return the joined table, as a pending table
+     * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    JsPendingTable<JsTable> crossJoin(JsTableReference rightTable,
+    Promise<JsTable> crossJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits);
@@ -121,10 +122,10 @@ public interface JoinableTable {
      * @param columnsToMatch The columns that should match exactly.
      * @param columnsToAdd Columns from the right table to add to the resulting table, empty/null/absent to add all
      *        columns.
-     * @return the joined table, as a pending table
+     * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    JsPendingTable<JsTable> exactJoin(JsTableReference rightTable,
+    Promise<JsTable> exactJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd);
 
@@ -137,10 +138,10 @@ public interface JoinableTable {
      * @param columnsToMatch The columns that should match exactly.
      * @param columnsToAdd Columns from the right table to add to the resulting table. Empty/null/absent to add all
      *        columns.
-     * @return the joined table, as a pending table
+     * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    JsPendingTable<JsTable> naturalJoin(JsTableReference rightTable,
+    Promise<JsTable> naturalJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd);
 }

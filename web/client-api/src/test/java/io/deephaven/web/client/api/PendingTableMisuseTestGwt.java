@@ -423,11 +423,11 @@ public class PendingTableMisuseTestGwt extends AbstractAsyncGwtTestCase {
      */
     private Map<String, Function<JsTableReference, Promise<?>>> unbatched(IdeSession session, JsInputTable input) {
         Map<String, Function<JsTableReference, Promise<?>>> consumers = new LinkedHashMap<>();
-        consumers.put("Table.naturalJoin", op -> source.naturalJoin(op, arr("X"), arr("Y2=Y")).resolve());
-        consumers.put("Table.exactJoin", op -> source.exactJoin(op, arr("X"), arr("Y2=Y")).resolve());
-        consumers.put("Table.crossJoin", op -> source.crossJoin(op, arr("X"), arr("Y2=Y"), null).resolve());
-        consumers.put("Table.asOfJoin", op -> source.asOfJoin(op, arr("X"), arr("Y2=Y"), null).resolve());
-        consumers.put("Table.snapshot", op -> source.snapshot(op, true, null).resolve());
+        consumers.put("Table.naturalJoin", op -> source.naturalJoin(op, arr("X"), arr("Y2=Y")));
+        consumers.put("Table.exactJoin", op -> source.exactJoin(op, arr("X"), arr("Y2=Y")));
+        consumers.put("Table.crossJoin", op -> source.crossJoin(op, arr("X"), arr("Y2=Y"), null));
+        consumers.put("Table.asOfJoin", op -> source.asOfJoin(op, arr("X"), arr("Y2=Y"), null));
+        consumers.put("Table.snapshot", op -> source.snapshot(op, true, null));
         consumers.put("mergeTables",
                 op -> session.mergeTables(arr(JsTableReference.of(source), op)).resolve());
         consumers.put("InputTable.addTable", input::addTable);

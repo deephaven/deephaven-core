@@ -1521,8 +1521,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * in the resulting table.</li>
      * </ul>
      */
-    public JsPendingTable<JsTable> selectDistinct(Column[] columns) {
-        // The result's ticket and state exist now, so operations can be chained before the source table has resolved
+    public Promise<JsTable> selectDistinct(Column[] columns) {
         List<String> columnNames = Arrays.stream(columns).map(Column::getName).collect(Collectors.toList());
         ClientTableState state = connection.newState((c, cts) -> {
             // The call is made once the source table arrives, in this fetch's context, where a cancel reaches it
@@ -1550,7 +1549,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 return null;
             });
         }, "selectDistinct " + columnNames, connection.getTickets().newTableTicket());
-        return connection.pendingTable(state);
+        return connection.pendingTable(state).asPromise();
     }
 
     public Promise<JsTotalsTableConfig> getTotalsTableConfig() {

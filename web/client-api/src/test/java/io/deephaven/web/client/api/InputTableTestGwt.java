@@ -60,7 +60,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                                 Promise<Object> checks = Promise.resolve((Object) null);
                                 for (Supplier<Promise<Object>> check : List.<Supplier<Promise<Object>>>of(
                                         () -> rejectsForConnection("snapshot",
-                                                local.snapshot(operand, true, null).resolve()),
+                                                local.snapshot(operand, true, null)),
                                         () -> rejectsForConnection("addTable", input.addTable(operand)),
                                         () -> rejectsForConnection("deleteTable", input.deleteTable(operand)),
                                         () -> rejectsForConnection("addTables",

@@ -417,11 +417,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * snapshot table will not update. This does not change the original table, and the new table will not have any of
      * the client side sorts/filters/columns. New client side sorts/filters/columns can be added to the snapshot copy.
      * 
-     * @return the snapshot table, as a pending table
+     * @return a promise of the snapshot table
      */
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> freeze() {
+    public Promise<JsTable> freeze() {
         return wrappedTable.freeze();
     }
 
@@ -431,11 +431,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param baseTable The table to snapshot.
      * @param doInitialSnapshot Whether to create an initial snapshot immediately.
      * @param stampColumns Optional list of stamp column match pairs to include in the result.
-     * @return the snapshot table, as a pending table
+     * @return a promise of the snapshot table
      */
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> snapshot(JsTableReference baseTable,
+    public Promise<JsTable> snapshot(JsTableReference baseTable,
             @JsOptional @JsNullable Boolean doInitialSnapshot,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> stampColumns) {
         return wrappedTable.snapshot(baseTable, doInitialSnapshot, stampColumns);
@@ -449,11 +449,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
      * @param asOfMatchRule If joinType is {@code AJ}/{@code RAJ}/{@code ReverseAJ}, the match rule to use.
-     * @return the joined table, as a pending table
+     * @return a promise of the joined table
      */
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> join(String joinType, JsTableReference rightTable,
+    public Promise<JsTable> join(String joinType, JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule) {
@@ -467,11 +467,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
      * @param asOfMatchRule The match rule to use.
-     * @return the joined table, as a pending table
+     * @return a promise of the joined table
      */
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> asOfJoin(JsTableReference rightTable,
+    public Promise<JsTable> asOfJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule) {
@@ -485,11 +485,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
      * @param reserveBits Optional reserve bits for the join.
-     * @return the joined table, as a pending table
+     * @return a promise of the joined table
      */
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> crossJoin(JsTableReference rightTable,
+    public Promise<JsTable> crossJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits) {
@@ -502,11 +502,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param rightTable The table to join to.
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
-     * @return the joined table, as a pending table
+     * @return a promise of the joined table
      */
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> exactJoin(JsTableReference rightTable,
+    public Promise<JsTable> exactJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         return wrappedTable.exactJoin(rightTable, columnsToMatch, columnsToAdd);
@@ -518,11 +518,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
      * @param rightTable The table to join to.
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result.
-     * @return the joined table, as a pending table
+     * @return a promise of the joined table
      */
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> naturalJoin(JsTableReference rightTable,
+    public Promise<JsTable> naturalJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         return wrappedTable.naturalJoin(rightTable, columnsToMatch, columnsToAdd);

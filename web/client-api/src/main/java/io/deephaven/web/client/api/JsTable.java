@@ -945,11 +945,11 @@ public class JsTable extends HasLifecycle
      * order of appearance of values from the original table.
      * 
      * @param columns
-     * @return the distinct table, as a pending table
+     * @return a promise of the distinct table
      */
     @JsMethod
-    public JsPendingTable<JsTable> selectDistinct(Column[] columns) {
-        return selectDistinct(columns, workerConnection.getTickets().newTableTicket());
+    public Promise<JsTable> selectDistinct(Column[] columns) {
+        return selectDistinct(columns, workerConnection.getTickets().newTableTicket()).asPromise();
     }
 
     /**
@@ -1362,22 +1362,22 @@ public class JsTable extends HasLifecycle
      * table will not update. This does not change the original table, and the new table will not have any of the client
      * side sorts/filters/columns. New client side sorts/filters/columns can be added to the frozen copy.
      *
-     * @return the frozen table, as a pending table
+     * @return a promise of the frozen table
      */
     @JsMethod
-    public JsPendingTable<JsTable> freeze() {
+    public Promise<JsTable> freeze() {
         return workerConnection.pendingTable((c, state) -> {
             SnapshotTableRequest request = SnapshotTableRequest.newBuilder()
                     .setSourceId(state().getHandle().makeTableReference())
                     .setResultId(state.getHandle().makeTicket())
                     .build();
             workerConnection.tableServiceClient().snapshot(request, c);
-        }, "freeze");
+        }, "freeze").asPromise();
     }
 
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> snapshot(JsTableReference baseTable,
+    public Promise<JsTable> snapshot(JsTableReference baseTable,
             @JsOptional @JsNullable Boolean doInitialSnapshot,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> stampColumns) {
         Objects.requireNonNull(baseTable, "Snapshot base table");
@@ -1401,7 +1401,7 @@ public class JsTable extends HasLifecycle
             }
 
             workerConnection.tableServiceClient().snapshotWhen(request.build(), c);
-        }, fetchSummary, baseTable);
+        }, fetchSummary, baseTable).asPromise();
     }
 
     // inheritDoc lets us implement the inherited method, but still keep docs for TS
@@ -1411,7 +1411,7 @@ public class JsTable extends HasLifecycle
     @Override
     @JsMethod
     @Deprecated
-    public JsPendingTable<JsTable> join(String joinType, JsTableReference rightTable,
+    public Promise<JsTable> join(String joinType, JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule) {
@@ -1430,7 +1430,7 @@ public class JsTable extends HasLifecycle
 
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> asOfJoin(JsTableReference rightTable,
+    public Promise<JsTable> asOfJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule) {
@@ -1452,12 +1452,12 @@ public class JsTable extends HasLifecycle
             }
             workerConnection.tableServiceClient().asOfJoinTables(request.build(), c);
         }, "asOfJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")",
-                rightTable);
+                rightTable).asPromise();
     }
 
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> crossJoin(JsTableReference rightTable,
+    public Promise<JsTable> crossJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits) {
@@ -1478,12 +1478,13 @@ public class JsTable extends HasLifecycle
                 request.setReserveBits((int) (double) reserveBits);
             }
             workerConnection.tableServiceClient().crossJoinTables(request.build(), c);
-        }, "join(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + reserveBits + ")", rightTable);
+        }, "join(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + reserveBits + ")", rightTable)
+                .asPromise();
     }
 
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> exactJoin(JsTableReference rightTable,
+    public Promise<JsTable> exactJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd) {
         if (rightTable.getConnection() != workerConnection) {
@@ -1500,12 +1501,12 @@ public class JsTable extends HasLifecycle
                 request.addAllColumnsToAdd(MatchPairUnion.toStringArray(columnsToAdd));
             }
             workerConnection.tableServiceClient().exactJoinTables(request.build(), c);
-        }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")", rightTable);
+        }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")", rightTable).asPromise();
     }
 
     @Override
     @JsMethod
-    public JsPendingTable<JsTable> naturalJoin(JsTableReference rightTable,
+    public Promise<JsTable> naturalJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd) {
         if (rightTable.getConnection() != workerConnection) {
@@ -1522,7 +1523,7 @@ public class JsTable extends HasLifecycle
                 request.addAllColumnsToAdd(MatchPairUnion.toStringArray(columnsToAdd));
             }
             workerConnection.tableServiceClient().naturalJoinTables(request.build(), c);
-        }, "naturalJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")", rightTable);
+        }, "naturalJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")", rightTable).asPromise();
     }
 
     /**
