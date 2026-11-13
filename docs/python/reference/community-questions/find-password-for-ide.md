@@ -11,6 +11,8 @@ The password the IDE asks for is Deephaven's pre-shared key (PSK). If you didn't
 With Docker Compose, view the log with `docker compose logs`. If you started Deephaven with `docker run`, use `docker logs deephaven` instead. With the Python embedded server, get the login URL from the server object:
 
 ```python skip-test
+from deephaven_server import Server
+
 s = Server.instance
 target_url = s.server_config.target_url_or_default
 for handler in s.authentication_handlers:
