@@ -6,6 +6,8 @@ package io.deephaven.web.client.api;
 import elemental2.core.Global;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
+import io.deephaven.web.client.api.agg.AggByOptions;
+import io.deephaven.web.client.api.agg.Aggregation;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.ide.IdeSession;
@@ -24,7 +26,7 @@ import java.util.List;
 public class ParityTestGwt extends AbstractAsyncGwtTestCase {
     /** A thousand rows: a few keys, every common column type, nulls in each value column, NaN in D. */
     private final TableSourceBuilder tables = new TableSourceBuilder()
-            .script("from deephaven import empty_table")
+            .script("from deephaven import empty_table, agg")
             .script("src", "empty_table(1000).update(["
                     + "\"Key = i % 7\","
                     + "\"Sym = (i % 5 == 0) ? null : `S` + (i % 13)\","
@@ -102,6 +104,122 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                         src -> src.where(arr(FilterValue.ofColumn("Key").eq(FilterValue.ofNumber(2)))).flatten()),
                 parity("src.snapshot()",
                         JsTableOperations::snapshot));
+    }
+
+    /** The numeric columns, for the aggregations that only take numbers. */
+    private static final String NUMERIC = "src.view(['Key', 'I', 'L', 'D', 'W'])";
+
+    private static JsPendingTable<JsResolvedTable> numeric(JsTableOperations src) {
+        return src.view(arr("Key", "I", "L", "D", "W"));
+    }
+
+    public void testAggregations() {
+        runAll(20_002,
+                parity(NUMERIC + ".sum_by('Key')", src -> numeric(src).sumBy(arr("Key"))),
+                parity(NUMERIC + ".abs_sum_by('Key')", src -> numeric(src).absSumBy(arr("Key"))),
+                parity(NUMERIC + ".avg_by('Key')", src -> numeric(src).avgBy(arr("Key"))),
+                parity(NUMERIC + ".median_by('Key')", src -> numeric(src).medianBy(arr("Key"))),
+                parity(NUMERIC + ".std_by('Key')", src -> numeric(src).stdBy(arr("Key"))),
+                parity(NUMERIC + ".var_by('Key')", src -> numeric(src).varBy(arr("Key"))),
+                parity(NUMERIC + ".min_by('Key')", src -> numeric(src).minBy(arr("Key"))),
+                parity(NUMERIC + ".max_by('Key')", src -> numeric(src).maxBy(arr("Key"))),
+                parity(NUMERIC + ".weighted_sum_by('W', 'Key')", src -> numeric(src).wsumBy(lit("W"), arr("Key"))),
+                parity(NUMERIC + ".weighted_avg_by('W', 'Key')", src -> numeric(src).wavgBy(lit("W"), arr("Key"))),
+                parity("src.first_by('Key')", src -> src.firstBy(arr("Key"))),
+                parity("src.last_by(['Key', 'B'])", src -> src.lastBy(arr("Key", "B"))),
+                parity("src.count_by('N', 'Sym')", src -> src.countBy("N", arr("Sym"))),
+                parity(NUMERIC + ".sum_by()", src -> numeric(src).sumBy(null)),
+
+                parity("src.agg_by([agg.sum_(['SumI = I', 'SumD = D'])], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggSum(arr("SumI = I", "SumD = D")))),
+                parity("src.agg_by([agg.abs_sum('AbsD = D')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggAbsSum(arr("AbsD = D")))),
+                parity("src.agg_by([agg.avg(['AvgI = I', 'AvgL = L'])], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggAvg(arr("AvgI = I", "AvgL = L")))),
+                parity("src.agg_by([agg.count_('N')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggCount("N"))),
+                parity("src.agg_by([agg.count_where('Big', 'I > 500')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggCountWhere("Big", arr("I > 500")))),
+                parity("src.agg_by([agg.count_distinct('CD = Sym')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggCountDistinct(null, arr("CD = Sym")))),
+                parity("src.agg_by([agg.count_distinct('CD = Sym', count_nulls=True)], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggCountDistinct(true, arr("CD = Sym")))),
+                parity("src.agg_by([agg.distinct('DW = W')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggDistinct(null, arr("DW = W")))),
+                parity("src.agg_by([agg.first(['FI = I', 'FS = Sym']), agg.last('LT = T')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggFirst(arr("FI = I", "FS = Sym")),
+                                Aggregation.AggLast(arr("LT = T")))),
+                parity("src.agg_by([agg.min_('MinD = D'), agg.max_('MaxT = T')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggMin(arr("MinD = D")),
+                                Aggregation.AggMax(arr("MaxT = T")))),
+                parity("src.agg_by([agg.median('MedI = I')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggMed(null, arr("MedI = I")))),
+                parity("src.agg_by([agg.median('MedI = I', average_evenly_divided=False)], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggMed(false, arr("MedI = I")))),
+                parity("src.agg_by([agg.pct(0.25, 'P25 = D')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggPct(0.25, null, arr("P25 = D")))),
+                parity("src.agg_by([agg.pct(0.25, 'P25 = I', average_evenly_divided=True)], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggPct(0.25, true, arr("P25 = I")))),
+                parity("src.agg_by([agg.std('StdD = D'), agg.var('VarI = I')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggStd(arr("StdD = D")),
+                                Aggregation.AggVar(arr("VarI = I")))),
+                parity("src.agg_by([agg.weighted_avg('W', 'WAvgD = D'), agg.weighted_sum('W', 'WSumI = I')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggWAvg(lit("W"), arr("WAvgD = D")),
+                                Aggregation.AggWSum(lit("W"), arr("WSumI = I")))),
+                parity("src.agg_by([agg.sorted_first('D', 'SF = I'), agg.sorted_last('D', 'SL = I')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggSortedFirst(arr("D"), arr("SF = I")),
+                                Aggregation.AggSortedLast(arr("D"), arr("SL = I")))),
+                parity("src.agg_by([agg.unique('UW = W', non_unique_sentinel=-1.0)], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggUnique(null,
+                                Js.uncheckedCast(JsPropertyMap.of("type", "double", "value", -1.0)), arr("UW = W")))),
+                parity("src.agg_by([agg.unique('UI = I', non_unique_sentinel=-1)], by=['Key', 'L'])",
+                        src -> aggBy(src, "Key", Aggregation.AggUnique(null,
+                                Js.uncheckedCast(JsPropertyMap.of("type", "int", "value", -1.0)), arr("UI = I")),
+                                "L")),
+                parity("src.agg_by([agg.unique('US = Sym', include_nulls=True, non_unique_sentinel='many')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggUnique(true,
+                                Js.uncheckedCast(JsPropertyMap.of("type", "string", "value", "many")),
+                                arr("US = Sym")))),
+                parity("src.agg_by([agg.group('GI = I')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggGroup(arr("GI = I")))),
+                // Freeze has no Python agg; AggregationTestGwt covers it
+
+                parity("src.agg_by([agg.formula('MaxW = max(W)')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggFormula("MaxW = max(W)"))),
+                parity("src.agg_by([agg.sum_('S = I'), agg.count_('N')])",
+                        src -> aggBy(src, null, Aggregation.AggSum(arr("S = I")), Aggregation.AggCount("N"))),
+
+                parity(NUMERIC + ".agg_all_by(agg.sum_(), by='Key')",
+                        src -> numeric(src).aggAllBy(Js.uncheckedCast(Aggregation.AggSum(null)), arr("Key"))),
+                parity("src.agg_all_by(agg.first(), by=['Key', 'B'])",
+                        src -> src.aggAllBy(Js.uncheckedCast(Aggregation.AggFirst(null)), arr("Key", "B"))),
+                parity("src.view(['Key', 'Sym', 'B']).agg_all_by(agg.count_distinct(), by='Key')",
+                        src -> src.view(arr("Key", "Sym", "B"))
+                                .aggAllBy(Js.uncheckedCast(Aggregation.AggCountDistinct(null, null)), arr("Key"))));
+    }
+
+    /** aggBy over the given aggregations, grouped by {@code key} (and {@code extraKey}, if given) or not at all. */
+    private static JsPendingTable<JsResolvedTable> aggBy(JsTableOperations src, String key, Object... aggregations) {
+        return aggBy(src, key, aggregations, null);
+    }
+
+    private static JsPendingTable<JsResolvedTable> aggBy(JsTableOperations src, String key, Object aggregation,
+            String extraKey) {
+        return aggBy(src, key, new Object[] {aggregation}, extraKey);
+    }
+
+    private static JsPendingTable<JsResolvedTable> aggBy(JsTableOperations src, String key, Object[] aggregations,
+            String extraKey) {
+        AggByOptions options = new AggByOptions();
+        options.aggregations = Js.uncheckedCast(aggregations);
+        if (key != null) {
+            options.groupByColumns = extraKey == null ? arr(key) : arr(key, extraKey);
+        }
+        return src.aggBy(options);
+    }
+
+    private static <T> T lit(String literal) {
+        return Js.uncheckedCast(literal);
     }
 
     /**
