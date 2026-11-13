@@ -10,7 +10,7 @@ There are two basic ways to do this. The first uses a [table listener](../../how
 
 ## With a table listener
 
-The listener approach uses [`snapshot_when`](../table-operations/snapshot/snapshot-when.md) to capture the table's state at regular intervals, and a [table listener](../../how-to-guides/table-listeners-python.md) to convert the snapshot to a pandas DataFrame each time it updates. This is the recommended approach because the listener runs only when data changes, with no extra thread management.
+The listener approach uses [`snapshot_when`](../table-operations/snapshot/snapshot-when.md) to capture the table's state at regular intervals, and a [table listener](../../how-to-guides/table-listeners-python.md) to convert the snapshot to a pandas DataFrame each time it updates. This is the recommended approach because it avoids managing a dedicated polling thread.
 
 ```python order=source,source_snapshot,df
 import threading
@@ -53,7 +53,7 @@ timer.start()
 
 ## With Python threading
 
-The threading approach polls [`to_pandas`](../pandas/to-pandas.md) on a fixed interval. Unlike the listener, it runs on a schedule whether or not data has changed, and requires managing the thread's lifecycle.
+The threading approach polls [`to_pandas`](../pandas/to-pandas.md) on a fixed interval. It requires managing the thread's lifecycle.
 
 ```python order=source,df
 import threading
