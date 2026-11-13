@@ -206,6 +206,10 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
                 parity("src.agg_by([agg.weighted_avg('W', 'WAvgD = D'), agg.weighted_sum('W', 'WSumI = I')], by='Key')",
                         src -> aggBy(src, "Key", Aggregation.AggWAvg(lit("W"), arr("WAvgD = D")),
                                 Aggregation.AggWSum(lit("W"), arr("WSumI = I")))),
+                // As in the weighted average example in types/examples/use-cases.ts, factories and a literal mixed
+                parity("src.agg_by([agg.weighted_avg('W', 'WAvgX = I'), agg.avg('AvgX = I'), agg.count_('N')], by='Key')",
+                        src -> aggBy(src, "Key", Aggregation.AggWAvg(lit("W"), arr("WAvgX = I")),
+                                Aggregation.AggAvg(arr("AvgX = I")), JsPropertyMap.of("type", "Count", "col", "N"))),
                 parity("src.agg_by([agg.sorted_first('D', 'SF = I'), agg.sorted_last('D', 'SL = I')], by='Key')",
                         src -> aggBy(src, "Key", Aggregation.AggSortedFirst(arr("D"), arr("SF = I")),
                                 Aggregation.AggSortedLast(arr("D"), arr("SL = I")))),

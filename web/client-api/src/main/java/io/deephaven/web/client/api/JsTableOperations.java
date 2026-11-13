@@ -938,7 +938,19 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Aggregates the contents of this table into a new table.
+     * Aggregates the contents of this table into a new table. Each aggregation adds columns computed over each group,
+     * and can be made with a {@code dh.agg.Aggregation} factory or written as an object literal:
+     *
+     * <pre>
+     * const summary = await table.aggBy({
+     *     aggregations: [
+     *         dh.agg.Aggregation.AggWAvg("W", ["WAvgX = X"]),
+     *         dh.agg.Aggregation.AggAvg(["AvgX = X"]),
+     *         { type: "Count", col: "N" },
+     *     ],
+     *     groupByColumns: ["Key"],
+     * });
+     * </pre>
      *
      * @param options the aggregations, and optionally the columns to group by and the groups to start with
      * @return a table with one row per group, and a column for each aggregation
@@ -976,7 +988,22 @@ public interface JsTableOperations extends ServerObject {
 
     /**
      * Adds columns computed over each row's preceding (and, for windowed operations, following) rows, such as
-     * cumulative sums, moving averages, and exponential moving statistics, optionally per group.
+     * cumulative sums, moving averages, and exponential moving statistics, optionally per group. For example, a
+     * weighted average over each row and the two before it in its group:
+     *
+     * <pre>
+     * const rolling = await table.updateBy({
+     *     operations: [{
+     *         spec: {
+     *             type: "UpdateByRollingWAvg",
+     *             weightColumn: "W",
+     *             reverseWindowScale: { type: "ticks", ticks: 3 },
+     *         },
+     *         matchPairs: ["RollWAvgX = X"],
+     *     }],
+     *     groupByColumns: ["Key"],
+     * });
+     * </pre>
      *
      * @param options the operations to apply, and optionally the columns to group by and control settings
      * @return a table with this table's rows and columns, plus a column for each operation's output
@@ -1278,7 +1305,13 @@ public interface JsTableOperations extends ServerObject {
 
     /**
      * Computes the weighted average of each column within each group. Each value is multiplied by the corresponding
-     * weight, and the result is the sum of weighted values divided by the sum of weights.
+     * weight, and the result is the sum of weighted values divided by the sum of weights. Every column other than the
+     * weight and the group-by columns is averaged; to choose and rename columns, or to combine with other aggregations,
+     * use {@link #aggBy(AggByOptions)} with {@code dh.agg.Aggregation.AggWAvg}.
+     *
+     * <pre>
+     * const byKey = await table.wavgBy("W", ["Key"]);
+     * </pre>
      *
      * @param weightColumn the column containing the weights
      * @param groupByColumns columns to group by; if omitted, computes the weighted average across all rows

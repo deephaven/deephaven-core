@@ -95,6 +95,38 @@ async function rollingUpdateBy() {
     t.close();
 }
 
+// py: t.weighted_avg_by("W", by=["Key"])
+//     t.agg_by([agg.weighted_avg("W", ["WAvgX = X"]), agg.avg(["AvgX = X"]), agg.count_("N")], by=["Key"])
+//     t.update_by(rolling_wavg_tick("W", ["RollWAvgX = X"], rev_ticks=3), by=["Key"])
+async function weightedAverages() {
+    const t = session.emptyTable(12).update(["Key = i % 3", "X = i", "W = i % 4 + 1"]);
+    // t is never awaited, so all three use it in this task: one batch, one await
+    const [byKey, withOthers, rolling] = await Promise.all([
+        // Every non-key column except W, weighted by W
+        t.wavgBy("W", ["Key"]),
+        // Chosen columns, renamed, beside other aggregations
+        t.aggBy({
+            aggregations: [
+                dh.agg.Aggregation.AggWAvg("W", ["WAvgX = X"]),
+                dh.agg.Aggregation.AggAvg(["AvgX = X"]),
+                dh.agg.Aggregation.AggCount("N"),
+            ],
+            groupByColumns: ["Key"],
+        }),
+        // Over each row and the two before it in its group
+        t.updateBy({
+            operations: [{
+                spec: { type: "UpdateByRollingWAvg", weightColumn: "W", reverseWindowScale: { type: "ticks", ticks: 3 } },
+                matchPairs: ["RollWAvgX = X"],
+            }],
+            groupByColumns: ["Key"],
+        }),
+    ]);
+    byKey.close();
+    withOthers.close();
+    rolling.close();
+}
+
 // py: t.where_in(keys, ["Key"]); windows.range_join(t, on=["Key", "LStart <= Ts <= LEnd"], aggs=[agg.group(["Ts"])])
 async function whereInAndRangeJoin() {
     // rangeJoin only supports static inputs, so t is not a time table
