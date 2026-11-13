@@ -112,17 +112,45 @@ public class BarrageProcessorTest {
   }
 
   /// <summary>
-  /// While the initial snapshot is still arriving the server can re-send a row the client already holds. Treating
-  /// that as an overwrite is a separate change; until it lands, the row must be rejected rather than inserted a
-  /// second time.
+  /// While the initial snapshot is still arriving, the server can re-send a row the client already holds: a row
+  /// that an insertion ahead of the delivered region pushed out of the server's window, which the next round then
+  /// covers again. This client holds only rows it has data for, so the row is reported as removed and then added
+  /// back with the new data. That is the one representation in which every before-and-after table in the update
+  /// agrees with the index sets that describe it.
   /// </summary>
   [Test]
-  public async Task ReSentRowIsRejected() {
+  public async Task ReSentRowIsRemovedAndAddedBack() {
     var driver = AfterFirstRound();
     var metadata = AddsOnly(Range(0, 1000), Range(399, 800), isSnapshot: true);
-    await Assert.That(() => { driver.FeedRows(metadata, Range(399, 800)); })
-      .Throws<Exception>()
-      .WithMessageContaining("duplicates");
+    var keys = Range(399, 800).Elements.Select(k => (Int64)k).ToArray();
+    var values = keys.Select(ValueFor).ToArray();
+    values[0] = 12345;  // The re-sent row carries a new value, which must win.
+    var update = driver.Feed(metadata, keys, values);
+    await Assert.That(update).IsNotNull();
+    await Assert.That(Render(update!.RemovedRowsIndexSpace)).IsEqualTo("[399,400)");
+    await Assert.That(update.AfterRemoves.NumRows).IsEqualTo(399L);
+    await Assert.That(Render(update.AddedRowsIndexSpace)).IsEqualTo("[399,800)");
+    await Assert.That(update.Current.NumRows).IsEqualTo(800L);
+    await Assert.That(Column(update.Current, 0)[399]).IsEqualTo(399L);
+    await Assert.That(Column(update.Current, 1)[399]).IsEqualTo(12345L);
+    await Assert.That(Column(update.Current, 1)[400]).IsEqualTo(ValueFor(400));
+  }
+
+  /// <summary>
+  /// One message can both remove held rows and re-send a held row. The removed set reported to the user is in the
+  /// index space of the table before the message, so the re-sent row's position has to account for the rows
+  /// removed ahead of it.
+  /// </summary>
+  [Test]
+  public async Task ReSendCombinedWithRemovesReportsPositionsBeforeTheMessage() {
+    var driver = AfterFirstRound();
+    var metadata = BarrageMessages.Metadata(Range(5, 8), None, Range(399, 405), [None, None]);
+    var update = driver.FeedRows(metadata, Range(399, 405));
+    await Assert.That(update).IsNotNull();
+    await Assert.That(Render(update!.RemovedRowsIndexSpace)).IsEqualTo("[5,8) [399,400)");
+    await Assert.That(update.AfterRemoves.NumRows).IsEqualTo(396L);
+    await Assert.That(Render(update.AddedRowsIndexSpace)).IsEqualTo("[396,402)");
+    await AssertHolds(update.Current, Range(0, 5), Range(8, 405));
   }
 
   /// <summary>
