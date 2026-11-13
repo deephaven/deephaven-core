@@ -499,7 +499,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(session -> {
                     delayTestFinish(10_035);
                     return session.getTable("source", null).asPromise().then(table -> {
-                        JsTableOperations before = table.operations();
+                        JsPendingTable<JsResolvedTable> before = table.operations();
                         table.applyFilter(new FilterCondition[] {
                                 table.findColumn("X").filter().greaterThan(FilterValue.ofNumber(2.0))});
                         // Both resolved in this task, the only one the views may be used in
@@ -528,7 +528,7 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     delayTestFinish(10_037);
                     return session.getTable("source", null).asPromise().then(table -> {
                         ClientTableState state = table.state();
-                        JsTableOperations view = table.operations();
+                        JsPendingTable<JsResolvedTable> view = table.operations();
                         table.close();
                         // A few microtasks on, still in this task: the close has been flushed by then
                         return Promise.resolve((Object) null)
@@ -607,28 +607,6 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
             }
             return settleAll(uses, index + 1);
         });
-    }
-
-    public void testResolveOfAResolvedTableIsItself() {
-        connect(tables)
-                .then(session -> {
-                    delayTestFinish(10_045);
-                    return session.getTable("source", null).resolve();
-                })
-                .then(resolved -> {
-                    Promise<JsResolvedTable> again;
-                    try {
-                        again = resolved.resolve();
-                    } catch (Throwable e) {
-                        return Promise.reject("resolve() on a resolved table threw: " + e);
-                    }
-                    return again.then(same -> {
-                        assertSame("resolve() on a resolved table gave another instance", resolved, same);
-                        resolved.close();
-                        return Promise.resolve(same);
-                    });
-                })
-                .then(this::finish).catch_(this::report);
     }
 
     public void testCopyIsAtOnceAndIndependent() {

@@ -69,19 +69,16 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * <p>
  * Each table holds server resources until it is closed, by whoever owns it:
  * <ul>
- * <li>Awaiting a {@link JsPendingTable} gives the table it produces, and {@link #resolve()} gives it as a
+ * <li>Awaiting a {@link JsPendingTable} gives the table it produces, and {@link JsPendingTable#resolve()} gives it as a
  * {@link JsResolvedTable}. Repeating either gives the same instance, as awaiting a promise twice does. A pending table
  * has no owner: awaiting or resolving it retains the table it produces, one instance shared by every await and
  * {@code resolve()} of it, and whoever does so is responsible for closing it.</li>
- * <li>A {@code ResolvedTable} cannot be awaited, since awaiting a thenable would also await what it resolves to.
- * {@link #resolve()} is how code reaches the table from any {@code TableOperations}, pending or resolved: on a
- * {@code ResolvedTable} it gives that same table.</li>
- * <li>Awaiting or resolving it again gives that same instance and does not change who is responsible for it; whether
- * code that receives a table may close it is agreed between that code and its caller. Code given a
- * {@code TableOperations} should only chain on it: if it is a pending table, resolving it would retain a table the
- * caller cannot reach to close. Code that reads a table should take a {@code ResolvedTable}, which the sender resolves
- * before handing it over, and code that keeps one it was lent can call {@link JsResolvedTable#copy()} for a new
- * instance with its own lifetime.</li>
+ * <li>A {@code ResolvedTable} is already the table: it cannot be awaited, since awaiting a thenable would also await
+ * what it resolves to, and needs no resolving.</li>
+ * <li>Whether code that receives a table may close it is agreed between that code and its caller. Code given a
+ * {@code TableOperations} can only chain on it, so it never retains a table its caller cannot reach to close. Code that
+ * reads a table should take a {@code ResolvedTable}, which the sender resolves before handing it over, and code that
+ * keeps one it was lent can call {@link JsResolvedTable#copy()} for a new instance with its own lifetime.</li>
  * </ul>
  * To hand one table to several owners, resolve it once, give each a copy, and close your own:
  *
@@ -159,29 +156,6 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
 @TsName(namespace = "dh", name = "TableOperations")
 @TsInterface
 public interface JsTableOperations extends ServerObject {
-
-    /**
-     * The table these operations stand for, as a {@link JsResolvedTable} whose data can be read and on which more
-     * operations can be chained. On a {@link JsPendingTable}, including the {@link JsTable#operations()} of a
-     * {@link JsTable}, it is the table the pending table produces, whatever awaiting it gives; on a resolved table, it
-     * is that table itself. Repeated calls give the same promise and the same table. Resolving does not change who owns
-     * the table; use {@link JsResolvedTable#copy()} for an instance with its own lifetime. A pending table that was
-     * canceled, or is resolved after the task that created it, rejects instead, as does a fetched one that was already
-     * awaited.
-     *
-     * @param options optionally, a {@code signal} that cancels a pending table when aborted
-     * @return a promise of the resolved table
-     */
-    @JsMethod
-    Promise<JsResolvedTable> resolve(@JsOptional @JsNullable @TsTypeRef(ResolveOptions.class) Object options);
-
-    /**
-     * As {@link #resolve(Object)} with no options.
-     */
-    @JsIgnore
-    default Promise<JsResolvedTable> resolve() {
-        return resolve(null);
-    }
 
     /**
      * Internal method to make the async call to the server.

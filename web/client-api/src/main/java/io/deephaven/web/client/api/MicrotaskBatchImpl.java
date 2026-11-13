@@ -785,13 +785,6 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        public Promise<JsResolvedTable> resolve(@JsOptional @Nullable Object options) {
-            // Nothing pending to cancel, so the signal is not used
-            checkOpen();
-            return Promise.resolve(this);
-        }
-
-        @Override
         public JsResolvedTable copy() {
             checkOpen();
             return new Resolved(connection, state);

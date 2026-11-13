@@ -11,7 +11,7 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 /**
- * Optional configuration that can be passed to {@link JsTableOperations#resolve(Object)}.
+ * Optional configuration that can be passed to {@link JsPendingTable#resolve(Object)}.
  */
 @JsType(namespace = "dh")
 public class ResolveOptions {

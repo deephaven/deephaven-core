@@ -10,10 +10,7 @@ import elemental2.promise.Promise;
 import io.deephaven.web.client.api.tree.JsRollupConfig;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.tree.JsTreeTableConfig;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsNullable;
-import jsinterop.annotations.JsOptional;
 
 /**
  * The table an awaited {@link JsPendingTable} resolves to: a retained table whose data can be read, plus the chainable
@@ -28,22 +25,6 @@ import jsinterop.annotations.JsOptional;
 @TsName(namespace = "dh", name = "ResolvedTable")
 @TsInterface
 public interface JsResolvedTable extends JsITable, JsTableOperations {
-    /**
-     * This table itself, as {@link JsTableOperations#resolve(Object)} gives for any table operations. Resolving does
-     * not change who owns it; use {@link #copy()} for an instance with its own lifetime.
-     *
-     * @throws IllegalStateException if this table is closed
-     */
-    @Override
-    @JsMethod
-    Promise<JsResolvedTable> resolve(@JsOptional @JsNullable @TsTypeRef(ResolveOptions.class) Object options);
-
-    @Override
-    @JsIgnore
-    default Promise<JsResolvedTable> resolve() {
-        return resolve(null);
-    }
-
     /**
      * A new instance over the same server-side table with its own lifetime, available at once. The caller owns it, and
      * either instance can be closed without affecting the other.

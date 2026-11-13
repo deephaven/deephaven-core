@@ -6,8 +6,13 @@ package io.deephaven.web.client.api;
 import com.vertispan.tsdefs.annotations.TsDefault;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.promise.Promise;
 import io.deephaven.web.client.fu.PromiseLike;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
+import jsinterop.annotations.JsOptional;
 
 /**
  * Represents a table being created on the server that more operations can be called on asynchronously. Supports all the
@@ -61,4 +66,26 @@ public interface JsPendingTable<@TsDefault(JsResolvedTable.class) T> extends JsT
      */
     @JsMethod
     void cancel();
+
+    /**
+     * The table this pending table produces, as a {@link JsResolvedTable} whose data can be read and on which more
+     * operations can be chained, whatever awaiting it gives; this holds for the {@link JsTable#operations()} of a
+     * {@link JsTable} too. Repeated calls give the same promise and the same table. Resolving does not change who owns
+     * the table; use {@link JsResolvedTable#copy()} for an instance with its own lifetime. A pending table that was
+     * canceled, or is resolved after the task that created it, rejects instead, as does a fetched one that was already
+     * awaited.
+     *
+     * @param options optionally, a {@code signal} that cancels this pending table when aborted
+     * @return a promise of the resolved table
+     */
+    @JsMethod
+    Promise<JsResolvedTable> resolve(@JsOptional @JsNullable @TsTypeRef(ResolveOptions.class) Object options);
+
+    /**
+     * As {@link #resolve(Object)} with no options.
+     */
+    @JsIgnore
+    default Promise<JsResolvedTable> resolve() {
+        return resolve(null);
+    }
 }
