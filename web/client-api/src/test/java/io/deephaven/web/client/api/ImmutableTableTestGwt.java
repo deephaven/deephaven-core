@@ -1676,6 +1676,9 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                             resolved.seekRow(seekOptions(0, "V2", true, null, null)), 2))
                                     .then(ignore -> expectRow("resolved, next S containing v after row 3",
                                             resolved.seekRow(seekOptions(3, "v", null, true, null)), 4))
+                                    .then(ignore -> expectRow("resolved, the same from row 3 as a LongWrapper",
+                                            resolved.seekRow(seekOptionsFrom(LongWrapper.of(3), "v", null, true, null)),
+                                            4))
                                     .then(ignore -> expectRow("resolved, S = v1 searching back from row 3",
                                             resolved.seekRow(seekOptions(3, "v1", null, null, true)), 1))
                                     .then(ignore -> expectRow("resolved, S = v3 from row 3, found last after wrapping",
@@ -1693,6 +1696,14 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
 
     /** Seek options for column S, as the object literal a JS caller writes. */
     private static SeekRowOptions seekOptions(double startingRow, String value, Boolean insensitive, Boolean contains,
+            Boolean isBackwards) {
+        // A boxed double is a JS number
+        return seekOptionsFrom(startingRow, value, insensitive, contains, isBackwards);
+    }
+
+    /** As above, with the starting row as any value, such as a LongWrapper. */
+    private static SeekRowOptions seekOptionsFrom(Object startingRow, String value, Boolean insensitive,
+            Boolean contains,
             Boolean isBackwards) {
         JsPropertyMap<Object> options = JsPropertyMap.of();
         options.set("startingRow", startingRow);

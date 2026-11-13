@@ -1671,20 +1671,20 @@ public class JsTable extends HasLifecycle
             @JsOptional @JsNullable Boolean insensitive,
             @JsOptional @JsNullable Boolean contains,
             @JsOptional @JsNullable Boolean isBackwards) {
-        return seekRow(workerConnection, state().getHandle().makeTicket(), startingRow, column, valueType, seekValue,
-                insensitive, contains, isBackwards);
+        return seekRow(workerConnection, state().getHandle().makeTicket(), (long) startingRow, column, valueType,
+                seekValue, insensitive, contains, isBackwards);
     }
 
     /**
      * Sends a seek-row request for the table on {@code source}, shared by this class and resolved tables; the arguments
      * are as for the instance method.
      */
-    static Promise<Double> seekRow(WorkerConnection connection, Ticket source, double startingRow,
+    static Promise<Double> seekRow(WorkerConnection connection, Ticket source, long startingRow,
             Column.ColumnOrName column, String valueType, Any seekValue, @Nullable Boolean insensitive,
             @Nullable Boolean contains, @Nullable Boolean isBackwards) {
         SeekRowRequest.Builder seekRowRequest = SeekRowRequest.newBuilder();
         seekRowRequest.setSourceId(source);
-        seekRowRequest.setStartingRow((long) startingRow);
+        seekRowRequest.setStartingRow(startingRow);
         seekRowRequest.setColumnName(column.columnName());
         seekRowRequest.setSeekValue(objectToLiteral(valueType, seekValue));
         if (insensitive != null) {

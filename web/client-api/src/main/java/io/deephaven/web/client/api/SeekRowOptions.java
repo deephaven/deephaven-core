@@ -16,9 +16,10 @@ import jsinterop.base.Any;
 @JsType(namespace = "dh")
 public class SeekRowOptions {
     /**
-     * The position of the row to search after. The search wraps around, so the row at this position is checked last.
+     * The position of the row to search after, as a number or a {@link LongWrapper}. The search wraps around, so the
+     * row at this position is checked last.
      */
-    public double startingRow;
+    public TableData.RowPositionUnion startingRow;
 
     /**
      * The column, or the name of the column, to search.
