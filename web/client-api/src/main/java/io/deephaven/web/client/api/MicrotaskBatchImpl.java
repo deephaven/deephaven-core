@@ -140,8 +140,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             if (createdInTask == currentTask()) {
                 return null;
             }
-            String message = "A pending table (" + describe() + ") was used " + LATE_USE
-                    + ". A pending table can only be awaited or chained on in the task that creates it; to use the"
+            String message = "A pending table (" + describe() + ") was used after the task that created it."
+                    + " A pending table can only be awaited or chained on in the task that creates it; to use the"
                     + " table later, keep the table that awaiting it gives you, or the promise from Promise.resolve,"
                     + " and close that table when done.";
             JsLog.warn(message, created);
@@ -829,8 +829,6 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
      * Operations waiting for the current microtask to end, per connection: each connection gets its own batch request.
      */
     private static final Map<WorkerConnection, Batch> enqueued = new HashMap<>();
-
-    private static final String LATE_USE = "after the task that created it";
 
     /** Counts tasks (not microtasks) that created a pending table, so a later use can tell it is in another task. */
     private static int task;
