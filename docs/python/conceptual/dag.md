@@ -20,7 +20,7 @@ Traditional batch processing typically reprocesses an entire dataset even when o
 - **Automatic dependency tracking**: The engine tracks which tables depend on each source table (a table where data enters the graph), so you never have to tell it which tables to recompute or in what order. See [Update graph cycles](#update-graph-cycles).
 - **Efficient resource usage**: Portions of the DAG whose inputs never change never recompute. See [Incremental updates](#incremental-updates).
 - **Clear data lineage**: The graph structure makes it easy to trace how data flows from sources to results. See [Query as a graph](#query-as-a-graph).
-- **Natural parallelization**: The engine can process independent branches of the DAG concurrently. See [Parallelizing query updates](./query-engine/parallelization.md#parallelizing-query-updates).
+- **Natural parallelization**: The engine can process independent branches of the DAG concurrently. See [Concurrent table updates](./query-engine/parallelization.md#concurrent-table-updates).
 
 ## Query as a graph
 

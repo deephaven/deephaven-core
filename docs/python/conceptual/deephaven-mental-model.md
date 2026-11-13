@@ -153,7 +153,7 @@ You might expect `Value` to be `[1, 2, 3, 4, 5]`, but nothing guarantees it. Two
 - **Parallel evaluation**: When an operation processes many rows at once, the engine can evaluate a formula's rows on multiple threads, so values can come out of order and differ between runs.
 - **Live re-evaluation**: On a live table, the engine re-evaluates a formula only for the rows that change, so the counter's values no longer follow the row order.
 
-On a small static table like this one, the values usually come back in order. Also, a formula that calls a Python function, like this one, runs in parallel only on a [free-threaded Python build](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where).
+On a small static table like this one, the values usually come back in order. Also, a formula that calls a Python function, like this one, runs in parallel only on a [free-threaded Python build](./query-engine/parallelization.md#python-formulas-and-free-threading).
 
 **The rule:** Formulas should be _stateless_. The result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable Python variables, such as configuration values, are fine. Shared mutable state, such as a counter that every row updates, and logic that depends on the order rows are processed in are not.
 
@@ -183,7 +183,7 @@ from deephaven import updateby as uby
 result = empty_table(5).update("X = i + 1").update_by(uby.cum_sum("RunningTotal = X"))
 ```
 
-For more complex cases involving state, see [Controlling concurrency](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where), which explains how to make the engine evaluate a formula serially.
+For more complex cases involving state, see [Controlling execution order](./query-engine/parallelization.md#controlling-execution-order), which explains how to make the engine evaluate a formula serially.
 
 ## Moving data between Python and Deephaven
 
