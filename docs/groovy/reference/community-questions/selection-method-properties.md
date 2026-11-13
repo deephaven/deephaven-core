@@ -4,7 +4,7 @@ title: How efficient are my table selection operations?
 
 _How much memory do my [`select`](../table-operations/select/select.md) and [`update`](../table-operations/select/update.md) operations waste? Are they efficient?_
 
-[`select`](../table-operations/select/select.md) and [`update`](../table-operations/select/update.md) create in-memory columns of data. [`view`](../table-operations/select/view.md) and [`updateView`](../table-operations/select/update-view.md) do not store results, and [`lazyUpdate`](../table-operations/select/lazy-update.md) stores only a cache of results keyed by input values.
+[`select`](../table-operations/select/select.md) and [`update`](../table-operations/select/update.md) create in-memory columns of data. [`view`](../table-operations/select/view.md) and [`updateView`](../table-operations/select/update-view.md) do not store results, and [`lazyUpdate`](../table-operations/select/lazy-update.md), by default, stores a cache of results keyed by input values.
 
 Deephaven recommends using [`select`](../table-operations/select/select.md) and [`update`](../table-operations/select/update.md) when calculations are expensive, or the results are needed for multiple downstream operations. These methods can cause issues when data gets sufficiently large, as they can consume a lot of memory.
 
@@ -12,17 +12,17 @@ Run the following Groovy script in the console to measure how efficiently your t
 
 ### What the script measures
 
-The script checks only columns backed by a [`SparseArrayColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/sources/SparseArrayColumnSource.html), which stores data in blocks of 1,024 consecutive row keys. Non-flat refreshing tables with in-memory columns (created by [`select`](../table-operations/select/select.md) or [`update`](../table-operations/select/update.md)) use this column source. A "flat" table has a row set that increases monotonically from 0 to the number of rows minus one with no gaps — flat tables and static tables are not checked.
+The script checks only columns backed by a [`SparseArrayColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/sources/SparseArrayColumnSource.html), which stores data in blocks of 1,024 consecutive row keys. Tables that have computed in-memory columns (created by [`select`](../table-operations/select/select.md) or [`update`](../table-operations/select/update.md)) typically use this column source. The script skips tables that have no `SparseArrayColumnSource` columns and tables with an empty row set.
 
 The script computes three values for each table:
 
 - **Ideal blocks**: the fewest blocks the table's rows could fit in.
 - **Actual blocks**: the number of blocks the table's row keys actually occupy.
-- **Efficiency**: ideal blocks divided by actual blocks, as a percentage. An efficiency of 100% means the selection operations waste no memory.
+- **Efficiency**: ideal blocks divided by actual blocks, as a percentage. An efficiency of 100% means the table's row keys are packed into the fewest possible blocks.
 
 ### Example setup
 
-First, create a non-flat refreshing table so the script has something to measure:
+First, create a table with `SparseArrayColumnSource` columns so the script has something to measure:
 
 ```groovy ticking-table order=null
 t1 = timeTable("PT1s").update("X = randomDouble(-1, 1)").where("X > -0.75")
@@ -63,7 +63,7 @@ resultList.sort { e1, e2 -> Double.compare(e2[1], e1[1]) }
 println resultList
 ```
 
-Running the script after creating `t1` prints:
+Once `t1` has accumulated some rows, running the script prints output like:
 
 ```text
 t1: ideal blocks=1, actual blocks=1, efficiency=100.0%
