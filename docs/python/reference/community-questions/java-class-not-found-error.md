@@ -56,10 +56,10 @@ The Deephaven server wheel requires Java 17 or later because:
    export PATH=$JAVA_HOME/bin:$PATH
    ```
 
-   On macOS:
+   On macOS (with Homebrew):
 
    ```bash
-   export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+   export JAVA_HOME="$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home"
    export PATH=$JAVA_HOME/bin:$PATH
    ```
 
