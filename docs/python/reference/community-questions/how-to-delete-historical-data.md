@@ -4,13 +4,13 @@ title: How do I delete historical data?
 
 _Can I delete historical data from Deephaven tables? I've heard that Deephaven is an append-only database._
 
-Deephaven tables are views over data held in memory or read from external storage. To remove persisted history such as Parquet or Iceberg files, delete or rewrite the data at the source. Within the engine, whether you can delete rows depends on the table type.
+It depends on the **type of table** you're working with. Deephaven tables are views over data held in memory or read from external storage. If you need to remove persisted history (such as Parquet or Iceberg files), you'll need to delete or rewrite it at the source. Within the engine, whether you can delete rows depends on the table type:
 
 ## Keyed input tables
 
 **Yes, you can delete data** from keyed [input tables](../../how-to-guides/input-tables.md). Input tables are user-created, in-memory tables that support both adding and deleting data.
 
-To delete data from a keyed input table, use the [`delete`](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.InputTable.delete) or [`delete_async`](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.InputTable.delete_async) methods on the input table object. The table you pass to `delete` must contain only the key columns. Including value columns raises an error. To delete rows selected from the input table itself, drop the value columns first, for example with `view("Key")`.
+To delete data from a keyed input table, use the [`delete`](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.InputTable.delete) or [`delete_async`](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.InputTable.delete_async) methods on the input table object. Make sure the table you pass to `delete` contains only the key columns — if you include value columns, you'll get an error. To delete rows selected from the input table itself, drop the value columns first with something like `view("Key")`.
 
 ```python order=my_input_table
 from deephaven import empty_table, input_table
@@ -33,17 +33,17 @@ my_input_table.delete_async(empty_table(1).update("Key = `A1`"))
 > [!NOTE]
 > `delete_async` returns immediately without waiting for the operation to complete. The deletion is applied on a later update cycle, so the table snapshot may still show the row briefly.
 
-Keep these limits in mind:
+A couple of things to keep in mind:
 
 - Only **keyed** input tables support deletion. Append-only input tables do not.
-- The table passed to `delete` must contain only key columns, not value columns.
+- The table you pass to `delete` must contain only key columns, not value columns.
 
 ## Standard and append-only tables
 
-Deephaven has no API to delete individual rows from standard or append-only tables.
+**Standard and append-only tables don't support direct row deletion.** There's no API to delete individual rows from these table types:
 
 - **Append-only tables**: Rows can only be added to the end. Once added, rows cannot be modified, deleted, or reindexed.
-- **Standard streaming tables**: Rows can be added, modified, removed, or reindexed by whatever updates the table (its data source or upstream operations), but there is no method to delete individual rows yourself.
+- **Standard streaming tables**: Rows can be added, modified, removed, or reindexed by whatever updates the table (its data source or upstream operations), but there's no method to delete individual rows yourself.
 
 For these table types, you can:
 
