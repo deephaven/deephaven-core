@@ -37,6 +37,7 @@ import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -85,6 +86,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import com.google.common.primitives.UnsignedLong;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.ParquetProperties;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.SimpleGroupFactory;
 import org.apache.parquet.column.statistics.DoubleStatistics;
@@ -114,6 +116,7 @@ import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -136,7 +139,9 @@ import java.util.function.DoubleConsumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
+import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -149,7 +154,9 @@ import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTables;
 import static io.deephaven.util.QueryConstants.*;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.decimalType;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.float16Type;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.uuidType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -3272,6 +3279,296 @@ public final class ParquetTableReadWriteTest {
                 ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
         assertThrowsWithMessage(() -> ForceReadUtility.of(readTable(dest.getPath(), asInt)),
                 "Cannot convert parquet unsigned long column to int");
+    }
+
+    private static final String UUID_COL = "uuidCol";
+    private static final String FLOAT16_COL = "float16Col";
+    private static final UUID SAMPLE_UUID = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef");
+    /** Catches byte-order and sign errors; the repeat gives a dictionary a shared entry. */
+    private static final UUID[] UUIDS = {
+            new UUID(0, 0), new UUID(-1, -1), new UUID(Long.MIN_VALUE, 1), SAMPLE_UUID, null, SAMPLE_UUID};
+
+    /** Big-endian, per the parquet spec; deliberately independent of the codec under test. */
+    private static byte[] uuidBytes(final UUID value) {
+        return ByteBuffer.allocate(16)
+                .putLong(value.getMostSignificantBits())
+                .putLong(value.getLeastSignificantBits())
+                .array();
+    }
+
+    /** One row per value; a null value is a row with no value. */
+    private static List<List<byte[]>> uuidRows(final UUID... values) {
+        return Arrays.stream(values)
+                .map(value -> value == null ? List.<byte[]>of() : List.of(uuidBytes(value)))
+                .collect(Collectors.toList());
+    }
+
+    private static File writeUuidFile(final String fileName, final boolean dictionaryEncoded, final UUID... values)
+            throws IOException {
+        return writeFixedLenFile(fileName, optional(FIXED_LEN_BYTE_ARRAY).length(16).as(uuidType()).named(UUID_COL),
+                dictionaryEncoded, uuidRows(values));
+    }
+
+    /**
+     * Write one {@code FIXED_LEN_BYTE_ARRAY} column with parquet-mr, as Deephaven's writer emits neither {@code UUID}
+     * nor {@code FLOAT16}. Each row holds the given values; an empty row is a null in an optional column.
+     */
+    private static File writeFixedLenFile(final String fileName, final PrimitiveType column,
+            final boolean dictionaryEncoded, final List<List<byte[]>> rows) throws IOException {
+        final MessageType schema = Types.buildMessage().addFields(column).named("schema");
+        final File dest = new File(rootFile, fileName);
+        final SimpleGroupFactory groupFactory = new SimpleGroupFactory(schema);
+        try (final ParquetWriter<Group> writer = ExampleParquetWriter
+                .builder(new LocalOutputFile(dest.toPath()))
+                .withType(schema)
+                .withCompressionCodec(CompressionCodecName.UNCOMPRESSED)
+                // parquet-mr's v1 writer never dictionary encodes FIXED_LEN_BYTE_ARRAY; its v2 writer does.
+                .withWriterVersion(dictionaryEncoded
+                        ? ParquetProperties.WriterVersion.PARQUET_2_0
+                        : ParquetProperties.WriterVersion.PARQUET_1_0)
+                .withDictionaryEncoding(dictionaryEncoded)
+                .build()) {
+            for (final List<byte[]> row : rows) {
+                final Group group = groupFactory.newGroup();
+                for (final byte[] value : row) {
+                    group.add(column.getName(), Binary.fromConstantByteArray(value));
+                }
+                writer.write(group);
+            }
+        }
+        final ParquetMetadata metadata = new ParquetTableLocationKey(dest.toURI(), 0, null, EMPTY).getMetadata();
+        assertEquals(schema, metadata.getFileMetaData().getSchema());
+        assertEquals(dictionaryEncoded, metadata.getBlocks().get(0).getColumns().get(0).hasDictionaryPage());
+        return dest;
+    }
+
+    private static ParquetInstructions withDefinition(final ColumnDefinition<?> columnDefinition) {
+        return EMPTY.withTableDefinitionAndLayout(TableDefinition.of(columnDefinition),
+                ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
+    }
+
+    /**
+     * Filters agree with the same filters in memory, including through a dictionary.
+     */
+    @Test
+    public void testReadUuidLogicalType() throws IOException {
+        QueryScope.addParam("targetUuid", SAMPLE_UUID);
+        final UUID[] nonNull = Arrays.stream(UUIDS).filter(Objects::nonNull).toArray(UUID[]::new);
+        for (final boolean dictionaryEncoded : new boolean[] {false, true}) {
+            final File dest = writeUuidFile("uuid_dict_" + dictionaryEncoded + ".parquet", dictionaryEncoded, UUIDS);
+            final Table fromDisk = checkSingleTable(newTable(col(UUID_COL, UUIDS)), dest);
+            assertEquals(UUID.class, fromDisk.getDefinition().getColumn(UUID_COL).getDataType());
+
+            final Table inMemory = fromDisk.select();
+            for (final String filter : new String[] {
+                    "uuidCol == targetUuid", "uuidCol != targetUuid", "isNull(uuidCol)", "!isNull(uuidCol)"}) {
+                assertTableEquals(inMemory.where(filter), fromDisk.where(filter));
+            }
+            assertEquals(2, fromDisk.where("uuidCol == targetUuid").size());
+
+            // A required column takes the reader's non-null materializer path.
+            final File required = writeFixedLenFile("uuid_required_dict_" + dictionaryEncoded + ".parquet",
+                    Types.required(FIXED_LEN_BYTE_ARRAY).length(16).as(uuidType()).named(UUID_COL),
+                    dictionaryEncoded, uuidRows(nonNull));
+            checkSingleTable(newTable(col(UUID_COL, nonNull)), required);
+        }
+    }
+
+    @Test
+    public void testReadRepeatedUuid() throws IOException {
+        final UUID[] firstRow = {new UUID(0, 0), new UUID(-1, -1)};
+        final UUID[] secondRow = {SAMPLE_UUID, new UUID(0, 0)};
+        final List<List<byte[]>> rows = Stream.of(firstRow, secondRow)
+                .map(row -> Arrays.stream(row).map(ParquetTableReadWriteTest::uuidBytes).collect(Collectors.toList()))
+                .collect(Collectors.toList());
+        for (final boolean dictionaryEncoded : new boolean[] {false, true}) {
+            final File dest = writeFixedLenFile("uuid_repeated_dict_" + dictionaryEncoded + ".parquet",
+                    Types.repeated(FIXED_LEN_BYTE_ARRAY).length(16).as(uuidType()).named(UUID_COL),
+                    dictionaryEncoded, rows);
+
+            final Table fromDisk = readTable(dest.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
+            final ColumnDefinition<?> columnDefinition = fromDisk.getDefinition().getColumn(UUID_COL);
+            assertEquals(UUID[].class, columnDefinition.getDataType());
+            assertEquals(UUID.class, columnDefinition.getComponentType());
+            try (final CloseableIterator<UUID[]> it = fromDisk.objectColumnIterator(UUID_COL)) {
+                assertArrayEquals(firstRow, it.next());
+                assertArrayEquals(secondRow, it.next());
+                assertFalse(it.hasNext());
+            }
+        }
+    }
+
+    /**
+     * A {@code byte[]} definition reads the raw bytes, a {@link String} definition the canonical string form, and other
+     * types are rejected. String statistics pushdown must not compare the raw 16-byte statistics as text.
+     */
+    @Test
+    public void testReadUuidViaTableDefinition() throws IOException {
+        final String[] asStrings = Arrays.stream(UUIDS)
+                .map(value -> value == null ? null : value.toString())
+                .toArray(String[]::new);
+        for (final boolean dictionaryEncoded : new boolean[] {false, true}) {
+            final File dest =
+                    writeUuidFile("uuid_definition_dict_" + dictionaryEncoded + ".parquet", dictionaryEncoded, UUIDS);
+
+            try (final CloseableIterator<byte[]> it = readTable(dest.getPath(),
+                    withDefinition(ColumnDefinition.fromGenericType(UUID_COL, byte[].class)))
+                    .objectColumnIterator(UUID_COL)) {
+                for (final UUID value : UUIDS) {
+                    assertArrayEquals(value == null ? null : uuidBytes(value), it.next());
+                }
+                assertFalse(it.hasNext());
+            }
+
+            final Table fromDisk = readTable(dest.getPath(), withDefinition(ColumnDefinition.ofString(UUID_COL)));
+            assertTableEquals(newTable(stringCol(UUID_COL, asStrings)), fromDisk);
+            final Table inMemory = fromDisk.select();
+            for (final String filter : new String[] {
+                    "uuidCol == `" + SAMPLE_UUID + "`", "uuidCol > `7`", "uuidCol < `1`", "isNull(uuidCol)"}) {
+                assertTableEquals(inMemory.where(filter), fromDisk.where(filter));
+            }
+            assertEquals(2, fromDisk.where("uuidCol == `" + SAMPLE_UUID + "`").size());
+
+            assertThrowsWithMessage(() -> ForceReadUtility.of(
+                    readTable(dest.getPath(), withDefinition(ColumnDefinition.ofLong(UUID_COL)))),
+                    "Cannot convert parquet UUID column to long");
+        }
+    }
+
+    /** Half-precision bit patterns, and below them the floats they hold. */
+    private static final int[] HALF_BITS = {
+            0x0000, 0x8000, 0x3c00, 0xc000, 0x7bff, 0x0001, 0x0400, 0x3555, 0x7c00, 0xfc00, 0x7e00};
+    private static final float[] HALF_VALUES = {
+            0f, -0f, 1f, -2f, 65504f, 0x1p-24f, 0x1p-14f, 0.333251953125f,
+            Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NaN};
+
+    /** Little-endian, per the parquet spec. */
+    private static byte[] halfBytes(final int halfBits) {
+        return new byte[] {(byte) halfBits, (byte) (halfBits >>> 8)};
+    }
+
+    /** Writes {@link #HALF_BITS} followed by a null. */
+    private static File writeFloat16File(final String fileName, final boolean dictionaryEncoded) throws IOException {
+        final List<List<byte[]>> rows = Arrays.stream(HALF_BITS)
+                .mapToObj(bits -> List.of(halfBytes(bits)))
+                .collect(Collectors.toCollection(ArrayList::new));
+        rows.add(List.of());
+        return writeFixedLenFile(fileName, optional(FIXED_LEN_BYTE_ARRAY).length(2).as(float16Type()).named(
+                FLOAT16_COL), dictionaryEncoded, rows);
+    }
+
+    /** Bitwise, so -0.0 and NaN compare exactly. */
+    private static void assertFloatBitsEqual(final float[] expected, final float[] actual) {
+        assertEquals(expected.length, actual.length);
+        for (int ii = 0; ii < expected.length; ++ii) {
+            assertEquals("index " + ii, Float.floatToRawIntBits(expected[ii]), Float.floatToRawIntBits(actual[ii]));
+        }
+    }
+
+    /**
+     * Filters agree with the same filters in memory. Nothing prunes {@code FLOAT16} row groups today, so this guards
+     * future statistics or dictionary pushdown.
+     */
+    @Test
+    public void testReadFloat16LogicalType() throws IOException {
+        final float[] expected = Arrays.copyOf(HALF_VALUES, HALF_VALUES.length + 1);
+        expected[HALF_VALUES.length] = NULL_FLOAT;
+        final List<List<byte[]>> requiredRows = Arrays.stream(HALF_BITS)
+                .mapToObj(bits -> List.of(halfBytes(bits)))
+                .collect(Collectors.toList());
+        for (final boolean dictionaryEncoded : new boolean[] {false, true}) {
+            final File dest = writeFloat16File("float16_dict_" + dictionaryEncoded + ".parquet", dictionaryEncoded);
+            final Table fromDisk = readTable(dest.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
+            assertEquals(float.class, fromDisk.getDefinition().getColumn(FLOAT16_COL).getDataType());
+            assertFloatBitsEqual(expected, ColumnVectors.ofFloat(fromDisk, FLOAT16_COL).toArray());
+
+            final Table inMemory = fromDisk.select();
+            for (final String filter : new String[] {
+                    "float16Col > 0", "float16Col <= 1", "float16Col == -2", "isNull(float16Col)"}) {
+                assertFloatBitsEqual(
+                        ColumnVectors.ofFloat(inMemory.where(filter), FLOAT16_COL).toArray(),
+                        ColumnVectors.ofFloat(fromDisk.where(filter), FLOAT16_COL).toArray());
+            }
+            assertEquals(1, fromDisk.where("float16Col == -2").size());
+
+            // A required column takes the reader's non-null materializer path.
+            final File required = writeFixedLenFile("float16_required_dict_" + dictionaryEncoded + ".parquet",
+                    Types.required(FIXED_LEN_BYTE_ARRAY).length(2).as(float16Type()).named(FLOAT16_COL),
+                    dictionaryEncoded, requiredRows);
+            assertFloatBitsEqual(HALF_VALUES, ColumnVectors.ofFloat(readTable(required.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)), FLOAT16_COL).toArray());
+        }
+    }
+
+    @Test
+    public void testReadRepeatedFloat16() throws IOException {
+        final int split = 4;
+        final List<List<byte[]>> rows = List.of(
+                Arrays.stream(HALF_BITS, 0, split).mapToObj(ParquetTableReadWriteTest::halfBytes)
+                        .collect(Collectors.toList()),
+                Arrays.stream(HALF_BITS, split, HALF_BITS.length).mapToObj(ParquetTableReadWriteTest::halfBytes)
+                        .collect(Collectors.toList()));
+        for (final boolean dictionaryEncoded : new boolean[] {false, true}) {
+            final File dest = writeFixedLenFile("float16_repeated_dict_" + dictionaryEncoded + ".parquet",
+                    Types.repeated(FIXED_LEN_BYTE_ARRAY).length(2).as(float16Type()).named(FLOAT16_COL),
+                    dictionaryEncoded, rows);
+
+            final Table fromDisk = readTable(dest.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
+            final ColumnDefinition<?> columnDefinition = fromDisk.getDefinition().getColumn(FLOAT16_COL);
+            assertEquals(float[].class, columnDefinition.getDataType());
+            assertEquals(float.class, columnDefinition.getComponentType());
+            try (final CloseableIterator<float[]> it = fromDisk.objectColumnIterator(FLOAT16_COL)) {
+                assertFloatBitsEqual(Arrays.copyOfRange(HALF_VALUES, 0, split), it.next());
+                assertFloatBitsEqual(Arrays.copyOfRange(HALF_VALUES, split, HALF_VALUES.length), it.next());
+                assertFalse(it.hasNext());
+            }
+        }
+    }
+
+    /**
+     * A {@code byte[]} definition reads the raw bytes, and other types are rejected.
+     */
+    @Test
+    public void testReadFloat16ViaTableDefinition() throws IOException {
+        for (final boolean dictionaryEncoded : new boolean[] {false, true}) {
+            final File dest =
+                    writeFloat16File("float16_definition_dict_" + dictionaryEncoded + ".parquet", dictionaryEncoded);
+            try (final CloseableIterator<byte[]> it = readTable(dest.getPath(),
+                    withDefinition(ColumnDefinition.fromGenericType(FLOAT16_COL, byte[].class)))
+                    .objectColumnIterator(FLOAT16_COL)) {
+                for (final int bits : HALF_BITS) {
+                    assertArrayEquals(halfBytes(bits), it.next());
+                }
+                assertNull(it.next());
+                assertFalse(it.hasNext());
+            }
+
+            assertThrowsWithMessage(() -> ForceReadUtility.of(
+                    readTable(dest.getPath(), withDefinition(ColumnDefinition.ofDouble(FLOAT16_COL)))),
+                    "Cannot convert parquet FLOAT16 column to double");
+        }
+    }
+
+    /**
+     * Written by pyarrow 25.0.1, independently of the encoding in the tests above, with default (dictionary) encoding:
+     * {@code pa.table({"uuidCol": pa.array(..., type=pa.uuid()), "float16Col": pa.array(np.float16 values,
+     * type=pa.float16(), mask=...)})}.
+     */
+    @Test
+    public void testReadReferenceUuidFloat16() {
+        final String path = ParquetTableReadWriteTest.class.getResource("/ReferenceUuidFloat16.parquet").getFile();
+        final Table fromDisk = readParquetFileFromGitLFS(new File(path)).select();
+        assertEquals(UUID.class, fromDisk.getDefinition().getColumn(UUID_COL).getDataType());
+        assertEquals(float.class, fromDisk.getDefinition().getColumn(FLOAT16_COL).getDataType());
+        assertTableEquals(
+                newTable(col(UUID_COL, new UUID(0, 0), SAMPLE_UUID, null, new UUID(-1, -1),
+                        UUID.fromString("80000000-0000-0000-8000-000000000000"), SAMPLE_UUID)),
+                fromDisk.view(UUID_COL));
+        assertFloatBitsEqual(new float[] {0f, -0f, 1f, NULL_FLOAT, 65504f, 0x1p-24f},
+                ColumnVectors.ofFloat(fromDisk, FLOAT16_COL).toArray());
     }
 
     @Test
