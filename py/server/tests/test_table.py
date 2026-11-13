@@ -56,6 +56,7 @@ from deephaven.table import (
     TailInitializationFilter,
     table_diff,
 )
+from deephaven.updateby import rolling_formula_tick
 from tests.testbase import BaseTestCase, table_equals
 
 
@@ -346,6 +347,14 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             restricted_table.sort(order_by=["a"])
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
+
+    def test_clear_sorting_restrictions(self) -> None:
+        restricted_table = self.test_table.restrict_sort_to("b")
+        with self.assertRaises(DHError):
+            restricted_table.sort(order_by=["a"])
+        cleared_table = restricted_table.clear_sorting_restrictions()
+        result_table = cleared_table.sort(order_by=["a"])
+        self.assertEqual(result_table.size, self.test_table.size)
 
     def test_sort_descending(self):
         sorted_table = self.test_table.sort(
@@ -1066,6 +1075,43 @@ class TableTestCase(BaseTestCase):
                 self.verify_table_data(rt, [1, 2])
 
         inner_func("param str")
+
+    def test_local_scope_update_by_and_filters(self) -> None:
+        def inner_func() -> None:
+            local_int = 3
+            t = empty_table(10).update(["A = i", "B = i % 2"])
+
+            with self.subTest("update_by"):
+                rt = t.update_by(
+                    rolling_formula_tick(formula="R = sum(A) + local_int", rev_ticks=1)
+                )
+                self.assertEqual(3, rt.j_table.getColumnSource("R").get(0))
+
+            with self.subTest("PartitionedTableProxy.update_by"):
+                proxy = t.partition_by("B").proxy()
+                rt = proxy.update_by(
+                    rolling_formula_tick(formula="R = sum(A) + local_int", rev_ticks=1)
+                ).target.merge()
+                # rev_ticks=1 sums only the current row, so R is A + 3 on every row.
+                self.assertEqual(10, rt.size)
+                self.assertEqual(0, rt.where("R != A + 3").size)
+
+            with self.subTest("PartitionedTable.filter"):
+                pt = t.update("K = i").partition_by("K")
+                self.assertEqual(7, pt.filter("K >= local_int").table.size)
+
+            with self.subTest("RollupTable.with_filters"):
+                rollup_table = t.rollup(aggs=[sum_("A")], by="B")
+                # getSource() returns the unfiltered source, so this checks only that the filter compiles. Without
+                # the function's scope, local_int is unknown and the call raises.
+                self.assertIsNotNone(rollup_table.with_filters("B >= local_int - 2"))
+
+            with self.subTest("TreeTable.with_filters"):
+                tree_table = t.update("P = A - 1").tree(id_col="A", parent_col="P")
+                filtered = tree_table.with_filters("A < local_int")
+                self.assertEqual(3, filtered.j_tree_table.getSource().size())
+
+        inner_func()
 
     def test_nested_scopes(self):
         def inner_func(p) -> str:

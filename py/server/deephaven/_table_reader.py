@@ -31,16 +31,18 @@ def _col_defs(
     table: Table, cols: str | Sequence[str] | None
 ) -> Sequence[ColumnDefinition]:
     if not cols:
-        col_defs = table.columns
-    else:
-        cols = to_sequence(cols)
-        col_defs = [col for col in table.columns if col.name in cols]
-        if len(col_defs) != len(cols):
-            raise ValueError(
-                f"Invalid column names: {set(cols) - {col.name for col in col_defs}}"
-            )
+        return table.columns
 
-    return col_defs
+    # Return the definitions in the order of cols. The tuple readers name the fields from cols, so a different
+    # order would label one column's values with another column's name.
+    cols = to_sequence(cols)
+    defs_by_name = {col.name: col for col in table.columns}
+    if invalid_cols := [col for col in cols if col not in defs_by_name]:
+        raise ValueError(f"Invalid column names: {set(invalid_cols)}")
+    if len(set(cols)) != len(cols):
+        raise ValueError(f"Duplicate column names: {cols}")
+
+    return [defs_by_name[col] for col in cols]
 
 
 def _table_reader_all(
