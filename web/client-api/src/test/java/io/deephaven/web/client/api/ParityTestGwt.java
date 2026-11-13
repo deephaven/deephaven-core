@@ -1,0 +1,257 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.web.client.api;
+
+import elemental2.core.Global;
+import elemental2.core.JsArray;
+import elemental2.promise.Promise;
+import io.deephaven.web.client.api.filter.FilterValue;
+import io.deephaven.web.client.api.subscription.DataOptions;
+import io.deephaven.web.client.ide.IdeSession;
+import jsinterop.base.Any;
+import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Checks that the JS API produces the same tables as the server's Python API. Each case pairs a Python expression on
+ * the {@code src} fixture with the JS calls a client would write for it; both results are snapshotted in full and
+ * compared cell by cell.
+ */
+public class ParityTestGwt extends AbstractAsyncGwtTestCase {
+    /** A thousand rows: a few keys, every common column type, nulls in each value column, NaN in D. */
+    private final TableSourceBuilder tables = new TableSourceBuilder()
+            .script("from deephaven import empty_table")
+            .script("src", "empty_table(1000).update(["
+                    + "\"Key = i % 7\","
+                    + "\"Sym = (i % 5 == 0) ? null : `S` + (i % 13)\","
+                    + "\"I = (i % 11 == 0) ? NULL_INT : (int) ((i * 37) % 1000)\","
+                    + "\"L = (i % 17 == 0) ? NULL_LONG : (long) i * 1_000_003L\","
+                    + "\"D = (i % 19 == 0) ? NULL_DOUBLE : (i % 23 == 0) ? Double.NaN : i * 1.5 - 300\","
+                    + "\"W = (double) (i % 4 + 1)\","
+                    + "\"B = (i % 13 == 0) ? null : (i % 2 == 0)\","
+                    + "\"T = '2024-01-01T00:00:00 UTC' + i * MINUTE\"])");
+
+    /** The JS calls for one case, made on a fresh operations view of {@code src}. */
+    private interface JsCall {
+        JsPendingTable<JsResolvedTable> on(JsTableOperations src);
+    }
+
+    private static final class Case {
+        final String python;
+        final JsCall js;
+
+        Case(String python, JsCall js) {
+            this.python = python;
+            this.js = js;
+        }
+    }
+
+    /** A case: the Python expression, which names the case in failures, and the JS calls that should match it. */
+    private static Case parity(String python, JsCall js) {
+        return new Case(python, js);
+    }
+
+    private static TableData.RowPositionUnion rows(double count) {
+        return Js.uncheckedCast(count);
+    }
+
+    public void testFiltersSortsAndProjections() {
+        runAll(20_001,
+                parity("src.where('I > 500')",
+                        src -> src.where(arr(FilterValue.ofColumn("I").greaterThan(FilterValue.ofNumber(500))))),
+                parity("src.where('Sym = `S3`')",
+                        src -> src.where(arr(FilterValue.ofColumn("Sym").eq(FilterValue.ofString("S3"))))),
+                parity("src.where('isNull(D)')",
+                        src -> src.where(arr(FilterValue.ofColumn("D").isNull()))),
+                parity("src.where_one_of(['I < 100', 'Key = 3'])",
+                        src -> src.where(arr(FilterValue.ofColumn("I").lessThan(FilterValue.ofNumber(100))
+                                .or(FilterValue.ofColumn("Key").eq(FilterValue.ofNumber(3)))))),
+                parity("src.sort('I')",
+                        src -> src.sort(arr("I"))),
+                parity("src.sort_descending('D')",
+                        src -> src.sort(arr(JsPropertyMap.of("column", "D", "direction", Sort.SortDirection.DESC)))),
+                parity("src.sort(['Key', 'Sym'])",
+                        src -> src.sort(arr("Key", "Sym"))),
+                parity("src.update(['X = I * 2', 'Y = D / W'])",
+                        src -> src.update(arr("X = I * 2", "Y = D / W"))),
+                parity("src.view(['Key', 'Z = L + I'])",
+                        src -> src.view(arr("Key", "Z = L + I"))),
+                parity("src.update_view(['U = Sym + `_` + Key'])",
+                        src -> src.updateView(arr("U = Sym + `_` + Key"))),
+                parity("src.select(['Key', 'D'])",
+                        src -> src.select(arr("Key", "D"))),
+                parity("src.lazy_update(['Q = W * 10'])",
+                        src -> src.lazyUpdate(arr("Q = W * 10"))),
+                parity("src.drop_columns(['B', 'T'])",
+                        src -> src.dropColumns(arr("B", "T"))),
+                parity("src.head(10)",
+                        src -> src.head(rows(10))),
+                parity("src.tail(10)",
+                        src -> src.tail(rows(10))),
+                parity("src.slice(5, 20)",
+                        src -> src.slice(rows(5), rows(20))),
+                parity("src.reverse()",
+                        JsTableOperations::reverse),
+                parity("src.select_distinct(['Key', 'Sym'])",
+                        src -> src.selectDistinct(arr("Key", "Sym"))),
+                parity("src.where('Key = 2').flatten()",
+                        src -> src.where(arr(FilterValue.ofColumn("Key").eq(FilterValue.ofNumber(2)))).flatten()),
+                parity("src.snapshot()",
+                        JsTableOperations::snapshot));
+    }
+
+    /**
+     * Runs each case in turn and fails once at the end, listing every case whose tables differ. The Python result is
+     * held in one variable, {@code result}, reassigned per case and cleared when done.
+     */
+    private void runAll(int timeout, Case... cases) {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(timeout);
+                    return session.getTable("src", null).asPromise().then(src -> {
+                        List<String> failures = new ArrayList<>();
+                        return runFrom(session, src, cases, 0, timeout, failures)
+                                .then(ignore -> session.runCode("result = None"))
+                                .then(ignore -> {
+                                    src.close();
+                                    if (!failures.isEmpty()) {
+                                        fail(failures.size() + " of " + cases.length + " cases differ:\n"
+                                                + String.join("\n", failures));
+                                    }
+                                    return Promise.resolve(src);
+                                });
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    private Promise<Object> runFrom(IdeSession session, JsTable src, Case[] cases, int index, int timeout,
+            List<String> failures) {
+        if (index == cases.length) {
+            return Promise.resolve((Object) null);
+        }
+        Case c = cases[index];
+        delayTestFinish(timeout);
+        return session.runCode("result = " + c.python).then(run -> {
+            if (run.getError() != null) {
+                failures.add(c.python + ": Python failed: " + run.getError());
+                return Promise.resolve((Object) null);
+            }
+            // Both are made in this task: the JS chain on a fresh view of src, and the fetch of the Python result
+            Promise<JsResolvedTable> js;
+            try {
+                js = c.js.on(src.operations()).resolve();
+            } catch (RuntimeException e) {
+                failures.add(c.python + ": JS threw " + e);
+                return Promise.resolve((Object) null);
+            }
+            Promise<JsTable> py = session.getTable("result", null).asPromise();
+            return js.then(jsTable -> py.then(pyTable -> compare(c.python, pyTable.getColumns(), pyTable.getSize(),
+                    pyTable::createSnapshot, jsTable.getColumns(), jsTable.getSize(), jsTable::createSnapshot)
+                    .then(differences -> {
+                        pyTable.close();
+                        jsTable.close();
+                        if (differences != null) {
+                            failures.add(differences);
+                        }
+                        return Promise.resolve((Object) null);
+                    }), pyErr -> {
+                        jsTable.close();
+                        failures.add(c.python + ": fetching the Python result failed: " + pyErr);
+                        return Promise.resolve((Object) null);
+                    }), jsErr -> {
+                        failures.add(c.python + ": JS rejected: " + jsErr);
+                        return py.then(pyTable -> {
+                            pyTable.close();
+                            return Promise.resolve((Object) null);
+                        });
+                    });
+        }).then(ignore -> runFrom(session, src, cases, index + 1, timeout, failures));
+    }
+
+    private interface Snapshotter {
+        Promise<TableData> snapshot(Object options);
+    }
+
+    /** Resolves with a description of how the two tables differ, or null if they match. */
+    private static Promise<String> compare(String name, JsArray<Column> pyColumns, double pySize, Snapshotter py,
+            elemental2.core.ReadonlyArray<Column> jsColumns, double jsSize, Snapshotter js) {
+        List<String> pyShape = new ArrayList<>();
+        List<String> jsShape = new ArrayList<>();
+        for (int i = 0; i < pyColumns.length; i++) {
+            pyShape.add(pyColumns.getAt(i).getName() + ":" + pyColumns.getAt(i).getType());
+        }
+        for (int i = 0; i < jsColumns.getLength(); i++) {
+            jsShape.add(jsColumns.getAt(i).getName() + ":" + jsColumns.getAt(i).getType());
+        }
+        if (!pyShape.equals(jsShape)) {
+            return Promise.resolve(name + ": columns differ, Python " + pyShape + " vs JS " + jsShape);
+        }
+        if (pySize != jsSize) {
+            return Promise.resolve(name + ": size differs, Python " + pySize + " vs JS " + jsSize);
+        }
+        if (pySize == 0) {
+            return Promise.resolve((String) null);
+        }
+        // Not Promise.all: its result is typed as a Java array, which the plain JS array it resolves with is not
+        return py.snapshot(allRows(pyColumns, pySize)).then(pyData -> js.snapshot(allRows(jsColumns, jsSize))
+                .then(jsData -> {
+                    List<String> cells = new ArrayList<>();
+                    int differing = 0;
+                    for (int row = 0; row < pySize; row++) {
+                        for (int col = 0; col < pyColumns.length; col++) {
+                            String expected = cell(pyData.getData(row, pyColumns.getAt(col)));
+                            String actual = cell(jsData.getData(row, jsColumns.getAt(col)));
+                            if (!expected.equals(actual)) {
+                                differing++;
+                                if (cells.size() < 5) {
+                                    cells.add("row " + row + " " + pyColumns.getAt(col).getName() + ": Python "
+                                            + expected + " vs JS " + actual);
+                                }
+                            }
+                        }
+                    }
+                    return Promise.resolve(differing == 0 ? null
+                            : name + ": " + differing + " cells differ, e.g. " + String.join("; ", cells));
+                }));
+    }
+
+    private static DataOptions.SnapshotOptions allRows(elemental2.core.ReadonlyArray<Column> columns, double size) {
+        DataOptions.SnapshotOptions options = new DataOptions.SnapshotOptions();
+        options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, size - 1));
+        options.columns = Js.uncheckedCast(columns);
+        return options;
+    }
+
+    /** A cell's value as comparable text: wrappers by their value, NaN and null spelled out, strings quoted. */
+    private static String cell(Any value) {
+        Object v = value;
+        if (v == null) {
+            return "null";
+        }
+        String type = Js.typeof(v);
+        if ("number".equals(type)) {
+            double d = Js.asDouble(v);
+            return Double.isNaN(d) ? "NaN" : String.valueOf(d);
+        }
+        if ("string".equals(type)) {
+            return "'" + v + "'";
+        }
+        if ("boolean".equals(type)) {
+            return String.valueOf(Js.asBoolean(v));
+        }
+        if (JsArray.isArray(v)) {
+            return Global.JSON.stringify(v);
+        }
+        return String.valueOf(v);
+    }
+
+    @Override
+    public String getModuleName() {
+        return "io.deephaven.web.DeephavenIntegrationTest";
+    }
+}
