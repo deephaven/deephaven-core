@@ -96,17 +96,6 @@ public class Sort {
             return Js.uncheckedCast(this);
         }
 
-        @JsOverlay
-        default String columnName() {
-            if (Js.typeof(this).equals("string")) {
-                return Js.uncheckedCast(this);
-            }
-            if (this instanceof Column c) {
-                return c.getName();
-            }
-            return ((SimpleSort) this).column.columnName();
-        }
-
         /**
          * Internal helper to build a proto sort descriptor from the variety of JS types.
          */
