@@ -4,7 +4,7 @@ title: Set custom environment variables
 
 Applications commonly use environment variables, especially for sensitive information like API keys. This guide shows how to set environment variables for use in Deephaven when you run it with Docker Compose.
 
-If you run Deephaven without Docker, the server already sees the environment variables of the shell that starts it. That covers the [production application](../getting-started/production-application.md) and a [source build](../getting-started/launch-build.md). Skip to [Read environment variables in Deephaven](#read-environment-variables-in-deephaven).
+If you run Deephaven without Docker, the server already sees the environment variables of the process that starts it, usually your shell. That covers the [production application](../getting-started/production-application.md) and a [source build](../getting-started/launch-build.md). Skip to [Read environment variables in Deephaven](#read-environment-variables-in-deephaven).
 
 ## Add variables to the Docker Compose file
 

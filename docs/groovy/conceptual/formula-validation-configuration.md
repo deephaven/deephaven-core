@@ -159,7 +159,7 @@ Formulas may call any method or constructor covered by an annotation that names 
 The built-in `dh-defaults.prop` file enables three annotation values:
 
 - `function_library` covers Deephaven's [built-in functions](../how-to-guides/built-in-functions.md).
-- `vector` and `base` cover the methods of Deephaven's [vector and array types](../how-to-guides/work-with-arrays.md).
+- `vector` covers the methods of Deephaven's [vector types](../how-to-guides/work-with-arrays.md), and `base` covers the size methods they share.
 
 The default property is:
 
@@ -177,33 +177,6 @@ ColumnExpressionValidator.annotationSets.myapp=my_math_utils,static_math_methods
 ```
 
 A property that reuses a label replaces the earlier value, so redefining `annotationSets.default` without `base`, `vector`, and `function_library` turns off the built-in annotation values.
-
-### Call a permitted method from a client
-
-Once the class is on the server's classpath and its annotation value is enabled, a client can call the method by its fully qualified name. This [Python client](/core/client-api/python/) example calls `MathUtils.square` from [Annotate entire classes](#annotate-entire-classes), then sends a formula that nothing permits:
-
-```python syntax
-from pydeephaven import Session
-
-# Add auth_type and auth_token to match your server's authentication
-session = Session(host="localhost", port=10000)
-
-source = session.empty_table(5).update(["X = i * 1.5"])
-
-# Permitted: MathUtils is annotated with the enabled my_math_utils value
-squares = source.update(["Y = com.example.formulas.MathUtils.square(X)"])
-
-# Rejected: no annotation or pointcut pattern permits System.getenv
-env = source.update(["Home = java.lang.System.getenv(`HOME`)"])
-```
-
-When a formula calls a method that isn't permitted, the client receives an error that gives only an error ID, and the server log records the reason under that ID. For the rejected formula above, the reason is:
-
-```text
-User expressions are not permitted to use static method getenv(java.lang.String) on class java.lang.System
-```
-
-A rejected constructor call produces a message that starts with `User expressions are not permitted to instantiate`, followed by the class and its parameter types.
 
 ### Best practices for annotations
 
@@ -233,7 +206,9 @@ Write the class name, a space, then the method name followed by its parameters i
 - `java.lang.Math *(..)` matches every method and constructor on `Math`.
 - `java.math.MathContext <constructor>(int)` matches the `MathContext` constructor that takes an `int`.
 
-A pattern that names `java.lang.Object` matches that method on every class, so `java.lang.Object toString()` permits every class's `toString` method. For any other class, a pattern matches a method only when the named class declares it. A subclass that inherits the method without overriding it still calls the named class's method, so the pattern matches. A subclass or implementation that overrides the method declares its own version, which the pattern doesn't match. For example, `java.util.List size()` permits `size` on a value whose type is `List`, but not on a value whose type is `ArrayList`, because `ArrayList` declares its own `size` method.
+A pattern that names `java.lang.Object` matches that method on every class, so `java.lang.Object toString()` permits every class's `toString` method.
+
+For any other class, a pattern matches a method only when the named class declares it. A subclass that inherits the method without overriding it still calls the named class's method, so the pattern matches. A subclass or implementation that overrides the method declares its own version, which the pattern doesn't match. For example, `java.util.List size()` permits `size` on a value whose type is `List`, but not on a value whose type is `ArrayList`, because `ArrayList` declares its own `size` method.
 
 ### Pattern matching symbols
 
@@ -305,6 +280,33 @@ When writing pointcut patterns, follow these recommendations:
 - **Never write a wildcard pattern on `java.lang.Object`.** Because every class is an `Object`, `java.lang.Object *(..)` permits every method and constructor of every class, which turns off validation.
 - **Name the class that declares the method formulas call.** A pattern on an interface or superclass doesn't cover a subclass's override. To permit `size` on `ArrayList` values, name `java.util.ArrayList`.
 - **Add a property with a new label rather than redefining a default one.** Redefining a default label, such as `numbers`, removes the patterns it held.
+
+## Test your configuration from a client
+
+Once a method is permitted, by an enabled annotation value or by a pointcut pattern, and its class is on the server's classpath, a client can call it by its fully qualified name. Send a formula that calls the method to confirm your configuration works. This [Python client](/core/client-api/python/) example calls `MathUtils.square` from [Annotate entire classes](#annotate-entire-classes), then sends a formula that nothing permits:
+
+```python syntax
+from pydeephaven import Session
+
+# Add auth_type and auth_token to match your server's authentication
+session = Session(host="localhost", port=10000)
+
+source = session.empty_table(5).update(["X = i * 1.5"])
+
+# Permitted: MathUtils is annotated with the enabled my_math_utils value
+squares = source.update(["Y = com.example.formulas.MathUtils.square(X)"])
+
+# Rejected: no annotation or pointcut pattern permits System.getenv
+env = source.update(["Home = java.lang.System.getenv(`HOME`)"])
+```
+
+When a formula calls a method that isn't permitted, the client receives an error of the form `Details Logged w/ID '<id>'`, and the server log records the reason under that ID. For the rejected formula above, the reason is:
+
+```text
+User expressions are not permitted to use static method getenv(java.lang.String) on class java.lang.System
+```
+
+A rejected constructor call produces a message that starts with `User expressions are not permitted to instantiate`, followed by the class and its parameter types.
 
 ## Backwards compatibility (Deephaven 0.39.x and earlier)
 

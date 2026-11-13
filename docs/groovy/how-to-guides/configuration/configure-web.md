@@ -37,7 +37,7 @@ timeZone=America/Chicago
 dateTimeFormat=yyyy-MM-dd HH:mm:ss
 ```
 
-Keep the `deephaven.console.type=groovy` line. Without it, a server that reads this file starts a Python console instead of a Groovy one. This matters on the `server-slim` Docker image, which sets the Groovy console type only in its own `deephaven.prop`. Your file replaces that file, as described in [Use a configuration file](./docker-application.md#use-a-configuration-file).
+Keep the `deephaven.console.type=groovy` line. Without it, the server tries to start a Python console instead of a Groovy one. On the `server-slim` Docker image, which doesn't include Python, the server then fails to start. That image sets the Groovy console type only in its own `deephaven.prop`, and your file replaces that file, as described in [Use a configuration file](./docker-application.md#use-a-configuration-file).
 
 ## Default format and time zone properties
 

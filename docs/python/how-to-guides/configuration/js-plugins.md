@@ -56,7 +56,7 @@ For a full walkthrough, including Docker Compose, see [Extend Docker images for 
 
 A JS plugin can use exports from another JS plugin by naming it in the [`loader` field](../create-js-plugins.md#use-exports-from-another-js-plugin) of its `package.json`. The published `ghcr.io/deephaven/web-plugin-packager:latest` image runs the Deephaven 0.17 version of [`pack-plugins.sh`](https://github.com/deephaven/deephaven-core/blob/main/docker/web-plugin-packager/src/main/docker/files/pack-plugins.sh), which drops that field from `manifest.json`. If a plugin's `package.json` has a `loader` field, build the current packager instead:
 
-1. In a clone of [deephaven-core](https://github.com/deephaven/deephaven-core), run `./gradlew docker-web-plugin-packager:buildDocker`.
+1. In a clone of [deephaven-core](https://github.com/deephaven/deephaven-core) on `main` or a release tag of 42.5 or later, run `./gradlew docker-web-plugin-packager:buildDocker`.
 2. Use the resulting `deephaven/web-plugin-packager:local-build` image in place of `ghcr.io/deephaven/web-plugin-packager:latest`.
 
 ## Install JS plugins on a server outside Docker
@@ -71,7 +71,7 @@ Replace `<plugins>` with one or more npm package names, separated by spaces. To 
 
 The script writes `js-plugins/` to that directory and uses a temporary `tmp/` subdirectory, which it deletes when it finishes. It fails if `js-plugins/` already exists.
 
-The published packager image doesn't copy a plugin's [`loader` field](../create-js-plugins.md#use-exports-from-another-js-plugin) into `manifest.json`, as described in [Plugins that use the loader field](#plugins-that-use-the-loader-field). To package a plugin that has that field, use the `deephaven/web-plugin-packager:local-build` image in place of `ghcr.io/deephaven/web-plugin-packager:latest`, or run [`pack-plugins.sh`](https://github.com/deephaven/deephaven-core/blob/main/docker/web-plugin-packager/src/main/docker/files/pack-plugins.sh) from the `main` branch as described next.
+The published packager image doesn't copy a plugin's [`loader` field](../create-js-plugins.md#use-exports-from-another-js-plugin) into `manifest.json`, as described in [Plugins that use the loader field](#plugins-that-use-the-loader-field). To package a plugin that has that field, use the `deephaven/web-plugin-packager:local-build` image in place of `ghcr.io/deephaven/web-plugin-packager:latest`, or run the current [`pack-plugins.sh`](https://github.com/deephaven/deephaven-core/blob/main/docker/web-plugin-packager/src/main/docker/files/pack-plugins.sh) without Docker, as described in the next paragraph.
 
 To run [`pack-plugins.sh`](https://github.com/deephaven/deephaven-core/blob/main/docker/web-plugin-packager/src/main/docker/files/pack-plugins.sh) without Docker, you need bash, Node.js, npm 7.20 or later, and GNU `tar` and `rm`. Run it as `./pack-plugins.sh <plugins>`. It writes the same `js-plugins/` directory to the current directory, so run it in an empty directory.
 
@@ -86,9 +86,7 @@ The server discovers plugins through a `manifest.json` file in `<configDir>/js-p
 - The server loads only the plugins that `manifest.json` lists.
 - If the directory has no `manifest.json`, the server loads no plugins from it.
 
-To load JS plugins from another directory as well, set the [configuration property](./config-file.md) `deephaven.jsPlugins.resourceBase` to it. The server then loads plugins from both directories.
-
-This directory must contain a `manifest.json`. If it doesn't, the server fails to start.
+To load JS plugins from another directory as well, set the [configuration property](./config-file.md) `deephaven.jsPlugins.resourceBase` to it. The server then loads plugins from both directories. The `resourceBase` directory must contain a `manifest.json`; if it doesn't, the server fails to start.
 
 If you're developing a plugin, you can instead point a `deephaven.jsPlugins.<name>` property at a single npm package directory. See [Register an npm package directory during development](../create-js-plugins.md#register-an-npm-package-directory-during-development).
 
