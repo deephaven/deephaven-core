@@ -69,7 +69,7 @@ for date in dates:
     result = t.update("X = i")
 ```
 
-Here, `t` and `result` are global variables, but because they are replaced on each iteration, the tables created by previous iterations can be cleaned up. However, adding a new variable to `globals()` on each iteration prevents this cleanup, because every table stays referenced by its own global name:
+Here, `t` and `result` are global variables, but because they are replaced on each iteration, the tables created by previous iterations can be cleaned up. However, adding a new variable to `globals` on each iteration prevents this cleanup, because every table stays referenced by its own global name:
 
 ```python order=t,result_2013_01_17,result_2013_01_22,result_2013_01_29,result_2013_02_14
 from deephaven import read_csv

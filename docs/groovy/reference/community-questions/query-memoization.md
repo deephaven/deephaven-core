@@ -2,14 +2,14 @@
 title: Why do some queries run faster the second time they are run?
 ---
 
-Deephaven uses [memoization](https://en.wikipedia.org/wiki/Memoization) for many table operations, such as [`avgBy`](../table-operations/group-and-aggregate/avgBy.md). Memoization stores previously computed results and reuses them instead of computing them again. When you apply the same operation with the same arguments to the same table again, and the earlier result still exists, Deephaven returns that existing result instead of computing it again.
+Deephaven uses [memoization](https://en.wikipedia.org/wiki/Memoization) for many table operations, such as [`avgBy`](../table-operations/group-and-aggregate/avgBy.md). Memoization stores previously computed results and reuses them instead of computing them again. When you apply the same operation with the same arguments to the same table again, and the earlier result is still valid and available, Deephaven returns that existing result instead of computing it again.
 
 ## Are all operations in Deephaven memoized?
 
 Not all operations are memoized. Some operations are excluded for one of two reasons:
 
 - The work hasn't been done to memoize the table operation (yet).
-- Memoizing the operation would not be safe. For example, `select`, `update`, and `view` calls that compute formula columns are never memoized, and neither are most formula filters, because a formula can return a different result each time it runs.
+- Memoizing the operation would not be safe. For example, [`select`](../table-operations/select/select.md), [`update`](../table-operations/select/update.md), and [`view`](../table-operations/select/view.md) calls that compute formula columns are never memoized, and neither are most formula filters, because a formula can return a different result each time it runs.
 
 ## Do other factors besides memoization make later runs faster?
 
