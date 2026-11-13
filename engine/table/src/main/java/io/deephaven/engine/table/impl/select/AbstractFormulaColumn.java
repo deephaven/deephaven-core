@@ -360,7 +360,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @Override
     public WritableColumnSource<?> newDestInstance(long size) {
-        return SparseArrayColumnSource.getSparseMemoryColumnSource(rowSet.size(), returnedType);
+        return SparseMemoryColumnSourceFactory.getMemoryColumnSource(rowSet.size(), returnedType);
     }
 
     @Override

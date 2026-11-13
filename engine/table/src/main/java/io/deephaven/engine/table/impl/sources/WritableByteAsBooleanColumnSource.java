@@ -61,9 +61,9 @@ public class WritableByteAsBooleanColumnSource extends ByteAsBooleanColumnSource
             byteChunk.close();
         }
 
-        private void convert(ObjectChunk<Boolean, ? extends Values> src) {
-            byteChunk.setSize(src.size());
-            for (int ii = 0; ii < src.size(); ++ii) {
+        private void convert(ObjectChunk<Boolean, ? extends Values> src, int size) {
+            byteChunk.setSize(size);
+            for (int ii = 0; ii < size; ++ii) {
                 byteChunk.set(ii, BooleanUtils.booleanAsByte(src.get(ii)));
             }
         }
@@ -78,7 +78,7 @@ public class WritableByteAsBooleanColumnSource extends ByteAsBooleanColumnSource
     public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
             @NotNull RowSequence rowSequence) {
         final ConvertingFillFromContext convertingFillFromContext = (ConvertingFillFromContext) context;
-        convertingFillFromContext.convert(src.asObjectChunk());
+        convertingFillFromContext.convert(src.asObjectChunk(), rowSequence.intSize());
         alternateColumnSource.fillFromChunk(convertingFillFromContext.alternateFillFromContext,
                 convertingFillFromContext.byteChunk, rowSequence);
     }
@@ -87,7 +87,7 @@ public class WritableByteAsBooleanColumnSource extends ByteAsBooleanColumnSource
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
             @NotNull LongChunk<RowKeys> keys) {
         final ConvertingFillFromContext convertingFillFromContext = (ConvertingFillFromContext) context;
-        convertingFillFromContext.convert(src.asObjectChunk());
+        convertingFillFromContext.convert(src.asObjectChunk(), keys.size());
         alternateColumnSource.fillFromChunkUnordered(convertingFillFromContext.alternateFillFromContext,
                 convertingFillFromContext.byteChunk, keys);
     }

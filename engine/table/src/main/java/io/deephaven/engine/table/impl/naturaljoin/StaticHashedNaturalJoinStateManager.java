@@ -8,6 +8,7 @@ import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.JoinControl;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.StaticNaturalJoinStateManager;
@@ -106,7 +107,8 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
                 return new ContiguousWritableRowRedirection(innerIndex);
             }
             case Sparse: {
-                final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
+                final WritableColumnSource<Long> sparseRedirections =
+                        SparseArrayColumnSource.getSparseMemoryColumnSource(long.class);
 
                 try (final RowSet.Iterator indexKeyIt = indexTableRowSet.iterator()) {
                     for (int ii = 0; ii < rowSetCount; ++ii) {

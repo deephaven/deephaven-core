@@ -198,7 +198,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByOperator {
         } else {
             maybeInnerSource = null;
             // region create-sparse
-            outputSource = new DoubleSparseArraySource();
+            outputSource = SparseArrayColumnSource.getSparseMemoryColumnSource(double.class);
             // endregion create-sparse
         }
     }
@@ -231,7 +231,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((DoubleSparseArraySource) outputSource).shift(subRowSetToShift, delta);
+        ((SparseArrayColumnSource<?>) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 

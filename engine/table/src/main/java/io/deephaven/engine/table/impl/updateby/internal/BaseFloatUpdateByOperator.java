@@ -198,7 +198,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
         } else {
             maybeInnerSource = null;
             // region create-sparse
-            outputSource = new FloatSparseArraySource();
+            outputSource = SparseArrayColumnSource.getSparseMemoryColumnSource(float.class);
             // endregion create-sparse
         }
     }
@@ -231,7 +231,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((FloatSparseArraySource) outputSource).shift(subRowSetToShift, delta);
+        ((SparseArrayColumnSource<?>) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 

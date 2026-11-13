@@ -47,7 +47,7 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  *
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
-public class DoubleSparseArraySource extends SparseArrayColumnSource<Double>
+public class DoubleSparseArraySource extends OneOrNSparseArrayColumnSource<Double>
         implements MutableColumnSourceGetDefaults.ForDouble /* MIXIN_IMPLS */ {
     // region recyclers
     private static final SoftRecycler<double[]> recycler =
