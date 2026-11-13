@@ -225,10 +225,10 @@ class CustomFileColumnSource implements ColumnSource<Double> {
 
 Deephaven tables can be "coalesced" or "uncoalesced":
 
-- **Uncoalesced tables** — Reference data but defer the work of assembling a full `QueryTable` until it is needed. Query operations like `where`, `select`, and `update` automatically coalesce the table before executing.
+- **Uncoalesced tables** — Reference data but defer the work of assembling a full `QueryTable`. Most query operations coalesce the table automatically before executing.
 - **Coalesced tables** — Fully formed `QueryTable` instances ready for query operations.
 
-For example, when reading from disk with partitioning filters like `"Date=today()"`, the table remains uncoalesced until a query operation triggers coalescing, avoiding the need to determine the complete `RowSet` upfront.
+When reading partitioned on-disk data, the table starts uncoalesced. A `where` filter on a partition column (like `"Date=today()"`) can select matching partitions and coalesce only those, avoiding the need to assemble rows for excluded partitions. Other operations coalesce all partitions before executing.
 
 ### Data indexes for performance
 
