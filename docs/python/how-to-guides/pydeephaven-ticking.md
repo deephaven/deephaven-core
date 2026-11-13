@@ -55,9 +55,6 @@ The simplest listener is a function that takes one argument — a `TableUpdate`:
 import time
 from pydeephaven import Session, TableUpdate, listen
 
-session = Session(host="localhost", port=10000)
-table = session.time_table("PT1s").update(["X = ii"])
-
 
 def on_update(update: TableUpdate) -> None:
     added = update.added()
@@ -65,16 +62,20 @@ def on_update(update: TableUpdate) -> None:
         print(added["X"].to_pylist())
 
 
-handle = listen(table, on_update)
-handle.start()  # Subscribe and start receiving updates on a background thread.
-
-time.sleep(10)  # The main thread is free to do other work.
-
-handle.stop()  # Unsubscribe and wait for the background thread to exit.
-session.close()
+session = Session(host="localhost", port=10000)
+try:
+    table = session.time_table("PT1s").update(["X = ii"])
+    handle = listen(table, on_update)
+    handle.start()  # Subscribe and start receiving updates on a background thread.
+    try:
+        time.sleep(10)  # The main thread is free to do other work.
+    finally:
+        handle.stop()  # Unsubscribe and wait for the background thread to exit.
+finally:
+    session.close()
 ```
 
-`listen` takes a [`Table`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table) reference and a listener, and returns a `TableListenerHandle`. Nothing happens until you call `start`. The table can be any table reference — one you create with the session, or an existing server table opened with [`open_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.open_table).
+`listen` takes a [`Table`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table) reference and a listener, and returns a `TableListenerHandle`. Nothing happens until you call `start`. The `try`/`finally` blocks make sure the handle is stopped and the session closed even if your code fails or you press Ctrl+C; see [Stop the subscription](#stop-the-subscription). The table can be any table reference — one you create with the session, or an existing server table opened with [`open_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.open_table).
 
 `listen` raises `ValueError` if a function listener or error callback doesn't take exactly one argument, if you pass `on_error` together with a `TableListener` object (use the object's `on_error` method instead), or if the listener is neither a function nor a `TableListener`.
 
@@ -239,7 +240,7 @@ To recover, create a new handle and call `start` again. If you'd rather keep the
 
 Call `stop` when you're done. Called from outside the listener thread, it cancels the subscription and waits for the background thread to exit, so no further callbacks run after it returns. Called from inside `on_update` (as described above), it only marks the subscription cancelled and returns immediately without waiting — the current callback keeps running, and the background thread exits on its own once that callback finishes.
 
-Close the session after stopping its handles. Use `try`/`finally` so that cleanup happens even when your program fails or is interrupted:
+The listener thread isn't a daemon thread, so if you skip `stop` — for example, because Ctrl+C interrupts your code before it gets there — the thread keeps running and your program doesn't exit. Close the session after stopping its handles. Use `try`/`finally` so that cleanup happens even when your program fails or is interrupted:
 
 ```python ticking-table order=null skip-test
 handle = listen(table, on_update)
