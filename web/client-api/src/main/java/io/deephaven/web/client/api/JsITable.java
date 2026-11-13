@@ -12,9 +12,7 @@ import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
-import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
-import jsinterop.base.Any;
 
 /**
  * A server-side table that the client has retained: its data and metadata can be read, and it must be closed when no
@@ -115,33 +113,6 @@ public interface JsITable {
      */
     @JsMethod
     void close();
-
-    /**
-     * Finds the next row, after {@code startingRow} and wrapping around, whose value in {@code column} matches
-     * {@code seekValue}.
-     *
-     * @param startingRow the position of the row to search after
-     * @param column the column, or the name of the column, to search
-     * @param valueType the type to compare {@code seekValue} as
-     * @param seekValue the value to find
-     * @param insensitive optionally, {@code true} to ignore case. Defaults to {@code false}.
-     * @param contains optionally, {@code true} to match values that contain {@code seekValue} rather than equal it.
-     *        Defaults to {@code false}.
-     * @param isBackwards optionally, {@code true} to search backward. Defaults to {@code false}.
-     * @return a promise of the position of the matching row, or -1 if no row matches
-     */
-    // TODO BEFORE MERGE: ask reviewers whether to also accept an options object here, as a union with startingRow for
-    // the first argument ({column, value, valueType?, startingRow?, caseInsensitive?, contains?, backward?}). It keeps
-    // Table.seekRow's positional signature, which is what this matches today.
-    @JsMethod
-    Promise<Double> seekRow(
-            double startingRow,
-            Column.ColumnOrName column,
-            @TsTypeRef(ValueType.class) String valueType,
-            Any seekValue,
-            @JsOptional @JsNullable Boolean insensitive,
-            @JsOptional @JsNullable Boolean contains,
-            @JsOptional @JsNullable Boolean isBackwards);
 
     /**
      * Computes statistics for one column of this table, such as its count, sum and average for a numeric column, or its

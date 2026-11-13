@@ -66,6 +66,16 @@ public interface JsResolvedTable extends JsITable, JsTableOperations {
     JsTable createMutableTable();
 
     /**
+     * Finds the next row, after {@code startingRow} and wrapping around, whose value in {@code column} matches
+     * {@code seekValue}.
+     *
+     * @param options the value to find, and where and how to search for it
+     * @return a promise of the position of the matching row, or -1 if no row matches
+     */
+    @JsMethod
+    Promise<Double> seekRow(SeekRowOptions options);
+
+    /**
      * A promise that will resolve to a new {@link JsTreeTable dh.TreeTable} of this table. Multiple calls to this
      * method will each produce a new {@link JsTreeTable dh.TreeTable} which must have {@link JsTreeTable#close()
      * close()} called on it when not in use.

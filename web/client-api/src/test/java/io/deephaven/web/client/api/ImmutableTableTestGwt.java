@@ -1684,7 +1684,6 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     return session.getTable("source", null).asPromise();
                 })
                 .then(table -> {
-                    Column.ColumnOrName s = Column.ColumnOrName.of("S");
                     // A table: X is 0 to 4
                     return expectRow("Table, X = 3", table.seekRow(0, Column.ColumnOrName.of("X"), ValueType.NUMBER,
                             Js.asAny(3.0), null, null, null), 3)
@@ -1694,18 +1693,17 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                             // A resolved table: S is "v0" to "v4"
                             .then(ignore -> table.operations().update(arr("S = `v` + X")).resolve())
                             .then(resolved -> expectRow("resolved, S = v3",
-                                    resolved.seekRow(0, s, ValueType.STRING, Js.asAny("v3"), null, null, null), 3)
-                                    .then(ignore -> expectRow("resolved, S = V2 ignoring case", resolved.seekRow(0, s,
-                                            ValueType.STRING, Js.asAny("V2"), true, null, null), 2))
+                                    resolved.seekRow(seekOptions(0, "v3", null, null, null)), 3)
+                                    .then(ignore -> expectRow("resolved, S = V2 ignoring case",
+                                            resolved.seekRow(seekOptions(0, "V2", true, null, null)), 2))
                                     .then(ignore -> expectRow("resolved, next S containing v after row 3",
-                                            resolved.seekRow(3, s, ValueType.STRING, Js.asAny("v"), null, true, null),
-                                            4))
+                                            resolved.seekRow(seekOptions(3, "v", null, true, null)), 4))
                                     .then(ignore -> expectRow("resolved, S = v1 searching back from row 3",
-                                            resolved.seekRow(3, s, ValueType.STRING, Js.asAny("v1"), null, null,
-                                                    true),
-                                            1))
-                                    .then(ignore -> expectRow("resolved, no S = nope", resolved.seekRow(0, s,
-                                            ValueType.STRING, Js.asAny("nope"), null, null, null), -1))
+                                            resolved.seekRow(seekOptions(3, "v1", null, null, true)), 1))
+                                    .then(ignore -> expectRow("resolved, S = v3 from row 3, found last after wrapping",
+                                            resolved.seekRow(seekOptions(3, "v3", null, null, null)), 3))
+                                    .then(ignore -> expectRow("resolved, no S = nope",
+                                            resolved.seekRow(seekOptions(0, "nope", null, null, null)), -1))
                                     .then(ignore -> {
                                         resolved.close();
                                         table.close();
@@ -1713,6 +1711,20 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                     }));
                 })
                 .then(this::finish).catch_(this::report);
+    }
+
+    /** Seek options for column S, as the object literal a JS caller writes. */
+    private static SeekRowOptions seekOptions(double startingRow, String value, Boolean insensitive, Boolean contains,
+            Boolean isBackwards) {
+        JsPropertyMap<Object> options = JsPropertyMap.of();
+        options.set("startingRow", startingRow);
+        options.set("column", "S");
+        options.set("valueType", ValueType.STRING);
+        options.set("seekValue", value);
+        options.set("insensitive", insensitive);
+        options.set("contains", contains);
+        options.set("isBackwards", isBackwards);
+        return Js.uncheckedCast(options);
     }
 
     public void testDownsampleRejectsBadArguments() {

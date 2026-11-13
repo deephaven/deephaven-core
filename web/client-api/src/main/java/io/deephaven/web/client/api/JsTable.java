@@ -1682,7 +1682,6 @@ public class JsTable extends HasLifecycle
      * @param isBackwards optionally, {@code true} to search backward. Defaults to {@code false}.
      * @return a promise of the position of the matching row, or -1 if no row matches
      */
-    @Override
     @JsMethod
     public Promise<Double> seekRow(
             double startingRow,
