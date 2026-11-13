@@ -71,10 +71,20 @@ public interface ThreadProfiler {
         }
         // The com.sun.management extension, which HotSpot builds from every vendor (e.g. Oracle, Adoptium, Azul Zulu,
         // Corretto) implement, exposes per-thread allocation measurement; the profiler checks whether it is supported.
-        if (ManagementFactory.getThreadMXBean() instanceof com.sun.management.ThreadMXBean) {
+        if (hasSunThreadMXBean()) {
             return new SunThreadMXBeanThreadProfiler();
         }
         return new BaselineThreadMXBeanThreadProfiler();
+    }
+
+    private static boolean hasSunThreadMXBean() {
+        final java.lang.management.ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        try {
+            return threadMXBean instanceof com.sun.management.ThreadMXBean;
+        } catch (LinkageError e) {
+            // com.sun.management lives in the jdk.management module, which a custom runtime image may omit
+            return false;
+        }
     }
 
     /**
