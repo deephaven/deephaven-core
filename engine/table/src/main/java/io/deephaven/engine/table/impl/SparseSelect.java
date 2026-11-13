@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseablePair;
@@ -174,7 +175,12 @@ public class SparseSelect {
 
                     for (final String columnName : columnNames) {
                         final ColumnSource<?> inputSource = source.getColumnSource(columnName);
-                        if (inputSource instanceof SparseArrayColumnSource
+                        // a reinterpretable column, such as a Boolean or Instant column, may hold its values in a
+                        // sparse primitive source
+                        final ColumnSource<?> storage = inputSource instanceof SparseArrayColumnSource
+                                ? inputSource
+                                : ReinterpretUtils.maybeConvertToPrimitive(inputSource);
+                        if (storage instanceof SparseArrayColumnSource
                                 || inputSource instanceof ArrayBackedColumnSource) {
                             resultColumns.put(columnName, inputSource);
                         } else {

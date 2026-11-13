@@ -163,10 +163,12 @@ public class SparseSelectTest {
         final int[] intVals = {1, 2, 3, 4, 5};
         final Table table = TstUtils.testRefreshingTable(RowSetFactory.flat(5).toTracking(),
                 TableTools.intCol("Value", intVals))
-                .update("V2=Value*2");
+                .update("V2=Value*2", "B=Value % 2 == 0", "T=DateTimeUtils.epochNanosToInstant(Value)");
         final Table selected = SparseSelect.sparseSelect(table);
         assertTableEquals(table, selected);
         assertSame(table.getColumnSource("V2"), selected.getColumnSource("V2"));
+        assertSame(table.getColumnSource("B"), selected.getColumnSource("B"));
+        assertSame(table.getColumnSource("T"), selected.getColumnSource("T"));
         assertNotSame(table.getColumnSource("Value"), selected.getColumnSource("Value"));
 
         final Table tt = TableTools.newTable(TableTools.intCol("Val", intVals)).updateView("V2=Val*2");
