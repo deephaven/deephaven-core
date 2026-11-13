@@ -81,7 +81,9 @@ session.close()
 For listeners that keep state or need custom error handling, subclass `TableListener`. You must implement `on_update`; `on_error` is optional.
 
 ```python ticking-table order=null skip-test
-from pydeephaven import TableListener, TableUpdate, listen
+import time
+
+from pydeephaven import Session, TableListener, TableUpdate, listen
 
 
 class PrintingListener(TableListener):
@@ -98,15 +100,24 @@ class PrintingListener(TableListener):
         print(f"Subscription failed: {error}")
 
 
+session = Session(host="localhost", port=10000)
+table = session.time_table("PT1s").update(["X = ii"])
 handle = listen(table, PrintingListener())
-handle.start()
+try:
+    handle.start()
+    try:
+        time.sleep(10)
+    finally:
+        handle.stop()
+finally:
+    session.close()
 ```
 
 ## Read the changes in a table update
 
-Once the initial snapshot is complete, the server batches changes and sends at most one callback per update interval, which is one second by default. Configure that interval with the server-side `-Dbarrage.minUpdateInterval` setting (in milliseconds); see [What is Barrage?](../conceptual/what-is-barrage.md) for details. If nothing changed during an interval, no callback arrives. The interval doesn't apply while a large table's initial snapshot is arriving: the server sends the snapshot in size-limited rounds and starts the next round immediately, so your listener can run several times within one interval.
+The server batches changes: it waits at least one update interval, one second by default, between propagations of ongoing changes to your subscription. Configure that interval with the server-side `-Dbarrage.minUpdateInterval` setting (in milliseconds); see [What is Barrage?](../conceptual/what-is-barrage.md) for details. If nothing changed during an interval, no callback arrives. Don't rely on the interval to space out your callbacks, though: a large table's initial snapshot arrives in size-limited rounds that the server sends back to back, and one propagation can deliver more than one update, so your listener can run several times within one interval.
 
-Each call to `on_update` receives a `TableUpdate` that describes the coalesced, net row changes since the previous call — not a log of every intermediate change. Every accessor returns a `dict` that maps column names to [PyArrow arrays](https://arrow.apache.org/docs/python/generated/pyarrow.Array.html). The arrays in one `dict` all have the same length, and position `i` in each array belongs to the same row. If a category has no rows in this update, the accessor returns an empty `dict`.
+Each call to `on_update` receives a `TableUpdate` that describes the coalesced, net row changes since the previous call — not a log of every intermediate change. Blink tables are the exception; see the last point below. Every accessor returns a `dict` that maps column names to [PyArrow arrays](https://arrow.apache.org/docs/python/generated/pyarrow.Array.html). The arrays in one `dict` all have the same length, and position `i` in each array belongs to the same row. If a category has no rows in this update, the accessor returns an empty `dict`.
 
 | Method          | Returns                                                                            |
 | --------------- | ---------------------------------------------------------------------------------- |
@@ -117,14 +128,15 @@ Each call to `on_update` receives a `TableUpdate` that describes the coalesced, 
 
 Keep these points in mind:
 
-- **The first update starts the initial snapshot.** When the subscription starts, every row currently in the table arrives as an addition. For a large table, the server delivers the snapshot in several size-limited rounds, so it can span several consecutive updates. If the table is empty at that moment, the first update has no rows. **[Blink tables](../conceptual/table-types.md#specialization-3-blink) are the exception**: the server always sends an empty initial snapshot for a blink table, even if rows are present at subscription time. Don't treat that first, empty update as the blink table's current contents — the first real rows arrive in later updates.
+- **The initial contents arrive as one or more updates.** When the subscription starts, every row currently in the table arrives as an addition. For a large table, the server sends the snapshot in size-limited rounds, and the client reports a separate update for each round, so the first callback may not contain the whole table, and ordinary changes can arrive between rounds. Don't treat the first callback as a fully initialized local copy. If the table is empty at that moment, the first update has no rows. **[Blink tables](../conceptual/table-types.md#specialization-3-blink) are the exception**: the server always sends an empty initial snapshot for a blink table, even if rows are present at subscription time. Don't treat that first, empty update as the blink table's current contents — the first real rows arrive in later updates.
 - **Modified rows include every requested column.** A row is reported as modified if any of its columns changed, and `modified` returns all the columns you ask for, not just the ones that changed. This means you can always read a key column alongside the changed values.
 - **`modified` and `modified_prev` line up by position.** Use them together to see how each row changed — for example, to compute a price move.
-- **One update can combine several changes to the same row.** The server merges all the changes from an update interval, so each row appears at most once per category:
+- **For tables that aren't blink tables, one update can combine several changes to the same row.** The server merges all the changes from an update interval, so each row appears at most once per category:
   - A row modified several times appears once in `modified`, with its latest values. `modified_prev` holds its values from before the first of those changes.
   - A row added and then modified appears only in `added`, with its latest values. It isn't also in `modified`.
   - A row added and then removed doesn't appear at all.
   - A row removed and then added again appears in both `removed` and `added`. Apply removals before additions so that the row ends up present.
+- **Blink tables aren't coalesced.** The server keeps every row that blinked during an update interval, so a row that appeared and disappeared within the interval still arrives in `added`, and the rows delivered by the previous update arrive in `removed`.
 
 ### Request only the columns you need
 
