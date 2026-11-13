@@ -36,7 +36,7 @@ rst = (
 )
 ```
 
-Each of the 100 constituent tables runs its own `count_by` on about 1/100 of the keys, and because each key falls in exactly one partition, `merge` returns the same counts as a single `count_by`, though rows may appear in a different order. For joins, partition both tables on the same derived column before performing the proxy join. See the [partitioned tables guide](../../how-to-guides/partitioned-tables.md) for more detail.
+Each of the 100 constituent tables runs its own `count_by` on about 1/100 of the keys, and because each key falls in exactly one partition, `merge` returns the same counts as a single `count_by`, though rows may appear in a different order. For joins, partition both tables on the same derived column before performing the proxy join. For as-of joins, derive the partition from the exact-match keys only, not the as-of column, so that valid matches are not separated. See the [partitioned tables guide](../../how-to-guides/partitioned-tables.md) for more detail.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
