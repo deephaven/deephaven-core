@@ -158,29 +158,34 @@ public class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExch
         final ExchangeMarshaller.Subscription newSubscriptionObject =
                 marshallerForExport.subscribe(subscriptionRequest, options, export, listener);
 
+        final boolean closed;
         synchronized (this) {
-            if (marshaller.isClosed()) {
-                newSubscriptionObject.close();
+            closed = marshaller.isClosed();
+            if (closed) {
                 preExportSubscriptions = null;
-                return;
-            }
+            } else {
+                subscriptionObject = newSubscriptionObject;
 
-            subscriptionObject = newSubscriptionObject;
-
-            final LivenessReferent subscriptionManagedReference = subscriptionObject.toManage();
-            if (subscriptionManagedReference != null) {
-                marshaller.manage(subscriptionManagedReference);
-            }
-
-            // preExportSubscriptions could have been changed out from under us if subscribe called close()
-            if (preExportSubscriptions != null) {
-                for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
-                    apply(request);
+                final LivenessReferent subscriptionManagedReference = subscriptionObject.toManage();
+                if (subscriptionManagedReference != null) {
+                    marshaller.manage(subscriptionManagedReference);
                 }
-            }
 
-            // we will now process requests as they are received
-            preExportSubscriptions = null;
+                // preExportSubscriptions could have been changed out from under us if subscribe called close()
+                if (preExportSubscriptions != null) {
+                    for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
+                        apply(request);
+                    }
+                }
+
+                // we will now process requests as they are received
+                preExportSubscriptions = null;
+            }
+        }
+
+        if (closed) {
+            // not under this monitor: closing may write, and a failed write's cancel needs this monitor
+            newSubscriptionObject.close();
         }
     }
 
