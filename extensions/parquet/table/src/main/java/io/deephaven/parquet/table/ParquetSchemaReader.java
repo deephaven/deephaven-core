@@ -509,8 +509,14 @@ public class ParquetSchemaReader {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.UUIDLogicalTypeAnnotation uuidLogicalType) {
-                errorString.setValue("UUIDLogicalType");
-                return Optional.empty();
+                return Optional.of(UUID.class);
+            }
+
+            @Override
+            public Optional<Class<?>> visit(
+                    final LogicalTypeAnnotation.Float16LogicalTypeAnnotation float16LogicalType) {
+                // Java has no half-precision type; float holds every FLOAT16 value exactly.
+                return Optional.of(float.class);
             }
 
             @Override

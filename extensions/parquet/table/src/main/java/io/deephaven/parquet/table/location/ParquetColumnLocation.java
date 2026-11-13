@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
 import io.deephaven.parquet.base.BigIntegerParquetBytesCodec;
 import io.deephaven.parquet.base.ColumnChunkReader;
+import io.deephaven.parquet.base.UUIDParquetBytesCodec;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
@@ -41,6 +42,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.function.Supplier;
@@ -716,6 +718,33 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 default:
                     return Optional.empty();
             }
+        }
+
+        @Override
+        public Optional<ToPage<ATTR, ?>> visit(final LogicalTypeAnnotation.UUIDLogicalTypeAnnotation uuidLogicalType) {
+            if (pageType == UUID.class) {
+                return Optional.of(ToObjectPage.create(UUID.class, UUIDParquetBytesCodec.INSTANCE,
+                        columnChunkReader.getDictionarySupplier()));
+            } else if (pageType == String.class) {
+                return Optional.of(ToObjectPage.create(String.class, UUIDParquetBytesCodec.AS_STRING,
+                        columnChunkReader.getDictionarySupplier()));
+            } else if (pageType == byte[].class) {
+                // An explicit byte[] definition reads the raw bytes.
+                return Optional.empty();
+            }
+            throw new IllegalArgumentException("Cannot convert parquet UUID column to " + pageType);
+        }
+
+        @Override
+        public Optional<ToPage<ATTR, ?>> visit(
+                final LogicalTypeAnnotation.Float16LogicalTypeAnnotation float16LogicalType) {
+            if (pageType == float.class) {
+                return Optional.of(ToFloatPage.createFromFloat16(pageType));
+            } else if (pageType == byte[].class) {
+                // An explicit byte[] definition reads the raw bytes.
+                return Optional.empty();
+            }
+            throw new IllegalArgumentException("Cannot convert parquet FLOAT16 column to " + pageType);
         }
     }
 }

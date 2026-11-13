@@ -1,15 +1,12 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ToCharPage and run "./gradlew replicateToPage" to regenerate
-//
-// @formatter:off
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.FloatFromFloat16Materializer;
 import io.deephaven.parquet.base.materializers.FloatMaterializer;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,19 +14,35 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT_BOXED;
 
 public class ToFloatPage<ATTR extends Any> implements ToPage<ATTR, float[]> {
 
+    public static <ATTR extends Any> ToFloatPage<ATTR> create(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_FLOAT;
+    }
+
+    public static <ATTR extends Any> ToFloatPage<ATTR> createFromFloat16(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_FLOAT16;
+    }
+
     @SuppressWarnings("rawtypes")
-    private static final ToFloatPage INSTANCE = new ToFloatPage<>();
+    private static final ToFloatPage FROM_FLOAT = new ToFloatPage<>(FloatMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToFloatPage FROM_FLOAT16 = new ToFloatPage<>(FloatFromFloat16Materializer.FACTORY);
 
-    public static <ATTR extends Any> ToFloatPage<ATTR> create(Class<?> nativeType) {
+    private static void verifyNativeType(final Class<?> nativeType) {
         if (nativeType == null || float.class.equals(nativeType)) {
-            // noinspection unchecked
-            return INSTANCE;
+            return;
         }
-
         throw new IllegalArgumentException("The native type for a Float column is " + nativeType.getCanonicalName());
     }
 
-    private ToFloatPage() {}
+    private final PageMaterializerFactory pageMaterializerFactory;
+
+    private ToFloatPage(@NotNull final PageMaterializerFactory pageMaterializerFactory) {
+        this.pageMaterializerFactory = pageMaterializerFactory;
+    }
 
     @Override
     @NotNull
@@ -52,6 +65,6 @@ public class ToFloatPage<ATTR extends Any> implements ToPage<ATTR, float[]> {
     @Override
     @NotNull
     public final PageMaterializerFactory getPageMaterializerFactory() {
-        return FloatMaterializer.FACTORY;
+        return pageMaterializerFactory;
     }
 }
