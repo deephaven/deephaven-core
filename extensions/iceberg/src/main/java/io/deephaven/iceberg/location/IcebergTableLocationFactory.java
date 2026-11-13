@@ -8,6 +8,7 @@ import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.location.ParquetTableLocation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,7 +26,7 @@ public final class IcebergTableLocationFactory implements TableLocationFactory<T
             @NotNull final IcebergTableLocationKey locationKey,
             @Nullable final TableDataRefreshService refreshService) {
         if (locationKey instanceof IcebergTableParquetLocationKey) {
-            return new IcebergTableParquetLocation(
+            return new ParquetTableLocation(
                     tableKey,
                     (IcebergTableParquetLocationKey) locationKey,
                     (ParquetInstructions) locationKey.readInstructions());

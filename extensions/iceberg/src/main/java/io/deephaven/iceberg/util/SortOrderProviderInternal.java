@@ -23,7 +23,8 @@ class SortOrderProviderInternal {
          * Returns the sort order to write down to the iceberg table when appending new data. This may be different from
          * the {@code getSortOrderToUse(table)} as this sort order may be customized. But
          * {@link #getSortOrderToUse(Table)} should always {@link SortOrder#satisfies(SortOrder) satisfy} this sort
-         * order.
+         * order. New data files declare this sort order only where Deephaven orders the values of this sort order's
+         * fields as the Iceberg specification does, and declare no sort order otherwise.
          */
         @NotNull
         default SortOrder getSortOrderToWrite(@NotNull final Table table) {

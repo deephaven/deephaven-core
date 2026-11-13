@@ -99,4 +99,14 @@ public class TestTableInfo {
         assertTrue(back.dataIndexes().isEmpty());
         assertTrue(back.sortingColumns().isEmpty());
     }
+
+    /** A sort column names a parquet column, which need not be a valid Deephaven column name. */
+    @Test
+    public void jsonRoundTripSortingColumnNotDeephavenName() throws Exception {
+        final SortColumnInfo sci = SortColumnInfo.of("x col", SortColumnInfo.SortDirection.Descending);
+        final TableInfo ti = TableInfo.builder().addSortingColumns(sci).build();
+
+        final TableInfo back = TableInfo.deserializeFromJSON(ti.serializeToJSON());
+        assertThat(back.sortingColumns()).isEqualTo(List.of(sci));
+    }
 }
