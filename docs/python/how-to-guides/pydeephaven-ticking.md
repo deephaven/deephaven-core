@@ -104,7 +104,7 @@ handle.start()
 
 ## Read the changes in a table update
 
-The server batches changes, sending at most one callback per update interval, which is one second by default. Configure that interval with the server-side `-Dbarrage.minUpdateInterval` setting (in milliseconds); see [What is Barrage?](../conceptual/what-is-barrage.md) for details. After the initial snapshot, if nothing changed during an interval, no callback arrives.
+Once the initial snapshot is complete, the server batches changes and sends at most one callback per update interval, which is one second by default. Configure that interval with the server-side `-Dbarrage.minUpdateInterval` setting (in milliseconds); see [What is Barrage?](../conceptual/what-is-barrage.md) for details. If nothing changed during an interval, no callback arrives. The interval doesn't apply while a large table's initial snapshot is arriving: the server sends the snapshot in size-limited rounds and starts the next round immediately, so your listener can run several times within one interval.
 
 Each call to `on_update` receives a `TableUpdate` that describes the coalesced, net row changes since the previous call — not a log of every intermediate change. Every accessor returns a `dict` that maps column names to [PyArrow arrays](https://arrow.apache.org/docs/python/generated/pyarrow.Array.html). The arrays in one `dict` all have the same length, and position `i` in each array belongs to the same row. If a category has no rows in this update, the accessor returns an empty `dict`.
 
@@ -117,7 +117,7 @@ Each call to `on_update` receives a `TableUpdate` that describes the coalesced, 
 
 Keep these points in mind:
 
-- **The first update is the initial snapshot.** When the subscription starts, every row currently in the table arrives as an addition. If the table is empty at that moment, the first update has no rows. **[Blink tables](../conceptual/table-types.md#specialization-3-blink) are the exception**: the server always sends an empty initial snapshot for a blink table, even if rows are present at subscription time. Don't treat that first, empty update as the blink table's current contents — the first real rows arrive in later updates.
+- **The first update starts the initial snapshot.** When the subscription starts, every row currently in the table arrives as an addition. For a large table, the server delivers the snapshot in several size-limited rounds, so it can span several consecutive updates. If the table is empty at that moment, the first update has no rows. **[Blink tables](../conceptual/table-types.md#specialization-3-blink) are the exception**: the server always sends an empty initial snapshot for a blink table, even if rows are present at subscription time. Don't treat that first, empty update as the blink table's current contents — the first real rows arrive in later updates.
 - **Modified rows include every requested column.** A row is reported as modified if any of its columns changed, and `modified` returns all the columns you ask for, not just the ones that changed. This means you can always read a key column alongside the changed values.
 - **`modified` and `modified_prev` line up by position.** Use them together to see how each row changed — for example, to compute a price move.
 - **One update can combine several changes to the same row.** The server merges all the changes from an update interval, so each row appears at most once per category:
@@ -282,21 +282,21 @@ class QuoteBook(TableListener):
 
 
 session = Session(host="localhost", port=10000)
-quotes = (
-    session.time_table("PT0.25s")
-    .update(
-        [
-            "Sym = `SYM` + randomInt(0, 5)",
-            "Price = 100.0 + randomGaussian(0.0, 5.0)",
-            "Size = randomInt(1, 1000)",
-        ]
-    )
-    .last_by("Sym")
-)
-
-book = QuoteBook()
-handle = listen(quotes, book)
 try:
+    quotes = (
+        session.time_table("PT0.25s")
+        .update(
+            [
+                "Sym = `SYM` + randomInt(0, 5)",
+                "Price = 100.0 + randomGaussian(0.0, 5.0)",
+                "Size = randomInt(1, 1000)",
+            ]
+        )
+        .last_by("Sym")
+    )
+
+    book = QuoteBook()
+    handle = listen(quotes, book)
     handle.start()
     try:
         for _ in range(10):

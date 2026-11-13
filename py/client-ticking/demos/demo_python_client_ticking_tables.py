@@ -140,10 +140,12 @@ def main() -> None:
         auth_type=os.environ.get("DH_AUTH_TYPE", "Anonymous"),
         auth_token=os.environ.get("DH_AUTH_TOKEN", ""),
     )
-    book = LiveQuoteBook()
-    handle = listen(make_quotes(session), book)
 
+    # Start the cleanup scope right after creating the session, so that a failure while
+    # creating the table or the listener still closes it.
     try:
+        book = LiveQuoteBook()
+        handle = listen(make_quotes(session), book)
         handle.start()
         try:
             deadline = time.monotonic() + RUN_SECONDS
