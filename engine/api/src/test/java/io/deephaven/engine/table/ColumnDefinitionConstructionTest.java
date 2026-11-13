@@ -475,6 +475,125 @@ public class ColumnDefinitionConstructionTest {
                 .isEqualTo(Object[].class);
     }
 
+    @Test
+    public void createUsesValuesAsProvided() {
+        final ColumnDefinition.ColumnType normal = ColumnDefinition.ColumnType.Normal;
+        final ColumnDefinition<Number[]> integers =
+                ColumnDefinition.create(CN, Number[].class, Integer.class, ColumnDefinition.ColumnType.Partitioning);
+        assertThat(integers.getName()).isEqualTo(CN);
+        assertThat(integers.getDataType()).isEqualTo(Number[].class);
+        assertThat(integers.getComponentType()).isEqualTo(Integer.class);
+        assertThat(integers.getColumnType()).isEqualTo(ColumnDefinition.ColumnType.Partitioning);
+        assertThat(ColumnDefinition.create(CN, int.class)).isEqualTo(ColumnDefinition.ofInt(CN));
+        assertThat(ColumnDefinition.create(CN, Boolean.class)).isEqualTo(ColumnDefinition.ofBoolean(CN));
+        assertThat(ColumnDefinition.create(CN, String.class).getComponentType()).isNull();
+        assertThat(ColumnDefinition.create(CN, int[].class, int.class, normal))
+                .isEqualTo(ColumnDefinition.fromGenericType(CN, int[].class));
+        assertThat(ColumnDefinition.create(CN, IntVector.class, int.class, normal).getComponentType())
+                .isEqualTo(int.class);
+        assertThat(ColumnDefinition.create(CN, ObjectVector.class, String.class, normal).getComponentType())
+                .isEqualTo(String.class);
+        // Some callers depend on giving a component type for other data types
+        assertThat(ColumnDefinition.create(CN, List.class, String.class, normal).getComponentType())
+                .isEqualTo(String.class);
+    }
+
+    @Test
+    public void createDoesNotNormalizeDataTypes() {
+        for (final Class<?> dataType : new Class<?>[] {boolean.class, Byte.class, Character.class, Short.class,
+                Integer.class, Long.class, Float.class, Double.class}) {
+            assertThatThrownBy(() -> ColumnDefinition.create(CN, dataType))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> ColumnDefinition.create(CN, dataType, null, ColumnDefinition.ColumnType.Normal))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Test
+    public void createDoesNotInferComponentTypes() {
+        for (final Class<?> dataType : new Class<?>[] {int[].class, String[].class, IntVector.class,
+                ObjectVector.class}) {
+            assertThatThrownBy(() -> ColumnDefinition.create(CN, dataType))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Missing component type for column " + CN + " with "
+                            + (dataType.isArray() ? "array" : "Vector") + " data type " + dataType.getTypeName());
+            assertThatThrownBy(() -> ColumnDefinition.create(CN, dataType, null, ColumnDefinition.ColumnType.Normal))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Missing component type");
+        }
+    }
+
+    @Test
+    public void createInvalidDataTypes() {
+        for (final Class<?> dataType : new Class<?>[] {void.class, Void.class}) {
+            assertThatThrownBy(() -> ColumnDefinition.create(CN, dataType))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining(dataType.getName());
+            assertThatThrownBy(() -> ColumnDefinition.create(CN, dataType, null,
+                    ColumnDefinition.ColumnType.Partitioning))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+        assertThatThrownBy(() -> ColumnDefinition.create(CN, Void[].class, Void.class,
+                ColumnDefinition.ColumnType.Normal)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void createInvalidComponentTypes() {
+        final ColumnDefinition.ColumnType normal = ColumnDefinition.ColumnType.Normal;
+        final Object[][] cases = {
+                {Number[].class, int.class, "array"},
+                {Number[].class, Object.class, "array"},
+                {Number[].class, Comparable.class, "array"},
+                {int[].class, Integer.class, "array"},
+                {Integer[].class, int.class, "array"},
+                {boolean[].class, Boolean.class, "array"},
+                {Instant[].class, String.class, "array"},
+                {IntVector.class, Integer.class, "Vector"},
+                {IntVector.class, long.class, "Vector"},
+                {ObjectVector.class, int.class, "Vector"},
+        };
+        for (final Object[] c : cases) {
+            final Class<?> dataType = (Class<?>) c[0];
+            final Class<?> componentType = (Class<?>) c[1];
+            assertThatThrownBy(() -> ColumnDefinition.create(CN, dataType, componentType, normal))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Invalid component type " + componentType.getTypeName() + " for column " + CN
+                            + " with " + c[2] + " data type " + dataType.getTypeName());
+        }
+        // void and Void element types, whatever the data type
+        for (final Class<?> dataType : new Class<?>[] {Object[].class, ObjectVector.class, List.class}) {
+            for (final Class<?> componentType : new Class<?>[] {void.class, Void.class, Void[].class}) {
+                assertThatThrownBy(() -> ColumnDefinition.create(CN, dataType, componentType, normal))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContaining("void and Void are not valid element types");
+            }
+        }
+        assertThatThrownBy(() -> ColumnDefinition.create(CN, Vector.class, Object.class, normal))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unrecognized Vector type");
+    }
+
+    @Test
+    public void createInvalidNames() {
+        for (final String name : new String[] {"", "i", "ii", "k", "in", "not", "class", "_", "true", "null", "1abc",
+                "has space", "a-b", "a.b"}) {
+            assertThatThrownBy(() -> ColumnDefinition.create(name, int.class))
+                    .isInstanceOf(NameValidator.InvalidNameException.class);
+            assertThatThrownBy(() -> ColumnDefinition.create(name, int[].class, int.class,
+                    ColumnDefinition.ColumnType.Normal))
+                    .isInstanceOf(NameValidator.InvalidNameException.class);
+        }
+        assertThatThrownBy(() -> ColumnDefinition.create(null, int.class))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> ColumnDefinition.create(CN, (Class<?>) null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> ColumnDefinition.create(CN, int.class, null, null))
+                .isInstanceOf(NullPointerException.class);
+        for (final String name : new String[] {"_x", "$x", "__RowDepth__", "I", "Ii", "inValue", "x1"}) {
+            assertThat(ColumnDefinition.create(name, int.class).getName()).isEqualTo(name);
+        }
+    }
+
     private static void checkVoidElementType(final ThrowableAssert.ThrowingCallable construct) {
         assertThatThrownBy(construct)
                 .isInstanceOf(IllegalArgumentException.class)
