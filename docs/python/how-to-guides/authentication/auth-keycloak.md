@@ -47,6 +47,8 @@ Create these files, which the rest of this section describes one at a time:
         └── init-keycloak.sql
 ```
 
+Docker Compose creates the `data` directory, which the `deephaven` service mounts, the first time you run the example.
+
 ### docker-compose.yml
 
 The Docker Compose YAML file sets up three services: `deephaven`, `database`, and `keycloak`. It also sets up a bridge network that connects all three.
@@ -333,10 +335,7 @@ The values that tie this file to the rest of the example are:
 
 The other client settings come from a Keycloak realm export. Keep them as they are for this example.
 
-Keycloak imports `deephaven_realm.json` only if the `deephaven_core` realm doesn't exist yet, so editing the file after the first start has no effect. To change the realm after that, do one of the following:
-
-- Make the change in the Keycloak admin console, as described in [Grant access to users](#grant-access-to-users).
-- Run `docker compose down -v` to delete the Postgres data, then start the example again. Keycloak imports the edited file.
+Keycloak imports `deephaven_realm.json` only if the `deephaven_core` realm doesn't exist yet. The realm, and any changes you make to it, last as long as the containers do, so they survive stopping with Ctrl+C and running `docker compose up` again. To change the realm while the containers exist, use the Keycloak admin console, as described in [Grant access to users](#grant-access-to-users). To apply an edited `deephaven_realm.json`, run `docker compose down -v` to remove the containers and the Postgres data, then start the example again. Keycloak imports the edited file.
 
 ### init-keycloak.sql
 
@@ -359,24 +358,22 @@ The first command builds the `deephaven` image without using cached layers, and 
 
 Navigate to `http://localhost:10000/ide`. The web UI redirects you to Keycloak's login page, which prompts for a username and password. Log in as one of the example users: `user` with password `user`, or `admin` with password `admin`. After you log in, Keycloak sends you back to the Deephaven web UI.
 
-When you're done, stop the containers with Ctrl+C, then remove them:
+When you're done, stop the containers with Ctrl+C. The containers and the Keycloak database remain, so `docker compose up` starts the example again with any users you added.
 
-```bash
-docker compose down
-```
-
-To also delete the Postgres data volume, add `-v`. Keycloak then imports the realm file again the next time you start the example:
+To remove the containers, run:
 
 ```bash
 docker compose down -v
 ```
+
+This also deletes the Postgres data, including users you added in the admin console. The next time you start the example, Keycloak imports the realm file again. Use `-v` here: the Postgres data is in an anonymous volume, so `docker compose down` without it still starts the next run with an empty database and leaves the old volume behind.
 
 ## Grant access to users
 
 Users log in to Deephaven with accounts in the Keycloak realm that `authentication.oidc.keycloak.realm` names (`deephaven_core` in the example). To add a user, use the Keycloak admin console:
 
 1. Open the Keycloak admin console at `/admin` on your Keycloak server. In the example, the `keycloak` service publishes port 8080 on the host, so open `http://localhost:8080/admin`.
-2. Log in as `admin` with password `admin`. The `KC_BOOTSTRAP_ADMIN_*` variables in `docker-compose.yml` create this Keycloak administrator account, which belongs to Keycloak's `master` realm. It is separate from the `admin` user in the `deephaven_core` realm.
+2. Log in as a Keycloak administrator. In the example, log in as `admin` with password `admin`. The `KC_BOOTSTRAP_ADMIN_*` variables in `docker-compose.yml` create this Keycloak administrator account, which belongs to Keycloak's `master` realm. It is separate from the `admin` user in the `deephaven_core` realm.
 3. Switch to your Deephaven realm and create the user.
 4. Give the user an email address, a first name, and a last name. Otherwise, Keycloak makes the user fill them in before it completes their first login.
 5. Set a password on the user's **Credentials** tab. Turn off **Temporary** unless you want the user to choose a new password when they first log in.
