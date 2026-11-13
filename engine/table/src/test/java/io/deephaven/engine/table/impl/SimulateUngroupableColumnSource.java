@@ -149,102 +149,102 @@ class SimulateUngroupableColumnSource<T> extends AbstractColumnSource<T> impleme
     }
 
     @Override
-    public Object getUngrouped(final long groupRowKey, final int offsetInGroup) {
+    public Object getUngrouped(final long groupRowKey, final long offsetInGroup) {
         return unpack(get(groupRowKey), offsetInGroup);
     }
 
-    private static Object unpack(Object o, final int offsetInGroup) {
+    private static Object unpack(Object o, final long offsetInGroup) {
         if (o == null) {
             return 0;
         }
         if (o instanceof Vector) {
             o = ((Vector<?>) o).toArray();
         }
-        return Array.get(o, offsetInGroup);
+        return Array.get(o, Math.toIntExact(offsetInGroup));
     }
 
     @Override
-    public Object getUngroupedPrev(final long groupRowKey, final int offsetInGroup) {
+    public Object getUngroupedPrev(final long groupRowKey, final long offsetInGroup) {
         return unpack(getPrev(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public Boolean getUngroupedBoolean(final long groupRowKey, final int offsetInGroup) {
+    public Boolean getUngroupedBoolean(final long groupRowKey, final long offsetInGroup) {
         return (Boolean) getUngrouped(groupRowKey, offsetInGroup);
     }
 
     @Override
-    public Boolean getUngroupedPrevBoolean(final long groupRowKey, final int offsetInGroup) {
+    public Boolean getUngroupedPrevBoolean(final long groupRowKey, final long offsetInGroup) {
         return (Boolean) getUngroupedPrev(groupRowKey, offsetInGroup);
     }
 
     @Override
-    public double getUngroupedDouble(final long groupRowKey, final int offsetInGroup) {
+    public double getUngroupedDouble(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Double) unpack(get(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public double getUngroupedPrevDouble(final long groupRowKey, final int offsetInGroup) {
+    public double getUngroupedPrevDouble(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Double) unpack(getPrev(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public float getUngroupedFloat(final long groupRowKey, final int offsetInGroup) {
+    public float getUngroupedFloat(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Float) unpack(get(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public float getUngroupedPrevFloat(final long groupRowKey, final int offsetInGroup) {
+    public float getUngroupedPrevFloat(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Float) unpack(getPrev(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public byte getUngroupedByte(final long groupRowKey, final int offsetInGroup) {
+    public byte getUngroupedByte(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Byte) unpack(get(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public byte getUngroupedPrevByte(final long groupRowKey, final int offsetInGroup) {
+    public byte getUngroupedPrevByte(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Byte) unpack(getPrev(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public char getUngroupedChar(final long groupRowKey, final int offsetInGroup) {
+    public char getUngroupedChar(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Character) unpack(get(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public char getUngroupedPrevChar(final long groupRowKey, final int offsetInGroup) {
+    public char getUngroupedPrevChar(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Character) unpack(getPrev(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public short getUngroupedShort(final long groupRowKey, final int offsetInGroup) {
+    public short getUngroupedShort(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Short) unpack(get(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public short getUngroupedPrevShort(final long groupRowKey, final int offsetInGroup) {
+    public short getUngroupedPrevShort(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Short) unpack(getPrev(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public int getUngroupedInt(final long groupRowKey, final int offsetInGroup) {
+    public int getUngroupedInt(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Integer) unpack(get(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public int getUngroupedPrevInt(final long groupRowKey, final int offsetInGroup) {
+    public int getUngroupedPrevInt(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Integer) unpack(getPrev(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public long getUngroupedLong(final long groupRowKey, final int offsetInGroup) {
+    public long getUngroupedLong(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Long) unpack(get(groupRowKey), offsetInGroup));
     }
 
     @Override
-    public long getUngroupedPrevLong(final long groupRowKey, final int offsetInGroup) {
+    public long getUngroupedPrevLong(final long groupRowKey, final long offsetInGroup) {
         return TypeUtils.unbox((Long) unpack(getPrev(groupRowKey), offsetInGroup));
     }
 

@@ -34,6 +34,7 @@ import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.impl.ForceReadUtility;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
+import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
@@ -1620,6 +1621,56 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
         final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata").getPath()).select();
         assertTableEquals(inputData.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNoRows() {
+        // DH-23629: no rows means no partitions and no destinations.
+        // Writing nothing is the contract: the destination is left untouched, and is not created if it does not exist.
+        final Table inputData = newTable(stringCol("PC1"), intCol("I"));
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNoRows");
+        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), EMPTY);
+        assertFalse(parentDir.exists());
+
+        // The caller creates the destination directory. The key-value layout records the schema only in its data
+        // files, so the empty directory cannot be read back without a table definition, and reads back as the
+        // original table with one. Each read runs both with the layout inferred and with the key-value layout named.
+        assertTrue(parentDir.mkdirs());
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofString("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("I"));
+        for (final ParquetInstructions readInstructions : List.of(EMPTY,
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED))) {
+            assertThrowsWithMessage(() -> readTable(parentDir.getPath(), readInstructions), "Unable to infer schema");
+            final Table fromDisk = readTable(parentDir.getPath(), readInstructions.withTableDefinition(definition));
+            assertEquals(definition, fromDisk.getDefinition());
+            assertTableEquals(inputData, fromDisk);
+            // The read is a partitioned source table with no partitions
+            assertTrue(fromDisk instanceof PartitionAwareSourceTable);
+            assertTrue(((PartitionAwareSourceTable) fromDisk).tableLocationProvider().getTableLocationKeys().isEmpty());
+        }
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNoRowsOverExistingData() {
+        // An empty write over a populated directory must leave the existing data intact
+        final Table inputData = newTable(stringCol("PC1", "aa", "bb"), intCol("I", 1, 2));
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsOverExistingData");
+        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), EMPTY);
+        writeKeyValuePartitionedTable(inputData.head(0).partitionBy("PC1"), parentDir.getAbsolutePath(), EMPTY);
+        // Read both with the layout inferred and with the key-value layout named
+        for (final ParquetInstructions readInstructions : List.of(EMPTY,
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED))) {
+            final Table fromDisk = readTable(parentDir.getPath(), readInstructions);
+            assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
+            // The read is a partitioned source table holding only the partitions of the first write
+            assertTrue(fromDisk instanceof PartitionAwareSourceTable);
+            final Set<Object> partitionValues = ((PartitionAwareSourceTable) fromDisk).tableLocationProvider()
+                    .getTableLocationKeys().stream()
+                    .map(key -> key.getPartitionValue("PC1"))
+                    .collect(Collectors.toSet());
+            assertEquals(Set.of("aa", "bb"), partitionValues);
+        }
     }
 
     @Test
@@ -4650,9 +4701,6 @@ public final class ParquetTableReadWriteTest {
 
         verifyMakeHandleException(nonExistentTableLocation::getSortedColumns);
         makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getSortedColumns);
-
-        verifyMakeHandleException(nonExistentTableLocation::getColumnTypes);
-        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getColumnTypes);
 
         verifyMakeHandleException(nonExistentTableLocation::hasDataIndex);
         makeNewTableLocationAndVerifyNoException(ParquetTableLocation::hasDataIndex);

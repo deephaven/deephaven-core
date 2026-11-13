@@ -2,7 +2,7 @@
 
 import io.deephaven.engine.table.impl.util.PerformanceQueries
 
-queryUpdatePerformanceSet = { int evaluationNumber ->
+queryUpdatePerformanceSet = { long evaluationNumber ->
     tables = PerformanceQueries.queryUpdatePerformanceMap(evaluationNumber)
     tables.each{ name, table -> binding.setVariable(name, table) }
 }

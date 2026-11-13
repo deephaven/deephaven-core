@@ -21,7 +21,7 @@ import org.immutables.value.Value;
 public abstract class GroupingColumnInfo {
 
     /**
-     * @return The column name
+     * @return The parquet column name
      */
     @Value.Parameter
     public abstract String columnName();

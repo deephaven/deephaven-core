@@ -4,7 +4,7 @@ title: How do I extract a list of distinct dates from a table?
 
 _I have a table with a date column that contains many repeated dates. How can I get a list of the unique dates?_
 
-Use [`selectDistinct`](../table-operations/select/select-distinct.md) to get the unique dates:
+Use [`selectDistinct`](../table-operations/select/select-distinct.md) to get the unique dates, then extract them into a list:
 
 ```groovy test-set=dates order=source,distinctDates
 import static io.deephaven.time.DateTimeUtils.parseInstant
@@ -22,7 +22,14 @@ source = emptyTable(50).update(
 distinctDates = source.selectDistinct("Date")
 ```
 
-The `distinctDates` table now contains only the unique dates from the original table. You can view this table in the Deephaven IDE or use it in further table operations.
+Then extract the dates into a list using [`ColumnVectors`](../../how-to-guides/extract-table-value.md):
+
+```groovy test-set=dates
+import io.deephaven.engine.table.vectors.ColumnVectors
+
+dateList = ColumnVectors.ofObject(distinctDates, "Date", java.time.LocalDate.class).toArray() as List
+println dateList
+```
 
 This approach works for any column type, not just dates. Use `selectDistinct` to get unique values from any column in your table.
 

@@ -39,14 +39,15 @@ class Input:
 class Output:
     """Output specifies how to scatter data from an object into a table column."""
 
-    def __init__(self, col_name: str, scatter_func: Callable, col_type: type):
+    def __init__(self, col_name: str, scatter_func: Callable, col_type: str | None):
         """Initializes an Output object with the given arguments.
 
         Args:
             col_name (str) : name of the new column that will store results.
             scatter_func (Callable): function that determines how data is taken from an object and placed into a
                 Deephaven table column.
-            col_type (type) : desired data type of the new output column, default is None (no explicit type cast).
+            col_type (Optional[str]) : the type name of the new output column, as a string such as "double". Each value is
+                cast to this type. Pass None for no explicit type cast. This argument has no default.
         """
         self.output = _JLearnOutput(col_name, scatter_func, col_type)
 
@@ -55,12 +56,12 @@ class Output:
         return self.output.toString()
 
 
-def _validate(inputs: list[Input], outputs: list[Output], table: Table) -> None:
+def _validate(inputs: list[Input], outputs: list[Output] | None, table: Table) -> None:
     """Ensures that all input columns exist in the table, and that no output column names already exist in the table.
 
     Args:
         inputs (list[Input])  : list of Inputs to validate.
-        outputs (Output) : list of Outputs to validate.
+        outputs (Optional[list[Output]]) : list of Outputs to validate, or None for no outputs.
         table (Table)  : table to check Input and Output columns against.
 
     Raises:
@@ -123,8 +124,8 @@ def _create_non_conflicting_col_name(table: Table, base_col_name: str) -> str:
 def learn(
     table: Table,
     model_func: Callable | None = None,
-    inputs: list[Input] = [],
-    outputs: list[Output] = [],
+    inputs: list[Input] | None = None,
+    outputs: list[Output] | None = None,
     batch_size: int | None = None,
 ) -> Table:
     """Learn gathers data from multiple rows of the input table, performs a calculation, and scatters values from the
@@ -134,8 +135,11 @@ def learn(
     Args:
         table (Table): the Deephaven table to perform computations on.
         model_func (Optional[Callable]): function that performs computations on the table.
-        inputs (list[Input]): list of Input objects that determine how data gets extracted from the table.
-        outputs (list[Output]): list of Output objects that determine how data gets scattered back into the results table.
+        inputs (Optional[list[Input]]): list of Input objects that determine how data gets extracted from the table,
+            defaults to None, meaning no inputs.
+        outputs (Optional[list[Output]]): list of Output objects that determine how data gets scattered back into the
+            results table, defaults to None, meaning the result table gets no new columns. model_func still runs on
+            every batch. An empty list means the same as None.
         batch_size (Optional[int]): maximum number of rows for which model_func is evaluated at once.
 
     Returns:
@@ -146,6 +150,7 @@ def learn(
     """
 
     try:
+        inputs = inputs or []
         _validate(inputs, outputs, table)
 
         if batch_size is None:
@@ -160,7 +165,9 @@ def learn(
         future_offset = _create_non_conflicting_col_name(table, "__FutureOffset")
         clean = _create_non_conflicting_col_name(table, "__CleanComputer")
 
-        if outputs is not None:
+        # An empty list takes the no-output path. The output path never reads the model's result, so with no
+        # outputs nothing would make sure model_func runs.
+        if outputs:
             __scatterer = _JLearnScatterer([output.output for output in outputs])
 
             return (

@@ -1,0 +1,1 @@
+{"file":"reference/cheat-sheets/time-cheat-sheet.md","objects":{"t_nanos":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"Now","type":"java.time.Instant"}],"rows":[]}}}}

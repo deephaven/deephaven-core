@@ -24,7 +24,7 @@
     There are two accounts by default for this sample: <code>admin</code>, and <code>user</code>. For both, the password
     is the same as the username. To administer Keycloak, open the base URL (default is
     <a href="http://localhost:6060/">http://localhost:6060/</a>) and log in as <code>admin</code>, with password
-    <code>password</code>.
+    <code>admin</code>.
 </p>
 <button id="go">Go</button>
 <div id="log"></div>
@@ -72,19 +72,13 @@
             return;
         }
 
-        // load the keycloak.js from the specify server, and wait for it to load
-        var scriptTag = document.createElement('script');
-        scriptTag.src = url + "/js/keycloak.js";
-        await new Promise((resolve, reject) => {
-            document.head.append(scriptTag);
-            scriptTag.onload = resolve;
-            scriptTag.onerror = reject;
-        });
+        // Keycloak no longer serves its JS adapter, so load a pinned keycloak-js release from a CDN
+        const {default: Keycloak} = await import('https://cdn.jsdelivr.net/npm/keycloak-js@26.2.5/lib/keycloak.js');
         log('Keycloak JS adapter loaded');
 
         var keycloak = new Keycloak({realm, url, clientId,});
         keycloak.init({pkceMethod:'S256', checkLoginIframe:false,})
-            .success(authenticated => {
+            .then(authenticated => {
                 log('Keycloak api authenticated')
                 if (authenticated) {
                     log('auth with keycloak successful, authenticating to deephaven...');
@@ -98,7 +92,7 @@
                     setTimeout(()=>keycloak.login({}), 2000);
                 }
             })
-                .error(error => log("Error logging in: " + error));
+            .catch(error => log("Error logging in: " + error));
     }
 </script>
 </body>

@@ -145,6 +145,11 @@ class QueryTestCase(BaseTestCase):
         result_table = query.exec()
         self.assertEqual(5, result_table.size)
 
+    def test_exec_without_ops(self) -> None:
+        query = self.session.query(self.session.empty_table(1))
+        with self.assertRaises(DHError):
+            query.exec()
+
     def test_where_in(self):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)

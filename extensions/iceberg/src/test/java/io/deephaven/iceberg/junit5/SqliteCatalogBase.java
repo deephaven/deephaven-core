@@ -12,6 +12,8 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -64,6 +66,7 @@ import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.MetadataTableType;
 import org.apache.iceberg.NullOrder;
 import org.apache.iceberg.PartitionSpec;
+import org.apache.iceberg.ReplaceSortOrder;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.SortOrder;
@@ -82,7 +85,6 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,7 +118,6 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.shortCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static io.deephaven.iceberg.layout.IcebergBaseLayout.computeSortedColumns;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
@@ -2524,25 +2525,40 @@ public abstract class SqliteCatalogBase {
     }
 
     /**
-     * Verify that the sort order for the data files in the table match the expected sort order.
+     * The ID a data file declares when it declares no sort order.
      */
-    private static void verifySortOrder(
-            final IcebergTableAdapter tableAdapter,
-            final List<List<SortColumn>> expectedSortOrders) {
-        verifySortOrder(tableAdapter, expectedSortOrders,
-                ParquetInstructions.EMPTY.withTableDefinition(tableAdapter.definition()));
-    }
+    private static final int UNSORTED_ORDER_ID = SortOrder.unsorted().orderId();
 
-    private static void verifySortOrder(
-            @NotNull final IcebergTableAdapter tableAdapter,
-            @NotNull final List<List<SortColumn>> expectedSortOrders,
-            @NotNull final ParquetInstructions readInstructions) {
+    /**
+     * Verify the sort each data file in the table was written with: the sort order the data file declares, and the
+     * leading column of its sort, which Deephaven records in its parquet metadata and which Deephaven reads trust.
+     *
+     * @param expectedSortOrderIds The ID of the sort order each data file declares, {@link #UNSORTED_ORDER_ID} for a
+     *        data file that declares none: Deephaven declares a sort order only where Deephaven's ordering agrees with
+     *        the Iceberg specification's
+     * @param expectedParquetSortOrders The full sort each data file was written with, named by parquet column: each
+     *        file is read on its own, without the table's resolver, so its columns have the names they were written
+     *        under. Only the leading column of each is recorded, so only that one is checked.
+     */
+    private void verifySortOrder(
+            final IcebergTableAdapter tableAdapter,
+            final List<Integer> expectedSortOrderIds,
+            final List<List<SortColumn>> expectedParquetSortOrders) {
         final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
-        final List<List<SortColumn>> actualSortOrders = new ArrayList<>();
-        IcebergTestUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot())
-                .forEach(dataFile -> actualSortOrders
-                        .add(computeSortedColumns(icebergTable, dataFile, readInstructions)));
-        assertThat(actualSortOrders).isEqualTo(expectedSortOrders);
+        final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                .setSpecialInstructions(dataInstructions())
+                .build();
+        final List<Integer> actualSortOrderIds = new ArrayList<>();
+        final List<List<SortColumn>> actualSortedColumns = new ArrayList<>();
+        IcebergTestUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot()).forEach(dataFile -> {
+            actualSortOrderIds.add(dataFile.sortOrderId());
+            actualSortedColumns.add(SortedColumnsAttribute.getSortedColumns(
+                    ParquetTools.readTable(dataFile.location(), readInstructions).coalesce()));
+        });
+        assertThat(actualSortOrderIds).isEqualTo(expectedSortOrderIds);
+        assertThat(actualSortedColumns).isEqualTo(expectedParquetSortOrders.stream()
+                .map(sortOrder -> sortOrder.isEmpty() ? List.<SortColumn>of() : List.of(sortOrder.get(0)))
+                .collect(Collectors.toList()));
     }
 
     @Test
@@ -2561,13 +2577,14 @@ public abstract class SqliteCatalogBase {
                 .build());
 
         // Verify that the data file is not sorted
-        verifySortOrder(tableAdapter, List.of(List.of()));
+        verifySortOrder(tableAdapter, List.of(UNSORTED_ORDER_ID), List.of(List.of()));
 
         // Update the default sort order of the underlying iceberg table
         final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
         assertThat(icebergTable.sortOrder().fields()).hasSize(0);
         icebergTable.replaceSortOrder().asc("intCol").commit();
         assertThat(icebergTable.sortOrder().fields()).hasSize(1);
+        final int intColOrderId = icebergTable.sortOrder().orderId();
 
         // Append more unsorted data to the table with enforcing sort order
         final IcebergTableWriter tableWriterWithSorting = tableAdapter.tableWriter(writerOptionsBuilder()
@@ -2578,8 +2595,8 @@ public abstract class SqliteCatalogBase {
                 .addTables(source)
                 .build());
 
-        // Verify that the new data file is sorted
-        verifySortOrder(tableAdapter, List.of(
+        // Verify that the new data file is sorted, and declares the sort order since intCol is an integer column
+        verifySortOrder(tableAdapter, List.of(intColOrderId, UNSORTED_ORDER_ID), List.of(
                 List.of(SortColumn.asc(ColumnName.of("intCol"))),
                 List.of()));
 
@@ -2589,7 +2606,7 @@ public abstract class SqliteCatalogBase {
                 .build());
 
         // Verify that the new data file is not sorted
-        verifySortOrder(tableAdapter, List.of(
+        verifySortOrder(tableAdapter, List.of(UNSORTED_ORDER_ID, intColOrderId, UNSORTED_ORDER_ID), List.of(
                 List.of(),
                 List.of(SortColumn.asc(ColumnName.of("intCol"))),
                 List.of()));
@@ -2629,10 +2646,130 @@ public abstract class SqliteCatalogBase {
                 .build());
         final List<SortColumn> expectedSortOrder =
                 List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")));
-        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+        // The sort order leads with a floating point column, so the data file does not declare it
+        verifySortOrder(tableAdapter, List.of(UNSORTED_ORDER_ID), List.of(expectedSortOrder));
         final Table fromIceberg = tableAdapter.table();
         final Table expected = source.sort(expectedSortOrder);
         assertTableEquals(expected, fromIceberg);
+    }
+
+    /**
+     * Sortedness recorded in Deephaven's parquet metadata belongs to the Deephaven column bound by field id to the
+     * parquet column it names, not to whichever Deephaven column happens to share that name.
+     */
+    @Test
+    void testSortedColumnsFollowFieldIds() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("A", 1, 2, 3, 4, 5, 6, 7, 8),
+                intCol("B", 50, 10, 70, 30, 80, 20, 60, 40));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.icebergTable().replaceSortOrder().asc("A").commit();
+        tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build())
+                .append(IcebergWriteInstructions.builder()
+                        .addTables(source)
+                        .build());
+
+        // Deephaven A reads Iceberg field B, and Deephaven B reads Iceberg field A
+        final Schema schema = tableAdapter.icebergTable().schema();
+        final IcebergTableAdapter swappedAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(tableIdentifier)
+                .resolver(Resolver.builder()
+                        .definition(source.getDefinition())
+                        .schema(schema)
+                        .putColumnInstructions("A", schemaField(schema.findField("B").fieldId()))
+                        .putColumnInstructions("B", schemaField(schema.findField("A").fieldId()))
+                        .build())
+                .build());
+        final Table fromIceberg = swappedAdapter.table();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "A")).isEmpty();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "B"))
+                .contains(SortingOrder.Ascending);
+        assertTableEquals(fromIceberg.select().where("A >= 50"), fromIceberg.where("A >= 50"));
+    }
+
+    /**
+     * When two Deephaven columns read the sorted parquet column, neither can be identified as the one Deephaven's
+     * parquet metadata describes, so the sortedness is dropped rather than guessed.
+     */
+    @Test
+    void testSortedColumnsFieldReadTwice() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("A", 1, 2, 3, 4, 5, 6, 7, 8),
+                intCol("B", 50, 10, 70, 30, 80, 20, 60, 40));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.icebergTable().replaceSortOrder().asc("A").commit();
+        tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build())
+                .append(IcebergWriteInstructions.builder()
+                        .addTables(source)
+                        .build());
+
+        final Schema schema = tableAdapter.icebergTable().schema();
+        final IcebergTableAdapter twiceAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(tableIdentifier)
+                .resolver(Resolver.builder()
+                        .definition(TableDefinition.of(ColumnDefinition.ofInt("A"), ColumnDefinition.ofInt("A2")))
+                        .schema(schema)
+                        .putColumnInstructions("A", schemaField(schema.findField("A").fieldId()))
+                        .putColumnInstructions("A2", schemaField(schema.findField("A").fieldId()))
+                        .build())
+                .build());
+        final Table fromIceberg = twiceAdapter.table();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "A")).isEmpty();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "A2")).isEmpty();
+        assertTableEquals(fromIceberg.select().where("A >= 5"), fromIceberg.where("A >= 5"));
+    }
+
+    /**
+     * Deephaven trusts only the sortedness it records in a data file's parquet metadata. A sort order another writer
+     * declares for a data file is neither verified nor necessarily Deephaven's order, so it is ignored.
+     */
+    @Test
+    void testDeclaredSortOrderIgnored() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(intCol("I", 3, 1, 4, 2));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        icebergTable.replaceSortOrder().asc("I").commit();
+
+        // Emulate a writer outside of DH declaring the table's sort order for a data file it did not sort
+        final String location = OutputFileFactory.builderFor(icebergTable, 0, 0)
+                .format(FileFormat.PARQUET)
+                .build()
+                .newOutputFile()
+                .encryptingOutputFile()
+                .location();
+        final CompletedParquetWrite[] completed = new CompletedParquetWrite[1];
+        ParquetTools.writeTable(source, location, ParquetInstructions.builder()
+                .setTableDefinition(source.getDefinition())
+                .setFieldId("I", icebergTable.schema().findField("I").fieldId())
+                .setSpecialInstructions(dataInstructions())
+                .setOnWriteCompleted(cpw -> completed[0] = cpw)
+                .build());
+        icebergTable.newAppend()
+                .appendFile(DataFiles.builder(PartitionSpec.unpartitioned())
+                        .withFormat(FileFormat.PARQUET)
+                        .withPath(completed[0].destination().toString())
+                        .withRecordCount(completed[0].numRows())
+                        .withFileSizeInBytes(completed[0].numBytes())
+                        .withSortOrder(icebergTable.sortOrder())
+                        .build())
+                .commit();
+        assertThat(IcebergTestUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot())
+                .map(DataFile::sortOrderId))
+                .containsExactly(icebergTable.sortOrder().orderId());
+
+        final Table fromIceberg = tableAdapter.table().coalesce();
+        assertThat(SortedColumnsAttribute.getSortedColumns(fromIceberg)).isEmpty();
+        assertTableEquals(fromIceberg.select().where("I >= 2"), fromIceberg.where("I >= 2"));
+        assertTableEquals(source.sort("I"), fromIceberg.sort("I"));
     }
 
     @Test
@@ -2652,7 +2789,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(source)
                 .build());
         final List<SortColumn> expectedSortOrder = List.of(SortColumn.asc(ColumnName.of("intCol")));
-        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+        verifySortOrder(tableAdapter, List.of(1), List.of(expectedSortOrder));
         final Table fromIceberg = tableAdapter.table();
         final Table expected = source.sort(expectedSortOrder);
         assertTableEquals(expected, fromIceberg);
@@ -2685,7 +2822,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(source)
                 .build());
         final List<SortColumn> expectedSortOrder = List.of();
-        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+        verifySortOrder(tableAdapter, List.of(UNSORTED_ORDER_ID), List.of(expectedSortOrder));
         final Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
     }
@@ -2709,7 +2846,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(source)
                 .build());
         final List<SortColumn> expectedSortOrder = List.of(SortColumn.asc(ColumnName.of("intCol")));
-        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+        verifySortOrder(tableAdapter, List.of(sortOrder.orderId()), List.of(expectedSortOrder));
         final Table fromIceberg = tableAdapter.table();
         final Table expected = source.sort(expectedSortOrder);
         assertTableEquals(expected, fromIceberg);
@@ -2761,10 +2898,131 @@ public abstract class SqliteCatalogBase {
                 .build());
         final List<SortColumn> expectedSortOrder =
                 List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")));
-        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+        // The sort order with ID 2 leads with a floating point column, so the data file does not declare it
+        verifySortOrder(tableAdapter, List.of(UNSORTED_ORDER_ID), List.of(expectedSortOrder));
         final Table fromIceberg = tableAdapter.table();
         final Table expected = source.sort(expectedSortOrder);
         assertTableEquals(expected, fromIceberg);
+    }
+
+    /**
+     * A sort order ID can identify a sort order Deephaven can declare, a prefix of the sort that ends before a column
+     * Deephaven orders differently than the Iceberg specification does.
+     */
+    @Test
+    void testSortByDelegatingSortOrderDeclaresPrefix() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 15, 33, 0),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final IcebergTableAdapter tableAdapter = buildTableToTestSortOrder(tableIdentifier, source.getDefinition());
+
+        // Sort order 1 is {intCol}, which {intCol, doubleCol} satisfies
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        final SortOrder sortOrder = SortOrder.builderFor(icebergTable.schema())
+                .asc("intCol")
+                .asc("doubleCol")
+                .build();
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder).withId(1))
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+        final List<SortColumn> expectedSortOrder =
+                List.of(SortColumn.asc(ColumnName.of("intCol")), SortColumn.asc(ColumnName.of("doubleCol")));
+        verifySortOrder(tableAdapter, List.of(1), List.of(expectedSortOrder));
+        assertTableEquals(source.sort(expectedSortOrder), tableAdapter.table());
+    }
+
+    /**
+     * Make {@code sortOrder} the table's default sort order, write {@code source} sorted by it without committing, and
+     * return whether the data file written declares it rather than no sort order.
+     */
+    private boolean writeDeclaresSortOrder(
+            final IcebergTableAdapter tableAdapter,
+            final Table source,
+            final Function<ReplaceSortOrder, ReplaceSortOrder> sortOrder) {
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        sortOrder.apply(icebergTable.replaceSortOrder()).commit();
+        final List<DataFile> dataFiles = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build())
+                .writeDataFiles(IcebergWriteInstructions.builder()
+                        .addTables(source)
+                        .build());
+        assertThat(dataFiles).hasSize(1);
+        final int sortOrderId = dataFiles.get(0).sortOrderId();
+        if (sortOrderId == UNSORTED_ORDER_ID) {
+            return false;
+        }
+        assertThat(sortOrderId).isEqualTo(icebergTable.sortOrder().orderId());
+        return true;
+    }
+
+    /**
+     * Data files declare a sort order only on columns whose values Deephaven orders as the Iceberg specification does,
+     * which strings and floating point values are not.
+     */
+    @Test
+    void testSortOrderDeclaredByType() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                booleanCol("boolCol", true, null, false),
+                byteCol("byteCol", (byte) 3, NULL_BYTE, (byte) 1),
+                shortCol("shortCol", (short) 3, NULL_SHORT, (short) 1),
+                intCol("intCol", 3, NULL_INT, 1),
+                longCol("longCol", 3L, NULL_LONG, 1L),
+                floatCol("floatCol", 3.5f, NULL_FLOAT, -0.0f),
+                doubleCol("doubleCol", 3.5, NULL_DOUBLE, -0.0),
+                stringCol("stringCol", "c", null, "a"),
+                instantCol("instCol", Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH),
+                new ColumnHolder<>("ldtCol", LocalDateTime.class, null, false,
+                        LocalDateTime.of(2025, 1, 1, 12, 0), null, LocalDateTime.of(2023, 1, 1, 0, 0)),
+                new ColumnHolder<>("ldCol", LocalDate.class, null, false,
+                        LocalDate.of(2025, 1, 1), null, LocalDate.of(2023, 1, 1)),
+                new ColumnHolder<>("ltCol", LocalTime.class, null, false,
+                        LocalTime.of(12, 0, 1), null, LocalTime.of(12, 0)));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final List<String> notDeclared = List.of("floatCol", "doubleCol", "stringCol");
+        for (final String columnName : source.getDefinition().getColumnNames()) {
+            assertThat(writeDeclaresSortOrder(tableAdapter, source, so -> so.asc(columnName)))
+                    .as(columnName)
+                    .isEqualTo(!notDeclared.contains(columnName));
+            assertThat(writeDeclaresSortOrder(tableAdapter, source, so -> so.desc(columnName)))
+                    .as(columnName)
+                    .isEqualTo(!notDeclared.contains(columnName));
+        }
+    }
+
+    /**
+     * Deephaven sorts by column values rather than transformed values, so a data file declares a sort order with a
+     * transform only when the transform preserves order and is on the sort order's last field.
+     */
+    @Test
+    void testSortOrderDeclaredByTransform() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                instantCol("instCol",
+                        Instant.parse("2025-01-02T12:00:00Z"),
+                        Instant.parse("2025-01-01T18:00:00Z"),
+                        Instant.parse("2025-01-01T06:00:00Z")),
+                intCol("intCol", 1, 2, 3));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+
+        assertThat(writeDeclaresSortOrder(tableAdapter, source, so -> so.asc(Expressions.day("instCol")))).isTrue();
+        assertThat(writeDeclaresSortOrder(tableAdapter, source, so -> so.asc("intCol").asc(Expressions.day("instCol"))))
+                .isTrue();
+        assertThat(writeDeclaresSortOrder(tableAdapter, source, so -> so.asc(Expressions.truncate("intCol", 2))))
+                .isTrue();
+        // Sorted by instCol, the rows are not sorted by intCol within 2025-01-01
+        assertThat(writeDeclaresSortOrder(tableAdapter, source, so -> so.asc(Expressions.day("instCol")).asc("intCol")))
+                .isFalse();
+        assertThat(writeDeclaresSortOrder(tableAdapter, source, so -> so.asc(Expressions.bucket("intCol", 2))))
+                .isFalse();
     }
 
     @Test
@@ -2799,8 +3057,8 @@ public abstract class SqliteCatalogBase {
         tableWriter.append(IcebergWriteInstructions.builder()
                 .addTables(source)
                 .build());
-        // Empty sort order since the sort order cannot be applied
-        verifySortOrder(tableAdapter, List.of(List.of()));
+        // The sort order cannot be applied, so the data file is not sorted
+        verifySortOrder(tableAdapter, List.of(UNSORTED_ORDER_ID), List.of(List.of()));
         final Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
     }
@@ -2848,16 +3106,16 @@ public abstract class SqliteCatalogBase {
                     .build());
             final Table fromIceberg = ta.table();
             assertTableEquals(expected, fromIceberg);
+
+            // Deephaven's parquet metadata records the leading sort column by parquet column name, which the resolver
+            // maps to the renamed column
+            assertThat(SortedColumnsAttribute.getSortedColumns(fromIceberg.coalesce()))
+                    .isEqualTo(List.of(SortColumn.asc(ColumnName.of("renamedIntCol"))));
         }
 
-        // Verify that the sort order is still applied
-        final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
-                .addColumnNameMapping("intCol", "renamedIntCol")
-                .setTableDefinition(expected.getDefinition())
-                .build();
-        verifySortOrder(tableAdapter, List.of(
-                List.of(SortColumn.asc(ColumnName.of("renamedIntCol")), SortColumn.desc(ColumnName.of("doubleCol")))),
-                parquetInstructions);
+        // The sort order has a floating point column, so the data file does not declare it
+        verifySortOrder(tableAdapter, List.of(UNSORTED_ORDER_ID), List.of(
+                List.of(SortColumn.asc(ColumnName.of("intCol")), SortColumn.desc(ColumnName.of("doubleCol")))));
     }
 
     @Test
@@ -2880,6 +3138,9 @@ public abstract class SqliteCatalogBase {
         tableWriterWithSorting.append(IcebergWriteInstructions.builder()
                 .addTables(source)
                 .build());
+        // The sort order has a floating point column, so the data file does not declare it
+        verifySortOrder(tableAdapter, List.of(UNSORTED_ORDER_ID), List.of(
+                List.of(SortColumn.asc(ColumnName.of("intCol")), SortColumn.desc(ColumnName.of("doubleCol")))));
 
         {
             // Now read a table with a different table definition skipping the "doubleCol"
@@ -2901,13 +3162,9 @@ public abstract class SqliteCatalogBase {
                     .sort(List.of(SortColumn.asc(ColumnName.of("intCol"))));
             assertTableEquals(expected, fromIceberg);
 
-            // Verify that the sort order is still applied for the first column
-            final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
-                    .setTableDefinition(tableDefinition)
-                    .build();
-            verifySortOrder(ta, List.of(
-                    List.of(SortColumn.asc(ColumnName.of("intCol")))),
-                    parquetInstructions);
+            // The leading sort column is still read, so its sortedness is kept
+            assertThat(SortedColumnsAttribute.getSortedColumns(fromIceberg.coalesce()))
+                    .isEqualTo(List.of(SortColumn.asc(ColumnName.of("intCol"))));
         }
 
         {
@@ -2932,11 +3189,8 @@ public abstract class SqliteCatalogBase {
                     .dropColumns("intCol");
             assertTableEquals(expected, fromIceberg);
 
-            // Verify that the sort order is not applied for any columns since the first sorted column is skipped
-            final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
-                    .setTableDefinition(tableDefinition)
-                    .build();
-            verifySortOrder(ta, List.of(List.of()), parquetInstructions);
+            // The only sort column the file records, the leading one, is not read, so no sortedness is kept
+            assertThat(SortedColumnsAttribute.getSortedColumns(fromIceberg.coalesce())).isEmpty();
         }
     }
 

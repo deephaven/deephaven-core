@@ -2805,7 +2805,7 @@ public class QueryTableTest extends QueryTableTestBase {
         System.out.println("Initial table:");
         show(snapshot);
         System.out.println("Initial prev:");
-        show(prevTable(snapshot));
+        show(prevTableCopy(snapshot));
         assertTableEquals(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")));
 
         final SimpleListener listener = new SimpleListener(snapshot);
@@ -3208,11 +3208,11 @@ public class QueryTableTest extends QueryTableTestBase {
         System.out.println("Initial table:");
         show(snapshot);
         System.out.println("Initial prev:");
-        show(prevTable(snapshot));
+        show(prevTableCopy(snapshot));
         final QueryTable firstResult =
                 testRefreshingTable(col("A", 3, 1, 2), col("B", "c", "a", "b"), col("T", 2, 2, 2));
         assertTableEquals(snapshot, firstResult);
-        assertTableEquals(prevTable(snapshot), firstResult);
+        assertTableEquals(prevTableCopy(snapshot), firstResult);
 
         final SimpleListener listener;
         snapshot.addUpdateListener(listener = new SimpleListener(snapshot));
@@ -3220,7 +3220,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
-            assertTableEquals(prevTable(snapshot), firstResult);
+            assertTableEquals(prevTableCopy(snapshot), firstResult);
             assertTableEquals(snapshot, firstResult);
 
             addToTable(base, i(20, 40), col("A", 30, 50), col("B", "aa", "bc"));
@@ -3228,13 +3228,13 @@ public class QueryTableTest extends QueryTableTestBase {
         });
         show(snapshot, 50);
         assertTableEquals(snapshot, firstResult);
-        assertTableEquals(prevTable(snapshot), firstResult);
+        assertTableEquals(prevTableCopy(snapshot), firstResult);
         assertEquals(listener.getCount(), 0);
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger, i(3), col("T", 5));
             trigger.notifyListeners(i(3), i(), i());
-            assertEquals("", diff(prevTable(snapshot), firstResult, 10));
+            assertEquals("", diff(prevTableCopy(snapshot), firstResult, 10));
         });
 
         show(snapshot, 50);

@@ -1104,7 +1104,7 @@ public class QueryTableSelectUpdateTest {
                 : LongSparseArraySource.class;
         assertTrue(expectedSourceClass.isInstance(selected2.getColumnSource("Value2")));
 
-        assertTableEquals(prevTable(table), prevTable(selected));
+        assertTableEquals(prevTableCopy(table), prevTableCopy(selected));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -1113,7 +1113,7 @@ public class QueryTableSelectUpdateTest {
         });
 
         assertTableEquals(table, selected);
-        assertTableEquals(prevTable(table), prevTable(selected));
+        assertTableEquals(prevTableCopy(table), prevTableCopy(selected));
 
         TableTools.show(table);
         TableTools.show(selected);
@@ -1128,7 +1128,7 @@ public class QueryTableSelectUpdateTest {
         TableTools.show(selected);
 
         assertTableEquals(table, selected);
-        assertTableEquals(prevTable(table), prevTable(selected));
+        assertTableEquals(prevTableCopy(table), prevTableCopy(selected));
     }
 
     @Test

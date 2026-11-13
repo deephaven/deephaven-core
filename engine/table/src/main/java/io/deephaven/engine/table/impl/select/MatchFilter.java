@@ -425,6 +425,11 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
     public void setRecomputeListener(RecomputeListener listener) {}
 
     public static abstract class ColumnTypeConvertor {
+        /**
+         * A decimal-looking integer literal with a leading zero, such as {@code 0777}, which Java reads as octal. The
+         * query language does not support octal literals.
+         */
+        private static final Pattern OCTAL_LITERAL = Pattern.compile("[-+]?0[0-9_]*[0-9][lL]?");
 
         abstract Object convertStringLiteral(String str);
 
@@ -622,6 +627,12 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
                 }
                 valueConsumer.accept(paramConverter.apply(paramValue));
                 return false;
+            }
+
+            if (OCTAL_LITERAL.matcher(strValue).matches()) {
+                throw new IllegalArgumentException("Integer literal " + strValue
+                        + " has a leading zero, so it would be interpreted as octal, which the query language does not"
+                        + " support; remove the leading zero for a decimal value");
             }
 
             try {

@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import org.junit.Before;
@@ -11,9 +13,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
 import static io.deephaven.engine.util.TableTools.intCol;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -73,5 +77,17 @@ public class ConditionFilterTest {
         assertEquals("a column plus ii is two inputs", 2, initialized("X > 5 && ii > 0", table).getNumInputsUsed());
         assertEquals("a column plus i, ii and k is four inputs", 4,
                 initialized("X > 5 && i > 0 && ii > 0 && k > 0", table).getNumInputsUsed());
+    }
+
+    @Test
+    public void testUnsafeRefreshingMessageNamesConfigurationProperty() {
+        final BaseTable<?> refreshing = (BaseTable<?>) TstUtils.testRefreshingTable(intCol("X", 1))
+                .withoutAttributes(List.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE));
+        final ConditionFilter filter = initialized("X > ii", refreshing);
+        final IllegalArgumentException e =
+                assertThrows(IllegalArgumentException.class, () -> filter.validateSafeForRefresh(refreshing));
+        assertTrue(e.getMessage(),
+                e.getMessage().endsWith(
+                        " set the system property AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true."));
     }
 }

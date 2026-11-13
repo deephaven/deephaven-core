@@ -58,6 +58,12 @@ price_sorted = result.sort(order_by=["Price"])
 
 <!-- TODO: issue 594 - error fix; update image https://github.com/deephaven/deephaven-core/issues/594 -->
 
+To lift the restriction, call [`clear_sorting_restrictions`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.clear_sorting_restrictions) on the restricted table:
+
+```python test-set=1 order=price_sorted_cleared
+price_sorted_cleared = result.clear_sorting_restrictions().sort(order_by=["Price"])
+```
+
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
