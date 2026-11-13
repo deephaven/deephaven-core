@@ -48,3 +48,4 @@ For example, `final PeriodicUpdateGraph.targetCycleDurationMillis=250` fixes the
 
 - [Configure the production application](./configure-production-application.md)
 - [Configuration properties](./configuration-properties.md)
+- [Configure the Deephaven Docker application](./docker-application.md)

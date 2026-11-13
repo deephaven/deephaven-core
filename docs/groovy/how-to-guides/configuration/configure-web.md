@@ -85,4 +85,5 @@ These properties control the **Enable WebGL** option in the **Advanced** section
 - [Set date-time format](../set-date-time-format.md)
 - [Create a Deephaven configuration file](./config-file.md)
 - [Configuration properties reference](./configuration-properties.md#web-ui-configuration)
+- [Configure the Deephaven Docker application](./docker-application.md)
 - [Navigate the GUI](../user-interface/navigating-the-ui.md)
