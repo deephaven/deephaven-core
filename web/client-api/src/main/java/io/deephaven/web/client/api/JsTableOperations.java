@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsIgnore;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsLiteral;
 import com.vertispan.tsdefs.annotations.TsName;
@@ -514,6 +515,7 @@ public interface JsTableOperations extends ServerObject {
      * @param columns the columns or expressions to have in the new table
      * @return a new table with those columns appended
      */
+    @TsIgnore
     @JsMethod
     default JsPendingTable<JsResolvedTable> lazyUpdate(
             ReadonlyArray<JsTable.CustomColumnArgUnionType> columns) {
