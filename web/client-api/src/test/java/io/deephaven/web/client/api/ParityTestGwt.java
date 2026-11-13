@@ -402,9 +402,13 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
         return Js.uncheckedCast(options);
     }
 
-    /** One updateBy operation: a spec applied to the given match pairs. */
+    /** One updateBy operation: a spec applied to the given match pairs, omitted when there are none. */
     private static Object op(Object spec, String... pairs) {
-        return JsPropertyMap.of("spec", spec, "matchPairs", Js.uncheckedCast(pairs));
+        JsPropertyMap<Object> op = JsPropertyMap.of("spec", spec);
+        if (pairs.length > 0) {
+            op.set("matchPairs", Js.uncheckedCast(pairs));
+        }
+        return op;
     }
 
     /** An updateBy spec object literal: its type, then property names and values in turn. */

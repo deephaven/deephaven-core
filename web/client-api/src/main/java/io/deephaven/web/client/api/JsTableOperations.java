@@ -1021,11 +1021,13 @@ public interface JsTableOperations extends ServerObject {
         for (int i = 0; i < options.operations.getLength(); i++) {
             // Not getAt: its checked cast throws on a plain object shaped like the class
             UpdateByOperation op = options.operations.getAtAsAny(i).uncheckedCast();
-            UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.Builder spec = op.spec.makeOperation();
-            builder.addOperations(UpdateByRequest.UpdateByOperation.newBuilder()
-                    .setColumn(UpdateByRequest.UpdateByOperation.UpdateByColumn.newBuilder()
-                            .setSpec(spec)
-                            .addAllMatchPairs(JsTable.MatchPairUnion.toStringArray(op.matchPairs))));
+            UpdateByRequest.UpdateByOperation.UpdateByColumn.Builder column =
+                    UpdateByRequest.UpdateByOperation.UpdateByColumn.newBuilder()
+                            .setSpec(op.spec.makeOperation());
+            if (op.matchPairs != null) {
+                column.addAllMatchPairs(JsTable.MatchPairUnion.toStringArray(op.matchPairs));
+            }
+            builder.addOperations(UpdateByRequest.UpdateByOperation.newBuilder().setColumn(column));
         }
         if (options.groupByColumns != null) {
             builder.addAllGroupByColumns(columnsToNameList(options.groupByColumns));
@@ -1053,7 +1055,7 @@ public interface JsTableOperations extends ServerObject {
         public double width;
 
         /**
-         * The visible X range as {@code [start, end]}, both required. If absent or null, all of the data is used.
+         * The visible X range as {@code [start, end]}, both required. If absent or null, all data is used.
          */
         @JsNullable
         public ReadonlyArray<LongWrapper> xRange;
