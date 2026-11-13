@@ -3,7 +3,6 @@
 //
 package io.deephaven.parquet.table.pagestore;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
@@ -33,6 +32,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
     private volatile ColumnPageReader[] columnPageReaders;
     private final ColumnChunkReader.ColumnPageReaderIterator columnPageReaderIterator;
     private volatile WeakReference<PageCache.IntrusivePage<ATTR>>[] pages;
+    private volatile SparseState<ATTR>[] sparseStates;
 
     VariablePageSizeColumnChunkPageStore(
             @NotNull final PageCache<ATTR> pageCache,
@@ -51,6 +51,8 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
 
         // noinspection unchecked
         pages = (WeakReference<PageCache.IntrusivePage<ATTR>>[]) new WeakReference[INIT_ARRAY_SIZE];
+        // noinspection unchecked
+        sparseStates = (SparseState<ATTR>[]) new SparseState[INIT_ARRAY_SIZE];
     }
 
     private void extendOnePage(@NotNull final SeekableChannelContext channelContext, final int prevNumPages) {
@@ -71,6 +73,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
                     pageRowOffsets = Arrays.copyOf(pageRowOffsets, newSize + 1);
                     columnPageReaders = Arrays.copyOf(columnPageReaders, newSize);
                     pages = Arrays.copyOf(pages, newSize);
+                    sparseStates = Arrays.copyOf(sparseStates, newSize);
                 }
 
                 final ColumnPageReader columnPageReader = columnPageReaderIterator.next(channelContext);
@@ -92,6 +95,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
 
                 columnPageReaders[localNumPages] = columnPageReader;
                 pages[localNumPages] = pageRef;
+                sparseStates[localNumPages] = new SparseState<>();
                 pageRowOffsets[localNumPages + 1] = prevRowOffset + numRows;
                 numPages = localNumPages + 1;
             }
@@ -115,8 +119,9 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         return minPageNum;
     }
 
-    private ChunkPage<ATTR> getPage(@NotNull final SeekableChannelContext channelContext,
-            final int pageNum) {
+    @Override
+    @NotNull
+    ChunkPage<ATTR> getPage(@NotNull final SeekableChannelContext channelContext, final int pageNum) {
         PageCache.IntrusivePage<ATTR> page = pages[pageNum].get();
 
         if (page == null) {
@@ -144,36 +149,59 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
     }
 
     @Override
-    @NotNull
-    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, final long rowKey) {
-        try {
-            return getPageContainingImpl(fillContext, rowKey);
-        } catch (final RuntimeException e) {
-            throw new UncheckedDeephavenException("Failed to read parquet page data for row: " + rowKey + ", column: " +
-                    columnChunkReader.columnName() + ", uri: " + columnChunkReader.getURI(), e);
-        }
-    }
-
-    @NotNull
-    private ChunkPage<ATTR> getPageContainingImpl(@Nullable final FillContext fillContext, long rowKey) {
-        rowKey &= mask();
-        Require.inRange(rowKey - pageRowOffsets[0], "rowKey", numRows(), "numRows");
+    int pageNumContaining(@Nullable final FillContext fillContext, final long row) {
+        Require.inRange(row - pageRowOffsets[0], "row", numRows(), "numRows");
         int localNumPages = numPages;
-        int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, rowKey);
+        int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, row);
         if (pageNum < 0) {
             pageNum = -2 - pageNum;
         }
-        // Use the latest channel context while reading page headers, or create (and close) a new one
-        try (final ContextHolder holder = ensureContext(fillContext)) {
-            if (pageNum >= localNumPages) {
-                final int minPageNum = fillToRow(holder.get(), localNumPages, rowKey);
-                localNumPages = numPages;
-                pageNum = Arrays.binarySearch(pageRowOffsets, minPageNum + 1, localNumPages + 1, rowKey);
-                if (pageNum < 0) {
-                    pageNum = -2 - pageNum;
-                }
+        if (pageNum >= localNumPages) {
+            final int minPageNum;
+            // Use the latest channel context while reading page headers, or create (and close) a new one
+            try (final ContextHolder holder = ensureContext(fillContext)) {
+                minPageNum = fillToRow(holder.get(), localNumPages, row);
             }
-            return getPage(holder.get(), pageNum);
+            localNumPages = numPages;
+            pageNum = Arrays.binarySearch(pageRowOffsets, minPageNum + 1, localNumPages + 1, row);
+            if (pageNum < 0) {
+                pageNum = -2 - pageNum;
+            }
         }
+        return pageNum;
+    }
+
+    @Override
+    long pageFirstRow(final int pageNum) {
+        return pageRowOffsets[pageNum];
+    }
+
+    @Override
+    int pageRowCount(final int pageNum) {
+        final long[] localPageRowOffsets = pageRowOffsets;
+        return Math.toIntExact(localPageRowOffsets[pageNum + 1] - localPageRowOffsets[pageNum]);
+    }
+
+    @Override
+    @Nullable
+    ChunkPage<ATTR> getCachedPage(final int pageNum) {
+        final PageCache.IntrusivePage<ATTR> page = pages[pageNum].get();
+        if (page == null) {
+            return null;
+        }
+        pageCache.touch(page);
+        return page.getPage();
+    }
+
+    @Override
+    @NotNull
+    ColumnPageReader getPageReader(@NotNull final SeekableChannelContext channelContext, final int pageNum) {
+        return columnPageReaders[pageNum];
+    }
+
+    @Override
+    @NotNull
+    SparseState<ATTR> sparseState(final int pageNum) {
+        return sparseStates[pageNum];
     }
 }
