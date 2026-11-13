@@ -28,6 +28,7 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -36,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.ArrayDeque;
@@ -43,8 +45,10 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
@@ -93,7 +97,7 @@ public class ExportTableUpdateListenerTest {
     private ExportedTableUpdateListener createListener(
             final SessionState session,
             final QueuingResponseObserver observer) {
-        return new ExportedTableUpdateListener(session, observer, errorTransformer);
+        return new ExportedTableUpdateListener(session, observer, errorTransformer, scheduler);
     }
 
     @Test
@@ -473,6 +477,98 @@ public class ExportTableUpdateListenerTest {
     }
 
     /**
+     * The client's connection fails while one of the session's exports is being created. On Jetty, a failed write runs
+     * the call's cancel handler on the writing thread, which still holds its locks.
+     *
+     * <ul>
+     * <li>W, the update graph delivering a table update, holds the listener's write lock and writes the new size. The
+     * write fails and cancels the call.</li>
+     * <li>N, notifying the listener of the new export, holds the listener's monitor and sends the export's size, which
+     * needs the write lock.</li>
+     * </ul>
+     *
+     * The cancel must not wait for the listener's monitor, which removing the listener from the session takes.
+     */
+    @Test
+    public void testCancelFromFailedWriteDoesNotDeadlockWithNewExport() throws Exception {
+        // a ticking table whose update listener the test can call directly, as the update graph would
+        final AtomicReference<TableUpdateListener> updateListener = new AtomicReference<>();
+        final QueryTable src = new QueryTable(RowSetFactory.flat(42).toTracking(), Map.of()) {
+            @Override
+            public boolean addUpdateListener(
+                    @NotNull final TableUpdateListener listener, final long requiredLastNotificationStep) {
+                updateListener.set(listener);
+                return super.addUpdateListener(listener, requiredLastNotificationStep);
+            }
+        };
+        src.setRefreshing(true);
+        final SessionState.ExportObject<QueryTable> t1;
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            t1 = session.newServerSideExport(src);
+        }
+
+        final InlineCancelResponseObserver call = new InlineCancelResponseObserver();
+        final ExportedTableUpdateListener listener =
+                new ExportedTableUpdateListener(session, call, errorTransformer, scheduler);
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            session.addExportListener(listener);
+        }
+        // as TableServiceGrpcImpl#exportedTableUpdates does
+        call.setOnCancelHandler(listener::onCancel);
+        Assert.eq(call.messages.size(), "call.messages.size()", 1);
+        Assert.neqNull(updateListener.get(), "updateListener.get()");
+
+        final AtomicReference<Thread> notifierThread = new AtomicReference<>();
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+        call.onNextHook = () -> {
+            call.onNextHook = null;
+            // while the size is being written, a new export notifies the listener
+            final Thread notifier = new Thread(() -> {
+                try (final SafeCloseable ignored = LivenessScopeStack.open();
+                        final SafeCloseable ignored2 = executionContext.open()) {
+                    session.newServerSideExport(TstUtils.testTable(RowSetFactory.flat(10).toTracking()));
+                } catch (final Throwable t) {
+                    failure.compareAndSet(null, t);
+                }
+            }, "ExportTableUpdateListenerTest-notifier");
+            notifier.setDaemon(true);
+            notifierThread.set(notifier);
+            notifier.start();
+            // wait for the notifier to block on the write lock, which this thread holds, or to finish
+            awaitBlocked(notifier);
+            // the write fails; the servlet transport cancels the call on this thread
+            call.onCancelHandler.run();
+        };
+
+        final Thread writer = new Thread(() -> {
+            try (final SafeCloseable ignored = executionContext.open()) {
+                updateListener.get().onUpdate(new TableUpdateImpl(
+                        i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+            } catch (final Throwable t) {
+                failure.compareAndSet(null, t);
+            }
+        }, "ExportTableUpdateListenerTest-writer");
+        writer.setDaemon(true);
+        writer.start();
+
+        final long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+        writer.join(Math.max(1, deadline - System.currentTimeMillis()));
+        Assert.neqNull(notifierThread.get(), "notifierThread.get()");
+        notifierThread.get().join(Math.max(1, deadline - System.currentTimeMillis()));
+        if (writer.isAlive() || notifierThread.get().isAlive()) {
+            throw new AssertionError("the cancel and the export notification did not finish; deadlocked:\n"
+                    + describeDeadlockedThreads());
+        }
+        if (failure.get() != null) {
+            throw new AssertionError("worker thread failed", failure.get());
+        }
+        // the cancel removes the listener from the session off the writing thread
+        scheduler.runUntilQueueEmpty();
+        Assert.eqZero(session.numExportListeners(), "session.numExportListeners()");
+        t1.release();
+    }
+
+    /**
      * Wait until {@code thread} is parked waiting for the update graph lock. If {@code thread} completes first, its
      * result or failure is reported instead.
      */
@@ -496,6 +592,43 @@ public class ExportTableUpdateListenerTest {
             }
             Thread.sleep(10);
         }
+    }
+
+    /**
+     * Waits until {@code thread} is blocked entering a monitor, or has finished. Gives up after 10 seconds, so the test
+     * reports what is stuck instead of hanging here.
+     */
+    private static void awaitBlocked(final Thread thread) {
+        final long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+        while (System.currentTimeMillis() < deadline && thread.isAlive()
+                && thread.getState() != Thread.State.BLOCKED) {
+            Thread.onSpinWait();
+        }
+    }
+
+    private static String describeDeadlockedThreads() {
+        final ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+        final long[] ids = bean.findDeadlockedThreads();
+        if (ids == null) {
+            return "(the JVM reports no deadlocked threads)";
+        }
+        final StringBuilder sb = new StringBuilder();
+        for (final ThreadInfo info : bean.getThreadInfo(ids, true, true)) {
+            sb.append('"').append(info.getThreadName()).append("\" ").append(info.getThreadState())
+                    .append(" on ").append(info.getLockName())
+                    .append(" owned by \"").append(info.getLockOwnerName()).append("\"\n");
+            final StackTraceElement[] stack = info.getStackTrace();
+            for (int ii = 0; ii < stack.length; ii++) {
+                sb.append("\tat ").append(stack[ii]).append('\n');
+                for (final MonitorInfo locked : info.getLockedMonitors()) {
+                    if (locked.getLockedStackDepth() == ii) {
+                        sb.append("\t- locked ").append(locked).append('\n');
+                    }
+                }
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
     }
 
     private void addRowsToSource(final QueryTable src, final long nRows) {
@@ -562,5 +695,61 @@ public class ExportTableUpdateListenerTest {
         public void onCompleted() {
             complete = true;
         }
+    }
+
+    /**
+     * A call whose writes can run the cancel handler, as the servlet transport does when a write fails.
+     */
+    private static final class InlineCancelResponseObserver
+            extends ServerCallStreamObserver<ExportedTableUpdateMessage> {
+        final Queue<ExportedTableUpdateMessage> messages = new ConcurrentLinkedQueue<>();
+        volatile Runnable onCancelHandler;
+        /** runs on a write, while the writer holds the listener's write lock */
+        volatile Runnable onNextHook;
+
+        @Override
+        public void onNext(final ExportedTableUpdateMessage value) {
+            messages.add(value);
+            final Runnable toRun = onNextHook;
+            if (toRun != null) {
+                toRun.run();
+            }
+        }
+
+        @Override
+        public void onError(final Throwable t) {}
+
+        @Override
+        public void onCompleted() {}
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public void setOnCancelHandler(final Runnable onCancelHandler) {
+            this.onCancelHandler = onCancelHandler;
+        }
+
+        @Override
+        public void setCompression(final String compression) {}
+
+        @Override
+        public boolean isReady() {
+            return true;
+        }
+
+        @Override
+        public void setOnReadyHandler(final Runnable onReadyHandler) {}
+
+        @Override
+        public void disableAutoInboundFlowControl() {}
+
+        @Override
+        public void request(final int count) {}
+
+        @Override
+        public void setMessageCompression(final boolean enable) {}
     }
 }
