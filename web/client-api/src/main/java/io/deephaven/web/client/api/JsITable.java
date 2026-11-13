@@ -72,13 +72,40 @@ public interface JsITable {
     @JsNullable
     Object getAttribute(String attributeName);
 
+    /**
+     * Returns a promise that will resolve to a {@link TableData} instance containing a snapshot of the current state of
+     * the table, within the bounds of the specified rows and columns.
+     *
+     * @param options options for the snapshot; see {@link DataOptions.SnapshotOptions} for details
+     * @return Promise of {@link TableData}
+     */
     @JsMethod
     Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options);
 
+    /**
+     * Creates a viewport subscription to the specified columns, across the specified rows in the table. The returned
+     * {@link TableViewportSubscription} instance allows the viewport to be changed over time, and events are fired from
+     * it when the data changes or when a viewport change has been applied. Each call creates a new subscription, which
+     * must have {@link TableViewportSubscription#close()} called on it to stop it and release its resources.
+     *
+     * @param options options for the viewport subscription; see {@link DataOptions.ViewportSubscriptionOptions} for
+     *        details
+     * @return a new {@link TableViewportSubscription}
+     */
     @JsMethod
     TableViewportSubscription createViewportSubscription(
             @TsTypeRef(DataOptions.ViewportSubscriptionOptions.class) Object options);
 
+    /**
+     * Creates a subscription to the specified columns, across all rows in the table. Useful for charts or taking a
+     * snapshot of the table atomically. The initial snapshot will arrive in a single event, but later changes will be
+     * sent as updates. However, this may still be very expensive to run from a browser for very large tables. Each call
+     * creates a new subscription, which must have {@link TableSubscription#close()} called on it to stop it and release
+     * its resources, and all events are fired from the {@link TableSubscription} instance.
+     *
+     * @param options options for the subscription; see {@link DataOptions.SubscriptionOptions} for details
+     * @return a new {@link TableSubscription}
+     */
     @JsMethod
     TableSubscription createSubscription(@TsTypeRef(DataOptions.SubscriptionOptions.class) Object options);
 
