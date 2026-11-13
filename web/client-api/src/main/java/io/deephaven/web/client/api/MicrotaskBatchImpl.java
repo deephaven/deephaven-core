@@ -245,7 +245,6 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         private boolean cancelled;
         private @Nullable String cancelMessage;
         private @Nullable LazyPromise<JsResolvedTable> resolving;
-        private @Nullable Promise<JsResolvedTable> resolved;
         private @Nullable Resolved owner;
 
         protected OverState(WorkerConnection connection, Ticket ticket) {
@@ -275,14 +274,13 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             if (misuse != null) {
                 return Promise.reject(misuse);
             }
-            if (resolved == null) {
+            if (resolving == null) {
                 // The Resolved retains the state from now on; the caller owns it and must close it, or cancel() does
                 owner = new Resolved(connection, state);
                 resolving = whenRunning(owner, state, describe());
-                resolved = resolving.asPromise();
             }
             cancelOnAbort(options, resolving);
-            return resolved;
+            return resolving.asPromise();
         }
 
         @Override

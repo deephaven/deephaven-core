@@ -38,6 +38,9 @@ public class LazyPromise<T> {
 
     private boolean isScheduled;
 
+    /** Made by the first {@link #asPromise()}; not before, since an unused promise that rejects is reported. */
+    private Promise<T> promise;
+
     @JsIgnore
     public static void runLater(JsRunnable task) {
         Promise.resolve((Object) null).then(ignored -> {
@@ -64,14 +67,17 @@ public class LazyPromise<T> {
     }
 
     /**
-     * @return a real promise that we will resolve when we are resolved.
+     * @return a real promise that we will resolve when we are resolved, the same one on every call.
      *
      *         Use this method if you are safely wiring up failure handling for this LazyPromise. If you aren't
      *         explicitly wiring up calls to {@link #fail(Object)} this LazyPromise, then you should setup a timeout
      *         (see {@link #asPromise(int)} and {@link #timeout(int)}
      */
     public final Promise<T> asPromise() {
-        return new Promise<>(this::spyResult);
+        if (promise == null) {
+            promise = new Promise<>(this::spyResult);
+        }
+        return promise;
     }
 
     public final CancellablePromise<T> asPromise(JsRunnable cancel) {
