@@ -10,6 +10,7 @@ import io.deephaven.web.client.api.agg.AggByOptions;
 import io.deephaven.web.client.api.agg.Aggregation;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.subscription.DataOptions;
+import io.deephaven.web.client.api.updateby.UpdateByOptions;
 import io.deephaven.web.client.ide.IdeSession;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
@@ -27,6 +28,7 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
     /** A thousand rows: a few keys, every common column type, nulls in each value column, NaN in D. */
     private final TableSourceBuilder tables = new TableSourceBuilder()
             .script("from deephaven import empty_table, agg")
+            .script("from deephaven import updateby as ub")
             .script("src", "empty_table(1000).update(["
                     + "\"Key = i % 7\","
                     + "\"Sym = (i % 5 == 0) ? null : `S` + (i % 13)\","
@@ -220,6 +222,115 @@ public class ParityTestGwt extends AbstractAsyncGwtTestCase {
 
     private static <T> T lit(String literal) {
         return Js.uncheckedCast(literal);
+    }
+
+    public void testUpdateBy() {
+        runAll(20_003,
+                parity("src.update_by(ub.cum_sum('CS = I'), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByCumulativeSum"), "CS = I")),
+                parity("src.update_by(ub.cum_prod('CP = W'), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByCumulativeProduct"), "CP = W")),
+                parity("src.update_by([ub.cum_min('Lo = D'), ub.cum_max('Hi = D')], by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByCumulativeMin"), "Lo = D")
+                                .updateBy(options("Key", spec("UpdateByCumulativeMax"), "Hi = D"))),
+                parity("src.update_by(ub.forward_fill('FS = Sym'), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByFill"), "FS = Sym")),
+                parity("src.update_by(ub.delta('DL = L'))",
+                        src -> updateBy(src, null, spec("UpdateByDelta"), "DL = L")),
+                parity("src.update_by(ub.delta('DL = L', delta_control=ub.DeltaControl.VALUE_DOMINATES))",
+                        src -> updateBy(src, null, spec("UpdateByDelta", "nullBehavior", "VALUE_DOMINATES"),
+                                "DL = L")),
+                parity("src.update_by(ub.ema_tick(10, 'E = D'), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByEma", "windowScale", ticks(10)), "E = D")),
+                parity("src.update_by(ub.ema_time('T', 'PT10M', 'E = D'), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByEma", "windowScale", time("PT10M")), "E = D")),
+                parity("src.update_by(ub.ema_tick(10, 'E = D', op_control=ub.OperationControl("
+                        + "on_null=ub.BadDataBehavior.RESET, on_nan=ub.BadDataBehavior.RESET)), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByEma", "windowScale", ticks(10), "emOptions",
+                                JsPropertyMap.of("onNullValue", "RESET", "onNaNValue", "RESET")), "E = D")),
+                parity("src.update_by(ub.ems_tick(10, 'E = I'), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByEms", "windowScale", ticks(10)), "E = I")),
+                parity("src.update_by(ub.emmin_tick(10, 'E = D'), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByEmMin", "windowScale", ticks(10)), "E = D")),
+                parity("src.update_by(ub.emmax_time('T', 'PT10M', 'E = D'), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByEmMax", "windowScale", time("PT10M")), "E = D")),
+                parity("src.update_by(ub.emstd_tick(10, 'E = D'), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByEmStd", "windowScale", ticks(10)), "E = D")),
+                parity("src.update_by(ub.rolling_sum_tick('RS = I', rev_ticks=5, fwd_ticks=2), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByRollingSum", "reverseWindowScale", ticks(5),
+                                "forwardWindowScale", ticks(2)), "RS = I")),
+                parity("src.update_by(ub.rolling_sum_time('T', 'RS = I', rev_time='PT5M', fwd_time='PT1M'))",
+                        src -> updateBy(src, null, spec("UpdateByRollingSum", "reverseWindowScale", time("PT5M"),
+                                "forwardWindowScale", time("PT1M")), "RS = I")),
+                parity("src.update_by(ub.rolling_group_tick('RG = I', rev_ticks=3), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByRollingGroup", "reverseWindowScale", ticks(3)),
+                                "RG = I")),
+                parity("src.update_by(ub.rolling_avg_tick('RA = D', rev_ticks=4), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByRollingAvg", "reverseWindowScale", ticks(4)),
+                                "RA = D")),
+                parity("src.update_by(ub.rolling_min_tick('RMin = I', rev_ticks=4), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByRollingMin", "reverseWindowScale", ticks(4)),
+                                "RMin = I")),
+                parity("src.update_by(ub.rolling_max_time('T', 'RMax = D', rev_time='PT20M'), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByRollingMax", "reverseWindowScale", time("PT20M")),
+                                "RMax = D")),
+                parity("src.update_by(ub.rolling_prod_tick('RP = W', rev_ticks=3), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByRollingProduct", "reverseWindowScale", ticks(3)),
+                                "RP = W")),
+                parity("src.update_by(ub.rolling_count_tick('RC = Sym', rev_ticks=6), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByRollingCount", "reverseWindowScale", ticks(6)),
+                                "RC = Sym")),
+                parity("src.update_by(ub.rolling_std_tick('RStd = D', rev_ticks=6), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByRollingStd", "reverseWindowScale", ticks(6)),
+                                "RStd = D")),
+                parity("src.update_by(ub.rolling_wavg_tick('W', 'RW = D', rev_ticks=3), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByRollingWAvg", "weightColumn", "W",
+                                "reverseWindowScale", ticks(3)), "RW = D")),
+                parity("src.update_by(ub.rolling_wavg_time('T', 'W', 'RW = I', rev_time='PT10M'))",
+                        src -> updateBy(src, null, spec("UpdateByRollingWAvg", "weightColumn", "W",
+                                "reverseWindowScale", time("PT10M")), "RW = I")),
+                parity("src.update_by(ub.rolling_formula_tick('RF = sum(I)', rev_ticks=3), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByRollingFormula", "formula", "RF = sum(I)",
+                                "reverseWindowScale", ticks(3)))),
+                parity("src.update_by(ub.cum_count_where('CW', 'I > 500'), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByCumulativeCountWhere", "resultColumn", "CW",
+                                "filters", arr("I > 500")))),
+                parity("src.update_by(ub.rolling_count_where_tick('RCW', 'I > 500', rev_ticks=5), by='Key')",
+                        src -> updateBy(src, "Key", spec("UpdateByRollingCountWhere", "resultColumn", "RCW",
+                                "filters", arr("I > 500"), "reverseWindowScale", ticks(5)))));
+    }
+
+    /** One updateBy operation applying {@code spec} to {@code pairs}, grouped by {@code key} or not at all. */
+    private static JsPendingTable<JsResolvedTable> updateBy(JsTableOperations src, String key, Object spec,
+            String... pairs) {
+        return src.updateBy(options(key, spec, pairs));
+    }
+
+    private static UpdateByOptions options(String key, Object spec, String... pairs) {
+        JsPropertyMap<Object> options = JsPropertyMap.of(
+                "operations", arr(JsPropertyMap.of("spec", spec, "matchPairs", Js.uncheckedCast(pairs))));
+        if (key != null) {
+            options.set("groupByColumns", arr(key));
+        }
+        return Js.uncheckedCast(options);
+    }
+
+    /** An updateBy spec object literal: its type, then property names and values in turn. */
+    private static Object spec(String type, Object... properties) {
+        JsPropertyMap<Object> spec = JsPropertyMap.of("type", type);
+        for (int i = 0; i < properties.length; i += 2) {
+            spec.set((String) properties[i], properties[i + 1]);
+        }
+        return spec;
+    }
+
+    private static Object ticks(double ticks) {
+        return JsPropertyMap.of("type", "ticks", "ticks", ticks);
+    }
+
+    /** A window of {@code duration} over the timestamp column T. */
+    private static Object time(String duration) {
+        return JsPropertyMap.of("type", "time", "column", "T", "duration", duration);
     }
 
     /**
