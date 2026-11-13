@@ -8,7 +8,8 @@ title: Why does my function with type hints throw an error on null values?
 
 How a null value reaches a Python function depends on the column's type and the parameter's type hint:
 
-- **String and Boolean columns** — A null arrives as `None`, with or without `Optional`. The function must handle `None` if the column can contain nulls.
+- **String and Boolean columns with a built-in `str` or `bool` type hint** — A null arrives as `None`, with or without `Optional`. The function must handle `None` if the column can contain nulls.
+- **String and Boolean columns with a NumPy `np.str_` or `np.bool_` type hint** — Deephaven converts every argument to the NumPy type, so a null arrives as the string `"None"` or as `False`, with or without `Optional`. An `is None` check never catches these nulls, so use the built-in `str` or `bool` type hint when the column can contain nulls.
 - **Numeric columns with a numeric type hint (`int`, `float`, NumPy scalars)** — A null arrives as the Deephaven null sentinel for the column's type, such as `NULL_INT` for an `int` column or `NULL_LONG` for a `long` column. The sentinel is an ordinary number, so a function that doesn't check for it silently computes with it. Wrapping the type hint in `Optional[...]` converts the sentinel to `None`.
 - **Numeric columns with an `object` type hint** — A null arrives as the null sentinel for the column's type, even with `Optional`.
 
