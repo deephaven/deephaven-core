@@ -7,8 +7,7 @@ import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsType;
 
 /**
- * Returns the row key of the first row in each aggregation group. The row key is stored in a new column with the
- * specified name.
+ * Returns the row key of the first row in each aggregation group, in a new column with the specified name.
  *
  * <p>
  * This aggregation is not supported in {@code aggAllBy} — use it only with {@code aggBy}.

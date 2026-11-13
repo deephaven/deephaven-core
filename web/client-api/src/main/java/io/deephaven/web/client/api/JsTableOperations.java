@@ -58,14 +58,13 @@ import java.util.stream.Collectors;
 import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
 
 /**
- * Describes operations that can be performed on a table without retrieving data or metadata, allowing these operations
- * to potentially be chained with no direct interaction with a promise.
+ * Operations on a table that need none of its data or metadata, so they can be chained without waiting on a promise.
  * <p>
  * Every {@code TableOperations} is immutable: it stands for one server-side table, fixed when it is created, and
- * nothing done elsewhere changes which table that is. An operation never alters the table it is called on; it returns a
+ * nothing done elsewhere changes which table that is. An operation never alters the table it is called on. It returns a
  * new pending table, so the caller decides the order of operations by how they chain them. This holds for the
- * {@link JsTable#operations()} of a {@link JsTable} too: it stands for the table as it was when taken, and a later
- * filter or sort applied to that {@code Table} is not seen by it.
+ * {@link JsTable#operations()} of a {@link JsTable} too: it stands for the table as it was when taken, and does not see
+ * a later filter or sort applied to that {@link JsTable}.
  * <p>
  * Each table holds server resources until it is closed, by whoever owns it:
  * <ul>
@@ -73,14 +72,14 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * {@link JsResolvedTable}. Repeating either gives the same instance, as awaiting a promise twice does. A pending table
  * has no owner: awaiting or resolving it retains the table it produces, one instance shared by every await and
  * {@code resolve()} of it, and whoever does so is responsible for closing it.</li>
- * <li>A {@code ResolvedTable} is already the table: it cannot be awaited, since awaiting a thenable would also await
+ * <li>A {@link JsResolvedTable} is already the table: it cannot be awaited, since awaiting a thenable would also await
  * what it resolves to, and needs no resolving.</li>
- * <li>Whether code that receives a table may close it is agreed between that code and its caller. Code given a
+ * <li>Code that receives a table and its caller agree on whether that code may close it. Code given a
  * {@code TableOperations} can only chain on it, so it never retains a table its caller cannot reach to close. Code that
- * reads a table should take a {@code ResolvedTable}, which the sender resolves before handing it over, and code that
+ * reads a table should take a {@link JsResolvedTable}, which the sender resolves before handing it over, and code that
  * keeps one it was lent can call {@link JsResolvedTable#copy()} for a new instance with its own lifetime.</li>
  * </ul>
- * To hand one table to several owners, resolve it once, give each a copy, and close your own:
+ * To hand one table to several owners, resolve it once, give each owner a copy, and close the original:
  *
  * <pre>
  * const t = await pending;
@@ -89,9 +88,9 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * t.close();
  * </pre>
  * <p>
- * Each method checks its arguments when called and throws for invalid ones. A failure of the operation itself, on the
- * server or because a table it uses was canceled, failed, or used too late, is reported by rejecting the pending table
- * it returns; see {@link JsPendingTable} for how long a pending table may be used.
+ * Each method checks its arguments when called and throws for invalid ones. If the operation itself fails, on the
+ * server or because a table it uses was canceled, failed, or used too late, the pending table it returns rejects.
+ * {@link JsPendingTable} describes how long a pending table may be used.
  * <p>
  *
  * <pre>
@@ -100,8 +99,8 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  *       .where([dh.FilterValue.ofColumn("A").greaterThan(dh.FilterValue.ofNumber(5))])
  *       .sort([{column: "B", direction: "DESC"}])
  *       .head(10);
- *   // Any use of methods on table after this point would be potentially invalid, we didn't retain it ourselves,
- *   // and don't know if the caller did either.
+ *   // From here on, `table` may already be closed. This function did not retain it, and cannot tell whether the
+ *   // caller did.
  *   try {
  *       const a = result.findColumn("A");
  *       const data = await result.createSnapshot({
@@ -160,9 +159,9 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Internal method to make the async call to the server.
      *
-     * @param resultId the ticket that the server will populate with this result
+     * @param resultId the ticket that the server populates with this result
      * @param operation the operation to perform
-     * @param operand the other table the operation reads, if any; a pending one is checked and held as the source is
+     * @param operand the other table the operation reads, if any. A pending one is checked and held as the source is
      * @return a table operations instance that more calls can be chained on, or can be awaited
      */
     JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation,
@@ -232,7 +231,7 @@ public interface JsTableOperations extends ServerObject {
 
     /**
      * A server-side snapshot of the entire table as of the time the request is processed. The result does not update.
-     * This is what {@link JsTable#freeze()} does; the name here follows the other Deephaven clients.
+     * This is what {@link JsTable#freeze()} does. The name here follows the other Deephaven clients.
      *
      * @return a new, non-ticking table with the same contents as this table at that moment
      */
@@ -251,8 +250,8 @@ public interface JsTableOperations extends ServerObject {
     @JsType(namespace = "dh")
     class SnapshotWhenOptions {
         /**
-         * Whether to take an initial snapshot of the base table upon creation. If false, the resulting table will
-         * remain empty until the trigger table first updates. Defaults to false.
+         * Whether to take an initial snapshot of the base table upon creation. If false, the resulting table remains
+         * empty until the trigger table first updates. Defaults to false.
          */
         @JsProperty
         @JsNullable
@@ -260,7 +259,7 @@ public interface JsTableOperations extends ServerObject {
 
         /**
          * Whether the resulting table should be incremental. When incremental, only the rows of the base table that
-         * have been added or updated will have the latest "stamp key". Defaults to false.
+         * have been added or updated have the latest "stamp key". Defaults to false.
          */
         @JsProperty
         @JsNullable
@@ -276,9 +275,8 @@ public interface JsTableOperations extends ServerObject {
         public Boolean history;
 
         /**
-         * One or more column names to act as stamp columns. Each stamp column will be included in the final result, and
-         * will contain the value of the stamp column from the trigger table at the time of the snapshot. If empty or
-         * not specified, all columns will be used.
+         * One or more column names to act as stamp columns. The result includes each stamp column, holding its value
+         * from the trigger table at the time of the snapshot. If empty or not specified, uses all columns.
          */
         @JsProperty
         @JsNullable
@@ -289,7 +287,7 @@ public interface JsTableOperations extends ServerObject {
      * Creates a table that captures a snapshot of this table whenever the trigger table updates.
      *
      * @param trigger the table to use as a trigger for when to take a snapshot of this table
-     * @param options options on how the result table should be updated
+     * @param options options controlling when and how the result table updates
      * @return the snapshot table
      */
     @JsMethod
@@ -336,7 +334,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Creates a table that filters the contents of this table based on the provided conditions.
      *
-     * @param conditions the conditions to filter on; {@link FilterValue#ofColumn} names a column without a resolved
+     * @param conditions the conditions to filter on. {@link FilterValue#ofColumn} names a column without a resolved
      *        table
      * @return a filtered table
      */
@@ -353,10 +351,9 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Filters the contents of the left table (e.g. this table) based on the set of values that match the provided right
-     * table.
+     * Filters the contents of this table based on the set of values that match the provided right table.
      * <p>
-     * Note that when the right table ticks, all the rows in the left table will be re-evaluated.
+     * When the right table ticks, all the rows in this table are re-evaluated.
      *
      * @param rightTable the table with the filter criteria
      * @param columnsToMatch the column matches between the two tables
@@ -379,10 +376,9 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Filters the contents of the left table (this table) based on the set of values that do not match the provided
-     * right table.
+     * Filters the contents of this table based on the set of values that do not match the provided right table.
      * <p>
-     * Note that when the right table ticks, all the rows in the left table will be re-evaluated.
+     * When the right table ticks, all the rows in this table are re-evaluated.
      *
      * @param rightTable the table with the filter criteria
      * @param columnsToMatch the column matches between the two tables
@@ -407,27 +403,27 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Extracts a subset of a table by row position.
      * <p>
-     * If both firstPosition and lastPosition are positive, then the rows are counted from the beginning of the table.
-     * The firstPosition is inclusive, and the lastPosition is exclusive. The {@link #head}(N) call is equivalent to
+     * If both firstPosition and lastPosition are positive, both count from the beginning of the table. The
+     * firstPosition is inclusive, and the lastPosition is exclusive. The {@link #head}(N) call is equivalent to
      * slice(0, N). The firstPosition must be less than or equal to the lastPosition.
      * <p>
-     * If firstPosition is positive and lastPosition is negative, then the firstRow is counted from the beginning of the
-     * table, inclusively. The lastPosition is counted from the end of the table. For example, slice(1, -1) includes all
-     * rows but the first and last. If the lastPosition would be before the firstRow, the result is an emptyTable.
+     * If firstPosition is positive and lastPosition is negative, the firstPosition counts from the beginning of the
+     * table, inclusively. The lastPosition counts from the end of the table. For example, slice(1, -1) includes all
+     * rows but the first and last. If the lastPosition would be before the firstPosition, the result is an empty table.
      * <p>
-     * If firstPosition is negative, and lastPosition is zero, then the firstRow is counted from the end of the table,
-     * and the end of the slice is the size of the table. slice(-N, 0) is equivalent to {@link #tail}(N).
+     * If firstPosition is negative and lastPosition is zero, the firstPosition counts from the end of the table, and
+     * the slice ends at the end of the table. slice(-N, 0) is equivalent to {@link #tail}(N).
      * <p>
-     * If the firstPosition is negative and the lastPosition is negative, they are both counted from the end of the
-     * table. For example, slice(-2, -1) returns the second to last row of the table.
+     * If the firstPosition is negative and the lastPosition is negative, both count from the end of the table. For
+     * example, slice(-2, -1) returns the second to last row of the table.
      * <p>
-     * If firstPosition is negative and lastPosition is positive, then firstPosition is counted from the end of the
-     * table, inclusively. The lastPosition is counted from the beginning of the table, exclusively. For example,
-     * slice(-3, 5) returns all rows starting from the third-last row to the fifth row of the table. If there are no
-     * rows between these positions, the function will return an empty table.
+     * If firstPosition is negative and lastPosition is positive, the firstPosition counts from the end of the table,
+     * inclusively. The lastPosition counts from the beginning of the table, exclusively. For example, slice(-3, 5)
+     * returns all rows starting from the third-last row to the fifth row of the table. If there are no rows between
+     * these positions, the result is an empty table.
      *
      * @param firstPositionInclusive the first position to include in the result
-     * @param lastPositionExclusive the last position to include in the result
+     * @param lastPositionExclusive the position after the last one to include in the result
      * @return a new table with the subset of rows from the original table
      */
     @JsMethod
@@ -454,8 +450,8 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Creates a new table with only the specified columns. Any formulas will be computed each time the value is
-     * requested, nothing will be stored.
+     * Creates a new table with only the specified columns. Computes each formula every time a value is read, and stores
+     * nothing.
      *
      * @param columns the columns or expressions to have in the new table
      * @return a new table with only those columns.
@@ -472,8 +468,8 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Creates a new table, appending or replacing the specified columns. Any formulas will be computed each time the
-     * value is requested, nothing will be stored.
+     * Creates a new table, appending or replacing the specified columns. Computes each formula every time a value is
+     * read, and stores nothing.
      *
      * @param columns the columns or expressions to have in the new table
      * @return a new table with those columns appended
@@ -491,8 +487,8 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Creates a new table, appending or replacing the specified columns. All formulas will be computed eagerly and
-     * their values stored in memory.
+     * Creates a new table, appending or replacing the specified columns. Computes all formulas eagerly and stores their
+     * values in memory.
      *
      * @param columns the columns or expressions to have in the new table
      * @return a new table with those columns appended
@@ -509,8 +505,9 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Creates a new table appending or replacing the specified columns. All formulas will be computed the first time
-     * they are referenced and their values stored in memory.
+     * Creates a new table appending or replacing the specified columns. Computes each formula only when a value is
+     * read, and caches each result by the combination of the formula's inputs, reusing it when that combination
+     * repeats. The cache is never cleared, so this suits columns with few distinct inputs.
      *
      * @param columns the columns or expressions to have in the new table
      * @return a new table with those columns appended
@@ -528,8 +525,8 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Creates a new table with only the specified columns. All formulas will be computed eagerly and their values
-     * stored in memory.
+     * Creates a new table with only the specified columns. Computes all formulas eagerly and stores their values in
+     * memory.
      *
      * @param columns the columns or expressions to have in the new table
      * @return a new table with only those columns.
@@ -550,11 +547,11 @@ public interface JsTableOperations extends ServerObject {
      * rows.
      *
      * <ul>
-     * <li>ERROR_ON_DUPLICATE - Throw an error if a duplicate right hand table row is found. This is the default
+     * <li>ERROR_ON_DUPLICATE — Throw an error if a duplicate right hand table row is found. This is the default
      * behavior if not specified.</li>
-     * <li>FIRST_MATCH - Match the first right hand table row and ignore later duplicates.</li>
-     * <li>LAST_MATCH - Match the last right hand table row and ignore earlier duplicates.</li>
-     * <li>EXACTLY_ONE_MATCH - Match exactly one right hand table row; throw an error if there are zero or more than one
+     * <li>FIRST_MATCH — Match the first right hand table row and ignore later duplicates.</li>
+     * <li>LAST_MATCH — Match the last right hand table row and ignore earlier duplicates.</li>
+     * <li>EXACTLY_ONE_MATCH — Match exactly one right hand table row. Throw an error if there are zero or more than one
      * matches.</li>
      * </ul>
      */
@@ -582,14 +579,12 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Perform a natural-join with the {@code rightTable}.
      *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch The match pair conditions.
-     * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
-     *        match; if omitted, all non-match columns are added.
-     * @param joinType The type of join to perform
+     * @param rightTable the right side table on the join
+     * @param columnsToMatch the match pair conditions
+     * @param columnsToAdd the columns from the right table to add to the result. If omitted, adds all non-match columns
+     * @param joinType the type of join to perform
      * @return the natural-joined table
      */
-    // TODO add an options type for these various flags?
     @JsMethod
     default JsPendingTable<JsResolvedTable> naturalJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
@@ -628,11 +623,11 @@ public interface JsTableOperations extends ServerObject {
 
     /**
      * Performs an exact join of this table with the right table. Each row in this table must have exactly one matching
-     * row in the right table based on the match columns; if no match is found, an error is raised.
+     * row in the right table based on the match columns. If a row has no match, the operation fails.
      *
      * @param rightTable the table to join with
      * @param columnsToMatch the columns to match on, in "LeftCol=RightCol" format
-     * @param columnsToAdd the columns to add from the right table; if omitted, all non-match columns are added
+     * @param columnsToAdd the columns to add from the right table. If omitted, adds all non-match columns
      * @return a new table with the joined columns
      */
     @JsMethod
@@ -660,8 +655,8 @@ public interface JsTableOperations extends ServerObject {
      *
      * @param rightTable the table to join with
      * @param columnsToMatch the columns to match on, in "LeftCol=RightCol" format
-     * @param columnsToAdd the columns to add from the right table; if omitted, all non-match columns are added
-     * @param reserveBits the number of bits of key-space to initially reserve per group; default is 10
+     * @param columnsToAdd the columns to add from the right table. If omitted, adds all non-match columns
+     * @param reserveBits the number of bits of key-space to initially reserve per group. The default is 10
      * @return a new table with the joined columns
      */
     @JsMethod
@@ -695,7 +690,7 @@ public interface JsTableOperations extends ServerObject {
      * @param columnsToMatch the columns to match on. All but the last are exact matches ({@code "LeftCol=RightCol"} or
      *        a name in both tables). The last is the as-of match: {@code "LeftCol>=RightCol"},
      *        {@code "LeftCol>RightCol"}, or a name in both tables, which means {@code >=}.
-     * @param columnsToAdd the columns to add from the right table; if omitted, all non-match columns are added
+     * @param columnsToAdd the columns to add from the right table. If omitted, adds all non-match columns
      * @return a new table with the joined columns
      */
     @JsMethod
@@ -716,7 +711,7 @@ public interface JsTableOperations extends ServerObject {
      * @param columnsToMatch the columns to match on. All but the last are exact matches ({@code "LeftCol=RightCol"} or
      *        a name in both tables). The last is the as-of match: {@code "LeftCol<=RightCol"},
      *        <code>"LeftCol&lt;RightCol"</code>, or a name in both tables, which means {@code <=}.
-     * @param columnsToAdd the columns to add from the right table; if omitted, all non-match columns are added
+     * @param columnsToAdd the columns to add from the right table. If omitted, adds all non-match columns
      * @return a new table with the joined columns
      */
     @JsMethod
@@ -800,11 +795,27 @@ public interface JsTableOperations extends ServerObject {
     class RangeJoinMatch {
         /** The left column that starts each row's range. */
         public Column.ColumnOrName leftStartColumn;
-        /** How the right values compare to the start of the range. */
+        /**
+         * How the right values compare to the start of the range:
+         * <ul>
+         * <li>{@code LESS_THAN} — the start is less than the right value</li>
+         * <li>{@code LESS_THAN_OR_EQUAL} — the start is less than or equal to the right value</li>
+         * <li>{@code LESS_THAN_OR_EQUAL_ALLOW_PRECEDING} — as {@code LESS_THAN_OR_EQUAL}, and if no right value equals
+         * the start, the range also takes the closest right row before it</li>
+         * </ul>
+         */
         public RangeStartRule rangeStartRule;
         /** The right column whose values are matched against each range. */
         public Column.ColumnOrName rightRangeColumn;
-        /** How the right values compare to the end of the range. */
+        /**
+         * How the right values compare to the end of the range:
+         * <ul>
+         * <li>{@code GREATER_THAN} — the end is greater than the right value</li>
+         * <li>{@code GREATER_THAN_OR_EQUAL} — the end is greater than or equal to the right value</li>
+         * <li>{@code GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING} — as {@code GREATER_THAN_OR_EQUAL}, and if no right value
+         * equals the end, the range also takes the closest right row after it</li>
+         * </ul>
+         */
         public RangeEndRule rangeEndRule;
         /** The left column that ends each row's range. */
         public Column.ColumnOrName leftEndColumn;
@@ -868,7 +879,7 @@ public interface JsTableOperations extends ServerObject {
 
     /**
      * Groups the table by the specified columns, accumulating the other columns into arrays. If no columns are
-     * provided, the resulting table will have a single row.
+     * provided, the resulting table has a single row.
      * 
      * @param groupByColumns columns to group
      * @return a table with one row per group
@@ -961,9 +972,10 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Adds columns computed over each row's preceding (and, for windowed operations, following) rows, such as
-     * cumulative sums, moving averages, and exponential moving statistics, optionally per group. For example, a
-     * weighted average over each row and the two before it in its group:
+     * Adds or replaces columns whose value in each row depends on the rows around it in its group: cumulative
+     * operations, rolling windows, exponential moving statistics, fills and deltas. Without
+     * {@link UpdateByOptions#groupByColumns}, the whole table is one group. For example, a weighted average over each
+     * row and the two before it in its group:
      *
      * <pre>
      * const rolling = await table.updateBy({
@@ -980,7 +992,8 @@ public interface JsTableOperations extends ServerObject {
      * </pre>
      *
      * @param options the operations to apply, and optionally the columns to group by and control settings
-     * @return a table with this table's rows and columns, plus a column for each operation's output
+     * @return a table with the same rows as this table, and each operation's output columns added or replacing the
+     *         columns of the same name
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> updateBy(UpdateByOptions options) {
@@ -1055,7 +1068,7 @@ public interface JsTableOperations extends ServerObject {
         public double width;
 
         /**
-         * The visible X range as {@code [start, end]}, both required. If absent or null, all data is used.
+         * The visible X range as {@code [start, end]}, both required. If absent or null, uses all data.
          */
         @JsNullable
         public ReadonlyArray<LongWrapper> xRange;
@@ -1063,8 +1076,8 @@ public interface JsTableOperations extends ServerObject {
 
     /**
      * Creates a table with fewer rows than this one that draws the same as a line plot at the given width, for plotting
-     * large time series. Each pixel of the width keeps the rows that set its first, last, minimum and maximum values; a
-     * table with fewer rows than that is returned unchanged.
+     * large time series. Each pixel of the width keeps the rows that set its first, last, minimum and maximum values.
+     * If the table has fewer rows than that, the result is the table unchanged.
      *
      * @param options the columns to plot, the plot width, and optionally the visible X range
      * @return the downsampled table
@@ -1097,10 +1110,10 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Creates a new table with only the distinct values of the specified columns. If no columns are specified, all
-     * columns will be used.
+     * Creates a new table with only the distinct values of the specified columns. If no columns are specified, uses all
+     * columns.
      * 
-     * @param columnNames the column names to distinct on - if empty/null, all columns are used
+     * @param columnNames the column names to distinct on. If empty/null, uses all columns
      * @return a new table with only the distinct values of the specified columns
      */
     @JsMethod
@@ -1120,7 +1133,7 @@ public interface JsTableOperations extends ServerObject {
      * Counts the number of rows in each group, storing the result in a new column.
      *
      * @param columnName the name of the new column to hold the row counts
-     * @param groupByColumns columns to group by; if omitted, counts all rows into a single result
+     * @param groupByColumns columns to group by. If omitted, counts all rows into a single result
      * @return a new table with a count column and optional group-by columns
      */
     @JsMethod
@@ -1145,7 +1158,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Returns the first row of each group.
      *
-     * @param groupByColumns columns to group by; if omitted, returns the first row of the table
+     * @param groupByColumns columns to group by. If omitted, returns the first row of the table
      * @return a new table with the first row from each group
      */
     @JsMethod
@@ -1157,7 +1170,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Returns the last row of each group.
      *
-     * @param groupByColumns columns to group by; if omitted, returns the last row of the table
+     * @param groupByColumns columns to group by. If omitted, returns the last row of the table
      * @return a new table with the last row from each group
      */
     @JsMethod
@@ -1169,7 +1182,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Returns the minimum value of each column within each group.
      *
-     * @param groupByColumns columns to group by; if omitted, computes the minimum across all rows
+     * @param groupByColumns columns to group by. If omitted, computes the minimum across all rows
      * @return a new table with the minimum values
      */
     @JsMethod
@@ -1181,7 +1194,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Returns the maximum value of each column within each group.
      *
-     * @param groupByColumns columns to group by; if omitted, computes the maximum across all rows
+     * @param groupByColumns columns to group by. If omitted, computes the maximum across all rows
      * @return a new table with the maximum values
      */
     @JsMethod
@@ -1193,7 +1206,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Computes the sum of each column within each group.
      *
-     * @param groupByColumns columns to group by; if omitted, computes the sum across all rows
+     * @param groupByColumns columns to group by. If omitted, computes the sum across all rows
      * @return a new table with the sums
      */
     @JsMethod
@@ -1205,7 +1218,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Computes the arithmetic mean of each column within each group.
      *
-     * @param groupByColumns columns to group by; if omitted, computes the average across all rows
+     * @param groupByColumns columns to group by. If omitted, computes the average across all rows
      * @return a new table with the averages
      */
     @JsMethod
@@ -1218,7 +1231,7 @@ public interface JsTableOperations extends ServerObject {
      * Computes the median of each column within each group. When the group size is even, averages the two middle values
      * for numeric types.
      *
-     * @param groupByColumns columns to group by; if omitted, computes the median across all rows
+     * @param groupByColumns columns to group by. If omitted, computes the median across all rows
      * @return a new table with the medians
      */
     @JsMethod
@@ -1231,7 +1244,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Computes the sample standard deviation of each column within each group, using Bessel's correction.
      *
-     * @param groupByColumns columns to group by; if omitted, computes the standard deviation across all rows
+     * @param groupByColumns columns to group by. If omitted, computes the standard deviation across all rows
      * @return a new table with the standard deviations
      */
     @JsMethod
@@ -1243,7 +1256,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Computes the sample variance of each column within each group, using Bessel's correction.
      *
-     * @param groupByColumns columns to group by; if omitted, computes the variance across all rows
+     * @param groupByColumns columns to group by. If omitted, computes the variance across all rows
      * @return a new table with the variances
      */
     @JsMethod
@@ -1255,7 +1268,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Computes the sum of absolute values of each column within each group.
      *
-     * @param groupByColumns columns to group by; if omitted, computes the absolute sum across all rows
+     * @param groupByColumns columns to group by. If omitted, computes the absolute sum across all rows
      * @return a new table with the absolute sums
      */
     @JsMethod
@@ -1265,11 +1278,10 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Computes the weighted sum of each column within each group. Each value is multiplied by the corresponding weight,
-     * and the results are summed.
+     * Computes the weighted sum of each column within each group: the sum of each value multiplied by its weight.
      *
      * @param weightColumn the column containing the weights
-     * @param groupByColumns columns to group by; if omitted, computes the weighted sum across all rows
+     * @param groupByColumns columns to group by. If omitted, computes the weighted sum across all rows
      * @return a new table with the weighted sums
      */
     @JsMethod
@@ -1280,17 +1292,17 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Computes the weighted average of each column within each group. Each value is multiplied by the corresponding
-     * weight, and the result is the sum of weighted values divided by the sum of weights. Every column other than the
-     * weight and the group-by columns is averaged, so each must be numeric; to choose and rename columns, or to combine
-     * with other aggregations, use {@link #aggBy(AggByOptions)} with {@code dh.agg.Aggregation.AggWAvg}.
+     * Computes the weighted average of each column within each group: the sum of each value multiplied by its weight,
+     * divided by the sum of the weights. It averages every column other than the weight and the group-by columns, so
+     * each must be numeric. To choose and rename columns, or to combine with other aggregations, use
+     * {@link #aggBy(AggByOptions)} with {@code dh.agg.Aggregation.AggWAvg}.
      *
      * <pre>
      * const byKey = await table.wavgBy("W", ["Key"]);
      * </pre>
      *
      * @param weightColumn the column containing the weights
-     * @param groupByColumns columns to group by; if omitted, computes the weighted average across all rows
+     * @param groupByColumns columns to group by. If omitted, computes the weighted average across all rows
      * @return a new table with the weighted averages
      */
     @JsMethod
@@ -1311,7 +1323,7 @@ public interface JsTableOperations extends ServerObject {
         public Boolean nullFill;
 
         /**
-         * Specific columns to ungroup. If absent or empty, all columns in the table will be ungrouped.
+         * Specific columns to ungroup. If absent or empty, ungroups all columns in the table.
          */
         @JsNullable
         public ReadonlyArray<Column.ColumnOrName> columnsToUngroup;
@@ -1319,8 +1331,8 @@ public interface JsTableOperations extends ServerObject {
 
     /**
      * Ungroups a table by expanding columns of arrays or vectors into columns of singular values, creating one row in
-     * the output table for each value in the columns to be ungrouped. Columns that are not ungrouped have their values
-     * duplicated in each output row corresponding to a given input row.
+     * the output table for each value in the columns being ungrouped. Each output row repeats the values of the other
+     * columns from its input row.
      *
      * @param options options to specify the behavior of the ungroup operation
      * @return an ungrouped table

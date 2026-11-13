@@ -19,7 +19,7 @@ import jsinterop.base.Js;
 
 /**
  * Computes the single distinct value within each aggregation group. A group with more than one distinct value gives
- * {@link #nonUniqueSentinel}; a group whose values are all null gives null, whatever the sentinel.
+ * {@link #nonUniqueSentinel}. A group whose values are all null gives null, whatever the sentinel.
  */
 @JsType(namespace = "dh.agg")
 public final class Unique extends ColumnAggregation {
@@ -52,6 +52,9 @@ public final class Unique extends ColumnAggregation {
         return sentinel.toProto();
     }
 
+    /**
+     * A {@link #nonUniqueSentinel} value, whose {@code type} names the column type it suits.
+     */
     @TsUnion(anonymous = false, namespace = "dh.agg")
     @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "?")
     public interface NonUniqueSentinelUnion {
@@ -198,7 +201,9 @@ public final class Unique extends ColumnAggregation {
         public String value;
     }
 
-    /** Outputs {@code value}, a whole number within the int range, for an int column. */
+    /**
+     * Outputs {@code value} for an int column. Must be a whole number from -2147483648 through 2147483647.
+     */
     @TsInterface
     @JsType(namespace = "dh.agg")
     public static final class IntSentinel {
@@ -207,7 +212,7 @@ public final class Unique extends ColumnAggregation {
         public double value;
     }
 
-    /** Outputs {@code value} for a long column. */
+    /** Outputs {@code value} for a long column. Accepts any long value. */
     @TsInterface
     @JsType(namespace = "dh.agg")
     public static final class LongSentinel {
@@ -216,7 +221,7 @@ public final class Unique extends ColumnAggregation {
         public LongWrapper value;
     }
 
-    /** Outputs {@code value} for a float column. */
+    /** Outputs {@code value} for a float column. The value is sent as a 32-bit float, losing any extra precision. */
     @TsInterface
     @JsType(namespace = "dh.agg")
     public static final class FloatSentinel {
@@ -243,7 +248,7 @@ public final class Unique extends ColumnAggregation {
         public boolean value;
     }
 
-    /** Outputs {@code value}, a whole number within the byte range, for a byte column. */
+    /** Outputs {@code value} for a byte column. Must be a whole number from -128 through 127. */
     @TsInterface
     @JsType(namespace = "dh.agg")
     public static final class ByteSentinel {
@@ -252,7 +257,7 @@ public final class Unique extends ColumnAggregation {
         public double value;
     }
 
-    /** Outputs {@code value}, a whole number within the short range, for a short column. */
+    /** Outputs {@code value} for a short column. Must be a whole number from -32768 through 32767. */
     @TsInterface
     @JsType(namespace = "dh.agg")
     public static final class ShortSentinel {
@@ -261,7 +266,10 @@ public final class Unique extends ColumnAggregation {
         public double value;
     }
 
-    /** Outputs {@code value}, a single-character string, for a char column. */
+    /**
+     * Outputs {@code value} for a char column. Must be a string of exactly one UTF-16 code unit, so the client rejects
+     * a character outside the Basic Multilingual Plane, such as most emoji.
+     */
     @TsInterface
     @JsType(namespace = "dh.agg")
     public static final class CharSentinel {

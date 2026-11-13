@@ -7,7 +7,7 @@ import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsType;
 
 /**
- * Counts the number of rows in each aggregation group. The count is stored in a new column with the specified name.
+ * Counts the number of rows in each aggregation group, and writes the count to a new column with the specified name.
  *
  * <p>
  * This aggregation is not supported in {@code aggAllBy} — use it only with {@code aggBy}.

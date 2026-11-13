@@ -7,7 +7,7 @@ import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsType;
 
 /**
- * Collects all values within each aggregation group into an array/vector column.
+ * Collects all values within each aggregation group into an array column.
  */
 @JsType(namespace = "dh.agg")
 public final class Group extends ColumnAggregation {

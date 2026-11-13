@@ -34,14 +34,14 @@ public class AggByOptions {
      * An optional table whose distinct combinations of values for the {@link #groupByColumns} should be used to create
      * an initial set of aggregation groups. All other columns are ignored.
      * <p>
-     * Only the initial state of this table is used, updates will be ignored.
+     * The aggregation uses only the initial state of this table and ignores later updates.
      */
     @JsNullable
     public JsTableReference initialGroups;
 
     /**
      * The columns to group by. Must be specified if {@link #initialGroups} is non-null. If empty or unspecified, the
-     * result will be a single group containing all rows in the table.
+     * result is a single group containing all rows in the table.
      */
     @JsNullable
     public ReadonlyArray<Column.ColumnOrName> groupByColumns;

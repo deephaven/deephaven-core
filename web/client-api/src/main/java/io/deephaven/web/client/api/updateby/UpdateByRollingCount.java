@@ -6,6 +6,9 @@ package io.deephaven.web.client.api.updateby;
 import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsType;
 
+/**
+ * Counts the non-null values of each input column in each row's window.
+ */
 @JsType(namespace = "dh.updateby")
 public final class UpdateByRollingCount extends UpdateByRollingSpec {
     @TsLiteral

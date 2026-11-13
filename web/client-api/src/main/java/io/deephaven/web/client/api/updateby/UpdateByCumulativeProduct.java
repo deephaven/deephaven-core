@@ -6,6 +6,10 @@ package io.deephaven.web.client.api.updateby;
 import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsType;
 
+/**
+ * Computes the product of each input column over the current row and every row before it in its group. Skips null
+ * values.
+ */
 @JsType(namespace = "dh.updateby")
 public class UpdateByCumulativeProduct {
     @TsLiteral

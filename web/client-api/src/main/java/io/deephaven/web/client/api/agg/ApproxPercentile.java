@@ -20,8 +20,8 @@ public final class ApproxPercentile extends ColumnAggregation {
     public double percentile;
 
     /**
-     * T-Digest compression factor. Must be greater than or equal to 1; values above 1000 are extremely large. Higher
-     * values provide more accuracy at the cost of memory and computation. When not specified, the server will choose a
+     * T-Digest compression factor. Must be greater than or equal to 1. Values above 1000 are extremely large. Higher
+     * values provide more accuracy at the cost of memory and computation. When not specified, the server chooses a
      * default compression value.
      */
     @JsNullable

@@ -7,21 +7,34 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 /**
- * Options for the exponential moving operations. Each one is optional; the server's default applies to any not set.
+ * Options for the exponential moving operations: {@link UpdateByEma}, {@link UpdateByEms}, {@link UpdateByEmMin},
+ * {@link UpdateByEmMax} and {@link UpdateByEmStd}. Any option left unset uses the server's default.
  */
 @JsType(namespace = "dh.updateby")
 public class UpdateByEmOptions {
+    /** What to do when an input value is null. Defaults to {@code SKIP}. */
     @JsNullable
     public BadDataBehavior onNullValue;
+    /** What to do when an input value is NaN. Defaults to {@code SKIP}. */
     @JsNullable
     public BadDataBehavior onNaNValue;
+    /** For time-based decay, what to do when a row's timestamp is null. Defaults to {@code SKIP}. */
     @JsNullable
     public BadDataBehavior onNullTime;
+    /**
+     * For time-based decay, what to do when a row's timestamp is earlier than the previous row's. Defaults to
+     * {@code THROW}.
+     */
     @JsNullable
     public BadDataBehavior onNegativeDeltaTime;
+    /** For time-based decay, what to do when a row's timestamp equals the previous row's. */
     @JsNullable
     public BadDataBehavior onZeroDeltaTime;
 
+    /**
+     * The precision and rounding mode for the operation's arithmetic on BigDecimal and BigInteger columns. Defaults to
+     * Java's {@code MathContext.DECIMAL128}, 34 digits with {@code HALF_EVEN} rounding.
+     */
     @JsNullable
     public MathContext bigValueContext;
 

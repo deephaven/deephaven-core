@@ -8,8 +8,8 @@ import jsinterop.annotations.JsType;
 
 /**
  * Freezes the value of each group's single row: once set, it does not change when that row updates. A group must have
- * at most one row; a group with more fails the aggregation, so group by columns that are unique in the source. When a
- * group is removed its output row is removed, and if it is added again its new value is frozen.
+ * at most one row. A group with more fails the aggregation, so group by columns that are unique in the source. Removing
+ * a group removes its output row, and if the group returns, the aggregation freezes its new value.
  */
 @JsType(namespace = "dh.agg")
 public final class Freeze extends ColumnAggregation {

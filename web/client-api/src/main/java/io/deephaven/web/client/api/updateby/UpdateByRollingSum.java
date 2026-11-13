@@ -6,6 +6,9 @@ package io.deephaven.web.client.api.updateby;
 import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsType;
 
+/**
+ * Computes the sum of each input column over each row's window. Skips null values.
+ */
 @JsType(namespace = "dh.updateby")
 public final class UpdateByRollingSum extends UpdateByRollingSpec {
     @TsLiteral

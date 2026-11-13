@@ -36,8 +36,8 @@ public abstract sealed class Aggregation
     /**
      * Creates a Sum aggregation.
      *
-     * @param columns the column(s) to aggregate; can be renaming expressions, i.e. {@code "new_col = col"}. Default is
-     *        null, only valid when used in {@code aggAllBy}.
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy}.
      * @return an aggregation
      */
     @JsMethod
@@ -218,8 +218,8 @@ public abstract sealed class Aggregation
      * Creates an Approximate Percentile aggregation using T-Digest.
      *
      * @param percentile the percentile to calculate, must be in the range [0.0, 1.0]
-     * @param compression T-Digest compression factor; must be &ge; 1, values above 1000 are not recommended. If null,
-     *        the server will choose a default.
+     * @param compression T-Digest compression factor, which must be &ge; 1. Values above 1000 are not recommended. If
+     *        null, the server chooses a default.
      * @param columns the column(s) to aggregate
      * @return an aggregation
      */
@@ -353,7 +353,7 @@ public abstract sealed class Aggregation
     /**
      * Creates a T-Digest aggregation, storing the T-Digest data structure for later percentile calculations.
      *
-     * @param compression T-Digest compression factor; must be &ge; 1. If null, the server will choose a default.
+     * @param compression T-Digest compression factor, which must be &ge; 1. If null, the server chooses a default.
      * @param columns the column(s) to aggregate
      * @return an aggregation
      */
@@ -414,7 +414,7 @@ public abstract sealed class Aggregation
      * {@code aggAllBy}.
      *
      * @param col the output column name to hold the sub-tables
-     * @param includeGroupByColumns whether to include the group-by columns in each sub-table; defaults to {@code true}
+     * @param includeGroupByColumns whether to include the group-by columns in each sub-table. Defaults to {@code true}
      * @return an aggregation
      */
     @JsMethod

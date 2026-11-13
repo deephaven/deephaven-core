@@ -8,8 +8,8 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 /**
- * Partitions the source table into sub-tables, one per aggregation group. Each sub-table is stored in a new column with
- * the specified name.
+ * Partitions the source table into sub-tables, one per aggregation group, and holds them in a new column with the
+ * specified name.
  *
  * <p>
  * This aggregation is not supported in {@code aggAllBy} — use it only with {@code aggBy}.

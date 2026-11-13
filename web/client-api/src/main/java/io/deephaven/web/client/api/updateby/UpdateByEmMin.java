@@ -7,11 +7,27 @@ import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
+/**
+ * Computes the exponential moving minimum of each input column, within each group:
+ *
+ * <pre>
+ * emMin = min(a * emMinPrev, value)
+ * </pre>
+ *
+ * The first value in each group is the initial minimum. {@link #windowScale} sets {@code a}.
+ */
 @JsType(namespace = "dh.updateby")
 public class UpdateByEmMin {
     @TsLiteral
     public final String type = "UpdateByEmMin";
+    /**
+     * How to handle null and NaN values, and other options. If null, the server's defaults apply.
+     */
     @JsNullable
     public UpdateByEmOptions emOptions;
+    /**
+     * The decay rate. In rows, {@code a = e^(-1 / ticks)}. In time, {@code a = e^(-dt / duration)}, where {@code dt} is
+     * the time since the previous row. A larger value decays more slowly.
+     */
     public UpdateByWindowScale windowScale;
 }

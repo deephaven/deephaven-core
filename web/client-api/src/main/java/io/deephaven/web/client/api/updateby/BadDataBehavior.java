@@ -12,13 +12,13 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 /**
- * Directives for how to handle {@code null} and {@code NaN} values.
+ * How an exponential moving operation handles a null or NaN value, or an invalid timestamp:
  *
  * <ul>
- * <li>THROW - Throw an exception and abort processing when bad data is encountered.</li>
- * <li>RESET - Reset the state for the bucket to {@code null} when invalid data is encountered.</li>
- * <li>SKIP - Skip and do not process the invalid data without changing state.</li>
- * <li>POISON - Allow the bad data to poison the result. This is only valid for use with NaN.</li>
+ * <li>THROW — throws an exception and fails the operation</li>
+ * <li>RESET — resets the group's state to null</li>
+ * <li>SKIP — ignores the value and keeps the current state</li>
+ * <li>POISON — lets a NaN value propagate into the result, and is valid only for NaN</li>
  * </ul>
  */
 @TsUnion(anonymous = false, namespace = "dh.updateby", name = "BadDataBehavior")
