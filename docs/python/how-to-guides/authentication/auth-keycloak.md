@@ -25,6 +25,9 @@ This guide assumes you have [Docker and Docker Compose](../../getting-started/do
 > Deephaven's OIDC authentication handler gives every user who logs in through Keycloak the same SuperUser context, and Deephaven Community allows every logged-in user to do everything the Deephaven APIs allow. This applies to any Keycloak configuration, not only the example. Roles assigned in Keycloak, such as the `user` and `admin` roles in the [example realm](#deephaven_realmjson), don't limit what a user can do in Deephaven.
 
 > [!WARNING]
+> **Security issue:** The OIDC authentication provider in Deephaven 42.8 and 42.9 has a flaw that lets a login with an invalid token succeed, with full access to the server. The fix is on `main` but isn't in a release yet. The provider JAR that this guide downloads is affected, so until a release includes the fix, don't use the example or the provider to protect a server that untrusted users can reach.
+
+> [!WARNING]
 > **Known issue:** In testing with Deephaven 42.8 and 42.9, the web UI doesn't show the Keycloak login screen. The latest published version of the `@deephaven/js-plugin-auth-keycloak` plugin, 0.2.0, fails to load in the web UI, and the IDE shows "No login plugins found". Keycloak and the server's OIDC authentication handler start normally, and users can sign in to Keycloak itself, but until a compatible plugin is published, the example can't sign users in to the IDE.
 
 ## Set up the project
