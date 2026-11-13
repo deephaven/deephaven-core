@@ -6,6 +6,7 @@ package io.deephaven.client.impl;
 import com.google.protobuf.ByteStringAccess;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.StateReclamation;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
@@ -487,6 +488,12 @@ class BatchTableRequestBuilder {
 
         @Override
         public Operation visit(AggregateTable aggregateTable) {
+            if (!aggregateTable.stateReclamation().equals(StateReclamation.configured())) {
+                // AggregateRequest has no field for it, so the server always uses its configured reclamation
+                throw new UnsupportedOperationException(
+                        "Aggregations over gRPC do not support choosing a state reclamation: "
+                                + aggregateTable.stateReclamation());
+            }
             AggregateRequest.Builder builder = AggregateRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(aggregateTable.parent()))

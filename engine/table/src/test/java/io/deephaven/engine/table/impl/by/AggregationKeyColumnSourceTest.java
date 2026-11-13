@@ -3,10 +3,14 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.agg.AggregationOptions;
+import io.deephaven.api.agg.StateReclamation;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
@@ -15,9 +19,11 @@ import io.deephaven.engine.table.impl.NoPushdownColumnSourceWrapper;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.SimpleListener;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
@@ -38,6 +44,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -46,7 +53,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
 import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 
+import static io.deephaven.api.agg.Aggregation.AggLast;
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
@@ -272,7 +281,9 @@ public class AggregationKeyColumnSourceTest {
     public void testOnlyCyclesThatMayChangeTheHashTableRecordTheirStep() {
         final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(),
                 intCol("Key", 3, 5, 7), intCol("Value", 1, 2, 3));
-        final AggregationRowLookup lookup = AggregationProcessor.getRowLookup(source.lastBy("Key"));
+        // an aggregation that keeps its states; one that reclaims them changes the hash table when a state empties
+        final AggregationRowLookup lookup =
+                AggregationProcessor.getRowLookup(lastBy(source, StateReclamation.none()));
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         // the initial build precedes every reader
         assertEquals(QueryConstants.NULL_LONG, lookup.lastStateChangeStep());
@@ -307,6 +318,98 @@ public class AggregationKeyColumnSourceTest {
             source.notifyListeners(i(), i(), i(4));
         });
         assertEquals(updateGraph.clock().currentStep(), lookup.lastStateChangeStep());
+    }
+
+    /**
+     * An aggregation that reclaims states removes an emptied state from the hash table, and may move states to collapse
+     * sparse blocks, in a cycle that adds no rows; either records the cycle's step.
+     */
+    @Test
+    public void testCyclesThatRemoveOrMoveStatesRecordTheirStep() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int size = 3 * blockSize;
+        final int[] keys = IntStream.range(0, size).toArray();
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(size).toTracking(),
+                intCol("Key", keys), intCol("Value", keys));
+        final QueryTable aggregated = lastBy(source, StateReclamation.releaseBlocks(0.5));
+        final AggregationRowLookup lookup = AggregationProcessor.getRowLookup(aggregated);
+        final SimpleListener listener = new SimpleListener(aggregated);
+        aggregated.addUpdateListener(listener);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // block 0 becomes sparse, and block 1 is one state short of it
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final WritableRowSet removed = RowSetFactory.fromRange(0, blockSize / 2 - 1);
+            removed.insertRange(blockSize, blockSize + blockSize / 2 - 2);
+            removeRows(source, removed);
+            source.notifyListeners(i(), removed, i());
+        });
+        assertEquals(updateGraph.clock().currentStep(), lookup.lastStateChangeStep());
+
+        // block 1 becomes sparse; the one removed row allows one state to move toward collapsing the two blocks
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet removed = i(blockSize + blockSize / 2 - 1);
+            removeRows(source, removed);
+            source.notifyListeners(i(), removed, i());
+        });
+        final long removeStep = updateGraph.clock().currentStep();
+        assertEquals(removeStep, lookup.lastStateChangeStep());
+
+        // modifying values allows the remaining states to move, with no state added or removed
+        listener.reset();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet modified = RowSetFactory.fromRange(2L * blockSize, size - 1);
+            addToTable(source, modified, intCol("Key", IntStream.range(2 * blockSize, size).toArray()),
+                    intCol("Value", IntStream.range(0, blockSize).toArray()));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), modified, RowSetShiftData.EMPTY,
+                    source.newModifiedColumnSet("Value")));
+        });
+        assertTrue(listener.getUpdate().added().isEmpty());
+        assertTrue(listener.getUpdate().removed().isEmpty());
+        assertTrue(listener.getUpdate().shifted().nonempty());
+        assertTrue(updateGraph.clock().currentStep() > removeStep);
+        assertEquals(updateGraph.clock().currentStep(), lookup.lastStateChangeStep());
+        listener.close();
+    }
+
+    /**
+     * A probe of previous values in a cycle that removed a state from the hash table is abandoned, since the state is
+     * no longer found.
+     */
+    @Test
+    public void testPreviousValuesAfterAStateIsRemovedAreScanned() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(),
+                intCol("Key", 3, 5, 7), intCol("Value", 1, 2, 3));
+        final QueryTable lastBy = lastBy(source, StateReclamation.releaseBlocks());
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "Key", 3, 11);
+        filter.init(lastBy.getDefinition());
+        final AggregationKeyColumnSource<?> keySource = keySource(lastBy);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            removeRows(source, i(2));
+            source.notifyListeners(i(), i(2), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+            final long step = updateGraph.clock().currentStep();
+            while (!lastBy.satisfied(step)) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+
+            try (final RowSet prevRows = lastBy.getRowSet().copyPrev();
+                    final PushdownResult result = pushdown(keySource, filter, prevRows, true)) {
+                assertEquals(i(0, 1, 2), prevRows);
+                assertEquals(prevRows, result.maybeMatch());
+                assertTrue(result.match().isEmpty());
+            }
+            // key 3's state is gone from the current rows and the hash table alike
+            try (final PushdownResult result = pushdown(keySource, filter, lastBy.getRowSet(), false)) {
+                assertTrue(result.match().isEmpty());
+                assertTrue(result.maybeMatch().isEmpty());
+            }
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
     }
 
     @Test
@@ -661,6 +764,11 @@ public class AggregationKeyColumnSourceTest {
             source.notifyListeners(i(14), i(), i());
         });
         check.run();
+    }
+
+    private static QueryTable lastBy(final Table source, final StateReclamation stateReclamation) {
+        return (QueryTable) source.aggBy(List.of(AggLast("Value")), ColumnName.from("Key"),
+                AggregationOptions.<Table>builder().stateReclamation(stateReclamation).build());
     }
 
     private static Table withKeyFormula(final Table table, final String keyFormula) {

@@ -167,6 +167,10 @@ public class TypedHasherFactory {
                             TypedAggregationFactory::buildInsert));
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
             configureAggregation(builder);
+            builder.supportTombstones(true);
+            builder.tombstoneStateName("TOMBSTONE_STATE");
+            builder.rehashSlotsPerEntry(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
+                    "REHASH_SLOTS_PER_ENTRY");
             builder.classPrefix("IncrementalAggOpenHasher").packageMiddle("incopenagg");
             builder.overflowOrAlternateStateName("alternateOutputPosition");
             builder.moveMainFull(TypedAggregationFactory::incAggMoveMain);

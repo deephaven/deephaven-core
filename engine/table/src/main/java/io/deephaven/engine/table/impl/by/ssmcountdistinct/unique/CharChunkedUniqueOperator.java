@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.CharSsmBackedSource;
@@ -352,6 +353,25 @@ public class CharChunkedUniqueOperator extends BaseCharChunkedUniqueOperator {
         ssms.clear(destination);
     }
     // endregion
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        internalResult.shift(shiftData);
+        singletonCount.shift(shiftData);
+        ssms.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        internalResult.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        singletonCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        ssms.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
 
     /**
      * Reduces the removed and added ranges to their net removals and net additions, each compacted to distinct values
