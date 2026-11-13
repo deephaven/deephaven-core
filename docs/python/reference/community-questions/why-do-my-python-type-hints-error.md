@@ -15,7 +15,7 @@ How a null value reaches a Python function depends on the column's type and the 
 
 The following example shows the difference between a plain numeric type hint and an `Optional` one:
 
-```python
+```python order=t_str,t_int,t_optional,source
 from typing import Optional
 from deephaven import empty_table
 
