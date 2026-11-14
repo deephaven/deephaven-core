@@ -249,8 +249,9 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
   isn't validated by the docs snapshotter; flag it unless the page has a reason.
 - **Is it readable in one view?** Short enough to follow, with realistic names, and with comments
   that explain *why* rather than restating the code.
-- **Does the page work in order, on a clean machine?** Walk each path a reader can actually take,
-  top to bottom, pasting each snippet into a fresh environment. Treat independent examples (each
+- **Does the page work in order, on a clean machine?** Trace by reading (nothing is executed) each
+  path a reader can actually take, top to bottom, as if they pasted each snippet into a fresh
+  environment. Treat independent examples (each
   starting from the page's shared setup) and mutually exclusive alternatives as separate paths, and
   when the text tells the reader to insert a fragment into earlier code (inside an earlier `try`
   block, say), apply that instruction before judging the snippet. Track what each snippet creates, closes, or
@@ -262,9 +263,8 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
   to log in, and any package, codec, or image the default distribution lacks. Each must be stated
   before the step that needs it and agree everywhere on the page (same port, URL, and login). Check
   the other language's page the same way. (Defaults, failure paths, and version pins are checked
-  against source by the accuracy check's **Example robustness**.) This check traces the steps by
-  reading and doesn't execute anything. Blocks marked `syntax` or `skip-test` are still traced by
-  reading, as above, and a snippet the page presents as a fragment is judged by where the text says it goes.
+  against source by the accuracy check's **Example robustness**.) Blocks marked `syntax` or
+  `skip-test` are traced the same way, and a snippet the page presents as a fragment is judged by where the text says it goes.
 
 If the user asked for edits and you change an example's code or its comments, re-verify the
 changed example with `deephaven-core-accuracy-spot-check` before moving on, as in the re-verify
