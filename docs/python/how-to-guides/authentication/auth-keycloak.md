@@ -22,7 +22,7 @@ This guide assumes you have [Docker and Docker Compose](../../getting-started/do
 > - Postgres runs with [`fsync`](https://man7.org/linux/man-pages/man2/fsync.2.html) and `synchronous_commit` turned off. Leave both on in production.
 
 > [!IMPORTANT]
-> Deephaven's OIDC authentication handler gives every user who logs in through Keycloak the same SuperUser context, and Deephaven Community allows every logged-in user to do everything the Deephaven APIs allow. This applies to any Keycloak configuration, not only the example. Roles assigned in Keycloak, such as the `user` and `admin` roles in the [example realm](#deephaven_realmjson), don't limit what a user can do in Deephaven.
+> Deephaven's OIDC authentication handler gives every user who logs in through Keycloak the same `SuperUser` context, and Deephaven Community allows every logged-in user to do everything the Deephaven APIs allow. This applies to any Keycloak configuration, not only the example. Roles assigned in Keycloak, such as the `user` and `admin` roles in the [example realm](#deephaven_realmjson), don't limit what a user can do in Deephaven.
 
 > [!WARNING]
 > **Security issue:** The OIDC authentication provider in Deephaven 42.8 and 42.9 has a flaw that lets a login with an invalid token succeed, with full access to the server. The fix is on `main` but isn't in a release yet. The provider JAR that this guide downloads is affected, so until a release includes the fix, don't use the example or the provider to protect a server that untrusted users can reach.
@@ -366,7 +366,7 @@ If you are running the example on this page and need to add a user, add a user t
 2. Sign in to the master realm with the administrator account. In this example, that account is `admin`/`admin`, which the `KC_BOOTSTRAP_ADMIN_USERNAME` and `KC_BOOTSTRAP_ADMIN_PASSWORD` environment variables define.
 3. Switch to the `deephaven_core` realm, create the user, and set a password for them. If you leave the email, first name, or last name empty, Keycloak asks the user to fill them in on an "Update Account Information" page the first time they sign in.
 
-Every user in the realm who can log in gets full access to Deephaven. See the note on SuperUser access at the top of this guide.
+Every user in the realm who can log in gets full access to Deephaven. See the note on `SuperUser` access at the top of this guide.
 
 In a production Keycloak deployment, use your organization's admin console and realm instead.
 
