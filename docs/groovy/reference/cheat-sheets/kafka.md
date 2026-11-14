@@ -18,7 +18,7 @@ The examples assume the following setup:
 - A `share.price.avro` topic of Avro records whose schema is registered as `share.price.record`, supplied separately, for [Consume Avro](#consume-avro).
 - An `orders` topic of JSON records with the fields `jsymbol`, `jside`, `jprice`, and `jqty`, supplied separately, for [Consume JSON with a field mapping](#consume-json-with-a-field-mapping).
 
-To run a broker alongside Deephaven, see [Connect to a Kafka stream](../../how-to-guides/data-import-export/kafka-stream.md#launching-kafka-with-deephaven).
+To run a broker alongside Deephaven, see [Connect to a Kafka stream](../../how-to-guides/data-import-export/kafka-stream.md#launch-kafka-with-deephaven).
 
 ## Produce to Kafka
 
