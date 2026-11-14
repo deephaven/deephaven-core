@@ -1,0 +1,1 @@
+{"file":"how-to-guides/rolling-aggregations.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"}],"rows":[]}},"result":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"},{"name":"AvgX","type":"double"}],"rows":[]}}}}
