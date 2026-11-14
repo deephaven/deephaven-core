@@ -42,6 +42,8 @@ async function wrongCasts() {
 // Accepted by the types, wrong at runtime. Each line type-checks; the comment says what goes wrong.
 async function acceptedButWrong() {
     // Awaiting two pendings one after the other: b was not used in the task that created it, so its await rejects.
+    // a's table is never closed, so it leaks; b gives no table, and is released when its response arrives.
+    // Instead: const [a, b] = await dh.resolveAll([session.timeTable(1e9), session.timeTable(1e9)]);
     const a = session.timeTable(1e9);
     const b = session.timeTable(1e9);
     await a;

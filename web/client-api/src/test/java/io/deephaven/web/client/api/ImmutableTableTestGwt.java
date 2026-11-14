@@ -23,6 +23,7 @@ import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.ide.IdeConnection;
+import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.base.Js;
@@ -1729,6 +1730,103 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                         table.close();
                         return Promise.resolve(table);
                     });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testResolveAllGivesTablesInOrder() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_070);
+                    JsPendingTable<JsTable> fetched = session.getTable("source", null);
+                    JsPendingTable<JsResolvedTable> head = fetched.head(Js.uncheckedCast(2.0));
+                    // A fetch and an operation both give ResolvedTables; the same pending twice gives one table
+                    return DhNamespace.resolveAll(arr(fetched, head, head), null).then(resolved -> {
+                        assertEquals(3, resolved.length);
+                        assertTrue("a fetched pending gives a ResolvedTable, got " + resolved.getAt(0),
+                                (Object) resolved.getAt(0) instanceof JsResolvedTable);
+                        assertEquals(5., resolved.getAt(0).getSize(), 0);
+                        assertEquals(2., resolved.getAt(1).getSize(), 0);
+                        assertSame(resolved.getAt(1), resolved.getAt(2));
+                        resolved.getAt(0).close();
+                        resolved.getAt(1).close();
+                        return DhNamespace.resolveAll(arr(), null);
+                    }).then(none -> {
+                        assertEquals(0, none.length);
+                        return Promise.resolve(session);
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testResolveAllClosesWhatArrivedWhenOneFails() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_071);
+                    return session.getTable("source", null).asPromise();
+                })
+                .then(table -> {
+                    WorkerConnection connection = table.getConnection();
+                    Promise<Object> rejected = expectRejection(DhNamespace.resolveAll(arr(
+                            table.operations().head(Js.uncheckedCast(2.0)),
+                            table.operations().update(arr("Z = NoSuchColumn"))), null), "INVALID_ARGUMENT");
+                    return rejected
+                            .then(ignore -> within("the table that arrived was left open after the other failed",
+                                    () -> batchStates(connection) == 0))
+                            .then(ignore -> {
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testResolveAllRejectsATableThatIsNotPending() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_072);
+                    return session.getTable("source", null).asPromise();
+                })
+                .then(table -> table.operations().resolve().then(resolved -> {
+                    Promise<Object> result = Js.uncheckedCast(DhNamespace.resolveAll(
+                            arr(table.operations().head(Js.uncheckedCast(1.0)), resolved), null));
+                    return result.then(ignore -> Promise.reject("resolveAll took a resolved table"), err -> {
+                        // The rejection is the exception's JS error, which maps back to the Java exception
+                        Throwable thrown = LazyPromise.ofObject(err);
+                        assertEquals(IllegalArgumentException.class, thrown.getClass());
+                        assertTrue(thrown.getMessage(), thrown.getMessage().contains("element 1"));
+                        resolved.close();
+                        table.close();
+                        return Promise.resolve((Object) table);
+                    });
+                }))
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testResolveAllAbortLeavesNothingOpen() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(15_060);
+                    return session.getTable("slowsource", null).asPromise();
+                })
+                .then(slow -> {
+                    WorkerConnection connection = slow.getConnection();
+                    AbortController controller = new AbortController();
+                    // The head arrives quickly; the slow update is still running when the signal aborts
+                    Promise<JsArray<JsResolvedTable>> result = DhNamespace.resolveAll(arr(
+                            slow.operations().head(Js.uncheckedCast(1.0)),
+                            slow.operations().update(arr(SLOW))), withSignal(controller));
+                    return delay(300)
+                            .then(ignore -> {
+                                controller.abort();
+                                return expectRejection(result, "AbortError");
+                            })
+                            .then(ignore -> within("a table was left open after the abort",
+                                    () -> batchStates(connection) == 0))
+                            .then(ignore -> {
+                                slow.close();
+                                return abandonedWorkDone(slow);
+                            });
                 })
                 .then(this::finish).catch_(this::report);
     }

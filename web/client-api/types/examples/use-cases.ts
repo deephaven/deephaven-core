@@ -31,8 +31,9 @@ async function filterNamed() {
 async function joins() {
     const left = session.getObject({ type: "Table", name: "left" }) as dh.PendingTable<dh.Table>;
     const right = session.getObject({ type: "Table", name: "right" }) as dh.PendingTable<dh.Table>;
-    // left and right are never awaited, so every use of them belongs in this task: one batch, one await
-    const [joined, asOf, exact] = await Promise.all([
+    // left and right are never awaited, so every use of them belongs in this task: one batch, one await.
+    // resolveAll, unlike Promise.all, closes the tables that arrived if another fails
+    const [joined, asOf, exact] = await dh.resolveAll([
         left.naturalJoin(right, ["Key"], ["Value"]),
         left.aj(right, ["Key", "Ts"]),
         left.exactJoin(right, ["Key"], ["Value"]),
@@ -58,7 +59,7 @@ async function uniqueWithSentinel() {
 // py: t.agg_by([agg.sum_(["SumX = X"]), agg.count_("N")], by=["Key"])
 async function aggregate() {
     const t = session.timeTable(1e9).update(["Key = i % 3", "X = i"]);
-    const [viaFactories, viaLiterals, sumBy] = await Promise.all([
+    const [viaFactories, viaLiterals, sumBy] = await dh.resolveAll([
         t.aggBy({
             aggregations: [dh.agg.Aggregation.AggSum(["SumX = X"]), dh.agg.Aggregation.AggCount("N")],
             groupByColumns: ["Key"],
@@ -101,7 +102,7 @@ async function rollingUpdateBy() {
 async function weightedAverages() {
     const t = session.emptyTable(12).update(["Key = i % 3", "X = i", "W = i % 4 + 1"]);
     // t is never awaited, so all three use it in this task: one batch, one await
-    const [byKey, withOthers, rolling] = await Promise.all([
+    const [byKey, withOthers, rolling] = await dh.resolveAll([
         // Every non-key column except W, weighted by W
         t.wavgBy("W", ["Key"]),
         // Chosen columns, renamed, beside other aggregations
@@ -133,8 +134,7 @@ async function whereInAndRangeJoin() {
     const t = session.emptyTable(30).update(["Key = i % 3", "Ts = i"]);
     const keys = session.emptyTable(2).update(["Key = i"]);
     const windows = session.emptyTable(3).update(["Key = i % 3", "LStart = i * 10", "LEnd = LStart + 5"]);
-    // allSettled, so a table that arrived is still closed if the other fails
-    const results = await Promise.allSettled([
+    const [inKeys, ranged] = await dh.resolveAll([
         t.whereIn(keys, ["Key"]),
         windows.rangeJoin(t, ["Key"], {
             leftStartColumn: "LStart",
@@ -144,16 +144,9 @@ async function whereInAndRangeJoin() {
             leftEndColumn: "LEnd",
         }, [dh.agg.Aggregation.AggGroup(["Ts"])]),
     ]);
-    const tables = results.flatMap(r => r.status === "fulfilled" ? [r.value] : []);
-    try {
-        if (tables.length < results.length) {
-            throw new Error("whereIn or rangeJoin failed");
-        }
-        const [inKeys, ranged] = tables;
-        // ... use inKeys and ranged ...
-    } finally {
-        tables.forEach(table => table.close());
-    }
+    // ... use inKeys and ranged ...
+    inKeys.close();
+    ranged.close();
 }
 
 // Abandoning work that is no longer wanted: cancel() a pending table, or abort the signal given to resolve()
@@ -179,19 +172,29 @@ async function handleFailure() {
     orNull?.close();
 }
 
-// Several tables at once when any can fail: Promise.all would reject and lose the ones that arrived, still open
-async function severalThatMayFail() {
+// Several tables at once when any can fail: Promise.all would reject and leave the ones that arrived open.
+// dh.resolveAll closes them instead, so a failure leaves nothing to clean up; one signal aborts them all.
+async function severalThatMayFail(signal: AbortSignal) {
+    const t = session.emptyTable(5).update(["X = i"]);
+    let tables: dh.ResolvedTable[];
+    try {
+        tables = await dh.resolveAll([t.update(["Y = X * 2"]), t.update(["Z = NoSuchColumn"])], { signal });
+    } catch (e) {
+        console.warn("an update failed, or the signal aborted; no table is left open", e);
+        return;
+    }
+    // ... use the tables ...
+    tables.forEach(table => table.close());
+}
+
+// Some results wanted even when others fail: Promise.allSettled keeps each outcome, and each table that arrived is
+// the caller's to close
+async function keepWhatSucceeded() {
     const t = session.emptyTable(5).update(["X = i"]);
     const results = await Promise.allSettled([t.update(["Y = X * 2"]), t.update(["Z = NoSuchColumn"])]);
     const tables = results.flatMap(r => r.status === "fulfilled" ? [r.value] : []);
-    try {
-        if (tables.length < results.length) {
-            throw new Error("some tables failed");
-        }
-        // ... use the tables ...
-    } finally {
-        tables.forEach(table => table.close());
-    }
+    // ... use the tables that arrived ...
+    tables.forEach(table => table.close());
 }
 
 // Reading any table, legacy or new: Table, TotalsTable and ResolvedTable share these members
@@ -209,7 +212,7 @@ async function readEither() {
 // py: t.head(5); t.select_distinct(["Key"]); t.snapshot(); t.snapshot_when(trigger, initial=True)
 async function misc() {
     const t = session.timeTable(1e9).update(["Key = i % 3"]);
-    const [head, distinct, snap, when] = await Promise.all([
+    const [head, distinct, snap, when] = await dh.resolveAll([
         t.head(5),
         t.selectDistinct(["Key"]),
         t.snapshot(),

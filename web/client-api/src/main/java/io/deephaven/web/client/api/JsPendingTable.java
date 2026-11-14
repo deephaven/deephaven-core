@@ -37,18 +37,18 @@ import jsinterop.annotations.JsOptional;
  * <p>
  * A pending table may only be used in the task that created it, before control returns to the event loop: awaited,
  * {@code then} or {@link #resolve()} called on it, chained on, passed as an operand, or passed to
- * {@code Promise.resolve} or {@code Promise.all}. What lasts is the result: the table an await produces, which is
- * retained until it is closed and has the same operations, or the promise from {@code Promise.resolve}. A pending table
- * that is not awaited is freed automatically as soon as possible: once its response arrives and nothing chained on it
- * still needs it. Used in a later task, awaited or not, the operation chained on it, or the {@code await}, is rejected,
- * and a warning names where the pending table was created. A use the client cannot yet tell is in a later task behaves
- * as it would by timing alone. In particular, awaiting two pending tables one after the other,
- * {@code await a; await b;}, rejects {@code b}: await both at once with {@code Promise.all([a, b])}, or each as it is
- * created. This holds for a fetch as much as for an operation. A {@link JsTable#operations()} is often ready at once,
- * so awaiting it may not leave the task and a second await can happen to work. Do not rely on that, since a change
- * still being applied to the table makes it wait like any other. If one of the tables passed to {@code Promise.all}
- * fails, it rejects without the others, which still arrive and must still be closed. When any of them can fail, use
- * {@code Promise.allSettled} and close those that arrived.
+ * {@code dh.resolveAll}, {@code Promise.resolve} or {@code Promise.all}. What lasts is the result: the table an await
+ * produces, which is retained until it is closed and has the same operations, or the promise from
+ * {@code Promise.resolve}. A pending table that is not awaited is freed automatically as soon as possible: once its
+ * response arrives and nothing chained on it still needs it. Used in a later task, awaited or not, the operation
+ * chained on it, or the {@code await}, is rejected, and a warning names where the pending table was created. A use the
+ * client cannot yet tell is in a later task behaves as it would by timing alone. In particular, awaiting two pending
+ * tables one after the other, {@code await a; await b;}, rejects {@code b}: await both at once with
+ * {@code dh.resolveAll([a, b])}, or each as it is created. This holds for a fetch as much as for an operation. A
+ * {@link JsTable#operations()} is often ready at once, so awaiting it may not leave the task and a second await can
+ * happen to work. Do not rely on that, since a change still being applied to the table makes it wait like any other.
+ * Prefer {@code dh.resolveAll} to {@code Promise.all}: if one table fails, {@code Promise.all} rejects without the
+ * others, which still arrive and must still be closed, while {@code dh.resolveAll} closes them.
  *
  * @param <T> the table awaiting this gives. In TypeScript it defaults to {@link JsResolvedTable}, what every operation
  *        produces. A fetched table resolves to a {@link JsTable} instead: narrow what
