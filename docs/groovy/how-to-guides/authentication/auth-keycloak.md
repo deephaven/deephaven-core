@@ -14,7 +14,18 @@ This guide assumes you have [Docker and Docker Compose](../../getting-started/do
 > Deephaven servers that use OIDC and Keycloak serve many users. To get access, see [Granting access to users](#granting-access-to-users).
 
 > [!WARNING]
-> The [example configuration](#set-up-the-project) given in this guide is _not_ recommended for use in a production environment. For instance, it creates two users: `admin` and `user`, with passwords the same as the usernames. Additionally, the example disables [fsync](https://man7.org/linux/man-pages/man2/fsync.2.html) and `synchronous_commit`, which are not recommended for production. The example is only meant to show a basic implementation that can be used as a template.
+> The [example configuration](#set-up-the-project) in this guide is _not_ recommended for use in a production environment. Use it only as a template for a basic implementation. It differs from a production setup in these ways:
+>
+> - It creates two users, `admin` and `user`, whose passwords match their usernames.
+> - The Keycloak administrator account and the Postgres database also use placeholder passwords.
+> - Keycloak runs in development mode (`start-dev`) over plain HTTP.
+> - Postgres runs with [`fsync`](https://man7.org/linux/man-pages/man2/fsync.2.html) and `synchronous_commit` turned off. Leave both on in production.
+
+> [!IMPORTANT]
+> Deephaven's OIDC authentication handler gives every user who logs in through Keycloak the same `SuperUser` context, and Deephaven Community allows every logged-in user to do everything the Deephaven APIs allow. This applies to any Keycloak configuration, not only the example. Roles assigned in Keycloak, such as the `user` and `admin` roles in the [example realm](#deephaven_realmjson), don't limit what a user can do in Deephaven.
+
+> [!WARNING]
+> **Security issue:** The OIDC authentication provider in Deephaven 42.8 and 42.9 has a flaw that lets a login with an invalid token succeed, with full access to the server. The fix is on `main` but isn't in a release yet. The provider JAR that this guide downloads is affected, so until a release includes the fix, don't use the example or the provider to protect a server that untrusted users can reach.
 
 > [!WARNING]
 > **Known issue:** In testing with Deephaven 42.8 and 42.9, the web UI doesn't show the Keycloak login screen. The latest published version of the `@deephaven/js-plugin-auth-keycloak` plugin, 0.2.0, fails to load in the web UI, and the IDE shows "No login plugins found". Keycloak and the server's OIDC authentication handler start normally, and users can sign in to Keycloak itself, but until a compatible plugin is published, the example can't sign users in to the IDE.
@@ -127,20 +138,26 @@ networks:
 There's a lot going on in this file. Here's what it all means:
 
 - The `deephaven` service is built from the Dockerfile in `docker/deephaven`, mounts `data/deephaven` as `/data`, the server's data directory, and starts only after the `keycloak` service is healthy.
-- The `database` service uses the [`postgres`](https://hub.docker.com/_/postgres) image, mounts the SQL file to initialize the Keycloak database, exposes port 5432, and sets the password for the database to `password`.
+- The `database` service uses the [`postgres`](https://hub.docker.com/_/postgres) image, mounts the SQL file to initialize the Keycloak database, exposes port 5432 to the other containers without publishing it on the host, and sets the password for the database to `password`.
 - The `database` service also turns off `fsync` and `synchronous_commit`.
-- The `keycloak` service uses the [Keycloak image](https://quay.io/repository/keycloak/keycloak). It sets the initial admin credentials, runs some commands, creates a health check that queries Keycloak's management port (9000) once per 3 seconds, publishes port 8080 to the host, and mounts the Deephaven realm file as read-only into the container.
-- The `deephaven`, `database`, and `keycloak` services are all attached to the `dh_auth_ntw` network.
+- The `keycloak` service uses the [Keycloak image](https://quay.io/repository/keycloak/keycloak). It sets the initial admin credentials, runs some commands, creates a health check that queries Keycloak's management port (9000) once per 3 seconds, publishes port 8080 to the host, and mounts the Deephaven realm file into the container as read-only with a [bind mount](../../conceptual/docker-data-volumes.md).
+- The `deephaven`, `database`, and `keycloak` services are all attached to the `dh_auth_ntw` network. The `keycloak` service gets the fixed address `10.222.1.10`, which is the address in `authentication.oidc.keycloak.url`.
 
-The `START_OPTS` properties set up the login. The `AuthHandlers` property tells Deephaven to use the OIDC authentication handler. The three `authentication.oidc.keycloak.*` properties set the following:
+The `START_OPTS` properties set up the login. The [`AuthHandlers`](../configuration/configuration-properties.md#authentication-configuration) property tells Deephaven to use the OIDC authentication handler in place of the default [pre-shared key handler](./auth-psk.md). The three `authentication.oidc.keycloak.*` properties set the following:
 
 - The Keycloak server URL (`authentication.oidc.keycloak.url`)
 - The realm, `deephaven_core` (`authentication.oidc.keycloak.realm`)
 - The client ID, `deephaven` (`authentication.oidc.keycloak.clientId`), which is the application that the realm file registers with Keycloak
 
-The `authentication.client.configuration.list` property names the properties that the web UI can read, so the browser knows which Keycloak server and realm to send users to. The [Web Defaults](../configuration/configure-web.md) guide describes the related `client.configuration.list` property, which works the same way for general web UI settings.
+The `authentication.client.configuration.list` property names the properties that the web UI can read, so the browser knows which Keycloak server and realm to send users to. The [Web Defaults](../configuration/configure-web.md) guide describes the related `client.configuration.list` property, which works the same way for general web UI settings. The web UI turns on the Keycloak [plugin](../configuration/js-plugins.md) only when `AuthHandlers` includes the OIDC handler, and the plugin reads the URL, realm, and client ID from the other three properties.
 
-The Keycloak URL must be reachable from two places. The Deephaven container reads Keycloak's configuration at startup. Your browser is redirected there to sign in. The address `10.222.1.10` is on the Docker network and may not be reachable from your browser, for example on Docker Desktop. If you can't reach it, use a hostname that resolves in both places.
+> [!IMPORTANT]
+> The Keycloak URL must be reachable from two places: the `deephaven` container, which reads Keycloak's configuration at startup, and your browser, which is redirected there to sign in. The address `10.222.1.10` is on the Docker network. Your browser can reach it with Docker Engine on Linux, but not on Docker Desktop. To run the example on Docker Desktop:
+>
+> - Add `127.0.0.1 keycloak` to your hosts file: `/etc/hosts` on macOS and Linux, or `C:\Windows\System32\drivers\etc\hosts` on Windows.
+> - Change `authentication.oidc.keycloak.url` to `http://keycloak:8080`.
+>
+> Your browser then reaches Keycloak through the published port 8080, and the `deephaven` container reaches it through the Compose network, both under the name `keycloak`.
 
 ### Dockerfile
 
@@ -149,7 +166,7 @@ The `docker-compose.yml` file in the root directory tells Docker to build images
 ```dockerfile
 ARG VERSION=42.8
 
-FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
+FROM ghcr.io/deephaven/web-plugin-packager:latest AS js-plugins
 RUN ./pack-plugins.sh @deephaven/js-plugin-auth-keycloak@0.2.0
 
 FROM ghcr.io/deephaven/server-slim:${VERSION}
@@ -296,6 +313,18 @@ To configure Keycloak with users and passwords, create a `deephaven_realm.json` 
 > [!IMPORTANT]
 > This file configures the placeholder users described in the production warning at the top of this guide.
 
+The values that tie this file to the rest of the example are:
+
+- `realm` and the client's `clientId` must match `authentication.oidc.keycloak.realm` and `authentication.oidc.keycloak.clientId` in `docker-compose.yml`.
+- `redirectUris` lists the addresses Keycloak may send users back to after login. Include every URL users open Deephaven at.
+- `publicClient` is `true` because the web UI logs in from the browser, which can't keep a client secret.
+- `standardFlowEnabled` is `true` because the web UI logs in with Keycloak's browser redirect (authorization code) flow.
+- `webOrigins` is `["+"]`, which lets the web UI request tokens from Keycloak from every origin in `redirectUris`.
+
+The other client settings come from a Keycloak realm export. Keep them as they are for this example.
+
+Keycloak imports `deephaven_realm.json` only if the `deephaven_core` realm doesn't exist yet. The realm, and any changes you make to it, last as long as the containers do. To change the realm while the containers exist, use the Keycloak admin console.
+
 ### init-keycloak.sql
 
 The `database` service runs a Postgres database that stores Keycloak's data. Create the file `init-keycloak.sql` in the `docker/postgres` directory with the following SQL. Postgres runs it when it first initializes the database, which creates the `keycloak` schema that the Keycloak service uses.
@@ -317,6 +346,16 @@ The first command builds the Docker images (not using a cache), and the second s
 
 Navigate to `http://localhost:10000/ide`. With a working Keycloak plugin, you're greeted with a login screen prompting for a username and password. Log in with `user`/`user` or `admin`/`admin`. See the known issue at the top of this guide.
 
+When you're done, stop the containers with Ctrl+C. The containers and the Keycloak database remain, so `docker compose up` starts the example again with any users you added.
+
+To remove the containers, run:
+
+```bash
+docker compose down -v
+```
+
+This also deletes the Postgres data, including users you added in the admin console, so the next run imports the realm file again. Use `-v`: without it, `docker compose down` leaves the Postgres data in an orphaned anonymous volume that the next run doesn't use, so the next run starts with an empty database and imports the realm file again anyway.
+
 ## Granting access to users
 
 Most people who use a [Keycloak](https://www.keycloak.org/)-protected Deephaven server don't deploy Keycloak, Postgres, and Deephaven themselves, as the [example](#set-up-the-project) on this page does. Organizations typically have a person or department that manages their application security. Contact your administrator to learn the steps to be granted access to a Deephaven resource guarded by [Keycloak](https://www.keycloak.org/) and [OpenID Connect](https://openid.net/developers/how-connect-works/).
@@ -327,6 +366,8 @@ If you are running the example on this page and need to add a user, add a user t
 2. Sign in to the master realm with the administrator account. In this example, that account is `admin`/`admin`, which the `KC_BOOTSTRAP_ADMIN_USERNAME` and `KC_BOOTSTRAP_ADMIN_PASSWORD` environment variables define.
 3. Switch to the `deephaven_core` realm, create the user, and set a password for them. If you leave the email, first name, or last name empty, Keycloak asks the user to fill them in on an "Update Account Information" page the first time they sign in.
 
+Every user in the realm who can log in gets full access to Deephaven. See the note on `SuperUser` access at the top of this guide.
+
 In a production Keycloak deployment, use your organization's admin console and realm instead.
 
 ## Related documentation
@@ -334,6 +375,9 @@ In a production Keycloak deployment, use your organization's admin console and r
 - [Configure username/password authentication](./auth-uname-pw.md)
 - [Configure mTLS for Deephaven](./auth-mtls.md)
 - [Configure JS plugins](../configuration/js-plugins.md)
+- [Configure and use pre-shared key authentication](./auth-psk.md)
+- [Configuration properties reference](../configuration/configuration-properties.md)
+- [Access your file system with Docker bind mounts](../../conceptual/docker-data-volumes.md)
 - [How to configure the Docker application](../configuration/docker-application.md)
 - [Install guide for Docker](../../getting-started/docker-install.md)
 - [Web Defaults](../configuration/configure-web.md)
