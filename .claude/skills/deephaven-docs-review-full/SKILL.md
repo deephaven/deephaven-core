@@ -262,7 +262,9 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
   to log in, and any package, codec, or image the default distribution lacks. Each must be stated
   before the step that needs it and agree everywhere on the page (same port, URL, and login). Check
   the other language's page the same way. (Defaults, failure paths, and version pins are checked
-  against source by the accuracy check's **Example robustness**.)
+  against source by the accuracy check's **Example robustness**.) This check traces the steps by
+  reading and doesn't execute anything. Blocks marked `syntax` or `skip-test` are still traced by
+  reading, as above, and a snippet the page presents as a fragment is judged by where the text says it goes.
 
 If the user asked for edits and you change an example's code or its comments, re-verify the
 changed example with `deephaven-core-accuracy-spot-check` before moving on, as in the re-verify
