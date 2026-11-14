@@ -283,7 +283,7 @@ But what if the code we wrote to model the problem could also run the production
 
 A long-running feed needs two changes that the example skips:
 
-- Refresh the baseline on a schedule. The script computes `LAST_MIDNIGHT` once, when it runs, so the four-week window doesn't move forward on its own. A [function-generated table](./function-generated-tables.md) can rebuild the baseline on an interval.
+- Refresh the baseline on a schedule. The script computes `LAST_MIDNIGHT` once, when it runs, so the four-week window doesn't move forward on its own. The capture is read once as a static table, so each rebuild must re-read the capture to pick up newly captured files, as well as recompute `LAST_MIDNIGHT` and the average. A [function-generated table](./function-generated-tables.md) can run that rebuild on an interval.
 - Bound the [live table](../conceptual/table-types.md#table-type-summary). [`blink_to_append_only`](../reference/table-operations/create/blink-to-append-only.md) keeps every row it receives. A [ring table](../conceptual/table-types.md#create-a-ring-table-from-a-blink-table) from [`ring_table`](../reference/table-operations/create/ringTable.md) keeps only the latest rows.
 
 ## From live feed to action
