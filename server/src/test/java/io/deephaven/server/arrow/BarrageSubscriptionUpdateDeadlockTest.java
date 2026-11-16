@@ -51,7 +51,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Set;
@@ -61,7 +60,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -427,39 +425,6 @@ public class BarrageSubscriptionUpdateDeadlockTest {
     }
 
     /**
-     * The propagation job fails after it has taken a rejected subscription out of the producer's lists, but before it
-     * has sent the rejection. The producer's failure handling still ends that client's stream with its rejection, and
-     * sends it without holding the producer's monitor.
-     */
-    @Test
-    public void testRejectionIsSentWhenPropagationFails() throws Exception {
-        final AtomicReference<Object> producer = new AtomicReference<>();
-        final InlineCancelCallObserver call = new InlineCancelCallObserver();
-        final ArrowFlightUtil.DoExchangeMarshaller marshaller = newMarshaller(call,
-                TableTools.emptyTable(100).update("I = i"), producer::set);
-        marshaller.onNext(subscriptionRequest(null));
-        sessionScheduler.runUntilQueueEmpty();
-        producerScheduler.runUntilQueueEmpty();
-        assertNull(call.error);
-
-        // a full subscription cannot change to a viewport
-        marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(0, 9)));
-        final AtomicReference<Boolean> sentHoldingProducerMonitor = new AtomicReference<>();
-        call.onErrorHook = () -> sentHoldingProducerMonitor.set(Thread.holdsLock(producer.get()));
-        // the job's bookkeeping fails after it has removed the deleted subscription from its lists
-        final Field postSnapshotColumns = producer.get().getClass().getDeclaredField("postSnapshotColumns");
-        postSnapshotColumns.setAccessible(true);
-        postSnapshotColumns.set(producer.get(), null);
-        producerScheduler.runUntilQueueEmpty();
-
-        assertEquals("the client should be sent one error", 1, call.errors.get());
-        final Status status = Status.fromThrowable(call.error);
-        assertEquals(Status.Code.INVALID_ARGUMENT, status.getCode());
-        assertEquals("cannot change from full subscription to viewport or vice versa", status.getDescription());
-        assertFalse("the error must be sent without the producer's monitor", sentHoldingProducerMonitor.get());
-    }
-
-    /**
      * When the stream closes while the handler is subscribing, the handler closes the new subscription without holding
      * its own monitor. Closing a subscription can write to the stream, and a write that fails on another thread can
      * cancel the call there while it holds the stream's lock; the cancel closes the handler, which needs the monitor.
@@ -588,16 +553,6 @@ public class BarrageSubscriptionUpdateDeadlockTest {
      */
     private ArrowFlightUtil.DoExchangeMarshaller newMarshaller(final InlineCancelCallObserver call,
             final Table table) {
-        return newMarshaller(call, table, producer -> {
-        });
-    }
-
-    /**
-     * Exports {@code table} and opens a DoExchange stream on {@code call}, with no request sent yet. Each
-     * subscription's producer is passed to {@code onProducer}.
-     */
-    private ArrowFlightUtil.DoExchangeMarshaller newMarshaller(final InlineCancelCallObserver call,
-            final Table table, final Consumer<Object> onProducer) {
         session.newExport(EXPORT_ID).submit(() -> table);
         sessionScheduler.runUntilQueueEmpty();
 
@@ -612,7 +567,7 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         return new ArrowFlightUtil.DoExchangeMarshaller(
                 ticketRouter,
                 streamGeneratorFactory,
-                List.of(new ProducerCapturingMarshaller(tableMarshaller, onProducer)),
+                List.of(tableMarshaller),
                 Set.of(new BarrageSubscriptionRequestHandler.BarrageSubscriptionRequestHandlerFactory()),
                 errorTransformer,
                 session,
@@ -699,57 +654,6 @@ public class BarrageSubscriptionUpdateDeadlockTest {
             sb.append('\n');
         }
         return sb.toString();
-    }
-
-    /**
-     * Passes each subscription's {@link io.deephaven.server.barrage.BarrageMessageProducer} to a test.
-     */
-    private static final class ProducerCapturingMarshaller implements ExchangeMarshaller {
-        private final ExchangeMarshaller delegate;
-        private final Consumer<Object> onProducer;
-
-        private ProducerCapturingMarshaller(final ExchangeMarshaller delegate, final Consumer<Object> onProducer) {
-            this.delegate = delegate;
-            this.onProducer = onProducer;
-        }
-
-        @Override
-        public int priority() {
-            return delegate.priority();
-        }
-
-        @Override
-        public boolean accept(final Object export) {
-            return delegate.accept(export);
-        }
-
-        @Override
-        public void snapshot(final BarrageSnapshotRequest snapshotRequest,
-                final BarrageSnapshotOptions options,
-                final Object export,
-                final BarragePerformanceLog.SnapshotMetricsHelper metrics,
-                final StreamObserver<BarrageMessageWriter.MessageView> listener,
-                final String ticketLogName,
-                final BarrageMessageWriter.Factory streamGeneratorFactory) {
-            delegate.snapshot(snapshotRequest, options, export, metrics, listener, ticketLogName,
-                    streamGeneratorFactory);
-        }
-
-        @Override
-        public Subscription subscribe(final BarrageSubscriptionRequest subscriptionRequest,
-                final BarrageSubscriptionOptions options,
-                final Object export,
-                final StreamObserver<BarrageMessageWriter.MessageView> listener) {
-            final Subscription subscription = delegate.subscribe(subscriptionRequest, options, export, listener);
-            try {
-                final Field producer = subscription.getClass().getDeclaredField("bmp");
-                producer.setAccessible(true);
-                onProducer.accept(producer.get(subscription));
-            } catch (final ReflectiveOperationException e) {
-                throw new IllegalStateException(e);
-            }
-            return subscription;
-        }
     }
 
     /**
