@@ -34,7 +34,7 @@ These steps call Java classes that have no Python wrappers. [Get the Java classe
 
 1. Get the default schema with the Java method [`BarrageUtil.schemaFromTable`](/core/javadoc/io/deephaven/extensions/barrage/util/BarrageUtil.html#schemaFromTable(io.deephaven.engine.table.Table)). It maps every column to its default Arrow type, including the `Utf8` default described above. Start from this schema and replace fields in place.
 2. Replace the target field with explicit Arrow types, such as `Utf8`, `Union`, and `ArrowMap`, which [Get the Java classes](#get-the-java-classes) loads from the Java `ArrowType` class. When you re-encode a column, build its field from the Arrow type of its values instead of reusing the default field.
-3. Keep every column, in its original order. The server builds the export from the attached schema's fields, so a column the schema leaves out is not sent.
+3. Keep one field for every column, in the table's column order. The schema sets wire types, not which columns are exported, so a schema that leaves out or reorders columns can make the export fail or pair data with the wrong field. To export fewer columns, select them on the table first.
 4. Attach the schema using [`with_attributes`](../../reference/table-operations/create/withAttributes.md): `table.with_attributes({JTable.BARRAGE_SCHEMA_ATTRIBUTE: new_schema})`, where `JTable` is the Java [`Table`](/core/javadoc/io/deephaven/engine/table/Table.html) class.
 5. Make attaching the schema the last step before export. Most table operations drop the attribute, as the note below lists.
 

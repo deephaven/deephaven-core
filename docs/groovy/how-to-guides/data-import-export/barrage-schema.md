@@ -32,7 +32,7 @@ Once a table has a schema attribute, the server takes every column's encoding fr
 
 1. Get the default schema with [`BarrageUtil.schemaFromTable`](/core/javadoc/io/deephaven/extensions/barrage/util/BarrageUtil.html#schemaFromTable(io.deephaven.engine.table.Table)). It maps every column to its default Arrow type, including the `Utf8` default described above. Start from this schema and replace fields in place.
 2. Replace the target field with explicit Arrow types. When you re-encode a column, build its field from the Arrow type of its values instead of reusing the default field.
-3. Keep every column, in its original order. The server builds the export from the attached schema's fields, so a column the schema leaves out is not sent.
+3. Keep one field for every column, in the table's column order. The schema sets wire types, not which columns are exported, so a schema that leaves out or reorders columns can make the export fail or pair data with the wrong field. To export fewer columns, select them on the table first.
 4. Attach the schema with [`withAttributes`](../../reference/table-operations/select/withAttributes.md): `table.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, newSchema))`.
 5. Make attaching the schema the last step before export. Most table operations drop the attribute, as the note below lists.
 
