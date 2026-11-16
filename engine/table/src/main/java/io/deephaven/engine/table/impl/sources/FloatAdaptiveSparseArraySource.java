@@ -1517,7 +1517,8 @@ public class FloatAdaptiveSparseArraySource extends SparseArrayColumnSource<Floa
      * position in its bottom level, the leaves of a bottom level reserved together. A leaf that may hold more values
      * than a compact leaf holds needs room only for a full block; its writer then makes it a full block from its first
      * chunk, unless its bottom level has room for compact leaves anyway (see {@link #writesAlignedDivisions()}). Any
-     * other leaf needs room only for a compact leaf. The previous values get room for both.
+     * other leaf needs room only for a compact leaf. The previous values always get room for a compact leaf, and room
+     * for a snapshot when a leaf may be recorded past {@code recordThreshold}.
      */
     private void prepareLeafIndices(final RowSequence rows) {
         final boolean trackPrevious = prevFlusher != null;

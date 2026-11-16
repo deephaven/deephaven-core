@@ -74,8 +74,9 @@ Every level holds its children in one of two forms, chosen by the span of the ch
   bitmap of reasonable size; `Level1` and `Level2` find a child's position with a `ChildPositions`.
 
 A level moves between the forms as children are added: a window that would grow past its limit becomes ranked, and a
-ranked level whose children become dense enough becomes a window. A ranked level holds at most `MAX_RANKED` (4,096)
-children, since more always fit a window.
+ranked level whose children become dense enough becomes a window. A ranked `Level1` or `Level2` holds at most
+`MAX_RANKED` (4,096) children, since more always fit its window of 32,768 entries; a ranked `Level0` may hold more,
+since its window has 2^23 entries.
 
 A window of one entry also records its index (`onlyIndex`), so that finding the only child of a level is one comparison
 against a field that does not change, which the JIT can move out of a loop over one source. A `Level2` of one leaf goes
@@ -131,8 +132,8 @@ merge of ascending offsets), `insertAbsent` (add offsets holding null, for paral
 `CharSortedLeaf` holds its offsets in ascending order, packed four 16-bit lanes to a `long`, with its values at the
 same positions. Unused lanes hold `Short.MAX_VALUE`, which is past every offset. A lookup counts the offsets less than
 its target a word at a time, with no branch that depends on the offsets: setting a guard bit in each lane, subtracting
-the target replicated into every lane, and counting the guard bits that survive (`lessThan`). The count is the index of
-the target if it is present.
+the target replicated into every lane, and counting the guard bits the subtraction borrows away (`lessThan`). The count
+is the index of the target if it is present.
 
 `wordsFor` sizes the offsets as one word for up to four offsets and at least four words otherwise, and `lowerBound`
 counts those two lengths with straight-line code. The cost is a handful of arithmetic instructions for every lookup in a
@@ -142,9 +143,10 @@ leaf of up to 16 values.
 
 `CharBitmapLeaf` keeps a 1024-bit bitmap of the offsets that hold a value, the values densely in offset order, and
 `rankBefore`, a `short` per bitmap word counting the values in the words before it. The value of an offset is at its
-rank: `rankBefore[word]` plus the population count of the bits below it in its word. A point read is two loads and a
-`bitCount`. The fixed cost is about 240 bytes per leaf (the bitmap, the ranks and the object and array headers) plus
-the values, which is why the sorted tier exists below 16 values.
+rank: `rankBefore[word]` plus the population count of the bits below it in its word. A point read loads the bitmap
+word and its rank, counts the bits with `bitCount`, and loads the value. The fixed cost is about 240 bytes per leaf
+(the bitmap, the ranks and the object and array headers) plus the values, which is why the sorted tier exists below 16
+values.
 
 Inserts and removes move the values above the changed offset and adjust the ranks after its word. `putSorted` and
 `insertAbsent` merge from the highest offset down, so each value moves at most once, and recompute the ranks once.
@@ -234,7 +236,7 @@ the row keys in each leaf to decide which arrays of the `Level2` the leaf may ne
 than a compact leaf holds needs room for a full block, and any other leaf room for a compact leaf. A writer may write a
 leaf in several chunks, so the first chunk of a leaf that will be a full block may hold few values; when its `Level2`
 has no array of compact leaves, the writer makes the leaf a full block at once (`writesAlignedDivisions`). The previous
-values get room for both a snapshot and a compact leaf, since their arrays last only the cycle.
+values always get room for a compact leaf, and room for a snapshot when a leaf may be recorded past `recordThreshold`.
 
 When divisions are not aligned (a caller that uses `prepareForParallelPopulation(rows)`), several writers may share a
 leaf, so the preparation does all structural work up front: after reserving the leaves, it builds each leaf with every

@@ -35,23 +35,23 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  * </tr>
  * <tr>
  * <td>Block 0</td>
- * <td>19</td>
- * <td>62-44</td>
+ * <td>23</td>
+ * <td>62-40</td>
  * </tr>
  * <tr>
  * <td>Block 1</td>
- * <td>18</td>
- * <td>43-26</td>
+ * <td>15</td>
+ * <td>39-25</td>
  * </tr>
  * <tr>
  * <td>Block 2</td>
- * <td>18</td>
- * <td>25-8</td>
+ * <td>15</td>
+ * <td>24-10</td>
  * </tr>
  * <tr>
  * <td>Index Within Block</td>
- * <td>8</td>
- * <td>7-0</td>
+ * <td>10</td>
+ * <td>9-0</td>
  * </tr>
  * </table>
  * <p>
