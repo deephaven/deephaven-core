@@ -34,6 +34,8 @@ public final class IntSortedLeaf extends IntCompactLeaf {
     private static final long LANE_ONES = 0x0001_0001_0001_0001L;
     private static final long GUARD_BITS = 0x8000_8000_8000_8000L;
     private static final long PAST_BLOCK_LANES = PAST_BLOCK * LANE_ONES;
+    /** The words of the bitmap of a bitmap leaf, which a sorted leaf makes when it grows past its threshold. */
+    private static final int BITMAP_WORDS = BLOCK_SIZE / Long.SIZE;
 
     /** A leaf holding no values. */
     public static final IntSortedLeaf EMPTY = new IntSortedLeaf(newWords(0), new int[0]);
@@ -141,15 +143,27 @@ public final class IntSortedLeaf extends IntCompactLeaf {
     }
 
     @Override
-    public IntCompactLeaf put(final int offset, final int value) {
+    public IntCompactLeaf put(final int offset, final int value, final int sortedThreshold) {
         int index = indexOf(offset);
         if (index >= 0) {
             values[index] = value;
             return this;
         }
         index = -index - 1;
-        final long[] newWords = newWords(size + 1);
+        // a bitmap leaf holds its values in offset order too, so either leaf takes the same values
         final int[] newValues = new int[size + 1];
+        System.arraycopy(values, 0, newValues, 0, index);
+        newValues[index] = value;
+        System.arraycopy(values, index, newValues, index + 1, size - index);
+        if (size + 1 > sortedThreshold) {
+            final long[] bits = new long[BITMAP_WORDS];
+            for (int ii = 0; ii < size; ++ii) {
+                setBit(bits, offsetAt(ii));
+            }
+            setBit(bits, offset);
+            return new IntBitmapLeaf(bits, newValues);
+        }
+        final long[] newWords = newWords(size + 1);
         for (int ii = 0; ii < index; ++ii) {
             setOffset(newWords, ii, offsetAt(ii));
         }
@@ -157,10 +171,11 @@ public final class IntSortedLeaf extends IntCompactLeaf {
         for (int ii = index; ii < size; ++ii) {
             setOffset(newWords, ii + 1, offsetAt(ii));
         }
-        System.arraycopy(values, 0, newValues, 0, index);
-        newValues[index] = value;
-        System.arraycopy(values, index, newValues, index + 1, size - index);
         return new IntSortedLeaf(newWords, newValues);
+    }
+
+    private static void setBit(final long[] bits, final int offset) {
+        bits[offset >>> 6] |= 1L << offset;
     }
 
     @Override
@@ -184,9 +199,9 @@ public final class IntSortedLeaf extends IntCompactLeaf {
 
     @Override
     public IntCompactLeaf putSorted(final int[] offsets, final IntChunk<?> src, final int srcOffset,
-            final int count) {
+            final int count, final int sortedThreshold) {
         if (count == 1) {
-            return put(offsets[0], src.get(srcOffset));
+            return put(offsets[0], src.get(srcOffset), sortedThreshold);
         }
         final int newSize = size + countAbsent(offsets, count);
         if (newSize == size) {
@@ -201,27 +216,32 @@ public final class IntSortedLeaf extends IntCompactLeaf {
             }
             return this;
         }
-        return merge(offsets, src, srcOffset, count, newSize);
+        return merge(offsets, src, srcOffset, count, newSize, sortedThreshold);
     }
 
     @Override
-    public IntCompactLeaf insertAbsent(final int[] offsets, final int count) {
+    public IntCompactLeaf insertAbsent(final int[] offsets, final int count, final int sortedThreshold) {
         final int newSize = size + countAbsent(offsets, count);
-        return newSize == size ? this : merge(offsets, null, 0, count, newSize);
+        return newSize == size ? this : merge(offsets, null, 0, count, newSize, sortedThreshold);
     }
 
     /**
      * @return a new leaf of {@code newSize} values holding this leaf's offsets and {@code offsets[0, count)}, ascending
      *         and distinct, with the values of {@code src} from {@code srcOffset} for those offsets, or, if {@code src}
-     *         is null, keeping the values of the offsets this leaf holds and null for the others
+     *         is null, keeping the values of the offsets this leaf holds and null for the others; a bitmap leaf if
+     *         {@code newSize} is more than {@code sortedThreshold}, else a sorted leaf
      */
-    private IntSortedLeaf merge(
+    private IntCompactLeaf merge(
             final int[] offsets,
             final IntChunk<?> src,
             final int srcOffset,
             final int count,
-            final int newSize) {
-        final long[] newWords = newWords(newSize);
+            final int newSize,
+            final int sortedThreshold) {
+        // the values are in offset order for either leaf; the offsets go to packed lanes or to a bitmap
+        final boolean bitmap = newSize > sortedThreshold;
+        final long[] newWords = bitmap ? null : newWords(newSize);
+        final long[] bits = bitmap ? new long[BITMAP_WORDS] : null;
         final int[] newValues = new int[newSize];
         int index = 0;
         int dest = 0;
@@ -229,11 +249,11 @@ public final class IntSortedLeaf extends IntCompactLeaf {
             final int offset = offsets[ii];
             int existing;
             while (index < size && (existing = offsetAt(index)) < offset) {
-                setOffset(newWords, dest, existing);
+                placeOffset(newWords, bits, dest, existing);
                 newValues[dest++] = values[index++];
             }
             final boolean present = index < size && offsetAt(index) == offset;
-            setOffset(newWords, dest, offset);
+            placeOffset(newWords, bits, dest, offset);
             if (src != null) {
                 newValues[dest++] = src.get(srcOffset + ii);
             } else {
@@ -244,10 +264,22 @@ public final class IntSortedLeaf extends IntCompactLeaf {
             }
         }
         while (index < size) {
-            setOffset(newWords, dest, offsetAt(index));
+            placeOffset(newWords, bits, dest, offsetAt(index));
             newValues[dest++] = values[index++];
         }
-        return new IntSortedLeaf(newWords, newValues);
+        return bitmap ? new IntBitmapLeaf(bits, newValues) : new IntSortedLeaf(newWords, newValues);
+    }
+
+    /**
+     * Record {@code offset}, the offset of the value at {@code index}, in {@code words} at that index, or if
+     * {@code words} is null, in {@code bits}.
+     */
+    private static void placeOffset(final long[] words, final long[] bits, final int index, final int offset) {
+        if (words != null) {
+            setOffset(words, index, offset);
+        } else {
+            setBit(bits, offset);
+        }
     }
 
     @Override
@@ -317,18 +349,6 @@ public final class IntSortedLeaf extends IntCompactLeaf {
             }
             dest.set(destOffset + offset - firstOffset, values[index]);
         }
-    }
-
-    /**
-     * @return a bitmap leaf holding the same offsets and values
-     */
-    public IntBitmapLeaf toBitmap() {
-        final long[] bits = new long[BLOCK_SIZE / Long.SIZE];
-        for (int ii = 0; ii < size; ++ii) {
-            final int offset = offsetAt(ii);
-            bits[offset >>> 6] |= 1L << offset;
-        }
-        return new IntBitmapLeaf(bits, Arrays.copyOf(values, size));
     }
 
     @Override

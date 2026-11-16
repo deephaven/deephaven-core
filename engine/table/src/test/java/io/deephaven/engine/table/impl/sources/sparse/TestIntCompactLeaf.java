@@ -17,18 +17,27 @@ import java.util.Random;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class TestIntCompactLeaf {
 
     @Test
     public void testSortedLeaf() {
-        checkAgainstBlock(IntSortedLeaf.EMPTY);
+        checkAgainstBlock(IntSortedLeaf.EMPTY, Integer.MAX_VALUE);
     }
 
     @Test
     public void testBitmapLeaf() {
-        checkAgainstBlock(IntBitmapLeaf.EMPTY);
+        checkAgainstBlock(IntBitmapLeaf.EMPTY, 0);
+    }
+
+    /**
+     * A sorted leaf that grows past its threshold, by any write that adds offsets, becomes a bitmap leaf.
+     */
+    @Test
+    public void testSortedLeafBecomesBitmapLeaf() {
+        checkAgainstBlock(IntSortedLeaf.EMPTY, 16);
     }
 
     private static int randomValue(final Random random) {
@@ -44,9 +53,9 @@ public class TestIntCompactLeaf {
     /**
      * Apply random puts, sorted puts, absent inserts and removes to a leaf, starting from {@code empty}, and to a plain
      * block, and compare them after each step. A step that adds or removes offsets must leave the leaf it started from
-     * unchanged.
+     * unchanged. A sorted leaf must hold at most {@code sortedThreshold} values, and a bitmap leaf must stay one.
      */
-    private static void checkAgainstBlock(final IntCompactLeaf empty) {
+    private static void checkAgainstBlock(final IntCompactLeaf empty, final int sortedThreshold) {
         final Random random = new Random(0);
         final int[] offsets = new int[BLOCK_SIZE];
         for (int trial = 0; trial < 50; ++trial) {
@@ -90,14 +99,14 @@ public class TestIntCompactLeaf {
                                 expected[offsets[ii]] = value;
                                 present[offsets[ii]] = true;
                             }
-                            leaf = leaf.putSorted(offsets, values, 3, count);
+                            leaf = leaf.putSorted(offsets, values, 3, count, sortedThreshold);
                         }
                         break;
                     }
                     case 3: {
                         // offsets already present keep their values, and the others hold null
                         final int count = randomSortedOffsets(random, offsetRange, offsets);
-                        leaf = leaf.insertAbsent(offsets, count);
+                        leaf = leaf.insertAbsent(offsets, count, sortedThreshold);
                         for (int ii = 0; ii < count; ++ii) {
                             present[offsets[ii]] = true;
                         }
@@ -106,13 +115,19 @@ public class TestIntCompactLeaf {
                     default: {
                         final int offset = random.nextInt(offsetRange);
                         final int value = randomValue(random);
-                        leaf = leaf.put(offset, value);
+                        leaf = leaf.put(offset, value, sortedThreshold);
                         expected[offset] = value;
                         present[offset] = true;
                     }
                 }
                 if (leaf != before) {
                     assertMatches(before, expectedBefore, presentBefore, random);
+                }
+                if (leaf instanceof IntSortedLeaf) {
+                    assertTrue("sorted leaf of " + leaf.size(), leaf.size() <= sortedThreshold);
+                }
+                if (before instanceof IntBitmapLeaf) {
+                    assertTrue("bitmap leaf became " + leaf.getClass(), leaf instanceof IntBitmapLeaf);
                 }
                 if (step % 50 == 0) {
                     assertMatches(leaf, expected, present, random);

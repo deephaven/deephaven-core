@@ -35,6 +35,7 @@ import io.deephaven.util.SoftRecyclerWindow;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 
 import static io.deephaven.engine.table.impl.sources.sparse.PageTableLevels.*;
@@ -1202,21 +1203,15 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
     // endregion page table
 
     /**
-     * @return an empty compact leaf of the tier that holds {@code count} values
-     */
-    private ByteCompactLeaf emptyCompactLeaf(final int count) {
-        return count <= sortedThreshold ? ByteSortedLeaf.EMPTY : ByteBitmapLeaf.EMPTY;
-    }
-
-    /**
      * Make the leaf covering {@code key} in {@code level2}, the current bottom level covering it, whose compact leaf is
      * {@code compact} (or null if the leaf is absent), ready for {@code count} more offsets. When the leaf stays
-     * compact, the caller writes the returned leaf and puts the leaf that results in place of {@code compact}, so that
-     * the page table never holds a leaf whose offsets are changing. When it becomes a full block, the leaf may move to
-     * a new bottom level, so a caller that writes the leaf reads the bottom level again.
+     * compact, the caller writes the returned leaf, passing {@code sortedThreshold} so that a sorted leaf grows into a
+     * bitmap leaf when it must, and puts the leaf that results in place of {@code compact}, so that the page table
+     * never holds a leaf whose offsets are changing. When it becomes a full block, the leaf may move to a new bottom
+     * level, so a caller that writes the leaf reads the bottom level again.
      *
-     * @return the compact leaf to write, which is {@code compact} or a leaf not yet in the page table, or null if the
-     *         leaf is now a full block
+     * @return the compact leaf to write, which is {@code compact} or, for an absent leaf, the empty sorted leaf, or
+     *         null if the leaf is now a full block
      */
     private ByteCompactLeaf makeRoomInLeaf(
             final long key,
@@ -1228,14 +1223,13 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
                 setBlock(false, key, level2, newBlock());
                 return null;
             }
-            return emptyCompactLeaf(count);
+            return ByteSortedLeaf.EMPTY;
         }
-        final int newSize = compact.size() + count;
-        if (newSize > compactThreshold) {
+        if (compact.size() + count > compactThreshold) {
             setBlock(false, key, level2, toBlock(compact));
             return null;
         }
-        return maybeLeaveSortedTier(compact, newSize);
+        return compact;
     }
 
     /**
@@ -1445,22 +1439,6 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
     }
 
     /**
-     * Move a sorted leaf to the bitmap tier when it is about to hold more values than a sorted leaf allows.
-     *
-     * @param compact the compact leaf
-     * @param newSize the number of values the leaf is about to hold
-     * @return the leaf to write: {@code compact}, or, when it is a sorted leaf and {@code newSize} is more than
-     *         {@code sortedThreshold}, a bitmap leaf holding its values, which the caller puts in its place once
-     *         written
-     */
-    private ByteCompactLeaf maybeLeaveSortedTier(final ByteCompactLeaf compact, final int newSize) {
-        if (newSize <= sortedThreshold || !(compact instanceof ByteSortedLeaf)) {
-            return compact;
-        }
-        return ((ByteSortedLeaf) compact).toBitmap();
-    }
-
-    /**
      * @return whether individual writes must record previous values: the source tracks previous values, and preparation
      *         for parallel population has not already recorded them for the leaves of this cycle
      */
@@ -1664,7 +1642,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             final int absent = compact == null ? count : compact.countAbsent(offsets, count);
             final ByteCompactLeaf target = makeRoomInLeaf(firstKey, level2, compact, absent);
             if (target != null) {
-                final ByteCompactLeaf prepared = target.insertAbsent(offsets, count);
+                final ByteCompactLeaf prepared = target.insertAbsent(offsets, count, sortedThreshold);
                 if (prepared != compact) {
                     setCompact(false, firstKey, level2, prepared);
                 }
@@ -1674,7 +1652,9 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
 
     /**
      * Record the current value at {@code offset} of the leaf at {@code block2} of {@code level2} (null if not
-     * allocated), which covers {@code key}, as its previous value, unless this cycle has already recorded it.
+     * allocated), which covers {@code key}, as its previous value, unless this cycle has already recorded it. A record
+     * is visible to other threads before the caller writes the new value, so that a reader of previous values that sees
+     * the new value finds the record (see {@link #getPrevValue(long)}).
      */
     private void recordPrevious(final long key, final Level2 level2, final int block2, final int offset) {
         final Level2 prevLevel2 = ensurePrevLevel2(key);
@@ -1689,14 +1669,15 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
         final byte value = getValue(level2, block2, offset);
         final ByteCompactLeaf target = makeRoomInPrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
         if (target != null) {
-            setCompact(true, key, prevLevel2, target.put(offset, value));
+            setCompact(true, key, prevLevel2, target.put(offset, value, sortedThreshold));
         }
+        VarHandle.releaseFence();
     }
 
     /**
      * Record the current values at {@code offsets[0, count)}, ascending and distinct, of the leaf at {@code block2} of
      * {@code level2} (null if not allocated), which covers {@code key}, as their previous values, except those this
-     * cycle has already recorded.
+     * cycle has already recorded. The records are visible to other threads before the caller writes the new values.
      *
      * @param scratch holds the offsets to record and their values, when they fit in a compact leaf
      */
@@ -1719,6 +1700,8 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
         }
         final ByteCompactLeaf recorded = makeRoomInPrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
         if (recorded == null) {
+            // the leaf's previous values are now a snapshot
+            VarHandle.releaseFence();
             return;
         }
         final int leafSlot = level2 == null ? -1 : level2.slot(block2);
@@ -1737,7 +1720,9 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
                 ++next;
             }
         }
-        setCompact(true, key, prevLevel2, recorded.putSorted(scratch.offsets, scratch.valuesChunk, 0, absent));
+        setCompact(true, key, prevLevel2,
+                recorded.putSorted(scratch.offsets, scratch.valuesChunk, 0, absent, sortedThreshold));
+        VarHandle.releaseFence();
     }
 
     /**
@@ -1775,10 +1760,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             setBlock(true, key, prevLevel2, snapshot);
             return null;
         }
-        if (recorded == null) {
-            return emptyCompactLeaf(count);
-        }
-        return maybeLeaveSortedTier(recorded, newSize);
+        return recorded == null ? ByteSortedLeaf.EMPTY : recorded;
     }
 
     /**
@@ -1801,14 +1783,23 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
      * @return the value of {@code rowKey} at the start of this cycle
      */
     private byte getPrevValue(final long rowKey) {
-        final Level0 localPrevRoot = prevRoot;
-        if (localPrevRoot != null && rowKey >= 0) {
-            final Level2 prevLevel2 = getLevel2(localPrevRoot, rowKey);
+        if (rowKey < 0) {
+            return NULL_BYTE;
+        }
+        final int block2 = block2(rowKey);
+        final int offset = (int) (rowKey & INDEX_MASK);
+        byte current = NULL_BYTE;
+        // a row without a recorded value has not changed this cycle, unless a writer records and writes it while it is
+        // read; the writer records it first, so if the current value read here is the new one, the second look finds
+        // the recorded value
+        for (int look = 0; look < 2; ++look) {
+            final Level0 localPrevRoot = prevRoot;
+            final Level2 prevLevel2 = localPrevRoot == null ? null : getLevel2(localPrevRoot, rowKey);
             if (prevLevel2 != null) {
-                final int slot = prevLevel2.slot(block2(rowKey));
-                final int offset = (int) (rowKey & INDEX_MASK);
-                // a recorded leaf that becomes a snapshot is replaced by the snapshot before it is cleared, so reading
-                // the recorded leaf first finds one of them
+                final int slot = prevLevel2.slot(block2);
+                // when the recorded leaf becomes a snapshot, the snapshot is stored before the recorded leaf is
+                // cleared, so reading the recorded leaf first finds either the recorded leaf or, once that is
+                // cleared, the snapshot, and never neither
                 final ByteCompactLeaf recorded = prevLevel2.compactAt(slot);
                 if (recorded != null) {
                     if (recorded.contains(offset)) {
@@ -1821,18 +1812,25 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
                     }
                 }
             }
+            if (look == 0) {
+                current = getValueForPrevious(getLevel2(rowKey), block2, offset);
+                VarHandle.acquireFence();
+            }
         }
-        if (rowKey < 0) {
-            return NULL_BYTE;
-        }
-        final Level2 level2 = getLevel2(rowKey);
+        return current;
+    }
+
+    /**
+     * @return the current value at {@code offset} of the leaf at {@code block2} of {@code level2}, which may be null,
+     *         read for a previous value: this cycle has not changed the value, but may be making its leaf a full block,
+     *         storing the block before clearing the compact leaf, so the compact leaf is read first, which finds either
+     *         the compact leaf or, once that is cleared, the block, and never neither
+     */
+    private static byte getValueForPrevious(final Level2 level2, final int block2, final int offset) {
         if (level2 == null) {
             return NULL_BYTE;
         }
-        // this cycle has not changed the value, but may be making its leaf a full block, which it sets before clearing
-        // the compact leaf, so the compact leaf is read first
-        final int slot = level2.slot(block2(rowKey));
-        final int offset = (int) (rowKey & INDEX_MASK);
+        final int slot = level2.slot(block2);
         final ByteCompactLeaf compact = level2.compactAt(slot);
         if (compact != null) {
             return compact.get(offset);
@@ -2070,7 +2068,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
         final ByteCompactLeaf compact = level2.getCompact(block2);
         if (compact != null && compact.contains(offset)) {
             // the leaf holds the offset, so the value is written in place
-            compact.put(offset, value);
+            compact.put(offset, value, sortedThreshold);
             return level2;
         }
         final ByteCompactLeaf target = makeRoomInLeaf(key, level2, compact, 1);
@@ -2079,7 +2077,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             current.getBlock(block2)[offset] = value;
             return current;
         }
-        return setCompact(false, key, level2, target.put(offset, value));
+        return setCompact(false, key, level2, target.put(offset, value, sortedThreshold));
     }
 
     @Override
@@ -2200,9 +2198,11 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
      * reads the leaf's previous values: a snapshot of the whole leaf, or the recorded offsets.
      */
     private static final class FillState {
-        /** Whether the fill reads previous values, which this cycle may be changing the current leaves around. */
+        private final ByteAdaptiveSparseArraySource source;
+        /**
+         * Whether the fill reads previous values, which it may read from current leaves that this cycle is changing.
+         */
         private final boolean previous;
-        private final Level0 prevRoot;
         private long maxKeyInCurrentLeaf = -1;
         private byte[] block;
         private ByteCompactLeaf compact;
@@ -2211,16 +2211,15 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
         private int destOffset;
 
         /**
+         * @param source the source to read
          * @param previous whether to read previous values
-         * @param prevRoot the previous values recorded this cycle, or null if there are none or {@code previous} is
-         *        false
          */
-        private FillState(final boolean previous, final Level0 prevRoot) {
+        private FillState(final ByteAdaptiveSparseArraySource source, final boolean previous) {
+            this.source = source;
             this.previous = previous;
-            this.prevRoot = prevRoot;
         }
 
-        private void readLeaf(final ByteAdaptiveSparseArraySource source, final long key) {
+        private void readLeaf(final long key) {
             maxKeyInCurrentLeaf = key | INDEX_MASK;
             final int block2 = block2(key);
             final Level2 level2 = source.getLevel2(key);
@@ -2230,8 +2229,9 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             } else {
                 final int slot = level2.slot(block2);
                 if (previous) {
-                    // a leaf that this cycle makes a full block is set as a block before its compact leaf is cleared,
-                    // so reading the compact leaf first finds one of them
+                    // when this cycle makes the leaf a full block, it stores the block before clearing the compact
+                    // leaf, so reading the compact leaf first finds either the compact leaf or, once that is cleared,
+                    // the block, and never neither
                     compact = level2.compactAt(slot);
                     block = compact == null ? level2.blockAt(slot) : null;
                 } else {
@@ -2239,19 +2239,49 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
                     compact = block == null ? level2.compactAt(slot) : null;
                 }
             }
-            if (prevRoot != null) {
-                final Level2 prevLevel2 = getLevel2(prevRoot, key);
-                if (prevLevel2 == null) {
-                    prevSnapshot = null;
-                    prevRecorded = null;
-                } else {
-                    // a recorded leaf that becomes a snapshot is replaced by the snapshot before it is cleared, so
-                    // reading the recorded leaf first finds one of them
-                    final int slot = prevLevel2.slot(block2);
-                    prevRecorded = prevLevel2.compactAt(slot);
-                    prevSnapshot = prevRecorded == null ? prevLevel2.blockAt(slot) : null;
-                }
+            if (previous) {
+                readPrevious();
             }
+        }
+
+        /**
+         * Read the previous values that this cycle has recorded for the current leaf.
+         *
+         * @return whether they are not those read before
+         */
+        private boolean readPrevious() {
+            final Level0 prevRoot = source.prevRoot;
+            final Level2 prevLevel2 = prevRoot == null ? null : getLevel2(prevRoot, maxKeyInCurrentLeaf);
+            ByteCompactLeaf recorded = null;
+            byte[] snapshot = null;
+            if (prevLevel2 != null) {
+                // when the recorded leaf becomes a snapshot, the snapshot is stored before the recorded leaf is
+                // cleared, so reading the recorded leaf first finds either the recorded leaf or, once that is
+                // cleared, the snapshot, and never neither
+                final int slot = prevLevel2.slot(block2(maxKeyInCurrentLeaf));
+                recorded = prevLevel2.compactAt(slot);
+                snapshot = recorded == null ? prevLevel2.blockAt(slot) : null;
+            }
+            final boolean changed = recorded != prevRecorded || snapshot != prevSnapshot;
+            prevRecorded = recorded;
+            prevSnapshot = snapshot;
+            return changed;
+        }
+
+        /**
+         * After reading values of the current leaf for previous values, read the previous values recorded for it again.
+         * A writer records a row before writing it, so if a value read from the current leaf is the new one, the row's
+         * recorded value is found now.
+         *
+         * @return whether the recorded values are not those read before, and so must be laid over the values read
+         */
+        private boolean recordedMeanwhile() {
+            if (prevSnapshot != null) {
+                // a snapshot holds every row's previous value for the rest of the cycle
+                return false;
+            }
+            VarHandle.acquireFence();
+            return readPrevious();
         }
 
         private byte get(final int offset) {
@@ -2261,6 +2291,10 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             return compact == null ? NULL_BYTE : compact.get(offset);
         }
 
+        /**
+         * @return the previous value at {@code offset}, as far as the previous values read for the current leaf show;
+         *         the caller then checks for rows recorded while it was read
+         */
         private byte getPrev(final int offset) {
             if (prevSnapshot != null) {
                 return prevSnapshot[offset];
@@ -2296,6 +2330,15 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             if (prevRecorded != null) {
                 prevRecorded.overlayKeys(keys, start, end, chunk, start);
             }
+            if (previous && recordedMeanwhile()) {
+                if (prevSnapshot != null) {
+                    for (int ii = start; ii < end; ++ii) {
+                        chunk.set(ii, prevSnapshot[(int) (keys.get(ii) & INDEX_MASK)]);
+                    }
+                } else if (prevRecorded != null) {
+                    prevRecorded.overlayKeys(keys, start, end, chunk, start);
+                }
+            }
         }
 
         /**
@@ -2316,6 +2359,13 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             }
             if (prevRecorded != null) {
                 prevRecorded.overlayRange(firstOffset, firstOffset + length - 1, chunk, destOffset);
+            }
+            if (previous && recordedMeanwhile()) {
+                if (prevSnapshot != null) {
+                    chunk.copyFromTypedArray(prevSnapshot, firstOffset, destOffset, length);
+                } else if (prevRecorded != null) {
+                    prevRecorded.overlayRange(firstOffset, firstOffset + length - 1, chunk, destOffset);
+                }
             }
         }
     }
@@ -2354,12 +2404,12 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             final WritableByteChunk<? super Values> chunk,
             final RowSequence rowSequence,
             final boolean previous) {
-        final FillState state = new FillState(previous, previous ? prevRoot : null);
+        final FillState state = new FillState(this, previous);
         rowSequence.forAllRowKeyRanges((final long firstKey, final long lastKey) -> {
             long key = firstKey;
             while (true) {
                 if (key > state.maxKeyInCurrentLeaf) {
-                    state.readLeaf(this, key);
+                    state.readLeaf(key);
                 }
                 final long lastKeyInLeaf = Math.min(lastKey, state.maxKeyInCurrentLeaf);
                 final int length = (int) (lastKeyInLeaf - key + 1);
@@ -2382,13 +2432,13 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             final WritableByteChunk<? super Values> chunk,
             final RowSequence rowSequence,
             final boolean previous) {
-        final FillState state = new FillState(previous, previous ? prevRoot : null);
+        final FillState state = new FillState(this, previous);
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
         final int size = keys.size();
         int start = 0;
         while (start < size) {
             final long firstKey = keys.get(start);
-            state.readLeaf(this, firstKey);
+            state.readLeaf(firstKey);
             final long lastKeyInLeaf = firstKey | INDEX_MASK;
             int end = start + 1;
             while (end < size && keys.get(end) <= lastKeyInLeaf) {
@@ -2403,26 +2453,6 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
     // region getChunk
     @Override
     public ByteChunk<Values> getChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
-        return getChunk(context, rowSequence, false).asByteChunk();
-    }
-
-    @Override
-    public ByteChunk<Values> getPrevChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
-        if (prevRoot == null) {
-            // this cycle has recorded no previous values, so they are the current values
-            return getChunk(context, rowSequence, true).asByteChunk();
-        }
-        return getPrevChunkByFilling(context, rowSequence).asByteChunk();
-    }
-
-    /**
-     * @return the values of {@code rowSequence}, which alias the leaf when it is a contiguous range within one full
-     *         block; any other values are filled, as previous values if {@code previous}
-     */
-    private Chunk<Values> getChunk(
-            @NotNull final GetContext context,
-            @NotNull final RowSequence rowSequence,
-            final boolean previous) {
         if (rowSequence.isEmpty()) {
             return ByteChunk.getEmptyChunk();
         }
@@ -2430,8 +2460,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
         final long lastKey = rowSequence.lastRowKey();
         if (lastKey - firstKey + 1 == rowSequence.size() && (firstKey >> BLOCK2_SHIFT == lastKey >> BLOCK2_SHIFT)) {
             // a contiguous range within one leaf can alias the leaf when it is a full block, or read as nulls when
-            // there is no leaf; the compact leaf is read first, since a leaf becoming a full block is set as a block
-            // before its compact leaf is cleared
+            // there is no leaf
             final Level2 level2 = getLevel2(firstKey);
             final int slot = level2 == null ? -1 : level2.slot(block2(firstKey));
             if (level2 == null || level2.compactAt(slot) == null) {
@@ -2441,7 +2470,17 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
                         (int) rowSequence.size());
             }
         }
-        return previous ? getPrevChunkByFilling(context, rowSequence) : getChunkByFilling(context, rowSequence);
+        return getChunkByFilling(context, rowSequence).asByteChunk();
+    }
+
+    @Override
+    public ByteChunk<Values> getPrevChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
+        if (prevFlusher == null) {
+            // a source that does not track previous values has only its current values
+            return getChunk(context, rowSequence);
+        }
+        // a writer may change the current values while they are read, so they are copied rather than aliased
+        return getPrevChunkByFilling(context, rowSequence).asByteChunk();
     }
     // endregion getChunk
 
@@ -2468,7 +2507,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             final WritableByteChunk<? super Values> chunk,
             final LongChunk<? extends RowKeys> keys,
             final boolean previous) {
-        final FillState state = new FillState(previous, previous ? prevRoot : null);
+        final FillState state = new FillState(this, previous);
         long currentLeafKey = -1;
         final int size = keys.size();
         for (int ki = 0; ki < size; ++ki) {
@@ -2479,13 +2518,63 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             }
             final long leafKey = key & ~INDEX_MASK;
             if (leafKey != currentLeafKey) {
-                state.readLeaf(this, key);
+                state.readLeaf(key);
                 currentLeafKey = leafKey;
             }
             final int offset = (int) (key & INDEX_MASK);
-            chunk.set(ki, state.prevRoot == null ? state.get(offset) : state.getPrev(offset));
+            chunk.set(ki, previous ? state.getPrev(offset) : state.get(offset));
+        }
+        if (previous) {
+            overlayRecordedMeanwhile(chunk, keys);
         }
         chunk.setSize(size);
+    }
+
+    /**
+     * After {@code keys} have been read into {@code chunk} for their previous values, lay over them the previous values
+     * of the rows that this cycle recorded while they were read. A writer records a row before writing it, so if a
+     * value read from a current leaf is the new one, the row's record is found now. A chunk needs one look, after all
+     * its keys are read, rather than one for each key.
+     */
+    private void overlayRecordedMeanwhile(
+            final WritableByteChunk<? super Values> chunk,
+            final LongChunk<? extends RowKeys> keys) {
+        VarHandle.acquireFence();
+        final Level0 localPrevRoot = prevRoot;
+        if (localPrevRoot == null) {
+            // nothing is recorded, so every value read is a previous value
+            return;
+        }
+        long currentLeafKey = -1;
+        ByteCompactLeaf recorded = null;
+        byte[] snapshot = null;
+        final int size = keys.size();
+        for (int ki = 0; ki < size; ++ki) {
+            final long key = keys.get(ki);
+            if (key == RowSequence.NULL_ROW_KEY) {
+                continue;
+            }
+            final long leafKey = key & ~INDEX_MASK;
+            if (leafKey != currentLeafKey) {
+                currentLeafKey = leafKey;
+                final Level2 prevLevel2 = getLevel2(localPrevRoot, key);
+                if (prevLevel2 == null) {
+                    recorded = null;
+                    snapshot = null;
+                } else {
+                    // as in FillState.readPrevious, the recorded leaf is read before the snapshot that may replace it
+                    final int slot = prevLevel2.slot(block2(key));
+                    recorded = prevLevel2.compactAt(slot);
+                    snapshot = recorded == null ? prevLevel2.blockAt(slot) : null;
+                }
+            }
+            final int offset = (int) (key & INDEX_MASK);
+            if (snapshot != null) {
+                chunk.set(ki, snapshot[offset]);
+            } else if (recorded != null && recorded.contains(offset)) {
+                chunk.set(ki, recorded.get(offset));
+            }
+        }
     }
 
     @Override
@@ -2562,7 +2651,8 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
                 final int absent = existing == null ? count : existing.countAbsent(offsets, count);
                 final ByteCompactLeaf target = makeRoomInLeaf(firstKey, level2, existing, absent);
                 if (target != null) {
-                    final ByteCompactLeaf written = target.putSorted(offsets, values, srcOffset, count);
+                    final ByteCompactLeaf written =
+                            target.putSorted(offsets, values, srcOffset, count, sortedThreshold);
                     if (written != existing) {
                         setCompact(false, firstKey, level2, written);
                     }

@@ -90,7 +90,7 @@ public final class ShortBitmapLeaf extends ShortCompactLeaf {
     }
 
     @Override
-    public ShortCompactLeaf put(final int offset, final short value) {
+    public ShortCompactLeaf put(final int offset, final short value, final int sortedThreshold) {
         final int index = rank(offset);
         if (contains(offset)) {
             values[index] = value;
@@ -107,9 +107,9 @@ public final class ShortBitmapLeaf extends ShortCompactLeaf {
 
     @Override
     public ShortCompactLeaf putSorted(final int[] offsets, final ShortChunk<?> src, final int srcOffset,
-            final int count) {
+            final int count, final int sortedThreshold) {
         if (count == 1) {
-            return put(offsets[0], src.get(srcOffset));
+            return put(offsets[0], src.get(srcOffset), sortedThreshold);
         }
         final int absent = countAbsent(offsets, count);
         if (absent == 0) {
@@ -122,7 +122,7 @@ public final class ShortBitmapLeaf extends ShortCompactLeaf {
     }
 
     @Override
-    public ShortCompactLeaf insertAbsent(final int[] offsets, final int count) {
+    public ShortCompactLeaf insertAbsent(final int[] offsets, final int count, final int sortedThreshold) {
         final int absent = countAbsent(offsets, count);
         return absent == 0 ? this : merge(offsets, null, 0, count, values.length + absent);
     }

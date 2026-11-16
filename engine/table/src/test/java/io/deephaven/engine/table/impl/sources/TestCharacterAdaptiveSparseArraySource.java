@@ -20,7 +20,6 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.Long2CharOpenHashMap;
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -532,9 +531,8 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
      * Read previous values on other threads, a row at a time and in chunks, while each cycle adds and removes values of
      * compact leaves in several rounds, makes a compact leaf a full block every other cycle, and changes enough rows of
      * some full blocks that their previous values become snapshots partway through the cycle. Cycles run serially and
-     * after preparing for parallel population in turn. The readers check the rows the cycle does not change, whose
-     * previous values are read from the current leaf that the cycle is changing, and the rows that earlier rounds of
-     * the cycle changed, whose previous values are recorded.
+     * after preparing for parallel population in turn. The readers check every row that held a value at the start of
+     * the cycle or that the cycle adds, including the rows being written while they are read.
      */
     @Test
     public void testConcurrentPreviousReadsOfChangingLeaves() throws Exception {
@@ -636,9 +634,6 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
                 final List<RowSet> removedByRound = new ArrayList<>();
                 final List<RowSet> addedByRound = new ArrayList<>();
                 final RowSetBuilderRandom changedBuilder = RowSetFactory.builderRandom();
-                // the round in which the cycle first changes each row that held a value or is added
-                final Long2IntOpenHashMap firstChange = new Long2IntOpenHashMap();
-                firstChange.defaultReturnValue(rounds);
                 for (int round = 0; round < rounds; ++round) {
                     final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
                     final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
@@ -664,61 +659,37 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
                     }
                     final RowSet removed = removedBuilder.build();
                     final RowSet added = addedBuilder.build();
-                    final int thisRound = round;
-                    removed.forAllRowKeys(key -> {
-                        if (expected.containsKey(key) && firstChange.get(key) > thisRound) {
-                            firstChange.put(key, thisRound);
-                        }
-                    });
-                    added.forAllRowKeys(key -> {
-                        if (firstChange.get(key) > thisRound) {
-                            firstChange.put(key, thisRound);
-                        }
-                    });
                     changedBuilder.addRowSet(removed);
                     changedBuilder.addRowSet(added);
                     removedByRound.add(removed);
                     addedByRound.add(added);
                 }
-                // before each round, the rows that held a value or that earlier rounds changed may be checked; the
-                // others are about to be changed for the first time this cycle, which races with a reader
-                final Long2CharOpenHashMap previous = new Long2CharOpenHashMap(expected);
-                previous.defaultReturnValue(NULL_CHAR);
-                final List<CheckedRows> checkedByRound = new ArrayList<>();
-                for (int round = 0; round < rounds; ++round) {
-                    final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-                    final int thisRound = round;
-                    previous.keySet().forEach(key -> {
-                        if (firstChange.get(key) >= rounds || firstChange.get(key) < thisRound) {
-                            builder.addKey(key);
-                        }
+                // every row that held a value or that the cycle adds is checked, against its value at the start of the
+                // cycle
+                final RowSetBuilderRandom checkedBuilder = RowSetFactory.builderRandom();
+                expected.keySet().forEach(checkedBuilder::addKey);
+                addedByRound.forEach(checkedBuilder::addRowSet);
+                final CheckedRows checked;
+                try (final RowSet keys = checkedBuilder.build()) {
+                    final long[] keyArray = new long[keys.intSize()];
+                    final char[] values = new char[keyArray.length];
+                    final MutableInt position = new MutableInt(0);
+                    keys.forAllRowKeys(key -> {
+                        keyArray[position.get()] = key;
+                        values[position.getAndIncrement()] = expected.get(key);
                     });
-                    firstChange.forEach((key, firstRound) -> {
-                        if (firstRound < thisRound) {
-                            builder.addKey(key);
-                        }
-                    });
-                    try (final RowSet keys = builder.build()) {
-                        final long[] keyArray = new long[keys.intSize()];
-                        final char[] values = new char[keyArray.length];
-                        final MutableInt position = new MutableInt(0);
-                        keys.forAllRowKeys(key -> {
-                            keyArray[position.get()] = key;
-                            values[position.getAndIncrement()] = previous.get(key);
-                        });
-                        checkedByRound.add(new CheckedRows(cycle, keyArray, values));
-                    }
+                    checked = new CheckedRows(cycle, keyArray, values);
                 }
                 final boolean prepare = (cycle / 2) % 2 == 1;
                 final int thisCycle = cycle;
                 try (final RowSet changed = changedBuilder.build()) {
                     updateGraph.runWithinUnitTestCycle(() -> {
                         openCycle.set(thisCycle);
+                        checkedRows.set(checked);
                         if (prepare) {
                             source.prepareForParallelPopulation(changed);
                         }
                         for (int round = 0; round < rounds; ++round) {
-                            checkedRows.set(checkedByRound.get(round));
                             final RowSet removed = removedByRound.get(round);
                             source.setNull(removed);
                             removed.forAllRowKeys(expected::remove);

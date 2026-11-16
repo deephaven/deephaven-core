@@ -41,9 +41,11 @@ public abstract sealed class DoubleCompactLeaf permits DoubleSortedLeaf, DoubleB
     /**
      * Set the value at {@code offset}, adding the offset if it holds no value.
      *
+     * @param sortedThreshold the most values a sorted leaf holds; a sorted leaf that would hold more makes a bitmap
+     *        leaf instead
      * @return this leaf, if it holds {@code offset}; otherwise a new leaf holding its values and the new one
      */
-    public abstract DoubleCompactLeaf put(int offset, double value);
+    public abstract DoubleCompactLeaf put(int offset, double value, int sortedThreshold);
 
     /**
      * Set the values at several offsets, adding the offsets that hold no value. When every offset already holds a
@@ -53,16 +55,21 @@ public abstract sealed class DoubleCompactLeaf permits DoubleSortedLeaf, DoubleB
      * @param src the values, in the order of {@code offsets}
      * @param srcOffset the position in {@code src} of the value for {@code offsets[0]}
      * @param count the number of offsets
+     * @param sortedThreshold the most values a sorted leaf holds; a sorted leaf that would hold more makes a bitmap
+     *        leaf instead
      * @return this leaf, if it holds every offset; otherwise a new leaf holding its values and the new ones
      */
-    public abstract DoubleCompactLeaf putSorted(int[] offsets, DoubleChunk<?> src, int srcOffset, int count);
+    public abstract DoubleCompactLeaf putSorted(int[] offsets, DoubleChunk<?> src, int srcOffset, int count,
+            int sortedThreshold);
 
     /**
      * Add each of {@code offsets[0, count)}, ascending and distinct, that holds no value, with a null value.
      *
+     * @param sortedThreshold the most values a sorted leaf holds; a sorted leaf that would hold more makes a bitmap
+     *        leaf instead
      * @return this leaf, if it holds every offset; otherwise a new leaf holding its values and the added offsets
      */
-    public abstract DoubleCompactLeaf insertAbsent(int[] offsets, int count);
+    public abstract DoubleCompactLeaf insertAbsent(int[] offsets, int count, int sortedThreshold);
 
     /**
      * @return the number of {@code offsets[0, count)}, ascending and distinct, that hold no value

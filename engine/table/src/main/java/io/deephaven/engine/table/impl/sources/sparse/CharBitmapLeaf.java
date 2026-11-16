@@ -86,7 +86,7 @@ public final class CharBitmapLeaf extends CharCompactLeaf {
     }
 
     @Override
-    public CharCompactLeaf put(final int offset, final char value) {
+    public CharCompactLeaf put(final int offset, final char value, final int sortedThreshold) {
         final int index = rank(offset);
         if (contains(offset)) {
             values[index] = value;
@@ -103,9 +103,9 @@ public final class CharBitmapLeaf extends CharCompactLeaf {
 
     @Override
     public CharCompactLeaf putSorted(final int[] offsets, final CharChunk<?> src, final int srcOffset,
-            final int count) {
+            final int count, final int sortedThreshold) {
         if (count == 1) {
-            return put(offsets[0], src.get(srcOffset));
+            return put(offsets[0], src.get(srcOffset), sortedThreshold);
         }
         final int absent = countAbsent(offsets, count);
         if (absent == 0) {
@@ -118,7 +118,7 @@ public final class CharBitmapLeaf extends CharCompactLeaf {
     }
 
     @Override
-    public CharCompactLeaf insertAbsent(final int[] offsets, final int count) {
+    public CharCompactLeaf insertAbsent(final int[] offsets, final int count, final int sortedThreshold) {
         final int absent = countAbsent(offsets, count);
         return absent == 0 ? this : merge(offsets, null, 0, count, values.length + absent);
     }
