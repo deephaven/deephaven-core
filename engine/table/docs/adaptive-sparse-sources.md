@@ -127,6 +127,14 @@ values leaves it as it is, and releasing a leaf with no live rows is `clearBlock
 merge of ascending offsets), `insertAbsent` (add offsets holding null, for parallel preparation), `remove`,
 `removeRange`, `copyTo` a block, `copyOffsets`, `overlayRange` and `fillRange` for chunked reads, and `estimateSize`.
 
+The offsets of a leaf never change. Setting the value of an offset the leaf holds writes it in place; `put`,
+`putSorted`, `insertAbsent`, `remove` and `removeRange` return a new leaf when they add or remove offsets, and the writer
+puts it in the page table in place of the old one (`setCompact`). A leaf builds its arrays before its constructor takes
+them into final fields, so a reader on another thread that finds the leaf sees it whole, and a reader that loaded the
+old leaf finds every value at its offset however the leaf is written meanwhile (see
+[Reading previous values during a cycle](#reading-previous-values-during-a-cycle)). Each tier has a shared empty leaf
+(`EMPTY`), which no write changes, since it holds no offset to write in place.
+
 ### Sorted leaf
 
 `CharSortedLeaf` holds its offsets in ascending order, packed four 16-bit lanes to a `long`, with its values at the
@@ -148,10 +156,9 @@ word and its rank, counts the bits with `bitCount`, and loads the value. The fix
 (the bitmap, the ranks and the object and array headers) plus the values, which is why the sorted tier exists below 16
 values.
 
-Inserts and removes move the values above the changed offset and adjust the ranks after its word. `putSorted` and
-`insertAbsent` merge from the highest offset down, so each value moves at most once, and recompute the ranks once.
-`removeRange` clears the range's bits word by word, counts them, moves the following values once and adjusts the ranks
-once.
+A write that adds offsets copies the bitmap, sets the new bits, and merges the old and new values into a new array in
+one ascending pass over the bits; the new leaf computes its ranks once. `removeRange` clears the range's bits word by
+word in a copy of the bitmap and copies the values before and after the range.
 
 ## Writes
 
@@ -164,8 +171,8 @@ leaf it knows how many row keys the write puts there before touching the leaf, s
 
 - an absent leaf receiving more than `compactThreshold` values becomes a full block directly, and the cursor copies the
   values into it by key or by range, without computing offsets unless previous values are recorded;
-- a compact leaf receives its offsets in one `putSorted` merge, or becomes a block first if the merge would take it past
-  `compactThreshold`;
+- a compact leaf merges its offsets with the new ones into a new leaf in one `putSorted`, or stores the values in place
+  when it holds every offset, or becomes a block first if the merge would take it past `compactThreshold`;
 - a full block is written in place.
 
 `fillFromChunkUnordered` writes one key at a time, reusing the `Level2` while consecutive keys share a leaf.
@@ -194,6 +201,24 @@ records a few changed rows per leaf in a compact leaf, and snapshots only leaves
 There is no in-use bitmap. A compact leaf is its own record of which rows it holds, and a snapshot holds every row. The
 first write to a leaf in a cycle looks up the previous leaf, and later writes find it there; a bulk write records all of
 a leaf's offsets with one `putSorted` (`recordPrevious` with `PrevScratch`).
+
+### Reading previous values during a cycle
+
+Another thread, such as a snapshot, may read previous values while the update thread writes. A row that the cycle has
+not changed has no recorded value, so the reader reads its current leaf, which the writer may be changing:
+
+- A compact leaf's offsets never change (see [Compact leaves](#compact-leaves)), so the leaf the reader loaded still
+  holds the row's value at its offset.
+- A compact leaf that becomes a full block is set as a block before the compact leaf is cleared, and a read of
+  previous values looks for the compact leaf first, so it finds one of them. Likewise a recorded leaf of previous values
+  that becomes a snapshot is replaced by the snapshot before it is cleared, and is read first.
+- `Level2.withBlocks`, which gives a level its first array of full blocks, copies the compact leaves into the new level
+  rather than sharing their array, so clearing a compact leaf from the new level leaves it in place for a reader of the
+  old one.
+
+A row that the cycle changes is recorded before it is written, as in the full block sources. A reader that finds no
+recorded value just before the writer records and writes the row reads the new value; this is the same race as reading
+the full block sources' in-use bitmap just before it is set.
 
 Snapshot blocks and the arrays of the previous page table that cover every child index come from per-type
 `SoftRecycler`s. Any smaller window and the arrays of a ranked level are the level's own, and are discarded with it when

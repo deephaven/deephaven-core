@@ -16,6 +16,10 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
  * A leaf of a {@link io.deephaven.engine.table.impl.sources.ObjectAdaptiveSparseArraySource} that holds fewer values
  * than a full block. Values are addressed by their offset within the block, from 0 to
  * {@link SparseConstants#BLOCK_SIZE} - 1; an offset without a value reads as null.
+ * <p>
+ * The offsets a leaf holds never change. Setting the value of an offset the leaf holds writes it in place; adding or
+ * removing offsets makes a new leaf, which the caller puts in place of this one. A reader of this leaf therefore finds
+ * each value at its offset however the leaf is written meanwhile.
  */
 public abstract sealed class ObjectCompactLeaf permits ObjectSortedLeaf, ObjectBitmapLeaf {
 
@@ -36,8 +40,10 @@ public abstract sealed class ObjectCompactLeaf permits ObjectSortedLeaf, ObjectB
 
     /**
      * Set the value at {@code offset}, adding the offset if it holds no value.
+     *
+     * @return this leaf, if it holds {@code offset}; otherwise a new leaf holding its values and the new one
      */
-    public abstract void put(int offset, Object value);
+    public abstract ObjectCompactLeaf put(int offset, Object value);
 
     /**
      * Set the values at several offsets, adding the offsets that hold no value. When every offset already holds a
@@ -47,13 +53,16 @@ public abstract sealed class ObjectCompactLeaf permits ObjectSortedLeaf, ObjectB
      * @param src the values, in the order of {@code offsets}
      * @param srcOffset the position in {@code src} of the value for {@code offsets[0]}
      * @param count the number of offsets
+     * @return this leaf, if it holds every offset; otherwise a new leaf holding its values and the new ones
      */
-    public abstract void putSorted(int[] offsets, ObjectChunk<Object, ?> src, int srcOffset, int count);
+    public abstract ObjectCompactLeaf putSorted(int[] offsets, ObjectChunk<Object, ?> src, int srcOffset, int count);
 
     /**
      * Add each of {@code offsets[0, count)}, ascending and distinct, that holds no value, with a null value.
+     *
+     * @return this leaf, if it holds every offset; otherwise a new leaf holding its values and the added offsets
      */
-    public abstract void insertAbsent(int[] offsets, int count);
+    public abstract ObjectCompactLeaf insertAbsent(int[] offsets, int count);
 
     /**
      * @return the number of {@code offsets[0, count)}, ascending and distinct, that hold no value
@@ -62,13 +71,17 @@ public abstract sealed class ObjectCompactLeaf permits ObjectSortedLeaf, ObjectB
 
     /**
      * Remove the value at {@code offset}, if it holds one.
+     *
+     * @return this leaf, if it does not hold {@code offset}; otherwise a new leaf holding its other values
      */
-    public abstract void remove(int offset);
+    public abstract ObjectCompactLeaf remove(int offset);
 
     /**
      * Remove the values at offsets {@code firstOffset} through {@code lastOffset} inclusive.
+     *
+     * @return this leaf, if it holds none of those offsets; otherwise a new leaf holding its other values
      */
-    public abstract void removeRange(int firstOffset, int lastOffset);
+    public abstract ObjectCompactLeaf removeRange(int firstOffset, int lastOffset);
 
     /**
      * Copy every value into {@code block} at its offset, leaving the other entries of {@code block} unchanged.

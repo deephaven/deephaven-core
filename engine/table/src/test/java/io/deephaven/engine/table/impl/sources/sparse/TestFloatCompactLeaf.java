@@ -13,7 +13,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Random;
-import java.util.function.IntFunction;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
@@ -24,12 +23,12 @@ public class TestFloatCompactLeaf {
 
     @Test
     public void testSortedLeaf() {
-        checkAgainstBlock(FloatSortedLeaf::new);
+        checkAgainstBlock(FloatSortedLeaf.EMPTY);
     }
 
     @Test
     public void testBitmapLeaf() {
-        checkAgainstBlock(FloatBitmapLeaf::new);
+        checkAgainstBlock(FloatBitmapLeaf.EMPTY);
     }
 
     private static float randomValue(final Random random) {
@@ -43,24 +42,28 @@ public class TestFloatCompactLeaf {
     }
 
     /**
-     * Apply random puts, sorted puts, absent inserts and removes to a leaf and to a plain block, and compare them after
-     * each step.
+     * Apply random puts, sorted puts, absent inserts and removes to a leaf, starting from {@code empty}, and to a plain
+     * block, and compare them after each step. A step that adds or removes offsets must leave the leaf it started from
+     * unchanged.
      */
-    private static void checkAgainstBlock(final IntFunction<FloatCompactLeaf> factory) {
+    private static void checkAgainstBlock(final FloatCompactLeaf empty) {
         final Random random = new Random(0);
         final int[] offsets = new int[BLOCK_SIZE];
         for (int trial = 0; trial < 50; ++trial) {
-            final FloatCompactLeaf leaf = factory.apply(1 + random.nextInt(8));
+            FloatCompactLeaf leaf = empty;
             final float[] expected = new float[BLOCK_SIZE];
             Arrays.fill(expected, NULL_FLOAT);
             final boolean[] present = new boolean[BLOCK_SIZE];
             // some trials touch only a few offsets, others most of the block
             final int offsetRange = trial % 2 == 0 ? 40 : BLOCK_SIZE;
             for (int step = 0; step < 600; ++step) {
+                final FloatCompactLeaf before = leaf;
+                final float[] expectedBefore = expected.clone();
+                final boolean[] presentBefore = present.clone();
                 switch (random.nextInt(6)) {
                     case 0: {
                         final int offset = random.nextInt(offsetRange);
-                        leaf.remove(offset);
+                        leaf = leaf.remove(offset);
                         expected[offset] = NULL_FLOAT;
                         present[offset] = false;
                         break;
@@ -70,7 +73,7 @@ public class TestFloatCompactLeaf {
                         // mostly short ranges, and sometimes ranges across several bitmap words or the whole leaf
                         final int length = random.nextInt(4) == 0 ? random.nextInt(offsetRange) : random.nextInt(8);
                         final int last = Math.min(offsetRange - 1, first + length);
-                        leaf.removeRange(first, last);
+                        leaf = leaf.removeRange(first, last);
                         Arrays.fill(expected, first, last + 1, NULL_FLOAT);
                         Arrays.fill(present, first, last + 1, false);
                         break;
@@ -87,14 +90,14 @@ public class TestFloatCompactLeaf {
                                 expected[offsets[ii]] = value;
                                 present[offsets[ii]] = true;
                             }
-                            leaf.putSorted(offsets, values, 3, count);
+                            leaf = leaf.putSorted(offsets, values, 3, count);
                         }
                         break;
                     }
                     case 3: {
                         // offsets already present keep their values, and the others hold null
                         final int count = randomSortedOffsets(random, offsetRange, offsets);
-                        leaf.insertAbsent(offsets, count);
+                        leaf = leaf.insertAbsent(offsets, count);
                         for (int ii = 0; ii < count; ++ii) {
                             present[offsets[ii]] = true;
                         }
@@ -103,10 +106,13 @@ public class TestFloatCompactLeaf {
                     default: {
                         final int offset = random.nextInt(offsetRange);
                         final float value = randomValue(random);
-                        leaf.put(offset, value);
+                        leaf = leaf.put(offset, value);
                         expected[offset] = value;
                         present[offset] = true;
                     }
+                }
+                if (leaf != before) {
+                    assertMatches(before, expectedBefore, presentBefore, random);
                 }
                 if (step % 50 == 0) {
                     assertMatches(leaf, expected, present, random);

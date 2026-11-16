@@ -11,8 +11,6 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
-import java.util.Arrays;
-
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.INDEX_MASK;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -25,19 +23,32 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public final class LongBitmapLeaf extends LongCompactLeaf {
     private static final int WORDS = BLOCK_SIZE / Long.SIZE;
 
+    /** A leaf holding no values. */
+    public static final LongBitmapLeaf EMPTY = new LongBitmapLeaf(new long[WORDS], new long[0]);
+
     /** Bit {@code offset % 64} of word {@code offset / 64} is set when {@code offset} holds a value. */
-    private final long[] bits = new long[WORDS];
+    private final long[] bits;
     /** The number of values in the words before each word. */
-    private final short[] rankBefore = new short[WORDS];
-    /** The values, in offset order; only the first {@link #size} entries are used. */
-    private long[] values;
-    private int size;
+    private final short[] rankBefore;
+    /** The values, in offset order. */
+    private final long[] values;
 
     /**
-     * @param initialCapacity the number of values to allocate room for
+     * Make a leaf of the offsets in {@code bits} and their values. The arrays are complete before the leaf is made, so
+     * that a reader on another thread that finds the leaf sees them in full.
+     *
+     * @param bits the offsets that hold a value
+     * @param values the values of those offsets, in offset order, one for each set bit of {@code bits}
      */
-    public LongBitmapLeaf(final int initialCapacity) {
-        values = new long[Math.max(1, initialCapacity)];
+    LongBitmapLeaf(final long[] bits, final long[] values) {
+        this.bits = bits;
+        this.values = values;
+        rankBefore = new short[WORDS];
+        int rank = 0;
+        for (int wi = 0; wi < WORDS; ++wi) {
+            rankBefore[wi] = (short) rank;
+            rank += Long.bitCount(bits[wi]);
+        }
     }
 
     /**
@@ -48,36 +59,9 @@ public final class LongBitmapLeaf extends LongCompactLeaf {
         return rankBefore[word] + Long.bitCount(bits[word] & ((1L << offset) - 1));
     }
 
-    private void adjustRanksAfter(final int word, final int delta) {
-        for (int wi = word + 1; wi < WORDS; ++wi) {
-            rankBefore[wi] += delta;
-        }
-    }
-
-    /**
-     * Set the bits of {@code offsets[0, count)} and recompute every rank, after a merge has placed their values.
-     */
-    private void setBitsAndRanks(final int[] offsets, final int count) {
-        for (int ii = 0; ii < count; ++ii) {
-            final int offset = offsets[ii];
-            bits[offset >>> 6] |= 1L << offset;
-        }
-        int rank = 0;
-        for (int wi = 0; wi < WORDS; ++wi) {
-            rankBefore[wi] = (short) rank;
-            rank += Long.bitCount(bits[wi]);
-        }
-    }
-
-    private void ensureCapacity(final int capacity) {
-        if (capacity > values.length) {
-            values = Arrays.copyOf(values, Math.min(BLOCK_SIZE, Math.max(capacity, size * 2)));
-        }
-    }
-
     @Override
     public int size() {
-        return size;
+        return values.length;
     }
 
     @Override
@@ -105,134 +89,121 @@ public final class LongBitmapLeaf extends LongCompactLeaf {
     }
 
     @Override
-    public void put(final int offset, final long value) {
-        final int word = offset >>> 6;
-        final long bit = 1L << offset;
+    public LongCompactLeaf put(final int offset, final long value) {
         final int index = rank(offset);
-        if ((bits[word] & bit) != 0) {
+        if (contains(offset)) {
             values[index] = value;
-            return;
+            return this;
         }
-        ensureCapacity(size + 1);
-        if (index < size) {
-            System.arraycopy(values, index, values, index + 1, size - index);
-        }
-        values[index] = value;
-        bits[word] |= bit;
-        adjustRanksAfter(word, 1);
-        ++size;
+        final long[] newBits = bits.clone();
+        newBits[offset >>> 6] |= 1L << offset;
+        final long[] newValues = new long[values.length + 1];
+        System.arraycopy(values, 0, newValues, 0, index);
+        newValues[index] = value;
+        System.arraycopy(values, index, newValues, index + 1, values.length - index);
+        return new LongBitmapLeaf(newBits, newValues);
     }
 
     @Override
-    public void putSorted(final int[] offsets, final LongChunk<?> src, final int srcOffset, final int count) {
+    public LongCompactLeaf putSorted(final int[] offsets, final LongChunk<?> src, final int srcOffset,
+            final int count) {
         if (count == 1) {
-            put(offsets[0], src.get(srcOffset));
-            return;
+            return put(offsets[0], src.get(srcOffset));
         }
-        final int newSize = size + countAbsent(offsets, count);
-        if (newSize == size) {
+        final int absent = countAbsent(offsets, count);
+        if (absent == 0) {
             for (int ii = 0; ii < count; ++ii) {
                 values[rank(offsets[ii])] = src.get(srcOffset + ii);
             }
-            return;
+            return this;
         }
-        ensureCapacity(newSize);
-        // merge from the highest offset down, walking the existing offsets through the bitmap, so that each value
-        // moves at most once and lands above any value not yet moved
-        int index = size - 1;
-        int dest = newSize - 1;
-        int wi = WORDS - 1;
-        long wordBits = bits[wi];
-        for (int ii = count - 1; ii >= 0;) {
-            while (wordBits == 0 && wi > 0) {
-                wordBits = bits[--wi];
-            }
-            final int existing = wordBits == 0 ? -1 : (wi << 6) + 63 - Long.numberOfLeadingZeros(wordBits);
-            final int offset = offsets[ii];
-            if (existing > offset) {
-                values[dest] = values[index--];
-                wordBits &= ~(1L << existing);
-            } else {
-                if (existing == offset) {
-                    --index;
-                    wordBits &= ~(1L << existing);
-                }
-                values[dest] = src.get(srcOffset + ii--);
-            }
-            --dest;
-        }
-        setBitsAndRanks(offsets, count);
-        size = newSize;
+        return merge(offsets, src, srcOffset, count, values.length + absent);
     }
 
     @Override
-    public void insertAbsent(final int[] offsets, final int count) {
-        final int newSize = size + countAbsent(offsets, count);
-        if (newSize == size) {
-            return;
-        }
-        ensureCapacity(newSize);
-        // merge from the highest offset down, as putSorted does, keeping the values of the offsets already present;
-        // dest - index is the number of absent offsets not yet placed, so the values below index are already in place
-        // once it reaches zero
-        int index = size - 1;
-        int dest = newSize - 1;
-        int wi = WORDS - 1;
-        long wordBits = bits[wi];
-        for (int ii = count - 1; dest > index;) {
-            while (wordBits == 0 && wi > 0) {
-                wordBits = bits[--wi];
-            }
-            final int existing = wordBits == 0 ? -1 : (wi << 6) + 63 - Long.numberOfLeadingZeros(wordBits);
+    public LongCompactLeaf insertAbsent(final int[] offsets, final int count) {
+        final int absent = countAbsent(offsets, count);
+        return absent == 0 ? this : merge(offsets, null, 0, count, values.length + absent);
+    }
+
+    /**
+     * @return a new leaf of {@code newSize} values holding this leaf's offsets and {@code offsets[0, count)}, ascending
+     *         and distinct, with the values of {@code src} from {@code srcOffset} for those offsets, or, if {@code src}
+     *         is null, keeping the values of the offsets this leaf holds and null for the others
+     */
+    private LongBitmapLeaf merge(
+            final int[] offsets,
+            final LongChunk<?> src,
+            final int srcOffset,
+            final int count,
+            final int newSize) {
+        final long[] newBits = bits.clone();
+        for (int ii = 0; ii < count; ++ii) {
             final int offset = offsets[ii];
-            if (existing >= offset) {
-                values[dest] = values[index--];
-                wordBits &= ~(1L << existing);
-                if (existing == offset) {
-                    --ii;
-                }
-            } else {
-                values[dest] = NULL_LONG;
-                --ii;
-            }
-            --dest;
+            newBits[offset >>> 6] |= 1L << offset;
         }
-        setBitsAndRanks(offsets, count);
-        size = newSize;
+        // walk the offsets of the result in ascending order, taking each value from src or from this leaf
+        final long[] newValues = new long[newSize];
+        int index = 0;
+        int ii = 0;
+        int dest = 0;
+        for (int wi = 0; wi < WORDS; ++wi) {
+            long wordBits = newBits[wi];
+            while (wordBits != 0) {
+                final int offset = (wi << 6) + Long.numberOfTrailingZeros(wordBits);
+                final boolean present = (bits[wi] & (1L << offset)) != 0;
+                if (ii < count && offsets[ii] == offset) {
+                    if (src != null) {
+                        newValues[dest] = src.get(srcOffset + ii);
+                    } else {
+                        newValues[dest] = present ? values[index] : NULL_LONG;
+                    }
+                    ++ii;
+                } else {
+                    newValues[dest] = values[index];
+                }
+                if (present) {
+                    ++index;
+                }
+                ++dest;
+                wordBits &= wordBits - 1;
+            }
+        }
+        return new LongBitmapLeaf(newBits, newValues);
     }
 
     @Override
-    public void remove(final int offset) {
-        final int word = offset >>> 6;
-        final long bit = 1L << offset;
-        if ((bits[word] & bit) == 0) {
-            return;
+    public LongCompactLeaf remove(final int offset) {
+        if (!contains(offset)) {
+            return this;
         }
         final int index = rank(offset);
-        System.arraycopy(values, index + 1, values, index, size - index - 1);
-        values[--size] = NULL_LONG;
-        bits[word] &= ~bit;
-        adjustRanksAfter(word, -1);
+        final long[] newBits = bits.clone();
+        newBits[offset >>> 6] &= ~(1L << offset);
+        final long[] newValues = new long[values.length - 1];
+        System.arraycopy(values, 0, newValues, 0, index);
+        System.arraycopy(values, index + 1, newValues, index, values.length - index - 1);
+        return new LongBitmapLeaf(newBits, newValues);
     }
 
     @Override
-    public void removeRange(final int firstOffset, final int lastOffset) {
-        final int start = rank(firstOffset);
-        final int lastWord = lastOffset >>> 6;
+    public LongCompactLeaf removeRange(final int firstOffset, final int lastOffset) {
+        final long[] newBits = bits.clone();
         int removed = 0;
-        for (int wi = firstOffset >>> 6; wi <= lastWord; ++wi) {
-            rankBefore[wi] -= removed;
-            final long cleared = bits[wi] & rangeMask(wi, firstOffset, lastOffset);
+        for (int wi = firstOffset >>> 6; wi <= lastOffset >>> 6; ++wi) {
+            final long cleared = newBits[wi] & rangeMask(wi, firstOffset, lastOffset);
             removed += Long.bitCount(cleared);
-            bits[wi] &= ~cleared;
+            newBits[wi] &= ~cleared;
         }
         if (removed == 0) {
-            return;
+            return this;
         }
-        adjustRanksAfter(lastWord, -removed);
-        System.arraycopy(values, start + removed, values, start, size - start - removed);
-        Arrays.fill(values, size - removed, size, NULL_LONG);
-        size -= removed;
+        // the removed values are consecutive, starting at the rank of the first offset
+        final int start = rank(firstOffset);
+        final long[] newValues = new long[values.length - removed];
+        System.arraycopy(values, 0, newValues, 0, start);
+        System.arraycopy(values, start + removed, newValues, start, values.length - start - removed);
+        return new LongBitmapLeaf(newBits, newValues);
     }
 
     @Override

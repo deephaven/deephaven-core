@@ -14,11 +14,12 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import java.util.Arrays;
 
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.INDEX_MASK;
 
 /**
  * A {@link ObjectCompactLeaf} for a few values: the offsets that hold a value in ascending order, and their values at the
- * same positions. It has no per-leaf structure beyond those two arrays, which grow as values are added.
+ * same positions. It has no per-leaf structure beyond those two arrays.
  * <p>
  * The offsets are packed four to a long, in 16 bit lanes from the lowest, and lanes past {@link #size} hold
  * {@link #PAST_BLOCK}. A lookup counts the offsets less than its target a word at a time, with no branch that depends
@@ -35,17 +36,33 @@ public final class ObjectSortedLeaf extends ObjectCompactLeaf {
     private static final long GUARD_BITS = 0x8000_8000_8000_8000L;
     private static final long PAST_BLOCK_LANES = PAST_BLOCK * LANE_ONES;
 
-    private long[] words;
-    private Object[] values;
-    private int size;
+    /** A leaf holding no values. */
+    public static final ObjectSortedLeaf EMPTY = new ObjectSortedLeaf(newWords(0), new Object[0]);
+
+    private final long[] words;
+    private final Object[] values;
+    private final int size;
 
     /**
-     * @param initialCapacity the number of values to allocate room for
+     * Make a leaf of the offsets in {@code words} and their values. The arrays are complete before the leaf is made, so
+     * that a reader on another thread that finds the leaf sees them in full.
+     *
+     * @param words the offsets, packed as {@link #newWords(int)} lays them out
+     * @param values the value of each offset, one for each offset
      */
-    public ObjectSortedLeaf(final int initialCapacity) {
-        words = new long[wordsFor(initialCapacity)];
+    private ObjectSortedLeaf(final long[] words, final Object[] values) {
+        this.words = words;
+        this.values = values;
+        size = values.length;
+    }
+
+    /**
+     * @return the words for {@code size} offsets, every lane holding {@link #PAST_BLOCK}
+     */
+    private static long[] newWords(final int size) {
+        final long[] words = new long[wordsFor(size)];
         Arrays.fill(words, PAST_BLOCK_LANES);
-        values = new Object[Math.max(1, initialCapacity)];
+        return words;
     }
 
     /**
@@ -68,7 +85,7 @@ public final class ObjectSortedLeaf extends ObjectCompactLeaf {
         return (int) (words[index >>> 2] >>> ((index & 3) << 4)) & 0xFFFF;
     }
 
-    private void setOffset(final int index, final int offset) {
+    private static void setOffset(final long[] words, final int index, final int offset) {
         final int shift = (index & 3) << 4;
         final int wi = index >>> 2;
         words[wi] = (words[wi] & ~(0xFFFFL << shift)) | ((long) offset << shift);
@@ -113,20 +130,6 @@ public final class ObjectSortedLeaf extends ObjectCompactLeaf {
         return index < size && offsetAt(index) == offset ? index : -index - 1;
     }
 
-    /**
-     * Make room for at least {@code capacity} offsets and values.
-     */
-    private void ensureCapacity(final int capacity) {
-        if (capacity > words.length * 4) {
-            final int oldLength = words.length;
-            words = Arrays.copyOf(words, wordsFor(Math.max(capacity, size * 2)));
-            Arrays.fill(words, oldLength, words.length, PAST_BLOCK_LANES);
-        }
-        if (capacity > values.length) {
-            values = Arrays.copyOf(values, Math.max(capacity, size * 2));
-        }
-    }
-
     @Override
     public boolean contains(final int offset) {
         return indexOf(offset) >= 0;
@@ -139,23 +142,26 @@ public final class ObjectSortedLeaf extends ObjectCompactLeaf {
     }
 
     @Override
-    public void put(final int offset, final Object value) {
+    public ObjectCompactLeaf put(final int offset, final Object value) {
         int index = indexOf(offset);
         if (index >= 0) {
             values[index] = value;
-            return;
+            return this;
         }
         index = -index - 1;
-        ensureCapacity(size + 1);
-        for (int ii = size; ii > index; --ii) {
-            setOffset(ii, offsetAt(ii - 1));
+        final long[] newWords = newWords(size + 1);
+        final Object[] newValues = new Object[size + 1];
+        for (int ii = 0; ii < index; ++ii) {
+            setOffset(newWords, ii, offsetAt(ii));
         }
-        setOffset(index, offset);
-        if (index < size) {
-            System.arraycopy(values, index, values, index + 1, size - index);
+        setOffset(newWords, index, offset);
+        for (int ii = index; ii < size; ++ii) {
+            setOffset(newWords, ii + 1, offsetAt(ii));
         }
-        values[index] = value;
-        ++size;
+        System.arraycopy(values, 0, newValues, 0, index);
+        newValues[index] = value;
+        System.arraycopy(values, index, newValues, index + 1, size - index);
+        return new ObjectSortedLeaf(newWords, newValues);
     }
 
     @Override
@@ -178,10 +184,10 @@ public final class ObjectSortedLeaf extends ObjectCompactLeaf {
     }
 
     @Override
-    public void putSorted(final int[] offsets, final ObjectChunk<Object, ?> src, final int srcOffset, final int count) {
+    public ObjectCompactLeaf putSorted(final int[] offsets, final ObjectChunk<Object, ?> src, final int srcOffset,
+            final int count) {
         if (count == 1) {
-            put(offsets[0], src.get(srcOffset));
-            return;
+            return put(offsets[0], src.get(srcOffset));
         }
         final int newSize = size + countAbsent(offsets, count);
         if (newSize == size) {
@@ -194,92 +200,89 @@ public final class ObjectSortedLeaf extends ObjectCompactLeaf {
                 }
                 values[index++] = src.get(srcOffset + ii);
             }
-            return;
+            return this;
         }
-        ensureCapacity(newSize);
-        // merge from the highest offset down, so that each entry moves at most once and lands above any entry not yet
-        // moved
-        int index = size - 1;
-        int dest = newSize - 1;
-        for (int ii = count - 1; ii >= 0;) {
-            final int offset = offsets[ii];
-            final int existing = index >= 0 ? offsetAt(index) : -1;
-            if (existing > offset) {
-                setOffset(dest, existing);
-                values[dest] = values[index--];
-            } else {
-                if (existing == offset) {
-                    --index;
-                }
-                setOffset(dest, offset);
-                values[dest] = src.get(srcOffset + ii--);
-            }
-            --dest;
-        }
-        size = newSize;
+        return merge(offsets, src, srcOffset, count, newSize);
     }
 
     @Override
-    public void insertAbsent(final int[] offsets, final int count) {
+    public ObjectCompactLeaf insertAbsent(final int[] offsets, final int count) {
         final int newSize = size + countAbsent(offsets, count);
-        if (newSize == size) {
-            return;
-        }
-        ensureCapacity(newSize);
-        // merge from the highest offset down, as putSorted does, keeping the values of the offsets already present
-        int index = size - 1;
-        int dest = newSize - 1;
-        for (int ii = count - 1; ii >= 0;) {
+        return newSize == size ? this : merge(offsets, null, 0, count, newSize);
+    }
+
+    /**
+     * @return a new leaf of {@code newSize} values holding this leaf's offsets and {@code offsets[0, count)}, ascending
+     *         and distinct, with the values of {@code src} from {@code srcOffset} for those offsets, or, if {@code src}
+     *         is null, keeping the values of the offsets this leaf holds and null for the others
+     */
+    private ObjectSortedLeaf merge(
+            final int[] offsets,
+            final ObjectChunk<Object, ?> src,
+            final int srcOffset,
+            final int count,
+            final int newSize) {
+        final long[] newWords = newWords(newSize);
+        final Object[] newValues = new Object[newSize];
+        int index = 0;
+        int dest = 0;
+        for (int ii = 0; ii < count; ++ii) {
             final int offset = offsets[ii];
-            final int existing = index >= 0 ? offsetAt(index) : -1;
-            if (existing >= offset) {
-                setOffset(dest, existing);
-                values[dest] = values[index--];
-                if (existing == offset) {
-                    --ii;
-                }
-            } else {
-                setOffset(dest, offset);
-                values[dest] = null;
-                --ii;
+            int existing;
+            while (index < size && (existing = offsetAt(index)) < offset) {
+                setOffset(newWords, dest, existing);
+                newValues[dest++] = values[index++];
             }
-            --dest;
+            final boolean present = index < size && offsetAt(index) == offset;
+            setOffset(newWords, dest, offset);
+            if (src != null) {
+                newValues[dest++] = src.get(srcOffset + ii);
+            } else {
+                newValues[dest++] = present ? values[index] : null;
+            }
+            if (present) {
+                ++index;
+            }
         }
-        size = newSize;
+        while (index < size) {
+            setOffset(newWords, dest, offsetAt(index));
+            newValues[dest++] = values[index++];
+        }
+        return new ObjectSortedLeaf(newWords, newValues);
     }
 
     @Override
-    public void remove(final int offset) {
+    public ObjectCompactLeaf remove(final int offset) {
         final int index = indexOf(offset);
         if (index < 0) {
-            return;
+            return this;
         }
-        for (int ii = index; ii < size - 1; ++ii) {
-            setOffset(ii, offsetAt(ii + 1));
-        }
-        setOffset(size - 1, PAST_BLOCK);
-        System.arraycopy(values, index + 1, values, index, size - index - 1);
-        values[--size] = null;
+        return without(index, index + 1);
     }
 
     @Override
-    public void removeRange(final int firstOffset, final int lastOffset) {
+    public ObjectCompactLeaf removeRange(final int firstOffset, final int lastOffset) {
         final int start = lowerBound(firstOffset);
         final int end = lowerBound(lastOffset + 1);
-        final int removed = end - start;
-        if (removed == 0) {
-            return;
+        return start == end ? this : without(start, end);
+    }
+
+    /**
+     * @return a new leaf holding this leaf's offsets and values except those at indices {@code [start, end)}
+     */
+    private ObjectSortedLeaf without(final int start, final int end) {
+        final int newSize = size - (end - start);
+        final long[] newWords = newWords(newSize);
+        final Object[] newValues = new Object[newSize];
+        for (int ii = 0; ii < start; ++ii) {
+            setOffset(newWords, ii, offsetAt(ii));
         }
-        final int newSize = size - removed;
-        for (int ii = start; ii < newSize; ++ii) {
-            setOffset(ii, offsetAt(ii + removed));
+        for (int ii = end; ii < size; ++ii) {
+            setOffset(newWords, ii - (end - start), offsetAt(ii));
         }
-        for (int ii = newSize; ii < size; ++ii) {
-            setOffset(ii, PAST_BLOCK);
-        }
-        System.arraycopy(values, end, values, start, size - end);
-        Arrays.fill(values, newSize, size, null);
-        size = newSize;
+        System.arraycopy(values, 0, newValues, 0, start);
+        System.arraycopy(values, end, newValues, start, size - end);
+        return new ObjectSortedLeaf(newWords, newValues);
     }
 
     @Override
@@ -318,12 +321,15 @@ public final class ObjectSortedLeaf extends ObjectCompactLeaf {
     }
 
     /**
-     * Pass every offset and value to {@code destination}, in offset order.
+     * @return a bitmap leaf holding the same offsets and values
      */
-    public void copyTo(final ObjectCompactLeaf destination) {
+    public ObjectBitmapLeaf toBitmap() {
+        final long[] bits = new long[BLOCK_SIZE / Long.SIZE];
         for (int ii = 0; ii < size; ++ii) {
-            destination.put(offsetAt(ii), values[ii]);
+            final int offset = offsetAt(ii);
+            bits[offset >>> 6] |= 1L << offset;
         }
+        return new ObjectBitmapLeaf(bits, Arrays.copyOf(values, size));
     }
 
     @Override

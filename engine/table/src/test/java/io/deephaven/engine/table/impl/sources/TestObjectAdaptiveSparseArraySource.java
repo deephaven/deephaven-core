@@ -24,10 +24,12 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -35,6 +37,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK0_SHIFT;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK0_SIZE;
@@ -43,6 +48,7 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK2_SIZE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -508,6 +514,269 @@ public class TestObjectAdaptiveSparseArraySource extends AbstractObjectColumnSou
             checkValue("key " + (level1 << BLOCK0_SHIFT), expected.get(level1 << BLOCK0_SHIFT),
                     source.get(level1 << BLOCK0_SHIFT));
         }
+    }
+
+    /**
+     * The row keys whose previous values readers may check while a cycle runs, ascending, and those values.
+     */
+    private static final class CheckedRows {
+        private final int cycle;
+        private final long[] keys;
+        private final Object[] values;
+
+        private CheckedRows(final int cycle, final long[] keys, final Object[] values) {
+            this.cycle = cycle;
+            this.keys = keys;
+            this.values = values;
+        }
+    }
+
+    /**
+     * Read previous values on other threads, a row at a time and in chunks, while each cycle adds and removes values of
+     * compact leaves in several rounds, makes a compact leaf a full block every other cycle, and changes enough rows of
+     * some full blocks that their previous values become snapshots partway through the cycle. Cycles run serially and
+     * after preparing for parallel population in turn. The readers check the rows the cycle does not change, whose
+     * previous values are read from the current leaf that the cycle is changing, and the rows that earlier rounds of
+     * the cycle changed, whose previous values are recorded.
+     */
+    @Test
+    public void testConcurrentPreviousReadsOfChangingLeaves() throws Exception {
+        final ObjectAdaptiveSparseArraySource<Object> source = makeTestSource();
+        final Random random = new Random(0);
+        final int leafCount = 16;
+        // full blocks, of each of which each cycle changes more rows than a compact leaf of previous values records
+        final int busyLeafCount = 16;
+        final long busyLeavesStart = 4096L * BLOCK_SIZE;
+        final Long2ObjectOpenHashMap<Object> expected = new Long2ObjectOpenHashMap<>();
+        expected.defaultReturnValue(null);
+        for (int leaf = 0; leaf < leafCount; ++leaf) {
+            final int count = 8 + random.nextInt(72);
+            for (int ii = 0; ii < count; ++ii) {
+                final long key = (long) leaf * BLOCK_SIZE + random.nextInt(BLOCK_SIZE);
+                final Object value = randomValue(random);
+                source.set(key, value);
+                expected.put(key, value);
+            }
+        }
+        for (int ii = 0; ii < 400 * busyLeafCount; ++ii) {
+            final long key = busyLeavesStart + random.nextInt(busyLeafCount * BLOCK_SIZE);
+            final Object value = randomValue(random);
+            source.set(key, value);
+            expected.put(key, value);
+        }
+        source.startTrackingPrevValues();
+
+        final AtomicReference<CheckedRows> checkedRows = new AtomicReference<>();
+        final AtomicInteger openCycle = new AtomicInteger(-1);
+        final AtomicReference<String> failure = new AtomicReference<>();
+        final AtomicBoolean done = new AtomicBoolean();
+        final int readerCount = 3;
+        final int maxChunk = 8;
+        final ExecutorService readers = Executors.newFixedThreadPool(readerCount);
+        final List<Future<?>> readerFutures = new ArrayList<>();
+        for (int ri = 0; ri < readerCount; ++ri) {
+            final Random readerRandom = new Random(ri + 1);
+            readerFutures.add(readers.submit(() -> {
+                try (final WritableObjectChunk<Object, Values> chunk = WritableObjectChunk.makeWritableChunk(maxChunk);
+                        final WritableLongChunk<RowKeys> unorderedKeys = WritableLongChunk.makeWritableChunk(maxChunk);
+                        final ChunkSource.FillContext context = source.makeFillContext(maxChunk)) {
+                    while (!done.get()) {
+                        final CheckedRows rows = checkedRows.get();
+                        if (rows == null || rows.keys.length == 0) {
+                            Thread.onSpinWait();
+                            continue;
+                        }
+                        final int first = readerRandom.nextInt(rows.keys.length);
+                        final int count = Math.min(rows.keys.length - first, 1 + readerRandom.nextInt(maxChunk));
+                        String problem = null;
+                        try {
+                            switch (readerRandom.nextInt(3)) {
+                                case 0: {
+                                    final Object value = source.getPrev(rows.keys[first]);
+                                    if (value != rows.values[first]) {
+                                        problem = "getPrevObject key " + rows.keys[first] + ": expected "
+                                                + rows.values[first] + " but was " + value;
+                                    }
+                                    break;
+                                }
+                                case 1: {
+                                    try (final RowSet keys = RowSetFactory.fromKeys(
+                                            Arrays.copyOfRange(rows.keys, first, first + count))) {
+                                        source.fillPrevChunk(context, chunk, keys);
+                                    }
+                                    problem = compareChunk("fillPrevChunk", rows, first, count, chunk, false);
+                                    break;
+                                }
+                                default: {
+                                    // the keys in descending order
+                                    for (int ii = 0; ii < count; ++ii) {
+                                        unorderedKeys.set(ii, rows.keys[first + count - 1 - ii]);
+                                    }
+                                    unorderedKeys.setSize(count);
+                                    source.fillPrevChunkUnordered(context, chunk, unorderedKeys);
+                                    problem = compareChunk("fillPrevChunkUnordered", rows, first, count, chunk,
+                                            true);
+                                }
+                            }
+                        } catch (RuntimeException e) {
+                            problem = "reading key " + rows.keys[first] + ": " + e;
+                        }
+                        // a read that overlapped the end of the cycle may see the next cycle's previous values
+                        if (problem != null && openCycle.get() == rows.cycle) {
+                            failure.compareAndSet(null, problem);
+                        }
+                    }
+                }
+            }));
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try {
+            for (int cycle = 0; cycle < 150 && failure.get() == null; ++cycle) {
+                // each round removes a range of each leaf and adds a few values, more in later leaves, so that the
+                // leaves stay compact at sizes on both sides of the sorted threshold, and changes rows of the busy leaf
+                final int rounds = 4;
+                final List<RowSet> removedByRound = new ArrayList<>();
+                final List<RowSet> addedByRound = new ArrayList<>();
+                final RowSetBuilderRandom changedBuilder = RowSetFactory.builderRandom();
+                // the round in which the cycle first changes each row that held a value or is added
+                final Long2IntOpenHashMap firstChange = new Long2IntOpenHashMap();
+                firstChange.defaultReturnValue(rounds);
+                for (int round = 0; round < rounds; ++round) {
+                    final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+                    final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
+                    if (round == 0) {
+                        // a new leaf gets a compact leaf's worth of values in one cycle, and becomes a full block when
+                        // the next adds more
+                        final long growingLeafStart = (long) (leafCount + cycle / 2) * BLOCK_SIZE;
+                        final int growth = cycle % 2 == 0 ? COMPACT_THRESHOLD - 20 : 40;
+                        for (int ii = 0; ii < growth; ++ii) {
+                            addedBuilder.addKey(growingLeafStart + random.nextInt(BLOCK_SIZE));
+                        }
+                    }
+                    for (int ii = 0; ii < 40 * busyLeafCount; ++ii) {
+                        addedBuilder.addKey(busyLeavesStart + random.nextInt(busyLeafCount * BLOCK_SIZE));
+                    }
+                    for (int leaf = 0; leaf < leafCount; ++leaf) {
+                        final long leafStart = (long) leaf * BLOCK_SIZE;
+                        final long removeStart = leafStart + random.nextInt(BLOCK_SIZE - 128);
+                        removedBuilder.addRange(removeStart, removeStart + 127);
+                        for (int ii = 0; ii < 1 + leaf % 8; ++ii) {
+                            addedBuilder.addKey(leafStart + random.nextInt(BLOCK_SIZE));
+                        }
+                    }
+                    final RowSet removed = removedBuilder.build();
+                    final RowSet added = addedBuilder.build();
+                    final int thisRound = round;
+                    removed.forAllRowKeys(key -> {
+                        if (expected.containsKey(key) && firstChange.get(key) > thisRound) {
+                            firstChange.put(key, thisRound);
+                        }
+                    });
+                    added.forAllRowKeys(key -> {
+                        if (firstChange.get(key) > thisRound) {
+                            firstChange.put(key, thisRound);
+                        }
+                    });
+                    changedBuilder.addRowSet(removed);
+                    changedBuilder.addRowSet(added);
+                    removedByRound.add(removed);
+                    addedByRound.add(added);
+                }
+                // before each round, the rows that held a value or that earlier rounds changed may be checked; the
+                // others are about to be changed for the first time this cycle, which races with a reader
+                final Long2ObjectOpenHashMap previous = new Long2ObjectOpenHashMap<>(expected);
+                previous.defaultReturnValue(null);
+                final List<CheckedRows> checkedByRound = new ArrayList<>();
+                for (int round = 0; round < rounds; ++round) {
+                    final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+                    final int thisRound = round;
+                    previous.keySet().forEach(key -> {
+                        if (firstChange.get(key) >= rounds || firstChange.get(key) < thisRound) {
+                            builder.addKey(key);
+                        }
+                    });
+                    firstChange.forEach((key, firstRound) -> {
+                        if (firstRound < thisRound) {
+                            builder.addKey(key);
+                        }
+                    });
+                    try (final RowSet keys = builder.build()) {
+                        final long[] keyArray = new long[keys.intSize()];
+                        final Object[] values = new Object[keyArray.length];
+                        final MutableInt position = new MutableInt(0);
+                        keys.forAllRowKeys(key -> {
+                            keyArray[position.get()] = key;
+                            values[position.getAndIncrement()] = previous.get(key);
+                        });
+                        checkedByRound.add(new CheckedRows(cycle, keyArray, values));
+                    }
+                }
+                final boolean prepare = (cycle / 2) % 2 == 1;
+                final int thisCycle = cycle;
+                try (final RowSet changed = changedBuilder.build()) {
+                    updateGraph.runWithinUnitTestCycle(() -> {
+                        openCycle.set(thisCycle);
+                        if (prepare) {
+                            source.prepareForParallelPopulation(changed);
+                        }
+                        for (int round = 0; round < rounds; ++round) {
+                            checkedRows.set(checkedByRound.get(round));
+                            final RowSet removed = removedByRound.get(round);
+                            source.setNull(removed);
+                            removed.forAllRowKeys(expected::remove);
+                            final RowSet added = addedByRound.get(round);
+                            try (final WritableObjectChunk<Object, Values> chunk =
+                                    WritableObjectChunk.makeWritableChunk(added.intSize());
+                                    final ChunkSink.FillFromContext context =
+                                            source.makeFillFromContext(added.intSize())) {
+                                final MutableInt position = new MutableInt(0);
+                                added.forAllRowKeys(key -> {
+                                    final Object value = randomValue(random);
+                                    chunk.set(position.getAndIncrement(), value);
+                                    expected.put(key, value);
+                                });
+                                source.fillFromChunk(context, chunk, added);
+                            }
+                        }
+                        checkedRows.set(null);
+                        openCycle.set(-1);
+                    });
+                }
+                removedByRound.forEach(RowSet::close);
+                addedByRound.forEach(RowSet::close);
+            }
+        } finally {
+            done.set(true);
+            for (final Future<?> future : readerFutures) {
+                future.get();
+            }
+            readers.shutdown();
+        }
+        assertNull(failure.get());
+        expected.forEach((key, value) -> checkValue("key " + key, value, source.get(key)));
+    }
+
+    /**
+     * @return a description of the first of {@code chunk[0, count)} that differs from the previous value of
+     *         {@code rows} at the same position from {@code first}, in reverse order if {@code reversed}, or null if
+     *         none differs
+     */
+    private static String compareChunk(
+            final String read,
+            final CheckedRows rows,
+            final int first,
+            final int count,
+            final ObjectChunk<Object, ? extends Values> chunk,
+            final boolean reversed) {
+        for (int ii = 0; ii < count; ++ii) {
+            final int index = reversed ? first + count - 1 - ii : first + ii;
+            if (chunk.get(ii) != rows.values[index]) {
+                return read + " key " + rows.keys[index] + ": expected " + rows.values[index] + " but was "
+                        + chunk.get(ii);
+            }
+        }
+        return null;
     }
 
     /**
