@@ -1807,7 +1807,7 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
                 }
             }
             if (look == 0) {
-                current = getValueForPrevious(getLevel2(rowKey), block2, offset);
+                current = getCurrentValueCompactFirst(getLevel2(rowKey), block2, offset);
                 VarHandle.acquireFence();
             }
         }
@@ -1815,12 +1815,14 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
     }
 
     /**
-     * @return the current value at {@code offset} of the leaf at {@code block2} of {@code level2}, which may be null,
-     *         read for a previous value: this cycle has not changed the value, but may be making its leaf a full block,
-     *         storing the block before clearing the compact leaf, so the compact leaf is read first, which finds either
-     *         the compact leaf or, once that is cleared, the block, and never neither
+     * Read the current value at {@code offset} of the leaf at {@code block2} of {@code level2} while this cycle may be
+     * writing the source. The cycle may be making the leaf a full block, storing the block before clearing the compact
+     * leaf, so the compact leaf is read first, which finds either the compact leaf or, once that is cleared, the block,
+     * and never neither.
+     *
+     * @return the current value, which may be null
      */
-    private static char getValueForPrevious(final Level2 level2, final int block2, final int offset) {
+    private static char getCurrentValueCompactFirst(final Level2 level2, final int block2, final int offset) {
         if (level2 == null) {
             return NULL_CHAR;
         }
