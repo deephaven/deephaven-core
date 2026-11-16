@@ -469,8 +469,10 @@ def avro_spec(
             becomes the column parent__child. When 'mapping' is given, the fields it names get the column names it
             defines; if the 'mapped_only' parameter is False, any other fields use their Avro field path unchanged
             as the column name, which is not a valid column name for a nested field, so map every nested field you
-            keep; otherwise, these unmapped fields are ignored and are not present in the resulting table.
-            default is None
+            keep; otherwise, these unmapped fields are ignored and are not present in the resulting table. In that
+            case, to keep a nested field, also map the path of every record that encloses it, such as parent for
+            parent.child, to any column name; a record produces no column itself, but if its path is not mapped,
+            none of its nested fields are read. default is None
         mapped_only (bool): whether to ignore Avro fields not present in the 'mapping' argument, default is False
 
     Returns:
