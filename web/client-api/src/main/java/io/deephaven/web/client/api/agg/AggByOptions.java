@@ -25,7 +25,7 @@ public class AggByOptions {
 
     /**
      * Whether to keep result rows for groups that are initially empty or become empty as a result of updates. Each
-     * aggregation operator defines its own values for empty groups. Defaults to false if unspecified.
+     * aggregation operator defines its own values for empty groups. Defaults to {@code false} if unspecified.
      */
     @JsNullable
     public Boolean preserveEmpty;

@@ -21,7 +21,8 @@ import jsinterop.base.Js;
  * {@code TableOperations.rangeJoin}, etc. This includes both column-based aggregations (subtypes of
  * {@link ColumnAggregation}) that operate on input/output column pairs, and non-column aggregations ({@link Count},
  * {@link CountWhere}, {@link Partition}, {@link FirstRowKey}, {@link LastRowKey}) that produce a single named output
- * column. {@code dh.agg.AggAllByUnion} is the subset accepted by {@code aggAllBy}.
+ * column. {@code dh.agg.AggAllByUnion} is the subset accepted by
+ * {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy aggAllBy}.
  * <p>
  * Each variant carries a {@code type} field that acts as a discriminant for TypeScript narrowing.
  */

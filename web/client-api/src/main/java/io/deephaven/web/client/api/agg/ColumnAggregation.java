@@ -10,12 +10,14 @@ import jsinterop.annotations.JsType;
 
 /**
  * Base type for aggregations that operate on columns via an {@code AggSpec} and optional input/output column match-pair
- * mappings. When used with {@code aggAllBy}, the {@link #columns} field is ignored and the spec is applied to every
- * non-key column. When used with {@code aggBy}, the {@link #columns} field specifies which columns to aggregate, and
- * may include renaming expressions such as {@code "Out = In"}.
+ * mappings. When used with {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy aggAllBy}, the
+ * {@link #columns} field is ignored and the spec is applied to every non-key column. When used with
+ * {@link io.deephaven.web.client.api.JsTableOperations#aggBy aggBy}, the {@link #columns} field specifies which columns
+ * to aggregate, and may include renaming expressions such as {@code "Out = In"}.
  *
  * <p>
- * In an {@code aggBy} call, {@code columns} must name at least one column. The server rejects a null or empty list.
+ * In an {@link io.deephaven.web.client.api.JsTableOperations#aggBy aggBy} call, {@code columns} must name at least one
+ * column. The server rejects a {@code null} or empty list.
  */
 @JsType(namespace = "dh.agg")
 public sealed class ColumnAggregation extends Aggregation
@@ -24,7 +26,8 @@ public sealed class ColumnAggregation extends Aggregation
 
     /**
      * The columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Required and non-empty in
-     * {@code aggBy}. Ignored in {@code aggAllBy}.
+     * {@link io.deephaven.web.client.api.JsTableOperations#aggBy aggBy}. Ignored in
+     * {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy aggAllBy}.
      */
     @JsNullable
     public ReadonlyArray<MatchPairUnion> columns;

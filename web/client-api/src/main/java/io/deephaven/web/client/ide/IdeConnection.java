@@ -41,7 +41,7 @@ import static io.deephaven.web.client.api.QueryInfoConstants.EVENT_TABLE_OPENED;
 
 /**
  * Presently, this is the entrypoint into the Deephaven JS API. By creating an instance of this with the server URL and
- * some options, JS applications can run code on the server, and interact with available exportable objects.
+ * some options, JS applications can run code on the server and interact with available exportable objects.
  */
 @JsType(namespace = "dh")
 public class IdeConnection extends QueryConnectable<IdeConnection> {

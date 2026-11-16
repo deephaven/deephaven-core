@@ -47,9 +47,9 @@ import static io.deephaven.web.client.api.JsTable.EVENT_ROWUPDATED;
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
     /**
-     * The connection to the server was lost. No {@code updated} events fire until it is back; the viewport is re-sent
-     * automatically, and {@link #EVENT_RECONNECT} fires when that has happened, or {@link #EVENT_RECONNECTFAILED} if it
-     * cannot be.
+     * The connection to the server was lost. No {@code updated} events fire until it is back. The viewport is re-sent
+     * automatically; {@link #EVENT_RECONNECT} fires when the server reconnects, or {@link #EVENT_RECONNECTFAILED} fires
+     * if it cannot.
      */
     @JsProperty(namespace = "dh.TableViewportSubscription")
     public static final String EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT;
@@ -272,12 +272,12 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     /**
      * Changes the rows and columns set on this viewport. This cannot be used to change the update interval.
      * 
-     * @param firstRow the first row to be visible in the viewport
-     * @param lastRow the last row to be visible in the viewport
+     * @param firstRow the first row to make visible in the viewport
+     * @param lastRow the last row to make visible in the viewport
      * @param columns the columns to show in the viewport
      * @param updateIntervalMs has no effect
-     * @param isReverseViewport true to start the viewport offset from the end of the table, such as to pin the scroll
-     *        to the bottom of a ticking table
+     * @param isReverseViewport {@code true} to start the viewport offset from the end of the table, such as to pin the
+     *        scroll to the bottom of a ticking table
      * @deprecated use {@link #update(Object)} instead
      */
     @JsMethod

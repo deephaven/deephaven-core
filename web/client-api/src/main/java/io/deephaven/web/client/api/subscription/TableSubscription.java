@@ -33,9 +33,9 @@ import jsinterop.base.Js;
 @JsType(namespace = "dh")
 public final class TableSubscription extends AbstractTableSubscription {
     /**
-     * The connection to the server was lost. No {@code updated} events fire until it is back; the subscription is
-     * re-sent automatically, and {@link #EVENT_RECONNECT} fires when that has happened, or
-     * {@link #EVENT_RECONNECTFAILED} if it cannot be.
+     * The connection to the server was lost. No {@code updated} events fire until it is back. The subscription is
+     * re-sent automatically; {@link #EVENT_RECONNECT} fires when the server reconnects, or
+     * {@link #EVENT_RECONNECTFAILED} fires if it cannot.
      */
     public static final String EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT;
     /**

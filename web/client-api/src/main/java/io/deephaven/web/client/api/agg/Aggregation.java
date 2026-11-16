@@ -36,7 +36,8 @@ public abstract sealed class Aggregation
      * Creates a Sum aggregation.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -50,7 +51,8 @@ public abstract sealed class Aggregation
      * Creates an absolute-sum aggregation.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -64,7 +66,8 @@ public abstract sealed class Aggregation
      * Creates an Average (arithmetic mean) aggregation.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -78,7 +81,8 @@ public abstract sealed class Aggregation
      * Creates a First aggregation, returning the first value in each group.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -92,7 +96,8 @@ public abstract sealed class Aggregation
      * Creates a Freeze aggregation, which keeps the first value seen and ignores subsequent changes.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -106,7 +111,8 @@ public abstract sealed class Aggregation
      * Creates a Group aggregation, collecting values into arrays.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -120,7 +126,8 @@ public abstract sealed class Aggregation
      * Creates a Last aggregation, returning the last value in each group.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -134,7 +141,8 @@ public abstract sealed class Aggregation
      * Creates a Max aggregation.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -148,7 +156,8 @@ public abstract sealed class Aggregation
      * Creates a Min aggregation.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -162,7 +171,8 @@ public abstract sealed class Aggregation
      * Creates a Std (sample standard deviation) aggregation, computed using Bessel's correction.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -176,7 +186,8 @@ public abstract sealed class Aggregation
      * Creates a Var (sample variance) aggregation, computed using Bessel's correction.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -193,7 +204,8 @@ public abstract sealed class Aggregation
      *        {@code true}, averages the two middle values. When {@code false}, uses the smaller value. Only applies to
      *        numeric types. Defaults to {@code true}.
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -210,9 +222,10 @@ public abstract sealed class Aggregation
      *
      * @param percentile the percentile to calculate, must be in the range [0.0, 1.0]
      * @param averageEvenlyDivided whether to average the two boundary values when the percentile falls evenly between
-     *        them. Only applies to numeric types. Defaults to false if not specified
+     *        them. Only applies to numeric types. Defaults to {@code false} if not specified
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -230,9 +243,10 @@ public abstract sealed class Aggregation
      *
      * @param percentile the percentile to calculate, must be in the range [0.0, 1.0]
      * @param compression T-Digest compression factor, which must be &ge; 1. Values above 1000 are not recommended. If
-     *        null, the server chooses a default.
+     *        {@code null}, the server chooses a default.
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -250,7 +264,8 @@ public abstract sealed class Aggregation
      *
      * @param countNulls whether null values should be counted as distinct values
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -268,7 +283,8 @@ public abstract sealed class Aggregation
      * @param includeNulls whether null values should be included in the distinct output values. Defaults to
      *        {@code false}.
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -285,7 +301,8 @@ public abstract sealed class Aggregation
      * distinct value, the result is {@code nonUniqueSentinel}.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @param includeNulls whether null is treated as a value for determining uniqueness. Defaults to {@code false}.
      * @param nonUniqueSentinel the value for a group with more than one distinct value. Defaults to {@code null}.
      * @return an aggregation
@@ -306,7 +323,8 @@ public abstract sealed class Aggregation
      *
      * @param weightColumn the column containing the weights
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -323,7 +341,8 @@ public abstract sealed class Aggregation
      *
      * @param weightColumn the column containing the weights
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -340,7 +359,8 @@ public abstract sealed class Aggregation
      *
      * @param sortedColumns the columns to sort by when determining the "first" row
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -357,7 +377,8 @@ public abstract sealed class Aggregation
      *
      * @param sortedColumns the columns to sort by when determining the "last" row
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -372,9 +393,11 @@ public abstract sealed class Aggregation
     /**
      * Creates a T-Digest aggregation, storing the T-Digest data structure for later percentile calculations.
      *
-     * @param compression T-Digest compression factor, which must be &ge; 1. If null, the server chooses a default.
+     * @param compression T-Digest compression factor, which must be &ge; 1. If {@code null}, the server chooses a
+     *        default.
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
+     *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
+     *        aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -401,7 +424,8 @@ public abstract sealed class Aggregation
     }
 
     /**
-     * Creates a Count aggregation, counting the number of rows in each group. Not supported in {@code aggAllBy}.
+     * Creates a Count aggregation, counting the number of rows in each group. Not supported in
+     * {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy aggAllBy}.
      *
      * @param col the output column name to hold the counts
      * @return an aggregation
@@ -415,7 +439,7 @@ public abstract sealed class Aggregation
 
     /**
      * Creates a CountWhere aggregation, counting rows that match the given filter(s) in each group. Not supported in
-     * {@code aggAllBy}.
+     * {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy aggAllBy}.
      *
      * @param col the output column name to hold the counts
      * @param filters the filter expression(s) to apply before counting
@@ -431,7 +455,7 @@ public abstract sealed class Aggregation
 
     /**
      * Creates a Partition aggregation, splitting the table into sub-tables, one per group. Not supported in
-     * {@code aggAllBy}.
+     * {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy aggAllBy}.
      *
      * @param col the output column name to hold the sub-tables
      * @param includeGroupByColumns whether to include the group-by columns in each sub-table. Defaults to {@code true}
@@ -447,7 +471,7 @@ public abstract sealed class Aggregation
 
     /**
      * Creates a FirstRowKey aggregation, returning the row key of the first row in each group. Not supported in
-     * {@code aggAllBy}.
+     * {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy aggAllBy}.
      *
      * @param col the output column name to hold the first row key
      * @return an aggregation
@@ -461,7 +485,7 @@ public abstract sealed class Aggregation
 
     /**
      * Creates a LastRowKey aggregation, returning the row key of the last row in each group. Not supported in
-     * {@code aggAllBy}.
+     * {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy aggAllBy}.
      *
      * @param col the output column name to hold the last row key
      * @return an aggregation

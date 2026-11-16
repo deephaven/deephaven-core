@@ -86,8 +86,8 @@ public interface JsITable {
     /**
      * Creates a viewport subscription to the specified columns, across the specified rows in the table. The returned
      * {@link TableViewportSubscription} instance allows the viewport to be changed over time, and events are fired from
-     * it when the data changes or when a viewport change has been applied. Each call creates a new subscription, which
-     * must have {@link TableViewportSubscription#close()} called on it to stop it and release its resources.
+     * it when the data changes or when a viewport change is applied. Each call creates a new subscription, which must
+     * have {@link TableViewportSubscription#close()} called on it to stop it and release its resources.
      *
      * @param options the viewport subscription options, described in {@link DataOptions.ViewportSubscriptionOptions}
      * @return a new {@link TableViewportSubscription}

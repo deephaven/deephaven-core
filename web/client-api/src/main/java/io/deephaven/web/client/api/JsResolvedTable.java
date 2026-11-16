@@ -26,8 +26,8 @@ import jsinterop.annotations.JsMethod;
 @TsInterface
 public interface JsResolvedTable extends JsITable, JsTableOperations {
     /**
-     * A new instance over the same server-side table with its own lifetime, available at once. The caller owns it, and
-     * either instance can be closed without affecting the other.
+     * A new instance over the same server-side table with its own lifetime, available immediately. The caller owns it,
+     * and either instance can be closed without affecting the other.
      *
      * @return a new instance of this table, sharing resources on the server
      * @throws IllegalStateException if this table is closed

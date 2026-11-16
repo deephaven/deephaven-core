@@ -267,7 +267,7 @@ public class JsInputTable {
         final Promise<?> failureToReport;
         if (tablesToDelete.length == 1) {
             JsTableReference onlyTable = tablesToDelete[0];
-            // A Table has columns to inspect: if it looks like it is already just the key columns, use it as is. Any
+            // A Table has columns to inspect: if it looks like it is already just the key columns, use it as-is. Any
             // other reference has no columns yet, so it always takes the view.
             if ((Object) onlyTable instanceof JsTable
                     && onlyTable.asTable().getColumns().length == keys.length

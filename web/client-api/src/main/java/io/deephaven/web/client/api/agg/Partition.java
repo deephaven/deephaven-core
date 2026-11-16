@@ -12,7 +12,8 @@ import jsinterop.annotations.JsType;
  * specified name.
  *
  * <p>
- * This aggregation is not supported in {@code aggAllBy} — use it only with {@code aggBy}.
+ * This aggregation is not supported in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy aggAllBy} — use it
+ * only with {@link io.deephaven.web.client.api.JsTableOperations#aggBy aggBy}.
  */
 @JsType(namespace = "dh.agg")
 public final class Partition extends Aggregation {

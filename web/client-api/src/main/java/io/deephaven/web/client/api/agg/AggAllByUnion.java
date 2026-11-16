@@ -14,8 +14,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 /**
- * Union type for the aggregations that {@code aggAllBy} accepts, which are the column-based aggregation specs. It does
- * not support {@link Count}, {@link CountWhere}, {@link Partition}, {@link FirstRowKey} or {@link LastRowKey}.
+ * Union type for the aggregations that {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy aggAllBy} accepts,
+ * which are the column-based aggregation specs. It does not support {@link Count}, {@link CountWhere},
+ * {@link Partition}, {@link FirstRowKey} or {@link LastRowKey}.
  */
 @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
 @TsUnion(anonymous = false, namespace = "dh.agg", name = "AggAllByUnion")

@@ -22,7 +22,7 @@ public class UpdateByEms {
     @TsLiteral
     public final String type = "UpdateByEms";
     /**
-     * How to handle null and NaN values, and other options. If null, the server's defaults apply.
+     * How to handle null and NaN values, and other options. If {@code null}, the server's defaults apply.
      */
     @JsNullable
     public UpdateByEmOptions emOptions;

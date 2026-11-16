@@ -40,13 +40,13 @@ public class Sort {
          */
         public Column.ColumnOrName column;
         /**
-         * The direction to sort this column. If absent/null, sort is ascending.
+         * The direction to sort this column. If absent or {@code null}, sort is ascending.
          */
         @JsNullable
         public SortDirection direction;
 
         /**
-         * True to take the absolute value before sorting. Defaults to false if absent/null.
+         * {@code true} to take the absolute value before sorting. Defaults to {@code false} if absent or {@code null}.
          */
         @JsNullable
         public Boolean isAbs;

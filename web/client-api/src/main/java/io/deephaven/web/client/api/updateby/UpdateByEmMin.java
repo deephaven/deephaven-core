@@ -21,7 +21,7 @@ public class UpdateByEmMin {
     @TsLiteral
     public final String type = "UpdateByEmMin";
     /**
-     * How to handle null and NaN values, and other options. If null, the server's defaults apply.
+     * How to handle null and NaN values, and other options. If {@code null}, the server's defaults apply.
      */
     @JsNullable
     public UpdateByEmOptions emOptions;

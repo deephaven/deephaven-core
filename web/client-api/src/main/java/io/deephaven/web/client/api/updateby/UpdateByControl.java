@@ -7,7 +7,8 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 /**
- * Optional advice to give the server on how to manage the work of maintaining the updateBy operation. Any option left
+ * Optional advice to give the server on how to manage the work of maintaining the
+ * {@link io.deephaven.web.client.api.JsTableOperations#updateBy(UpdateByOptions) updateBy} operation. Any option left
  * unset uses the server's default.
  */
 @JsType(namespace = "dh.updateby")

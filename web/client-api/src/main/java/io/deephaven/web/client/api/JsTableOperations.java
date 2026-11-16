@@ -62,8 +62,8 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
 /**
  * Operations on a table that need none of its data or metadata, so they can be chained without waiting on a promise.
  * <p>
- * Every {@code TableOperations} is immutable: it stands for one server-side table, fixed when it is created, and
- * nothing done elsewhere changes which table that is. An operation never alters the table it is called on. It returns a
+ * Every {@code TableOperations} is immutable: it stands for one server-side table that is fixed when it is created.
+ * Nothing done elsewhere changes which table that is. An operation never alters the table it is called on. It returns a
  * new pending table, so the caller decides the order of operations by how they chain them. This holds for the
  * {@link JsTable#operations()} of a {@link JsTable} too: it stands for the table as it was when taken, and does not see
  * a later filter or sort applied to that {@link JsTable}.
@@ -71,9 +71,9 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * Each table holds server resources until it is closed, by whoever owns it:
  * <ul>
  * <li>Awaiting a {@link JsPendingTable} gives the table it produces, and {@link JsPendingTable#resolve(Object)} gives
- * it as a {@link JsResolvedTable}. Repeating either gives the same instance, as awaiting a promise twice does. A
- * pending table has no owner: awaiting or resolving it retains the table it produces, one instance shared by every
- * await and {@code resolve()} of it, and whoever does so is responsible for closing it.</li>
+ * it as a {@link JsResolvedTable}. Use one or the other, not both; repeating the same one gives the same instance, as
+ * awaiting a promise twice does. A pending table has no owner: whoever awaits or resolves it owns that instance, and is
+ * responsible for closing it.</li>
  * <li>A {@link JsResolvedTable} is already the table: it cannot be awaited, since awaiting a thenable would also await
  * what it resolves to, and needs no resolving.</li>
  * <li>Code that receives a table and its caller agree on whether that code may close it. Code given a
@@ -165,7 +165,8 @@ public interface JsTableOperations extends ServerObject {
      *
      * @param resultId the ticket that the server populates with this result
      * @param operation the operation to perform
-     * @param operand the other table the operation reads, if any. A pending one is checked and held as the source is
+     * @param operand the other table the operation reads, if any. A pending table is checked and held along with the
+     *        source table
      * @return a table operations instance that more calls can be chained on, or can be awaited
      */
     JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation,
@@ -276,8 +277,8 @@ public interface JsTableOperations extends ServerObject {
     @JsType(namespace = "dh")
     class SnapshotWhenOptions {
         /**
-         * Whether to take an initial snapshot of the base table upon creation. If false, the resulting table remains
-         * empty until the trigger table first updates. Defaults to false.
+         * Whether to take an initial snapshot of the base table upon creation. If {@code false}, the resulting table
+         * remains empty until the trigger table first updates. Defaults to {@code false}.
          */
         @JsProperty
         @JsNullable
@@ -285,7 +286,7 @@ public interface JsTableOperations extends ServerObject {
 
         /**
          * Whether the resulting table should be incremental. When incremental, only the rows of the base table that
-         * have been added or updated have the latest "stamp key". Defaults to false.
+         * have been added or updated have the latest "stamp key". Defaults to {@code false}.
          */
         @JsProperty
         @JsNullable
@@ -294,7 +295,7 @@ public interface JsTableOperations extends ServerObject {
         /**
          * Whether the resulting table should keep history. A history table appends a full snapshot of the starting
          * table and the "stamp key" as opposed to updating existing rows. When this flag is set, the trigger table must
-         * be append-only
+         * be append-only.
          */
         @JsProperty
         @JsNullable
@@ -616,8 +617,8 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Specifies the type of natural join to perform, specifically how to handle duplicate and missing right hand table
-     * rows.
+     * Specifies the type of natural join to perform - specifically, how to handle duplicate and missing right hand
+     * table rows.
      *
      * <ul>
      * <li>ERROR_ON_DUPLICATE — Throw an error if a duplicate right hand table row is found. This is the default
@@ -1455,7 +1456,7 @@ public interface JsTableOperations extends ServerObject {
     class UngroupOptions {
         /**
          * Indicates if the ungrouped table should allow disparate sized arrays filling shorter columns with null
-         * values. If false, then all arrays must be the same length. Defaults to false.
+         * values. If {@code false}, then all arrays must be the same length. Defaults to {@code false}.
          */
         @JsNullable
         public Boolean nullFill;

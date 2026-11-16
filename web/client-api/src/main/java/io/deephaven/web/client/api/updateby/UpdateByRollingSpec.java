@@ -37,8 +37,8 @@ public sealed class UpdateByRollingSpec
 
     /**
      * The scale of the forward window, after the current row. Must use the same kind of scale as
-     * {@link #reverseWindowScale}. A time scale must name the same column. If null, the window ends at the current row
-     * or its timestamp.
+     * {@link #reverseWindowScale}. A time scale must name the same column. If {@code null}, the window ends at the
+     * current row or its timestamp.
      */
     @JsNullable
     public UpdateByWindowScale forwardWindowScale;

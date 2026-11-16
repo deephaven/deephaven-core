@@ -10,7 +10,8 @@ import jsinterop.annotations.JsType;
  * Counts the number of rows in each aggregation group, and writes the count to a new column with the specified name.
  *
  * <p>
- * This aggregation is not supported in {@code aggAllBy} — use it only with {@code aggBy}.
+ * This aggregation is not supported in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy aggAllBy} — use it
+ * only with {@link io.deephaven.web.client.api.JsTableOperations#aggBy aggBy}.
  */
 @JsType(namespace = "dh.agg")
 public final class Count extends Aggregation {
