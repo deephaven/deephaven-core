@@ -3314,7 +3314,7 @@ class Table(_TableOperations["Table"]):
 
         Args:
             id_col (str): the name of a column containing a unique identifier for a particular row in the table
-            parent_col (str): the name of a column containing the parent's identifier, {@code null} for rows that are
+            parent_col (str): the name of a column containing the parent's identifier, None for rows that are
                 part of the root table
             promote_orphans (bool): whether to promote node tables whose parents don't exist to be children of the
                 root node, default is False

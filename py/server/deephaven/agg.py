@@ -229,7 +229,8 @@ def formula(
     and specific input column names in the following format:
         |  formula('output_col=(input_col1 + input_col2) * input_col3')
     This form does not accept `formula_param` or `cols` arguments because the input and output columns are explicitly
-    set within the formula string.  The reaggregating parameter only applies to rollups.  When False (the default), the
+    set within the formula string.  The reaggregating parameter only applies to rollups and must be False outside a
+    rollup.  When False (the default), the
     formula is applied independently to the corresponding values from the source table.  When set to True the formula
     is applied to the prior level of the rollup.
 

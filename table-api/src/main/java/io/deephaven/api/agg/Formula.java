@@ -40,7 +40,8 @@ public abstract class Formula implements Aggregation {
      * Return a copy of this formula that will be applied to the prior level of the rollup.
      *
      * <p>
-     * The reaggregating parameter has no effect when not part of a rollup.
+     * A reaggregating formula is only valid in a rollup; using it in any other aggregation throws an
+     * {@link IllegalArgumentException}.
      * </p>
      *
      * @return a copy of this formula that is applied to the prior level of the rollup
