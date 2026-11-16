@@ -4,7 +4,7 @@
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Run ReplicateTypedHashers or ./gradlew replicateTypedHashers to regenerate
 //
-// @formatter:off
+//
 package io.deephaven.engine.table.impl.updateby.hashing.typed.open.gen;
 
 import io.deephaven.chunk.ChunkType;

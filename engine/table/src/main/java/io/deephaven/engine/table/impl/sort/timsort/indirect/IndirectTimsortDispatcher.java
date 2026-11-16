@@ -4,7 +4,7 @@
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Run GenerateTimsortKernels or ./gradlew generateTimsortKernels to regenerate
 //
-// @formatter:off
+//
 package io.deephaven.engine.table.impl.sort.timsort.indirect;
 
 import io.deephaven.chunk.ChunkType;

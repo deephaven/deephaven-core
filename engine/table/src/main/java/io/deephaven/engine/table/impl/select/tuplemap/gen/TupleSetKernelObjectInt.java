@@ -4,7 +4,7 @@
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Run ReplicateTupleSetKernels or ./gradlew replicateTupleSetKernels to regenerate
 //
-// @formatter:off
+//
 package io.deephaven.engine.table.impl.select.tuplemap.gen;
 
 import io.deephaven.chunk.Chunk;
