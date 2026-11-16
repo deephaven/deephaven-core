@@ -1814,6 +1814,30 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testResolveAllCancelsTheOthersWhenOneFails() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(15_061);
+                    return session.getTable("slowsource", null).asPromise();
+                })
+                .then(slow -> {
+                    WorkerConnection connection = slow.getConnection();
+                    // The bad update fails at once; the slow one would take a second or more to arrive
+                    Promise<Object> rejected = expectRejection(DhNamespace.resolveAll(arr(
+                            slow.operations().update(arr(SLOW)),
+                            slow.operations().update(arr("Z = NoSuchColumn"))), null), "INVALID_ARGUMENT");
+                    return rejected
+                            .then(ignore -> delay(200))
+                            .then(ignore -> {
+                                assertEquals("the slow operation was still running after the other failed", 0,
+                                        batchStates(connection));
+                                slow.close();
+                                return abandonedWorkDone(slow);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testResolveAllRejectsATableThatIsNotPending() {
         connect(tables)
                 .then(session -> {

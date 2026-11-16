@@ -14,10 +14,6 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
 /**
  * Functions in the {@code dh} namespace itself. Not a class: it has no constructor and no instance members.
  */
@@ -27,12 +23,13 @@ public class DhNamespace {
 
     /**
      * Resolves each of the pending tables, as {@link JsPendingTable#resolve(Object)} does, and gives the tables in the
-     * same order once all have arrived. If one fails, the result rejects as that one did, and the tables that arrived,
-     * or arrive later, are closed, so nothing is left open. Aborting the signal in {@code options} cancels each pending
-     * table not yet delivered, so the result rejects and closes the rest.
+     * same order once all have arrived. If one fails, the result rejects as that one did, and the others are canceled
+     * via {@link JsPendingTable#cancel()}, so nothing is left open: work still running is stopped, a table already
+     * delivered is closed, and anything chained on them that has not produced its table yet fails too. Aborting the
+     * signal in {@code options} also cancels each pending table and closes any that did complete.
      * <p>
-     * Like any use of a pending table, call it in the task that made them. A pending table that is also resolved or
-     * awaited elsewhere shares its table with this call, which closes it on failure.
+     * Like any use of a pending table, call it in the task that made them, and do not also await or resolve them
+     * elsewhere.
      *
      * <pre>
      * const [joined, totals] = await dh.resolveAll([
@@ -70,21 +67,11 @@ public class DhNamespace {
         LazyPromise<JsArray<JsResolvedTable>> result = new LazyPromise<>();
         int[] remaining = {each.length};
         boolean[] failed = {false};
-        // The same pending table given twice resolves to one table, closed once
-        List<JsResolvedTable> closed = new ArrayList<>();
-        Consumer<JsResolvedTable> close = table -> {
-            if (!closed.contains(table)) {
-                closed.add(table);
-                table.close();
-            }
-        };
         for (int i = 0; i < each.length; i++) {
             int index = i;
             each[i].resolve(options).then(table -> {
-                if (failed[0]) {
-                    // Arrived after another failed, so nobody else will close it
-                    close.accept(table);
-                } else {
+                // After a failure, the cancel has already closed it
+                if (!failed[0]) {
                     tables[index] = table;
                     if (--remaining[0] == 0) {
                         result.succeed(Js.uncheckedCast(tables));
@@ -94,10 +81,9 @@ public class DhNamespace {
             }, err -> {
                 if (!failed[0]) {
                     failed[0] = true;
-                    for (JsResolvedTable table : tables) {
-                        if (table != null) {
-                            close.accept(table);
-                        }
+                    // Stops those still running and closes those delivered, so nothing is left open
+                    for (JsPendingTable<?> pending : each) {
+                        pending.cancel();
                     }
                     result.fail(err);
                 }
