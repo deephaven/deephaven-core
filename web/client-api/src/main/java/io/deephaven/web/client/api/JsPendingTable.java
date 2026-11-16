@@ -7,6 +7,7 @@ import com.vertispan.tsdefs.annotations.TsDefault;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.fu.PromiseLike;
 import jsinterop.annotations.JsIgnore;
@@ -25,9 +26,8 @@ import jsinterop.annotations.JsOptional;
  * {@link JsResolvedTable}</li>
  * <li>an API that has always produced a {@link JsTable}, such as fetching a named table — a {@link JsTable}</li>
  * </ul>
- * {@link #resolve(Object)} always gives a {@link JsResolvedTable}. For an operation, awaiting and resolving give the
- * same table. A fetched pending table produces only one of the two, so await it or resolve it, not both. Either may be
- * repeated within the task that created it, and gives the same table each time.
+ * On the other hand, {@link #resolve(Object)} always gives a {@link JsResolvedTable}. Either await or
+ * {@link #resolve(Object) resolve} a pending table, but not both. Repeated usage of either yields the same instance.
  * <p>
  * A pending table has no {@code catch} or {@code finally}. For those, wrap it with {@code Promise.resolve(...)} in the
  * task that created it.
@@ -35,27 +35,16 @@ import jsinterop.annotations.JsOptional;
  * A pending table has no owner. Whoever awaits or resolves it must close the resulting table, so the server can free
  * its resources. {@link JsTableOperations} describes who owns what.
  * <p>
- * A pending table may only be used in the task that created it, before control returns to the event loop: awaited,
- * {@code then} or {@link #resolve(Object)} called on it, chained on, passed as an operand, or passed to
- * {@code dh.resolveAll}, {@code Promise.resolve} or {@code Promise.all}. What lasts is the result: the table an await
- * produces, which is retained until it is closed and has the same operations, or the promise from
- * {@code Promise.resolve}. A pending table that is not awaited is freed automatically as soon as possible: once its
- * response arrives and nothing chained on it still needs it. Used in a later task, awaited or not, the operation
- * chained on it, or the {@code await}, is rejected, and a warning names where the pending table was created. A use the
- * client cannot yet tell is in a later task behaves as it would by timing alone. In particular, awaiting two pending
- * tables one after the other, {@code await a; await b;}, rejects {@code b}: await both at once with
- * {@code dh.resolveAll([a, b])}, or each as it is created. This holds for a fetch as much as for an operation. A
- * {@link JsTable#operations()} is often ready at once, so awaiting it may not leave the task and a second await can
- * happen to work. Do not rely on that, since a change still being applied to the table makes it wait like any other.
- * Prefer {@code dh.resolveAll} to {@code Promise.all}: if one table fails, {@code Promise.all} rejects without the
- * others, which still arrive and must still be closed, while {@code dh.resolveAll} closes them.
+ * A pending table is only valid in the task that created it. Any use after the task is an error, and usually rejects -
+ * the one exception is {@link #cancel()}. It cannot be awaited, {@link #resolve(Object) resolved}, {@code then()}
+ * invoked or otherwise used as a promise, passed as an argument to another operation, or have operations called on it.
+ * <p>
  *
- * @param <T> the table awaiting this gives. In TypeScript it defaults to {@link JsResolvedTable}, what every operation
- *        produces. A fetched table resolves to a {@link JsTable} instead: narrow what
- *        {@link io.deephaven.web.client.ide.IdeConnection#getObject IdeConnection.getObject} or
- *        {@link io.deephaven.web.client.ide.IdeSession#getObject IdeSession.getObject} returns with a property test
- *        such as {@code "where" in result}, or with a cast to <code>PendingTable&lt;Table&gt;</code>. TypeScript
- *        rejects a cast to a bare {@code PendingTable}.
+ * When dealing with multiple pending tables, either individually use {@code Promise.resolve} or
+ * {@link #resolve(Object)} and await those promises, or use {@link DhNamespace#resolveAll(ReadonlyArray, Object)} to
+ * automatically await their successes, and clean them all up if any one fails.
+ *
+ * @param <T> the type of table awaiting this resolves to. Use {@link #resolve(Object)} to get {@link JsResolvedTable}.
  */
 @TsName(namespace = "dh", name = "PendingTable")
 @TsInterface

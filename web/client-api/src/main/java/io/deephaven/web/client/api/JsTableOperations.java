@@ -117,9 +117,10 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * }
  * </pre>
  * 
- * This function only chains on the table it is given, so it works whether the caller passes a pending or a resolved
- * table, and closes only what its own chain produced. To keep a table for later, take a {@code ResolvedTable} and copy
- * it: this class owns its copy and each filtered table it makes, and closes each when replaced or when it is closed.
+ * The {@code process} example only chains on the table it is given, so it works whether the caller passes a pending or
+ * a resolved table, and closes only what its own chain produced. To keep a table for later, take a
+ * {@code ResolvedTable} and copy it: below, SwapFilters owns its copy and each filtered table it makes, and closes each
+ * when replaced or when it is closed.
  *
  * <pre>
  * class SwapFilters {

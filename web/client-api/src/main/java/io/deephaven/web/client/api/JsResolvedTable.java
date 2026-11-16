@@ -14,13 +14,13 @@ import jsinterop.annotations.JsMethod;
 
 /**
  * The table an awaited {@link JsPendingTable} resolves to: a retained table whose data can be read, plus the chainable
- * {@link JsTableOperations}, each of which again yields a {@link JsPendingTable}. It has no client-side filter or sort
- * state of its own. Every change is a new server-side table.
+ * {@link JsTableOperations}, each of which again yields a {@link JsPendingTable}. Each instance points at a single
+ * server-side table, unlike a {@link JsTable} which can have its filters, sorts, and custom columns changed and
+ * releases every server-side table it made when closed.
  * <p>
- * Each instance must be closed, with {@code close()}, by whoever is responsible for it: the code that awaited or
- * resolved the pending table it came from, called {@link #copy()}, or was handed it to own. {@link #copy()} produces
- * another instance over the same server-side table that can be closed independently. {@link JsTableOperations}
- * describes who owns what. Like other tables made by operations, it is not revived if a reconnect needs a new session.
+ * Each instance has one owner which closes it when done so the server can free its resources. For multiple owners with
+ * independent lifetimes, {@link #copy()} produces a distinct ResolvedTable instance referencing the same server-side
+ * table.
  */
 @TsName(namespace = "dh", name = "ResolvedTable")
 @TsInterface
