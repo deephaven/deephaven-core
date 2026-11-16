@@ -242,11 +242,17 @@ public class TableDefinitionProtosTest {
                 "unsupported primitive type");
     }
 
+    /**
+     * Void is not a valid column data type, so it is deliberately not representable in the persisted format. If this
+     * test starts failing because void columns became valid, add a void primitive to {@code PrimitiveTypeProto} and
+     * {@link TableDefinitionProtos}.
+     */
     @Test
-    void invalidDataType() {
-        // Valid to encode, but not a valid column data type; rejected by ColumnDefinition.create
-        assertInvalid(column("X").setDataType(primitive(PrimitiveTypeProto.PRIMITIVE_TYPE_VOID)),
-                "Invalid data type");
+    void voidIsNotAValidColumnType() {
+        assertThatThrownBy(() -> ColumnDefinition.create("X", void.class))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> ColumnDefinition.create("X", Void.class))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
