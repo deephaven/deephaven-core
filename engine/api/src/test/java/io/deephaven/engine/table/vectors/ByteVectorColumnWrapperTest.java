@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.ByteVectorDirect;
 import io.deephaven.vector.ByteVectorTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE;

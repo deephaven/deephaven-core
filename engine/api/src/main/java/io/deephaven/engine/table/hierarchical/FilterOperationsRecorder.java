@@ -6,7 +6,6 @@ package io.deephaven.engine.table.hierarchical;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.Table;
 
-import java.util.Collection;
 
 /**
  * Records filter operations to be applied to individual nodes of a hierarchical table for presentation. Supports a

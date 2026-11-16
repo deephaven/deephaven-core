@@ -18,7 +18,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.PrimitiveIterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Consumer;

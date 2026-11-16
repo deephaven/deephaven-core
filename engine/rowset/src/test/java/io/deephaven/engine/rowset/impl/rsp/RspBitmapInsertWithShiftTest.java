@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.rowset.impl.rsp;
 
-import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import org.junit.Test;
 

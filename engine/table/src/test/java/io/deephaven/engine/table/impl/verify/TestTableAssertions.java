@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.verify;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;

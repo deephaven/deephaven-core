@@ -4,7 +4,6 @@
 package io.deephaven.server.plugin.js;
 
 import dagger.Module;
-import io.deephaven.configuration.ConfigDir;
 
 /**
  * Includes the modules {@link JsPluginManifestRegistration.Module}, {@link JsPluginConfigDirRegistration.Module}, and

@@ -7,11 +7,8 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.chunk.ObjectChunk;
 
-import io.deephaven.chunk.WritableObjectChunk;
 
-import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.chunk.ArrayGenerator;
 import io.deephaven.chunk.Chunk;
@@ -19,7 +16,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.WritableColumnSource;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 

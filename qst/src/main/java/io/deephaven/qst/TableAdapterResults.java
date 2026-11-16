@@ -8,7 +8,6 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.qst.TableAdapterResults.Output.Visitor;
 import io.deephaven.qst.table.TableSpec;
 import java.util.Map;
-import java.util.Objects;
 
 import org.immutables.value.Value.Immutable;
 

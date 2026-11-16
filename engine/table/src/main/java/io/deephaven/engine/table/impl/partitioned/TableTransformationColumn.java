@@ -13,7 +13,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;

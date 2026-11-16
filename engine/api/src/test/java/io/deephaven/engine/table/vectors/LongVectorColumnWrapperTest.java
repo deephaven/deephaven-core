@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import io.deephaven.vector.LongVectorTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;

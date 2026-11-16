@@ -11,7 +11,6 @@ import io.deephaven.engine.table.impl.ssms.EqualsConsistentObjectSegmentedSorted
 import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
 
-import java.util.Objects;
 
 import io.deephaven.util.compare.ObjectComparisons;
 

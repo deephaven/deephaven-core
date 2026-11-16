@@ -4,11 +4,7 @@
 package io.deephaven.engine.table.impl.updateby.hashing;
 
 import com.palantir.javapoet.CodeBlock;
-import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.by.typed.HasherConfig;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 public class TypedUpdateByFactory {
     public static void incrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,

@@ -10,7 +10,6 @@ package io.deephaven.parquet.table.location;
 import io.deephaven.engine.table.impl.select.ByteRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;

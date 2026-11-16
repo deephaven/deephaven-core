@@ -15,7 +15,6 @@ import java.util.TreeSet;
 import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rspOf;
 import static io.deephaven.engine.rowset.impl.RowSetTestCommon.singleRangeOf;
 import static io.deephaven.engine.rowset.impl.RowSetTestCommon.sortedRangesOf;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 /**

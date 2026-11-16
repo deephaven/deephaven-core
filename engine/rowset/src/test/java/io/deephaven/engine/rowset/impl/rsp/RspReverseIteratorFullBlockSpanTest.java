@@ -5,7 +5,6 @@ package io.deephaven.engine.rowset.impl.rsp;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import org.junit.Test;
 
 import java.util.ArrayList;

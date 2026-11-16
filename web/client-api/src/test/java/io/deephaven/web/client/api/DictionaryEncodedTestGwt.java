@@ -3,8 +3,6 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.gwt.junit.DoNotRunWith;
-import com.google.gwt.junit.Platform;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.subscription.DataOptions;

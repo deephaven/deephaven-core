@@ -8,9 +8,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
-import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
-import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import org.junit.Test;
 
 import java.util.ArrayList;

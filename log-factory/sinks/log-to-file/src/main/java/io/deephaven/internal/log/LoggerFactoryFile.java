@@ -18,7 +18,6 @@ import io.deephaven.io.logger.LoggerTimeSource;
 import io.deephaven.io.logger.NullLoggerImpl.NullLoggerTimeSource;
 
 import java.time.ZoneId;
-import java.util.TimeZone;
 
 @AutoService(LoggerFactory.class)
 public final class LoggerFactoryFile extends LoggerFactorySingleCache {

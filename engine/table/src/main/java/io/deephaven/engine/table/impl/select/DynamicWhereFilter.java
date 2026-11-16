@@ -17,7 +17,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
@@ -25,10 +24,7 @@ import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
-import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.commons.lang3.mutable.Mutable;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

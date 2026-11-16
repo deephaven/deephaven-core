@@ -4,9 +4,7 @@
 package io.deephaven.replicators;
 
 import java.io.IOException;
-import java.util.Map;
 
-import static io.deephaven.replication.ReplicatePrimitiveCode.charToByte;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToFloat;
 import static io.deephaven.replication.ReplicatePrimitiveCode.replaceAll;
 

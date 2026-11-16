@@ -9,8 +9,6 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Immutable
 @BuildableStyle

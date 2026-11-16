@@ -17,7 +17,6 @@ import org.apache.parquet.schema.Types;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;

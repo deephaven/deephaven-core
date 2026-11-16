@@ -17,8 +17,6 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.Comparator;
 import java.util.Map;

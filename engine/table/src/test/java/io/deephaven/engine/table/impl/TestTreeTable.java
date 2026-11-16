@@ -26,8 +26,6 @@ import org.junit.experimental.categories.Category;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 import static io.deephaven.engine.testutil.HierarchicalTableTestTools.freeSnapshotTableChunks;
 import static io.deephaven.engine.testutil.HierarchicalTableTestTools.snapshotToTable;

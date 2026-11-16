@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 public class WhereFilterInvertedImpl extends WhereFilterDelegatingBase {

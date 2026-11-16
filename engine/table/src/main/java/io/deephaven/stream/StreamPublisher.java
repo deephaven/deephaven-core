@@ -4,7 +4,6 @@
 package io.deephaven.stream;
 
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.engine.liveness.LivenessReferent;
 import org.jetbrains.annotations.NotNull;
 
 /**

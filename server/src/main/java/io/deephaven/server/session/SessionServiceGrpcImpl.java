@@ -39,7 +39,6 @@ import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.Closeable;
-import java.lang.Object;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;

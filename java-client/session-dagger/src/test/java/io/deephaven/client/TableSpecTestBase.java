@@ -5,7 +5,6 @@ package io.deephaven.client;
 
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
-import io.deephaven.client.impl.TableService;
 import io.deephaven.qst.table.TableSpec;
 import org.junit.Test;
 

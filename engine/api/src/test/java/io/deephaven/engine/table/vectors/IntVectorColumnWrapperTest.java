@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
 import io.deephaven.vector.IntVectorTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;

@@ -7,7 +7,6 @@ import io.deephaven.chunk.ByteChunk;
 import io.deephaven.json.jackson.JacksonProvider;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

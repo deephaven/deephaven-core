@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.vector.ObjectVectorTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

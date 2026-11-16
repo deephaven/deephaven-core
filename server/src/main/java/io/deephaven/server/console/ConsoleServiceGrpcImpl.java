@@ -18,7 +18,6 @@ import io.deephaven.engine.table.impl.util.RuntimeMemory.Sample;
 import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;

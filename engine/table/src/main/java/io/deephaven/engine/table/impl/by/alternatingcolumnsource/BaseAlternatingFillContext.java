@@ -4,16 +4,11 @@
 package io.deephaven.engine.table.impl.by.alternatingcolumnsource;
 
 import io.deephaven.chunk.ResettableWritableChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.impl.sources.FillUnordered;
 import org.jetbrains.annotations.Nullable;
 
 abstract class BaseAlternatingFillContext implements ChunkSource.FillContext {

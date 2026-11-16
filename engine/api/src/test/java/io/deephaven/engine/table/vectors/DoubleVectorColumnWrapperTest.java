@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.vector.DoubleVectorTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;

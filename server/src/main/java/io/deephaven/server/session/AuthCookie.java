@@ -5,13 +5,7 @@ package io.deephaven.server.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.github.f4b6a3.uuid.exception.InvalidUuidException;
-import io.grpc.Context;
-import io.grpc.Contexts;
 import io.grpc.Metadata;
-import io.grpc.ServerCall;
-import io.grpc.ServerCall.Listener;
-import io.grpc.ServerCallHandler;
-import io.grpc.ServerInterceptor;
 
 import java.util.Optional;
 import java.util.UUID;

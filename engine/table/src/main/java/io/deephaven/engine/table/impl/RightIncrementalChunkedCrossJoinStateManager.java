@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;

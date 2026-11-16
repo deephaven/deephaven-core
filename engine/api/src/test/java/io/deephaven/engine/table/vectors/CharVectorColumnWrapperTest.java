@@ -8,7 +8,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.CharVectorDirect;
 import io.deephaven.vector.CharVectorTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;

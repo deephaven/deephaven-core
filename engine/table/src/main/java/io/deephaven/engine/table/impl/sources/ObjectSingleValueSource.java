@@ -18,7 +18,6 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Single value source for Object.

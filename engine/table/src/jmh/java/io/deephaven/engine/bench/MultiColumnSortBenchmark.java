@@ -6,7 +6,6 @@ package io.deephaven.engine.bench;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.SortHelpers;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;

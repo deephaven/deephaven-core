@@ -18,7 +18,6 @@ import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -30,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class GenerateArrowColumnSourceTests {
 

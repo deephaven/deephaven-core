@@ -10,7 +10,6 @@ import io.deephaven.chunk.attributes.Values;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
-import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class GenericRecordStringFieldCopier extends GenericRecordFieldCopier {

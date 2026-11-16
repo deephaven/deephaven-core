@@ -11,7 +11,6 @@ import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 
 import java.util.Collection;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * Allows applications to offer custom autocomplete suggestions. Methods are all default with no implementation, so that

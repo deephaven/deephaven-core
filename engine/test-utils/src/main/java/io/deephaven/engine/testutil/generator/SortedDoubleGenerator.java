@@ -17,7 +17,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.Arrays;
 import java.util.Random;

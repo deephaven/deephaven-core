@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.exceptions.MismatchedJoinKeyException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.DataIndex;

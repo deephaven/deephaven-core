@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicatePrimitiveCode;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;

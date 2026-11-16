@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.vector.FloatVector;
 import io.deephaven.vector.FloatVectorDirect;
 import io.deephaven.vector.FloatVectorTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;

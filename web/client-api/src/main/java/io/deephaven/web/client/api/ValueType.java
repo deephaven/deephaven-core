@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsTypeDef;
-import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 /**

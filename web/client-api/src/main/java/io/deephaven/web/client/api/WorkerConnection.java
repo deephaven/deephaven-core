@@ -25,7 +25,6 @@ import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
-import io.deephaven.io.streams.ByteBufferOutputStream;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc;
@@ -115,7 +114,6 @@ import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jspecify.annotations.Nullable;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;

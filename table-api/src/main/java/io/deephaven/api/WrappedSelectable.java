@@ -5,7 +5,6 @@ package io.deephaven.api;
 
 import io.deephaven.api.expression.Expression;
 
-import java.util.Arrays;
 
 class WrappedSelectable implements Selectable {
     Selectable wrapped;

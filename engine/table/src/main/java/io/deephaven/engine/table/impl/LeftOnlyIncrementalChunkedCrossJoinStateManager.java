@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.exceptions.OutOfKeySpaceException;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;

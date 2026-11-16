@@ -22,7 +22,6 @@ import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
-import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 /**

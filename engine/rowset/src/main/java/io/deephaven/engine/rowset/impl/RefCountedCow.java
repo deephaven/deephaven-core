@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.util.annotations.VisibleForTesting;
 
 /**

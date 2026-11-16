@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.engine.table.impl.select.FormulaUtil;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

@@ -3,7 +3,6 @@
 //
 package io.deephaven.server.table.validation;
 
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.FormulaMethodInvocations;

@@ -19,7 +19,6 @@ import io.deephaven.engine.sql.Sql;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.TableCreatorImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;

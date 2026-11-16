@@ -5,7 +5,6 @@ package io.deephaven.qst.type;
 
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-import io.deephaven.qst.type.CustomType;
 import org.junit.jupiter.api.Test;
 
 public class CustomTypeTest {

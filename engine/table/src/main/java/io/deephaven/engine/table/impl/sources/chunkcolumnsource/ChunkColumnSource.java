@@ -8,7 +8,6 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 

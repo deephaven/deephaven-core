@@ -29,7 +29,6 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.time.Duration;
 import java.util.*;
-import java.util.function.Function;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.getTable;

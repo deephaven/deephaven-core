@@ -4,7 +4,6 @@
 package io.deephaven.jpy.integration;
 
 import io.deephaven.jpy.BuiltinsModule;
-import io.deephaven.jpy.JpyModule;
 import io.deephaven.jpy.PythonTest;
 import io.deephaven.jpy.integration.DestructorModuleParent.OnDelete;
 
@@ -19,7 +18,6 @@ import org.jpy.PyObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

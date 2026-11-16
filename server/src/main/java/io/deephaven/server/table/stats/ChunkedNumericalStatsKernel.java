@@ -3,9 +3,6 @@
 //
 package io.deephaven.server.table.stats;
 
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
 import io.deephaven.util.QueryConstants;
 
 import java.math.BigDecimal;

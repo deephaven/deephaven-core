@@ -4,9 +4,7 @@
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
-import it.unimi.dsi.fastutil.doubles.DoubleOpenCustomHashSet;
 import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
-import it.unimi.dsi.fastutil.floats.FloatOpenCustomHashSet;
 import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
 import org.apache.commons.io.FileUtils;
 

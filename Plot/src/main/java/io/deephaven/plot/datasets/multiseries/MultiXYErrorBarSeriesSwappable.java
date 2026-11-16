@@ -7,11 +7,9 @@ import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.datasets.DynamicSeriesNamer;
 import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesInternal;
 import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesTableArray;
-import io.deephaven.plot.filters.SelectableDataSetSwappableTable;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.plot.util.tables.TableHandle;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 
 /**

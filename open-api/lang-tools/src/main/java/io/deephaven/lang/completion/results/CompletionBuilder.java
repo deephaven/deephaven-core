@@ -11,7 +11,6 @@ import io.deephaven.lang.generated.Token;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
 import io.deephaven.proto.backplane.script.grpc.Position;
-import io.deephaven.proto.backplane.script.grpc.TextEdit;
 
 import java.util.Collection;
 

@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api;
 
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
 
 import javax.annotation.Nonnull;

@@ -14,7 +14,6 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Convert column values into column names for aggregated columns. This works similarly to a pivot table, except that it

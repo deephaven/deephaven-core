@@ -11,7 +11,6 @@ import com.google.common.hash.Funnels;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
-import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.content.HttpContent;
 

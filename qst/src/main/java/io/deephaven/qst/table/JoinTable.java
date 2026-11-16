@@ -5,7 +5,6 @@ package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
 import io.deephaven.api.TableOperations;
-import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Collection;

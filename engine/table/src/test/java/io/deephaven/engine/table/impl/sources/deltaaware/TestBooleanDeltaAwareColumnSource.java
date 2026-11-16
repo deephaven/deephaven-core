@@ -14,7 +14,6 @@ import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.chunk.ArrayGenerator;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.chunk.BooleanChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -22,7 +21,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

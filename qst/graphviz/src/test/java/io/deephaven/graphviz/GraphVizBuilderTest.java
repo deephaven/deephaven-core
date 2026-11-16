@@ -9,7 +9,6 @@ import guru.nidi.graphviz.model.MutableGraph;
 import io.deephaven.qst.table.LabeledTables;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeTable;
-import io.deephaven.qst.table.ViewTable;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;

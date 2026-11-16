@@ -5,8 +5,6 @@ package io.deephaven.engine.rowset.impl.rsp;
 
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;

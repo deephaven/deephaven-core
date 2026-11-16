@@ -10,7 +10,6 @@ package io.deephaven.base.ringbuffer;
 import org.junit.Test;
 
 import java.util.NoSuchElementException;
-import java.util.Random;
 
 import static io.deephaven.base.testing.Asserts.assertEquals;
 import static org.junit.Assert.*;

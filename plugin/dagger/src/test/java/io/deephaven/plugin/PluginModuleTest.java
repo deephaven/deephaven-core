@@ -9,7 +9,6 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;

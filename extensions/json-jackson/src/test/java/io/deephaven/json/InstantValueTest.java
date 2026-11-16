@@ -4,7 +4,6 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.json.InstantNumberValue.Format;
 import io.deephaven.json.jackson.JacksonProvider;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;

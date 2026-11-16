@@ -10,7 +10,6 @@ import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.DataDir;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.CreateDirectoryRequest;

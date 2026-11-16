@@ -12,7 +12,6 @@ import java.util.Objects;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.util.compare.ObjectComparisons;
 
 // region name
 public class ObjectChunkDeepEquals implements ChunkEquals {

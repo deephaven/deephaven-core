@@ -4,7 +4,6 @@
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
-import io.deephaven.util.compare.ObjectComparisons;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 

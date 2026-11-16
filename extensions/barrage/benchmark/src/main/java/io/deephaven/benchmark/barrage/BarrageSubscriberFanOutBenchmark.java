@@ -15,7 +15,6 @@ import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;

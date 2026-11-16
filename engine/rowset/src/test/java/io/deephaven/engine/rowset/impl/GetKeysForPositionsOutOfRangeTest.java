@@ -16,7 +16,6 @@ import java.util.PrimitiveIterator;
 
 import static io.deephaven.engine.rowset.impl.RowSetTestCommon.assertBackedBy;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * A position at or beyond the cardinality has no key. Every implementation must say so with

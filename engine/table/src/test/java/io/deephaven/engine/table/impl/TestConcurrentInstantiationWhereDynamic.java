@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;

@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.util.systemicmarking;
 
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 
 /**
  * An object that can report if it is systemically important.

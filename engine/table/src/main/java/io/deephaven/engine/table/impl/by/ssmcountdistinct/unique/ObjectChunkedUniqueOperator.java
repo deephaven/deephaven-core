@@ -7,7 +7,6 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
-import io.deephaven.engine.table.impl.util.compact.EqualsConsistentObjectCompactKernel;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.EqualsConsistentObjectCompactModifications;
 
 import io.deephaven.base.verify.Assert;

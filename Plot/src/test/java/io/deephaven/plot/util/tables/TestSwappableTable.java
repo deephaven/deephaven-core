@@ -5,7 +5,6 @@ package io.deephaven.plot.util.tables;
 
 import org.junit.Test;
 
-import static io.deephaven.base.testing.Asserts.assertEquals;
 
 public class TestSwappableTable {
 

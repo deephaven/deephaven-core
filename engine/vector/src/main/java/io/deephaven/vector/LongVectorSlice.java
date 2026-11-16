@@ -15,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 import static io.deephaven.base.ClampUtil.clampLong;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.vector.Vector.clampIndex;
 
 /**

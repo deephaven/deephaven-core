@@ -11,7 +11,6 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.TableAlreadyFailedException;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;

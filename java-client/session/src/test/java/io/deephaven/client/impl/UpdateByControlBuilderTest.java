@@ -5,7 +5,6 @@ package io.deephaven.client.impl;
 
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.proto.backplane.grpc.MathContext.RoundingMode;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions;
 import org.junit.jupiter.api.Test;

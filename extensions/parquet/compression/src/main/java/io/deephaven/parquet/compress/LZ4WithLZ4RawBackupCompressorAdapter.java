@@ -3,7 +3,6 @@
 //
 package io.deephaven.parquet.compress;
 
-import io.deephaven.io.streams.ByteBufferInputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;

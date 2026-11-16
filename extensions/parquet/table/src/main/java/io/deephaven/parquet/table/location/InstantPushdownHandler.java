@@ -7,7 +7,6 @@ import io.deephaven.engine.table.impl.select.InstantRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.QueryConstants;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -6,7 +6,6 @@ package io.deephaven.engine.util;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;

@@ -50,7 +50,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;

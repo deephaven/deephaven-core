@@ -4,7 +4,6 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import org.junit.Test;
