@@ -464,11 +464,13 @@ def avro_spec(
             the value of the Schema Server URL for fetching the schema definition
         schema_version (str): the schema version to fetch from schema service, default is 'latest'
         mapping (Optional[dict[str, str]]): a mapping from Avro field path (dotted for nested fields, such as
-            parent.child) to Deephaven table column name; the fields specified in
-            the mapping will have their column names defined by it; if 'mapped_only' parameter is False,
-            any other fields
-            not mentioned in the mapping will use the same Avro field path for Deephaven table column; otherwise, these
-            unmapped fields will be ignored and will not be present in the resulting table. default is None
+            parent.child) to Deephaven table column name. When 'mapping' is None or empty, every field is included
+            and each column is named after its field path with dots replaced by double underscores, so parent.child
+            becomes the column parent__child. When 'mapping' is given, the fields it names get the column names it
+            defines; if the 'mapped_only' parameter is False, any other fields use their Avro field path unchanged
+            as the column name, which is not a valid column name for a nested field, so map every nested field you
+            keep; otherwise, these unmapped fields are ignored and are not present in the resulting table.
+            default is None
         mapped_only (bool): whether to ignore Avro fields not present in the 'mapping' argument, default is False
 
     Returns:
