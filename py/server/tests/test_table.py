@@ -271,10 +271,14 @@ class TableTestCase(BaseTestCase):
         def raise_multi_line(x: int) -> int:
             raise Exception("udf failed\nwith details")
 
+        def raise_caused_by_line(x: int) -> int:
+            raise Exception("udf failed\ncaused by upstream failure")
+
         for func_name, expected in [
             ("raise_exception", "Exception: udf failed with Exception"),
             ("raise_value_error", "ValueError: udf failed with ValueError"),
             ("raise_multi_line", "Exception: udf failed"),
+            ("raise_caused_by_line", "Exception: udf failed"),
         ]:
             with self.subTest(func_name=func_name):
                 with self.assertRaises(DHError) as cm:
@@ -282,6 +286,9 @@ class TableTestCase(BaseTestCase):
                 self.assertEqual(expected, cm.exception.root_cause)
                 self.assertEqual(
                     expected, cm.exception.compact_traceback.splitlines()[-1]
+                )
+                self.assertNotIn(
+                    "caused by upstream failure", cm.exception.compact_traceback
                 )
 
     #

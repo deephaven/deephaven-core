@@ -4,7 +4,7 @@ title: to_table
 
 The `to_table` method creates a new table from a `pandas.DataFrame`.
 
-A missing value in a pandas nullable column, one for which `isna()` is `True`, becomes a Deephaven [null](../query-language/types/nulls.md). In a `Float32` or `Float64` column, that includes `None` and `np.nan`, because pandas marks them missing. A `NaN` that pandas doesn't mark missing stays [`NaN`](../query-language/types/NaNs.md).
+A missing value in a pandas nullable column, one for which `isna` returns `True`, becomes a Deephaven [null](../query-language/types/nulls.md). In a `Float32` or `Float64` column, that includes `None` and `np.nan`, because pandas marks them missing. A `NaN` that pandas doesn't mark missing stays [`NaN`](../query-language/types/NaNs.md).
 
 ## Syntax
 

@@ -13,6 +13,10 @@ traceback for easy debugging.
 import re
 import traceback
 
+# A Java cause header, such as 'caused by java.lang.RuntimeException: ...'. Requiring a dotted class name keeps a
+# line of a multi-line Python exception message that starts with 'caused by' from passing as a Java cause.
+_JAVA_CAUSE_RE = re.compile(r"^caused by (?:[\w$]+\.)+[\w$]+(?::|$)")
+
 
 class DHError(Exception):
     """The custom exception class for the Deephaven Python package.
@@ -37,7 +41,7 @@ class DHError(Exception):
         self._compact_tb = []
         for_compact_tb = True
         for tb_ln in tb_lines:
-            if tb_ln.startswith("caused by"):
+            if _JAVA_CAUSE_RE.match(tb_ln):
                 self._root_cause = tb_ln.split("by")[1].strip()
                 if tb_ln.strip().endswith(":"):
                     self._compact_tb.append(tb_ln[:-1].strip())
@@ -71,7 +75,7 @@ class DHError(Exception):
         interpreter' line for any Python exception whose name doesn't end in 'Error', such as Exception or
         KeyboardInterrupt.
         """
-        caused_by = [i for i, ln in enumerate(tb_lines) if ln.startswith("caused by")]
+        caused_by = [i for i, ln in enumerate(tb_lines) if _JAVA_CAUSE_RE.match(ln)]
         if not caused_by or not tb_lines[caused_by[-1]].rstrip().endswith(
             "Error in Python interpreter:"
         ):
