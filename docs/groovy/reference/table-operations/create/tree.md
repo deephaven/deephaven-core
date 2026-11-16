@@ -6,7 +6,7 @@ The Deephaven `tree` method creates a tree table from a source table given an ID
 
 ## Syntax
 
-```
+```groovy syntax
 resultNoOrphans = source.tree(idColumn, parentColumn)
 resultWithOrphans = TreeTable.promoteOrphans(source, idColumn, parentColumn).tree(idColumn, parentColumn)
 ```
@@ -32,7 +32,7 @@ The name of the parent column.
 
 The `TreeTable` interface has the following static methods:
 
-- [`promoteOrphans(Table, String, String)`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/hierarchical/TreeTable.html#promoteOrphans(io.deephaven.engine.table.Table,java.lang.String,java.lang.String)) - Adapt a source table to be used for a tree to ensure that the result will have no orphaned nodes.
+- [`promoteOrphans(Table, String, String)`](/core/javadoc/io/deephaven/engine/table/hierarchical/TreeTable.html#promoteOrphans(io.deephaven.engine.table.Table,java.lang.String,java.lang.String)) - Adapt a source table to be used for a tree to ensure that the result will have no orphaned nodes.
 
 ### Instance
 
@@ -41,9 +41,10 @@ The following methods can be called on an instance of `TreeTable`:
 - `getIdentifierColumn` - Get the name of the identifier column used to create the tree table.
 - `getNodeDefinition` - Get the TableDefinition that should be exposed to node table consumers.
 - `getParentIdentifierColumn` - Get the name of the parent identifier column used to create the tree table.
-- `makeNodeOperationsRecorder` - Create a [`TreeNodeOperationsRecorder`](/core/javadoc/io/deephaven/engine/table/hierarchical/TreeTable.NodeOperationsRecorder.html), which records node-level operations when capturing snapshots.
-- `withFilters(filters...)` - Create a new `TreeTable` with the specified [`Filters`](/core/javadoc/io/deephaven/api/filter/Filter.html) applied.
-- `withNodeFilterColumns(ColumnNames...)` - Create a new `TreeTable` with the specified `ColumnNames...` designated for node-level filtering.
+- `makeNodeOperationsRecorder` - Create a [`TreeTable.NodeOperationsRecorder`](/core/javadoc/io/deephaven/engine/table/hierarchical/TreeTable.NodeOperationsRecorder.html), which records node-level operations when capturing snapshots.
+- `rebase(newSource)` - Create a new `TreeTable` based on `newSource`, inheriting this tree table's identifier column, parent column, node filter columns, and node operations. `newSource` must have the same table definition as the source of this tree table.
+- `withFilter(filter)` - Create a new `TreeTable` with the specified [`Filter`](/core/javadoc/io/deephaven/api/filter/Filter.html) applied.
+- `withNodeFilterColumns(columns)` - Create a new `TreeTable` with the specified columns, a `Collection` of `ColumnName` objects, designated for node-level filtering.
 - `withNodeOperations(nodeOperations)` - Create a new `TreeTable` that will apply the [recorded operations](/core/javadoc/io/deephaven/engine/table/hierarchical/TreeTable.NodeOperationsRecorder.html) to nodes when gathering snapshots.
 
 ## Returns
@@ -90,4 +91,4 @@ resultWithOrphans = TreeTable.promoteOrphans(source, "ID", "Parent").tree("ID", 
 - [`join`](../join/join.md)
 - [`rollup`](./rollup.md)
 - [`timeTable`](./timeTable.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#tree(java.lang.String,java.lang.String))
+- [Javadoc](/core/javadoc/io/deephaven/engine/table/Table.html#tree(java.lang.String,java.lang.String))

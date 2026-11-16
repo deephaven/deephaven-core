@@ -39,7 +39,6 @@ A tree table.
 The following example creates a tree table from a static table.
 
 ```python order=result,source
-from deephaven.constants import NULL_INT
 from deephaven import empty_table
 
 source = empty_table(100).update_view(
@@ -53,7 +52,6 @@ The following example creates a tree table from a real-time table.
 
 ```python ticking-table order=null
 from deephaven import empty_table, time_table
-from deephaven.constants import NULL_INT
 
 t1 = empty_table(10_000).update_view(
     ["ID = i", "Parent = i == 0 ? NULL_INT : (int)(i / 10)"]
@@ -70,7 +68,6 @@ result = source.tree(id_col="ID", parent_col="Parent")
 The following example creates a tree table from a source table that contains orphans. The first omits orphan nodes, while the second promotes them such that they appear in the tree table.
 
 ```python order=result_no_orphans,result_w_orphans,source
-from deephaven.constants import NULL_INT
 from deephaven import empty_table
 
 source = empty_table(100).update_view(
@@ -87,6 +84,6 @@ result_w_orphans = source.tree(id_col="ID", parent_col="Parent", promote_orphans
 - [`time_table`](./timeTable.md)
 - [`join`](../join/join.md)
 - [`rollup`](./rollup.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#tree(java.lang.String,java.lang.String))
+- [Javadoc](/core/javadoc/io/deephaven/engine/table/Table.html#tree(java.lang.String,java.lang.String))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.tree)
 - [TreeTable](/core/pydoc/code/deephaven.table.html#deephaven.table.TreeTable)
