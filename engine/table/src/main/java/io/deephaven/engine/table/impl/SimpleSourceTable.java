@@ -9,6 +9,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.DeferredViewTable.TableReference;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -92,7 +93,13 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
     @Override
     protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
-        return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
-                new TableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
+        return DeferredViewTable.withView(newDefinitionExternal, getDescription() + "-redefined",
+                new TableReference(redefine(newDefinitionInternal)), viewColumns);
+    }
+
+    @Override
+    protected final Table redefineWithRename(TableDefinition newDefinitionExternal, SourceColumn[] renameColumns) {
+        return DeferredViewTable.withRename(newDefinitionExternal, getDescription() + "-redefined",
+                new TableReference(this), renameColumns);
     }
 }

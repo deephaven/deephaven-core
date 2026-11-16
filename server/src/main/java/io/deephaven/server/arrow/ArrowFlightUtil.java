@@ -37,6 +37,8 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
+import io.grpc.Context;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -93,6 +95,9 @@ public class ArrowFlightUtil {
 
         final String ticketLogName = ticketRouter.getLogNameFor(request, "table");
         final String description = "FlightService#DoGet(table=" + ticketLogName + ")";
+        // holds the compression types the client accepts; the snapshot itself runs on the session executor, which does
+        // not attach it
+        final Context grpcContext = Context.current();
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
@@ -123,18 +128,21 @@ public class ArrowFlightUtil {
                         metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                         metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
+                        grpcContext.run(() -> TransportCompression.apply(observer,
+                                ClientAcceptCompressionInterceptor.acceptedCompression(), table, ticketLogName));
+
                         // create an adapter for the response observer
                         final StreamObserver<BarrageMessageWriter.MessageView> listener =
                                 new MessageViewAdapter(observer);
 
-                        // push the schema to the listener
-                        listener.onNext(streamGeneratorFactory.getSchemaView(
-                                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
-                                        table)));
+                        // push the schema to the listener; the snapshot is written with this same schema
+                        final org.apache.arrow.vector.types.pojo.Schema schema =
+                                BarrageUtil.schemaFromTable(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table);
+                        listener.onNext(streamGeneratorFactory.getSchemaView(schema::getSchema));
 
                         // shared code between `DoGet` and `BarrageSnapshotRequest`
                         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
-                                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, listener, metrics);
+                                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, schema, listener, metrics);
                     });
         }
     }
@@ -152,6 +160,11 @@ public class ArrowFlightUtil {
         private SessionState.ExportBuilder<Table> resultExportBuilder;
         private Flight.FlightDescriptor flightDescriptor;
         private Schema schema;
+        /**
+         * Set when the stream is abandoned: its session expired, or a message failed. The decoded dictionaries have
+         * been released then, and later messages are ignored.
+         */
+        private boolean abandoned;
 
         public DoPutObserver(
                 final SessionState session,
@@ -169,9 +182,31 @@ public class ArrowFlightUtil {
             }
         }
 
-        // this is the entry point for client-streams
+        // this is the entry point for client-streams; synchronized against close(), which session expiration calls from
+        // another thread
         @Override
-        public void onNext(final InputStream request) {
+        public synchronized void onNext(final InputStream request) {
+            if (abandoned) {
+                return;
+            }
+            try {
+                processMessage(request);
+            } catch (final RuntimeException err) {
+                // gRPC closes the call when onNext throws, and calls neither onError nor onCompleted afterwards, so
+                // clean up as onError does before the error propagates, and ignore any later message
+                abandoned = true;
+                failStream(err);
+                throw err;
+            }
+        }
+
+        /** Releases the decoded dictionaries and ignores any later message. Callers hold this observer's monitor. */
+        private void abandon() {
+            abandoned = true;
+            releaseDictionaries();
+        }
+
+        private void processMessage(final InputStream request) {
             final MessageInfo mi;
             try {
                 mi = BarrageProtoUtil.parseProtoMessage(request);
@@ -229,7 +264,9 @@ public class ArrowFlightUtil {
 
             final int numColumns = resultTable.getColumnSources().size();
             final BarrageMessage msg = createBarrageMessage(mi, numColumns);
-            msg.rowsAdded = RowSetFactory.fromRange(totalRowsRead, totalRowsRead + msg.length - 1);
+            msg.rowsAdded = msg.length == 0
+                    ? RowSetFactory.empty()
+                    : RowSetFactory.fromRange(totalRowsRead, totalRowsRead + msg.length - 1);
             msg.rowsIncluded = msg.rowsAdded.copy();
             msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
             totalRowsRead += msg.length;
@@ -240,6 +277,7 @@ public class ArrowFlightUtil {
         }
 
         private void onCancel() {
+            releaseDictionaries();
             if (resultTable != null) {
                 resultTable.dropReference();
                 resultTable = null;
@@ -258,6 +296,18 @@ public class ArrowFlightUtil {
         @Override
         public void onError(final Throwable t) {
             // ok; we're done then
+            failStream(t);
+        }
+
+        /**
+         * Releases what this stream holds, and fails its export with {@code t}, which propagates to the observer.
+         * <p>
+         * A {@link StatusRuntimeException} fails the export as is, so the observer reports its status and description;
+         * wrapped, the export would report only an error id. When {@link #onNext} fails, the error it rethrows closes
+         * the call as well, racing this export failure, so both must report the same status.
+         */
+        private void failStream(final Throwable t) {
+            releaseDictionaries();
             if (resultTable != null) {
                 resultTable.dropReference();
                 resultTable = null;
@@ -265,6 +315,9 @@ public class ArrowFlightUtil {
             if (resultExportBuilder != null) {
                 // this thrown error propagates to observer
                 resultExportBuilder.submit(() -> {
+                    if (t instanceof StatusRuntimeException) {
+                        throw (StatusRuntimeException) t;
+                    }
                     throw new UncheckedDeephavenException(t);
                 });
                 resultExportBuilder = null;
@@ -275,6 +328,8 @@ public class ArrowFlightUtil {
 
         @Override
         public void onCompleted() {
+            // the client sends no more batches, so no more dictionary-encoded columns are decoded
+            releaseDictionaries();
             if (resultExportBuilder == null) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Result flight descriptor never provided");
@@ -316,6 +371,12 @@ public class ArrowFlightUtil {
         public void close() {
             // close() is intended to be invoked only though session expiration
             GrpcUtil.safelyError(observer, Code.UNAUTHENTICATED, "Session expired");
+            // Once the call is closed, gRPC calls none of onError, onCancel or onCompleted, so release the decoded
+            // dictionaries here. Holding the monitor waits out a message being decoded, and abandoning the stream stops
+            // a later message from decoding more.
+            synchronized (this) {
+                abandon();
+            }
         }
     }
 
@@ -362,6 +423,14 @@ public class ArrowFlightUtil {
         private final SessionState session;
 
         private final StreamObserver<BarrageMessageWriter.MessageView> listener;
+
+        /** the unwrapped response observer, needed to choose the response compression */
+        private final StreamObserver<InputStream> responseObserver;
+        /**
+         * the call's gRPC context, which holds the compression types the client accepts; captured at construction, on
+         * the gRPC thread
+         */
+        private final Context grpcContext;
 
         private volatile boolean isClosed = false;
 
@@ -417,6 +486,8 @@ public class ArrowFlightUtil {
             this.streamGeneratorFactory = streamGeneratorFactory;
             this.session = session;
             this.listener = new MessageViewAdapter(responseObserver);
+            this.responseObserver = responseObserver;
+            this.grpcContext = Context.current();
             this.errorTransformer = errorTransformer;
             this.marshallers = exchangeMarshallers;
 
@@ -484,6 +555,24 @@ public class ArrowFlightUtil {
             }
 
             handler.handleMessage(message);
+        }
+
+        /**
+         * Chooses the response compression for {@code export} from its allowed-compression attribute and the
+         * compression types the client accepts. Must be called before the first response message is sent.
+         *
+         * @param marshallerForExport the marshaller that will send {@code export}
+         * @param export the object being sent
+         * @param logName a description of {@code export}, for log messages
+         */
+        public void applyCompression(
+                final ExchangeMarshaller marshallerForExport,
+                final Object export,
+                final String logName) {
+            // handlers call this on the session executor, which does not attach the call's context
+            grpcContext.run(() -> TransportCompression.apply(responseObserver,
+                    ClientAcceptCompressionInterceptor.acceptedCompression(),
+                    marshallerForExport.attributesFor(export), logName));
         }
 
         public List<ExchangeMarshaller> getMarshallers() {

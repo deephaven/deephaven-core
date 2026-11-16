@@ -17,6 +17,7 @@ from deephaven import (
     time_table,
     update_graph,
 )
+from deephaven._query_scope import query_scope_ctx
 from deephaven.agg import (
     abs_sum,
     avg,
@@ -55,6 +56,7 @@ from deephaven.table import (
     TailInitializationFilter,
     table_diff,
 )
+from deephaven.updateby import rolling_formula_tick
 from tests.testbase import BaseTestCase, table_equals
 
 
@@ -218,6 +220,10 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(cm.exception.root_cause)
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
+    def test_update_empty(self) -> None:
+        # An empty list adds no columns, as Java's update does.
+        self.assert_table_equals(self.test_table, self.test_table.update([]))
+
     def test_USV(self):
         ops = [
             Table.update,
@@ -341,6 +347,14 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             restricted_table.sort(order_by=["a"])
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
+
+    def test_clear_sorting_restrictions(self) -> None:
+        restricted_table = self.test_table.restrict_sort_to("b")
+        with self.assertRaises(DHError):
+            restricted_table.sort(order_by=["a"])
+        cleared_table = restricted_table.clear_sorting_restrictions()
+        result_table = cleared_table.sort(order_by=["a"])
+        self.assertEqual(result_table.size, self.test_table.size)
 
     def test_sort_descending(self):
         sorted_table = self.test_table.sort(
@@ -531,6 +545,13 @@ class TableTestCase(BaseTestCase):
         with self.subTest("with no join keys"):
             result_table = left_table.join(right_table, joins="e", reserve_bits=2)
             self.assertTrue(result_table.size > left_table.size)
+        for reserve_bits in [0, 63]:
+            with self.subTest("out of range reserve_bits", reserve_bits=reserve_bits):
+                with self.assertRaises(DHError) as cm:
+                    left_table.join(
+                        right_table, on="a", joins="e", reserve_bits=reserve_bits
+                    )
+                self.assertIn("reserveBits must be between 1 and 62", str(cm.exception))
 
     def test_as_of_join(self):
         left_table = self.test_table.drop_columns(["d", "e"])
@@ -1055,6 +1076,43 @@ class TableTestCase(BaseTestCase):
 
         inner_func("param str")
 
+    def test_local_scope_update_by_and_filters(self) -> None:
+        def inner_func() -> None:
+            local_int = 3
+            t = empty_table(10).update(["A = i", "B = i % 2"])
+
+            with self.subTest("update_by"):
+                rt = t.update_by(
+                    rolling_formula_tick(formula="R = sum(A) + local_int", rev_ticks=1)
+                )
+                self.assertEqual(3, rt.j_table.getColumnSource("R").get(0))
+
+            with self.subTest("PartitionedTableProxy.update_by"):
+                proxy = t.partition_by("B").proxy()
+                rt = proxy.update_by(
+                    rolling_formula_tick(formula="R = sum(A) + local_int", rev_ticks=1)
+                ).target.merge()
+                # rev_ticks=1 sums only the current row, so R is A + 3 on every row.
+                self.assertEqual(10, rt.size)
+                self.assertEqual(0, rt.where("R != A + 3").size)
+
+            with self.subTest("PartitionedTable.filter"):
+                pt = t.update("K = i").partition_by("K")
+                self.assertEqual(7, pt.filter("K >= local_int").table.size)
+
+            with self.subTest("RollupTable.with_filters"):
+                rollup_table = t.rollup(aggs=[sum_("A")], by="B")
+                # getSource() returns the unfiltered source, so this checks only that the filter compiles. Without
+                # the function's scope, local_int is unknown and the call raises.
+                self.assertIsNotNone(rollup_table.with_filters("B >= local_int - 2"))
+
+            with self.subTest("TreeTable.with_filters"):
+                tree_table = t.update("P = A - 1").tree(id_col="A", parent_col="P")
+                filtered = tree_table.with_filters("A < local_int")
+                self.assertEqual(3, filtered.j_tree_table.getSource().size())
+
+        inner_func()
+
     def test_nested_scopes(self):
         def inner_func(p) -> str:
             t = empty_table(1).update("X = p * 10")
@@ -1105,6 +1163,24 @@ class TableTestCase(BaseTestCase):
             for k, rt in rt_dict.items():
                 v = a_dict[k]
                 self.verify_table_data(rt, [v, v * 10])
+
+    def test_scope_through_helper(self):
+        # A private helper in table.py that enters query_scope_ctx for a public method must still see the user's
+        # locals. Label both functions with table.py's file name, so they count as Deephaven frames.
+        def public_update(t, formulas):
+            return _helper(t, formulas)
+
+        def _helper(t, formulas):
+            with query_scope_ctx():
+                return Table(j_table=t.j_table.update(*formulas))
+
+        table_py = Table.update.__code__.co_filename
+        public_update.__code__ = public_update.__code__.replace(co_filename=table_py)
+        _helper.__code__ = _helper.__code__.replace(co_filename=table_py)
+
+        offset = 7
+        rt = public_update(empty_table(1), ["X = i + offset"])
+        self.verify_table_data(rt, [7])
 
     def test_scope_lambda(self):
         t = empty_table(1)

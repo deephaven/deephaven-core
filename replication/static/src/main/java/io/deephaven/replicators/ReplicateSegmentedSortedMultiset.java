@@ -122,6 +122,21 @@ public class ReplicateSegmentedSortedMultiset {
         updateDoublePercentileHelper(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/DoublePercentileTypeMedianHelper.java");
 
+        for (final String netChangeKernel : charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharNetChangeKernel.java")) {
+            if (netChangeKernel.contains("Float")) {
+                fixupNetChangeRepresentation(netChangeKernel,
+                        "return Float.floatToIntBits(lhs) == Float.floatToIntBits(rhs);");
+            } else if (netChangeKernel.contains("Double")) {
+                fixupNetChangeRepresentation(netChangeKernel,
+                        "return Double.doubleToLongBits(lhs) == Double.doubleToLongBits(rhs);");
+            }
+        }
+        final String objectNetChangeKernel = charToObject(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharNetChangeKernel.java");
+        fixupChunkAttributes(objectNetChangeKernel);
+        fixupNetChangeRepresentation(objectNetChangeKernel, "return Objects.equals(lhs, rhs);");
+
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
         objectSsm = charToObject(TASK,
@@ -172,16 +187,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
                 "internalResult");
 
-        charToAllButBooleanAndLong(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java");
-        fixupLongKernelOperator(
-                charToLong(TASK,
-                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
-                "    externalResult = new LongAsInstantColumnSource(internalResult);");
-        fixupObjectKernelOperator(
-                charToObject(TASK,
-                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
-                "ssms");
+        replicateUniqueOperators();
 
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java");
@@ -227,6 +233,21 @@ public class ReplicateSegmentedSortedMultiset {
         FileUtils.writeLines(objectFile, lines);
     }
 
+    /**
+     * Net only values with the same representation: floating point zeros of either sign, and Objects that compare equal
+     * without being equal, are kept in both the removals and the additions.
+     */
+    private static void fixupNetChangeRepresentation(final String path, final String sameRepresentation)
+            throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = replaceRegion(lines, "sameRepresentation", List.of("        " + sameRepresentation));
+        if (sameRepresentation.contains("Objects.")) {
+            lines = addImport(lines, "import java.util.Objects;");
+        }
+        FileUtils.writeLines(file, lines);
+    }
+
     private static void updateFloatPercentileHelper(String file) throws IOException {
         final File updatedFile = new File(file);
         List<String> lines = FileUtils.readLines(updatedFile, Charset.defaultCharset());
@@ -255,6 +276,80 @@ public class ReplicateSegmentedSortedMultiset {
                 "                return setResult(destination, Double.NaN);\n" +
                 "            }"));
         FileUtils.writeLines(updatedFile, lines);
+    }
+
+    /**
+     * The unique operators share a base class holding the result columns, the add path, compaction, and equality; the
+     * general and add-only subclasses each define how a state is represented.
+     */
+    private static void replicateUniqueOperators() throws IOException {
+        final String uniqueDir =
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/";
+        final String base = uniqueDir + "BaseCharChunkedUniqueOperator.java";
+        final String general = uniqueDir + "CharChunkedUniqueOperator.java";
+        final String addOnly = uniqueDir + "CharChunkedAddOnlyUniqueOperator.java";
+
+        for (final String path : List.of(base, general, addOnly)) {
+            charToAllButBooleanAndLong(TASK, path);
+        }
+
+        fixupLongKernelOperator(charToLong(TASK, base),
+                "    externalResult = new LongAsInstantColumnSource(internalResult);");
+        fixupLongUniqueSubclass(charToLong(TASK, general));
+        fixupLongUniqueSubclass(charToLong(TASK, addOnly));
+
+        fixupObjectUniqueBase(charToObject(TASK, base));
+        fixupObjectUniqueSubclass(charToObject(TASK, general), true);
+        fixupObjectUniqueSubclass(charToObject(TASK, addOnly), false);
+    }
+
+    private static void fixupLongUniqueSubclass(String longPath) throws IOException {
+        final File longFile = new File(longPath);
+        List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
+        lines = replaceRegion(lines, "Constructor", indent(Collections.singletonList("Class<?> type,"), 12));
+        lines = replaceRegion(lines, "SuperConstructor", indent(Collections.singletonList("type,"), 16));
+        FileUtils.writeLines(longFile, lines);
+    }
+
+    private static void fixupObjectUniqueBase(String objectPath) throws IOException {
+        final File objectFile = new File(objectPath);
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = replaceRegion(lines, "Constructor",
+                indent(Arrays.asList("Class<?> type,", "boolean equalsConsistent,"), 12));
+        lines = replaceRegion(lines, "EqualsConsistentAssignment",
+                indent(Collections.singletonList("this.equalsConsistent = equalsConsistent;"), 8));
+        lines = globalReplacements(lines, "^    protected final String name;$",
+                "    protected final String name;\n    protected final boolean equalsConsistent;");
+        lines = dispatchCompaction(lines);
+        lines = replaceRegion(lines, "ResultCreation",
+                indent(Collections.singletonList("this.internalResult = new ObjectArraySource(type);"), 8));
+        lines = fixupObjectUniqueChunks(lines);
+        lines = ReplicateSortKernel.fixupObjectEquality(lines);
+        FileUtils.writeLines(objectFile, lines);
+    }
+
+    private static void fixupObjectUniqueSubclass(String objectPath, boolean hasSsms) throws IOException {
+        final File objectFile = new File(objectPath);
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = replaceRegion(lines, "Constructor",
+                indent(Arrays.asList("Class<?> type,", "boolean equalsConsistent,"), 12));
+        lines = replaceRegion(lines, "SuperConstructor",
+                indent(Collections.singletonList("type, equalsConsistent,"), 16));
+        if (hasSsms) {
+            lines = replaceRegion(lines, "SsmCreation", indent(Collections.singletonList(
+                    "this.ssms = new ObjectSsmBackedSource(type, equalsConsistent);"), 8));
+            lines = useAbstractObjectSsm(lines);
+            lines = dispatchCompaction(lines);
+        }
+        lines = fixupObjectUniqueChunks(lines);
+        FileUtils.writeLines(objectFile, lines);
+    }
+
+    private static List<String> fixupObjectUniqueChunks(List<String> lines) {
+        lines = globalReplacements(lines, "\\(WritableObjectChunk<\\? extends Values>\\)",
+                "(WritableObjectChunk<Object, ? extends Values>)");
+        // give the typed chunk locals (e.g. the cast-once valueCopy) the two-argument WritableObjectChunk form
+        return fixupChunkAttributes(lines);
     }
 
     private static void fixupLongKernelOperator(String longPath, String externalResultSetter) throws IOException {

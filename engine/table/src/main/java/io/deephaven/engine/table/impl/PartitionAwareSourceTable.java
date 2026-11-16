@@ -208,8 +208,11 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
             final Set<String> partitioningDerivedColumnNames = new HashSet<>();
             for (final SelectColumn selectColumn : selectColumns) {
-                if (!((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
-                        selectColumn.getColumns(), selectColumn.getColumnArrays(), partitioningDerivedColumnNames)) {
+                // the location table has one row per location, so a column with cross-row dependencies would read
+                // locations rather than rows
+                if (selectColumn.hasCrossRowDependencies()
+                        || !((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
+                                selectColumn.getColumns(), partitioningDerivedColumnNames)) {
                     return null;
                 }
                 partitioningDerivedColumnNames.add(selectColumn.getName());
@@ -248,10 +251,9 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 getDescription() + "-retainColumns",
                 componentFactory, locationProvider, updateSourceRegistrar, null, partitioningColumnDefinitions,
                 copyFilters(partitioningColumnFilters));
-        return new DeferredViewTable(newDefinition, getDescription() + "-retainColumns",
+        return DeferredViewTable.withDropColumns(newDefinition, getDescription() + "-retainColumns",
                 new PartitionAwareTableReference(redefined),
-                droppedPartitioningColumnDefinitions.stream().map(ColumnDefinition::getName).toArray(String[]::new),
-                null, null);
+                droppedPartitioningColumnDefinitions.stream().map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
     @Override
@@ -261,8 +263,14 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         DeferredViewTable.TableReference reference = redefined instanceof PartitionAwareSourceTable
                 ? new PartitionAwareTableReference((PartitionAwareSourceTable) redefined)
                 : new DeferredViewTable.TableReference(redefined);
-        return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
-                reference, null, viewColumns, null);
+        return DeferredViewTable.withView(newDefinitionExternal, getDescription() + "-redefined", reference,
+                viewColumns);
+    }
+
+    @Override
+    protected final Table redefineWithRename(TableDefinition newDefinitionExternal, SourceColumn[] renameColumns) {
+        return DeferredViewTable.withRename(newDefinitionExternal, getDescription() + "-redefined",
+                new PartitionAwareTableReference(this), renameColumns);
     }
 
     private static final String KEY_SUPPLIER_COLUMN_NAME = "__PartitionAwareSourceTable_KeySupplier__";
@@ -374,6 +382,12 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         }
         compilationProcessor.compile();
 
+        // In order to match the equivalent memory table, run the full where on the coalesced table when any filter
+        // has cross-row dependencies (see WhereFilter#hasCrossRowDependencies).
+        if (whereFilters.stream().anyMatch(WhereFilter::hasCrossRowDependencies)) {
+            return coalesce().where(Filter.and(whereFilters));
+        }
+
         if (partitionFilters.isEmpty()) {
             if (partitioningFilterFound) {
                 // unfortunately we found a partitioning filter but could not re-prioritize it
@@ -381,8 +395,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             }
 
             // If we have no partition filters, we defer all filters.
-            return new DeferredViewTable(definition, getDescription() + "-withDeferredFilters",
-                    new PartitionAwareTableReference(this), null, null,
+            return DeferredViewTable.withFilters(definition, getDescription() + "-withDeferredFilters",
+                    new PartitionAwareTableReference(this),
                     otherFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
         }
 
@@ -409,8 +423,10 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
         final Set<String> partitioningDerivedColumnNames = new HashSet<>();
         for (final SelectColumn selectColumn : selectColumns) {
-            if (!isValidAgainstColumnPartitionTable(
-                    selectColumn.getColumns(), selectColumn.getColumnArrays(), partitioningDerivedColumnNames)) {
+            // the location table has one row per location, so a column with cross-row dependencies would read
+            // locations rather than rows
+            if (selectColumn.hasCrossRowDependencies()
+                    || !isValidAgainstColumnPartitionTable(selectColumn.getColumns(), partitioningDerivedColumnNames)) {
                 // Be sure to invoke the super-class version of this method, rather than the array-based one that
                 // delegates to this method.
                 return super.selectDistinct(selectColumns);
@@ -428,32 +444,33 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     /**
      * Whether {@code whereFilter} may be applied to the location keys before coalescing, rather than to the rows after.
      * Location discovery applies such filters once per discovered key, with no listener, so a refreshing filter cannot
-     * be one: it is deferred like any other row filter. Nor can a filter that uses virtual row variables, which would
-     * be evaluated against positions in the location table rather than in the coalesced table.
+     * be one: it is deferred like any other row filter. Nor can a filter that
+     * {@link WhereFilter#hasCrossRowDependencies() depends on other rows}, such as a filter that uses virtual row
+     * variables, which would be evaluated against positions in the location table rather than in the coalesced table.
      *
      * @param whereFilter The filter to test, already {@link WhereFilter#init(TableDefinition) initialized}
      * @return Whether {@code whereFilter} may be applied before coalescing
      */
     private boolean isPrioritizablePartitioningFilter(@NotNull final WhereFilter whereFilter) {
         return ExtractAllFilters.stream(whereFilter)
-                .noneMatch(f -> f instanceof ReindexingFilter || f.hasVirtualRowVariables())
+                .noneMatch(f -> f instanceof ReindexingFilter || f.hasCrossRowDependencies())
                 && !whereFilter.isRefreshing()
-                && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), whereFilter.getColumnArrays());
+                && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), Collections.emptySet());
     }
 
+    /**
+     * Whether every column in {@code columnNames} is a partitioning column or a column derived from the partitioning
+     * columns, so that the location table can answer for the columns. Each caller first rules out cross-row
+     * dependencies, such as column arrays, which the location table cannot answer for.
+     *
+     * @param columnNames the columns read
+     * @param partitioningDerivedColumnNames the columns that earlier select columns derive from the partitioning
+     *        columns
+     * @return whether the location table can answer for {@code columnNames}
+     */
     private boolean isValidAgainstColumnPartitionTable(
             @NotNull final Collection<String> columnNames,
-            @NotNull final Collection<String> columnArrayNames) {
-        return isValidAgainstColumnPartitionTable(columnNames, columnArrayNames, Collections.emptySet());
-    }
-
-    private boolean isValidAgainstColumnPartitionTable(
-            @NotNull final Collection<String> columnNames,
-            @NotNull final Collection<String> columnArrayNames,
             @NotNull final Collection<String> partitioningDerivedColumnNames) {
-        if (!columnArrayNames.isEmpty()) {
-            return false;
-        }
         return columnNames.stream().allMatch(
                 columnName -> partitioningColumnDefinitions.containsKey(columnName)
                         || partitioningDerivedColumnNames.contains(columnName));

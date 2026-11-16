@@ -11,6 +11,7 @@ import io.deephaven.api.expression.ExpressionException;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.CrossJoinHelper;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
@@ -163,17 +164,32 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                     CrossJoinTablesGrpcImpl::doJoin);
         }
 
+        @Override
+        public void validateRequest(final CrossJoinTablesRequest request) throws StatusRuntimeException {
+            super.validateRequest(request);
+            final int reserveBits = request.getReserveBits();
+            // zero is the unset value, which selects the default number of bits
+            if (reserveBits != 0 && (reserveBits < CrossJoinHelper.MIN_NUM_RIGHT_BITS_TO_RESERVE
+                    || reserveBits > CrossJoinHelper.MAX_NUM_RIGHT_BITS_TO_RESERVE)) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "reserve_bits must be 0 (the default) or between "
+                                + CrossJoinHelper.MIN_NUM_RIGHT_BITS_TO_RESERVE + " and "
+                                + CrossJoinHelper.MAX_NUM_RIGHT_BITS_TO_RESERVE + " (inclusive), but was "
+                                + reserveBits);
+            }
+        }
+
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final CrossJoinTablesRequest request) {
             final List<MatchPair> match = Arrays.asList(columnsToMatch);
             final List<MatchPair> add = Arrays.asList(columnsToAdd);
-            int reserveBits = request.getReserveBits();
-            if (reserveBits <= 0) {
-                return lhs.join(rhs, match, add); // use the default number of reserve_bits
-            } else {
-                return lhs.join(rhs, match, add, reserveBits);
+            final int reserveBits = request.getReserveBits();
+            if (reserveBits == 0) {
+                // an unset reserve_bits selects the default number of bits
+                return lhs.join(rhs, match, add);
             }
+            return lhs.join(rhs, match, add, reserveBits);
         }
     }
 

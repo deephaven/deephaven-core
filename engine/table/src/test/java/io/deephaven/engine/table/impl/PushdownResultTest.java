@@ -222,7 +222,7 @@ public class PushdownResultTest {
             } catch (IllegalArgumentException e) {
                 assertThat(e).hasMessageContaining(PushdownResult.FORCE_VALIDATION
                         ? "maybeMatch must be a subset of selection"
-                        : "matchSize + maybeMatchSize > selectionSize, 31 + 0 > 30");
+                        : "matchSize + maybeMatchSize > selectionSize, 0 + 31 > 30");
             }
         }
     }

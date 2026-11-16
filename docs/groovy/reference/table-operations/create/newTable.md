@@ -23,7 +23,7 @@ A list of columnHolders from which to create the new table.
 
 Columns are created using the following methods:
 
-- [`boolCol`](./booleanCol.md)
+- [`booleanCol`](./booleanCol.md)
 - [`byteCol`](./byteCol.md)
 - [`charCol`](./charCol.md)
 - [`col`](./col.md)
@@ -88,7 +88,7 @@ result = newTable(
 
 - [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`emptyTable`](./emptyTable.md)
-- [`boolCol`](./booleanCol.md)
+- [`booleanCol`](./booleanCol.md)
 - [`byteCol`](./byteCol.md)
 - [`charCol`](./charCol.md)
 - [`col`](./col.md)

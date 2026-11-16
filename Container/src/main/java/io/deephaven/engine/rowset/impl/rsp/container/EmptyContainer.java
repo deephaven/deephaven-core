@@ -1,5 +1,7 @@
 package io.deephaven.engine.rowset.impl.rsp.container;
 
+import java.util.NoSuchElementException;
+
 public final class EmptyContainer extends ImmutableContainer {
     private EmptyContainer() {}
 
@@ -292,17 +294,22 @@ public final class EmptyContainer extends ImmutableContainer {
 
     @Override
     public void selectRanges(final RangeConsumer outValues, final RangeIterator inPositions) {
-        if (inPositions.hasNext()) {
-            throw new IllegalStateException();
-        }
+        requireOnlyEmptyRanges(inPositions);
     }
 
     @Override
     public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
-        if (inValues.hasNext()) {
-            throw new IllegalStateException();
-        }
+        requireOnlyEmptyRanges(inValues);
         return false;
+    }
+
+    private static void requireOnlyEmptyRanges(final RangeIterator ranges) {
+        while (ranges.hasNext()) {
+            ranges.next();
+            if (ranges.start() < ranges.end()) {
+                throw new IllegalStateException();
+            }
+        }
     }
 
     @Override
@@ -336,12 +343,12 @@ public final class EmptyContainer extends ImmutableContainer {
 
     @Override
     public int first() {
-        throw new IllegalStateException();
+        throw new NoSuchElementException();
     }
 
     @Override
     public int last() {
-        throw new IllegalStateException();
+        throw new NoSuchElementException();
     }
 
     @Override

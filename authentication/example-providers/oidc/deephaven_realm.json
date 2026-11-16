@@ -5,6 +5,10 @@
     {
       "username": "user",
       "enabled": true,
+      "email": "user@example.com",
+      "emailVerified": true,
+      "firstName": "Example",
+      "lastName": "User",
       "credentials": [
         {
           "type": "password",
@@ -18,6 +22,10 @@
     {
       "username": "admin",
       "enabled": true,
+      "email": "admin@example.com",
+      "emailVerified": true,
+      "firstName": "Example",
+      "lastName": "Admin",
       "credentials": [
         {
           "type": "password",

@@ -187,7 +187,10 @@ public final class RunContainer extends Container {
         cardinality = d1 + d2;
     }
 
-    public static RunContainer select(final RunContainer src, final int startRank, final int endRank) {
+    public static Container select(final RunContainer src, final int startRank, final int endRank) {
+        if (endRank <= startRank) {
+            return Container.empty();
+        }
         final RunContainer ans = new RunContainer(src.valueslength.length);
         int k = 0;
         int kStart = toIntUnsigned(src.getValue(0));
@@ -983,6 +986,9 @@ public final class RunContainer extends Container {
 
     @Override
     public boolean contains(final int rangeStart, final int rangeEnd) {
+        if (rangeEnd <= rangeStart) {
+            return true;
+        }
         int ri = unsignedInterleavedBinarySearch(valueslength, 0, nbrruns, (short) rangeStart);
         if (ri >= 0) {
             final int len = getLengthAsInt(ri);
@@ -1051,7 +1057,7 @@ public final class RunContainer extends Container {
             return false;
         }
         final int runCount = numberOfRuns();
-        short ib = 0, ir = 0;
+        int ib = 0, ir = 0;
         while (ib < bitmapContainer.bitmap.length && ir < runCount) {
             long w = bitmapContainer.bitmap[ib];
             while (w != 0 && ir < runCount) {
@@ -1240,6 +1246,7 @@ public final class RunContainer extends Container {
                 return true;
             }
             if (nextRange < 0) {
+                curr = rangeStart;
                 return false;
             }
 
@@ -1396,7 +1403,14 @@ public final class RunContainer extends Container {
         return toIntUnsigned(getValue(index));
     }
 
-    public RunContainer iaddUnsafe(final int begin, final int end, final int searchBeginRunIndex) {
+    /**
+     * Add {@code [begin, end)} to this container in place, searching for it from run {@code searchBeginRunIndex}. This
+     * container must not be shared.
+     *
+     * @return This container, or a bitmap container holding the result when one more run would leave this larger than
+     *         a bitmap
+     */
+    public Container iaddUnsafe(final int begin, final int end, final int searchBeginRunIndex) {
         int bIndex = unsignedInterleavedBinarySearch(valueslength, searchBeginRunIndex, nbrruns, (short) begin);
         int eIndex;
         if (bIndex >= 0) {
@@ -1452,6 +1466,9 @@ public final class RunContainer extends Container {
                             prependValueLength(begin, eIndex + 1);
                             return this;
                         }
+                        if (nbrruns >= ArrayContainer.DEFAULT_MAX_SIZE / 2) {
+                            return toBitmapContainer().iadd(begin, end);
+                        }
                         makeRoomAtIndex(eIndex + 1);
                         setValue(eIndex + 1, (short) begin);
                         final int d = end - begin;
@@ -1481,6 +1498,9 @@ public final class RunContainer extends Container {
         if (canPrependValueLength(end - 1, 0)) {
             prependValueLength(begin, 0);
         } else {
+            if (nbrruns >= ArrayContainer.DEFAULT_MAX_SIZE / 2) {
+                return toBitmapContainer().iadd(begin, end);
+            }
             makeRoomAtIndex(0);
             setValue(0, (short) begin);
             final int d = end - begin;
@@ -1981,6 +2001,10 @@ public final class RunContainer extends Container {
 
     @Override
     public Container ixor(final RunContainer x) {
+        if (x == this) {
+            // The in-place merge below reads x while overwriting this.
+            return Container.empty();
+        }
         if (shared) {
             return xor(x);
         }
@@ -2383,7 +2407,7 @@ public final class RunContainer extends Container {
     }
 
     @Override
-    public RunContainer select(final int startRank, final int endRank) {
+    public Container select(final int startRank, final int endRank) {
         return select(this, startRank, endRank);
     }
 
@@ -2409,6 +2433,7 @@ public final class RunContainer extends Container {
     @Override
     public void selectRanges(final RangeConsumer outValues, final RangeIterator inPositions) {
         if (nbrruns == 0) {
+            requireOnlyEmptyRanges(inPositions, "selectRanges for invalid pos=");
             return;
         }
         int k = 0;
@@ -2444,12 +2469,18 @@ public final class RunContainer extends Container {
                 }
             }
         }
-        outValues.accept(ostart, oend + 1);
+        if (ostart != -1) {
+            outValues.accept(ostart, oend + 1);
+        }
     }
 
     @Override
     public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
         if (!inValues.hasNext()) {
+            return false;
+        }
+        if (nbrruns == 0) {
+            requireOnlyEmptyRanges(inValues, "findRanges for invalid key=");
             return false;
         }
         int k = 0;
@@ -2497,8 +2528,20 @@ public final class RunContainer extends Container {
                 }
             }
         } while (inValues.hasNext());
-        outPositions.accept(ostart, oend + 1);
+        if (ostart != -1) {
+            outPositions.accept(ostart, oend + 1);
+        }
         return false;
+    }
+
+    /** With no runs to read, any range but an empty one is invalid. */
+    private static void requireOnlyEmptyRanges(final RangeIterator ranges, final String message) {
+        while (ranges.hasNext()) {
+            ranges.next();
+            if (ranges.start() < ranges.end()) {
+                throw new IllegalArgumentException(message + ranges.start());
+            }
+        }
     }
 
     private void setLength(final int index, final short v) {
@@ -3172,7 +3215,7 @@ public final class RunContainer extends Container {
     // rangeEnd is exclusive.
     @Override
     public boolean overlapsRange(final int rangeStart, final int rangeEnd) {
-        if (isEmpty() || rangeEnd <= first() || rangeStart > last()) {
+        if (isEmpty() || rangeEnd <= rangeStart || rangeEnd <= first() || rangeStart > last()) {
             return false;
         }
         int i = searchFrom(lowbits(rangeStart), 0);

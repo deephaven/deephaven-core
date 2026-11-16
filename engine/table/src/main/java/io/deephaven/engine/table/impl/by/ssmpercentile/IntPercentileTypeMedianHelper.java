@@ -47,8 +47,9 @@ public class IntPercentileTypeMedianHelper extends IntPercentileTypeHelper {
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
                 // region averageEvenlyDivided
-                return setResult(destination, (((IntSegmentedSortedMultiset) ssmLo).getMaxInt()
-                        + ((IntSegmentedSortedMultiset) ssmHi).getMinInt()) / 2.0);
+                return setResult(destination, PercentileAverages.average(
+                        ((IntSegmentedSortedMultiset) ssmLo).getMaxInt(),
+                        ((IntSegmentedSortedMultiset) ssmHi).getMinInt()));
                 // endregion averageEvenlyDivided
             } else {
                 return setResult(destination, ((IntSegmentedSortedMultiset) ssmLo).getMaxInt());

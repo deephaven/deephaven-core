@@ -5,14 +5,16 @@
 
 import pyarrow as pa
 
-from ._arrow import map_arrow_type
-from .dherror import DHError
+from ._arrow import _is_supported
 
 
 def is_deephaven_compatible(data_type: pa.DataType) -> bool:
-    """Checks if the arrow data type is supported by Deephaven."""
-    try:
-        map_arrow_type(data_type)
-        return True
-    except DHError:
-        return False
+    """Checks whether Session.import_table supports a pyarrow data type.
+
+    Args:
+        data_type (pa.DataType): the pyarrow data type
+
+    Returns:
+        True if import_table supports the type, False otherwise
+    """
+    return _is_supported(data_type)

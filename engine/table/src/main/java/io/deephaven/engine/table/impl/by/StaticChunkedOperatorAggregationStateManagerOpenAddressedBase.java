@@ -3,7 +3,10 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -16,6 +19,7 @@ import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.B
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
+import org.jetbrains.annotations.NotNull;
 
 public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedBase
         extends OperatorAggregationStateManagerOpenAddressedBase {
@@ -74,5 +78,20 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
             keyHashTableSources[kci] = RedirectedColumnSource.maybeRedirect(resultIndexToHashSlot, mainKeySources[kci]);
         }
         return keyHashTableSources;
+    }
+
+    protected abstract void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            WritableLongChunk<RowKeys> outputPositions);
+
+    /**
+     * Search the table for a chunk of keys, without changing it. The search keeps no state in this manager, so that any
+     * number of readers may search at once.
+     */
+    @Override
+    public void findPositionsForKeys(
+            @NotNull final Chunk<? extends Values>[] keyChunks,
+            @NotNull final WritableLongChunk<RowKeys> positions) {
+        positions.setSize(keyChunks[0].size());
+        lookup(null, keyChunks, positions);
     }
 }

@@ -4,7 +4,6 @@
 """This module provides the ability to create, check, and retrieve DataIndex objects from Deephaven tables."""
 
 from collections.abc import Sequence
-from typing import Optional
 
 import jpy
 
@@ -39,7 +38,8 @@ class DataIndex(JObjectWrapper):
 
     @property
     def table(self) -> Table:
-        """The backing table of the DataIndex."""
+        """The backing table of the DataIndex. Accessing it creates the table if needed, after which operations such
+        as where can use the DataIndex."""
         return Table(self._j_data_index.table())
 
 
@@ -56,7 +56,7 @@ def has_data_index(table: Table, key_cols: Sequence[str]) -> bool:
     return _JDataIndexer.hasDataIndex(table.j_table, key_cols)
 
 
-def _get_data_index(table: Table, key_cols: Sequence[str]) -> Optional[DataIndex]:
+def _get_data_index(table: Table, key_cols: Sequence[str]) -> DataIndex | None:
     """Gets a DataIndex for the given key columns. Returns None if the DataIndex does not exist.
 
     Args:
@@ -72,10 +72,15 @@ def _get_data_index(table: Table, key_cols: Sequence[str]) -> Optional[DataIndex
 
 def data_index(
     table: Table, key_cols: Sequence[str], create_if_absent: bool = True
-) -> Optional[DataIndex]:
+) -> DataIndex | None:
     """Gets the DataIndex for the given key columns on the provided table. When the DataIndex already exists, returns it.
     When the DataIndex doesn't already exist, if create_if_absent is True, creates the DataIndex first then returns it;
     otherwise returns None.
+
+    The returned DataIndex's backing table may not have been created yet; it is created when first accessed through
+    the DataIndex's table property. Operations such as where use only data indexes whose backing tables already exist,
+    and do not create them. To have such operations use the returned DataIndex, access its table property, and keep a
+    reference to the DataIndex for as long as they should use it.
 
     Args:
         table (Table): the table to index

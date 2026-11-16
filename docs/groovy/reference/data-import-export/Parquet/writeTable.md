@@ -42,7 +42,7 @@ Instructions for customizations while writing. For simple compression, use prede
 - `ParquetTools.LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
 - `ParquetTools.GZIP`: Compression codec based on the GZIP format defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
 - `ParquetTools.ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
-- `ParquetTools.BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios.
+- `ParquetTools.BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios. Deephaven does not include a Brotli codec by default. To use this option, add one (`org.apache.hadoop.io.compress.BrotliCodec`) to the server classpath. Otherwise, the write fails with a `Failed to find CompressionCodec` error.
 
 If not specified, defaults to `SNAPPY`.
 
@@ -58,7 +58,7 @@ A Parquet file located in the specified path.
 ## Examples
 
 > [!NOTE]
-> All examples in this document write data to the `/data` directory in Deephaven. For more information on this directory and how it relates to your local file system, see [Docker data volumes](../../../conceptual/docker-data-volumes.md).
+> All examples in this document write data to the `/data` directory in Deephaven. For more information on this directory and how it relates to your local file system, see [Docker bind mounts](../../../conceptual/docker-data-volumes.md).
 
 ### Single Parquet file
 
@@ -99,5 +99,5 @@ ParquetTools.writeTable(source, "/data/output_GZIP.parquet", ParquetTools.GZIP)
 - [Write Parquet files](../../../how-to-guides/data-import-export/parquet-export.md)
 - [`readTable`](./readTable.md)
 - [`writeKeyValuePartitionedTable`](./writeKeyValuePartitionedTable.md)
-- [Docker data volumes](../../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTable(io.deephaven.engine.table.Table,java.lang.String))

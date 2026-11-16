@@ -8,6 +8,7 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.server.DeephavenServerTestBase.TestComponent;
 import io.deephaven.server.arrow.ExchangeMarshallerModule;
+import io.deephaven.server.runner.scheduler.PropagationJobSchedulerTestModule;
 import io.deephaven.server.flightsql.JettyTestComponent.JettyTestConfig;
 import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyServerModule;
@@ -26,6 +27,7 @@ import java.util.Set;
         JettyTestConfig.class,
         FlightSqlTestModule.class,
         ExchangeMarshallerModule.class,
+        PropagationJobSchedulerTestModule.class,
         ExpressionValidatorModule.class,
 })
 public interface JettyTestComponent extends TestComponent {

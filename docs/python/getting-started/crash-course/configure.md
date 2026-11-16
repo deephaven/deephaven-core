@@ -1,54 +1,59 @@
 ---
-title: Configure your Deephaven Instance
+title: Configure your Deephaven instance
 ---
 
-This last section covers configuration details needed to take your Deephaven instance beyond the defaults.
+This page shows how to take your Deephaven instance beyond the defaults: set up authentication, choose a different image, add Python packages, give it more memory, and keep it up to date. The Docker examples build on the command you ran in [Get started](./get-started.md). If you installed with pip, the last section shows how to do the same tasks.
 
 ## Authentication
 
-Keeping your real-time data secure is one of Deephaven's top priorities. As such, the default installation of Deephaven is equipped with [pre-shared key (PSK) authentication](../../how-to-guides/authentication/auth-psk.md). By default, this key is randomly generated and available in the Docker logs (if using Docker) on startup:
+Keeping your real-time data secure is one of Deephaven's top priorities. By default, Deephaven uses [pre-shared key (PSK) authentication](../../how-to-guides/authentication/auth-psk.md). In [Get started](./get-started.md), you set the key with the `-Dauthentication.psk` flag in the `docker run` command.
 
-![Docker logs showing the PSK](../../assets/how-to/9-steps/docker-logs.png)
+- With the flag, your key stays the same across server restarts.
+- Without the flag, Deephaven generates a new random key each time the server starts.
 
-It is advised that you change the password from a randomly generated string to your own password for enhanced security. For the [Docker one-liner installation](../../getting-started/docker-install.md), you can set your password with the `-Dauthentication.psk` flag:
+For enhanced security, replace the placeholder `YOUR_PASSWORD_HERE` in the `-Dauthentication.psk` flag with your own long, hard-to-guess key:
 
 ```bash skip-test
 docker run --rm --name deephaven -p 10000:10000 -v "$(pwd)/data:/data" --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server:latest
 ```
 
-If you're using pip-installed Deephaven, you can set the pre-shared key with the `jvm_args` parameter when starting a Deephaven server:
+In both cases, Deephaven prints the key in the server logs on startup, so you can find it there if you forget it. With the command from [Get started](./get-started.md), the logs print in the terminal where you ran `docker run`. The key appears in a line like this one from a Docker Compose log:
 
-```python skip-test
-from deephaven_server import Server
+![Docker Compose logs showing the PSK](../../assets/how-to/9-steps/docker-logs.png)
 
-s = Server(jvm_args=["-Dauthentication.psk=YOUR_PASSWORD_HERE"])
-s.start()
-```
-
-To learn more about PSK authentication, see the [user guide](../../how-to-guides/authentication/auth-psk.md) on the topic.
+To learn more about PSK authentication, see the [PSK authentication guide](../../how-to-guides/authentication/auth-psk.md).
 
 In addition to PSK authentication, Deephaven supports the following types of authentication:
 
 - [Anonymous](../../how-to-guides/authentication/auth-anon.md)
 - [Keycloak](../../how-to-guides/authentication/auth-keycloak.md)
 - [mTLS](../../how-to-guides/authentication/auth-mtls.md)
-- [Username / Password](../../how-to-guides/authentication/auth-uname-pw.md)
+- [Username/password](../../how-to-guides/authentication/auth-uname-pw.md)
 
-## Deployments
+## Choose an image
 
-Deephaven provides [multiple docker images](../../getting-started/docker-install.md#choose-a-deployment). Each of these images, called deployments, comes pre-installed with different Python packages. You also have the option of including [Deephaven's example data](https://github.com/deephaven/examples) in any of these images. Many of these images integrate with popular Python libraries. For example, the [`server-all-ai`](https://github.com/deephaven/deephaven-core/pkgs/container/server-all-ai) image comes pre-installed with [PyTorch](https://pytorch.org), [Tensorflow](https://www.tensorflow.org), [scikit-learn](https://scikit-learn.org/stable/), and [nltk](https://www.nltk.org). You can use this image with this Docker command:
+Deephaven provides [multiple Docker images](../../getting-started/docker-install.md#choose-a-deployment), called deployments. Each image is available in several [versions](../../getting-started/docker-install.md#image-versions), such as `latest` or a specific release.
+
+The images that start a Python console, such as the `server` image you ran in [Get started](./get-started.md), come pre-installed with different Python packages. For example, the [`server-all-ai`](https://github.com/deephaven/deephaven-core/pkgs/container/server-all-ai) image comes pre-installed with [PyTorch](https://pytorch.org), [TensorFlow](https://www.tensorflow.org), [scikit-learn](https://scikit-learn.org/stable/), and [NLTK](https://www.nltk.org). To use `server-all-ai`, swap the image name in your Get started command:
 
 ```bash skip-test
-docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server-all-ai:latest
+docker run --rm --name deephaven -p 10000:10000 -v "$(pwd)/data:/data" --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server-all-ai:latest
 ```
+
+Unlike `server`, `server-all-ai` doesn't include the [Deephaven Express](/core/plotly/docs/) and [`deephaven.ui`](/core/ui/docs/) plugins that the [Real-time Plots](./plots.md) and [deephaven.ui](./deephaven-ui.md) pages of this crash course use. Run `server` if you want to run those examples. Deephaven loads plugins when the server starts, so installing them from the IDE doesn't make them available. To add them to `server-all-ai`, build a [custom Docker image](../../how-to-guides/install-and-use-python-packages.md#permanently-add-packages-to-a-custom-docker-image) that starts from `server-all-ai`:
+
+```docker skip-test
+FROM ghcr.io/deephaven/server-all-ai:latest
+RUN pip install deephaven-plugin-plotly-express deephaven-plugin-ui
+```
+
+You can also run Deephaven with [Deephaven's example data](https://github.com/deephaven/examples), [Redpanda](https://redpanda.com/), or both. Deephaven publishes pre-built `docker-compose.yml` files that do this. To pick one and start it, see [Choose a deployment](../../getting-started/docker-install.md#choose-a-deployment).
 
 To learn more about deployments, check out the guide for [installing Deephaven with Docker](../../getting-started/docker-install.md).
 
-## Installing Python packages
+## Install Python packages
 
-Even with a standard deployment, you'll likely need to install new Python packages at some point. The process for installing a package is different for Docker-run Deephaven and pip-installed Deephaven.
-
-If you're using Docker-installed Deephaven, you can install packages from within the Deephaven IDE:
+Whichever image you run, you'll likely need to install Python packages it doesn't include at some point. You can install packages from within the Deephaven IDE:
 
 ```python skip-test
 import os
@@ -56,48 +61,59 @@ import os
 os.system("pip install gpytorch")
 ```
 
-Such installations will not persist after the Deephaven server has shut down. To learn about persistent package installations, see the [user guide on installing Python packages](../../how-to-guides/install-and-use-python-packages.md).
+The commands on this page start the container with `--rm`, so when you stop the container, Docker removes it along with any packages you installed. To learn about persistent package installations, see the [user guide on installing Python packages](../../how-to-guides/install-and-use-python-packages.md).
 
-Package persistence will not be a problem if you're using pip-installed Deephaven. All packages present in the environment where the [`deephaven-server`](https://pypi.org/project/deephaven-server/) package is installed will be available in Deephaven. New packages are installed in the usual way:
+## Give Deephaven more memory
+
+Large datasets require significant memory. Deephaven runs on the Java Virtual Machine (JVM), and the JVM's maximum heap size caps how much memory Deephaven can use for data. You set it with the `-Xmx` flag. If you don't, the JVM picks a size based on the memory available, which is often too small for large data.
+
+Fortunately, it's easy to give Deephaven more memory:
+
+1. On Docker Desktop, raise the memory limit under **Settings > Resources > Advanced**, as described in the [Docker Desktop settings documentation](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources). Containers can use only as much memory as Docker Desktop allows, which by default is half of your machine's memory.
+2. Add the `-Xmx` flag to the `START_OPTS` environment variable you used in [Get started](./get-started.md). Separate multiple JVM options with spaces. The new `START_OPTS` value replaces the old one, so include your pre-shared key in it too.
+
+Here's the `docker run` command from [Get started](./get-started.md) with a 16 GB maximum heap added:
 
 ```bash skip-test
-(env) pip install gpytorch
-```
-
-## RAM
-
-Large datasets require significant memory — often much more than the 4G that Deephaven allocates by default. Fortunately, it's easy to give Deephaven more memory, whether you have a Docker or a pip installation.
-
-If you're using Docker-installed Deephaven, Docker itself imposes memory constraints on processes it runs - you can raise this ceiling in [Docker Desktop](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources) by going to `Settings > Resources` and raising the memory parameter. Then, you can specify the memory allocated to Deephaven with the `-Xmx` flag. Here's the command to pull and run the latest version of the Deephaven server with 16G of RAM:
-
-```bash skip-test
-docker run --rm --name deephaven -p 10000:10000 --env START_OPTS=-Xmx16g ghcr.io/deephaven/server:latest
-```
-
-The same argument can be used to raise the memory ceiling for pip-installed Deephaven:
-
-```python skip-test
-from deephaven_server import Server
-
-s = Server(jvm_args=["-Xmx16g"])
-s.start()
+docker run --rm --name deephaven -p 10000:10000 -v "$(pwd)/data:/data" --env START_OPTS="-Xmx16g -Dauthentication.psk=YOUR_PASSWORD_HERE" ghcr.io/deephaven/server:latest
 ```
 
 The [memory guide](../../how-to-guides/heap-size.md) explains more about allocating memory in Deephaven.
 
-## Keep your instance up-to-date
+## Keep your instance up to date
 
-The data world is ever-evolving, and so is Deephaven. It's easy to keep your instance up-to-date, taking advantage of the latest features and bug fixes.
+The data world is ever-evolving, and so is Deephaven. It's easy to keep your instance up to date and get the latest features and bug fixes.
 
-If you're running Deephaven with Docker, simply use `docker pull` to pull the latest version of the image from the repository:
+To update, pull the latest version of the image you run. For the [Get started](./get-started.md) image, that's:
 
 ```bash
 docker pull ghcr.io/deephaven/server:latest
 ```
 
-Users with custom Docker installations should check out [this guide](../../how-to-guides/configuration/updating-deephaven.md#update-docker-installed-deephaven) for information on updating custom instances.
+Then stop your running container and start a new one with the same `docker run` command you used in [Get started](./get-started.md). To stop the container, press <kbd>Ctrl+C</kbd> in its terminal or run `docker stop deephaven`. Because the Get started command mounts `./data`, your saved files carry over.
 
-In the pip-installed Deephaven world, you can update the Deephaven Python package the same way you'd update any Python package:
+If you run Deephaven from a `docker-compose.yml` file or your own `Dockerfile`, see the [guide to updating Docker-installed Deephaven](../../how-to-guides/configuration/updating-deephaven.md#update-docker-installed-deephaven) to set the image version there.
+
+## If you installed Deephaven with pip
+
+This crash course runs Deephaven with Docker. If you [installed Deephaven with pip](../../getting-started/pip-install.md) instead, the steps above work differently.
+
+Set the pre-shared key and the maximum heap size with the `jvm_args` parameter when you start the Deephaven server:
+
+```python skip-test
+from deephaven_server import Server
+
+s = Server(jvm_args=["-Dauthentication.psk=YOUR_PASSWORD_HERE", "-Xmx16g"])
+s.start()
+```
+
+Deephaven can import every package in the Python environment where you installed [`deephaven-server`](https://pypi.org/project/deephaven-server/), so packages you install there persist across server restarts. To add a package, run `pip install` in that environment:
+
+```bash skip-test
+pip install gpytorch
+```
+
+Update the Deephaven Python package the same way you'd update any Python package:
 
 ```bash skip-test
 pip install --upgrade deephaven-server

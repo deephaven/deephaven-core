@@ -12,6 +12,7 @@ import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.LocalDateType;
 import io.deephaven.qst.type.LocalTimeType;
+import io.deephaven.util.SoftRecyclerWindow;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -46,6 +47,9 @@ import java.util.Collection;
  * <p>
  * The column source is dense with keys from 0 to capacity, there can be no holes. Arrays are divided into blocks so
  * that the column source can be incrementally expanded without copying data from one array to another.
+ * <p>
+ * A row key at or past the capacity holds no value: every read of such a row key, current or previous, by key or by
+ * chunk, returns null. Writing such a row key requires a call to {@link #ensureCapacity(long)} first.
  */
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractColumnSource<T>
@@ -93,9 +97,10 @@ public abstract class ArrayBackedColumnSource<T>
     static final int IN_USE_MASK = (1 << LOG_INUSE_BITSET_SIZE) - 1;
 
     static final SoftRecycler<long[]> inUseRecycler =
-            new SoftRecycler<>(ArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY,
+            SoftRecyclerWindow.register(new SoftRecycler<>(ArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY,
+                    ArrayColumnSourceConfiguration.IN_USE_RECYCLER_MAXIMUM_CAPACITY,
                     () -> new long[IN_USE_BLOCK_SIZE],
-                    block -> Arrays.fill(block, 0));
+                    block -> Arrays.fill(block, 0)));
 
     public static WritableColumnSource<?> from(Array<?> array) {
         return array.walk(new ArrayAdapter<>());
@@ -108,7 +113,8 @@ public abstract class ArrayBackedColumnSource<T>
     }
 
     /**
-     * The highest slot that can be used without a call to {@link #ensureCapacity(long)}.
+     * The highest slot that can be written without a call to {@link #ensureCapacity(long)}. Reads of higher slots
+     * return null.
      */
     long maxIndex;
 
@@ -194,7 +200,7 @@ public abstract class ArrayBackedColumnSource<T>
             @Nullable final Class<?> componentType) {
         final WritableColumnSource<T> result = getMemoryColumnSource(data.length, dataType, componentType);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, ObjectChunk.chunkWrap(data), range);
         }
         return result;
@@ -210,7 +216,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Byte> result = new ByteArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, ByteChunk.chunkWrap(data), range);
         }
         return result;
@@ -227,7 +233,7 @@ public abstract class ArrayBackedColumnSource<T>
         final WritableColumnSource<Byte> dest = (WritableColumnSource<Byte>) result.reinterpret(byte.class);
         result.ensureCapacity(data.length);
         try (final FillFromContext context = dest.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             dest.fillFromChunk(context, ByteChunk.chunkWrap(data), range);
         }
         return result;
@@ -243,7 +249,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Character> result = new CharacterArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, CharChunk.chunkWrap(data), range);
         }
         return result;
@@ -259,7 +265,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Double> result = new DoubleArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, DoubleChunk.chunkWrap(data), range);
         }
         return result;
@@ -275,7 +281,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Float> result = new FloatArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, FloatChunk.chunkWrap(data), range);
         }
         return result;
@@ -291,7 +297,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Integer> result = new IntegerArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, IntChunk.chunkWrap(data), range);
         }
         return result;
@@ -307,7 +313,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Long> result = new LongArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, LongChunk.chunkWrap(data), range);
         }
         return result;
@@ -341,7 +347,7 @@ public abstract class ArrayBackedColumnSource<T>
         result.ensureCapacity(data.length);
         final WritableColumnSource<Long> asLong = (WritableColumnSource<Long>) result.reinterpret(long.class);
         try (final FillFromContext context = asLong.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             asLong.fillFromChunk(context, LongChunk.chunkWrap(data), range);
         }
         return result;
@@ -357,7 +363,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Short> result = new ShortArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, ShortChunk.chunkWrap(data), range);
         }
         return result;
@@ -565,7 +571,8 @@ public abstract class ArrayBackedColumnSource<T>
             final long first = rowSequence.firstRowKey();
             final long last = rowSequence.lastRowKey();
 
-            if (getBlockNo(first) == getBlockNo(last)) {
+            // rows past maxIndex have no block to point into; filling reads them as null
+            if (getBlockNo(first) == getBlockNo(last) && last <= maxIndex) {
                 // Optimization if the caller requests a single range which happens to fall within a single block
                 final int blockPos = getBlockNo(first);
                 return DefaultGetContext.resetChunkFromArray(context,

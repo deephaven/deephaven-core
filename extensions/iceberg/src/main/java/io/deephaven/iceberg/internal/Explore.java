@@ -298,7 +298,7 @@ public final class Explore {
 
     public static List<DataFile> readDataFiles(ManifestFile manifestFile, FileIO io) throws IOException {
         final List<DataFile> dataFiles = new ArrayList<>();
-        try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
+        try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io, null)) {
             for (final DataFile dataFile : manifestReader) {
                 dataFiles.add(dataFile);
             }

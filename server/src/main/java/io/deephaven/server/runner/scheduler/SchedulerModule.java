@@ -9,8 +9,12 @@ import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.server.runner.DeephavenApiServer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -24,6 +28,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -31,9 +36,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
- * Provides a {@link Scheduler}.
+ * Provides the server's {@link Scheduler}, and the job schedulers, over a pool of threads, that
+ * {@link BarrageMessageProducer}s write to their subscribers on.
  */
 @Module
 public class SchedulerModule {
@@ -78,6 +85,28 @@ public class SchedulerModule {
         };
 
         return new Scheduler.DelegatingImpl(serialExecutor, concurrentExecutor, Clock.system());
+    }
+
+    /**
+     * Provides the supplier of the {@link JobScheduler} that {@link BarrageMessageProducer}s write each propagation
+     * phase's messages to their subscribers on. Its pool of helper threads is shared by every producer, and holds at
+     * most {@link BarrageMessageProducer#PROPAGATION_THREADS} less one; a propagation job's own thread writes as well,
+     * so the writes of one phase never run on more than {@link BarrageMessageProducer#PROPAGATION_THREADS} threads.
+     * With one thread or fewer, no pool is made, and the writes run in turn on the job's thread.
+     */
+    @Provides
+    @Singleton
+    @Named(BarrageMessageProducer.PROPAGATION_JOB_SCHEDULER)
+    public static Supplier<JobScheduler> providePropagationJobScheduler(
+            final @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) UpdateGraph updateGraph,
+            final ThreadInitializationFactory initializationFactory) {
+        final int threads = BarrageMessageProducer.PROPAGATION_THREADS;
+        if (threads <= 1) {
+            return ImmediateJobScheduler::new;
+        }
+        final Executor helperPool = ExecutorJobScheduler.newHelperPool(threads - 1,
+                new ThreadFactory("Barrage-Propagation", updateGraph, initializationFactory));
+        return () -> new ExecutorJobScheduler(helperPool, threads);
     }
 
     private static class ThreadFactory extends NamingThreadFactory {

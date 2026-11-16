@@ -94,7 +94,6 @@ public class IdeSession extends HasEventHandling {
                 autocompleteStreamCloseTimeout.schedule(AUTOCOMPLETE_STREAM_TIMEOUT);
                 return;
             }
-            currentStream.end();
             currentStream.cancel();
             currentStream = null;
         }

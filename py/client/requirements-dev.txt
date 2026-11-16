@@ -1,7 +1,6 @@
 pyarrow
 grpcio
 protobuf
-bitstring
 numpy
 pandas
 flightsql-dbapi

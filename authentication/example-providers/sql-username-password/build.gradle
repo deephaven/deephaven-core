@@ -14,16 +14,13 @@ dependencies {
     pwGen libs.logback.classic
 }
 
-shadowJar {
-    relocate 'org', 'io.deephaven.authentication.sql.rebased'
-    mergeServiceFiles()
-}
-
 // Usage:
 // ./gradlew :authentication:example-providers:sql-username-password:generatePassword --args=newPasswordGoesHere
 tasks.register('generatePassword', JavaExec) {
-    classpath(configurations.shadow.files)
-    classpath(configurations.pwGen.files)
+    // Pass the configurations themselves, not their resolved files, so Gradle builds the project jars they contain
+    // before running.
+    classpath(configurations.shadow)
+    classpath(configurations.pwGen)
     classpath(sourceSets.main.runtimeClasspath)
     mainClass = 'io.deephaven.authentication.sql.BasicSqlAuthenticationHandler'
     systemProperty 'Configuration.rootFile', 'lib-tests.prop'

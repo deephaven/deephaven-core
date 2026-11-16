@@ -61,9 +61,9 @@ final class InstantPushdownHandler {
     @Nullable
     private static long[] decodeMinMaxNanos(@NotNull final Statistics<?> statistics) {
         final long[] minMax = new long[2];
-        if (!MinMaxFromStatistics.getMinMaxForInstants(statistics,
-                v -> minMax[0] = DateTimeUtils.epochNanos(v),
-                v -> minMax[1] = DateTimeUtils.epochNanos(v))) {
+        if (!MinMaxFromStatistics.getMinMaxForInstantNanos(statistics,
+                v -> minMax[0] = v,
+                v -> minMax[1] = v)) {
             // Statistics could not be processed.
             return null;
         }
@@ -111,6 +111,11 @@ final class InstantPushdownHandler {
                 return StatisticsEvaluator.ALWAYS_MAYBE;
             }
             instantNanos[i] = DateTimeUtils.epochNanos((Instant) value);
+            if (value != null && !ParquetPushdownUtils.epochNanosToInstant(instantNanos[i]).equals(value)) {
+                // epochNanos wraps an Instant far before 1677 instead of rejecting it, so the result is some other
+                // instant -- possibly one a saturated statistic stands at -- and the statistics cannot place the value.
+                return StatisticsEvaluator.ALWAYS_MAYBE;
+            }
         }
         if (invertMatch) {
             return statistics -> {

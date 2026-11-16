@@ -15,6 +15,7 @@ import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.arrow.ExchangeMarshallerModule;
+import io.deephaven.server.runner.scheduler.PropagationJobSchedulerTestModule;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.console.ConsoleModule;
@@ -46,7 +47,8 @@ import java.util.concurrent.ScheduledExecutorService;
         ObfuscatingErrorTransformerModule.class,
         PluginsModule.class,
         FlightSqlModule.class,
-        ExchangeMarshallerModule.class
+        ExchangeMarshallerModule.class,
+        PropagationJobSchedulerTestModule.class
 })
 public class FlightSqlTestModule {
     @IntoSet

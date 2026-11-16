@@ -6,7 +6,6 @@
 
 import re
 from collections.abc import Sequence
-from typing import Optional
 
 import jpy
 import numpy as np
@@ -86,7 +85,7 @@ def _make_input_column(col: str, np_array: np.ndarray, dtype: DType) -> InputCol
     return InputColumn(name=_to_column_name(col), data_type=dtype, input_data=np_array)
 
 
-def to_numpy(table: Table, cols: Optional[Sequence[str]] = None) -> np.ndarray:
+def to_numpy(table: Table, cols: Sequence[str] | None = None) -> np.ndarray:
     """Produces a numpy array from a table.
 
     Note that the **entire table** is going to be cloned into memory, so the total number of entries in the table

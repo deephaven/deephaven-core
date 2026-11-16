@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import io.deephaven.chunk.attributes.Values;
 
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -98,11 +97,5 @@ public final class FloatChunkFiller implements ChunkFiller {
         for (int i = 0; i < sz; ++i) {
             typedDest.set(i, src.getPrevFloat(chunk.get(i)));
         }
-    }
-
-    @Override
-    public void fillFromSingleValue(ElementSource src, long srcKey, WritableColumnSource dest, RowSequence destKeys) {
-        final float value = src.getFloat(srcKey);
-        destKeys.forAllRowKeys(destKey -> dest.set(destKey, value));
     }
 }

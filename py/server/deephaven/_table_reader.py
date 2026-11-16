@@ -4,13 +4,10 @@
 """This module supports reading the data in a Deephaven table in a chunked manner."""
 
 from collections import namedtuple
-from collections.abc import Generator, Iterable, Sequence
+from collections.abc import Callable, Generator, Iterable, Sequence
 from typing import (
     Any,
-    Callable,
-    Optional,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -31,24 +28,26 @@ T = TypeVar("T")
 
 
 def _col_defs(
-    table: Table, cols: Optional[Union[str, Sequence[str]]]
+    table: Table, cols: str | Sequence[str] | None
 ) -> Sequence[ColumnDefinition]:
     if not cols:
-        col_defs = table.columns
-    else:
-        cols = to_sequence(cols)
-        col_defs = [col for col in table.columns if col.name in cols]
-        if len(col_defs) != len(cols):
-            raise ValueError(
-                f"Invalid column names: {set(cols) - {col.name for col in col_defs}}"
-            )
+        return table.columns
 
-    return col_defs
+    # Return the definitions in the order of cols. The tuple readers name the fields from cols, so a different
+    # order would label one column's values with another column's name.
+    cols = to_sequence(cols)
+    defs_by_name = {col.name: col for col in table.columns}
+    if invalid_cols := [col for col in cols if col not in defs_by_name]:
+        raise ValueError(f"Invalid column names: {set(invalid_cols)}")
+    if len(set(cols)) != len(cols):
+        raise ValueError(f"Duplicate column names: {cols}")
+
+    return [defs_by_name[col] for col in cols]
 
 
 def _table_reader_all(
     table: Table,
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    cols: str | Sequence[str] | None = None,
     *,
     emitter: Callable[[Sequence[ColumnDefinition], jpy.JType], T],
     row_set: jpy.JType,
@@ -96,12 +95,12 @@ def _table_reader_all(
 
 def _table_reader_all_dict(
     table: Table,
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    cols: str | Sequence[str] | None = None,
     *,
     row_set: jpy.JType,
     prev: bool = False,
     to_numpy: bool = True,
-) -> dict[str, Union[np.ndarray, jpy.JType]]:
+) -> dict[str, np.ndarray | jpy.JType]:
     """Reads all the rows in the given row set of a table into a dictionary. The dictionary is a map of column names
     to numpy arrays or Java arrays.
 
@@ -140,7 +139,7 @@ def _table_reader_all_dict(
 
 def _table_reader_chunk(
     table: Table,
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    cols: str | Sequence[str] | None = None,
     *,
     emitter: Callable[[Sequence[ColumnDefinition], jpy.JType], Iterable[T]],
     row_set: jpy.JType,
@@ -198,7 +197,7 @@ def _table_reader_chunk(
 
 def _table_reader_chunk_dict(
     table: Table,
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    cols: str | Sequence[str] | None = None,
     *,
     row_set: jpy.JType,
     chunk_size: int = 2048,
@@ -244,7 +243,7 @@ def _table_reader_chunk_dict(
 
 def _table_reader_chunk_tuple(
     table: Table,
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    cols: str | Sequence[str] | None = None,
     *,
     tuple_name: str = "Deephaven",
     chunk_size: int = 2048,
@@ -302,7 +301,7 @@ def _table_reader_chunk_tuple(
 
 def _table_reader_row_dict(
     table: Table,
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    cols: str | Sequence[str] | None = None,
     chunk_size: int = 2048,
 ) -> Generator[dict[str, Any], None, None]:
     """A generator that reads one row at a time from a table into a dictionary. The dictionary is a map of column names
@@ -332,14 +331,18 @@ def _table_reader_row_dict(
     def _emitter(
         col_defs: Sequence[ColumnDefinition], j_array: jpy.JType
     ) -> Iterable[dict[str, Any]]:
+        names = [col_def.name for col_def in col_defs]
+
+        # make_dict runs once per row. A strict zip here slowed iter_dict by
+        # 16-28%, and its check can never fail: each row has one value per column.
         def make_dict(values):
-            return {col_def.name: value for col_def, value in zip(col_defs, values)}
+            return {name: value for name, value in zip(names, values)}
 
         mvs = [
             memoryview(j_array[i]) if col_def.data_type.is_primitive else j_array[i]
             for i, col_def in enumerate(col_defs)
         ]
-        return map(make_dict, zip(*mvs))
+        return map(make_dict, zip(*mvs, strict=True))
 
     return _table_reader_chunk(
         table,
@@ -353,7 +356,7 @@ def _table_reader_row_dict(
 
 def _table_reader_row_tuple(
     table: Table,
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    cols: str | Sequence[str] | None = None,
     tuple_name: str = "Deephaven",
     chunk_size: int = 2048,
 ) -> Generator[tuple[Any, ...], None, None]:
@@ -392,7 +395,7 @@ def _table_reader_row_tuple(
             memoryview(j_array[i]) if col_def.data_type.is_primitive else j_array[i]
             for i, col_def in enumerate(col_defs)
         ]
-        return map(named_tuple_class._make, zip(*mvs))
+        return map(named_tuple_class._make, zip(*mvs, strict=True))
 
     return _table_reader_chunk(
         table,

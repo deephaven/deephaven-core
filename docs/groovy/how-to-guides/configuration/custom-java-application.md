@@ -373,7 +373,7 @@ JAVA_OPTS="-Dauthentication.psk=YOUR_PASSWORD_HERE -Dhttp.port=8080" ./build/ins
 - [Configuration properties](./configuration-properties.md)
 - [Application Mode](../application-mode.md)
 - [Liveness scope concept](../../conceptual/liveness-scope-concept.md)
-- [Execution context](../../conceptual/execution-context.md)
+- [Execution Context](../../conceptual/execution-context.md)
 - [Pre-shared key authentication](../authentication/auth-psk.md)
 - [Install and use Java packages](../install-and-use-java-packages.md)
 - [What is an UpdateGraphConflictException and how do I fix it?](../../reference/community-questions/update-graph-conflict-exception.md)

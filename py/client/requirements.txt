@@ -1,6 +1,5 @@
 pyarrow
 grpcio
 protobuf
-bitstring
 numpy
 pandas

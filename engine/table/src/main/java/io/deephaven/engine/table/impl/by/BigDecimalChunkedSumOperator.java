@@ -23,12 +23,17 @@ import java.util.Map;
 public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregationOperator, ChunkSource<Values> {
     private final String name;
     private final ObjectArraySource<BigDecimal> resultColumn = new ObjectArraySource<>(BigDecimal.class);
-    private final NonNullCounter nonNullCount = new NonNullCounter();
+    /**
+     * The number of non-null values in each destination, or null when the operator only receives additions; a null
+     * result then means that no non-null value has been added.
+     */
+    private final NonNullCounter nonNullCount;
     private final boolean isAbsolute;
 
-    BigDecimalChunkedSumOperator(boolean isAbsolute, String name) {
+    BigDecimalChunkedSumOperator(boolean isAbsolute, boolean addOnly, String name) {
         this.isAbsolute = isAbsolute;
         this.name = name;
+        nonNullCount = addOnly ? null : new NonNullCounter();
     }
 
     public static BigDecimal plus(BigDecimal a, BigDecimal b) {
@@ -112,12 +117,15 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
         if (changed) {
             resultColumn.set(destination, plus(oldValue, partialSum));
         }
-        nonNullCount.addNonNullUnsafe(destination, chunkNonNull.get());
+        if (nonNullCount != null) {
+            nonNullCount.addNonNullUnsafe(destination, chunkNonNull.get());
+        }
         return changed;
     }
 
     private boolean removeChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination, int chunkStart,
             int chunkSize) {
+        requireNonNullCount();
         final MutableInt chunkNonNull = new MutableInt(0);
         final BigDecimal partialSum = doSum(values, chunkStart, chunkSize, chunkNonNull);
 
@@ -136,6 +144,7 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
 
     private boolean modifyChunk(ObjectChunk<BigDecimal, ? extends Values> preValues,
             ObjectChunk<BigDecimal, ? extends Values> postValues, long destination, int chunkStart, int chunkSize) {
+        requireNonNullCount();
         final MutableInt preChunkNonNull = new MutableInt(0);
         final MutableInt postChunkNonNull = new MutableInt(0);
         final BigDecimal prePartialSum = doSum(preValues, chunkStart, chunkSize, preChunkNonNull);
@@ -169,10 +178,18 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
         }
     }
 
+    private void requireNonNullCount() {
+        if (nonNullCount == null) {
+            throw new UnsupportedOperationException("Add-only sum operators do not support removals or modifications");
+        }
+    }
+
     @Override
     public void ensureCapacity(long tableSize) {
         resultColumn.ensureCapacity(tableSize);
-        nonNullCount.ensureCapacity(tableSize);
+        if (nonNullCount != null) {
+            nonNullCount.ensureCapacity(tableSize);
+        }
     }
 
     @Override

@@ -9,7 +9,7 @@ Java plugin-registration bridge at server startup (see ``register.initialize_all
 ``deephaven.plugin_authorization``.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 _j_transformer: Any = None
 

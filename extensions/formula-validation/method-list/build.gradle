@@ -31,6 +31,11 @@ shadowJar {
     }
 
     mergeServiceFiles()
+    // Shadow 9 honors the default EXCLUDE strategy, which would drop all but the first copy of each service file
+    // (and Kotlin module file) before mergeServiceFiles (and the Kotlin module transformer) sees them.
+    filesMatching(['META-INF/services/**', 'META-INF/*.kotlin_module']) {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
     zip64 = true
     minimize()
 }

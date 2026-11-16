@@ -32,7 +32,12 @@ public class StandaloneDataIndex extends LivenessArtifact implements BasicDataIn
         return new StandaloneDataIndex(table.coalesce(), keyColumnNames, rowSetColumnName);
     }
 
-    private StandaloneDataIndex(
+    /**
+     * @param table The index table, already {@link Table#coalesce() coalesced}
+     * @param keyColumnNames The names of the key columns in {@code table}
+     * @param rowSetColumnName The name of the row set column in {@code table}
+     */
+    protected StandaloneDataIndex(
             @NotNull final Table table,
             @NotNull final String[] keyColumnNames,
             @NotNull final String rowSetColumnName) {

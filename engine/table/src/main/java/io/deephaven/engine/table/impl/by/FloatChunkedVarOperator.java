@@ -31,13 +31,25 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
     private final boolean std;
     private final NonNullCounter nonNullCounter = new NonNullCounter();
     private final DoubleArraySource resultColumn = new DoubleArraySource();
+    /**
+     * The sum of each destination's normal values. An add-only operator stores NaN here once a destination receives a
+     * NaN or infinite value, which fixes its result at NaN, and keeps no NaN or infinity counts.
+     */
     private final DoubleArraySource sumSource = new DoubleArraySource();
     private final DoubleArraySource sum2Source = new DoubleArraySource();
+    /**
+     * Whether the operator only receives additions, so that a NaN or infinite value never leaves a destination.
+     */
+    private final boolean addOnly;
 
-    FloatChunkedVarOperator(boolean std, String name, boolean exposeInternalColumns) {
+    FloatChunkedVarOperator(boolean std, String name, boolean exposeInternalColumns, boolean addOnly) {
+        if (addOnly && exposeInternalColumns) {
+            throw new IllegalArgumentException("An add-only variance operator cannot expose its internal columns");
+        }
         this.std = std;
         this.name = name;
         this.exposeInternalColumns = exposeInternalColumns;
+        this.addOnly = addOnly;
     }
 
     @Override
@@ -87,6 +99,11 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
         final double sum = SumFloatChunk.sum2FloatChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
                 chunkInfinityCount, chunkMinusInfinity, sum2);
 
+        if (addOnly) {
+            return addOnlyVariance(destination, sum, sum2.doubleValue(), chunkNormalCount.get(),
+                    chunkNanCount.get() + chunkInfinityCount.get() + chunkMinusInfinity.get());
+        }
+
         final long totalPositiveInfinities = updatePositiveInfinityCount(destination, chunkInfinityCount.get());
         final long totalNegativeInfinities = updateNegativeInfinityCount(destination, chunkMinusInfinity.get());
         final long totalNanCount = updateNanCount(destination, chunkNanCount.get());
@@ -129,6 +146,35 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
         return false;
     }
 
+    private boolean addOnlyVariance(long destination, double normalSum, double normalSum2, int normalCount,
+            int nonNormalCount) {
+        final double priorSum = sumSource.getUnsafe(destination);
+        if (Double.isNaN(priorSum)) {
+            return false;
+        }
+        if (nonNormalCount > 0) {
+            sumSource.set(destination, Double.NaN);
+            resultColumn.set(destination, Double.NaN);
+            return true;
+        }
+        if (normalCount == 0) {
+            return false;
+        }
+        final long totalNormalCount = nonNullCounter.addNonNullUnsafe(destination, normalCount);
+        final double newSum = NullSafeAddition.plusDouble(priorSum, normalSum);
+        final double newSum2 = NullSafeAddition.plusDouble(sum2Source.getUnsafe(destination), normalSum2);
+        sumSource.set(destination, newSum);
+        sum2Source.set(destination, newSum2);
+        // a single value, or a sum or sum of squares that has reached +/-Infinity, leaves the result at NaN
+        if (totalNormalCount == 1 || Double.isInfinite(newSum) || Double.isInfinite(newSum2)) {
+            resultColumn.set(destination, Double.NaN);
+        } else {
+            final double variance = computeVariance(totalNormalCount, newSum, newSum2);
+            resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
+        }
+        return true;
+    }
+
     private static double computeVariance(long nonNullCount, double newSum, double newSum2) {
         // Perform the calculation in a way that minimizes the impact of FP error.
         final double eps = Math.ulp(newSum2);
@@ -142,6 +188,9 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
     }
 
     private boolean removeChunk(FloatChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
+        if (addOnly) {
+            throw new UnsupportedOperationException("Add-only variance operators do not support removals");
+        }
         final MutableDouble sum2 = new MutableDouble();
         final MutableInt chunkNormalCount = new MutableInt();
         final MutableInt chunkNanCount = new MutableInt();

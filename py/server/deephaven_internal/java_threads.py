@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 import threading
-from typing import Callable
+from collections.abc import Callable
 
 
 def create_thread_entry(thread_name: str) -> Callable:

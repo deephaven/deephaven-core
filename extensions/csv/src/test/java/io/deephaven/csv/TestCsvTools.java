@@ -19,9 +19,12 @@ import org.junit.*;
 import org.junit.experimental.categories.Category;
 
 import java.io.*;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -106,6 +109,38 @@ public class TestCsvTools {
         Files.write(csvTarFile.toPath(), contentTarBytes);
         final Table expected = CsvTools.readCsv(csvFile.toPath());
         final Table actual = CsvTools.readCsv(csvTarFile.toPath());
+        TstUtils.assertTableEquals(expected, actual);
+    }
+
+    /**
+     * {@code test.csv.7z} and {@code test.csv.tar.7z} were made with {@code 7z a -t7z -m0=LZMA}, from a
+     * {@code test.csv} holding {@link #SEVEN_ZIP_CONTENTS} and from a ustar archive of that file.
+     */
+    private static final String SEVEN_ZIP_CONTENTS = "A,B,C,D\n"
+            + "\"Hello World\",3.0,5,700\n"
+            + "\"Goodbye Cruel World\",3.1,1000000,800\n"
+            + "\"Hello World Again!\",4.0,20000000000,900\n";
+
+    @Test
+    public void testSevenZipCSV() throws IOException, CsvReaderException, URISyntaxException {
+        checkSevenZipResource("test.csv.7z");
+    }
+
+    @Test
+    public void testTarSevenZipCSV() throws IOException, CsvReaderException, URISyntaxException {
+        checkSevenZipResource("test.csv.tar.7z");
+    }
+
+    private void checkSevenZipResource(final String resourceName)
+            throws IOException, CsvReaderException, URISyntaxException {
+        final File csvFile = new File(tmpDir, "test.csv");
+        Files.write(csvFile.toPath(), SEVEN_ZIP_CONTENTS.getBytes(StandardCharsets.UTF_8));
+        final Table expected = CsvTools.readCsv(csvFile.toPath());
+
+        final URL resource = TestCsvTools.class.getResource(resourceName);
+        Assert.assertNotNull(resourceName, resource);
+        final Table actual = CsvTools.readCsv(Paths.get(resource.toURI()));
+        Assert.assertEquals(3, actual.size());
         TstUtils.assertTableEquals(expected, actual);
     }
 

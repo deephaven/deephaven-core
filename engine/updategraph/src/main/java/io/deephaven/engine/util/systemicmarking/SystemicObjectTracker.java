@@ -44,7 +44,6 @@ public class SystemicObjectTracker {
 
     /**
      * Marks the current thread as not systemically important. This can be changed with {@link #markThreadSystemic()}
-     * ()}
      */
     public static void markThreadNotSystemic() {
         if (SYSTEMIC_OBJECT_MARKING_ENABLED) {

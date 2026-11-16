@@ -123,11 +123,11 @@ public abstract class RedirectionBenchBase {
                 for (int i = 0; i < nFillCols; ++i) {
                     final ColumnSource cs = fillSources[i];
                     final ChunkSource.FillContext fc = fillContexts[i];
-                    try (final RowSequence rs = it.getNextRowSequenceWithLength(chunkCapacity)) {
-                        cs.fillChunk(fc, chunk, rs);
-                        bh.consume(chunk);
-                        chunk.setSize(chunkCapacity);
-                    }
+                    // The iterator owns the sequences it returns; they must not be closed.
+                    final RowSequence rs = it.getNextRowSequenceWithLength(chunkCapacity);
+                    cs.fillChunk(fc, chunk, rs);
+                    bh.consume(chunk);
+                    chunk.setSize(chunkCapacity);
                 }
             }
         }

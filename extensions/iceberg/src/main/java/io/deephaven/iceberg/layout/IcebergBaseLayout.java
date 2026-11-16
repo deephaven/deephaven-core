@@ -246,7 +246,10 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 checkIsDataManifest(manifestFile);
             }
             for (final ManifestFile manifestFile : manifestFiles) {
-                try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
+                // Intentionally passing null specsById so the partition spec (and its schema) is read from the
+                // manifest metadata, instead of being bound to the current table schema via table.specs(). The
+                // manifest's schema is what tells ResolverFactory whether a column may be present in a data file.
+                try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io, null)) {
                     final PartitionSpec manifestPartitionSpec = manifestReader.spec();
                     for (final DataFile dataFile : manifestReader) {
                         locationKeyObserver

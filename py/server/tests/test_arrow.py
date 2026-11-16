@@ -13,8 +13,8 @@ import pyarrow as pa
 import pyarrow.feather as feather
 import pyarrow.parquet as papq
 
+from deephaven import DHError, empty_table, new_table, time_table
 from deephaven import arrow as dharrow
-from deephaven import new_table, time_table
 from deephaven.column import (
     bool_col,
     byte_col,
@@ -28,6 +28,7 @@ from deephaven.column import (
     string_col,
 )
 from deephaven.table import Table
+from tests.barrage_encodings import with_barrage_encodings
 from tests.testbase import BaseTestCase
 
 
@@ -421,6 +422,121 @@ class ArrowTestCase(BaseTestCase):
         t = dharrow.read_feather(f_path)
         self.assert_table_equals(t, self.test_table)
         os.remove(f_path)
+
+    def test_to_arrow_with_barrage_encodings(self):
+        # A table whose Barrage schema attribute asks for dictionary, run-end, and run-end over dictionary encoded
+        # columns keeps those encodings in to_arrow, and decodes to the same values as the table without them.
+        source = empty_table(100).update(
+            [
+                "Sym = i % 3 == 0 ? `AAPL` : `MSFT`",
+                "Block = (int) (i / 10)",
+                "Both = ((int) (i / 10)) % 2 == 0 ? `X` : null",
+            ]
+        )
+        encoded = with_barrage_encodings(
+            source, dict_cols=["Sym"], ree_cols=["Block"], ree_dict_cols=["Both"]
+        )
+
+        pa_plain = dharrow.to_arrow(source)
+        pa_encoded = dharrow.to_arrow(encoded)
+
+        self.assertTrue(pa.types.is_dictionary(pa_encoded.schema.field("Sym").type))
+        self.assertTrue(
+            pa.types.is_run_end_encoded(pa_encoded.schema.field("Block").type)
+        )
+        both_type = pa_encoded.schema.field("Both").type
+        self.assertTrue(pa.types.is_run_end_encoded(both_type))
+        self.assertTrue(pa.types.is_dictionary(both_type.value_type))
+        for name in ["Sym", "Block", "Both"]:
+            self.assertEqual(
+                pa_plain.column(name).to_pylist(),
+                pa_encoded.column(name).to_pylist(),
+                name,
+            )
+
+    def test_to_table_with_barrage_encodings(self) -> None:
+        # to_table accepts the dictionary, run-end, and run-end over dictionary encoded columns that to_arrow returns
+        source = empty_table(100).update(
+            [
+                "Sym = i % 3 == 0 ? `AAPL` : `MSFT`",
+                "Block = (int) (i / 10)",
+                "Both = ((int) (i / 10)) % 2 == 0 ? `X` : null",
+            ]
+        )
+        encoded = with_barrage_encodings(
+            source, dict_cols=["Sym"], ree_cols=["Block"], ree_dict_cols=["Both"]
+        )
+
+        dh_table = dharrow.to_table(dharrow.to_arrow(encoded))
+
+        self.assertEqual(dh_table.definition, source.definition)
+        self.assert_table_equals(dh_table, source)
+
+    def test_to_table_auto_detected_encodings(self) -> None:
+        # Auto-detection makes this column run-end over dictionary, with a non-nullable field.
+        source = empty_table(26300).update("S = (ii < 13150) ? `A` : `B`")
+        pa_table = dharrow.to_arrow(source)
+        field = pa_table.schema.field("S")
+        self.assertTrue(pa.types.is_run_end_encoded(field.type))
+        self.assertTrue(pa.types.is_dictionary(field.type.value_type))
+
+        dh_table = dharrow.to_table(pa_table)
+
+        self.assert_table_equals(dh_table, source)
+
+    def test_to_table_dictionary_chunks(self) -> None:
+        # Each chunk has its own dictionary, and to_table sends each one.
+        chunks = [
+            pa.array(["a", "b", "a", None]).dictionary_encode(),
+            pa.array(["c", "c", "a"]).dictionary_encode(),
+        ]
+        pa_table = pa.table({"S": pa.chunked_array(chunks)})
+
+        dh_table = dharrow.to_table(pa_table)
+
+        expected = new_table([string_col("S", ["a", "b", "a", None, "c", "c", "a"])])
+        self.assert_table_equals(dh_table, expected)
+
+    def test_to_table_unsupported_dictionary_value_type(self) -> None:
+        # The error names the encoded type from the user's schema.
+        pa_table = pa.table(
+            {"S": pa.array(["a", "b"], type=pa.large_string()).dictionary_encode()}
+        )
+
+        with self.assertRaises(DHError) as cm:
+            dharrow.to_table(pa_table)
+
+        self.assertIn("dictionary<values=large_string", str(cm.exception))
+        self.assertIn("deephaven.arrow.is_deephaven_compatible", str(cm.exception))
+
+    def test_is_deephaven_compatible(self) -> None:
+        # Exact, parameterized, and encoded types pass when their values and elements are supported.
+        string_dict = pa.dictionary(pa.int32(), pa.string())
+        supported = [
+            pa.int64(),
+            pa.decimal128(5, 2),
+            string_dict,
+            pa.run_end_encoded(pa.int32(), string_dict),
+            pa.list_(pa.int64()),
+            pa.list_(string_dict),
+            pa.map_(pa.string(), pa.decimal128(5, 2)),
+        ]
+        unsupported = [
+            pa.large_string(),
+            pa.dictionary(pa.int32(), pa.large_string()),
+            pa.struct([pa.field("a", pa.int64())]),
+            pa.list_(pa.large_string()),
+            pa.list_(pa.struct([pa.field("a", pa.int64())])),
+            pa.map_(pa.string(), pa.large_string()),
+            pa.dense_union(
+                [pa.field("s", pa.string()), pa.field("l", pa.large_string())]
+            ),
+        ]
+
+        for data_type in supported:
+            self.assertTrue(dharrow.is_deephaven_compatible(data_type), data_type)
+        for data_type in unsupported:
+            self.assertFalse(dharrow.is_deephaven_compatible(data_type), data_type)
 
 
 if __name__ == "__main__":

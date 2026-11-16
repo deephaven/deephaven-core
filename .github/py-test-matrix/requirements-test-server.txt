@@ -1,0 +1,9 @@
+# Packages the tests need beyond deephaven-core, deephaven-server and pydeephaven. run-tests-venv.sh warns about any
+# that are missing. Versions are open, so the tests run against the latest releases. requirements-dev.txt is different:
+# it holds the tools the wheel build uses.
+unittest-xml-reporting
+numba
+adbc-driver-manager
+adbc-driver-postgresql
+# tests/test_dbc.py skips its connectorx test off x86_64.
+connectorx; platform_machine == "x86_64"

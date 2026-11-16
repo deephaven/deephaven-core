@@ -45,9 +45,9 @@ public class FloatPercentileTypeMedianHelper extends FloatPercentileTypeHelper {
             }
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
-                final float divisor = (float) 2.0;
-                return setResult(destination, (((FloatSegmentedSortedMultiset) ssmLo).getMaxFloat()
-                        + ((FloatSegmentedSortedMultiset) ssmHi).getMinFloat()) / divisor);
+                return setResult(destination, PercentileAverages.average(
+                        ((FloatSegmentedSortedMultiset) ssmLo).getMaxFloat(),
+                        ((FloatSegmentedSortedMultiset) ssmHi).getMinFloat()));
             } else {
                 return setResult(destination, ((FloatSegmentedSortedMultiset) ssmLo).getMaxFloat());
             }

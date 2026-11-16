@@ -2,7 +2,7 @@
 title: Select and create columns
 ---
 
-You will often want to select, create, or modify columns in tables. There are five table operations available for this:
+You often need to select, create, or modify columns in a table. Deephaven has five table operations for this:
 
 - [`select`](../reference/table-operations/select/select.md)
 - [`view`](../reference/table-operations/select/view.md)
@@ -10,34 +10,52 @@ You will often want to select, create, or modify columns in tables. There are fi
 - [`update_view`](../reference/table-operations/select/update-view.md)
 - [`lazy_update`](../reference/table-operations/select/lazy-update.md)
 
-All five operations allow you to address column selection and projection on real-time (updating), static, and snapshotted tables.
+All five operations work on real-time (updating), static, and [snapshotted](../reference/table-operations/snapshot/snapshot.md) tables.
 
-In all cases, the syntax follows a mostly similar pattern. All five of the scripts below produce the same resultant table, but how and when the engine manifests the results is different in each case.
+All five operations take the same kind of [formula](./formulas.md) arguments, but [`select`](../reference/table-operations/select/select.md) and [`view`](../reference/table-operations/select/view.md) must also list the source columns to keep. The five queries below produce the same table. They differ in when the engine computes the results and whether it stores them. To pick one, see [Choose the right column selection method](#choose-the-right-column-selection-method).
 
 ```python order=source,table_select,table_view,table_update,table_update_view,table_lazy_update
 from deephaven import new_table
 from deephaven.column import int_col
 
-source = new_table([int_col("Column_1", [1, 1, 2, 3, 4])]).update(
-    formulas=["Column_2 = i*2"]
+source = new_table([int_col("Column1", [1, 1, 2, 3, 4])]).update(
+    formulas=["Column2 = i * 2"]
 )
 
 table_select = source.select(
-    formulas=["Column_1", "Column_2", "New_Column_A = Column_1 + Column_2^2"]
+    formulas=["Column1", "Column2", "NewColumnA = Column1 + Column2 * Column2"]
 )
 table_view = source.view(
-    formulas=["Column_1", "Column_2", "New_Column_A = Column_1 + Column_2^2"]
+    formulas=["Column1", "Column2", "NewColumnA = Column1 + Column2 * Column2"]
 )
 
-table_update = source.update(formulas=["New_Column_A = Column_1 + Column_2^2"])
-table_update_view = source.update_view(["New_Column_A = Column_1 + Column_2^2"])
+table_update = source.update(formulas=["NewColumnA = Column1 + Column2 * Column2"])
+table_update_view = source.update_view(
+    formulas=["NewColumnA = Column1 + Column2 * Column2"]
+)
 
-table_lazy_update = source.lazy_update(["New_Column_A = Column_1 + Column_2^2"])
+table_lazy_update = source.lazy_update(
+    formulas=["NewColumnA = Column1 + Column2 * Column2"]
+)
 ```
 
-Within these selection and update operations you can use [query strings](./query-string-overview.md) to transform data; do math; use common [operators](./operators.md), [literals](./query-string-overview.md#literals), objects, and [special variables](../reference/query-language/variables/special-variables.md); [cast data types](../reference/query-language/control-flow/casting.md); [parse and manipulate strings](./work-with-strings.md); [handle arrays](./work-with-arrays.md); [use built-in functions](./built-in-functions.md); [operate on time](../conceptual/time-in-deephaven.md); [bin data](../reference/community-questions/bin-times-specific-time.md#every-day); [introduce ternaries](./ternary-if-how-to.md); and address other vital use cases by generating a new column, manipulating an existing column, or combining and decorating multiple columns from a table. You can also use Java methods, Python, and user-defined and 3rd-party library functions within these table operations.
+## Use query strings in column formulas
 
-For example, below is an inelegant, but demonstrative script of using [query strings](./query-string-overview.md) within an [`update`](../reference/table-operations/select/update.md) operation, as representative of the other four methods. The projections below are just a taste of what you can do with these operations and query strings.
+In all five operations, each [formula](./formulas.md) is a [query string](./query-string-overview.md). You can use query strings to:
+
+- Transform data and do math.
+- Use common [operators](./operators.md), [literals](./query-string-overview.md#literals), objects, and [special variables](../reference/query-language/variables/special-variables.md).
+- [Cast data types](../reference/query-language/control-flow/casting.md).
+- [Parse and manipulate strings](./work-with-strings.md).
+- [Handle arrays](./work-with-arrays.md).
+- [Use built-in functions](./built-in-functions.md).
+- [Operate on time](../conceptual/time-in-deephaven.md).
+- [Bin data](./downsampling.md).
+- [Introduce ternaries](./ternary-if-how-to.md).
+
+You can also call [Java methods](./java-classes.md), [Python functions](./python-functions.md), and [third-party library functions](./install-and-use-python-packages.md) within these table operations.
+
+The following script uses query strings in an [`update`](../reference/table-operations/select/update.md) operation. The same formulas work in the other four operations.
 
 ```python order=source,result
 # Create a sample table
@@ -53,98 +71,173 @@ source = new_table(
 )
 
 
-# Basic example formula
+# A user-defined function used in a formula
 def f(a, b):
     return a * b
 
 
-# Demonstrate some projections
+# Demonstrate some formulas
 result = source.update(
     formulas=[
-        "Col_Special_Char = i",
-        "Col_Operator = Y*Z/3",
-        "Col_Cast = (int)Col_Operator",
-        "Col_BuilIn_Fcn = absAvg(Y, Z)",
-        "Col_Formula = (int)f(Y, Z)",
-        "Col_Ternary = Col_Cast <= 1 ? pow(Col_Formula,2) : pow(Col_Formula,3)",
-        "Col_String_Stuff = X + `_hello`",
+        "ColSpecialVar = i",
+        "ColOperator = Y * Z / 3",
+        "ColCast = (int)ColOperator",
+        "ColBuiltInFcn = absAvg(Y, Z)",
+        "ColFormula = (int)f(Y, Z)",
+        "ColTernary = ColCast <= 1 ? pow(ColFormula, 2) : pow(ColFormula, 3)",
+        "ColStringStuff = X + `_hello`",
     ]
 )
 ```
 
+Each column name says which feature its formula shows. Dividing two `int` values returns a `double`, so `ColOperator` is a `double` column, and `ColCast` casts it back to `int`. These formulas are just a taste of what you can do with query strings.
+
 ## Choose the right column selection method
 
-Your decision about which of the five methods to use largely hinges, case by case, on how you answer the following two questions.
+Which of the five operations you use depends on two choices:
 
-### "Do you want all columns in the original table or only the ones you itemized in your script?"
+- Whether the new table keeps all of the source columns or only the ones you list.
+- How the engine produces the new column's values. There are three column types:
+  - An _in-memory column_ computes its values in advance and stores them.
+  - A _formula column_ stores only the formula. It computes a cell each time a consumer, such as a client or a downstream table, reads it.
+  - A _memoized column_ computes a cell the first time a consumer reads it, then caches the result.
 
-- [`select`](../reference/table-operations/select/select.md) and [`view`](../reference/table-operations/select/view.md) return only the columns you itemize.
-- [`update`](../reference/table-operations/select/update.md), [`update_view`](../reference/table-operations/select/update-view.md), and [`lazy_update`](../reference/table-operations/select/lazy-update.md) return all of the original columns of the table, as well as the columns you itemize.
+The following table shows each operation's behavior. The subsections below explain each choice.
 
-Notice below how `t_select` and `t_view` return only `Column_2`, whereas the others return the original `Column_1`, as well as the new `Column_2`.
+<table className="text--center">
+  <thead>
+    <tr>
+      <th colSpan="1"></th>
+      <th colSpan="2">Source columns in new table</th>
+      <th colSpan="3">New column type</th>
+    </tr>
+    <tr>
+      <th>Operation</th>
+      <th>Subset</th>
+      <th>All</th>
+      <th>In-memory</th>
+      <th>Formula</th>
+      <th>Memoized</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td scope="row" ><a href="../reference/table-operations/select/select.md"><code>select</code></a></td>
+      <td><Check/></td>
+      <td><RedX/></td>
+      <td><Check/></td>
+      <td><RedX/></td>
+      <td><RedX/></td>
+    </tr>
+    <tr>
+      <td scope="row" ><a href="../reference/table-operations/select/view.md"><code>view</code></a></td>
+      <td><Check/></td>
+      <td><RedX/></td>
+      <td><RedX/></td>
+      <td><Check/></td>
+      <td><RedX/></td>
+    </tr>
+    <tr>
+      <td scope="row" ><a href="../reference/table-operations/select/update.md"><code>update</code></a></td>
+      <td><RedX/></td>
+      <td><Check/></td>
+      <td><Check/></td>
+      <td><RedX/></td>
+      <td><RedX/></td>
+    </tr>
+    <tr>
+      <td scope="row" ><a href="../reference/table-operations/select/update-view.md"><code>update_view</code></a></td>
+      <td><RedX/></td>
+      <td><Check/></td>
+      <td><RedX/></td>
+      <td><Check/></td>
+      <td><RedX/></td>
+    </tr>
+    <tr>
+      <td scope="row" ><a href="../reference/table-operations/select/lazy-update.md"><code>lazy_update</code></a></td>
+      <td><RedX/></td>
+      <td><Check/></td>
+      <td><RedX/></td>
+      <td><RedX/></td>
+      <td><Check/></td>
+    </tr>
+  </tbody>
+</table>
+
+### Keep all source columns or only the ones you list
+
+- [`select`](../reference/table-operations/select/select.md) and [`view`](../reference/table-operations/select/view.md) return only the columns you list.
+- [`update`](../reference/table-operations/select/update.md), [`update_view`](../reference/table-operations/select/update-view.md), and [`lazy_update`](../reference/table-operations/select/lazy-update.md) return all of the original columns of the table, as well as the columns you list.
+
+Notice below how `t_select` and `t_view` return only `Column2`, whereas the others return the original `Column1`, as well as the new `Column2`.
 
 ```python order=source,t_select,t_view,t_update,t_update_view,t_lazy_update
 from deephaven import empty_table
 
-source = empty_table(5).update(formulas=["Column_1 = i"])
+source = empty_table(5).update(formulas=["Column1 = i"])
 
 # select() and view() have identical syntax
-# These create a table only with Column_2
-t_select = source.select(formulas=["Column_2 = Column_1^2"])
-t_view = source.view(formulas=["Column_2 = Column_1^2"])
+# These create a table only with Column2
+t_select = source.select(formulas=["Column2 = Column1 * Column1"])
+t_view = source.view(formulas=["Column2 = Column1 * Column1"])
 
 # update(), update_view(), and lazy_update() have identical syntax
-# These create a table with the original set of columns (i.e., Column_1) plus Column_2
-t_update = source.update(formulas=["Column_2 = Column_1^2"])
-t_update_view = source.update_view(formulas=["Column_2 = Column_1^2"])
-t_lazy_update = source.lazy_update(formulas=["Column_2 = Column_1^2"])
+# These create a table with the original set of columns (i.e., Column1) plus Column2
+t_update = source.update(formulas=["Column2 = Column1 * Column1"])
+t_update_view = source.update_view(formulas=["Column2 = Column1 * Column1"])
+t_lazy_update = source.lazy_update(formulas=["Column2 = Column1 * Column1"])
 ```
 
-### "Do you want to write new columns to memory, or calculate them on demand?"
+To modify an existing column, give the formula that column's name. For example, `source.update(formulas=["Column1 = Column1 * 2"])` replaces `Column1` with the doubled values.
 
-In this context, _on demand_ implies that the new columns are not stored in memory. Rather, a formula is stored that is used to recalculate each cell every time it is accessed by a downstream node in the DAG, client, or other consumer.
+### Store new columns in memory or calculate them on demand
 
-- Both [`view`](../reference/table-operations/select/view.md) and [`update_view`](../reference/table-operations/select/update-view.md) handle column calculation in this way. (As noted previously, `update_view` returns the table plus additionally articulated columns, whereas `view` returns only the selected columns.)
-- [`select`](../reference/table-operations/select/select.md) and [`update`](../reference/table-operations/select/update.md) calculate columns incrementally, writing the results to memory.
-- [`view`](../reference/table-operations/select/view.md), [`update_view`](../reference/table-operations/select/update-view.md), and [`lazy_update`](../reference/table-operations/select/lazy-update.md) will calculate new columns' cells only on-demand.
+Each operation creates one of the three column types defined [above](#choose-the-right-column-selection-method). A column's consumers include clients and downstream tables in the [DAG](../conceptual/dag.md), the graph of dependent table operations.
 
-It is recommended you use [`update_view`](../reference/table-operations/select/update-view.md) or [`view`](../reference/table-operations/select/view.md) when your use case suggests one, some, or all of the following are true:
+- [`view`](../reference/table-operations/select/view.md) and [`update_view`](../reference/table-operations/select/update-view.md) create _formula columns_, which store only their formula and compute values on demand, recalculating a cell each time a consumer reads it.
+- [`select`](../reference/table-operations/select/select.md) and [`update`](../reference/table-operations/select/update.md) create _in-memory columns_. They calculate the values and write them to memory, then, on each [update cycle](../conceptual/table-update-model.md), recalculate only the rows that were added or whose input columns changed.
+- [`lazy_update`](../reference/table-operations/select/lazy-update.md) creates _memoized columns_. It also computes cells on demand, but caches each result by its input values, so it does not recompute a repeated input. See [Cache results with `lazy_update`](#cache-results-with-lazy_update).
 
-1. the column formula is fast to compute,
-2. only a small portion of the set of rows is being accessed,
-3. cells are accessed very few times, or
-4. memory usage must be minimized.
+Use [`update_view`](../reference/table-operations/select/update-view.md) or [`view`](../reference/table-operations/select/view.md) when one or more of the following is true:
 
-For other cases, consider using `select` or `update`. ([`lazy_update`](../reference/table-operations/select/lazy-update.md)) is more rarely used than the other four.
+1. The formula is fast to compute.
+2. Consumers read only a small fraction of the rows.
+3. Consumers read each cell only a few times.
+4. You need to minimize memory use.
+
+These conditions aren't always obvious. Prefer [`update_view`](../reference/table-operations/select/update-view.md) or [`view`](../reference/table-operations/select/view.md) in situations like these, which usually meet condition 2 or 3:
+
+- The table is the last node in the [DAG](../conceptual/dag.md) and it isn't obvious how consumers use the calculated column.
+- The table updates in real time, so the new column's values change often, but clients and other consumers read it only occasionally.
+- The table is big, and the column is an intermediate result used only once in downstream calculations.
+- The only consumers of the new column are people using a GUI. A GUI reads only the rows visible in its viewport, which is a small number of rows.
+
+Otherwise, use [`select`](../reference/table-operations/select/select.md) or [`update`](../reference/table-operations/select/update.md). If the formula has few distinct input values relative to the number of rows, consider [`lazy_update`](../reference/table-operations/select/lazy-update.md) instead. See [Cache results with `lazy_update`](#cache-results-with-lazy_update).
 
 > [!CAUTION]
-> When using [`view`](../reference/table-operations/select/view.md) or [`update_view`](../reference/table-operations/select/update-view.md), non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](../reference/table-operations/select/select.md) or [`update`](../reference/table-operations/select/update.md) instead.
-
-Extreme cases #1-4 from the note above are easy to determine. The challenge in determinging the fitness of `update_view` or `view` (over their `update` or `select` counterparts) comes when use case conditions are less obvious. Here are some good rules of thumb for when to prefer the `update_view` or `view` over the alternatives:
-
-- The table is the last node in the DAG and it isn't obvious how the calculated column will be used.
-- The table updates in real-time, the new column will therefore be ticking, and clients/consumers thereof will be sporadic.
-- The table is big, the column is intermediate and only used once in downstream calculations.
-- The only consumers of the new column are humans using GUIs (and therefore restricted to the relatively small scale of viewports in their UI).
-
-> [!NOTE]
-> Further reading
-> An example exists in a [blog post](/blog/2024/02/12/group-ungroup#compute-data-immediately-or-as-needed) that shows the performance differences in suporting just a UI versus a downstream DAG calculation for a table with 135 million rows. It articulates the performance of respective selection method choices.
-
-## When to use `lazy_update`
-
-The [`lazy_update`](../reference/table-operations/select/lazy-update.md) method creates a new table containing a new cached formula column for each argument.
-
-Similar to `update_view`, with `lazy_update` column formulas are computed on-demand, deferring computation and memory until it is required.
-
-When performing a `lazy_update`, cell values are stored in memory in a cache. Because results are cached (memoized) for the set of input values, the same input values will never be computed twice. Existing results are referenced without additional memory allocation. This improves performance when the number of distinct inputs are low relative to the number of rows in the table.
-
-> [!NOTE]
-> The syntax for the `lazy_update`, [`update_view`](../reference/table-operations/select/update-view.md), and [`update`](../reference/table-operations/select/update.md) methods is identical, as is the resulting table.
+> If a formula calls a non-deterministic method, such as one that returns a random number or the current time, or reads a mutable structure, use [`select`](../reference/table-operations/select/select.md) or [`update`](../reference/table-operations/select/update.md). The other operations can give inconsistent results:
 >
-> `lazy_update` is recommended for small sets of unique input values. In this case, `lazy_update` uses less memory than `update` and requires less computation than `update_view`. However, if there are many unique input values, `update` will be more efficient because `lazy_update` stores the formula inputs and result in a map, whereas `update` stores the values more compactly in an array.
+> - [`view`](../reference/table-operations/select/view.md) and [`update_view`](../reference/table-operations/select/update-view.md) can return a different value each time a consumer reads a cell, so downstream operations on the column have undefined behavior.
+> - [`lazy_update`](../reference/table-operations/select/lazy-update.md) can return one cached value for every row with the same input values.
 
-Here is an example of `lazy_update`. Because only it contains two values exist in column C (2 and 5), sqrt(2) is computed exactly one time, and sqrt(5) is computed exactly one time. The values are cached for future use, so the subsequent two calculations of sqrt(5) are free from a compute and memory allocation perspective. This is most appropriately used when the distinct set of computational results is small relative to the row count.
+To turn formula columns into in-memory columns later, call [`select`](../reference/table-operations/select/select.md) with no arguments. It evaluates every formula column and stores the results. Columns that are already in memory are usually kept as they are, without a copy.
+
+> [!NOTE]
+> **Further reading**
+>
+> The [blog post on computing data immediately or as needed](/blog/2024/02/12/group-ungroup#compute-data-immediately-or-as-needed) compares [`update`](../reference/table-operations/select/update.md) and [`update_view`](../reference/table-operations/select/update-view.md) on a 135-million-row table, timing both the creation of the new column and a downstream [DAG](../conceptual/dag.md) calculation that reads every row of it.
+
+## Cache results with `lazy_update`
+
+[`lazy_update`](../reference/table-operations/select/lazy-update.md) computes column formulas on demand, like [`update_view`](../reference/table-operations/select/update-view.md), and caches each result in a map keyed by the formula's input values.
+
+- It computes nothing for a cell until a consumer reads it.
+- It computes the formula only once for each distinct input.
+- Like [`update`](../reference/table-operations/select/update.md) and [`update_view`](../reference/table-operations/select/update-view.md), it references the source table's existing columns instead of copying them.
+
+Use [`lazy_update`](../reference/table-operations/select/lazy-update.md) when a formula has few distinct input values relative to the number of rows. It then uses less memory than [`update`](../reference/table-operations/select/update.md) and less computation than [`update_view`](../reference/table-operations/select/update-view.md). On a ticking table, the cache keeps every distinct input it has seen and never evicts any, so this advantage holds only while the number of distinct inputs stays small over the table's lifetime. With many distinct input values, [`update`](../reference/table-operations/select/update.md) is more efficient, because it stores results in an array, which is more compact than a map.
+
+Here is an example of [`lazy_update`](../reference/table-operations/select/lazy-update.md). Column `C` contains only two distinct values (2 and 5), so the engine computes `sqrt(2)` and `sqrt(5)` once each, the first time a consumer reads a cell that needs them. The other two cells where `C` is 5 reuse the cached result instead of recomputing it.
 
 ```python order=source,result
 from deephaven import new_table
@@ -161,69 +254,12 @@ source = new_table(
 result = source.lazy_update(formulas=["Y = sqrt(C)"])
 ```
 
-# Summary of selection methods
-
-The following table showcases Deephaven's five selection methods and provides a quick visual reference for the differences between them.
-
-<table className="text--center">
-  <thead>
-    <tr>
-      <th colSpan="1"></th>
-      <th colSpan="2">Source columns in new table</th>
-      <th colSpan="3">New column type</th>
-    </tr>
-    <tr>
-      <th>Method Name</th>
-      <th>Subset</th>
-      <th>All</th>
-      <th>In-memory</th>
-      <th>Formula</th>
-      <th>Memoized</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td scope="row" ><a href="../reference/table-operations/select/select.md">select</a></td>
-      <td><Check/></td>
-      <td><RedX/></td>
-      <td><Check/></td>
-      <td><RedX/></td>
-      <td><RedX/></td>
-    </tr>
-    <tr>
-      <td scope="row" ><a href="../reference/table-operations/select/view.md">view</a></td>
-      <td><Check/></td>
-      <td><RedX/></td>
-      <td><RedX/></td>
-      <td><Check/></td>
-      <td><RedX/></td>
-    </tr>
-    <tr>
-      <td scope="row" ><a href="../reference/table-operations/select/update.md">update</a></td>
-      <td><RedX/></td>
-      <td><Check/></td>
-      <td><Check/></td>
-      <td><RedX/></td>
-      <td><RedX/></td>
-    </tr>
-    <tr>
-      <td scope="row" ><a href="../reference/table-operations/select/update-view.md">update_view</a></td>
-      <td><RedX/></td>
-      <td><Check/></td>
-      <td><RedX/></td>
-      <td><Check/></td>
-      <td><RedX/></td>
-    </tr>
-    <tr>
-      <td scope="row" ><a href="../reference/table-operations/select/lazy-update.md">lazy_update</a></td>
-      <td><RedX/></td>
-      <td><Check/></td>
-      <td><RedX/></td>
-      <td><RedX/></td>
-      <td><Check/></td>
-    </tr>
-  </tbody>
-</table>
+> [!NOTE]
+> [`lazy_update`](../reference/table-operations/select/lazy-update.md) does not cache vectorized [Python function](./python-functions.md) calls. For those calls, the formula runs for every cell, as it does in [`update_view`](../reference/table-operations/select/update-view.md).
+>
+> The engine usually vectorizes a formula that is only a call to a Python function, such as `Y = f(C)`, when every argument is a column, a variable, or a constant. A vectorized call makes one call into Python for each chunk (block) of rows instead of one call for each row.
+>
+> The engine doesn't vectorize a call whose argument count differs from the function's parameter count, such as a call that passes several values to `*args` or one that leaves out parameters that have defaults.
 
 ## Related documentation
 
@@ -232,4 +268,9 @@ The following table showcases Deephaven's five selection methods and provides a 
 - [`update`](../reference/table-operations/select/update.md)
 - [`update_view`](../reference/table-operations/select/update-view.md)
 - [`lazy_update`](../reference/table-operations/select/lazy-update.md)
-- [Performance examples](/blog/2024/02/12/group-ungroup#compute-data-immediately-or-as-needed)
+- [Query strings](./query-string-overview.md)
+- [Formulas](./formulas.md)
+- [Python functions in query strings](./python-functions.md)
+- [Directed acyclic graph (DAG)](../conceptual/dag.md)
+- [Incremental update model](../conceptual/table-update-model.md)
+- [Blog: Compute data immediately or as needed](/blog/2024/02/12/group-ungroup#compute-data-immediately-or-as-needed)

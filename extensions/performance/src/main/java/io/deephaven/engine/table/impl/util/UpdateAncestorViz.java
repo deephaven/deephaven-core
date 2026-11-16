@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import guru.nidi.graphviz.attribute.Rank;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.engine.GraphvizException;
 import guru.nidi.graphviz.model.Graph;
 import guru.nidi.graphviz.model.Node;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
@@ -79,6 +80,8 @@ public class UpdateAncestorViz {
      * @param filename an optional file to which the SVG will be written; if null, the SVG is not written to a file
      * @return a byte array representing the SVG output
      * @throws IOException if an I/O error occurs while writing to the file
+     * @throws IllegalStateException if no Graphviz engine can render SVG, for example because the Graphviz {@code dot}
+     *         executable is not on the {@code PATH}; {@link #dot} does not need an engine
      */
     public static byte[] svg(long[] entryIds, Table updatePerformanceLog, Table updateAncestors, File filename)
             throws IOException {
@@ -100,7 +103,7 @@ public class UpdateAncestorViz {
      * @param entryIds an array of performance entry IDs to traverse and generate a graph for
      * @param updatePerformanceLog a table containing update performance log data
      * @param updateAncestors a table containing update ancestor data
-     * @return a byte array representing the SVG output
+     * @return the Graphviz DOT representation of the graph
      */
     public static String dot(long[] entryIds, Table updatePerformanceLog, Table updateAncestors) {
         UpdateAncestorViz updateAncestorViz = new UpdateAncestorViz(updatePerformanceLog, updateAncestors);
@@ -118,9 +121,30 @@ public class UpdateAncestorViz {
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        graphviz.render(Format.SVG).toOutputStream(baos);
+        try {
+            graphviz.render(Format.SVG).toOutputStream(baos);
+        } catch (GraphvizException e) {
+            throw svgUnavailable(e);
+        }
+        if (baos.size() == 0) {
+            throw svgUnavailable(null);
+        }
 
         return baos.toByteArray();
+    }
+
+    private static IllegalStateException svgUnavailable(final GraphvizException cause) {
+        final IllegalStateException failure = new IllegalStateException("Could not render the update ancestor graph "
+                + "as SVG. SVG rendering requires a Graphviz engine, such as the Graphviz dot executable on the PATH.",
+                cause);
+        // When no engine can be initialized, graphviz-java throws once and then renders every later graph as an empty
+        // string. Releasing the engine makes the next render initialize the engines again.
+        try {
+            Graphviz.releaseEngine();
+        } catch (GraphvizException e) {
+            failure.addSuppressed(e);
+        }
+        return failure;
     }
 
     private String makeDot(long[] entryIds) {

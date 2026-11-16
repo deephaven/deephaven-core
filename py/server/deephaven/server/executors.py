@@ -8,7 +8,7 @@ executor, otherwise the concurrent executor should be used. In the future there 
 when there is no chance of using either lock.
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 import jpy
 

@@ -12,26 +12,24 @@ Deephaven makes several performance log tables available.
 > circumstances will be populated with raw performance data
 > pertaining to your running queries and server state.
 
-```groovy order=upl,qopl,qpl,pml,pil,ssl,qptt,qoptt
+```groovy order=upl,upal,qopl,qpl,pml,pil,ssl,qptt,qoptt
 import io.deephaven.engine.table.impl.util.PerformanceQueries
 
 upl = updatePerformanceLog()
+upal = updatePerformanceAncestorsLog()
 qopl = queryOperationPerformanceLog()
 qpl = queryPerformanceLog()
 pml = processMetricsLog()
 pil = processInfoLog()
 ssl = serverStateLog()
 
-qoptt = PerformanceQueries.queryPerformanceAsTreeTable()
-qptt = PerformanceQueries.queryOperationPerformanceAsTreeTable()
+qptt = PerformanceQueries.queryPerformanceAsTreeTable()
+qoptt = PerformanceQueries.queryOperationPerformanceAsTreeTable()
 ```
 
-Several derived tables are defined on top of them, typically by removing the suffix `Log` from the name; these derived tables
-accumulate data and present it in more user-friendly column types (e.g., time units in fractional seconds instead of nanoseconds for
-CPU time metrics), and as such are more useful for dashboards, where the `Log` tables are more useful as sources of raw data
-for user-defined computation of performance statistics. For the derived tables in the list below that are related to query performance,
-the functions that create them take one query evaluation number id as a parameter to show results for a particular query (where the `Log`
-tables show data for all queries).
+Several derived tables are defined on top of them. Their names typically drop the `Log` suffix. These derived tables add computed columns, such as the elapsed time in seconds (`TimeSecs`) and memory use as a fraction of the heap. This makes them more useful for dashboards, while the `Log` tables are more useful as sources of raw data for your own performance statistics.
+
+The functions that create the query-related derived tables take a query evaluation number as a parameter. Each of these tables shows results for that one query, where the `Log` tables show data for all queries.
 
 ```groovy order=qup,qp,qop,ss
 import io.deephaven.engine.table.impl.util.PerformanceQueries
@@ -83,18 +81,18 @@ Subscription statistics are presented in percentiles bucketed over a time period
 
 Here are the various metrics that are recorded by the deephaven-core server:
 
-| Stat Type            | Sender / Receiver | Description                                                                         |
-| -------------------- | ----------------- | ----------------------------------------------------------------------------------- |
-| EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle |
-| AggregateNanos       | Sender            | The time it took to aggregate multiple updates within the same interval             |
-| PropagateNanos       | Sender            | The time it took to deliver an aggregated message to all subscribers                |
-| SnapshotNanos        | Sender            | The time it took to snapshot data for a new or changed subscription                 |
-| UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic          |
-| WriteNanos           | Sender            | The time it took to write the update to a single subscriber                         |
-| WriteBytes           | Sender            | The payload size of the update in bytes                                             |
-| DeserializationNanos | Receiver          | The time it took to read and deserialize the update from the wire                   |
-| ProcessUpdateNanos   | Receiver          | The time it took to apply a single update during the update graph cycle             |
-| RefreshNanos         | Receiver          | The time it took to apply all queued updates during a single update graph cycle     |
+| Stat Type            | Sender / Receiver | Description                                                                                  |
+| -------------------- | ----------------- | -------------------------------------------------------------------------------------------- |
+| EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle          |
+| AggregateNanos       | Sender            | The time it took to aggregate multiple updates within the same interval                      |
+| PropagateNanos       | Sender            | The elapsed time of one propagation phase: writing one message to the subscribers it goes to |
+| SnapshotNanos        | Sender            | The time it took to snapshot data for a new or changed subscription                          |
+| UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                   |
+| WriteNanos           | Sender            | The time it took to write the update to a single subscriber                                  |
+| WriteBytes           | Sender            | The payload size of the update in bytes                                                      |
+| DeserializationNanos | Receiver          | The time it took to read and deserialize the update from the wire                            |
+| ProcessUpdateNanos   | Receiver          | The time it took to apply a single update during the update graph cycle                      |
+| RefreshNanos         | Receiver          | The time it took to apply all queued updates during a single update graph cycle              |
 
 ### Barrage Snapshot Metrics
 

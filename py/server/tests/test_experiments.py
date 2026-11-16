@@ -51,6 +51,11 @@ class ExperimentalTestCase(BaseTestCase):
             self.assertEqual(rt.size, t1.size * self.test_table.size)
             self.assertEqual(len(rt.definition), 1 + len(self.test_table.definition))
 
+        with self.subTest("full outer join with zero reserve_bits"):
+            with self.assertRaises(DHError) as cm:
+                full_outer_join(self.test_table, t1, joins=["Y = a"], reserve_bits=0)
+            self.assertIn("reserveBits must be between 1 and 62", str(cm.exception))
+
     def test_left_outer_join(self):
         with self.subTest("left outer join with matching keys"):
             t1 = time_table("PT00:00:00.001").update(["a = i", "b = i * 2"])
@@ -79,6 +84,11 @@ class ExperimentalTestCase(BaseTestCase):
             rt = left_outer_join(self.test_table, t1, joins=["Y = a"], reserve_bits=2)
             self.assertEqual(rt.size, t1.size * self.test_table.size)
             self.assertEqual(len(rt.definition), 1 + len(self.test_table.definition))
+
+        with self.subTest("left outer join with zero reserve_bits"):
+            with self.assertRaises(DHError) as cm:
+                left_outer_join(self.test_table, t1, joins=["Y = a"], reserve_bits=0)
+            self.assertIn("reserveBits must be between 1 and 62", str(cm.exception))
 
     def test_time_window(self):
         with self.subTest("user-explicit lock"):

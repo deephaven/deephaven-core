@@ -37,7 +37,8 @@ public class MessageHelper {
         // 4 * 2 is for two ints; IPC_CONTINUATION_TOKEN followed by size of schema payload
         final byte[] byteMsg = new byte[msg.remaining() + 4 * 2 + padding];
         intToBytes(IPC_CONTINUATION_TOKEN, byteMsg, 0);
-        intToBytes(msg.remaining(), byteMsg, 4);
+        // the Arrow IPC format counts the padding in the size; a stream reader finds the next message after it
+        intToBytes(msg.remaining() + padding, byteMsg, 4);
         msg.get(byteMsg, 8, msg.remaining());
         return byteMsg;
     }

@@ -2,11 +2,20 @@
 title: Work with calendars
 ---
 
-This guide will show you how to create and use business calendars in Deephaven. In Deephaven, the calendar API is centered around the [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object, which is a calendar with the concept of business and non-business time. These calendars are highly useful in both Groovy code and Deephaven tables.
+This guide shows you how to create and use business calendars in Deephaven. A business calendar is a calendar that knows which days and hours are business time and which are not, such as weekends, holidays, and hours outside business hours. Each calendar is a [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object. These calendars are useful in table operations, such as filtering to business hours or counting business days.
+
+The static methods of the [`Calendars`](/core/javadoc/io/deephaven/time/calendar/Calendars.html) class let you:
+
+- List calendars with [`calendarNames`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarNames()).
+- Add and remove calendars with [`addCalendarFromFile`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#addCalendarFromFile(java.lang.String)) and [`removeCalendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#removeCalendar(java.lang.String)).
+- Get a calendar with [`calendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendar(java.lang.String)).
+- Get or set the default calendar with [`calendarName`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarName()) and [`setCalendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#setCalendar(java.lang.String)). The default calendar is the one that [`calendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendar()) returns when you don't pass a name.
+
+This guide uses the methods that list, get, and add calendars. See [Related documentation](#related-documentation) for the others.
 
 ## Get a calendar
 
-Getting a calendar is simple. The code block below lists the available calendars and grabs the `USNYSE_EXAMPLE` calendar.
+The code block below uses [`calendarNames`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarNames()) to list the available calendars and [`calendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendar(java.lang.String)) to get the `USNYSE_EXAMPLE` calendar.
 
 ```groovy test-set=1 order=:log
 import static io.deephaven.time.calendar.Calendars.calendar
@@ -17,29 +26,36 @@ nyseCal = calendar("USNYSE_EXAMPLE")
 println nyseCal.getClass()
 ```
 
-We can see from the output that `nyseCal` is an [`io.deephaven.time.calendar.BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object. It's Deephaven's business calendar object. A `BusinessCalendar` has many different methods available that can be useful in queries. The sections below explore those uses.
+Deephaven comes with three calendars: `UTC`, `USNYSE_EXAMPLE`, and `USBANK_EXAMPLE`. The output also shows that `nyseCal` is an [`io.deephaven.time.calendar.BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object. The sections below use its methods in queries.
 
-## Business calendar use
+> [!WARNING]
+> The calendars that come with Deephaven are examples, and Deephaven doesn't guarantee that their holidays are complete or current. Create your own calendars for production use.
 
-### Input data types
+## Use a calendar in queries
 
-`BusinessCalendar` methods accept either strings or Java date-time types ([`Instant`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html), [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/ZonedDateTime.html), [`LocalDate`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html)). See [Time in Deephaven](../conceptual/time-in-deephaven.md#1-built-in-java-functions) for conversion functions.
+The examples in this section call methods on `nyseCal`, the calendar from [Get a calendar](#get-a-calendar), and use the `source` table created below.
 
 ### Create data
 
-Before we can demonstrate the use of business calendars in queries, we'll need to create a table with some data. The following code block creates a month's worth of date-time data spaced 3 minutes apart.
+Before you use a calendar in queries, create a table with some data. The following code block creates about three weeks' worth of date-time data spaced 3 minutes apart.
 
 ```groovy test-set=1 order=source
-// Create sample data
+// Create sample data: a random walk sampled every 3 minutes
 source = emptyTable(10000).update(
     "Timestamp = '2024-01-01T00:00:00 ET' + i * 3 * MINUTE",
     "Value = randomGaussian(0.0, 0.1)"
-)
+).updateBy(CumSum("Value"))
 ```
+
+### Input data types
+
+Date and time arguments to [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) methods are Java date-time types such as [`Instant`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html), [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/ZonedDateTime.html), and [`LocalDate`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html). Many methods also accept strings. Check the Javadoc for each method's overloads. For example, [`isBusinessTime`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html#isBusinessTime(java.time.Instant)) accepts an `Instant` or a `ZonedDateTime`, but not a string or a `LocalDate`.
+
+See [Time in Deephaven](../conceptual/time-in-deephaven.md#1-built-in-java-functions) for conversion functions. The examples below use date-time literals in query strings, which Deephaven converts to [`Instant`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html) values.
 
 ### Business days and business time
 
-The following example calculates the number of business days and non-business days (weekends & holidays) between two timestamps.
+The following example uses [`numberBusinessDates`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html#numberBusinessDates(java.time.Instant,java.time.Instant)) and [`numberNonBusinessDates`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html#numberNonBusinessDates(java.time.Instant,java.time.Instant)) to calculate the number of business days and non-business days (weekends and holidays) between two timestamps. Both counts include the start and end dates.
 
 ```groovy test-set=1 order=result
 result = source.update(
@@ -48,7 +64,7 @@ result = source.update(
 )
 ```
 
-The following example shows how to filter data to only business days and business hours. The `source` table is [filtered](./filters.md) twice to create two result tables. The first contains only data that takes place during an NYSE business day, while the second contains only data that takes place during NYSE business hours.
+The following code block [filters](./filters.md) `source` twice. The first filter uses [`isBusinessDay`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html#isBusinessDay(java.time.Instant)) to keep rows that fall on an NYSE business day. The second uses [`isBusinessTime`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html#isBusinessTime(java.time.Instant)) to keep rows that fall within NYSE business hours.
 
 ```groovy test-set=1 order=resultBizDays,resultBizHours
 resultBizDays = source.where("nyseCal.isBusinessDay(Timestamp)")
@@ -56,33 +72,39 @@ resultBizDays = source.where("nyseCal.isBusinessDay(Timestamp)")
 resultBizHours = source.where("nyseCal.isBusinessTime(Timestamp)")
 ```
 
-These filtered tables can be used for analysis, reporting, or plotting data that occurs only during business days or business hours.
+### Plot against business time
+
+To plot data against business time, call [`xBusinessTime`](/core/javadoc/io/deephaven/plot/Figure.html#xBusinessTime(io.deephaven.time.calendar.BusinessCalendar)) with the calendar on a [`plot`](../reference/plot/plot.md). The plot's x-axis leaves out weekends, holidays, and hours outside business hours, so the plot has no gaps where the market is closed. The following code block plots all of `source` against NYSE business time.
+
+```groovy test-set=1 order=bizTimePlot
+bizTimePlot = plot("Business time data", source, "Timestamp", "Value").xBusinessTime(nyseCal).show()
+```
 
 ## Create a calendar
 
-Deephaven offers [three pre-built calendars](#get-a-calendar) for use: `UTC`, `USNYSE_EXAMPLE`, and `USBANK_EXAMPLE`.
+Deephaven's built-in [calendar files](https://github.com/deephaven/deephaven-core/tree/main/props/configs/src/main/resources/calendar) use [XML](https://en.wikipedia.org/wiki/XML) to define the properties of the calendar, which include:
 
-> [!WARNING]
-> The calendars that come with Deephaven are meant to serve as examples. They may not be updated. Deephaven recommends users create their own calendars.
-
-The calendar configuration files can be found [here](https://github.com/deephaven/deephaven-core/tree/main/props/configs/src/main/resources/calendar). They use [XML](https://en.wikipedia.org/wiki/XML) to define the properties of the calendar, which include:
-
-- Valid date range
-- Country and time zone
+- Name
+- Time zone
 - Description
-- Operating hours
-- Holidays
-- More
+- Valid date range
+- Default business hours and weekend days
+- Holidays and half-days
 
-Users can build their own calendars by creating a calendar file using the format described in [this Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html). This section goes over an example of using a custom-built calendar for a hypothetical business for the year 2024.
+Deephaven ignores other elements, such as `<language>` and `<country>`.
 
-This example uses a calendar file found in Deephaven's [examples repository](https://github.com/deephaven/examples/tree/main/Calendar). This guide assumes you have the file on your local machine in the [/data mount point](../conceptual/docker-data-volumes.md). This hypothetical business is called "Company Y", and the calendar only covers the year 2024.
+To build your own calendar, create a calendar file in the format that the [`BusinessCalendarXMLParser` Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html) describes. The rest of this guide goes over an example of using a custom-built calendar for a hypothetical business for the year 2024. The example is based on a calendar file in Deephaven's [examples repository](https://github.com/deephaven/examples/tree/main/Calendar).
 
 ### The calendar file
 
-A calendar XML file contains top-level information about the calendar itself, business days, business hours, and holidays. While most business calendars have a single business period (e.g., 9am - 5pm), some use two distinct business periods separated by a lunch break. The test calendar file below has two distinct periods: from 8am - 12pm and from 1pm - 5pm. It also specifies a series of holidays over the course of the 2024 calendar year, which includes two half-holidays in which business is open for the first of the two business periods. Calendars typically contain data for more than one year, but this example limits it to 2024 only.
+Most business calendars have a single business period each day, such as 9am to 5pm. Some split the day around a lunch break. The test calendar below covers only 2024 and defines:
 
-The `TestCalendar_2024.calendar` file can be found [here](https://github.com/deephaven/examples/blob/main/Calendar/TestCalendar_2024.calendar). To see its contents, expand the file below. For the examples that use this calendar, it's placed in the folder `/data/examples/Calendar/` in the [Deephaven Docker container](../conceptual/docker-data-volumes.md).
+- Two business periods: 8am to 12pm and 1pm to 5pm.
+- The 2024 holidays, two of which are half-days that are open only for the morning period.
+
+Save the listing as `/data/examples/Calendar/TestCalendar_2024.calendar` in the [Deephaven Docker container](../conceptual/docker-data-volumes.md). The examples below load the calendar from that path.
+
+If you have the examples repository's copy of [`TestCalendar_2024.calendar`](https://github.com/deephaven/examples/blob/main/Calendar/TestCalendar_2024.calendar), replace it. That copy puts both `<open>`/`<close>` pairs in one `<businessTime>` element. Deephaven reads only the first pair in each element, so the copy defines only the morning period. The listing below gives each period its own `<businessTime>` element.
 
 <details>
 <summary>Test calendar for 2024</summary>
@@ -101,8 +123,9 @@ The `TestCalendar_2024.calendar` file can be found [here](https://github.com/dee
         The periods are separated by a one hour lunch break.
         This calendar file defines standard business hours, weekends, and holidays.
     </description>
-        <default>
-        <businessTime><open>08:00</open><close>12:00</close><open>13:00</open><close>17:00</close></businessTime>
+    <default>
+        <businessTime><open>08:00</open><close>12:00</close></businessTime>
+        <businessTime><open>13:00</open><close>17:00</close></businessTime>
         <weekend>Saturday</weekend>
         <weekend>Sunday</weekend>
     </default>
@@ -152,15 +175,13 @@ The `TestCalendar_2024.calendar` file can be found [here](https://github.com/dee
 
 </details>
 
-For more information on formatting custom calendars, see the [XML Parser Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html).
-
-## Use the new calendar
+## Add and use the new calendar
 
 ### Add the calendar to the set of available calendars
 
-There are two ways to add a calendar to the set of available calendars.
+Add a calendar from a running session with [`addCalendarFromFile`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#addCalendarFromFile(java.lang.String)), or [load it when the server starts](#load-calendars-when-the-server-starts).
 
-The first and simplest way to do so is through the calendar API. The following code block shows how it's done using the path to the calendar file just created.
+The following code block uses [`addCalendarFromFile`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#addCalendarFromFile(java.lang.String)) to load `/data/examples/Calendar/TestCalendar_2024.calendar`, the file you saved in [The calendar file](#the-calendar-file).
 
 ```groovy skip-test
 import static io.deephaven.time.calendar.Calendars.addCalendarFromFile
@@ -168,31 +189,9 @@ import static io.deephaven.time.calendar.Calendars.addCalendarFromFile
 addCalendarFromFile("/data/examples/Calendar/TestCalendar_2024.calendar")
 ```
 
-The second way is through the configuration property `Calendar.importPath`. This should point to a text file with line-separated locations of any calendar files to load by default. Say your Docker configuration has a `/data/Calendar` folder that contains three calendar files: `MyCalendar.calendar`, `TestCalendar_2024.calendar`, `CrazyCalendar.calendar`. The text file, which we'll name `calendar_imports.txt` and place in the root of your Deephaven deployment, would look as follows:
-
-```txt
-/data/Calendar/MyCalendar.calendar
-/data/Calendar/TestCalendar_2024.calendar
-/data/Calendar/CrazyCalendar.calendar
-```
-
-To make Deephaven load this list of calendars automatically upon startup via [`docker compose`](https://docs.docker.com/compose/), you can set the property directly:
-
-```yaml
-services:
-  deephaven:
-    image: ghcr.io/deephaven/server:${VERSION:-latest}
-    ports:
-      - "${DEEPHAVEN_PORT:-10000}:10000"
-    volumes:
-      - ./data:/data
-    environment:
-      - START_OPTS=-Xmx4g -DCalendar.importPath="/calendar_imports.txt"
-```
-
-Alternatively, a [configuration file](./configuration/config-file.md) could be used to set the property.
-
 ### Get an instance of the new calendar
+
+After you add the calendar, get it by the name in its `<name>` element, the same way as a built-in calendar. [`calendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendar(java.lang.String)) matches the name case-insensitively. [`calendarNames`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarNames()) lists names in uppercase, such as `TESTCALENDAR_2024`.
 
 ```groovy skip-test
 import static io.deephaven.time.calendar.Calendars.calendar
@@ -200,17 +199,60 @@ import static io.deephaven.time.calendar.Calendars.calendar
 test2024Cal = calendar("TestCalendar_2024")
 ```
 
-Happy calendar-ing!
+### Use the new calendar in a query
+
+The new calendar works in queries the same way as `nyseCal` in [Use a calendar in queries](#use-a-calendar-in-queries). The following code block keeps only the rows of the `source` table from [Create data](#create-data) that fall within the test calendar's business hours. Because of the lunch break, the result has no rows between 12pm and 1pm. It also has no rows on the January 1 and January 15 holidays.
+
+```groovy skip-test
+testBizHours = source.where("test2024Cal.isBusinessTime(Timestamp)")
+```
+
+## Load calendars when the server starts
+
+Instead of calling [`addCalendarFromFile`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#addCalendarFromFile(java.lang.String)) in each session, you can load calendars when the server starts. The configuration property `Calendar.userImportPath` adds calendars to the built-in set when the server starts. Its value is the location of a text file that lists one calendar file location per line. Deephaven loads the text file and each calendar file as classpath resources, not filesystem paths, so:
+
+- The folder that holds the files must be on the server's classpath, the list of directories the Java server searches for resources. The Docker example below adds it with `EXTRA_CLASSPATH`.
+- Each location, including the property's value, starts with `/` and is relative to that folder.
+
+Say a `calendars` folder next to your `docker-compose.yml` file contains three calendar files: `MyCalendar.calendar`, `TestCalendar_2024.calendar`, and `CrazyCalendar.calendar`. The same folder also contains a text file named `calendar_imports.txt`, which looks as follows:
+
+```txt
+/MyCalendar.calendar
+/TestCalendar_2024.calendar
+/CrazyCalendar.calendar
+```
+
+To load these calendars when the server starts with [Docker Compose](https://docs.docker.com/compose/), mount the folder, add it to the classpath with `EXTRA_CLASSPATH`, and set the property as a JVM argument in `START_OPTS`:
+
+```yaml
+services:
+  deephaven:
+    image: ghcr.io/deephaven/server-slim:${VERSION:-latest}
+    ports:
+      - "${DEEPHAVEN_PORT:-10000}:10000"
+    volumes:
+      - ./data:/data
+      - ./calendars:/calendars
+    environment:
+      - EXTRA_CLASSPATH=/apps/libs/*:/calendars
+      - START_OPTS=-Xmx4g -DCalendar.userImportPath=/calendar_imports.txt
+```
+
+You can also set `Calendar.userImportPath` in a [configuration file](./configuration/config-file.md) instead of `START_OPTS`. The folder must still be on the classpath.
+
+> [!CAUTION]
+> Don't set `Calendar.importPath` to load your own calendars. Use `Calendar.userImportPath` instead. `Calendar.importPath` points to the list of built-in calendars, so overriding it drops `UTC`, `USNYSE_EXAMPLE`, and `USBANK_EXAMPLE` unless your list includes them.
+>
+> The `Calendar.default` property sets the default calendar, and its value is `UTC` unless you change it. If `UTC` isn't loaded, the Groovy console session fails to start, because its startup script requests the default calendar and gets a "No such calendar" error. If you drop `UTC`, also set `Calendar.default` to a calendar you load.
 
 ## Related documentation
 
 - [Time in Deephaven](../conceptual/time-in-deephaven.md)
-- [BusinessCalendar Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html)
-- [`addCalendarFromFile`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#addCalendarFromFile(java.io.File))
+- [`addCalendarFromFile`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#addCalendarFromFile(java.lang.String))
 - [`calendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendar(java.lang.String))
 - [`calendarName`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarName())
 - [`calendarNames`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarNames())
 - [`removeCalendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#removeCalendar(java.lang.String))
 - [`setCalendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#setCalendar(java.lang.String))
-- [BusinessCalendar Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html)
-- [XML Parser Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html)
+- [`BusinessCalendar` Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html)
+- [`BusinessCalendarXMLParser` Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html)

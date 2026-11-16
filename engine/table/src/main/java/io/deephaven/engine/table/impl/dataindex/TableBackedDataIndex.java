@@ -6,18 +6,29 @@ package io.deephaven.engine.table.impl.dataindex;
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraphWaitForbiddenException;
+import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.lang.invoke.VarHandle;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -38,6 +49,12 @@ public class TableBackedDataIndex extends AbstractDataIndex {
     final List<String> keyColumnNames;
 
     private final boolean isRefreshing;
+
+    /**
+     * The update graph of the source table, which the index table is computed on.
+     */
+    @NotNull
+    private final UpdateGraph updateGraph;
 
     private QueryTable sourceTable;
 
@@ -62,6 +79,7 @@ public class TableBackedDataIndex extends AbstractDataIndex {
                         sourceTable::getColumnSource, Function.identity(), Assert::neverInvoked, LinkedHashMap::new)));
 
         isRefreshing = sourceTable.isRefreshing();
+        updateGraph = sourceTable.getUpdateGraph();
 
         // Defer the actual index table and lookup function creation until they are needed.
         this.sourceTable = sourceTable;
@@ -94,12 +112,46 @@ public class TableBackedDataIndex extends AbstractDataIndex {
         if ((localIndexTable = indexTable) != null) {
             return localIndexTable;
         }
+        if (!isRefreshing
+                || UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(updateGraph)
+                || UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(
+                        ExecutionContext.getContext().getUpdateGraph())) {
+            // the thread computing the index table never waits for the update graph, so this thread may wait for it
+            synchronized (this) {
+                if ((localIndexTable = indexTable) != null) {
+                    return localIndexTable;
+                }
+                return computeTable();
+            }
+        }
         synchronized (this) {
             if ((localIndexTable = indexTable) != null) {
                 return localIndexTable;
             }
+            localIndexTable = computeTableWithoutWaitingForUpdateGraph();
+            if (localIndexTable != null) {
+                return localIndexTable;
+            }
+        }
+        return updateGraph.sharedLock().computeLocked(() -> table(unused));
+    }
 
+    /**
+     * Attempt to {@link #computeTable() compute} the index table while {@link UpdateGraphWaitGuard#forbidWaits()
+     * forbidden} to wait for any update graph. An attempt that would wait is abandoned, and the liveness referents it
+     * produced are released.
+     *
+     * @return The newly-computed index table, or {@code null} if the attempt would have waited for an update graph
+     */
+    @Nullable
+    private Table computeTableWithoutWaitingForUpdateGraph() {
+        try (final SafeCloseable ignored = UpdateGraphWaitGuard.forbidWaits()) {
             return computeTable();
+        } catch (final RuntimeException failure) {
+            if (ExceptionUtils.indexOfType(failure, UpdateGraphWaitForbiddenException.class) < 0) {
+                throw failure;
+            }
+            return null;
         }
     }
 
@@ -144,10 +196,31 @@ public class TableBackedDataIndex extends AbstractDataIndex {
     @NotNull
     public RowKeyLookup rowKeyLookup(final DataIndexOptions options) {
         table(options);
-        return (final Object key, final boolean usePrev) -> {
-            // Pass the object to the aggregation lookup, then return the resulting row key. This index will be
-            // correct in prev or current space because of the aggregation's hash-based lookup.
-            return lookupFunction.get(key);
+        // A key's row never moves, so the aggregation's hash-based lookup answers in prev or current space alike, as
+        // long as no update cycle changes the hash table during the lookups.
+        return new RowKeyLookup() {
+            @Override
+            public long apply(@Nullable final Object key, final boolean usePrev) {
+                return lookupFunction.get(key);
+            }
+
+            @Override
+            public void apply(
+                    @NotNull final Chunk<? extends Values>[] keyChunks,
+                    @NotNull final WritableLongChunk<RowKeys> rowKeys,
+                    final boolean usePrev) {
+                lookupFunction.get(keyChunks, rowKeys);
+            }
+
+            @Override
+            public long lastStateChangeStep() {
+                if (!isRefreshing) {
+                    return QueryConstants.NULL_LONG;
+                }
+                // a volatile read does not keep the hash table reads before it from happening after it
+                VarHandle.acquireFence();
+                return lookupFunction.lastStateChangeStep();
+            }
         };
     }
 

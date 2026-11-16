@@ -104,6 +104,20 @@ class AwaitingMetadata(TableState tableState) : IChunkProcessor {
     var shiftDestIndex = RowSequenceDecoder.ReadExternalCompressedDelta(diThreeShiftIndices);
     var addedRows = RowSequenceDecoder.ReadExternalCompressedDelta(diAdded);
 
+    // added_rows_included is the set of rows this message actually carries data for. The server omits it
+    // when it would be identical to added_rows, which is the case for every message of an established
+    // subscription. The two differ only while the server is still delivering the initial snapshot of a
+    // large table in rounds. A snapshot round announces the table's whole row set in added_rows but carries
+    // data only for its own slice of rows. A delta between rounds can carry data for rows that added_rows
+    // does not mention (rows that moved into the already-delivered region of the table) and no data for rows
+    // that it does (rows beyond that region, which a later round will deliver). The record batches are sized
+    // from this set, so the add phase must be too. This mirrors the Java client, whose reader defaults
+    // rowsIncluded to a copy of rowsAdded when the field is absent.
+    var addedRowsIncludedBytes = bmd.GetAddedRowsIncludedBytes();
+    var addedRowsIncluded = addedRowsIncludedBytes == null
+      ? addedRows
+      : RowSequenceDecoder.ReadExternalCompressedDelta(new DataInput(addedRowsIncludedBytes));
+
     var perColumnModifies = new List<RowSequence>();
     for (var i = 0; i != bmd.ModColumnNodesLength; ++i) {
       var mcns = bmd.ModColumnNodes(i);
@@ -128,31 +142,41 @@ class AwaitingMetadata(TableState tableState) : IChunkProcessor {
     // 4. modifies
     // We have not called with add or modify data yet, but we can do removes and shifts now
     // (steps 1 and 2).
-    var (prev, removedRowsIndexSpace, afterRemoves) = ProcessRemoves(removedRows);
+    var prev = tableState.Snapshot();
+    var removedRowsIndexSpace = tableState.Erase(removedRows);
     tableState.ApplyShifts(shiftStartIndex, shiftEndIndex, shiftDestIndex);
 
-    var addedRowsIndexSpace = tableState.AddKeys(addedRows);
+    // We track only the rows we hold data for, so the keys we add are the ones data is arriving for. A key
+    // that added_rows announces without data will arrive, with data, in a later snapshot round and is added
+    // then.
+    //
+    // While the initial snapshot is still arriving, the server can send data for a row we already hold. It
+    // tracks what we hold as a range of positions, so a row inserted ahead of the delivered region pushes the
+    // last delivered row out of that range, and the next round covers that row again. The Java client treats
+    // this as an overwrite. We hold only rows we have data for, so we take the row out and add it back with the
+    // new data, which reports it to the user as removed and then added. That is the one representation in which
+    // every before-and-after table in the update agrees with the index sets that describe it: overwriting in
+    // place during the add phase would change rows between AfterRemoves and AfterAdds that AddedRowsIndexSpace
+    // does not mention.
+    // Erase skips the rows it does not hold, so handed the whole included set it takes out exactly the re-sent rows.
+    var reSentRowsIndexSpace = tableState.Erase(addedRowsIncluded);
+    if (!reSentRowsIndexSpace.IsEmpty) {
+      // The removed set reported to the user is in the index space of 'prev'. This second erasure is in the
+      // index space of the table after the first, hence the lift.
+      removedRowsIndexSpace = TableState.CombineErasures(removedRowsIndexSpace, reSentRowsIndexSpace);
+    }
+
+    // When nothing was erased the table is unchanged, which we indicate by handing out the same table, because
+    // consumers rely on pointer equality (beforeRemoves == afterRemoves) to notice it. A non-empty removed set
+    // can still erase nothing: a full subscription is sent the server's entire removed set, which during the
+    // initial snapshot may name only rows this client has not been given yet.
+    var afterRemoves = removedRowsIndexSpace.IsEmpty ? prev : tableState.Snapshot();
+
+    var addedRowsIndexSpace = tableState.AddKeys(addedRowsIncluded);
 
     var nextState = new AwaitingAdds(tableState, perColumnModifies.ToArray(), prev, removedRowsIndexSpace, afterRemoves,
       addedRowsIndexSpace);
     return nextState.ProcessNextChunk(sourcesAndRanges, Array.Empty<byte>());
-  }
-
-  (IClientTable, RowSequence, IClientTable) ProcessRemoves(RowSequence removedRows) {
-    var prev = tableState.Snapshot();
-    // The reason we special-case "empty" is because when the tables are unchanged, we prefer
-    // to indicate this via pointer equality (e.g. beforeRemoves == afterRemoves).
-    RowSequence removedRowsIndexSpace;
-    IClientTable afterRemoves;
-    if (removedRows.IsEmpty) {
-      removedRowsIndexSpace = RowSequence.CreateEmpty();
-      afterRemoves = prev;
-    } else {
-      removedRowsIndexSpace = tableState.Erase(removedRows);
-      afterRemoves = tableState.Snapshot();
-    }
-
-    return (prev, removedRowsIndexSpace, afterRemoves);
   }
 }
 

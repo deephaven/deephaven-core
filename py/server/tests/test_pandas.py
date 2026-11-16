@@ -9,8 +9,9 @@ import numpy as np
 import pandas
 import pandas as pd
 import pyarrow as pa
+import pyarrow.compute as pc
 
-from deephaven import DHError, dtypes, new_table, time
+from deephaven import DHError, dtypes, empty_table, new_table, time
 from deephaven.column import (
     bool_col,
     byte_col,
@@ -36,7 +37,8 @@ from deephaven.constants import (
     NULL_SHORT,
 )
 from deephaven.jcompat import j_array_list
-from deephaven.pandas import to_pandas, to_table
+from deephaven.pandas import _decode_for_pandas, to_pandas, to_table
+from tests.barrage_encodings import with_barrage_encodings
 from tests.testbase import BaseTestCase
 
 
@@ -327,6 +329,75 @@ class PandasTestCase(BaseTestCase):
         df = to_pandas(test_table, dtype_backend="numpy_nullable")
         dh_table = to_table(df)
         self.assert_table_equals(test_table, dh_table)
+
+    def test_to_pandas_with_barrage_encodings(self) -> None:
+        # Dictionary columns become category columns. Run-end columns get their unencoded dtype.
+        source = empty_table(100).update(
+            [
+                "Sym = i % 3 == 0 ? `AAPL` : `MSFT`",
+                "Block = (int) (i / 10)",
+                "Both = ((int) (i / 10)) % 2 == 0 ? `X` : null",
+            ]
+        )
+        encoded = with_barrage_encodings(
+            source, dict_cols=["Sym"], ree_cols=["Block"], ree_dict_cols=["Both"]
+        )
+
+        for dtype_backend in ["numpy_nullable", "pyarrow"]:
+            with self.subTest(dtype_backend=dtype_backend):
+                df_plain = to_pandas(source, dtype_backend=dtype_backend)
+                df_encoded = to_pandas(encoded, dtype_backend=dtype_backend)
+
+                self.assertIsInstance(df_encoded["Sym"].dtype, pd.CategoricalDtype)
+                self.assertIsInstance(df_encoded["Both"].dtype, pd.CategoricalDtype)
+                self.assertEqual(df_encoded["Block"].dtype, df_plain["Block"].dtype)
+                self.assertTrue(df_encoded.isna().equals(df_plain.isna()))
+                for name in ["Sym", "Block", "Both"]:
+                    not_null = df_plain[name].notna()
+                    self.assertEqual(
+                        df_encoded[name][not_null].tolist(),
+                        df_plain[name][not_null].tolist(),
+                        name,
+                    )
+
+    def test_decode_run_end_ordered_dictionary(self) -> None:
+        # Decoding run-end over an ordered dictionary keeps the dictionary ordered.
+        runs = pc.run_end_encode(pa.array([0, 0, 1], pa.int32()))
+        ree = pa.RunEndEncodedArray.from_arrays(
+            runs.run_ends,
+            pa.DictionaryArray.from_arrays(
+                runs.values, pa.array(["a", "b"]), ordered=True
+            ),
+        )
+
+        decoded = _decode_for_pandas(pa.table({"C": ree}))
+
+        self.assertEqual(
+            pa.dictionary(pa.int32(), pa.string(), ordered=True),
+            decoded.schema.field("C").type,
+        )
+        self.assertEqual(["a", "a", "b"], decoded.column("C").to_pylist())
+
+    def test_to_pandas_dictionary_timestamps(self) -> None:
+        # Dictionary timestamps keep their time zone in to_pandas.
+        source = empty_table(100).update(
+            [
+                "Dict = i >= 90 ? null : epochNanosToInstant((long) (i / 10) * 1000000000L)",
+                "ReeDict = i >= 90 ? null : epochNanosToInstant((long) (i / 10) * 1000000000L)",
+            ]
+        )
+        encoded = with_barrage_encodings(
+            source, dict_cols=["Dict"], ree_dict_cols=["ReeDict"]
+        )
+
+        for dtype_backend in ["numpy_nullable", "pyarrow"]:
+            with self.subTest(dtype_backend=dtype_backend):
+                df_plain = to_pandas(source, dtype_backend=dtype_backend)
+                df_encoded = to_pandas(encoded, dtype_backend=dtype_backend)
+
+                for name in ["Dict", "ReeDict"]:
+                    self.assertEqual(df_plain[name].dtype, df_encoded[name].dtype, name)
+                    self.assertTrue(df_plain[name].equals(df_encoded[name]), name)
 
     def test_numpy_array(self):
         df_dict = {

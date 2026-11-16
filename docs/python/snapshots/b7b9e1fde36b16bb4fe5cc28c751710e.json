@@ -1,0 +1,1 @@
+{"file":"how-to-guides/use-numpy.md","objects":{":log":{"type":"Log","data":"<class 'io.deephaven.time.calendar.BusinessCalendar'>\n<class 'numpy.busdaycalendar'>\n[ True  True  True  True  True False False]\n['1999-01-01' '1999-01-18' '1999-02-15' '1999-04-02' '1999-05-31']\n"}}}

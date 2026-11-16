@@ -40,18 +40,22 @@ The following example uses `read_sql` to execute a SQL query on a Postgres DB vi
 
 ```python skip-test
 from deephaven.dbc import read_sql
+from urllib.parse import quote
 import os
 
-my_query = "SELECT t_ts as Timestamp, CAST(t_id AS text) as Id, " +
-    "CAST(t_instrument as text) as Instrument, " +
-    "t_exchange as Exchange, t_price as Price, t_size as Size " +
-    "FROM CRYPTO TRADES"
+my_query = (
+    "SELECT t_ts AS Timestamp, CAST(t_id AS text) AS Id, "
+    "CAST(t_instrument AS text) AS Instrument, "
+    "t_exchange AS Exchange, t_price AS Price, t_size AS Size "
+    "FROM crypto_trades"
+)
 
-my_username = os.environ["POSTGRES_USERNAME"]
-my_password = os.environ["POSTGRES_PASSWORD"]
+username = os.environ["POSTGRES_USERNAME"]
+password = os.environ["POSTGRES_PASSWORD"]
+host = os.environ["POSTGRES_HOST"]
+port = os.environ["POSTGRES_PORT"]
 
-sql_uri = "postgresql://postgres.postgres.svc.cluster.local.:5432/postgres?" +
-  f"user={my_username}&password={my_password}"
+sql_uri = f"postgresql://{host}:{port}/postgres?user={quote(username)}&password={quote(password)}"
 
 crypto_trades = read_sql(conn=sql_uri, query=my_query, driver="connectorx")
 ```

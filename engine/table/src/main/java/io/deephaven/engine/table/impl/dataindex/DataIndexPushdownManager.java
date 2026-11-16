@@ -3,9 +3,10 @@
 //
 package io.deephaven.engine.table.impl.dataindex;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.Pair;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.context.StandaloneQueryScope;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
@@ -16,6 +17,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.filter.ExtractFilterWithoutBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -26,7 +28,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import java.util.stream.Collectors;
 
 /**
  * A {@link PushdownPredicateManager} that supports pushdown against a {@link DataIndex}. This manager can wrap an
@@ -34,6 +35,9 @@ import java.util.stream.Collectors;
  * the cost ceiling is too low to use the DataIndex.
  */
 public class DataIndexPushdownManager implements PushdownPredicateManager {
+
+    /** The query scope name of the maybe-match rows, for the formula that finds the index rows overlapping them. */
+    private static final String MAYBE_MATCH_ROWS_PARAM = "__DH_MAYBE_MATCH_ROWS__";
 
     private final DataIndex dataIndex;
     private final PushdownFilterMatcher wrappedMatcher;
@@ -126,6 +130,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                             onComplete.accept(pushdownDataIndex(
                                     selection,
                                     filter,
+                                    usePrev,
                                     ctx.renameMap,
                                     dataIndex,
                                     result));
@@ -181,6 +186,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             onComplete.accept(pushdownDataIndex(
                     selection,
                     filter,
+                    usePrev,
                     ctx.renameMap,
                     dataIndex,
                     PushdownResult.allMaybeMatch(selection)));
@@ -247,38 +253,55 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
     /**
      * Apply the filter to the data index table and return the result.
      *
+     * @param usePrev whether to filter the previous state of the index table, as a snapshot that uses previous values
+     *        must; the index may update the index table's row sets in place before the filtered table notifies
      * @param result the result of any pushdown so far, whose maybe rows the index filters; this method closes it
      */
     @NotNull
     private PushdownResult pushdownDataIndex(
             final RowSet selection,
             final WhereFilter filter,
+            final boolean usePrev,
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
             final PushdownResult result) {
         try (result) {
             final WritableRowSet matching;
-            // One row set per index row that passes the filter, so the unfiltered index bounds them. The batcher owns
-            // what it gathers, and outliving the liveness scope and the iterator leaves nothing that can throw between
-            // building the result and the caller taking it.
-            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(dataIndex.table().size())) {
+            // One row set per index row that passes the filter, so the unfiltered index bounds them: the previous index
+            // when usePrev is set, which holds the keys removed during the cycle. The batcher owns what it gathers, and
+            // outliving the liveness scope and the iterator leaves nothing that can throw between building the result
+            // and the caller taking it.
+            final long indexSize = usePrev
+                    ? dataIndex.table().getRowSet().sizePrev()
+                    : dataIndex.table().size();
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(indexSize)) {
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    // A filter that respects a barrier may see only the keys of rows in question, or it could observe
+                    // keys only in rows its declarers removed; decided before the barriers go.
+                    final boolean barrierActive = ExtractRespectedBarriers.stream(filter).findAny().isPresent();
                     // Extract the fundamental filter, ignoring barriers.
                     final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
-                    final Table toFilter;
-                    if (!renameMap.isEmpty()) {
-                        final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                                .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
-                                        ColumnName.of(entry.getKey())))
-                                .collect(Collectors.toList());
-                        toFilter = dataIndex.table().renameColumns(renamePairs);
-                    } else {
-                        toFilter = dataIndex.table();
-                    }
+                    final String rowSetColumnName = dataIndex.rowSetColumnName();
+                    // The selection holds previous row keys when usePrev is set, so the index keys and row sets must
+                    // be previous values too. Filtering a static view of the previous state reads both consistently,
+                    // however far the index has updated during the cycle.
+                    final Table indexTable = usePrev ? PrevTableTools.prevTable(dataIndex.table()) : dataIndex.table();
                     try {
+                        Table toFilter = DataIndexUtils.indexTableForFilter(
+                                indexTable, rowSetColumnName, filter.getColumns(), renameMap);
+                        if (barrierActive) {
+                            // Keep only the index rows whose row sets overlap the rows in question.
+                            final QueryScope scope = new StandaloneQueryScope();
+                            scope.putParam(MAYBE_MATCH_ROWS_PARAM, result.maybeMatch());
+                            try (final SafeCloseable ignoredScope =
+                                    ExecutionContext.getContext().withQueryScope(scope).open()) {
+                                toFilter = toFilter.where(
+                                        rowSetColumnName + ".overlaps(" + MAYBE_MATCH_ROWS_PARAM + ")");
+                            }
+                        }
                         final Table filteredTable = toFilter.where(copiedFilter);
                         try (final CloseableIterator<RowSet> it =
-                                ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
+                                ColumnVectors.ofObject(filteredTable, rowSetColumnName, RowSet.class)
                                         .iterator()) {
                             it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(result.maybeMatch())));
                         }

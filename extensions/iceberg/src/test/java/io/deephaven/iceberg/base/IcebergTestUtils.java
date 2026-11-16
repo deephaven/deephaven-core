@@ -26,7 +26,7 @@ public final class IcebergTestUtils {
     public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
         return snapshot.allManifests(table.io())
                 .stream()
-                .map(x -> ManifestFiles.read(x, table.io()))
+                .map(x -> ManifestFiles.read(x, table.io(), table.specs()))
                 .flatMap(IcebergTestUtils::toStream);
     }
 

@@ -12,6 +12,9 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.engine.rowset.impl.RowKeysChunkBuilderSequential;
+import io.deephaven.engine.rowset.impl.RowKeysChunkRangeIterator;
 import io.deephaven.util.metrics.IntCounterMetric;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
@@ -2743,7 +2746,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      */
     public final boolean invertOnNew(
             final RowSet.RangeIterator rit,
-            final OrderedLongSetBuilderSequential builder,
+            final OrderedLongSet.BuilderSequential builder,
             final long maxPosition) {
         rit.next();
         long start = rit.currentRangeStart();
@@ -5384,12 +5387,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     public final RspBitmap toRsp() {
-        RspBitmap rsp = new RspBitmap();
-        forEachLongRange((final long start, final long end) -> {
-            rsp.appendRangeUnsafeNoWriteCheck(start, end);
-            return true;
-        });
-        rsp.finishMutations();
+        // Every range is known up front, so each container can be created at its final size.
+        final RspBitmap rsp = RspBitmapBuilderSequential.buildRsp(this);
         sortedRangesToRspConversions.sample(1);
         return rsp;
     }
@@ -5415,6 +5414,20 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
         }
         throw new IllegalArgumentException("keys argument has elements not in the rowSet");
+    }
+
+    @Override
+    public final void ixInvert(
+            final LongChunk<OrderedRowKeys> keys,
+            final WritableLongChunk<? super OrderedRowKeys> positions) {
+        final RowKeysChunkBuilderSequential builder = new RowKeysChunkBuilderSequential(positions);
+        if (keys.size() == 0) {
+            return;
+        }
+        if (!invertOnNew(new RowKeysChunkRangeIterator(keys), builder, Long.MAX_VALUE)
+                || positions.size() != keys.size()) {
+            throw new IllegalArgumentException("keys argument has elements not in the rowSet");
+        }
     }
 
     @Override

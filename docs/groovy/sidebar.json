@@ -9,7 +9,7 @@
         "path": "intro.md"
       },
       {
-        "label": "Deephaven Overview",
+        "label": "Deephaven overview",
         "path": "conceptual/deephaven-overview.md"
       },
       {
@@ -64,7 +64,7 @@
                 "path": "getting-started/crash-course/export-data.md"
               },
               {
-                "label": "Configure your Instance",
+                "label": "Configure your instance",
                 "path": "getting-started/crash-course/configure.md"
               },
               {
@@ -118,6 +118,10 @@
               {
                 "label": "Column types",
                 "path": "conceptual/column-types.md"
+              },
+              {
+                "label": "Aggregations",
+                "path": "conceptual/aggregations.md"
               }
             ]
           },
@@ -253,10 +257,6 @@
               {
                 "label": "SQL queries in Deephaven",
                 "path": "how-to-guides/data-import-export/execute-sql-queries.md"
-              },
-              {
-                "label": "Table data service",
-                "path": "how-to-guides/data-import-export/table-data-service.md"
               },
               {
                 "label": "URI",
@@ -576,7 +576,7 @@
                     "path": "how-to-guides/user-interface/markdown-widget.md"
                   },
                   {
-                    "label": "Format tables in the UI",
+                    "label": "Use table tools in the UI",
                     "path": "how-to-guides/user-interface/formatting-tables.md"
                   },
                   {
@@ -671,6 +671,10 @@
                   {
                     "label": "Stream data with Input Tables",
                     "path": "how-to-guides/java-client-input-tables.md"
+                  },
+                  {
+                    "label": "Capture remote tables with Barrage",
+                    "path": "how-to-guides/capture-tables.md"
                   }
                 ]
               },
@@ -732,10 +736,6 @@
                   {
                     "label": "Error handling",
                     "href": "https://deephaven.io/core/client-api/python/examples.html#error-handling"
-                  },
-                  {
-                    "label": "Capture Python client tables",
-                    "path": "how-to-guides/capture-tables.md"
                   }
                 ]
               },
@@ -796,17 +796,8 @@
             ]
           },
           {
-            "label": "Development tools",
-            "items": [
-              {
-                "label": "MCP",
-                "path": "how-to-guides/mcp.md"
-              },
-              {
-                "label": "Copilot extension",
-                "path": "how-to-guides/copilot-extension.md"
-              }
-            ]
+            "label": "MCP",
+            "path": "how-to-guides/mcp.md"
           },
           {
             "label": "Best practices and troubleshooting",
@@ -997,7 +988,7 @@
             "label": "Configuration",
             "items": [
               {
-                "label": "Docker data volumes",
+                "label": "Docker bind mounts",
                 "path": "conceptual/docker-data-volumes.md"
               },
               {
@@ -1019,6 +1010,10 @@
               {
                 "label": "Install and use Java packages",
                 "path": "how-to-guides/install-and-use-java-packages.md"
+              },
+              {
+                "label": "Local development",
+                "path": "how-to-guides/local-development.md"
               },
               {
                 "label": "Configure the production application",
@@ -1290,6 +1285,10 @@
                     "path": "reference/data-import-export/CSV/writeCsv.md"
                   }
                 ]
+              },
+              {
+                "label": "html",
+                "path": "reference/data-import-export/HTML/html.md"
               },
               {
                 "label": "Iceberg",
@@ -1658,6 +1657,10 @@
                   {
                     "label": "hide",
                     "path": "reference/table-operations/format/hide.md"
+                  },
+                  {
+                    "label": "Named colors",
+                    "path": "reference/table-operations/format/named-colors.md"
                   }
                 ]
               },
@@ -2901,7 +2904,7 @@
                 "label": "Install and upgrade",
                 "items": [
                   {
-                    "label": "How can I find which Core version to which a feature or fix was added?",
+                    "label": "How can I find which Core version added a particular feature or fix?",
                     "path": "reference/community-questions/how-do-i-find-a-specific-build.md"
                   },
                   {

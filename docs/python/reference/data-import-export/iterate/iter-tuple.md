@@ -9,7 +9,7 @@ If locking is not explicitly specified, this method will automatically lock to e
 ## Syntax
 
 ```python syntax
-iter_tuple(cols: Optional[Union[str, Sequence[str]]] = None, tuple_name: str = "Deephaven", chunk_size: int = 2048)
+iter_tuple(cols: Optional[Union[str, Sequence[str]]] = None, *, tuple_name: str = "Deephaven", chunk_size: int = 2048)
 ```
 
 ## Parameters

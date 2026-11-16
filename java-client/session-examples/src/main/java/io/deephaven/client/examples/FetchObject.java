@@ -3,10 +3,11 @@
 //
 package io.deephaven.client.examples;
 
+import io.deephaven.client.impl.ObjectService.Fetchable;
 import io.deephaven.client.impl.ServerData;
 import io.deephaven.client.impl.ServerObject;
-import io.deephaven.client.impl.ObjectService.Fetchable;
 import io.deephaven.client.impl.Session;
+import io.deephaven.client.impl.SessionFactoryConfig;
 import io.deephaven.client.impl.TypedTicket;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
@@ -16,11 +17,24 @@ import picocli.CommandLine.Option;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * Fetches a plugin object by type and ticket. The object's metadata goes to standard error and its bytes to standard
+ * output or a file; with {@code --recursive}, the objects it exports are fetched the same way.
+ */
 @Command(name = "fetch-object", mixinStandardHelpOptions = true,
         description = "Fetch object", version = "0.1.0")
-class FetchObject extends SingleSessionExampleBase {
+class FetchObject implements Callable<Void> {
+
+    @ArgGroup(exclusive = false)
+    ConnectOptions connectOptions;
+
+    @ArgGroup(exclusive = true)
+    AuthenticationOptions authenticationOptions;
 
     @Option(names = {"--type"}, required = true, description = "The ticket type.")
     String type;
@@ -35,12 +49,28 @@ class FetchObject extends SingleSessionExampleBase {
     boolean recursive;
 
     @Override
-    protected void execute(Session session) throws Exception {
+    public Void call() throws Exception {
+        // The scheduler runs the client's background work, such as refreshing the session token
+        final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
+        // The factory holds the connection; each session it opens is one authenticated login on that connection
+        final SessionFactoryConfig.Factory factory = SessionFactoryConfig.builder()
+                .clientConfig(ConnectOptions.options(connectOptions).config())
+                .sessionConfig(AuthenticationOptions.sessionConfig(authenticationOptions))
+                .scheduler(scheduler)
+                .build()
+                .factory();
+        // A typed ticket names a server object by plugin type and location; fetching it returns its bytes and
+        // the objects it exports
         try (
+                final Session session = factory.newSession();
                 final Fetchable fetchable = session.fetchable(new TypedTicket(type, ticket)).get();
                 final ServerData dataAndExports = fetchable.fetch().get()) {
             show(0, type, dataAndExports);
+        } finally {
+            factory.managedChannel().shutdownNow();
+            scheduler.shutdownNow();
         }
+        return null;
     }
 
     private void show(int depth, String type, ServerData dataAndExports)
@@ -79,7 +109,6 @@ class FetchObject extends SingleSessionExampleBase {
     }
 
     public static void main(String[] args) {
-        int execute = new CommandLine(new FetchObject()).execute(args);
-        System.exit(execute);
+        System.exit(new CommandLine(new FetchObject()).execute(args));
     }
 }

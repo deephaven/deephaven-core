@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
@@ -26,8 +27,10 @@ import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.util.BitSet;
+import java.util.function.Supplier;
 
 /**
  * TableExchangeMarshaller the implementation of {@link ExchangeMarshaller} for handling exported {@link Table}s,
@@ -76,9 +79,9 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
                     "Table is already failed");
         }
 
-        // push the schema to the listener
-        listener.onNext(streamGeneratorFactory.getSchemaView(
-                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, options, table)));
+        // push the schema to the listener; the snapshot is written with this same schema
+        final Schema schema = BarrageUtil.schemaFromTable(options, table);
+        listener.onNext(streamGeneratorFactory.getSchemaView(schema::getSchema));
 
         // collect the viewport and columnsets (if provided)
         final BitSet columns = BarrageRequestHelpers.getColumns(snapshotRequest);
@@ -89,7 +92,7 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
 
         // leverage common code for `DoGet` and `BarrageSnapshotOptions`
         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport,
-                reverseViewport, options, listener,
+                reverseViewport, options, schema, listener,
                 metrics);
     }
 
@@ -160,10 +163,11 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
         @Override
         public ExchangeMarshaller create(final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
-                final BarrageMessageWriter.Factory streamGeneratorFactory) {
+                final BarrageMessageWriter.Factory streamGeneratorFactory,
+                final Supplier<JobScheduler> propagationJobSchedulerFactory) {
             final BarrageMessageProducer.Operation.Factory factory =
                     (parent, updateIntervalMs) -> new BarrageMessageProducer.Operation(scheduler, errorTransformer,
-                            streamGeneratorFactory, parent, updateIntervalMs);
+                            streamGeneratorFactory, parent, updateIntervalMs, null, propagationJobSchedulerFactory);
             return new TableExchangeMarshaller(factory);
         }
     }

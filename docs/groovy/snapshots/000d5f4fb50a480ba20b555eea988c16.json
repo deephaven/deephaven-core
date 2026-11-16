@@ -1,0 +1,1 @@
+{"file":"how-to-guides/flight-sql.md","objects":{"myTable1":{"type":"Table","data":{"columns":[{"name":"Id","type":"long"},{"name":"Timestamp1","type":"java.time.Instant"}],"rows":[]}},"myTable2":{"type":"Table","data":{"columns":[{"name":"Id","type":"long"},{"name":"Timestamp2","type":"java.time.Instant"}],"rows":[]}}}}

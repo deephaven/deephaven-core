@@ -194,6 +194,12 @@ def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.bool_:
             t2 = t.update(["X1 = test_udf(null, Y)"])
             self.assertEqual(3, t2.to_string().count("false"))
 
+            def test_udf(p1: np.ndarray[str] | None, p2=None) -> bool:
+                return bool(len(p1)) if p1 is not None else False
+
+            t3 = t.update(["X1 = test_udf(null, Y)"])
+            self.assertEqual(3, t3.to_string().count("false"))
+
         with self.subTest("datetime"):
 
             def test_udf(p1: np.ndarray[np.datetime64], p2=None) -> bool:

@@ -28,6 +28,7 @@ import io.deephaven.engine.table.impl.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.SoftRecyclerWindow;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -56,17 +57,21 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
         implements MutableColumnSourceGetDefaults.ForBoolean /* MIXIN_IMPLS */ {
     // region recyclers
     private static final SoftRecycler<byte[]> recycler =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_CAPACITY,
-                    () -> new byte[BLOCK_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_CAPACITY,
+                    SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_MAXIMUM_CAPACITY,
+                    () -> new byte[BLOCK_SIZE], null));
     private static final SoftRecycler<byte[][]> recycler2 =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_CAPACITY2,
-                    () -> new byte[BLOCK2_SIZE][], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_MAXIMUM_CAPACITY2,
+                    () -> new byte[BLOCK2_SIZE][], null));
     private static final SoftRecycler<ByteOneOrN.Block2[]> recycler1 =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_CAPACITY1,
-                    () -> new ByteOneOrN.Block2[BLOCK1_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_CAPACITY1,
+                    SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_MAXIMUM_CAPACITY1,
+                    () -> new ByteOneOrN.Block2[BLOCK1_SIZE], null));
     private static final SoftRecycler<ByteOneOrN.Block1[]> recycler0 =
-            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_CAPACITY0,
-                    () -> new ByteOneOrN.Block1[BLOCK0_SIZE], null);
+            SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_CAPACITY0,
+                    SparseArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_MAXIMUM_CAPACITY0,
+                    () -> new ByteOneOrN.Block1[BLOCK0_SIZE], null));
     // endregion recyclers
 
     /**

@@ -14,11 +14,14 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
+import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.table.vectors.IntVectorColumnWrapper;
+import io.deephaven.engine.table.vectors.LongVectorColumnWrapper;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.sources.ObjectTestSource;
@@ -760,6 +763,150 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertEquals(
                 "Key overflow detected, perhaps you should flatten your table before calling ungroup: lastRowKey=1, base=62",
                 ise.getMessage());
+    }
+
+    @Test
+    public void testUngroupLargeGroups() {
+        // One group holds more than 2^32 elements, so its offsets need more than 32 bits of the result row key. The
+        // values are lazily computed from the row key, so the group costs no memory.
+        final long bigSize = (1L << 32) + 3;
+        final Table values = testTable(RowSetFactory.flat(bigSize).toTracking()).view("L = k", "S = Long.toString(k)");
+
+        final ObjectArraySource<RowSet> groupRowSets = new ObjectArraySource<>(RowSet.class);
+        groupRowSets.ensureCapacity(2);
+        groupRowSets.set(0, RowSetFactory.flat(bigSize));
+        groupRowSets.set(1, RowSetFactory.fromKeys(7));
+
+        final ObjectArraySource<LongVector> wrapped = new ObjectArraySource<>(LongVector.class, long.class);
+        wrapped.ensureCapacity(2);
+        wrapped.set(0, new LongVectorColumnWrapper(values.getColumnSource("L", long.class), values.getRowSet()));
+        wrapped.set(1, new LongVectorDirect(7));
+
+        final ObjectArraySource<long[]> arrays = new ObjectArraySource<>(long[].class, long.class);
+        arrays.ensureCapacity(2);
+        arrays.set(0, new long[] {11, 12});
+        arrays.set(1, new long[] {13});
+
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
+        columns.put("K", InMemoryColumnSource.getImmutableMemoryColumnSource(new int[] {1, 0}));
+        columns.put("L", AggregateColumnSource.make(values.getColumnSource("L"), groupRowSets));
+        columns.put("S", AggregateColumnSource.make(values.getColumnSource("S"), groupRowSets));
+        columns.put("W", wrapped);
+        columns.put("A", arrays);
+        final Table grouped = new QueryTable(RowSetFactory.flat(2).toTracking(), columns);
+
+        final long[] bigOffsets = {0, 1, (1L << 31) - 1, 1L << 31, (1L << 31) + 1, 1L << 32, bigSize - 1};
+
+        // The aggregate sources are ungrouped directly; once sorted, they are redirected and ungrouped by offset.
+        for (final Table toUngroup : List.of(grouped, grouped.sort("K"))) {
+            final boolean sorted = toUngroup != grouped;
+            final long bigStart = sorted ? 1 : 0;
+            final long smallPosition = sorted ? 0 : bigSize;
+
+            final Table ungrouped = toUngroup.ungroup("L", "S", "W");
+            assertEquals(bigSize + 1, ungrouped.size());
+            final RowSet rowSet = ungrouped.getRowSet();
+            for (final String name : List.of("L", "W")) {
+                final ColumnSource<Long> cs = ungrouped.getColumnSource(name, long.class);
+                for (final long offset : bigOffsets) {
+                    final long rowKey = rowSet.get(bigStart + offset);
+                    assertEquals(name + " offset " + offset, offset, cs.getLong(rowKey));
+                    assertEquals(name + " offset " + offset, offset, cs.getPrevLong(rowKey));
+                    assertEquals(name + " offset " + offset, Long.valueOf(offset), cs.get(rowKey));
+                }
+                assertEquals(name, 7L, cs.getLong(rowSet.get(smallPosition)));
+                assertArrayEquals(name, new long[] {(1L << 31) - 1, 1L << 31, (1L << 31) + 1},
+                        ColumnVectors.ofLong(ungrouped, name).subVector(bigStart + (1L << 31) - 1,
+                                bigStart + (1L << 31) + 2).toArray());
+            }
+            final ColumnSource<String> strings = ungrouped.getColumnSource("S", String.class);
+            for (final long offset : bigOffsets) {
+                final long rowKey = rowSet.get(bigStart + offset);
+                assertEquals("S offset " + offset, Long.toString(offset), strings.get(rowKey));
+                assertEquals("S offset " + offset, Long.toString(offset), strings.getPrev(rowKey));
+            }
+            assertEquals("7", strings.get(rowSet.get(smallPosition)));
+
+            // The array is shorter than the vector, so every offset past its end is null, even one whose low 32 bits
+            // are a valid array index.
+            final Table nullFilled = toUngroup.ungroup(true, "L", "A");
+            assertEquals(bigSize + 1, nullFilled.size());
+            final RowSet nullFilledRowSet = nullFilled.getRowSet();
+            final ColumnSource<Long> arrayValues = nullFilled.getColumnSource("A", long.class);
+            final long[] expectedArrayValues = {11, 12, QueryConstants.NULL_LONG, QueryConstants.NULL_LONG,
+                    QueryConstants.NULL_LONG, QueryConstants.NULL_LONG, QueryConstants.NULL_LONG};
+            for (int oi = 0; oi < bigOffsets.length; ++oi) {
+                final long rowKey = nullFilledRowSet.get(bigStart + bigOffsets[oi]);
+                assertEquals("A offset " + bigOffsets[oi], expectedArrayValues[oi], arrayValues.getLong(rowKey));
+                assertEquals("A offset " + bigOffsets[oi], expectedArrayValues[oi], arrayValues.getPrevLong(rowKey));
+            }
+            assertEquals(QueryConstants.NULL_LONG,
+                    arrayValues.getLong(nullFilledRowSet.get(bigStart + (1L << 32) + 1)));
+            assertEquals(13L, arrayValues.getLong(nullFilledRowSet.get(smallPosition)));
+        }
+    }
+
+    @Test
+    public void testUngroupLargeGroupsRebase() {
+        // A slot of 2^31 elements is the largest whose size is a positive int; a slot of 2^32 elements is the
+        // smallest whose size does not fit in an int at all. Both grow to a group that needs 33 bits.
+        checkUngroupLargeGroupRebase((1L << 30) + 1, 31);
+        checkUngroupLargeGroupRebase((1L << 31) + 1, 32);
+    }
+
+    private void checkUngroupLargeGroupRebase(final long initialSize, final int initialBase) {
+        final long grownSize = (1L << 32) + 1;
+        final int grownBase = 33;
+        final Table values = testTable(RowSetFactory.flat(grownSize).toTracking()).view("L = k");
+        final ColumnSource<Long> valueSource = values.getColumnSource("L", long.class);
+
+        final QueryTable grouped = testRefreshingTable(i(0, 1).toTracking(),
+                new ColumnHolder<>("W", LongVector.class, long.class, false,
+                        new LongVectorColumnWrapper(valueSource, RowSetFactory.flat(initialSize)),
+                        new LongVectorDirect(7)));
+        final Table ungrouped = grouped.ungroup();
+        final ColumnSource<Long> cs = ungrouped.getColumnSource("W", long.class);
+        final RowSet initialRowSet = RowSetFactory.fromRange(0, initialSize - 1).union(i(1L << initialBase));
+        final long[] initialOffsets = {0, 1, initialSize / 2, initialSize - 1};
+        assertEquals(initialSize + 1, ungrouped.size());
+        assertEquals(initialRowSet, ungrouped.getRowSet());
+        for (final long offset : initialOffsets) {
+            assertEquals("initial offset " + offset, offset, cs.getLong(offset));
+        }
+        assertEquals(7L, cs.getLong(1L << initialBase));
+
+        final RowSet grownRowSet = RowSetFactory.fromRange(0, grownSize - 1).union(i(1L << grownBase));
+        final long[] grownOffsets = {0, 1, initialSize - 1, initialSize, (1L << 31) - 1, 1L << 31,
+                (1L << 31) + 2, 1L << 32, grownSize - 1};
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(grouped, i(0), new ColumnHolder<>("W", LongVector.class, long.class, false,
+                    new LongVectorColumnWrapper(valueSource, RowSetFactory.flat(grownSize))));
+            grouped.notifyListeners(i(), i(), i(0));
+            updateGraph.flushAllNormalNotificationsForUnitTests();
+            assertTrue(ungrouped.satisfied(updateGraph.clock().currentStep()));
+
+            // Within the cycle, the previous row set and values are still those of the initial base.
+            assertEquals(initialRowSet, ungrouped.getRowSet().prev());
+            for (final long offset : initialOffsets) {
+                assertEquals("prev offset " + offset, offset, cs.getPrevLong(offset));
+                assertEquals("prev offset " + offset, Long.valueOf(offset), cs.getPrev(offset));
+            }
+            assertEquals(7L, cs.getPrevLong(1L << initialBase));
+
+            assertEquals(grownRowSet, ungrouped.getRowSet());
+            for (final long offset : grownOffsets) {
+                assertEquals("current offset " + offset, offset, cs.getLong(offset));
+            }
+            assertEquals(7L, cs.getLong(1L << grownBase));
+        });
+
+        assertEquals(grownSize + 1, ungrouped.size());
+        assertEquals(grownRowSet, ungrouped.getRowSet());
+        for (final long offset : grownOffsets) {
+            assertEquals("grown offset " + offset, offset, cs.getLong(offset));
+        }
+        assertEquals(7L, cs.getLong(1L << grownBase));
     }
 
     @Test

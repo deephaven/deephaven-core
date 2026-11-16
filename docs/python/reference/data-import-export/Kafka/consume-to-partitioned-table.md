@@ -39,7 +39,7 @@ The Kafka topic name.
 </Param>
 <Param name="offsets" type="dict[int, int]" optional>
 
-- `ALL_PARTITIONS_DONT_SEEK` (default) - Only receive new messages produced after this call is processed. This matches the default if `offsets` is not specified.
+- `ALL_PARTITIONS_DONT_SEEK` (default) - Start from the consumer's current position without seeking. This matches the default if `offsets` is not specified.
 - `ALL_PARTITIONS_SEEK_TO_END` - Go to the newest available message for every partition.
 - `ALL_PARTITIONS_SEEK_TO_BEGINNING` - Go to the oldest available message for every partition.
 - `{ _number_ : _offset_, ... }` - Map partition numbers to numeric offsets or one of the constants `DONT_SEEK`, `SEEK_TO_END`, `SEEK_TO_BEGINNING`.
@@ -92,7 +92,7 @@ An in-memory partitioned table.
 
 ## Examples
 
-In the following example, `consume_to_partitioned_table` reads the Kafka topic `orders` into a partitioned table. It uses the JSON format to parse the stream. Since we do not provide `partitions` or `offsets` values, the consumer will include all partitions and start from the first message received after the `consume_to_partitioned_table` call.
+In the following example, `consume_to_partitioned_table` reads the Kafka topic `orders` into a partitioned table. It uses the JSON format to parse the stream. Since the example does not provide `partitions` or `offsets` values, the consumer includes all partitions and starts from its current position without seeking.
 
 ```python docker-config=kafka order=null
 from deephaven import kafka_consumer as kc

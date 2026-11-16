@@ -8,17 +8,17 @@ instruments for working with Deephaven refreshing and static data."""
 from __future__ import annotations
 
 import contextlib
-import sys
-from collections.abc import Generator, Iterable, Mapping, Sequence
+from abc import abstractmethod
+from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
 from enum import Enum, auto
 from functools import cache, cached_property
 from typing import (
-    TYPE_CHECKING,
     Any,
-    Callable,
+    ClassVar,
+    Generic,
     Literal,
-    Optional,
     Protocol,
+    TypeAlias,
     Union,
 )
 
@@ -26,6 +26,7 @@ import jpy
 import numpy as np
 
 from deephaven import DHError, dtypes
+from deephaven._doc_template import T, copy_ops
 from deephaven._query_scope import query_scope_ctx
 from deephaven._wrapper import JObjectWrapper, unwrap
 from deephaven.agg import Aggregation
@@ -39,13 +40,11 @@ from deephaven.jcompat import (
     j_map_to_dict,
     j_unary_operator,
     to_sequence,
+    to_str_sequence,
 )
 from deephaven.time import DurationLike, to_j_duration
 from deephaven.update_graph import UpdateGraph, auto_locking_ctx
 from deephaven.updateby import UpdateByOperation
-
-if TYPE_CHECKING:
-    from typing_extensions import TypeAlias  # novermin  # noqa
 
 # Table
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
@@ -128,6 +127,9 @@ _JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
 _JTableAssertions = jpy.get_type(
     "io.deephaven.engine.table.impl.verify.TableAssertions"
 )
+_JTransportCompressionAttribute = jpy.get_type(
+    "io.deephaven.extensions.barrage.TransportCompressionAttribute"
+)
 
 
 @cache
@@ -135,6 +137,26 @@ def _default_cross_join_reserve_bits() -> int:
     return jpy.get_type(
         "io.deephaven.engine.table.impl.CrossJoinHelper"
     ).DEFAULT_NUM_RIGHT_BITS_TO_RESERVE
+
+
+def _j_with_transport_compression(
+    j_grid: jpy.JType, compression_types: str | Sequence[str] | None
+) -> jpy.JType:
+    """Returns a copy of a Java table, rollup table or tree table with its TransportCompression attribute set to the
+    given compression type names, which the Java method checks against the supported names, or without the attribute
+    when the names are None, so that the server's default compression types apply."""
+    if compression_types is None:
+        return _JTransportCompressionAttribute.resetCompression(j_grid)
+    names = to_str_sequence(compression_types, "compression type name")
+    return _JTransportCompressionAttribute.withCompression(j_grid, j_array_list(names))
+
+
+def _j_reset_transport_compression(j_grid: jpy.JType) -> jpy.JType:
+    """Returns a copy of a Java table, rollup table or tree table without its TransportCompression attribute, which
+    undoes with_transport_compression: the server compresses the result's Barrage snapshots and subscriptions with
+    its default compression types, from the TransportCompression.defaultTypes property, and does not compress them when
+    that property is unset."""
+    return _JTransportCompressionAttribute.resetCompression(j_grid)
 
 
 class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
@@ -172,7 +194,7 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
             raise DHError(e, f"failed to create a Selectable: {formula}") from e
 
     def with_declared_barriers(
-        self, barriers: Union[Barrier, Sequence[Barrier]]
+        self, barriers: Barrier | Sequence[Barrier]
     ) -> Selectable:
         """Returns a new Selectable with the given declared barriers.
 
@@ -196,7 +218,7 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
             ) from e
 
     def with_respected_barriers(
-        self, barriers: Union[Barrier, Sequence[Barrier]]
+        self, barriers: Barrier | Sequence[Barrier]
     ) -> Selectable:
         """Returns a new Selectable with the given respected barriers.
 
@@ -294,7 +316,7 @@ class _FormatOperationsRecorder(Protocol):
 
     def __init__(self, j_node_ops_recorder: jpy.JType): ...
 
-    def format_column(self, formulas: Union[str, Sequence[str]]):
+    def format_column(self, formulas: str | Sequence[str]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.format_columns` operation applied to nodes."""
         formulas = to_sequence(formulas)
         j_format_ops_recorder = jpy.cast(
@@ -329,7 +351,7 @@ class _SortOperationsRecorder(Protocol):
 
     def __init__(self, j_node_ops_recorder: jpy.JType): ...
 
-    def sort(self, order_by: Union[str, Sequence[str]]):
+    def sort(self, order_by: str | Sequence[str]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.sort` operation applied to nodes."""
         order_by = to_sequence(order_by)
         j_sort_ops_recorder = jpy.cast(
@@ -337,7 +359,7 @@ class _SortOperationsRecorder(Protocol):
         )
         return self.__class__(j_sort_ops_recorder.sort(order_by))
 
-    def sort_descending(self, order_by: Union[str, Sequence[str]]):
+    def sort_descending(self, order_by: str | Sequence[str]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.sort_descending` applied to nodes."""
         order_by = to_sequence(order_by)
         j_sort_ops_recorder = jpy.cast(
@@ -354,7 +376,7 @@ class _FilterOperationsRecorder(Protocol):
 
     def __init__(self, j_node_ops_recorder: jpy.JType): ...
 
-    def where(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]):
+    def where(self, filters: str | Filter | Sequence[str] | Sequence[Filter]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.where` operation applied to nodes."""
         j_filter_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFilterOperationsRecorder
@@ -369,7 +391,7 @@ class _UpdateViewOperationsRecorder(Protocol):
 
     def __init__(self, j_node_ops_recorder: jpy.JType): ...
 
-    def update_view(self, formulas: Union[str, Sequence[str]]):
+    def update_view(self, formulas: str | Sequence[str]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.update_view` operation applied to nodes."""
         formulas = to_sequence(formulas)
         j_update_view_ops_recorder = jpy.cast(
@@ -484,8 +506,65 @@ class RollupTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "with_node_operations on RollupTable failed.") from e
 
+    def with_transport_compression(
+        self, compression_types: str | Sequence[str] | None
+    ) -> RollupTable:
+        """Returns a new RollupTable that allows the server to compress its Barrage snapshots and subscriptions with
+        the given compression types. See :meth:`Table.with_transport_compression`. The compression of the rollup's
+        source table is not used.
+
+        Args:
+            compression_types (Optional[Union[str, Sequence[str]]]): the name, or names, of the compression types to
+                allow, most preferred first; an empty sequence returns a RollupTable that is never compressed, and
+                None one that uses the server's default compression types
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            return RollupTable(
+                j_rollup_table=jpy.cast(
+                    _j_with_transport_compression(
+                        self.j_rollup_table, compression_types
+                    ),
+                    _JRollupTable,
+                ),
+                include_constituents=self.include_constituents,
+                aggs=self.aggs,
+                by=self.by,
+            )
+        except Exception as e:
+            raise DHError(e, "with_transport_compression on RollupTable failed.") from e
+
+    def reset_transport_compression(self) -> RollupTable:
+        """Returns a new RollupTable that the server compresses with its default compression types, which undoes
+        :meth:`with_transport_compression`. See :meth:`Table.reset_transport_compression`.
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            return RollupTable(
+                j_rollup_table=jpy.cast(
+                    _j_reset_transport_compression(self.j_rollup_table), _JRollupTable
+                ),
+                include_constituents=self.include_constituents,
+                aggs=self.aggs,
+                by=self.by,
+            )
+        except Exception as e:
+            raise DHError(
+                e, "reset_transport_compression on RollupTable failed."
+            ) from e
+
     def with_filters(
-        self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
+        self, filters: str | Filter | Sequence[str] | Sequence[Filter]
     ) -> RollupTable:
         """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
 
@@ -500,8 +579,10 @@ class RollupTable(JObjectWrapper):
             DHError
         """
         try:
+            with query_scope_ctx():
+                j_rollup_table = self.j_rollup_table.withFilter(and_(filters).j_filter)
             return RollupTable(
-                j_rollup_table=self.j_rollup_table.withFilter(and_(filters).j_filter),
+                j_rollup_table=j_rollup_table,
                 include_constituents=self.include_constituents,
                 aggs=self.aggs,
                 by=self.by,
@@ -509,7 +590,7 @@ class RollupTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "with_filters operation on RollupTable failed.") from e
 
-    def with_update_view(self, formulas: Union[str, Sequence[str]]) -> RollupTable:
+    def with_update_view(self, formulas: str | Sequence[str]) -> RollupTable:
         """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
 
         Args:
@@ -616,8 +697,59 @@ class TreeTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "with_node_operations on TreeTable failed.") from e
 
+    def with_transport_compression(
+        self, compression_types: str | Sequence[str] | None
+    ) -> TreeTable:
+        """Returns a new TreeTable that allows the server to compress its Barrage snapshots and subscriptions with the
+        given compression types. See :meth:`Table.with_transport_compression`. The compression of the tree's source
+        table is not used.
+
+        Args:
+            compression_types (Optional[Union[str, Sequence[str]]]): the name, or names, of the compression types to
+                allow, most preferred first; an empty sequence returns a TreeTable that is never compressed, and
+                None one that uses the server's default compression types
+
+        Returns:
+            a new TreeTable
+
+        Raises:
+            DHError
+        """
+        try:
+            return TreeTable(
+                j_tree_table=jpy.cast(
+                    _j_with_transport_compression(self.j_tree_table, compression_types),
+                    _JTreeTable,
+                ),
+                id_col=self.id_col,
+                parent_col=self.parent_col,
+            )
+        except Exception as e:
+            raise DHError(e, "with_transport_compression on TreeTable failed.") from e
+
+    def reset_transport_compression(self) -> TreeTable:
+        """Returns a new TreeTable that the server compresses with its default compression types, which undoes
+        :meth:`with_transport_compression`. See :meth:`Table.reset_transport_compression`.
+
+        Returns:
+            a new TreeTable
+
+        Raises:
+            DHError
+        """
+        try:
+            return TreeTable(
+                j_tree_table=jpy.cast(
+                    _j_reset_transport_compression(self.j_tree_table), _JTreeTable
+                ),
+                id_col=self.id_col,
+                parent_col=self.parent_col,
+            )
+        except Exception as e:
+            raise DHError(e, "reset_transport_compression on TreeTable failed.") from e
+
     def with_filters(
-        self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
+        self, filters: str | Filter | Sequence[str] | Sequence[Filter]
     ) -> TreeTable:
         """Returns a new TreeTable by applying the given set of filters to the columns of this TreeTable.
 
@@ -633,8 +765,10 @@ class TreeTable(JObjectWrapper):
         """
 
         try:
+            with query_scope_ctx():
+                j_tree_table = self.j_tree_table.withFilter(and_(filters).j_filter)
             return TreeTable(
-                j_tree_table=self.j_tree_table.withFilter(and_(filters).j_filter),
+                j_tree_table=j_tree_table,
                 id_col=self.id_col,
                 parent_col=self.parent_col,
             )
@@ -679,24 +813,13 @@ def _sorting_order(dir_: SortDirection) -> jpy.JType:
     )
 
 
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias  # novermin  # noqa
-
-    TableDefinitionLike: TypeAlias = Union[
-        "TableDefinition",
-        Mapping[str, dtypes.DType],
-        Iterable[ColumnDefinition],
-        jpy.JType,
-    ]
-    """A Union representing objects that can be coerced into a TableDefinition."""
-else:
-    TableDefinitionLike = Union[
-        "TableDefinition",
-        Mapping[str, dtypes.DType],
-        Iterable[ColumnDefinition],
-        jpy.JType,
-    ]
-    """A Union representing objects that can be coerced into a TableDefinition."""
+TableDefinitionLike: TypeAlias = Union[
+    "TableDefinition",
+    Mapping[str, dtypes.DType],
+    Iterable[ColumnDefinition],
+    jpy.JType,
+]
+"""A Union representing objects that can be coerced into a TableDefinition."""
 
 
 class TableDefinition(JObjectWrapper, Mapping):
@@ -810,409 +933,362 @@ class TableDefinition(JObjectWrapper, Mapping):
         return JObjectWrapper.__hash__(self)
 
 
-class Table(JObjectWrapper):
-    """A Table represents a Deephaven table. It allows applications to perform powerful Deephaven table operations.
+class _TableOperations(JObjectWrapper, Generic[T]):
+    """The table operations that Table and PartitionedTableProxy share. Each one calls the method of the same
+    name on the Java ``TableOperations`` interface, which both Java classes implement. The ops reach the Java object
+    through ``j_object``, which each subclass defines as a JObjectWrapper.
 
-    Note: It should not be instantiated directly by user code. Tables are mostly created by factory methods,
-    data ingestion operations, queries, aggregations, joins, etc.
-
+    A subclass that sets ``_doc_vars`` gets its own copy of every public op, with the op's docstring filled in from
+    those values. ``returns`` fills ``{returns}``. ``right_type`` fills ``{right_type}``, the type of the right or
+    trigger table in the Args section. ``right_note`` fills a ``{right_note}`` line, which says what an op does when
+    the other table has the subclass's own type. An empty ``right_note`` removes the line. A non-empty ``intro``
+    becomes the first paragraph. ``{op}`` in any of them becomes the op's name.
     """
 
-    j_object_type = _JTable
+    _doc_vars: ClassVar[dict[str, str]] = {}
 
-    def __init__(self, j_table: jpy.JType):
-        self.j_table = jpy.cast(j_table, self.j_object_type)
-        if self.j_table is None:
-            raise DHError("j_table type is not io.deephaven.engine.table.Table")
-        self._definition = TableDefinition(self.j_table.getDefinition())
-
-    def __repr__(self):
-        default_repr = super().__repr__()
-        # default_repr is in a format like so:
-        # deephaven.table.Table(io.deephaven.engine.table.Table(objectRef=0x7f07e4890518))
-        # We take the last two brackets off, add a few more details about the table, then add the necessary brackets
-        # back
-        column_dict = {col.name: col.data_type for col in self.columns[:10]}
-        repr_str = (
-            f"{default_repr[:-2]}, num_rows = {self.size}, columns = {column_dict}"
-        )
-        # We need to add the two brackets back, and also truncate it to be 120 char total (118 + two brackets)
-        repr_str = repr_str[:114] + "...}))" if len(repr_str) > 118 else repr_str + "))"
-        return repr_str
-
-    def __str__(self):
-        return repr(self)
-
-    @property
-    def size(self) -> int:
-        """The current number of rows in the table."""
-        return self.j_table.size()
-
-    @property
-    def is_refreshing(self) -> bool:
-        """Whether this table is refreshing."""
-        return self.j_table.isRefreshing()
-
-    @property
-    def is_blink(self) -> bool:
-        """Whether this table is a blink table."""
-        return _JBlinkTableTools.isBlink(self.j_table)
-
-    @property
-    def is_failed(self) -> bool:
-        """Whether this table is in a failure state and is no longer usable."""
-        return self.j_table.isFailed()
-
-    @cached_property
-    def update_graph(self) -> UpdateGraph:
-        """The update graph of the table."""
-        return UpdateGraph(self.j_table.getUpdateGraph())
-
-    @property
-    def is_flat(self) -> bool:
-        """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
-        return self.j_table.isFlat()
-
-    @property
-    def definition(self) -> TableDefinition:
-        """The table definition."""
-        return self._definition
-
-    @property
-    def column_names(self) -> Sequence[str]:
-        """The column names of the table."""
-        return list(self.definition.keys())
-
-    @property
-    def columns(self) -> Sequence[ColumnDefinition]:
-        """The column definitions of the table."""
-        return list(self.definition.values())
-
-    @property
-    def meta_table(self) -> Table:
-        """The column definitions of the table in a Table form."""
-        return Table(j_table=self.j_table.meta())
-
-    @property
-    def j_object(self) -> jpy.JType:
-        return self.j_table
-
-    def iter_dict(
-        self,
-        cols: Optional[Union[str, Sequence[str]]] = None,
-        *,
-        chunk_size: int = 2048,
-    ) -> Generator[dict[str, Any], None, None]:
-        """Returns a generator that reads one row at a time from the table into a dictionary. The dictionary is a map
-        of column names to scalar values of the column data type.
-
-        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
-        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
-        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
-        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
-        context will be released after the generator is destroyed. That can happen implicitly when the generator
-        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
-        closed
-        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
-        it.
-
-        Args:
-            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
-            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python
-            boundary
-                crossings. Default is 2048.
-
-        Returns:
-            A generator that yields a dictionary of column names to scalar values.
-
-        Raises:
-            ValueError
-        """
-        from deephaven._table_reader import (
-            _table_reader_row_dict,
-        )  # to prevent circular import
-
-        return _table_reader_row_dict(self, cols, chunk_size=chunk_size)
-
-    def iter_tuple(
-        self,
-        cols: Optional[Union[str, Sequence[str]]] = None,
-        *,
-        tuple_name: str = "Deephaven",
-        chunk_size: int = 2048,
-    ) -> Generator[tuple[Any, ...], None, None]:
-        """Returns a generator that reads one row at a time from the table into a named tuple. The named tuple is made
-        up of fields with their names being the column names and their values being of the column data types.
-
-        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
-        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
-        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
-        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
-        context will be released after the generator is destroyed. That can happen implicitly when the generator
-        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
-        closed
-        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
-        it.
-
-        Args:
-            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read. Default
-            is None.
-            tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
-            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python
-            boundary
-                crossings. Default is 2048.
-
-        Returns:
-            A generator that yields a named tuple for each row in the table
-
-        Raises:
-            ValueError
-        """
-        from deephaven._table_reader import (
-            _table_reader_row_tuple,
-        )  # to prevent circular import
-
-        return _table_reader_row_tuple(
-            self, cols, tuple_name=tuple_name, chunk_size=chunk_size
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        copy_ops(
+            _TableOperations,
+            cls,
+            required=("returns", "right_type"),
+            defaults={"right_note": "", "intro": ""},
         )
 
-    def iter_chunk_dict(
-        self, cols: Optional[Union[str, Sequence[str]]] = None, chunk_size: int = 2048
-    ) -> Generator[dict[str, np.ndarray], None, None]:
-        """Returns a generator that reads one chunk of rows at a time from the table into a dictionary. The dictionary
-        is a map of column names to numpy arrays of the column data type.
+    @abstractmethod
+    def _wrap_result(self, j_obj: jpy.JType) -> T:
+        """Returns the Java result of an op wrapped in this class."""
 
-        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
-        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
-        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
-        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
-        context will be released after the generator is destroyed. That can happen implicitly when the generator
-        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
-        closed
-        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
-        it.
+    @abstractmethod
+    def _unwrap_other(self, table: Table | T) -> jpy.JType:
+        """Returns the Java object to pass to an op for its other table: the right table of a join, the filter table
+        of where_in and where_not_in, the trigger table of snapshot_when, or the initial groups of agg_by."""
 
-        Args:
-            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
-            chunk_size (int): The number of rows to read at a time. Default is 2048.
+    @abstractmethod
+    def _extra_lock_ctx(self, *others: Table | T) -> contextlib.AbstractContextManager:
+        """Returns the update graph lock context this class adds to the ops for which Java does not require the lock
+        on a Table.
 
-        Returns:
-            A generator that yields a dictionary of column names to numpy arrays.
-
-        Raises
-            ValueError
-        """
-        from deephaven._table_reader import (
-            _table_reader_chunk_dict,
-        )  # to prevent circular import
-
-        return _table_reader_chunk_dict(
-            self,
-            cols=cols,
-            row_set=self.j_table.getRowSet(),
-            chunk_size=chunk_size,
-            prev=False,
-        )
-
-    def iter_chunk_tuple(
-        self,
-        cols: Optional[Union[str, Sequence[str]]] = None,
-        tuple_name: str = "Deephaven",
-        chunk_size: int = 2048,
-    ) -> Generator[tuple[np.ndarray, ...], None, None]:
-        """Returns a generator that reads one chunk of rows at a time from the table into a named tuple. The named
-        tuple is made up of fields with their names being the column names and their values being numpy arrays of the
-        column data types.
-
-        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
-        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
-        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
-        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
-        context will be released after the generator is destroyed. That can happen implicitly when the generator
-        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
-        closed
-        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
-        it.
+        The ops for which Java requires the lock on a refreshing Table, such as update, the joins and snapshot, take
+        it through auto_locking_ctx on every class and do not call this. A class that adds no lock returns a null
+        context.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
-            tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
-            chunk_size (int): The number of rows to read at a time. Default is 2048.
-
-        Returns:
-            A generator that yields a named tuple for each row in the table.
-
-        Raises:
-            ValueError
+            others (Table | T): the other tables of the op, which the lock also covers when they are refreshing
         """
-        from deephaven._table_reader import (
-            _table_reader_chunk_tuple,
-        )  # to prevent circular import
 
-        return _table_reader_chunk_tuple(
-            self, cols=cols, tuple_name=tuple_name, chunk_size=chunk_size
-        )
+    @abstractmethod
+    def _make_op_error(self, e: Exception, op: str) -> DHError:
+        """Returns the DHError for an op that failed. The op raises it."""
 
-    def has_columns(self, cols: Union[str, Sequence[str]]):
-        """Whether this table contains a column for each of the provided names, return False if any of the columns is
-        not in the table.
+    def drop_columns(self, cols: str | Sequence[str]) -> T:
+        """The drop_columns method creates a new table with the same size as this table but omits any of specified
+        columns.
 
         Args:
             cols (Union[str, Sequence[str]]): the column name(s)
 
         Returns:
-            bool
-        """
-        cols = to_sequence(cols)
-        return self.j_table.hasColumns(cols)
-
-    def attributes(self) -> dict[str, Any]:
-        """Returns all the attributes defined on the table."""
-        j_map = jpy.cast(self.j_table, _JAttributeMap).getAttributes()
-        return j_map_to_dict(j_map)
-
-    def with_attributes(self, attrs: dict[str, Any]) -> Table:
-        """Returns a new Table that has the provided attributes defined on it and shares the underlying data and schema
-        with this table.
-
-        Note, the table attributes are immutable once defined, and are mostly used internally by the Deephaven
-        engine. For advanced users, certain predefined plug-in attributes provide a way to extend Deephaven with
-        custom-built plug-ins.
-
-        Args:
-            attrs (dict[str, Any]): a dict of table attribute names and their values
-
-        Returns:
-            a new Table
+            {returns}
 
         Raises:
             DHError
         """
         try:
-            j_map = j_hashmap(attrs)
-            return Table(
-                j_table=jpy.cast(self.j_table, _JAttributeMap).withAttributes(j_map)
-            )
+            with self._extra_lock_ctx():
+                cols = to_sequence(cols)
+                return self._wrap_result(self.j_object.dropColumns(*cols))
         except Exception as e:
-            raise DHError(e, "failed to create a table with attributes.") from e
+            raise self._make_op_error(e, "drop_columns") from e
 
-    def without_attributes(self, attrs: Union[str, Sequence[str]]) -> Table:
-        """Returns a new Table that shares the underlying data and schema with this table but with the specified
-        attributes removed.
+    def update(
+        self, formulas: str | Sequence[str] | Selectable | Sequence[Selectable]
+    ) -> T:
+        """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
-            attrs (Union[str, Sequence[str]]): the attribute name(s) to be removed
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or
+            Selectable(s)
 
         Returns:
-            a new Table
+            {returns}
 
         Raises:
             DHError
         """
         try:
-            j_attrs = j_array_list(to_sequence(attrs))
-            return Table(
-                j_table=jpy.cast(self.j_table, _JAttributeMap).withoutAttributes(
-                    j_attrs
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), auto_locking_ctx(self):
+                # Selectable objects go to Java as a collection. An empty list does too, which adds no columns.
+                # Strings go to Java one by one.
+                if not formulas or isinstance(formulas[0], Selectable.j_object_type):
+                    return self._wrap_result(
+                        self.j_object.update(j_array_list(formulas))
+                    )
+                else:
+                    return self._wrap_result(self.j_object.update(*formulas))
+        except Exception as e:
+            raise self._make_op_error(e, "update") from e
+
+    def lazy_update(self, formulas: str | Sequence[str]) -> T:
+        """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
+
+        Args:
+            formulas (Union[str, Sequence[str]]): the column formula(s)
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), auto_locking_ctx(self):
+                return self._wrap_result(self.j_object.lazyUpdate(*formulas))
+        except Exception as e:
+            raise self._make_op_error(e, "lazy_update") from e
+
+    def view(self, formulas: str | Sequence[str]) -> T:
+        """The view method creates a new formula table that includes one column for each formula.
+
+        Args:
+            formulas (Union[str, Sequence[str]]): the column formula(s)
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.view(*formulas))
+        except Exception as e:
+            raise self._make_op_error(e, "view") from e
+
+    def update_view(self, formulas: str | Sequence[str]) -> T:
+        """The update_view method creates a new table containing a new, formula column for each formula.
+
+        Args:
+            formulas (Union[str, Sequence[str]]): the column formula(s)
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.updateView(*formulas))
+        except Exception as e:
+            raise self._make_op_error(e, "update_view") from e
+
+    def select(
+        self,
+        formulas: str | Sequence[str] | Selectable | Sequence[Selectable] | None = None,
+    ) -> T:
+        """The select method creates a new in-memory table that includes one column for each formula. If no formula
+        is specified, all columns will be included.
+
+        Args:
+            formulas (Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]]): the column formula(s)
+                or Selectable(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with query_scope_ctx(), auto_locking_ctx(self):
+                if not formulas:
+                    return self._wrap_result(self.j_object.select())
+
+                formulas = to_sequence(formulas)
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return self._wrap_result(
+                        self.j_object.select(j_array_list(formulas))
+                    )
+                else:
+                    return self._wrap_result(self.j_object.select(*formulas))
+        except Exception as e:
+            raise self._make_op_error(e, "select") from e
+
+    def select_distinct(self, formulas: str | Sequence[str] | None = None) -> T:
+        """The select_distinct method creates a new table containing all the unique values for a set of key
+        columns. When the selectDistinct method is used on multiple columns, it looks for distinct sets of values in
+        the selected columns.
+
+        Args:
+            formulas (Optional[Union[str, Sequence[str]]]): the column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.selectDistinct(*formulas))
+        except Exception as e:
+            raise self._make_op_error(e, "select_distinct") from e
+
+    def where(
+        self,
+        filters: str | Filter | Sequence[str] | Sequence[Filter] | None = None,
+    ) -> T:
+        """The where method creates a new table with only the rows meeting the filter criteria in the column(s) of
+        the table.
+
+        Args:
+            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition
+                expression(s) or Filter object(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            filters = to_sequence(filters)
+            with query_scope_ctx(), self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.where(and_(filters).j_filter))
+        except Exception as e:
+            raise self._make_op_error(e, "where") from e
+
+    def where_in(self, filter_table: Table | T, cols: str | Sequence[str]) -> T:
+        """The where_in method creates a new table containing rows from the source table, where the rows match
+        values in the filter table. The filter is updated whenever either table changes.
+
+        {right_note}
+
+        Args:
+            filter_table ({right_type}): the table containing the set of values to filter on
+            cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx(filter_table):
+                cols = to_sequence(cols)
+                return self._wrap_result(
+                    self.j_object.whereIn(self._unwrap_other(filter_table), *cols)
                 )
-            )
         except Exception as e:
-            raise DHError(e, "failed to create a table without attributes.") from e
+            raise self._make_op_error(e, "where_in") from e
 
-    def with_keys(self, cols: Union[str, Sequence[str]]) -> Table:
-        """Returns a new Table that shares the underlying data and schema with this table and has the specified
-        columns marked as its key columns.
+    def where_not_in(self, filter_table: Table | T, cols: str | Sequence[str]) -> T:
+        """The where_not_in method creates a new table containing rows from the source table, where the rows do not
+        match values in the filter table.
+
+        {right_note}
 
         Args:
-            cols (Union[str, Sequence[str]]): the key column name(s), must name at least one existing column
+            filter_table ({right_type}): the table containing the set of values to filter on
+            cols (Union[str, Sequence[str]]): the column name(s)
 
         Returns:
-            a new Table
+            {returns}
 
         Raises:
             DHError
         """
         try:
-            cols = to_sequence(cols)
-            return Table(j_table=self.j_table.withKeys(*cols))
+            with self._extra_lock_ctx(filter_table):
+                cols = to_sequence(cols)
+                return self._wrap_result(
+                    self.j_object.whereNotIn(self._unwrap_other(filter_table), *cols)
+                )
         except Exception as e:
-            raise DHError(e, "failed to create a table with key columns.") from e
+            raise self._make_op_error(e, "where_not_in") from e
 
-    def with_unique_keys(self, cols: Union[str, Sequence[str]]) -> Table:
-        """Returns a new Table that shares the underlying data and schema with this table and has the specified
-        columns marked as its key columns, additionally indicating that each key set will be unique.
+    def head(self, num_rows: int) -> T:
+        """The head method creates a new table with a specific number of rows from the beginning of the table.
 
         Args:
-            cols (Union[str, Sequence[str]]): the key column name(s), must name at least one existing column
+            num_rows (int): the number of rows at the head of table
 
         Returns:
-            a new Table
+            {returns}
 
         Raises:
             DHError
         """
         try:
-            cols = to_sequence(cols)
-            return Table(j_table=self.j_table.withUniqueKeys(*cols))
+            with self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.head(num_rows))
         except Exception as e:
-            raise DHError(e, "failed to create a table with unique key columns.") from e
+            raise self._make_op_error(e, "head") from e
 
-    def to_string(
-        self, num_rows: int = 10, cols: Optional[Union[str, Sequence[str]]] = None
-    ) -> str:
-        """Returns the first few rows of a table as a pipe-delimited string.
+    def tail(self, num_rows: int) -> T:
+        """The tail method creates a new table with a specific number of rows from the end of the table.
 
         Args:
-            num_rows (int): the number of rows at the beginning of the table
-            cols (Optional[Union[str, Sequence[str]]]): the column name(s), default is None
+            num_rows (int): the number of rows at the end of table
 
         Returns:
-            string
+            {returns}
 
         Raises:
             DHError
         """
         try:
-            cols = to_sequence(cols)
-            return _JTableTools.string(self.j_table, num_rows, *cols)
+            with self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.tail(num_rows))
         except Exception as e:
-            raise DHError(e, "table to_string failed") from e
+            raise self._make_op_error(e, "tail") from e
 
-    def coalesce(self) -> Table:
-        """Returns a coalesced child table."""
-        return Table(j_table=self.j_table.coalesce())
+    def reverse(self) -> T:
+        """The reverse method creates a new table with all of the rows from this table in reverse order.
 
-    def flatten(self) -> Table:
-        """Returns a new version of this table with a flat row set, i.e. from 0 to number of rows - 1."""
-        return Table(j_table=self.j_table.flatten())
+        Returns:
+            {returns}
 
-    def remove_blink(self) -> Table:
-        """Returns a non-blink child table, or this table if it is not a blink table."""
-        return Table(j_table=self.j_table.removeBlink())
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.reverse())
+        except Exception as e:
+            raise self._make_op_error(e, "reverse") from e
 
-    def snapshot(self) -> Table:
+    def snapshot(self) -> T:
         """Returns a static snapshot table.
 
         Returns:
-            a new table
+            {returns}
 
         Raises:
             DHError
         """
         try:
             with auto_locking_ctx(self):
-                return Table(j_table=self.j_table.snapshot())
+                return self._wrap_result(self.j_object.snapshot())
         except Exception as e:
-            raise DHError(message="failed to create a snapshot.") from e
+            raise self._make_op_error(e, "snapshot") from e
 
     def snapshot_when(
         self,
-        trigger_table: Table,
-        stamp_cols: Optional[Union[str, Sequence[str]]] = None,
+        trigger_table: Table | T,
+        stamp_cols: str | Sequence[str] | None = None,
         initial: bool = False,
         incremental: bool = False,
         history: bool = False,
-    ) -> Table:
+    ) -> T:
         """Returns a table that captures a snapshot of this table whenever trigger_table updates.
 
         When trigger_table updates, a snapshot of this table and the "stamp key" from trigger_table form the resulting
@@ -1223,8 +1299,10 @@ class Table(JObjectWrapper):
         append-only and has modified or removed rows in its updates, the result snapshot table will be put in a failure
         state and become unusable.
 
+        {right_note}
+
         Args:
-            trigger_table (Table): the trigger table
+            trigger_table ({right_type}): the trigger table
             stamp_cols (Optional[Union[str, Sequence[str]]]): The columns from trigger_table that form the "stamp key", may be
                 renames. None, or empty, means that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
@@ -1238,7 +1316,7 @@ class Table(JObjectWrapper):
                 must be False.
 
         Returns:
-            a new table
+            {returns}
 
         Raises:
             DHError
@@ -1248,485 +1326,19 @@ class Table(JObjectWrapper):
                 initial, incremental, history, to_sequence(stamp_cols)
             )
             with auto_locking_ctx(self, trigger_table):
-                return Table(
-                    j_table=self.j_table.snapshotWhen(trigger_table.j_table, options)
+                return self._wrap_result(
+                    self.j_object.snapshotWhen(
+                        self._unwrap_other(trigger_table), options
+                    )
                 )
         except Exception as e:
-            raise DHError(message="failed to create a snapshot_when table.") from e
-
-    #
-    # Table operation category: Select
-    #
-    # region Select
-    def drop_columns(self, cols: Union[str, Sequence[str]]) -> Table:
-        """The drop_columns method creates a new table with the same size as this table but omits any of specified
-        columns.
-
-        Args:
-            cols (Union[str, Sequence[str]]): the column name(s)
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            cols = to_sequence(cols)
-            return Table(j_table=self.j_table.dropColumns(*cols))
-        except Exception as e:
-            raise DHError(e, "table drop_columns operation failed.") from e
-
-    def move_columns(self, idx: int, cols: Union[str, Sequence[str]]) -> Table:
-        """The move_columns method creates a new table with specified columns moved to a specific column index value.
-        Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and unordered,
-        enabling direct swaps between column names. Specifying a source or destination more than once is prohibited.
-
-        Args:
-            idx (int): the column index where the specified columns will be moved in the new table.
-            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            cols = to_sequence(cols)
-            return Table(j_table=self.j_table.moveColumns(idx, *cols))
-        except Exception as e:
-            raise DHError(e, "table move_columns operation failed.") from e
-
-    def move_columns_down(self, cols: Union[str, Sequence[str]]) -> Table:
-        """The move_columns_down method creates a new table with specified columns appearing last in order, to the far
-        right. Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and
-        unordered, enabling direct swaps between column names. Specifying a source or destination more than once is
-        prohibited.
-
-        Args:
-            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            cols = to_sequence(cols)
-            return Table(j_table=self.j_table.moveColumnsDown(*cols))
-        except Exception as e:
-            raise DHError(e, "table move_columns_down operation failed.") from e
-
-    def move_columns_up(self, cols: Union[str, Sequence[str]]) -> Table:
-        """The move_columns_up method creates a new table with specified columns appearing first in order, to the far
-        left. Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and
-        unordered, enabling direct swaps between column names. Specifying a source or destination more than once is
-        prohibited.
-
-        Args:
-            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            cols = to_sequence(cols)
-            return Table(j_table=self.j_table.moveColumnsUp(*cols))
-        except Exception as e:
-            raise DHError(e, "table move_columns_up operation failed.") from e
-
-    def rename_columns(self, cols: Union[str, Sequence[str]]) -> Table:
-        """The rename_columns method creates a new table with the specified columns renamed. The renames are
-        simultaneous and unordered, enabling direct swaps between column names. Specifying a source or
-        destination more than once is prohibited. If a new column name conflicts with an existing column
-        name in the table, the existing column will be silently replaced.
-
-        Args:
-            cols (Union[str, Sequence[str]]) : the column rename expr(s) as "X = Y"
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            cols = to_sequence(cols)
-            return Table(j_table=self.j_table.renameColumns(*cols))
-        except Exception as e:
-            raise DHError(e, "table rename_columns operation failed.") from e
-
-    def update(
-        self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]
-    ) -> Table:
-        """The update method creates a new table containing a new, in-memory column for each formula.
-
-        Args:
-            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or
-            Selectable(s)
-
-        Returns:
-            A new table
-
-        Raises:
-            DHError
-        """
-        try:
-            formulas = to_sequence(formulas)
-            with query_scope_ctx(), auto_locking_ctx(self):
-                if isinstance(formulas[0], Selectable.j_object_type):
-                    return Table(j_table=self.j_table.update(j_array_list(formulas)))
-                else:
-                    return Table(j_table=self.j_table.update(*formulas))
-        except Exception as e:
-            raise DHError(e, "table update operation failed.") from e
-
-    def lazy_update(self, formulas: Union[str, Sequence[str]]) -> Table:
-        """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
-
-        Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            formulas = to_sequence(formulas)
-            with query_scope_ctx(), auto_locking_ctx(self):
-                return Table(j_table=self.j_table.lazyUpdate(*formulas))
-        except Exception as e:
-            raise DHError(e, "table lazy_update operation failed.") from e
-
-    def view(self, formulas: Union[str, Sequence[str]]) -> Table:
-        """The view method creates a new formula table that includes one column for each formula.
-
-        Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            formulas = to_sequence(formulas)
-            with query_scope_ctx():
-                return Table(j_table=self.j_table.view(*formulas))
-        except Exception as e:
-            raise DHError(e, "table view operation failed.") from e
-
-    def update_view(self, formulas: Union[str, Sequence[str]]) -> Table:
-        """The update_view method creates a new table containing a new, formula column for each formula.
-
-        Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            formulas = to_sequence(formulas)
-            with query_scope_ctx():
-                return Table(j_table=self.j_table.updateView(*formulas))
-        except Exception as e:
-            raise DHError(e, "table update_view operation failed.") from e
-
-    def select(
-        self,
-        formulas: Optional[
-            Union[str, Sequence[str], Selectable, Sequence[Selectable]]
-        ] = None,
-    ) -> Table:
-        """The select method creates a new in-memory table that includes one column for each formula. If no formula
-        is specified, all columns will be included.
-
-        Args:
-            formulas (Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]]): the column formula(s)
-                or Selectable(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            with query_scope_ctx(), auto_locking_ctx(self):
-                if not formulas:
-                    return Table(j_table=self.j_table.select())
-
-                formulas = to_sequence(formulas)
-                if isinstance(formulas[0], Selectable.j_object_type):
-                    return Table(j_table=self.j_table.select(j_array_list(formulas)))
-                else:
-                    return Table(j_table=self.j_table.select(*formulas))
-        except Exception as e:
-            raise DHError(e, "table select operation failed.") from e
-
-    def select_distinct(
-        self, formulas: Optional[Union[str, Sequence[str]]] = None
-    ) -> Table:
-        """The select_distinct method creates a new table containing all the unique values for a set of key
-        columns. When the selectDistinct method is used on multiple columns, it looks for distinct sets of values in
-        the selected columns.
-
-        Args:
-            formulas (Optional[Union[str, Sequence[str]]]): the column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            formulas = to_sequence(formulas)
-            with query_scope_ctx():
-                return Table(j_table=self.j_table.selectDistinct(*formulas))
-        except Exception as e:
-            raise DHError(e, "table select_distinct operation failed.") from e
-
-    # endregion
-
-    #
-    # Table operation category: Filter
-    #
-    # region Filter
-
-    def where(
-        self,
-        filters: Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]] = None,
-    ) -> Table:
-        """The where method creates a new table with only the rows meeting the filter criteria in the column(s) of
-        the table.
-
-        Args:
-            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition
-                expression(s) or Filter object(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            filters = to_sequence(filters)
-            with query_scope_ctx():
-                return Table(j_table=self.j_table.where(and_(filters).j_filter))
-        except Exception as e:
-            raise DHError(e, "table where operation failed.") from e
-
-    def where_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> Table:
-        """The where_in method creates a new table containing rows from the source table, where the rows match
-        values in the filter table. The filter is updated whenever either table changes.
-
-        Args:
-            filter_table (Table): the table containing the set of values to filter on
-            cols (Union[str, Sequence[str]]): the column name(s)
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            cols = to_sequence(cols)
-            return Table(j_table=self.j_table.whereIn(filter_table.j_table, *cols))
-        except Exception as e:
-            raise DHError(e, "table where_in operation failed.") from e
-
-    def where_not_in(
-        self, filter_table: Table, cols: Union[str, Sequence[str]]
-    ) -> Table:
-        """The where_not_in method creates a new table containing rows from the source table, where the rows do not
-        match values in the filter table.
-
-        Args:
-            filter_table (Table): the table containing the set of values to filter on
-            cols (Union[str, Sequence[str]]): the column name(s)
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            cols = to_sequence(cols)
-            return Table(j_table=self.j_table.whereNotIn(filter_table.j_table, *cols))
-        except Exception as e:
-            raise DHError(e, "table where_not_in operation failed.") from e
-
-    def where_one_of(
-        self,
-        filters: Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]] = None,
-    ) -> Table:
-        """The where_one_of method creates a new table containing rows from the source table, where the rows match at
-        least one filter.
-
-        Args:
-            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition expression(
-            s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            filters = to_sequence(filters)
-            with query_scope_ctx():
-                return Table(j_table=self.j_table.where(or_(filters).j_filter))
-        except Exception as e:
-            raise DHError(e, "table where_one_of operation failed.") from e
-
-    def head(self, num_rows: int) -> Table:
-        """The head method creates a new table with a specific number of rows from the beginning of the table.
-
-        Args:
-            num_rows (int): the number of rows at the head of table
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            return Table(j_table=self.j_table.head(num_rows))
-        except Exception as e:
-            raise DHError(e, "table head operation failed.") from e
-
-    def head_pct(self, pct: float) -> Table:
-        """The head_pct method creates a new table with a specific percentage of rows from the beginning of the table.
-
-        Args:
-            pct (float): the percentage of rows to return as a value from 0 (0%) to 1 (100%).
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            return Table(j_table=self.j_table.headPct(pct))
-        except Exception as e:
-            raise DHError(e, "table head_pct operation failed.") from e
-
-    def tail(self, num_rows: int) -> Table:
-        """The tail method creates a new table with a specific number of rows from the end of the table.
-
-        Args:
-            num_rows (int): the number of rows at the end of table
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            return Table(j_table=self.j_table.tail(num_rows))
-        except Exception as e:
-            raise DHError(e, "table tail operation failed.") from e
-
-    def tail_pct(self, pct: float) -> Table:
-        """The tail_pct method creates a new table with a specific percentage of rows from the end of the table.
-
-        Args:
-            pct (float): the percentage of rows to return as a value from 0 (0%) to 1 (100%).
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            return Table(j_table=self.j_table.tailPct(pct))
-        except Exception as e:
-            raise DHError(e, "table tail_pct operation failed.") from e
-
-    # endregion
-
-    #
-    # Table operation category: Sort
-    #
-    # region Sort
-    def restrict_sort_to(self, cols: Union[str, Sequence[str]]):
-        """The restrict_sort_to method adjusts the input table to produce an output table that only allows sorting on
-        specified table columns. This can be useful to prevent users from accidentally performing expensive sort
-        operations as they interact with tables in the UI.
-
-        Args:
-            cols (Union[str, Sequence[str]]): the column name(s)
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            cols = to_sequence(cols)
-            return Table(self.j_table.restrictSortTo(*cols))
-        except Exception as e:
-            raise DHError(e, "table restrict_sort_to operation failed.") from e
-
-    def sort_descending(self, order_by: Union[str, Sequence[str]]) -> Table:
-        """The sort_descending method creates a new table where rows in a table are sorted in descending order based on
-        the order_by column(s).
-
-        Args:
-            order_by (Union[str, Sequence[str]]): the column name(s)
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            order_by = to_sequence(order_by)
-            return Table(j_table=self.j_table.sortDescending(*order_by))
-        except Exception as e:
-            raise DHError(e, "table sort_descending operation failed.") from e
-
-    def reverse(self) -> Table:
-        """The reverse method creates a new table with all of the rows from this table in reverse order.
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            return Table(j_table=self.j_table.reverse())
-        except Exception as e:
-            raise DHError(e, "table reverse operation failed.") from e
+            raise self._make_op_error(e, "snapshot_when") from e
 
     def sort(
         self,
-        order_by: Union[str, Sequence[str]],
-        order: Optional[Union[SortDirection, Sequence[SortDirection]]] = None,
-    ) -> Table:
+        order_by: str | Sequence[str],
+        order: SortDirection | Sequence[SortDirection] | None = None,
+    ) -> T:
         """The sort method creates a new table where the rows are ordered based on values in a specified set of columns.
 
         Args:
@@ -1735,130 +1347,78 @@ class Table(JObjectWrapper):
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
         Returns:
-            a new table
+            {returns}
 
         Raises:
             DHError
         """
 
         try:
-            order_by = to_sequence(order_by)
-            if not order:
-                order = (SortDirection.ASCENDING,) * len(order_by)
-            else:
-                order = to_sequence(order)
-                if any(
-                    [
-                        o not in (SortDirection.ASCENDING, SortDirection.DESCENDING)
-                        for o in order
-                    ]
-                ):
-                    raise DHError(
-                        message="The sort direction must be either 'ASCENDING' or 'DESCENDING'."
-                    )
-                if len(order_by) != len(order):
-                    raise DHError(
-                        message="The number of sort columns must be the same as the number of sort directions."
-                    )
+            with self._extra_lock_ctx():
+                order_by = to_sequence(order_by)
+                if not order:
+                    order = (SortDirection.ASCENDING,) * len(order_by)
+                else:
+                    order = to_sequence(order)
+                    if any(
+                        [
+                            o not in (SortDirection.ASCENDING, SortDirection.DESCENDING)
+                            for o in order
+                        ]
+                    ):
+                        raise DHError(
+                            message="The sort direction must be either 'ASCENDING' or 'DESCENDING'."
+                        )
+                    if len(order_by) != len(order):
+                        raise DHError(
+                            message="The number of sort columns must be the same as the number of sort directions."
+                        )
 
-            sort_columns = [
-                _sort_column(col, dir_) for col, dir_ in zip(order_by, order)
-            ]
-            j_sc_list = j_array_list(sort_columns)
-            return Table(j_table=self.j_table.sort(j_sc_list))
+                sort_columns = [
+                    _sort_column(col, dir_)
+                    for col, dir_ in zip(order_by, order, strict=True)
+                ]
+                j_sc_list = j_array_list(sort_columns)
+                return self._wrap_result(self.j_object.sort(j_sc_list))
         except Exception as e:
-            raise DHError(e, "table sort operation failed.") from e
+            raise self._make_op_error(e, "sort") from e
 
-    def with_order_for_column(
-        self,
-        col_name: str,
-        order: SortDirection = SortDirection.ASCENDING,
-    ) -> Table:
-        """Annotates this table to indicate that the given column is already sorted in the specified order.
-
-        This sets the SORTED_COLUMNS_ATTRIBUTE so that downstream operations (e.g. sorted-column binary
-        search / pushdown) can trust the column is pre-sorted without re-sorting.
-
-        .. warning::
-            **This method performs no validation.** If the column is not actually sorted in the declared
-            order, range and match filters will silently return **incorrect (missing or wrong) results**
-            with no error or warning. Use :meth:`assert_sorted` instead whenever possible — it validates
-            the sort order at call time for static tables and re-validates on every update for refreshing
-            tables. Only use this method when you have an external guarantee that the data is sorted and
-            the validation cost of ``assert_sorted`` is unacceptable.
+    def sort_descending(self, order_by: str | Sequence[str]) -> T:
+        """The sort_descending method creates a new table where rows in a table are sorted in descending order based on
+        the order_by column(s).
 
         Args:
-            col_name (str): the column to annotate as sorted.
-            order (SortDirection): the sort direction; defaults to ASCENDING.
+            order_by (Union[str, Sequence[str]]): the column name(s)
 
         Returns:
-            a new Table with the sorted-column attribute set.
+            {returns}
 
         Raises:
             DHError
         """
         try:
-            return Table(
-                j_table=_JSortedColumnsAttribute.withOrderForColumn(
-                    self.j_table, col_name, _sorting_order(order)
-                )
-            )
+            with self._extra_lock_ctx():
+                order_by = to_sequence(order_by)
+                return self._wrap_result(self.j_object.sortDescending(*order_by))
         except Exception as e:
-            raise DHError(e, "table with_order_for_column operation failed.") from e
-
-    def assert_sorted(
-        self,
-        col_name: str,
-        order: SortDirection = SortDirection.ASCENDING,
-        description: Optional[str] = None,
-    ) -> Table:
-        """Asserts that this table is sorted by the given column and returns it with the sorted-column attribute set.
-
-        For static tables this validates the sort order immediately and annotates the result. For refreshing tables
-        a listener is installed that validates each subsequent update, raising an error if the assertion is violated.
-        The annotation allows downstream range filters to use binary search instead of a linear scan.
-
-        Args:
-            col_name (str): the column that the table must be sorted by.
-            order (SortDirection): the expected sort direction; defaults to ASCENDING.
-            description (Optional[str]): an optional label included in the error message if the assertion is violated.
-
-        Returns:
-            a new Table with the sorted-column assertion applied.
-
-        Raises:
-            DHError
-        """
-        try:
-            return Table(
-                j_table=_JTableAssertions.assertSorted(
-                    description, self.j_table, col_name, _sorting_order(order)
-                )
-            )
-        except Exception as e:
-            raise DHError(e, "table assert_sorted operation failed.") from e
-
-    # endregion
-
-    #
-    # Table operation category: Join
-    #
-    # region Join
+            raise self._make_op_error(e, "sort_descending") from e
 
     def natural_join(
         self,
-        table: Table,
-        on: Union[str, Sequence[str]],
-        joins: Optional[Union[str, Sequence[str]]] = None,
+        table: Table | T,
+        on: str | Sequence[str],
+        joins: str | Sequence[str] | None = None,
         type: NaturalJoinType = NaturalJoinType.ERROR_ON_DUPLICATE,
-    ) -> Table:
+    ) -> T:
         """The natural_join method creates a new table containing all the rows and columns of this table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are
         equal. If there is no matching key in the right table, appended row values are NULL.
 
+        {right_note}
+
         Args:
-            table (Table): the right-table of the join
+            table ({right_type}): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
@@ -1867,7 +1427,7 @@ class Table(JObjectWrapper):
                 encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
-            a new table
+            {returns}
 
         Raises:
             DHError
@@ -1876,34 +1436,36 @@ class Table(JObjectWrapper):
             on = ",".join(to_sequence(on))
             joins = ",".join(to_sequence(joins))
             with auto_locking_ctx(self, table):
-                return Table(
-                    j_table=self.j_table.naturalJoin(
-                        table.j_table, on, joins, type.value
+                return self._wrap_result(
+                    self.j_object.naturalJoin(
+                        self._unwrap_other(table), on, joins, type.value
                     )
                 )
         except Exception as e:
-            raise DHError(e, "table natural_join operation failed.") from e
+            raise self._make_op_error(e, "natural_join") from e
 
     def exact_join(
         self,
-        table: Table,
-        on: Union[str, Sequence[str]],
-        joins: Optional[Union[str, Sequence[str]]] = None,
-    ) -> Table:
+        table: Table | T,
+        on: str | Sequence[str],
+        joins: str | Sequence[str] | None = None,
+    ) -> T:
         """The exact_join method creates a new table containing all the rows and columns of this table plus
         additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are
         equal.
 
+        {right_note}
+
         Args:
-            table (Table): the right-table of the join
+            table ({right_type}): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
-            a new table
+            {returns}
 
         Raises:
             DHError
@@ -1912,17 +1474,19 @@ class Table(JObjectWrapper):
             on = ",".join(to_sequence(on))
             joins = ",".join(to_sequence(joins))
             with auto_locking_ctx(self, table):
-                return Table(j_table=self.j_table.exactJoin(table.j_table, on, joins))
+                return self._wrap_result(
+                    self.j_object.exactJoin(self._unwrap_other(table), on, joins)
+                )
         except Exception as e:
-            raise DHError(e, "table exact_join operation failed.") from e
+            raise self._make_op_error(e, "exact_join") from e
 
     def join(
         self,
-        table: Table,
-        on: Optional[Union[str, Sequence[str]]] = None,
-        joins: Optional[Union[str, Sequence[str]]] = None,
-        reserve_bits: Optional[int] = None,
-    ) -> Table:
+        table: Table | T,
+        on: str | Sequence[str] | None = None,
+        joins: str | Sequence[str] | None = None,
+        reserve_bits: int | None = None,
+    ) -> T:
         """The join method creates a new table containing rows that have matching values in both tables. Rows that
         do not have matching criteria will not be included in the result. If there are multiple matches between a row
         from the left table and rows from the right table, all matching combinations will be included. If no columns
@@ -1931,20 +1495,24 @@ class Table(JObjectWrapper):
         To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless
         specified, join reserves 10 bits to represent a right row. When there are too few bits to represent all the
         right rows, the table will shift a bit from the left side to the right side. The default of 10 bits was
-        carefully chosen because it results in an efficient implementation to process live updates.
+        carefully chosen because it results in an efficient implementation to process live updates. A join whose
+        result can never change, such as a join of two static tables, ignores reserve_bits and uses just enough bits
+        for its right rows.
+
+        {right_note}
 
         Args:
-            table (Table): the right-table of the join
+            table ({right_type}): the right-table of the join
             on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal
             expression,
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
-                meaning the configured value is used, which is 10 bits by default.
+            reserve_bits (Optional[int]): the number of bits to reserve for the right row, between 1 and 62
+                (inclusive); default is None, meaning the configured value is used, which is 10 bits by default.
 
         Returns:
-            a new table
+            {returns}
 
         Raises:
             DHError
@@ -1953,35 +1521,36 @@ class Table(JObjectWrapper):
             on = ",".join(to_sequence(on))
             joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
-            reserve_bits = (
-                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-            )
+            if reserve_bits is None:
+                reserve_bits = _default_cross_join_reserve_bits()
             with auto_locking_ctx(self, table):
-                return Table(
-                    j_table=table_op.join(
-                        table.j_table,
+                return self._wrap_result(
+                    table_op.join(
+                        self._unwrap_other(table),
                         on,
                         joins,
                         reserve_bits,
                     )
                 )
         except Exception as e:
-            raise DHError(e, "table join operation failed.") from e
+            raise self._make_op_error(e, "join") from e
 
     def aj(
         self,
-        table: Table,
-        on: Union[str, Sequence[str]],
-        joins: Optional[Union[str, Sequence[str]]] = None,
-    ) -> Table:
+        table: Table | T,
+        on: str | Sequence[str],
+        joins: str | Sequence[str] | None = None,
+    ) -> T:
         """The aj (as-of join) method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
         the keys from the right table without going over. If there is no matching key in the right table, appended row
         values are NULL.
 
+        {right_note}
+
         Args:
-            table (Table): the right-table of the join
+            table ({right_type}): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
@@ -1989,7 +1558,7 @@ class Table(JObjectWrapper):
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
-            a new table
+            {returns}
 
         Raises:
             DHError
@@ -1999,24 +1568,28 @@ class Table(JObjectWrapper):
             joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                return Table(j_table=table_op.aj(table.j_table, on, joins))
+                return self._wrap_result(
+                    table_op.aj(self._unwrap_other(table), on, joins)
+                )
         except Exception as e:
-            raise DHError(e, "table as-of join operation failed.") from e
+            raise self._make_op_error(e, "aj") from e
 
     def raj(
         self,
-        table: Table,
-        on: Union[str, Sequence[str]],
-        joins: Optional[Union[str, Sequence[str]]] = None,
-    ) -> Table:
+        table: Table | T,
+        on: str | Sequence[str],
+        joins: str | Sequence[str] | None = None,
+    ) -> T:
         """The reverse-as-of join method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
         the keys from the right table without going under. If there is no matching key in the right table, appended row
         values are NULL.
 
+        {right_note}
+
         Args:
-            table (Table): the right-table of the join
+            table ({right_type}): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
@@ -2025,7 +1598,7 @@ class Table(JObjectWrapper):
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
-            a new table
+            {returns}
 
         Raises:
             DHError
@@ -2035,16 +1608,18 @@ class Table(JObjectWrapper):
             joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                return Table(j_table=table_op.raj(table.j_table, on, joins))
+                return self._wrap_result(
+                    table_op.raj(self._unwrap_other(table), on, joins)
+                )
         except Exception as e:
-            raise DHError(e, "table reverse-as-of join operation failed.") from e
+            raise self._make_op_error(e, "raj") from e
 
     def range_join(
         self,
-        table: Table,
-        on: Union[str, Sequence[str]],
-        aggs: Union[Aggregation, Sequence[Aggregation]],
-    ) -> Table:
+        table: Table | T,
+        on: str | Sequence[str],
+        aggs: Aggregation | Sequence[Aggregation],
+    ) -> T:
         """The range_join method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing aggregated data from the right table. For columns appended to the
         left table (joins), cell values equal aggregations over vectors of values from the right table.
@@ -2128,8 +1703,10 @@ class Table(JObjectWrapper):
         Note: At this time, implementations only support static tables and group aggregations. This operation remains
         under active development.
 
+        {right_note}
+
         Args:
-            table (Table): the right table of the join
+            table ({right_type}): the right table of the join
             on (Union[str, Sequence[str]]): the match expression(s) that must include zero-or-more exact match
             expression,
                 and exactly one range match expression as described above
@@ -2138,22 +1715,1257 @@ class Table(JObjectWrapper):
                 the right table for each row from this Table
 
         Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx(table):
+                on = to_sequence(on)
+                aggs = to_sequence(aggs)
+                j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+                return self._wrap_result(
+                    self.j_object.rangeJoin(
+                        self._unwrap_other(table), j_array_list(on), j_agg_list
+                    )
+                )
+        except Exception as e:
+            raise self._make_op_error(e, "range_join") from e
+
+    def group_by(self, by: str | Sequence[str] | None = None) -> T:
+        """The group_by method creates a new table containing grouping columns and grouped data, column content is
+        grouped into vectors.
+
+        Args:
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.groupBy(*by))
+                else:
+                    return self._wrap_result(self.j_object.groupBy())
+        except Exception as e:
+            raise self._make_op_error(e, "group_by") from e
+
+    def ungroup(self, cols: str | Sequence[str] | None = None) -> T:
+        """The ungroup method creates a new table in which array columns from the source table are unwrapped into
+        separate rows.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): the name(s) of the array column(s), if None, all array columns
+                will be ungrouped, default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            with self._extra_lock_ctx():
+                if cols:
+                    return self._wrap_result(self.j_object.ungroup(*cols))
+                else:
+                    return self._wrap_result(self.j_object.ungroup())
+        except Exception as e:
+            raise self._make_op_error(e, "ungroup") from e
+
+    def agg_by(
+        self,
+        aggs: Aggregation | Sequence[Aggregation],
+        by: str | Sequence[str] | None = None,
+        preserve_empty: bool = False,
+        initial_groups: Table | T | None = None,
+    ) -> T:
+        """The agg_by method creates a new table containing grouping columns and grouped data. The resulting
+        grouped data is defined by the aggregations specified.
+
+        {right_note}
+
+        Args:
+            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), if not provided, all rows from
+                this table are grouped into a single group of rows before the aggregations are applied to the
+                result, default is None.
+            preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
+                a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
+            initial_groups (Optional[{right_type}]): a table whose distinct combinations of values for
+                the group-by column(s) should be used to create an initial set of aggregation groups. All other columns
+                are ignored. This is useful in combination with preserve_empty=True to ensure that particular groups
+                appear in the result table, or with preserve_empty=False to control the encounter order for a
+                collection of groups and thus their relative order in the result. Changes to this table are not
+                expected or handled; if this table is a refreshing table, only its contents at instantiation time
+                will be used. Default is None, the result will be the same as if a table is provided but no rows were
+                supplied. When it is provided, the 'by' argument must be provided to explicitly specify the grouping
+                columns.
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            aggs = to_sequence(aggs)
+            by = to_sequence(by)
+            if not by and initial_groups is not None:
+                raise ValueError(
+                    "missing group-by column names when initial_groups is provided."
+                )
+            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+
+            cm = _query_scope_agg_ctx(aggs)
+            # initial_groups is the op's other table, so the class's lock covers it too.
+            others = () if initial_groups is None else (initial_groups,)
+            with cm, self._extra_lock_ctx(*others):
+                if not by:
+                    return self._wrap_result(
+                        self.j_object.aggBy(j_agg_list, preserve_empty)
+                    )
+                else:
+                    j_column_name_list = j_array_list(
+                        [_JColumnName.of(col) for col in by]
+                    )
+                    j_initial_groups = (
+                        self._unwrap_other(initial_groups)
+                        if initial_groups is not None
+                        else None
+                    )
+                    return self._wrap_result(
+                        self.j_object.aggBy(
+                            j_agg_list,
+                            preserve_empty,
+                            j_initial_groups,
+                            j_column_name_list,
+                        )
+                    )
+        except Exception as e:
+            raise self._make_op_error(e, "agg_by") from e
+
+    def agg_all_by(self, agg: Aggregation, by: str | Sequence[str] | None = None) -> T:
+        """The agg_all_by method creates a new table containing grouping columns and grouped data. The resulting
+        grouped data is defined by the aggregation specified.
+
+        Note, because agg_all_by applies the aggregation to all the columns of the table, it will ignore
+        any column names specified for the aggregation.
+
+        Args:
+            agg (Aggregation): the aggregation
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            cm = _query_scope_agg_ctx([agg])
+            with cm, self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.aggAllBy(agg.j_agg_spec, *by))
+        except Exception as e:
+            raise self._make_op_error(e, "agg_all_by") from e
+
+    def count_by(self, col: str, by: str | Sequence[str] | None = None) -> T:
+        """The count_by method creates a new table containing the number of rows for each group.
+
+        Args:
+            col (str): the name of the column to store the counts
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.countBy(col, *by))
+                else:
+                    return self._wrap_result(self.j_object.countBy(col))
+        except Exception as e:
+            raise self._make_op_error(e, "count_by") from e
+
+    def first_by(self, by: str | Sequence[str] | None = None) -> T:
+        """The first_by method creates a new table containing the first row for each group.
+
+        Args:
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.firstBy(*by))
+                else:
+                    return self._wrap_result(self.j_object.firstBy())
+        except Exception as e:
+            raise self._make_op_error(e, "first_by") from e
+
+    def last_by(self, by: str | Sequence[str] | None = None) -> T:
+        """The last_by method creates a new table containing the last row for each group.
+
+        Args:
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.lastBy(*by))
+                else:
+                    return self._wrap_result(self.j_object.lastBy())
+        except Exception as e:
+            raise self._make_op_error(e, "last_by") from e
+
+    def min_by(self, by: str | Sequence[str] | None = None) -> T:
+        """The min_by method creates a new table containing the minimum value for each group.
+
+        Args:
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.minBy(*by))
+                else:
+                    return self._wrap_result(self.j_object.minBy())
+        except Exception as e:
+            raise self._make_op_error(e, "min_by") from e
+
+    def max_by(self, by: str | Sequence[str] | None = None) -> T:
+        """The max_by method creates a new table containing the maximum value for each group.
+
+        Args:
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.maxBy(*by))
+                else:
+                    return self._wrap_result(self.j_object.maxBy())
+        except Exception as e:
+            raise self._make_op_error(e, "max_by") from e
+
+    def sum_by(self, by: str | Sequence[str] | None = None) -> T:
+        """The sum_by method creates a new table containing the sum for each group.
+
+        Args:
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.sumBy(*by))
+                else:
+                    return self._wrap_result(self.j_object.sumBy())
+        except Exception as e:
+            raise self._make_op_error(e, "sum_by") from e
+
+    def abs_sum_by(self, by: str | Sequence[str] | None = None) -> T:
+        """The abs_sum_by method creates a new table containing the absolute sum for each group.
+
+        Args:
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.absSumBy(*by))
+                else:
+                    return self._wrap_result(self.j_object.absSumBy())
+        except Exception as e:
+            raise self._make_op_error(e, "abs_sum_by") from e
+
+    def weighted_sum_by(self, wcol: str, by: str | Sequence[str] | None = None) -> T:
+        """The weighted_sum_by method creates a new table containing the weighted sum for each group.
+
+        Args:
+            wcol (str): the name of the weight column
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.wsumBy(wcol, *by))
+                else:
+                    return self._wrap_result(self.j_object.wsumBy(wcol))
+        except Exception as e:
+            raise self._make_op_error(e, "weighted_sum_by") from e
+
+    def avg_by(self, by: str | Sequence[str] | None = None) -> T:
+        """The avg_by method creates a new table containing the average for each group.
+
+        Args:
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.avgBy(*by))
+                else:
+                    return self._wrap_result(self.j_object.avgBy())
+        except Exception as e:
+            raise self._make_op_error(e, "avg_by") from e
+
+    def weighted_avg_by(self, wcol: str, by: str | Sequence[str] | None = None) -> T:
+        """The weighted_avg_by method creates a new table containing the weighted average for each group.
+
+        Args:
+            wcol (str): the name of the weight column
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.wavgBy(wcol, *by))
+                else:
+                    return self._wrap_result(self.j_object.wavgBy(wcol))
+        except Exception as e:
+            raise self._make_op_error(e, "weighted_avg_by") from e
+
+    def median_by(self, by: str | Sequence[str] | None = None) -> T:
+        """The median_by method creates a new table containing the median for each group.
+
+        Args:
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.medianBy(*by))
+                else:
+                    return self._wrap_result(self.j_object.medianBy())
+        except Exception as e:
+            raise self._make_op_error(e, "median_by") from e
+
+    def std_by(self, by: str | Sequence[str] | None = None) -> T:
+        """The std_by method creates a new table containing the sample standard deviation for each group.
+
+        Sample standard deviation is computed using `Bessel's correction
+        <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+        which ensures that the sample variance will be an unbiased estimator of population variance.
+
+        Args:
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.stdBy(*by))
+                else:
+                    return self._wrap_result(self.j_object.stdBy())
+        except Exception as e:
+            raise self._make_op_error(e, "std_by") from e
+
+    def var_by(self, by: str | Sequence[str] | None = None) -> T:
+        """The var_by method creates a new table containing the sample variance for each group.
+
+        Sample variance is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+        which ensures that the sample variance will be an unbiased estimator of population variance.
+
+        Args:
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            with self._extra_lock_ctx():
+                by = to_sequence(by)
+                if by:
+                    return self._wrap_result(self.j_object.varBy(*by))
+                else:
+                    return self._wrap_result(self.j_object.varBy())
+        except Exception as e:
+            raise self._make_op_error(e, "var_by") from e
+
+    def update_by(
+        self,
+        ops: UpdateByOperation | Sequence[UpdateByOperation],
+        by: str | Sequence[str] | None = None,
+    ) -> T:
+        """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
+        The aggregations are defined by the provided operations, which support incremental aggregations over the
+        corresponding rows in the table. The aggregations will apply position or time-based windowing and
+        compute the results over the entire table or each row group as identified by the provided key columns.
+
+        Args:
+            ops (Union[UpdateByOperation, Sequence[UpdateByOperation]]): the update-by operation definition(s)
+            by (Optional[Union[str, Sequence[str]]]): the key column name(s) to group the rows of the table
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+        """
+        try:
+            ops = to_sequence(ops)
+            by = to_sequence(by)
+            with query_scope_ctx(), auto_locking_ctx(self):
+                return self._wrap_result(self.j_object.updateBy(j_array_list(ops), *by))
+        except Exception as e:
+            raise self._make_op_error(e, "update_by") from e
+
+    def slice(self, start: int, stop: int) -> T:
+        """Extracts a subset of a table by row positions into a new Table.
+
+        If both the start and the stop are positive, then both are counted from the beginning of the table.
+        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
+        The start must be less than or equal to the stop.
+
+        If the start is positive and the stop is negative, then the start is counted from the beginning of the
+        table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
+        rows but the first and last. If the stop is before the start, the result is an empty table.
+
+        If the start is negative, and the stop is zero, then the start is counted from the end of the table,
+        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
+
+        If the start is negative and the stop is negative, they are both counted from the end of the
+        table. For example, slice(-2, -1) returns the second to last row of the table.
+
+        Args:
+            start (int): the first row position to include in the result
+            stop (int): the last row position to include in the result
+
+        Returns:
+            {returns}
+
+        Raises:
+            DHError
+
+        Examples:
+            >>> table.slice(0, 5)    # first 5 rows
+            >>> table.slice(-5, 0)   # last 5 rows
+            >>> table.slice(2, 6)    # rows from index 2 to 5
+            >>> table.slice(6, 2)    # ERROR: cannot slice start after end
+            >>> table.slice(-6, -2)  # rows from 6th last to 2nd last (exclusive)
+            >>> table.slice(-2, -6)  # ERROR: cannot slice start after end
+            >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
+            >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
+        """
+        try:
+            with self._extra_lock_ctx():
+                return self._wrap_result(self.j_object.slice(start, stop))
+        except Exception as e:
+            raise self._make_op_error(e, "slice") from e
+
+
+class Table(_TableOperations["Table"]):
+    """A Table represents a Deephaven table. It allows applications to perform powerful Deephaven table operations.
+
+    Note: It should not be instantiated directly by user code. Tables are mostly created by factory methods,
+    data ingestion operations, queries, aggregations, joins, etc.
+
+    """
+
+    j_object_type = _JTable
+    _doc_vars = {"returns": "a new table", "right_type": "Table"}
+
+    def _wrap_result(self, j_obj: jpy.JType) -> Table:
+        return Table(j_table=j_obj)
+
+    def _unwrap_other(self, table: Table) -> jpy.JType:
+        return table.j_table
+
+    def _extra_lock_ctx(self, *others: Table) -> contextlib.AbstractContextManager:
+        """Returns a null context. These ops need no lock on a Table. Java reads the other table, such as agg_by's
+        initial_groups, from a snapshot."""
+        return contextlib.nullcontext()
+
+    def _make_op_error(self, e: Exception, op: str) -> DHError:
+        return DHError(e, f"table {op} operation failed.")
+
+    def __init__(self, j_table: jpy.JType):
+        self.j_table = jpy.cast(j_table, self.j_object_type)
+        if self.j_table is None:
+            raise DHError("j_table type is not io.deephaven.engine.table.Table")
+        self._definition = TableDefinition(self.j_table.getDefinition())
+
+    def __repr__(self):
+        default_repr = super().__repr__()
+        # default_repr is in a format like so:
+        # deephaven.table.Table(io.deephaven.engine.table.Table(objectRef=0x7f07e4890518))
+        # We take the last two brackets off, add a few more details about the table, then add the necessary brackets
+        # back
+        column_dict = {col.name: col.data_type for col in self.columns[:10]}
+        repr_str = (
+            f"{default_repr[:-2]}, num_rows = {self.size}, columns = {column_dict}"
+        )
+        # We need to add the two brackets back, and also truncate it to be 120 char total (118 + two brackets)
+        repr_str = repr_str[:114] + "...}))" if len(repr_str) > 118 else repr_str + "))"
+        return repr_str
+
+    def __str__(self):
+        return repr(self)
+
+    @property
+    def size(self) -> int:
+        """The current number of rows in the table."""
+        return self.j_table.size()
+
+    @property
+    def is_refreshing(self) -> bool:
+        """Whether this table is refreshing."""
+        return self.j_table.isRefreshing()
+
+    @property
+    def is_blink(self) -> bool:
+        """Whether this table is a blink table."""
+        return _JBlinkTableTools.isBlink(self.j_table)
+
+    @property
+    def is_failed(self) -> bool:
+        """Whether this table is in a failure state and is no longer usable."""
+        return self.j_table.isFailed()
+
+    @cached_property
+    def update_graph(self) -> UpdateGraph:
+        """The update graph of the table."""
+        return UpdateGraph(self.j_table.getUpdateGraph())
+
+    @property
+    def is_flat(self) -> bool:
+        """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
+        return self.j_table.isFlat()
+
+    @property
+    def definition(self) -> TableDefinition:
+        """The table definition."""
+        return self._definition
+
+    @property
+    def column_names(self) -> Sequence[str]:
+        """The column names of the table."""
+        return list(self.definition.keys())
+
+    @property
+    def columns(self) -> Sequence[ColumnDefinition]:
+        """The column definitions of the table."""
+        return list(self.definition.values())
+
+    @property
+    def meta_table(self) -> Table:
+        """The column definitions of the table in a Table form."""
+        return Table(j_table=self.j_table.meta())
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_table
+
+    def iter_dict(
+        self,
+        cols: str | Sequence[str] | None = None,
+        *,
+        chunk_size: int = 2048,
+    ) -> Generator[dict[str, Any], None, None]:
+        """Returns a generator that reads one row at a time from the table into a dictionary. The dictionary is a map
+        of column names to scalar values of the column data type.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
+        closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
+        it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python
+            boundary
+                crossings. Default is 2048.
+
+        Returns:
+            A generator that yields a dictionary of column names to scalar values.
+
+        Raises:
+            ValueError
+        """
+        from deephaven._table_reader import (
+            _table_reader_row_dict,
+        )  # to prevent circular import
+
+        return _table_reader_row_dict(self, cols, chunk_size=chunk_size)
+
+    def iter_tuple(
+        self,
+        cols: str | Sequence[str] | None = None,
+        *,
+        tuple_name: str = "Deephaven",
+        chunk_size: int = 2048,
+    ) -> Generator[tuple[Any, ...], None, None]:
+        """Returns a generator that reads one row at a time from the table into a named tuple. The named tuple is made
+        up of fields with their names being the column names and their values being of the column data types.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
+        closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
+        it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read. Default
+            is None.
+            tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
+            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python
+            boundary
+                crossings. Default is 2048.
+
+        Returns:
+            A generator that yields a named tuple for each row in the table
+
+        Raises:
+            ValueError
+        """
+        from deephaven._table_reader import (
+            _table_reader_row_tuple,
+        )  # to prevent circular import
+
+        return _table_reader_row_tuple(
+            self, cols, tuple_name=tuple_name, chunk_size=chunk_size
+        )
+
+    def iter_chunk_dict(
+        self, cols: str | Sequence[str] | None = None, chunk_size: int = 2048
+    ) -> Generator[dict[str, np.ndarray], None, None]:
+        """Returns a generator that reads one chunk of rows at a time from the table into a dictionary. The dictionary
+        is a map of column names to numpy arrays of the column data type.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
+        closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
+        it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            chunk_size (int): The number of rows to read at a time. Default is 2048.
+
+        Returns:
+            A generator that yields a dictionary of column names to numpy arrays.
+
+        Raises
+            ValueError
+        """
+        from deephaven._table_reader import (
+            _table_reader_chunk_dict,
+        )  # to prevent circular import
+
+        return _table_reader_chunk_dict(
+            self,
+            cols=cols,
+            row_set=self.j_table.getRowSet(),
+            chunk_size=chunk_size,
+            prev=False,
+        )
+
+    def iter_chunk_tuple(
+        self,
+        cols: str | Sequence[str] | None = None,
+        tuple_name: str = "Deephaven",
+        chunk_size: int = 2048,
+    ) -> Generator[tuple[np.ndarray, ...], None, None]:
+        """Returns a generator that reads one chunk of rows at a time from the table into a named tuple. The named
+        tuple is made up of fields with their names being the column names and their values being numpy arrays of the
+        column data types.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
+        closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
+        it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
+            chunk_size (int): The number of rows to read at a time. Default is 2048.
+
+        Returns:
+            A generator that yields a named tuple for each row in the table.
+
+        Raises:
+            ValueError
+        """
+        from deephaven._table_reader import (
+            _table_reader_chunk_tuple,
+        )  # to prevent circular import
+
+        return _table_reader_chunk_tuple(
+            self, cols=cols, tuple_name=tuple_name, chunk_size=chunk_size
+        )
+
+    def has_columns(self, cols: str | Sequence[str]):
+        """Whether this table contains a column for each of the provided names, return False if any of the columns is
+        not in the table.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            bool
+        """
+        cols = to_sequence(cols)
+        return self.j_table.hasColumns(cols)
+
+    def attributes(self) -> dict[str, Any]:
+        """Returns all the attributes defined on the table."""
+        j_map = jpy.cast(self.j_table, _JAttributeMap).getAttributes()
+        return j_map_to_dict(j_map)
+
+    def with_attributes(self, attrs: dict[str, Any]) -> Table:
+        """Returns a new Table that has the provided attributes defined on it and shares the underlying data and schema
+        with this table.
+
+        Note, the table attributes are immutable once defined, and are mostly used internally by the Deephaven
+        engine. For advanced users, certain predefined plug-in attributes provide a way to extend Deephaven with
+        custom-built plug-ins.
+
+        Args:
+            attrs (dict[str, Any]): a dict of table attribute names and their values
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            j_map = j_hashmap(attrs)
+            return Table(
+                j_table=jpy.cast(self.j_table, _JAttributeMap).withAttributes(j_map)
+            )
+        except Exception as e:
+            raise DHError(e, "failed to create a table with attributes.") from e
+
+    def without_attributes(self, attrs: str | Sequence[str]) -> Table:
+        """Returns a new Table that shares the underlying data and schema with this table but with the specified
+        attributes removed.
+
+        Args:
+            attrs (Union[str, Sequence[str]]): the attribute name(s) to be removed
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            j_attrs = j_array_list(to_sequence(attrs))
+            return Table(
+                j_table=jpy.cast(self.j_table, _JAttributeMap).withoutAttributes(
+                    j_attrs
+                )
+            )
+        except Exception as e:
+            raise DHError(e, "failed to create a table without attributes.") from e
+
+    def with_transport_compression(
+        self, compression_types: str | Sequence[str] | None
+    ) -> Table:
+        """Returns a new Table that shares the data of this table and allows the server to compress its Barrage
+        snapshots and subscriptions with the given compression types. When a client fetches the table, the server uses
+        the first type in the list that the client accepts, and sends uncompressed data when none match.
+
+        The built-in compression types are "zstd", which compresses nearly as well as gzip, and many times faster;
+        "gzip", which compresses slightly smaller than zstd but much more slowly, and which most gRPC clients, including
+        pydeephaven, can decode; "snappy", the fastest of them, but the one that saves the least; and "deflate", the
+        algorithm of gzip in the zlib format, which compresses the same as gzip and decompresses slightly slower. The
+        server also supports any type that a Java io.deephaven.grpc.compression.CompressionCodecProvider on its
+        classpath adds.
+
+        This sets the table's "TransportCompression" attribute. Operations whose result holds only this table's values
+        keep it: filtering, sorting, reversing, flattening, dropping or renaming columns, partition_by constituents,
+        first_by and last_by. Operations that compute new values or bring in another table's data drop it, including
+        view, update_view, joins, rollups and trees; so do operations such as head, select and update. For a rollup or
+        tree table, call with_transport_compression on the RollupTable or TreeTable rather than on its source. A table
+        with no attribute set uses the server's default compression types, from the TransportCompression.defaultTypes
+        property, which is unset by default. An empty sequence sets the attribute to an empty list, so the table is
+        never compressed, even when the server has default compression types. To return to the server's default
+        compression types, pass None, or call :meth:`reset_transport_compression`.
+
+        Args:
+            compression_types (Optional[Union[str, Sequence[str]]]): the name, or names, of the compression types to
+                allow, most preferred first, ignoring case; an empty sequence returns a table that is never
+                compressed, and None one that uses the server's default compression types
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(
+                j_table=_j_with_transport_compression(self.j_table, compression_types)
+            )
+        except Exception as e:
+            raise DHError(e, "failed to create a table with compression.") from e
+
+    def reset_transport_compression(self) -> Table:
+        """Returns a new Table that shares the data of this table and that the server compresses with its default
+        compression types, from the TransportCompression.defaultTypes property, or not at all when that property is
+        unset. This undoes :meth:`with_transport_compression`, including with_transport_compression([]), by removing
+        the table's "TransportCompression" attribute, as with_transport_compression(None) does.
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=_j_reset_transport_compression(self.j_table))
+        except Exception as e:
+            raise DHError(
+                e, "failed to create a table with default compression."
+            ) from e
+
+    def with_keys(self, cols: str | Sequence[str]) -> Table:
+        """Returns a new Table that shares the underlying data and schema with this table and has the specified
+        columns marked as its key columns.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the key column name(s), must name at least one existing column
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return Table(j_table=self.j_table.withKeys(*cols))
+        except Exception as e:
+            raise DHError(e, "failed to create a table with key columns.") from e
+
+    def with_unique_keys(self, cols: str | Sequence[str]) -> Table:
+        """Returns a new Table that shares the underlying data and schema with this table and has the specified
+        columns marked as its key columns, additionally indicating that each key set will be unique.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the key column name(s), must name at least one existing column
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return Table(j_table=self.j_table.withUniqueKeys(*cols))
+        except Exception as e:
+            raise DHError(e, "failed to create a table with unique key columns.") from e
+
+    def to_string(
+        self, num_rows: int = 10, cols: str | Sequence[str] | None = None
+    ) -> str:
+        """Returns the first few rows of a table as a pipe-delimited string.
+
+        Args:
+            num_rows (int): the number of rows at the beginning of the table
+            cols (Optional[Union[str, Sequence[str]]]): the column name(s), default is None
+
+        Returns:
+            string
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return _JTableTools.string(self.j_table, num_rows, *cols)
+        except Exception as e:
+            raise DHError(e, "table to_string failed") from e
+
+    def coalesce(self) -> Table:
+        """Returns a coalesced child table."""
+        return Table(j_table=self.j_table.coalesce())
+
+    def flatten(self) -> Table:
+        """Returns a new version of this table with a flat row set, i.e. from 0 to number of rows - 1."""
+        return Table(j_table=self.j_table.flatten())
+
+    def remove_blink(self) -> Table:
+        """Returns a non-blink child table, or this table if it is not a blink table."""
+        return Table(j_table=self.j_table.removeBlink())
+
+    #
+    # Table operation category: Select
+    #
+    # region Select
+    def move_columns(self, idx: int, cols: str | Sequence[str]) -> Table:
+        """The move_columns method creates a new table with specified columns moved to a specific column index value.
+        Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and unordered,
+        enabling direct swaps between column names. Specifying a source or destination more than once is prohibited.
+
+        Args:
+            idx (int): the column index where the specified columns will be moved in the new table.
+            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
+
+        Returns:
             a new table
 
         Raises:
             DHError
         """
         try:
-            on = to_sequence(on)
-            aggs = to_sequence(aggs)
-            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+            cols = to_sequence(cols)
+            return Table(j_table=self.j_table.moveColumns(idx, *cols))
+        except Exception as e:
+            raise DHError(e, "table move_columns operation failed.") from e
+
+    def move_columns_down(self, cols: str | Sequence[str]) -> Table:
+        """The move_columns_down method creates a new table with specified columns appearing last in order, to the far
+        right. Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and
+        unordered, enabling direct swaps between column names. Specifying a source or destination more than once is
+        prohibited.
+
+        Args:
+            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return Table(j_table=self.j_table.moveColumnsDown(*cols))
+        except Exception as e:
+            raise DHError(e, "table move_columns_down operation failed.") from e
+
+    def move_columns_up(self, cols: str | Sequence[str]) -> Table:
+        """The move_columns_up method creates a new table with specified columns appearing first in order, to the far
+        left. Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and
+        unordered, enabling direct swaps between column names. Specifying a source or destination more than once is
+        prohibited.
+
+        Args:
+            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return Table(j_table=self.j_table.moveColumnsUp(*cols))
+        except Exception as e:
+            raise DHError(e, "table move_columns_up operation failed.") from e
+
+    def rename_columns(self, cols: str | Sequence[str]) -> Table:
+        """The rename_columns method creates a new table with the specified columns renamed. The renames are
+        simultaneous and unordered, enabling direct swaps between column names. Specifying a source or
+        destination more than once is prohibited. If a new column name matches an existing column that is not itself
+        renamed, that existing column is silently dropped from the result. When the existing column is also renamed
+        (a swap), nothing is dropped.
+
+        Args:
+            cols (Union[str, Sequence[str]]) : the column rename expr(s) as "X = Y"
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return Table(j_table=self.j_table.renameColumns(*cols))
+        except Exception as e:
+            raise DHError(e, "table rename_columns operation failed.") from e
+
+    # endregion
+
+    #
+    # Table operation category: Filter
+    #
+    # region Filter
+
+    def where_one_of(
+        self,
+        filters: str | Filter | Sequence[str] | Sequence[Filter] | None = None,
+    ) -> Table:
+        """The where_one_of method creates a new table containing rows from the source table, where the rows match at
+        least one filter.
+
+        Args:
+            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition expression(
+            s), default is None
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            filters = to_sequence(filters)
+            with query_scope_ctx():
+                return Table(j_table=self.j_table.where(or_(filters).j_filter))
+        except Exception as e:
+            raise DHError(e, "table where_one_of operation failed.") from e
+
+    def head_pct(self, pct: float) -> Table:
+        """The head_pct method creates a new table with a specific percentage of rows from the beginning of the table.
+
+        Args:
+            pct (float): the percentage of rows to return as a value from 0 (0%) to 1 (100%).
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.headPct(pct))
+        except Exception as e:
+            raise DHError(e, "table head_pct operation failed.") from e
+
+    def tail_pct(self, pct: float) -> Table:
+        """The tail_pct method creates a new table with a specific percentage of rows from the end of the table.
+
+        Args:
+            pct (float): the percentage of rows to return as a value from 0 (0%) to 1 (100%).
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.tailPct(pct))
+        except Exception as e:
+            raise DHError(e, "table tail_pct operation failed.") from e
+
+    # endregion
+
+    #
+    # Table operation category: Sort
+    #
+    # region Sort
+    def restrict_sort_to(self, cols: str | Sequence[str]):
+        """The restrict_sort_to method adjusts the input table to produce an output table that only allows sorting on
+        specified table columns. This can be useful to prevent users from accidentally performing expensive sort
+        operations as they interact with tables in the UI.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return Table(self.j_table.restrictSortTo(*cols))
+        except Exception as e:
+            raise DHError(e, "table restrict_sort_to operation failed.") from e
+
+    def clear_sorting_restrictions(self) -> Table:
+        """The clear_sorting_restrictions method removes the sorting restrictions that restrict_sort_to applied to the
+        table, so the output table allows sorting on any column.
+
+        Returns:
+            a new table, or this table if it has no sorting restrictions
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(self.j_table.clearSortingRestrictions())
+        except Exception as e:
+            raise DHError(
+                e, "table clear_sorting_restrictions operation failed."
+            ) from e
+
+    def with_order_for_column(
+        self,
+        col_name: str,
+        order: SortDirection = SortDirection.ASCENDING,
+    ) -> Table:
+        """Annotates this table to indicate that the given column is already sorted in the specified order.
+
+        This sets the SORTED_COLUMNS_ATTRIBUTE so that downstream operations (e.g. sorted-column binary
+        search / pushdown) can trust the column is pre-sorted without re-sorting.
+
+        .. warning::
+            **This method performs no validation.** If the column is not actually sorted in the declared
+            order, range and match filters will silently return **incorrect (missing or wrong) results**
+            with no error or warning. Use :meth:`assert_sorted` instead whenever possible — it validates
+            the sort order at call time for static tables and re-validates on every update for refreshing
+            tables. Only use this method when you have an external guarantee that the data is sorted and
+            the validation cost of ``assert_sorted`` is unacceptable.
+
+        Args:
+            col_name (str): the column to annotate as sorted.
+            order (SortDirection): the sort direction; defaults to ASCENDING.
+
+        Returns:
+            a new Table with the sorted-column attribute set.
+
+        Raises:
+            DHError
+        """
+        try:
             return Table(
-                j_table=self.j_table.rangeJoin(
-                    table.j_table, j_array_list(on), j_agg_list
+                j_table=_JSortedColumnsAttribute.withOrderForColumn(
+                    self.j_table, col_name, _sorting_order(order)
                 )
             )
         except Exception as e:
-            raise DHError(e, message="table range_join operation failed.") from e
+            raise DHError(e, "table with_order_for_column operation failed.") from e
+
+    def assert_sorted(
+        self,
+        col_name: str,
+        order: SortDirection = SortDirection.ASCENDING,
+        description: str | None = None,
+    ) -> Table:
+        """Asserts that this table is sorted by the given column and returns it with the sorted-column attribute set.
+
+        For static tables this validates the sort order immediately and annotates the result. For refreshing tables
+        a listener is installed that validates each subsequent update, raising an error if the assertion is violated.
+        The annotation allows downstream range filters to use binary search instead of a linear scan.
+
+        Args:
+            col_name (str): the column that the table must be sorted by.
+            order (SortDirection): the expected sort direction; defaults to ASCENDING.
+            description (Optional[str]): an optional label included in the error message if the assertion is violated.
+
+        Returns:
+            a new Table with the sorted-column assertion applied.
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(
+                j_table=_JTableAssertions.assertSorted(
+                    description, self.j_table, col_name, _sorting_order(order)
+                )
+            )
+        except Exception as e:
+            raise DHError(e, "table assert_sorted operation failed.") from e
 
     # endregion
 
@@ -2161,9 +2973,7 @@ class Table(JObjectWrapper):
     # Table operation category: Aggregation
     # region Aggregation
 
-    def head_by(
-        self, num_rows: int, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> Table:
+    def head_by(self, num_rows: int, by: str | Sequence[str] | None = None) -> Table:
         """The head_by method creates a new table containing the first number of rows for each group.
 
         Args:
@@ -2183,9 +2993,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table head_by operation failed.") from e
 
-    def tail_by(
-        self, num_rows: int, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> Table:
+    def tail_by(self, num_rows: int, by: str | Sequence[str] | None = None) -> Table:
         """The tail_by method creates a new table containing the last number of rows for each group.
 
         Args:
@@ -2205,407 +3013,12 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table tail_by operation failed.") from e
 
-    def group_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The group_by method creates a new table containing grouping columns and grouped data, column content is
-        grouped into vectors.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.groupBy(*by))
-            else:
-                return Table(j_table=self.j_table.groupBy())
-        except Exception as e:
-            raise DHError(e, "table group-by operation failed.") from e
-
-    def ungroup(self, cols: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The ungroup method creates a new table in which array columns from the source table are unwrapped into
-        separate rows.
-
-        Args:
-            cols (Optional[Union[str, Sequence[str]]]): the name(s) of the array column(s), if None, all array columns
-                will be ungrouped, default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            cols = to_sequence(cols)
-            with auto_locking_ctx(self):
-                if cols:
-                    return Table(j_table=self.j_table.ungroup(*cols))
-                else:
-                    return Table(j_table=self.j_table.ungroup())
-        except Exception as e:
-            raise DHError(e, "table ungroup operation failed.") from e
-
-    def first_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The first_by method creates a new table containing the first row for each group.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.firstBy(*by))
-            else:
-                return Table(j_table=self.j_table.firstBy())
-        except Exception as e:
-            raise DHError(e, "table first_by operation failed.") from e
-
-    def last_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The last_by method creates a new table containing the last row for each group.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.lastBy(*by))
-            else:
-                return Table(j_table=self.j_table.lastBy())
-        except Exception as e:
-            raise DHError(e, "table last_by operation failed.") from e
-
-    def sum_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The sum_by method creates a new table containing the sum for each group.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.sumBy(*by))
-            else:
-                return Table(j_table=self.j_table.sumBy())
-        except Exception as e:
-            raise DHError(e, "table sum_by operation failed.") from e
-
-    def abs_sum_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The abs_sum_by method creates a new table containing the absolute sum for each group.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.absSumBy(*by))
-            else:
-                return Table(j_table=self.j_table.absSumBy())
-        except Exception as e:
-            raise DHError(e, "table asb_sum_by operation failed.") from e
-
-    def weighted_sum_by(
-        self, wcol: str, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> Table:
-        """The weighted_sum_by method creates a new table containing the weighted sum for each group.
-
-        Args:
-            wcol (str): the name of the weight column
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.wsumBy(wcol, *by))
-            else:
-                return Table(j_table=self.j_table.wsumBy(wcol))
-        except Exception as e:
-            raise DHError(e, "table weighted_sum_by operation failed.") from e
-
-    def avg_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The avg_by method creates a new table containing the average for each group.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.avgBy(*by))
-            else:
-                return Table(j_table=self.j_table.avgBy())
-        except Exception as e:
-            raise DHError(e, "table avg_by operation failed.") from e
-
-    def weighted_avg_by(
-        self, wcol: str, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> Table:
-        """The weighted_avg_by method creates a new table containing the weighted average for each group.
-
-        Args:
-            wcol (str): the name of the weight column
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.wavgBy(wcol, *by))
-            else:
-                return Table(j_table=self.j_table.wavgBy(wcol))
-        except Exception as e:
-            raise DHError(e, "table avg_by operation failed.") from e
-
-    def std_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The std_by method creates a new table containing the sample standard deviation for each group.
-
-        Sample standard deviation is computed using `Bessel's correction
-        <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
-        which ensures that the sample variance will be an unbiased estimator of population variance.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.stdBy(*by))
-            else:
-                return Table(j_table=self.j_table.stdBy())
-        except Exception as e:
-            raise DHError(e, "table std_by operation failed.") from e
-
-    def var_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The var_by method creates a new table containing the sample variance for each group.
-
-        Sample variance is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
-        which ensures that the sample variance will be an unbiased estimator of population variance.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.varBy(*by))
-            else:
-                return Table(j_table=self.j_table.varBy())
-        except Exception as e:
-            raise DHError(e, "table var_by operation failed.") from e
-
-    def median_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The median_by method creates a new table containing the median for each group.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.medianBy(*by))
-            else:
-                return Table(j_table=self.j_table.medianBy())
-        except Exception as e:
-            raise DHError(e, "table median_by operation failed.") from e
-
-    def min_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The min_by method creates a new table containing the minimum value for each group.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.minBy(*by))
-            else:
-                return Table(j_table=self.j_table.minBy())
-        except Exception as e:
-            raise DHError(e, "table min_by operation failed.") from e
-
-    def max_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
-        """The max_by method creates a new table containing the maximum value for each group.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.maxBy(*by))
-            else:
-                return Table(j_table=self.j_table.maxBy())
-        except Exception as e:
-            raise DHError(e, "table max_by operation failed.") from e
-
-    def count_by(
-        self, col: str, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> Table:
-        """The count_by method creates a new table containing the number of rows for each group.
-
-        Args:
-            col (str): the name of the column to store the counts
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            if by:
-                return Table(j_table=self.j_table.countBy(col, *by))
-            else:
-                return Table(j_table=self.j_table.countBy(col))
-        except Exception as e:
-            raise DHError(e, "table count_by operation failed.") from e
-
-    def agg_by(
-        self,
-        aggs: Union[Aggregation, Sequence[Aggregation]],
-        by: Optional[Union[str, Sequence[str]]] = None,
-        preserve_empty: bool = False,
-        initial_groups: Optional[Table] = None,
-    ) -> Table:
-        """The agg_by method creates a new table containing grouping columns and grouped data. The resulting
-        grouped data is defined by the aggregations specified.
-
-        Args:
-            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), if not provided, all rows from
-            this table are
-                grouped into a single group of rows before the aggregations are applied to the result, default is None.
-            preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
-                a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
-            initial_groups (Optional[Table]): a table whose distinct combinations of values for the group-by column(s)
-                should be used to create an initial set of aggregation groups. All other columns are ignored. This is
-                useful in combination with preserve_empty=True to ensure that particular groups appear in the result
-                table, or with preserve_empty=False to control the encounter order for a collection of groups and
-                thus their relative order in the result. Changes to this table are not expected or handled; if this
-                table is a refreshing table, only its contents at instantiation time will be used. Default is None,
-                the result will be the same as if a table is provided but no rows were supplied. When it is provided,
-                the 'by' argument must be provided to explicitly specify the grouping columns.
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            aggs = to_sequence(aggs)
-            by = to_sequence(by)
-            if not by and initial_groups:
-                raise ValueError(
-                    "missing group-by column names when initial_groups is provided."
-                )
-            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-
-            cm = _query_scope_agg_ctx(aggs)
-            with cm:
-                if not by:
-                    return Table(j_table=self.j_table.aggBy(j_agg_list, preserve_empty))
-                else:
-                    j_column_name_list = j_array_list(
-                        [_JColumnName.of(col) for col in by]
-                    )
-                    initial_groups = unwrap(initial_groups)
-                    return Table(
-                        j_table=self.j_table.aggBy(
-                            j_agg_list,
-                            preserve_empty,
-                            initial_groups,
-                            j_column_name_list,
-                        )
-                    )
-        except Exception as e:
-            raise DHError(e, "table agg_by operation failed.") from e
-
     def partitioned_agg_by(
         self,
-        aggs: Union[Aggregation, Sequence[Aggregation]],
-        by: Optional[Union[str, Sequence[str]]] = None,
+        aggs: Aggregation | Sequence[Aggregation],
+        by: str | Sequence[str] | None = None,
         preserve_empty: bool = False,
-        initial_groups: Optional[Table] = None,
+        initial_groups: Table | None = None,
     ) -> PartitionedTable:
         """The partitioned_agg_by method is a convenience method that performs an agg_by operation on this table and
         wraps the result in a PartitionedTable. If the argument 'aggs' does not include a partition aggregation
@@ -2648,36 +3061,9 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table partitioned_agg_by operation failed.") from e
 
-    def agg_all_by(
-        self, agg: Aggregation, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> Table:
-        """The agg_all_by method creates a new table containing grouping columns and grouped data. The resulting
-        grouped data is defined by the aggregation specified.
-
-        Note, because agg_all_by applies the aggregation to all the columns of the table, it will ignore
-        any column names specified for the aggregation.
-
-        Args:
-            agg (Aggregation): the aggregation
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            cm = _query_scope_agg_ctx([agg])
-            with cm:
-                return Table(j_table=self.j_table.aggAllBy(agg.j_agg_spec, *by))
-        except Exception as e:
-            raise DHError(e, "table agg_all_by operation failed.") from e
-
     # endregion
 
-    def format_columns(self, formulas: Union[str, Sequence[str]]) -> Table:
+    def format_columns(self, formulas: str | Sequence[str]) -> Table:
         """Applies color formatting to the columns of the table.
 
         Args:
@@ -2703,8 +3089,8 @@ class Table(JObjectWrapper):
         Args:
             col (str): the column name
             cond (str): the condition expression
-            formula (str): the formatting string in the form of assignment expression "column=color expression"
-                where color_expression can be a color name or a Java ternary expression that results in a color.
+            formula (str): the color expression to apply where the condition is true, such as a color name or a
+                Java ternary expression that results in a color. It is not an assignment; col names the column.
 
         Returns:
             a new table
@@ -2723,8 +3109,8 @@ class Table(JObjectWrapper):
 
         Args:
             cond (str): the condition expression
-            formula (str): the formatting string in the form of assignment expression "column=color expression"
-                where color_expression can be a color name or a Java ternary expression that results in a color.
+            formula (str): the color expression to apply to the rows where the condition is true, such as a color
+                name or a Java ternary expression that results in a color. It is not an assignment.
 
         Returns:
             a new table
@@ -2740,12 +3126,12 @@ class Table(JObjectWrapper):
 
     def layout_hints(
         self,
-        front: Optional[Union[str, Sequence[str]]] = None,
-        back: Optional[Union[str, Sequence[str]]] = None,
-        freeze: Optional[Union[str, Sequence[str]]] = None,
-        hide: Optional[Union[str, Sequence[str]]] = None,
-        column_groups: Optional[Sequence[dict]] = None,
-        search_display_mode: Optional[SearchDisplayMode] = None,
+        front: str | Sequence[str] | None = None,
+        back: str | Sequence[str] | None = None,
+        freeze: str | Sequence[str] | None = None,
+        hide: str | Sequence[str] | None = None,
+        column_groups: Sequence[dict] | None = None,
+        search_display_mode: SearchDisplayMode | None = None,
     ) -> Table:
         """Sets layout hints on the Table
 
@@ -2811,7 +3197,7 @@ class Table(JObjectWrapper):
             raise DHError(e, "failed to set layout hints on table") from e
 
     def partition_by(
-        self, by: Union[str, Sequence[str]], drop_keys: bool = False
+        self, by: str | Sequence[str], drop_keys: bool = False
     ) -> PartitionedTable:
         """Creates a PartitionedTable from this table, partitioned according to the specified key columns.
 
@@ -2835,76 +3221,6 @@ class Table(JObjectWrapper):
             )
         except Exception as e:
             raise DHError(e, "failed to create a partitioned table.") from e
-
-    def update_by(
-        self,
-        ops: Union[UpdateByOperation, Sequence[UpdateByOperation]],
-        by: Optional[Union[str, Sequence[str]]] = None,
-    ) -> Table:
-        """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
-        The aggregations are defined by the provided operations, which support incremental aggregations over the
-        corresponding rows in the table. The aggregations will apply position or time-based windowing and
-        compute the results over the entire table or each row group as identified by the provided key columns.
-
-        Args:
-            ops (Union[UpdateByOperation, Sequence[UpdateByOperation]]): the update-by operation definition(s)
-            by (Optional[Union[str, Sequence[str]]]): the key column name(s) to group the rows of the table
-
-        Returns:
-            a new Table
-
-        Raises:
-            DHError
-        """
-        try:
-            ops = to_sequence(ops)
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
-        except Exception as e:
-            raise DHError(e, "table update-by operation failed.") from e
-
-    def slice(self, start: int, stop: int) -> Table:
-        """Extracts a subset of a table by row positions into a new Table.
-
-        If both the start and the stop are positive, then both are counted from the beginning of the table.
-        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
-        The start must be less than or equal to the stop.
-
-        If the start is positive and the stop is negative, then the start is counted from the beginning of the
-        table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
-        rows but the first and last. If the stop is before the start, the result is an empty table.
-
-        If the start is negative, and the stop is zero, then the start is counted from the end of the table,
-        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
-
-        If the start is negative and the stop is negative, they are both counted from the end of the
-        table. For example, slice(-2, -1) returns the second to last row of the table.
-
-        Args:
-            start (int): the first row position to include in the result
-            stop (int): the last row position to include in the result
-
-        Returns:
-            a new Table
-
-        Raises:
-            DHError
-
-        Examples:
-            >>> table.slice(0, 5)    # first 5 rows
-            >>> table.slice(-5, 0)   # last 5 rows
-            >>> table.slice(2, 6)    # rows from index 2 to 5
-            >>> table.slice(6, 2)    # ERROR: cannot slice start after end
-            >>> table.slice(-6, -2)  # rows from 6th last to 2nd last (exclusive)
-            >>> table.slice(-2, -6)  # ERROR: cannot slice start after end
-            >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
-            >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
-        """
-        try:
-            return Table(j_table=self.j_table.slice(start, stop))
-        except Exception as e:
-            raise DHError(e, "table slice operation failed.") from e
 
     def slice_pct(self, start_pct: float, end_pct: float) -> Table:
         """Extracts a subset of a table by row percentages.
@@ -2931,8 +3247,8 @@ class Table(JObjectWrapper):
 
     def rollup(
         self,
-        aggs: Union[Aggregation, Sequence[Aggregation]],
-        by: Optional[Union[str, Sequence[str]]] = None,
+        aggs: Aggregation | Sequence[Aggregation],
+        by: str | Sequence[str] | None = None,
         include_constituents: bool = False,
     ) -> RollupTable:
         """Creates a rollup table.
@@ -3026,7 +3342,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table tree operation failed.") from e
 
-    def await_update(self, timeout: Optional[int] = None) -> bool:
+    def await_update(self, timeout: int | None = None) -> bool:
         """Waits until either this refreshing Table is updated or the timeout elapses if provided.
 
         Args:
@@ -3083,11 +3399,11 @@ class PartitionedTable(JObjectWrapper):
     def from_partitioned_table(
         cls,
         table: Table,
-        key_cols: Optional[Union[str, Sequence[str]]] = None,
-        unique_keys: Optional[bool] = None,
-        constituent_column: Optional[str] = None,
-        constituent_table_columns: Optional[TableDefinitionLike] = None,
-        constituent_changes_permitted: Optional[bool] = None,
+        key_cols: str | Sequence[str] | None = None,
+        unique_keys: bool | None = None,
+        constituent_column: str | None = None,
+        constituent_table_columns: TableDefinitionLike | None = None,
+        constituent_changes_permitted: bool | None = None,
     ) -> PartitionedTable:
         """Creates a PartitionedTable from the provided underlying partitioned Table.
 
@@ -3157,7 +3473,7 @@ class PartitionedTable(JObjectWrapper):
     def from_constituent_tables(
         cls,
         tables: Sequence[Table],
-        constituent_table_columns: Optional[TableDefinitionLike] = None,
+        constituent_table_columns: TableDefinitionLike | None = None,
     ) -> PartitionedTable:
         """Creates a PartitionedTable with a single column named '__CONSTITUENT__' containing the provided constituent
         tables.
@@ -3285,7 +3601,7 @@ class PartitionedTable(JObjectWrapper):
             raise DHError(e, "failed to merge all the constituent tables.")
 
     def filter(
-        self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
+        self, filters: str | Filter | Sequence[str] | Sequence[Filter]
     ) -> PartitionedTable:
         """The filter method creates a new partitioned table containing only the rows meeting the filter criteria.
         Filters can not use the constituent column.
@@ -3300,23 +3616,25 @@ class PartitionedTable(JObjectWrapper):
         Raises:
             DHError
         """
-        filters = to_sequence(filters)
-        if isinstance(filters[0], str):
-            filters = to_sequence(Filter.from_(filters))  # type: ignore[arg-type]
-
         try:
-            return PartitionedTable(
-                j_partitioned_table=self.j_partitioned_table.filter(
-                    j_array_list(filters)
-                )
+            # Convert each string on its own, so a list may mix strings and Filter objects as Java allows. An empty
+            # list keeps every row, as in Java.
+            j_filters = j_array_list(
+                [
+                    Filter.from_(f) if isinstance(f, str) else f
+                    for f in to_sequence(filters)
+                ]
             )
+            with query_scope_ctx():
+                j_partitioned_table = self.j_partitioned_table.filter(j_filters)
+            return PartitionedTable(j_partitioned_table=j_partitioned_table)
         except Exception as e:
             raise DHError(e, "failed to apply filters to the partitioned table.") from e
 
     def sort(
         self,
-        order_by: Union[str, Sequence[str]],
-        order: Optional[Union[SortDirection, Sequence[SortDirection]]] = None,
+        order_by: str | Sequence[str],
+        order: SortDirection | Sequence[SortDirection] | None = None,
     ) -> PartitionedTable:
         """The sort method creates a new partitioned table where the rows are ordered based on values in a specified
         set of columns. Sort can not use the constituent column.
@@ -3344,7 +3662,8 @@ class PartitionedTable(JObjectWrapper):
                 )
 
             sort_columns = [
-                _sort_column(col, dir_) for col, dir_ in zip(order_by, order)
+                _sort_column(col, dir_)
+                for col, dir_ in zip(order_by, order, strict=True)
             ]
             j_sc_list = j_array_list(sort_columns)
             return PartitionedTable(
@@ -3353,7 +3672,7 @@ class PartitionedTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to sort the partitioned table.") from e
 
-    def get_constituent(self, key_values: Union[Any, Sequence[Any]]) -> Optional[Table]:
+    def get_constituent(self, key_values: Any | Sequence[Any]) -> Table | None:
         """Gets a single constituent table by its corresponding key column value(s).
         If there are no matching rows, the result is None. If there are multiple matching rows, a DHError is thrown.
 
@@ -3384,7 +3703,7 @@ class PartitionedTable(JObjectWrapper):
     def transform(
         self,
         func: Callable[[Table], Table],
-        dependencies: Optional[Sequence[Union[Table, PartitionedTable]]] = None,
+        dependencies: Sequence[Table | PartitionedTable] | None = None,
     ) -> PartitionedTable:
         """Apply the provided function to all constituent Tables and produce a new PartitionedTable with the results
         as its constituents, with the same data for all other columns in the underlying partitioned Table. Note that
@@ -3431,7 +3750,7 @@ class PartitionedTable(JObjectWrapper):
         self,
         other: PartitionedTable,
         func: Callable[[Table, Table], Table],
-        dependencies: Optional[Sequence[Union[Table, PartitionedTable]]] = None,
+        dependencies: Sequence[Table | PartitionedTable] | None = None,
     ) -> PartitionedTable:
         """Join the underlying partitioned Tables from this PartitionedTable and other on the key columns, then apply
         the provided function to all pairs of constituent Tables with the same keys in order to produce a new
@@ -3486,7 +3805,7 @@ class PartitionedTable(JObjectWrapper):
             ) from e
 
     def proxy(
-        self, require_matching_keys: bool = True, sanity_check_joins: bool = True
+        self, require_matching_keys: bool = True, sanity_check_joins: bool = False
     ) -> PartitionedTableProxy:
         """Makes a proxy that allows table operations to be applied to the constituent tables of this
         PartitionedTable.
@@ -3497,8 +3816,12 @@ class PartitionedTable(JObjectWrapper):
                 :meth:`~PartitionedTable.partitioned_transform`, default is True
             sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs
                 in exactly one constituent table of the underlying partitioned table. If the other table argument is
-                also a
-                PartitionedTableProxy, its constituents will also be subjected to this constraint.
+                also a PartitionedTableProxy, its constituents will also be subjected to this constraint. The check
+                also applies to :meth:`~PartitionedTableProxy.where_in` and :meth:`~PartitionedTableProxy.where_not_in`.
+                Default is False, meaning the check is skipped. The check adds work and limits the parallelism of
+                proxied joins, because it examines every row of every constituent and updates a shared data structure.
+                It can catch data errors that would otherwise produce results that differ from the same operation on
+                unpartitioned tables. Set it to True to run the check.
         """
         return PartitionedTableProxy(
             j_pt_proxy=self.j_partitioned_table.proxy(
@@ -3507,7 +3830,7 @@ class PartitionedTable(JObjectWrapper):
         )
 
 
-class PartitionedTableProxy(JObjectWrapper):
+class PartitionedTableProxy(_TableOperations["PartitionedTableProxy"]):
     """A PartitionedTableProxy is a table operation proxy for the underlying partitioned table. It provides methods
     that apply table operations to the constituent tables of the underlying partitioned table, produce a new
     partitioned table from the resulting constituent tables, and return a proxy of it.
@@ -3519,7 +3842,8 @@ class PartitionedTableProxy(JObjectWrapper):
             :meth:`~PartitionedTable.partitioned_transform`, default is True
         sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs
             in exactly one constituent table of the underlying partitioned table. If the other table argument is also a
-            PartitionedTableProxy, its constituents will also be subjected to this constraint.
+            PartitionedTableProxy, its constituents will also be subjected to this constraint. The check also applies
+            to :meth:`~PartitionedTableProxy.where_in` and :meth:`~PartitionedTableProxy.where_not_in`.
     """
 
     j_object_type = _JPartitionedTableProxy
@@ -3527,6 +3851,37 @@ class PartitionedTableProxy(JObjectWrapper):
     @property
     def j_object(self) -> jpy.JType:
         return self.j_pt_proxy
+
+    _doc_vars = {
+        "returns": "a new PartitionedTableProxy",
+        "right_type": "Union[Table, PartitionedTableProxy]",
+        "intro": "Applies the :meth:`~Table.{op}` table operation to all constituent tables of the underlying\n"
+        "partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of\n"
+        "its underlying partitioned table. On each constituent table, :meth:`~Table.{op}` works as described below.",
+        "right_note": "When the other table is a PartitionedTableProxy, the :meth:`~Table.{op}` table operation is\n"
+        "applied to the matching pairs of constituent tables from both underlying partitioned tables. When their\n"
+        "keys differ, the op may raise an error. See ``require_matching_keys`` in :meth:`~PartitionedTable.proxy`.",
+    }
+
+    def _wrap_result(self, j_obj: jpy.JType) -> PartitionedTableProxy:
+        return PartitionedTableProxy(j_pt_proxy=j_obj)
+
+    def _unwrap_other(self, table: Table | PartitionedTableProxy) -> jpy.JType:
+        return jpy.cast(table.j_object, _JTableOperations)
+
+    def _extra_lock_ctx(
+        self, *others: Table | PartitionedTableProxy
+    ) -> contextlib.AbstractContextManager:
+        """Returns the update graph lock context when this proxy or any other table is refreshing.
+
+        Java requires the lock for an op whose other table is a refreshing PartitionedTableProxy, such as agg_by with
+        a refreshing initial_groups, even when this proxy is static. Without it, the op fails with "May not initiate
+        serial table operations". The proxy's other ops lock too, which is more than Java requires.
+        """
+        return auto_locking_ctx(self, *others)
+
+    def _make_op_error(self, e: Exception, op: str) -> DHError:
+        return DHError(e, f"{op} operation on the PartitionedTableProxy failed.")
 
     @property
     def is_refreshing(self) -> bool:
@@ -3544,1168 +3899,6 @@ class PartitionedTableProxy(JObjectWrapper):
         self.sanity_check_joins = self.j_pt_proxy.sanityChecksJoins()
         self.target = PartitionedTable(j_partitioned_table=self.j_pt_proxy.target())
 
-    def head(self, num_rows: int) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.head` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            num_rows (int): the number of rows at the head of the constituent tables
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.head(num_rows))
-        except Exception as e:
-            raise DHError(
-                e, "head operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def tail(self, num_rows: int) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.tail` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            num_rows (int): the number of rows at the end of the constituent tables
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.tail(num_rows))
-        except Exception as e:
-            raise DHError(
-                e, "tail operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def reverse(self) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.reverse` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.reverse())
-        except Exception as e:
-            raise DHError(
-                e, "reverse operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def snapshot(self) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.snapshot` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot())
-        except Exception as e:
-            raise DHError(
-                e, "snapshot operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def snapshot_when(
-        self,
-        trigger_table: Union[Table, PartitionedTableProxy],
-        stamp_cols: Optional[Union[str, Sequence[str]]] = None,
-        initial: bool = False,
-        incremental: bool = False,
-        history: bool = False,
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.snapshot_when` table operation to all constituent tables of the underlying
-        partitioned table with the provided trigger table or PartitionedTableProxy, and produces a new
-        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
-
-        In the case of the trigger table being another PartitionedTableProxy, the :meth:`~Table.snapshot_when` table
-        operation is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
-
-        Args:
-            trigger_table (Union[Table, PartitionedTableProxy]): the trigger Table or PartitionedTableProxy
-            stamp_cols (Optional[Union[str, Sequence[str]]]): The columns from trigger_table that form the "stamp
-            key", may be
-                renames. None, or empty, means that all columns from trigger_table form the "stamp key".
-            initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
-                resulting table will remain empty until trigger_table first updates.
-            incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
-                rows of this table will have the latest "stamp key". When True, only the rows of this table that have
-                been added or updated will have the latest "stamp key".
-            history (bool): Whether the resulting table should keep history, default is False. A history table appends a
-                full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
-                is currently incompatible with initial and incremental: when history is True, incremental and initial
-                must be False.
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            options = _JSnapshotWhenOptions.of(
-                initial, incremental, history, to_sequence(stamp_cols)
-            )
-            with auto_locking_ctx(self, trigger_table):
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.snapshotWhen(
-                        trigger_table.j_object, options
-                    )
-                )
-        except Exception as e:
-            raise DHError(
-                e, "snapshot_when operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def sort(
-        self,
-        order_by: Union[str, Sequence[str]],
-        order: Optional[Union[SortDirection, Sequence[SortDirection]]] = None,
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.sort` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
-            order (Optional[Union[SortDirection, Sequence[SortDirection]]): the corresponding sort directions for
-                each sort column, default is None, meaning ascending order for all the sort columns.
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            if not order:
-                order = (SortDirection.ASCENDING,) * len(order_by)
-            else:
-                order = to_sequence(order)
-                if any(
-                    [
-                        o not in (SortDirection.ASCENDING, SortDirection.DESCENDING)
-                        for o in order
-                    ]
-                ):
-                    raise DHError(
-                        message="The sort direction must be either 'ASCENDING' or 'DESCENDING'."
-                    )
-                if len(order_by) != len(order):
-                    raise DHError(
-                        message="The number of sort columns must be the same as the number of sort directions."
-                    )
-
-            sort_columns = [
-                _sort_column(col, dir_) for col, dir_ in zip(order_by, order)
-            ]
-            j_sc_list = j_array_list(sort_columns)
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sort(j_sc_list))
-        except Exception as e:
-            raise DHError(
-                e, "sort operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def sort_descending(
-        self, order_by: Union[str, Sequence[str]]
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.sort_descending` table operation to all constituent tables of the underlying
-        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
-        underlying partitioned table.
-
-        Args:
-            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            order_by = to_sequence(order_by)
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.sortDescending(*order_by)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "sort_descending operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def where(
-        self,
-        filters: Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]] = None,
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.where` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition
-                expression(s) or Filter object(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            filters = to_sequence(filters)
-            with query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.where(and_(filters).j_filter)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "where operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def where_in(
-        self, filter_table: Table, cols: Union[str, Sequence[str]]
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.where_in` table operation to all constituent tables of the underlying
-        partitioned table with the provided filter table, and produces a new PartitionedTableProxy with the result
-        tables as the constituents of its underlying partitioned table.
-
-        Args:
-            filter_table (Table): the table containing the set of values to filter on
-            cols (Union[str, Sequence[str]]): the column name(s)
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            cols = to_sequence(cols)
-            with auto_locking_ctx(self, filter_table):
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.whereIn(filter_table.j_table, *cols)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "where_in operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def where_not_in(
-        self, filter_table: Table, cols: Union[str, Sequence[str]]
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.where_not_in` table operation to all constituent tables of the underlying
-        partitioned table with the provided filter table, and produces a new PartitionedTableProxy with the result
-        tables as the constituents of its underlying partitioned table.
-
-        Args:
-            filter_table (Table): the table containing the set of values to filter on
-            cols (Union[str, Sequence[str]]): the column name(s)
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            cols = to_sequence(cols)
-            with auto_locking_ctx(self, filter_table):
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.whereNotIn(filter_table.j_table, *cols)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "where_not_in operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def view(self, formulas: Union[str, Sequence[str]]) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.view` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
-
-        Returns:
-            A new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            formulas = to_sequence(formulas)
-            with query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.view(*formulas))
-        except Exception as e:
-            raise DHError(
-                e, "view operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def update_view(self, formulas: Union[str, Sequence[str]]) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.update_view` table operation to all constituent tables of the underlying
-        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
-        underlying partitioned table.
-
-        Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
-
-        Returns:
-            A new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            formulas = to_sequence(formulas)
-            with query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.updateView(*formulas)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "update_view operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def update(
-        self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.update` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or
-            Selectable(s)
-
-        Returns:
-            A new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            formulas = to_sequence(formulas)
-            with query_scope_ctx(), auto_locking_ctx(self):
-                if isinstance(formulas[0], Selectable.j_object_type):
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.update(j_array_list(formulas))
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.update(*formulas)
-                    )
-        except Exception as e:
-            raise DHError(
-                e, "update operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def select(
-        self,
-        formulas: Optional[
-            Union[str, Sequence[str], Selectable, Sequence[Selectable]]
-        ] = None,
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.select` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            formulas (Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]]): the column formula(s) or
-                Selectable(s), default is None
-
-        Returns:
-            A new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            formulas = to_sequence(formulas)
-            with query_scope_ctx(), auto_locking_ctx(self):
-                if isinstance(formulas[0], Selectable.j_object_type):
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.select(j_array_list(formulas))
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.select(*formulas)
-                    )
-        except Exception as e:
-            raise DHError(
-                e, "select operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def select_distinct(
-        self, formulas: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.select_distinct` table operation to all constituent tables of the underlying
-        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
-        underlying partitioned table.
-
-        Args:
-            formulas (Optional[Union[str, Sequence[str]]]): the column formula(s), default is None
-
-        Returns:
-            A new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            formulas = to_sequence(formulas)
-            with query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.selectDistinct(*formulas)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "select_distinct operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def natural_join(
-        self,
-        table: Union[Table, PartitionedTableProxy],
-        on: Union[str, Sequence[str]],
-        joins: Optional[Union[str, Sequence[str]]] = None,
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.natural_join` table operation to all constituent tables of the underlying
-        partitioned table with the provided right table or PartitionedTableProxy, and produces a new
-        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
-
-        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.natural_join` table
-        operation is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
-
-        Args:
-            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            on = ",".join(to_sequence(on))
-            joins = ",".join(to_sequence(joins))
-            table_op = jpy.cast(table.j_object, _JTableOperations)
-            with auto_locking_ctx(self, table):
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, on, joins)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "natural_join operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def exact_join(
-        self,
-        table: Union[Table, PartitionedTableProxy],
-        on: Union[str, Sequence[str]],
-        joins: Optional[Union[str, Sequence[str]]] = None,
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.exact_join` table operation to all constituent tables of the underlying
-        partitioned table with the provided right table or PartitionedTableProxy,and produces a new
-        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
-
-        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.exact_join` table
-        operation is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
-
-        Args:
-            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            on = ",".join(to_sequence(on))
-            joins = ",".join(to_sequence(joins))
-            table_op = jpy.cast(table.j_object, _JTableOperations)
-            with auto_locking_ctx(self, table):
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, on, joins)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "exact_join operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def join(
-        self,
-        table: Union[Table, PartitionedTableProxy],
-        on: Optional[Union[str, Sequence[str]]] = None,
-        joins: Optional[Union[str, Sequence[str]]] = None,
-        reserve_bits: Optional[int] = None,
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.join` table operation to all constituent tables of the underlying partitioned
-        table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
-        the result tables as the constituents of its underlying partitioned table.
-
-        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.join` table operation
-        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
-
-        Args:
-            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal
-            expression,
-                i.e. "col_a = col_b" for different column names; default is None
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is None
-            reserve_bits (Optional[int]): the number of bits to reserve for the join; default is None, meaning the
-                configured value is used, which is 10 by default
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            on = ",".join(to_sequence(on))
-            joins = ",".join(to_sequence(joins))
-            table_op = jpy.cast(table.j_object, _JTableOperations)
-            reserve_bits = (
-                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-            )
-
-            with auto_locking_ctx(self, table):
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.join(table_op, on, joins, reserve_bits)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "join operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def aj(
-        self,
-        table: Union[Table, PartitionedTableProxy],
-        on: Union[str, Sequence[str]],
-        joins: Optional[Union[str, Sequence[str]]] = None,
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.aj` table operation to all constituent tables of the underlying partitioned
-        table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
-        the result tables as the constituents of its underlying partitioned table.
-
-        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.aj` table operation
-        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
-
-        Args:
-            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
-                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
-                '>=' is used for the comparison.
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is None
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            on = ",".join(to_sequence(on))
-            joins = ",".join(to_sequence(joins))
-            table_op = jpy.cast(self.j_object, _JTableOperations)
-            r_table_op = jpy.cast(table.j_object, _JTableOperations)
-
-            with auto_locking_ctx(self, table):
-                return PartitionedTableProxy(
-                    j_pt_proxy=table_op.aj(r_table_op, on, joins)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "as-of join operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def raj(
-        self,
-        table: Union[Table, PartitionedTableProxy],
-        on: Union[str, Sequence[str]],
-        joins: Optional[Union[str, Sequence[str]]] = None,
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.raj` table operation to all constituent tables of the underlying partitioned
-        table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
-        the result tables as the constituents of its underlying partitioned table.
-
-        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.raj` table operation
-        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
-
-        Args:
-            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
-                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
-                '<=' is used for the comparison.
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is None
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            on = ",".join(to_sequence(on))
-            joins = ",".join(to_sequence(joins))
-            table_op = jpy.cast(self.j_object, _JTableOperations)
-            r_table_op = jpy.cast(table.j_object, _JTableOperations)
-
-            with auto_locking_ctx(self, table):
-                return PartitionedTableProxy(
-                    j_pt_proxy=table_op.raj(r_table_op, on, joins)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "reverse as-of join operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def group_by(
-        self, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.group_by` table operation to all constituent tables of the underlying
-        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
-        underlying partitioned table.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.groupBy(*by)
-                    )
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.groupBy())
-        except Exception as e:
-            raise DHError(
-                e, "group-by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def agg_by(
-        self,
-        aggs: Union[Aggregation, Sequence[Aggregation]],
-        by: Optional[Union[str, Sequence[str]]] = None,
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.agg_by` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            aggs = to_sequence(aggs)
-            by = to_sequence(by)
-            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-
-            cm = _query_scope_agg_ctx(aggs)
-            with cm:
-                with auto_locking_ctx(self):
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by)
-                    )
-        except Exception as e:
-            raise DHError(
-                e, "agg_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def agg_all_by(
-        self, agg: Aggregation, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.agg_all_by` table operation to all constituent tables of the underlying
-        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
-        underlying partitioned table.
-
-        Note, because agg_all_by applies the aggregation to all the columns of the table, it will ignore
-        any column names specified for the aggregation.
-
-        Args:
-            agg (Aggregation): the aggregation
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-
-            cm: contextlib.AbstractContextManager = _query_scope_agg_ctx([agg])
-            with cm:
-                with auto_locking_ctx(self):
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.aggAllBy(agg.j_agg_spec, *by)
-                    )
-        except Exception as e:
-            raise DHError(
-                e, "agg_all_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def count_by(
-        self, col: str, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.count_by` table operation to all constituent tables of the underlying partitioned
-        table with the provided source table, and produces a new PartitionedTableProxy with the result tables as the
-        constituents of its underlying partitioned table.
-
-        Args:
-            col (str): the name of the column to store the counts
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.countBy(col, *by)
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.countBy(col)
-                    )
-        except Exception as e:
-            raise DHError(
-                e, "count_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def first_by(
-        self, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.first_by` table operation to all constituent tables of the underlying
-        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
-        underlying partitioned table.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.firstBy(*by)
-                    )
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.firstBy())
-        except Exception as e:
-            raise DHError(
-                e, "first_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def last_by(
-        self, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.last_by` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.lastBy(*by))
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.lastBy())
-        except Exception as e:
-            raise DHError(
-                e, "last_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def min_by(
-        self, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.min_by` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.minBy(*by))
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.minBy())
-        except Exception as e:
-            raise DHError(
-                e, "min_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def max_by(
-        self, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.max_by` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.maxBy(*by))
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.maxBy())
-        except Exception as e:
-            raise DHError(
-                e, "max_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def sum_by(
-        self, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.sum_by` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sumBy(*by))
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sumBy())
-        except Exception as e:
-            raise DHError(
-                e, "sum_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def abs_sum_by(
-        self, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.abs_sum_by` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.absSumBy(*by)
-                    )
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.absSumBy())
-        except Exception as e:
-            raise DHError(
-                e, "sum_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def weighted_sum_by(
-        self, wcol: str, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.weighted_sum_by` table operation to all constituent tables of the underlying
-        partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            wcol (str): the name of the weight column
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.wsumBy(wcol, *by)
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.wsumBy(wcol)
-                    )
-        except Exception as e:
-            raise DHError(
-                e, "sum_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def avg_by(
-        self, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.avg_by` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy(*by))
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy())
-        except Exception as e:
-            raise DHError(
-                e, "avg_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def weighted_avg_by(
-        self, wcol: str, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.weighted_avg_by` table operation to all constituent tables of the underlying
-        partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            wcol (str): the name of the weight column
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.wavgBy(wcol, *by)
-                    )
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy(wcol))
-        except Exception as e:
-            raise DHError(
-                e, "avg_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def median_by(
-        self, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.median_by` table operation to all constituent tables of the underlying
-        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
-        underlying partitioned table.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.medianBy(*by)
-                    )
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.medianBy())
-        except Exception as e:
-            raise DHError(
-                e, "median_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def std_by(
-        self, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.std_by` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.stdBy(*by))
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.stdBy())
-        except Exception as e:
-            raise DHError(
-                e, "std_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def var_by(
-        self, by: Optional[Union[str, Sequence[str]]] = None
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.var_by` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                if by:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.varBy(*by))
-                else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.varBy())
-        except Exception as e:
-            raise DHError(
-                e, "var_by operation on the PartitionedTableProxy failed."
-            ) from e
-
-    def update_by(
-        self,
-        ops: Union[UpdateByOperation, Sequence[UpdateByOperation]],
-        by: Optional[Union[str, Sequence[str]]] = None,
-    ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.update_by` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            ops (Union[UpdateByOperation, Sequence[UpdateByOperation]]): the update-by operation definition(s)
-            by (Optional[Union[str, Sequence[str]]]): the key column name(s) to group the rows of the table
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            ops = to_sequence(ops)
-            by = to_sequence(by)
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.updateBy(j_array_list(ops), *by)
-                )
-        except Exception as e:
-            raise DHError(
-                e, "update-by operation on the PartitionedTableProxy failed."
-            ) from e
-
 
 class MultiJoinInput(JObjectWrapper):
     """A MultiJoinInput represents the input tables, key columns and additional columns to be used in the multi-table
@@ -4720,8 +3913,8 @@ class MultiJoinInput(JObjectWrapper):
     def __init__(
         self,
         table: Table,
-        on: Union[str, Sequence[str]],
-        joins: Optional[Union[str, Sequence[str]]] = None,
+        on: str | Sequence[str],
+        joins: str | Sequence[str] | None = None,
     ):
         """Creates a new MultiJoinInput containing the table to include for the join, the key columns from the table to
         match with other table keys plus additional columns containing data from the table. Rows containing unique keys
@@ -4764,8 +3957,8 @@ class MultiJoinTable(JObjectWrapper):
 
     def __init__(
         self,
-        input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
-        on: Optional[Union[str, Sequence[str]]] = None,
+        input: Table | Sequence[Table] | MultiJoinInput | Sequence[MultiJoinInput],
+        on: str | Sequence[str] | None = None,
     ):
         """Creates a new MultiJoinTable. The join can be specified in terms of either tables or MultiJoinInputs.
 
@@ -4811,8 +4004,8 @@ class MultiJoinTable(JObjectWrapper):
 
 
 def multi_join(
-    input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
-    on: Optional[Union[str, Sequence[str]]] = None,
+    input: Table | Sequence[Table] | MultiJoinInput | Sequence[MultiJoinInput],
+    on: str | Sequence[str] | None = None,
 ) -> MultiJoinTable:
     """The multi_join method creates a new table by performing a multi-table natural join on the input tables.  The
     result
@@ -4848,10 +4041,10 @@ def table_diff(
     an empty string is returned. The differences are returned in a human-readable format.
 
     This method starts by comparing the table sizes, and then the schema of the two tables, such as the number of
-    columns, column names, column types, column orders. If the schemas are different, the comparison stops and
-    the differences are returned. If the schemas are the same, the method proceeds to compare the data in the
-    tables. The method compares the data in the tables column by column (not row by row) and only records the first
-    difference found in each column.
+    columns, column names, column types, column orders. Then it compares the data of the columns that exist in both
+    tables with the same type. The comparison stops only when max_diffs differences have been found; schema
+    differences alone do not stop it. The method compares the data in the tables column by column (not row by row)
+    and only records the first difference found in each column.
 
     Note, inexact comparison of floating numbers may sometimes be desirable due to their inherent imprecision.
     When that is the case, the floating_comparison should be set to either 'absolute' or 'relative'. When it is set
@@ -4912,10 +4105,10 @@ def table_diff(
 
 def keyed_transpose(
     table: Table,
-    aggs: Union[Aggregation, Sequence[Aggregation]],
-    row_by_cols: Union[str, Sequence[str]],
-    col_by_cols: Union[str, Sequence[str]],
-    initial_groups: Optional[Table] = None,
+    aggs: Aggregation | Sequence[Aggregation],
+    row_by_cols: str | Sequence[str],
+    col_by_cols: str | Sequence[str],
+    initial_groups: Table | None = None,
     new_column_behavior: NewColumnBehaviorType = NewColumnBehaviorType.FAIL,
 ) -> Table:
     """The keyed_transpose operation takes a source table with a set of aggregations and produces a new table where
@@ -4960,9 +4153,12 @@ def keyed_transpose(
     - If ``aggs > 1``: Column names are prefixed with the aggregation column name. (ex. Count_INFO, MySum_INFO)
     - If ``col_by_cols > 1``: Values for the original columns are separated by an underscore (ex. INFO_OTHER1,
     WARN_OTHER2)
-    - If Illegal Characters: Purge characters that are invalid for Deephaven column names. (ex. "1-2.3/4" becomes
-    "1234")
-    - If Starts with Number: Add the prefix "column_" to the column name. (ex. column_123)
+    - If Reserved Word: Add the prefix "column_" to a name that is a Java keyword or a query language reserved name
+    (``in``, ``not``, ``i``, ``ii``, ``k``). (ex. column_not)
+    - If Illegal Characters: Remove every character other than letters, digits, "_", and "$". (ex. "a-b.c" becomes
+    "abc")
+    - If Starts with Number: After removing illegal characters, add the prefix "column_" to the column name. (ex.
+    "1-2.3/4" becomes column_1234)
     - If Duplicate Column Name: Add a suffix to differentiate the columns. (ex. INFO, INFO2)
 
     Given the above contract, and to give you more control over the result, it may be necessary to sanitize data values

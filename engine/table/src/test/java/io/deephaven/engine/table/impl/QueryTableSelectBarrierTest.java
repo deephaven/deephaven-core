@@ -76,8 +76,8 @@ public class QueryTableSelectBarrierTest {
         final ExecutionContext executionContext = ExecutionContext.getContext().withOperationInitializer(threadPool);
         try (final SafeCloseable ignored = executionContext.open();
                 final SafeCloseable ignored2 = new SaveQueryTableOptions();
-                final SafeCloseable ignored3 = threadPool::shutdown) {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+                final SafeCloseable ignored3 = threadPool::shutdown;
+                final SafeCloseable ignored4 = new ForcedParallelSelect()) {
             QueryTable.STATELESS_SELECT_BY_DEFAULT = false;
             QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = false;
 
@@ -140,8 +140,6 @@ public class QueryTableSelectBarrierTest {
     }
 
     private void testBarrierSelectable() {
-        QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
-
         final int segments = 10;
         final int size = Math.toIntExact(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS * segments);
         final SlowedAtomicInteger slow_a = new SlowedAtomicInteger(0, 2);
@@ -160,8 +158,8 @@ public class QueryTableSelectBarrierTest {
         final ExecutionContext executionContext = ExecutionContext.getContext().withOperationInitializer(threadPool);
         try (final SafeCloseable ignored = executionContext.open();
                 final SafeCloseable ignored2 = new SaveQueryTableOptions();
-                final SafeCloseable ignored3 = threadPool::shutdown) {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+                final SafeCloseable ignored3 = threadPool::shutdown;
+                final SafeCloseable ignored4 = new ForcedParallelSelect()) {
             QueryTable.STATELESS_SELECT_BY_DEFAULT = true;
             QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = false;
 
@@ -265,8 +263,8 @@ public class QueryTableSelectBarrierTest {
         final ExecutionContext executionContext = ExecutionContext.getContext().withOperationInitializer(threadPool);
         try (final SafeCloseable ignored = executionContext.open();
                 final SafeCloseable ignored2 = new SaveQueryTableOptions();
-                final SafeCloseable ignored3 = threadPool::shutdown) {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+                final SafeCloseable ignored3 = threadPool::shutdown;
+                final SafeCloseable ignored4 = new ForcedParallelSelect()) {
             QueryTable.STATELESS_SELECT_BY_DEFAULT = true;
             QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = true;
 
@@ -332,8 +330,8 @@ public class QueryTableSelectBarrierTest {
         final ExecutionContext executionContext = ExecutionContext.getContext().withOperationInitializer(threadPool);
         try (final SafeCloseable ignored = executionContext.open();
                 final SafeCloseable ignored2 = new SaveQueryTableOptions();
-                final SafeCloseable ignored3 = threadPool::shutdown) {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+                final SafeCloseable ignored3 = threadPool::shutdown;
+                final SafeCloseable ignored4 = new ForcedParallelSelect()) {
             QueryTable.STATELESS_SELECT_BY_DEFAULT = false;
             QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = false;
 
@@ -442,8 +440,8 @@ public class QueryTableSelectBarrierTest {
         final ExecutionContext executionContext = ExecutionContext.getContext().withOperationInitializer(threadPool);
         try (final SafeCloseable ignored = executionContext.open();
                 final SafeCloseable ignored2 = new SaveQueryTableOptions();
-                final SafeCloseable ignored3 = threadPool::shutdown) {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+                final SafeCloseable ignored3 = threadPool::shutdown;
+                final SafeCloseable ignored4 = new ForcedParallelSelect()) {
             QueryTable.STATELESS_SELECT_BY_DEFAULT = false;
             QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = false;
 
@@ -803,13 +801,11 @@ public class QueryTableSelectBarrierTest {
     }
 
     private static class SaveQueryTableOptions implements SafeCloseable {
-        final boolean oldForceParallel = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
         final boolean oldStateless = QueryTable.STATELESS_SELECT_BY_DEFAULT;
         final boolean oldSerialBarriers = QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS;
 
         @Override
         public void close() {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = oldForceParallel;
             QueryTable.STATELESS_SELECT_BY_DEFAULT = oldStateless;
             QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = oldSerialBarriers;
         }

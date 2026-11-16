@@ -3,6 +3,9 @@
 //
 package io.deephaven.generic.region;
 
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
@@ -64,6 +67,30 @@ public class AppendOnlyFixedSizePageRegionTest {
             System.out.println("Cycle start time: " + clock.instantNanos());
             TstUtils.assertTableEquals(expected, actual);
         }
+    }
+
+    @Test
+    public void testZeroLengthGetBytesAtFirstRow() {
+        final AppendOnlyFixedSizePageRegionByte<Values> region = new AppendOnlyFixedSizePageRegionByte<>(
+                (1L << 20) - 1, 64, new AppendOnlyRegionAccessor<>() {
+                    @Override
+                    public long size() {
+                        return 10;
+                    }
+
+                    @Override
+                    public void readChunkPage(final long firstRowPosition, final int minimumSize,
+                            @NotNull final WritableChunk<Values> destination) {
+                        final WritableByteChunk<Values> bytes = destination.asWritableByteChunk();
+                        for (int ii = 0; ii < minimumSize; ++ii) {
+                            bytes.set(ii, (byte) (firstRowPosition + ii));
+                        }
+                        bytes.setSize(minimumSize);
+                    }
+                });
+        final byte[] destination = {7, 8};
+        assertThat(region.getBytes(0, destination, 1, 0)).isSameAs(destination).containsExactly(7, 8);
+        assertThat(region.getBytes(0, destination, 0, 2)).containsExactly(0, 1);
     }
 
     private static Table[] addTypes(@NotNull final Table... tables) {

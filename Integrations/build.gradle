@@ -70,7 +70,7 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
                 include 'README.md'
                 into 'python/client'
             }
-            from('run-tests.sh') {
+            from('run-tests-docker.sh') {
             	into 'python'
             }
 
@@ -141,7 +141,7 @@ Closure composeConfig = { task ->
 }
 
 def pyTest = runInDocker('test-py-deephaven', '../py/server', 
-    ['./run-tests.sh', project.hasProperty("coverage.enabled")?project.property("coverage.enabled"):'false'], 
+    ['./run-tests-docker.sh', project.hasProperty("coverage.enabled")?project.property("coverage.enabled"):'false'], 
     composeConfig)
 
 pyTest.configure({

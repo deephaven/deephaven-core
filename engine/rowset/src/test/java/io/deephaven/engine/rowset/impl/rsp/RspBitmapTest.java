@@ -3900,7 +3900,7 @@ public class RspBitmapTest {
     public void testAppendShifted() {
         RspBitmap r0 = RspBitmap.makeSingleRange(20, 39);
         RspBitmap r1 = RspBitmap.makeSingleRange(21, 40);
-        r0.appendShiftedUnsafeNoWriteCheck(BLOCK_SIZE, r1);
+        assertTrue(r0.tryAppendShiftedUnsafeNoWriteCheck(BLOCK_SIZE, r1));
         r0.finishMutationsAndOptimize();
         assertEquals(40, r0.getCardinality());
         assertTrue(r0.containsRange(20, 39));
@@ -4496,5 +4496,103 @@ public class RspBitmapTest {
         assertEquals(2, other.getCardinality());
         assertEquals(65536 + 10, other.first());
         assertEquals(65536 + 11, other.last());
+    }
+
+    private static long countRanges(final RspBitmap rb) {
+        final MutableLong ranges = new MutableLong(0);
+        rb.forEachLongRange((final long start, final long end) -> {
+            ranges.increment();
+            return true;
+        });
+        return ranges.get();
+    }
+
+    /**
+     * The range count lower bound never claims more ranges than a set holds, including ranges that run from one block's
+     * container into the next, and is exact for sparse blocks of run containers.
+     */
+    @Test
+    public void testHasMoreRangesThanIsALowerBound() {
+        final Random random = new Random(7);
+        for (int iter = 0; iter < 200; ++iter) {
+            final RspBitmap rb = new RspBitmap();
+            long start = random.nextInt(100);
+            final int rangeCount = 1 + random.nextInt(300);
+            for (int ri = 0; ri < rangeCount; ++ri) {
+                // Mostly short ranges a few keys apart, with some long enough to cross a block, and some jumps of a
+                // block or more.
+                final long length = random.nextInt(8) == 0 ? BLOCK_SIZE + random.nextInt(100) : 1 + random.nextInt(5);
+                rb.appendRangeUnsafeNoWriteCheck(start, start + length - 1);
+                final long gap = random.nextInt(8) == 0 ? BLOCK_SIZE * (1 + random.nextInt(3)) : 2 + random.nextInt(50);
+                start += length + gap;
+            }
+            rb.finishMutationsAndOptimize();
+            final long actual = countRanges(rb);
+            assertEquals(rangeCount, actual);
+            assertFalse("iter=" + iter, rb.hasMoreRangesThan(actual));
+        }
+
+        // Adjacent blocks of single keys three apart are array containers, whose runs are counted. Neither the first
+        // nor the last key of a block is at its edge, so nothing joins across blocks, but each boundary still counts
+        // one range fewer.
+        final RspBitmap arrays = new RspBitmap();
+        for (int bi = 0; bi < 10; ++bi) {
+            for (int ki = 0; ki < 100; ++ki) {
+                final long key = bi * BLOCK_SIZE + 5 + 3L * ki;
+                arrays.appendRangeUnsafeNoWriteCheck(key, key);
+            }
+        }
+        arrays.finishMutationsAndOptimize();
+        assertEquals(1000, countRanges(arrays));
+        assertTrue(arrays.hasMoreRangesThan(1000 - 9 - 1));
+        assertFalse(arrays.hasMoreRangesThan(1000 - 9));
+
+        // Every other block holds single keys two apart, too many for an array container and too many runs for a run
+        // container, so the blocks are bitmap containers.
+        final RspBitmap bitmaps = new RspBitmap();
+        for (int bi = 0; bi < 6; bi += 2) {
+            for (int ki = 0; ki < 5000; ++ki) {
+                final long key = bi * BLOCK_SIZE + 2L * ki;
+                bitmaps.appendRangeUnsafeNoWriteCheck(key, key);
+            }
+        }
+        bitmaps.finishMutationsAndOptimize();
+        assertEquals(15000, countRanges(bitmaps));
+        assertTrue(bitmaps.hasMoreRangesThan(14999));
+        assertFalse(bitmaps.hasMoreRangesThan(15000));
+
+        // Every other block holds a run container of 100 ranges, so the bound is the count.
+        final RspBitmap runs = new RspBitmap();
+        for (int bi = 0; bi < 10; bi += 2) {
+            for (int ri = 0; ri < 100; ++ri) {
+                final long rangeStart = bi * BLOCK_SIZE + 10L * ri;
+                runs.appendRangeUnsafeNoWriteCheck(rangeStart, rangeStart + 2);
+            }
+        }
+        runs.finishMutationsAndOptimize();
+        assertEquals(500, countRanges(runs));
+        assertTrue(runs.hasMoreRangesThan(499));
+        assertFalse(runs.hasMoreRangesThan(500));
+
+        // One range held as two spans, the end of one block and the start of the next.
+        final RspBitmap joined = RspBitmap.makeSingleRange(BLOCK_SIZE - 10, BLOCK_SIZE + 10);
+        assertEquals(1, countRanges(joined));
+        assertTrue(joined.hasMoreRangesThan(0));
+        assertFalse(joined.hasMoreRangesThan(1));
+    }
+
+    /** Shared spans can be appended to an empty bitmap, which has nothing to order them against. */
+    @Test
+    public void testAppendShiftedToEmpty() {
+        final RspBitmap r0 = RspBitmap.makeEmpty();
+        final RspBitmap r1 = RspBitmap.makeSingleRange(21, 40);
+        r1.appendRangeUnsafeNoWriteCheck(3 * BLOCK_SIZE + 5, 3 * BLOCK_SIZE + 9);
+        r1.finishMutations();
+        assertTrue(r0.tryAppendShiftedUnsafeNoWriteCheck(BLOCK_SIZE, r1));
+        r0.finishMutationsAndOptimize();
+        r0.validate();
+        assertEquals(25, r0.getCardinality());
+        assertTrue(r0.containsRange(BLOCK_SIZE + 21, BLOCK_SIZE + 40));
+        assertTrue(r0.containsRange(4 * BLOCK_SIZE + 5, 4 * BLOCK_SIZE + 9));
     }
 }

@@ -782,7 +782,10 @@ public final class TwoValuesContainer extends ImmutableContainer {
             inPositions.next();
             final int pStart = inPositions.start();
             final int pEnd = inPositions.end();
-            if (pStart < 0 || pEnd > 2 || pEnd <= pStart) {
+            if (pEnd <= pStart) {
+                continue;
+            }
+            if (pStart < 0 || pEnd > 2) {
                 throw new IllegalArgumentException("pStart=" + pStart + ", pEnd=" + pEnd +
                         ", iv1=" + iv1 + ", iv2=" + iv2);
             }
@@ -813,6 +816,9 @@ public final class TwoValuesContainer extends ImmutableContainer {
             inValues.next();
             start = inValues.start();
             end = inValues.end();
+            if (end <= start) {
+                continue;
+            }
             if (start <= iv1 && iv1 < end) {
                 if (start < iv1 || end != iv1 + 1) {
                     doThrow = true;
@@ -833,11 +839,14 @@ public final class TwoValuesContainer extends ImmutableContainer {
                     break;
                 }
                 accept2 = true;
-                if (inValues.hasNext()) {
+                while (inValues.hasNext()) {
                     inValues.next();
                     start = inValues.start();
                     end = inValues.end();
-                    doThrow = true;
+                    if (start < end) {
+                        doThrow = true;
+                        break;
+                    }
                 }
                 break;
             }

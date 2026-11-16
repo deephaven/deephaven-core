@@ -14,6 +14,7 @@ The resultant table contains all rows from the left table (the first given) as w
 ```
 leftOuterJoin(leftTable, rightTable, columnsToMatch)
 leftOuterJoin(leftTable, rightTable, columnsToMatch, columnsToAdd)
+leftOuterJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, reserveBits)
 ```
 
 ## Parameters
@@ -63,6 +64,11 @@ The columns from the right table to add to the left table based on key.
 - An empty collection adds all columns from the right table to the left table, except right table columns whose names match a left table column in `columnsToMatch`.
 - `"X"` will add column `X` from the right table to the left table as column `X`.
 - `Y = X` will add column `X` from right table to left table and rename it to be `Y`.
+
+</Param>
+<Param name="reserveBits" type="int">
+
+The number of bits of each result row key to reserve for the right table rows that match a left table row, between 1 and 62 (inclusive). If omitted, 10 bits are reserved unless configured otherwise. Reserving enough bits for the largest group of matching right table rows avoids shifting result rows as groups grow. If the maximum size of a right table's group is small, reserve fewer bits by setting `reserveBits` on initialization. A join whose result can never change, such as a join of two static tables, ignores `reserveBits` and uses just enough bits for its right rows.
 
 </Param>
 </ParamTable>

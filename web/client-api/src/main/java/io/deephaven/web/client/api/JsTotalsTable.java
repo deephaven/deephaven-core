@@ -30,22 +30,22 @@ import jsinterop.base.Js;
 
 /**
  * Behaves like a {@link JsTable dh.Table}, but doesn't expose all of its API for changing the internal state. Instead,
- * state is driven by the upstream table - when its handle changes, this table listens and updates its own handle
- * accordingly.
- *
- * Additionally, this is automatically subscribed to its one and only row, across all columns.
- *
+ * state is driven by the upstream table - when its handle changes, this table listens and rebuilds its totals from the
+ * new state. If that rebuild fails, a <b>requestfailed</b> event fires with the failure message as its detail, and this
+ * table keeps the totals it last built until the upstream table changes again. If the rebuild succeeds but a filter,
+ * sort or custom column set on this table cannot be re-applied to it, the <b>requestfailed</b> event is the one any
+ * {@link JsTable dh.Table} fires for a rejected change, and this table shows the rebuilt totals without that change.
+ * <p>
  * A new config is returned any time it is accessed. This is to:
- *
  * <ol>
  * <li>Prevent accidental mutation.</li>
  * <li>Allow it to be used as a template when fetching a new totals table or changing the totals table in use.</li>
  * </ol>
  *
- * This class has limited methods found on {@link JsTable dh.Table}. Instances of this type always have a size of one
+ * This class has limited methods found on {@link JsTable dh.Table}. Instances of this type usually have a size of one
  * when no {@link JsTotalsTableConfig#groupBy groupBy} is set on the config, but may potentially contain as few as zero
- * rows, or as many as the parent table if each row gets its own group.
- *
+ * rows if the parent table was empty, or as many as the parent table if each row gets its own group.
+ * <p>
  * When using the {@link JsTotalsTableConfig#groupBy groupBy} feature, it may be desirable to also provide a row to the
  * user with all values across all rows. To achieve this, request the same Totals Table again, but remove the
  * {@link JsTotalsTableConfig#groupBy groupBy} setting.
@@ -77,10 +77,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * Re-applies the most recently set viewport options, if any.
+     * Re-applies the most recently set viewport options, if any. Does nothing once this table is closed, since a rebase
+     * that was in flight when it closed may still call this.
      */
     public void refreshViewport() {
-        if (firstRow != null && lastRow != null) {
+        if (firstRow != null && lastRow != null && !wrappedTable.isClosed()) {
             setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs, null);
         }
     }

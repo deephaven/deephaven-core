@@ -4,23 +4,32 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.exceptions.UncheckedTableException;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -381,7 +390,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
             source.wouldMatch("M=Number_.size() > 1");
             fail("Expected column vectors to be rejected");
         } catch (final UncheckedTableException expected) {
-            assertTrue(expected.getMessage(), expected.getMessage().contains("column Vectors"));
+            assertTrue(expected.getMessage(), expected.getMessage().contains("cross-row dependencies"));
         }
     }
 
@@ -462,26 +471,107 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
     /**
      * A filter that asks for a full recompute, rather than for matched or unmatched rows, re-evaluates the match column
-     * on the next cycle. An incremental release filter is the simplest such filter.
+     * on the next cycle.
      */
     @Test
     public void testMatchWithFullRecomputeRequests() {
-        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), col("Number", 0, 1, 2));
-        final IncrementalReleaseFilter releaseFilter = new IncrementalReleaseFilter(1, 1);
-        final Table result = source.wouldMatch(new WouldMatchPair("M", releaseFilter));
-        releaseFilter.start();
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("Number", 0, 1, 2));
+        final ThresholdFilter thresholdFilter = new ThresholdFilter(1);
+        final Table result = source.wouldMatch(new WouldMatchPair("M", thresholdFilter));
 
         assertArrayEquals(new Boolean[] {true, false, false},
                 ColumnVectors.ofObject(result, "M", Boolean.class).toArray());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.runWithinUnitTestCycle(releaseFilter::run);
+        updateGraph.runWithinUnitTestCycle(thresholdFilter::raise);
         assertArrayEquals(new Boolean[] {true, true, false},
                 ColumnVectors.ofObject(result, "M", Boolean.class).toArray());
 
-        updateGraph.runWithinUnitTestCycle(releaseFilter::run);
+        updateGraph.runWithinUnitTestCycle(thresholdFilter::raise);
         assertArrayEquals(new Boolean[] {true, true, true},
                 ColumnVectors.ofObject(result, "M", Boolean.class).toArray());
+    }
+
+    /**
+     * A release filter selects rows by position, as a filter on {@code ii} does, so {@code wouldMatch} rejects a
+     * release filter as a cross-row dependency.
+     */
+    @Test
+    public void testMatchRejectsReleaseFilters() {
+        final QueryTable source = testRefreshingTable(intCol("Number", 0, 1, 2));
+        try {
+            source.wouldMatch(new WouldMatchPair("M", new IncrementalReleaseFilter(1, 1)));
+            fail("Expected a release filter to be rejected");
+        } catch (final UncheckedTableException expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("cross-row dependencies"));
+        }
+    }
+
+    /**
+     * A refreshing filter that passes the rows whose {@code Number} is below a threshold, and requests a full recompute
+     * each time the threshold rises.
+     */
+    private static final class ThresholdFilter extends WhereFilterImpl {
+        private int threshold;
+        private RecomputeListener listener;
+
+        private ThresholdFilter(final int threshold) {
+            this.threshold = threshold;
+        }
+
+        private void raise() {
+            ++threshold;
+            listener.requestRecompute();
+        }
+
+        @Override
+        public List<String> getColumns() {
+            return List.of("Number");
+        }
+
+        @Override
+        public List<String> getColumnArrays() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public void init(@NotNull final TableDefinition tableDefinition) {}
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull final RowSet selection, @NotNull final RowSet fullSet, @NotNull final Table table,
+                final boolean usePrev) {
+            final ColumnSource<?> number = table.getColumnSource("Number");
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+            selection.forAllRowKeys(rowKey -> {
+                if ((usePrev ? number.getPrevInt(rowKey) : number.getInt(rowKey)) < threshold) {
+                    builder.appendKey(rowKey);
+                }
+            });
+            return builder.build();
+        }
+
+        @Override
+        public boolean isSimpleFilter() {
+            return false;
+        }
+
+        @Override
+        public boolean isRefreshing() {
+            return true;
+        }
+
+        @Override
+        public void setRecomputeListener(final RecomputeListener listener) {
+            this.listener = listener;
+            listener.setIsRefreshing(true);
+        }
+
+        @Override
+        public WhereFilter copy() {
+            return new ThresholdFilter(threshold);
+        }
     }
 
     /**

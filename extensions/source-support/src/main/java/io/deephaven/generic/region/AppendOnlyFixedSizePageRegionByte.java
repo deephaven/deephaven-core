@@ -67,6 +67,9 @@ public class AppendOnlyFixedSizePageRegionByte<ATTR extends Any>
             final int destinationOffset,
             final int length
     ) {
+        if (length == 0) {
+            return destination;
+        }
         final WritableChunk<ATTR> byteChunk = WritableByteChunk.writableChunkWrap(destination, destinationOffset, length);
         try (RowSequence rowSequence = RowSequenceFactory.forRange(firstRowKey, firstRowKey + length - 1)) {
             fillChunk(DEFAULT_FILL_INSTANCE, byteChunk, rowSequence);

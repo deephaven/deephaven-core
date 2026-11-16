@@ -446,7 +446,7 @@ public class ArrayContainer extends Container {
         if (value2.isEmpty()) {
             return cowRef();
         }
-        final ArrayContainer answer = new ArrayContainer(capacity());
+        final ArrayContainer answer = new ArrayContainer(cardinality);
         int pos = 0;
         for (int k = 0; k < cardinality; ++k) {
             short val = content[k];
@@ -514,6 +514,9 @@ public class ArrayContainer extends Container {
 
     @Override
     public boolean contains(final int rangeStart, final int rangeEnd) {
+        if (rangeEnd <= rangeStart) {
+            return true;
+        }
         final int maximum = rangeEnd - 1;
         final int start = ContainerUtil.advanceUntil(content, -1, cardinality, (short) rangeStart);
         if (start >= cardinality) {
@@ -805,7 +808,7 @@ public class ArrayContainer extends Container {
          */
         final ArrayContainer ans;
         if (newcardinality > capacity()) {
-            short[] destination = newContent(calculateCapacity(newcardinality));
+            short[] destination = newContent(growthCapacity(newcardinality));
             // if b > 0, we copy from 0 to b. Do nothing otherwise.
             System.arraycopy(content, 0, destination, 0, indexstart);
             // set values from b to e
@@ -861,7 +864,7 @@ public class ArrayContainer extends Container {
         final int firstIndexNewRange = cardinality;
         final boolean shared = isShared();
         if (shared || newCardinality > capacity()) {
-            short[] destination = newContent(appendCapacity(newCardinality));
+            short[] destination = newContent(growthCapacity(newCardinality));
             System.arraycopy(content, 0, destination, 0, cardinality);
             if (shared) {
                 ans = makeByWrapping(destination, newCardinality);
@@ -961,22 +964,23 @@ public class ArrayContainer extends Container {
     }
 
     /**
-     * The capacity, in shorts, to allocate when {@link #iappend(int, int) iappend} has to grow the backing array.
+     * The capacity, in shorts, to allocate when {@link #iappend(int, int) iappend}, {@link #iadd(int, int) iadd},
+     * {@link #inot(int, int) inot} or {@link #ior(ArrayContainer) ior} has to grow the backing array in place.
      *
      * <p>
      * Enough to hold {@code newCardinality}, but also geometric in the current capacity, so that a container filled by
-     * repeated appends of a few values at a time does not reallocate and copy on every single one of them -- which
+     * repeated additions of a few values at a time does not reallocate and copy on every single one of them -- which
      * would make filling it quadratic in its cardinality rather than linear.
      *
      * <p>
-     * Appending is the fast path for builders, and they {@link #runOptimize() optimize} the container once it is
-     * finished, which trims whatever capacity this left spare. Callers that append without optimizing afterwards, and
-     * that retain the result, will hold that spare capacity.
+     * Builders fill containers this way, and they {@link #runOptimize() optimize} a container once it is finished,
+     * which trims whatever capacity this left spare. Callers that add without optimizing afterwards, and that retain the
+     * result, will hold that spare capacity.
      *
-     * @param newCardinality The cardinality the container will have after the append
+     * @param newCardinality The cardinality the container will have after the addition
      * @return The capacity to allocate, always at least {@code newCardinality}
      */
-    private int appendCapacity(final int newCardinality) {
+    private int growthCapacity(final int newCardinality) {
         final int newCapacity = Math.max(newCardinality, nextCapacity(capacity()));
         // Within ~1/16th of the max there is no point holding back room to grow.
         return newCapacity > DEFAULT_MAX_SIZE - 256 ? DEFAULT_MAX_SIZE : newCapacity;
@@ -1021,7 +1025,7 @@ public class ArrayContainer extends Container {
             } else {
                 ans = this;
                 if (newCardinality > capacity()) {
-                    content = newContent(calculateCapacity(newCardinality));
+                    content = newContent(growthCapacity(newCardinality));
                     System.arraycopy(src, 0, content, 0, lastIndex + 1);
                 }
             }
@@ -1088,17 +1092,39 @@ public class ArrayContainer extends Container {
             return bc;
         }
         if (sumOfCardinalities >= capacity()) {
-            int newCapacity = calculateCapacity(sumOfCardinalities);
-            final ArrayContainer ans = new ArrayContainer(newCapacity);
+            final ArrayContainer ans = new ArrayContainer(growthCapacity(sumOfCardinalities));
             ans.cardinality =
                     ContainerUtil.unsignedUnion2by2(content, 0, cardinality, value2.content, 0, value2.cardinality,
                             ans.content);
             return ans;
         }
-        System.arraycopy(content, 0, content, value2.cardinality, cardinality);
-        cardinality =
-                ContainerUtil.unsignedUnion2by2(content, value2.cardinality, cardinality, value2.content, 0,
-                        value2.cardinality, content);
+        // Merge from the back into [w, sumOfCardinalities): the write position never falls below a value of ours not
+        // yet read, so no copy is needed to make room first.
+        final short[] other = value2.content;
+        int i1 = cardinality - 1;
+        int i2 = value2.cardinality - 1;
+        int w = sumOfCardinalities;
+        while (i1 >= 0 && i2 >= 0) {
+            final int v1 = ContainerUtil.toIntUnsigned(content[i1]);
+            final int v2 = ContainerUtil.toIntUnsigned(other[i2]);
+            if (v1 > v2) {
+                content[--w] = content[i1--];
+            } else if (v2 > v1) {
+                content[--w] = other[i2--];
+            } else {
+                content[--w] = content[i1--];
+                --i2;
+            }
+        }
+        while (i2 >= 0) {
+            content[--w] = other[i2--];
+        }
+        // Our values below every value of value2 are still in place at [0, kept); duplicates leave a gap after them.
+        final int kept = i1 + 1;
+        if (w > kept) {
+            System.arraycopy(content, w, content, kept, sumOfCardinalities - w);
+        }
+        cardinality = kept + sumOfCardinalities - w;
         return this;
     }
 
@@ -1545,6 +1571,9 @@ public class ArrayContainer extends Container {
 
     @Override
     public Container select(final int startRank, final int endRank) {
+        if (endRank <= startRank) {
+            return Container.empty();
+        }
         return new ArrayContainer(this, startRank, endRank);
     }
 
@@ -1564,6 +1593,9 @@ public class ArrayContainer extends Container {
             inPositions.next();
             int istart = inPositions.start();
             int iend = inPositions.end();
+            if (iend <= istart) {
+                continue;
+            }
             if (iend > cardinality) {
                 throw new IllegalArgumentException("selectRanges for invalid position=" + iend);
             }
@@ -1581,7 +1613,9 @@ public class ArrayContainer extends Container {
                 }
             }
         } while (inPositions.hasNext());
-        outValues.accept(ostart, oend + 1);
+        if (ostart != -1) {
+            outValues.accept(ostart, oend + 1);
+        }
     }
 
     @Override
@@ -1683,7 +1717,9 @@ public class ArrayContainer extends Container {
                 startSearch = pos + 1;
             }
         } while (inValues.hasNext());
-        outPositions.accept(ostart, oend + 1);
+        if (ostart != -1) {
+            outPositions.accept(ostart, oend + 1);
+        }
         return false;
     }
 
@@ -1802,7 +1838,7 @@ public class ArrayContainer extends Container {
 
         for (k = rankOffset + 1; k < cardinality; ++k) {
             final short v = content[k];
-            if (pendingEnd + 1 == v) {
+            if ((short) (pendingEnd + 1) == v) {
                 pendingEnd = v;
             } else {
                 if (!sc.accept(pendingStart, pendingEnd)) {
@@ -1906,6 +1942,9 @@ public class ArrayContainer extends Container {
     // rangeEnd is exclusive.
     @Override
     public boolean overlapsRange(final int rangeStart, final int rangeEnd) {
+        if (rangeEnd <= rangeStart) {
+            return false;
+        }
         int s = ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) rangeStart);
         if (s >= 0) {
             return true;

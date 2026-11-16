@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.TableTransformationColumn;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
@@ -76,6 +77,10 @@ public class UnionSourceManager implements PushdownPredicateManager {
     private final ConstituentChangesListenerRecorder constituentChangesListener;
     private final UpdateCommitter<UnionSourceManager> updateCommitter;
     private final ExecutionContext executionContext;
+    /**
+     * The callsite of the merge, shared by the listeners for constituents added after construction.
+     */
+    private final String callsite;
 
     public UnionSourceManager(@NotNull final PartitionedTable partitionedTable) {
         constituentChangesPermitted = partitionedTable.constituentChangesPermitted();
@@ -121,12 +126,14 @@ public class UnionSourceManager implements PushdownPredicateManager {
             executionContext = ExecutionContext.newBuilder()
                     .markSystemic()
                     .build();
+            callsite = QueryPerformanceRecorder.getCallerLine();
         } else {
             listenerRecorders = null;
             mergedListener = null;
             constituentChangesListener = null;
             updateCommitter = null;
             executionContext = null;
+            callsite = null;
         }
 
         try (final Stream<Table> initialConstituents = currConstituents()) {
@@ -568,7 +575,10 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         private void processAdd(@NotNull final Table addedConstituent) {
             if (addedConstituent.isRefreshing()) {
-                final ConstituentListenerRecorder addedListener = new ConstituentListenerRecorder(addedConstituent);
+                final ConstituentListenerRecorder addedListener;
+                try (final SafeCloseable ignored = QueryPerformanceRecorder.setCallsiteWithCloseable(callsite)) {
+                    addedListener = new ConstituentListenerRecorder(addedConstituent);
+                }
                 addedConstituent.addUpdateListener(addedListener);
                 addedListeners.add(addedListener);
                 synchronized (listenerRecorders) {

@@ -53,10 +53,10 @@ public class PercentileByBenchmark {
     @Param({"0", "10", "10000"})
     private int keyCount;
 
-    @Param({"1"})
-    private int valueCount;
+    @Param({"long", "double", "BigDecimal"})
+    private String dataType;
 
-    @Param({"normal", "tdigest"})
+    @Param({"median", "normal", "tdigest"})
     private String percentileMode;
 
     private Table table;
@@ -67,7 +67,9 @@ public class PercentileByBenchmark {
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
         TestExecutionContext.createForUnitTests().open();
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.enableUnitTestMode();
+        updateGraph.resetForUnitTests(false);
         QueryTable.setMemoizeResults(false);
 
         final BenchmarkTableBuilder builder;
@@ -135,26 +137,19 @@ public class PercentileByBenchmark {
         }
         keyColumnNames = keyCount > 0 ? keyName.split(",") : ArrayTypeUtils.EMPTY_STRING_ARRAY;
 
-        switch (valueCount) {
-            case 8:
-                builder.addColumn(BenchmarkTools.numberCol("ValueToSum8", float.class));
-            case 7:
-                builder.addColumn(BenchmarkTools.numberCol("ValueToSum7", long.class));
-            case 6:
-                builder.addColumn(BenchmarkTools.numberCol("ValueToSum6", double.class));
-            case 5:
-                builder.addColumn(BenchmarkTools.numberCol("ValueToSum5", int.class));
-            case 4:
-                builder.addColumn(BenchmarkTools.numberCol("ValueToSum4", float.class));
-            case 3:
-                builder.addColumn(BenchmarkTools.numberCol("ValueToSum3", long.class));
-            case 2:
-                builder.addColumn(BenchmarkTools.numberCol("ValueToSum2", double.class));
-            case 1:
-                builder.addColumn(BenchmarkTools.numberCol("ValueToSum1", int.class));
+        if (dataType.equals("BigDecimal") && percentileMode.equals("tdigest")) {
+            throw new UnsupportedOperationException("tdigest does not support BigDecimal");
+        }
+        switch (dataType) {
+            case "long":
+                builder.addColumn(BenchmarkTools.numberCol("Value", long.class));
+                break;
+            case "double":
+            case "BigDecimal":
+                builder.addColumn(BenchmarkTools.numberCol("Value", double.class, -1_000_000, 1_000_000));
                 break;
             default:
-                throw new IllegalArgumentException("Can not initialize with " + valueCount + " values.");
+                throw new IllegalArgumentException("Unknown dataType: " + dataType);
         }
 
         if (grouped) {
@@ -166,7 +161,10 @@ public class PercentileByBenchmark {
 
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
-        table = bmt.getTable().coalesce().dropColumns("PartCol");
+        final Table coalesced = bmt.getTable().coalesce().dropColumns("PartCol");
+        table = dataType.equals("BigDecimal")
+                ? coalesced.update("Value=java.math.BigDecimal.valueOf(Value)")
+                : coalesced;
     }
 
     @TearDown(Level.Trial)
@@ -200,7 +198,9 @@ public class PercentileByBenchmark {
     @NotNull
     private Function<Table, Table> getFunction() {
         final Function<Table, Table> fut;
-        if (percentileMode.equals("normal")) {
+        if (percentileMode.equals("median")) {
+            fut = t -> t.aggAllBy(AggSpec.median(), keyColumnNames);
+        } else if (percentileMode.equals("normal")) {
             fut = t -> t.aggAllBy(AggSpec.percentile(0.99), keyColumnNames);
         } else if (percentileMode.equals("tdigest")) {
             fut = (t) -> t.aggAllBy(AggSpec.approximatePercentile(0.99, 100.0), keyColumnNames);
@@ -214,6 +214,18 @@ public class PercentileByBenchmark {
     public Table percentileByIncremental(@NotNull final Blackhole bh) {
         final Function<Table, Table> fut = getFunction();
         final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                            .computeLocked(() -> fut.apply(t));
+                }, table);
+        bh.consume(result);
+        return state.setResult(TableTools.emptyTable(0));
+    }
+
+    @Benchmark
+    public Table percentileByRolling(@NotNull final Blackhole bh) {
+        final Function<Table, Table> fut = getFunction();
+        final Table result = IncrementalBenchmark.rollingBenchmark(
                 (t) -> {
                     return ExecutionContext.getContext().getUpdateGraph().sharedLock()
                             .computeLocked(() -> fut.apply(t));

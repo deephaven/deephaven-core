@@ -9,6 +9,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,7 +26,21 @@ import org.jetbrains.annotations.Nullable;
  * in future delta batches.
  *
  * <p>
- * Thread-safety: not thread-safe; access is serialized by the barrage propagation thread (the UGP cycle).
+ * Other subscribers add values to the shared dictionary, and this subscriber is sent them only in a batch whose own
+ * rows reference the dictionary, that is, a batch for which {@link #fillIndexChunk} was called. A subscriber that never
+ * writes a column using this dictionary, such as a subscriber not subscribed to that column, is sent only the first
+ * batch, carrying no values, which defines the dictionary for strict Arrow readers. It then holds an empty dictionary,
+ * so a later batch that references the dictionary is sent every value from the start, as a delta.
+ *
+ * <p>
+ * {@link #resetDelta()} advances past exactly the values that the last {@link #buildDeltaChunk()} covered, not past
+ * whatever the shared dictionary holds by then. Full subscribers write in parallel, so other subscribers may add values
+ * between this subscriber's building a DictionaryBatch and its sending it; those values were not in the batch, and they
+ * stay in this subscriber's next delta.
+ *
+ * <p>
+ * Thread-safety: each instance belongs to one subscription and is used by one thread at a time. The
+ * {@link SharedWriterDictionary} it delegates to is shared, and is safe to use from several threads at once.
  */
 public final class SharedDictionaryWriterState implements DictionaryWriterState {
 
@@ -59,10 +74,77 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
      * after one or more compactions does not incorrectly treat the first batch as a post-reset.
      */
     private int lastSeenGeneration;
+    /**
+     * The end of the range of values that the last {@link #buildDeltaChunk()} covered, which {@link #resetDelta()}
+     * advances {@link #flushedOffset} to; {@code -1} when no delta has been built since the last advance.
+     */
+    private int builtDeltaEnd = -1;
+    /**
+     * Whether a batch of this subscriber's has encoded values with this dictionary since its last accepted batch. Only
+     * then is it sent the values it is owed; see the class documentation.
+     */
+    private boolean referenced = false;
 
     public SharedDictionaryWriterState(@NotNull final SharedWriterDictionary shared) {
         this.shared = shared;
         this.lastSeenGeneration = shared.getGeneration();
+    }
+
+    /** The shared dictionary this state delegates to. */
+    @InternalUseOnly
+    @NotNull
+    public SharedWriterDictionary shared() {
+        return shared;
+    }
+
+    /**
+     * Returns the number of values of the shared dictionary's current generation that have been sent, after detecting
+     * any reset since this state last looked.
+     */
+    @InternalUseOnly
+    public int flushedOffset() {
+        syncGeneration();
+        return flushedOffset;
+    }
+
+    /**
+     * Advances this state to a position: from now on it behaves as though it had sent exactly the values below
+     * {@code flushedOffset} of the shared dictionary's current generation, and as though its last batch had been
+     * accepted. A producer that writes one message for a group of subscribers uses this to start the group's state
+     * where its members are, and then to advance each member to where the group ends once the group's messages have
+     * been written to it.
+     *
+     * <p>
+     * A state never moves back within a generation: one credited with fewer values than its subscriber holds would send
+     * them again, and every later index would refer to the wrong value. Only a reset of the shared dictionary, which
+     * starts a new generation, returns a state to the start, and this first detects any such reset.
+     *
+     * @param flushedOffset the number of values sent; no fewer than this state has sent, and no more than the shared
+     *        dictionary holds
+     * @param needsFullBatch whether the next DictionaryBatch must be {@code isDelta=false}; only while this state still
+     *        needs one, and so has sent no value
+     * @throws IllegalArgumentException if the position is behind this state's own, or past the end of the dictionary
+     */
+    @InternalUseOnly
+    public void advanceTo(final int flushedOffset, final boolean needsFullBatch) {
+        syncGeneration();
+        if (flushedOffset < this.flushedOffset || flushedOffset > shared.getTotalSize()) {
+            throw new IllegalArgumentException("Cannot advance from offset " + this.flushedOffset + " to "
+                    + flushedOffset + " of dictionary id " + shared.getDictId() + ", which holds "
+                    + shared.getTotalSize() + " values");
+        }
+        if (needsFullBatch && flushedOffset != 0) {
+            throw new IllegalArgumentException(
+                    "A state that needs a full batch has sent no values, not " + flushedOffset);
+        }
+        if (needsFullBatch && !this.needsFullBatch) {
+            throw new IllegalArgumentException("Cannot require a full batch of dictionary id " + shared.getDictId()
+                    + " again once one has been sent");
+        }
+        this.flushedOffset = flushedOffset;
+        this.needsFullBatch = needsFullBatch;
+        builtDeltaEnd = -1;
+        referenced = false;
     }
 
     /**
@@ -74,6 +156,8 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
         if (lastSeenGeneration != currentGeneration) {
             flushedOffset = 0;
             needsFullBatch = true;
+            // a delta built before the reset names values that no longer exist
+            builtDeltaEnd = -1;
             lastSeenGeneration = currentGeneration;
         }
     }
@@ -89,13 +173,15 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options,
             @NotNull final WritableIntChunk<Values> out) {
+        referenced = true;
         shared.fillIndexChunk(source, subset, options, out);
     }
 
     @Override
     public boolean hasDelta() {
         syncGeneration();
-        return needsFullBatch || flushedOffset < shared.getTotalSize();
+        // the first batch is always sent, to define the dictionary, even when it carries no values
+        return needsFullBatch || (referenced && flushedOffset < shared.getTotalSize());
     }
 
     @Override
@@ -108,13 +194,29 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
     @NotNull
     public WritableChunk<Values> buildDeltaChunk() {
         syncGeneration();
-        return shared.buildDeltaChunk(flushedOffset, shared.getTotalSize());
+        // The value list only grows between resets, so the range measured here is still exactly what the copy covers,
+        // however many values other subscribers add in between. A batch that does not reference the dictionary carries
+        // none of the values the subscriber is owed.
+        final int deltaEnd = referenced ? shared.getTotalSize() : flushedOffset;
+        final WritableChunk<Values> delta = shared.buildDeltaChunk(flushedOffset, deltaEnd);
+        builtDeltaEnd = deltaEnd;
+        return delta;
     }
 
+    /**
+     * Accepts the batch just written: advances past the values that the last {@link #buildDeltaChunk()} covered, and
+     * forgets that the batch referenced the dictionary. With no delta built since the last advance, nothing was sent
+     * and the offset does not change.
+     */
     @Override
     public void resetDelta() {
         syncGeneration();
-        flushedOffset = shared.getTotalSize();
+        referenced = false;
+        if (builtDeltaEnd < 0) {
+            return;
+        }
+        flushedOffset = builtDeltaEnd;
+        builtDeltaEnd = -1;
         needsFullBatch = false;
     }
 

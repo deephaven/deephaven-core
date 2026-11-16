@@ -15,12 +15,21 @@ import java.time.Instant;
  */
 final class ParquetPushdownUtils {
     private static final long NANOS_PER_SECOND = DateTimeUtils.SECOND;
+    private static final long MICROS_PER_SECOND = DateTimeUtils.SECOND / DateTimeUtils.MICRO;
 
     /**
      * Converts nanoseconds from the Epoch to an {@link Instant}.
      */
     static Instant epochNanosToInstant(final long nanos) {
         return Instant.ofEpochSecond(nanos / NANOS_PER_SECOND, nanos % NANOS_PER_SECOND);
+    }
+
+    /**
+     * Converts microseconds from the Epoch to an {@link Instant}.
+     */
+    static Instant epochMicrosToInstant(final long micros) {
+        return Instant.ofEpochSecond(Math.floorDiv(micros, MICROS_PER_SECOND),
+                Math.floorMod(micros, MICROS_PER_SECOND) * DateTimeUtils.MICRO);
     }
 
 

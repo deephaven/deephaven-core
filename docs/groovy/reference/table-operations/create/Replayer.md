@@ -13,12 +13,12 @@ Replayer(startTime, endTime)
 ## Parameters
 
 <ParamTable>
-<Param name="startTime" type="DateTime">
+<Param name="startTime" type="Instant">
 
 Historical data start time
 
 </Param>
-<Param name="endTime" type="DateTime">
+<Param name="endTime" type="Instant">
 
 Historical data end time.
 
@@ -45,12 +45,12 @@ The following example creates some fake historical data with timestamps and then
 import io.deephaven.engine.table.impl.replay.Replayer
 
 result = newTable(
-    instantCol("DateTime", convertDateTime("2000-01-01T00:00:01 NY"), convertDateTime("2000-01-01T00:00:03 NY"), convertDateTime("2000-01-01T00:00:06 NY")),
+    instantCol("DateTime", parseInstant("2000-01-01T00:00:01 ET"), parseInstant("2000-01-01T00:00:03 ET"), parseInstant("2000-01-01T00:00:06 ET")),
     intCol("Number", 1, 3, 6)
 )
 
-startTime = convertDateTime("2000-01-01T00:00:00 NY")
-endTime = convertDateTime("2000-01-01T00:00:07 NY")
+startTime = parseInstant("2000-01-01T00:00:00 ET")
+endTime = parseInstant("2000-01-01T00:00:07 ET")
 
 resultReplayer = new Replayer(startTime, endTime)
 

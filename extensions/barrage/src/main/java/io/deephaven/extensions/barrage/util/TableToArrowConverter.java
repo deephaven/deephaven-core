@@ -8,13 +8,12 @@ import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.NoSuchElementException;
-
-import static io.deephaven.extensions.barrage.util.BarrageUtil.schemaBytesFromTable;
 
 /**
  * This class produces Arrow Ipc Messages for a Deephaven table, including the schema and all columnar data. The data is
@@ -22,10 +21,19 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.schemaBytesFromTa
  */
 public class TableToArrowConverter {
     private final BaseTable<?> table;
+    /** The schema both {@link #getSchema()} and the record batches use; computed once, so the two always agree. */
+    private Schema schema = null;
     private ArrowBuilderObserver listener = null;
 
     public TableToArrowConverter(BaseTable<?> table) {
         this.table = table;
+    }
+
+    private Schema schema() {
+        if (schema == null) {
+            schema = BarrageUtil.schemaFromTable(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table);
+        }
+        return schema;
     }
 
     private void populateRecordBatches() {
@@ -37,11 +45,11 @@ public class TableToArrowConverter {
                 new BarragePerformanceLog.SnapshotMetricsHelper();
         listener = new ArrowBuilderObserver();
         BarrageUtil.createAndSendSnapshot(new BarrageMessageWriterImpl.ArrowFactory(), table, null, null,
-                false, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, listener, metrics);
+                false, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, schema(), listener, metrics);
     }
 
     public byte[] getSchema() {
-        return schemaBytesFromTable(table).toByteArray();
+        return BarrageUtil.schemaBytes(schema()::getSchema).toByteArray();
     }
 
     public boolean hasNext() {

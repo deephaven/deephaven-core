@@ -3,21 +3,35 @@
 //
 package io.deephaven.extensions.barrage.util;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.base.FileUtils;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
+import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.ColumnEncoding;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
+import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.IntVectorDirect;
+import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
@@ -27,11 +41,18 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -308,6 +329,148 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     @Test
+    public void testSamplingSkipsDictionaryForArrayVectorAndMapColumns() {
+        // Every column alternates between the same two values, so the sampled cardinality is far below the threshold.
+        // A string column takes a dictionary; array, vector and map columns must not, as they travel as Arrow lists or
+        // maps (and an array's equality is its identity, so its cardinality means nothing).
+        final int numRows = 1_000;
+        final String[] syms = new String[numRows];
+        final int[][] arrays = new int[numRows][];
+        final IntVector[] vectors = new IntVector[numRows];
+        @SuppressWarnings("unchecked")
+        final Map<String, Integer>[] maps = new Map[numRows];
+        final int[][] arrayValues = {{1, 2}, {3, 4}};
+        final IntVector[] vectorValues = {new IntVectorDirect(1, 2), new IntVectorDirect(3, 4)};
+        final List<Map<String, Integer>> mapValues = List.of(Map.of("a", 1), Map.of("b", 2));
+        for (int ii = 0; ii < numRows; ++ii) {
+            syms[ii] = ii % 2 == 0 ? "AAPL" : "MSFT";
+            arrays[ii] = arrayValues[ii % 2];
+            vectors[ii] = vectorValues[ii % 2];
+            maps[ii] = mapValues.get(ii % 2);
+        }
+        final Table table = newTable(stringCol("Sym", syms), col("Arr", arrays), col("Vec", vectors),
+                col("Map", maps));
+
+        final Map<String, ColumnEncoding> detected = new HashMap<>();
+        sampleColumnsForEncoding(table, detected, false, true);
+
+        assertThat(detected.get("Sym")).isEqualTo(ColumnEncoding.DICTIONARY_ENCODED_INT32);
+        assertThat(detected).as("array, vector and map columns must not be dictionary candidates")
+                .doesNotContainKeys("Arr", "Vec", "Map");
+    }
+
+    /**
+     * A snapshot is written with the schema its caller passes, never one it infers again: the caller sends that schema
+     * to the client first, and a second inference could choose different encodings for a ticking table. Writing a
+     * dictionary-encoded schema for a table that asks for no encoding shows which schema the writers used.
+     */
+    @Test
+    public void testSnapshotWritesTheSchemaItIsGiven() {
+        final String[] syms = new String[100];
+        for (int ii = 0; ii < syms.length; ++ii) {
+            syms[ii] = ii % 2 == 0 ? "AAPL" : "MSFT";
+        }
+        final QueryTable staticTable = (QueryTable) newTable(stringCol("Sym", syms));
+        final QueryTable refreshingTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(syms.length).toTracking(), stringCol("Sym", syms));
+
+        for (final QueryTable table : List.of(staticTable, refreshingTable)) {
+            final String which = table.isRefreshing() ? "refreshing" : "static";
+            // makeSchema, unlike schemaFromTable, never infers encodings, so this schema asks for none
+            final Schema plain = BarrageUtil.makeSchema(
+                    BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), Map.of(), table.isFlat());
+            assertThat(countSnapshotDictionaryBatches(table, plain)).as(which + ", plain schema").isZero();
+            // one snapshot message, so the dictionary goes out once, ahead of it
+            assertThat(countSnapshotDictionaryBatches(table, withDictionary(plain, "Sym")))
+                    .as(which + ", dictionary-encoded schema").isEqualTo(1);
+        }
+    }
+
+    /** Writes a snapshot of {@code table} with {@code schema} and counts the DictionaryBatch messages it sent. */
+    private static int countSnapshotDictionaryBatches(final QueryTable table, final Schema schema) {
+        final List<byte[]> messages = new ArrayList<>();
+        BarrageUtil.createAndSendSnapshot(new BarrageMessageWriterImpl.ArrowFactory(), table, null, null, false,
+                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, schema, new StreamObserver<>() {
+                    @Override
+                    public void onNext(final BarrageMessageWriter.MessageView view) {
+                        try {
+                            view.forEachStream(stream -> {
+                                try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                                    stream.drainTo(baos);
+                                    messages.add(baos.toByteArray());
+                                    stream.close();
+                                } catch (final IOException e) {
+                                    throw new UncheckedIOException(e);
+                                }
+                            });
+                        } catch (final IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        throw new IllegalStateException(t);
+                    }
+
+                    @Override
+                    public void onCompleted() {}
+                }, new BarragePerformanceLog.SnapshotMetricsHelper());
+
+        int numDictionaryBatches = 0;
+        for (final byte[] message : messages) {
+            // an encapsulated IPC message: a continuation marker, the metadata length, then the flatbuffer Message
+            final ByteBuffer bb = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN);
+            final int metadataOffset = bb.getInt(0) == -1 ? 8 : 4;
+            final org.apache.arrow.flatbuf.Message header = org.apache.arrow.flatbuf.Message.getRootAsMessage(
+                    bb.position(metadataOffset).slice().order(ByteOrder.LITTLE_ENDIAN));
+            if (header.headerType() == org.apache.arrow.flatbuf.MessageHeader.DictionaryBatch) {
+                ++numDictionaryBatches;
+            }
+        }
+        return numDictionaryBatches;
+    }
+
+    /** Returns {@code schema} with the field {@code column} dictionary encoded (Int32 index, dictionary id 0). */
+    private static Schema withDictionary(final Schema schema, final String column) {
+        return new Schema(schema.getFields().stream()
+                .map(f -> !column.equals(f.getName()) ? f
+                        : new Field(f.getName(),
+                                new FieldType(f.isNullable(), f.getType(),
+                                        new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)),
+                                        f.getMetadata()),
+                                f.getChildren()))
+                .collect(Collectors.toList()), schema.getCustomMetadata());
+    }
+
+    /**
+     * An encapsulated IPC message's size counts the padding after its metadata, as the Arrow IPC format specifies: a
+     * stream reader looks for the next message right after the size it reads. Column names of every length mod 8 give
+     * metadata that needs each amount of padding.
+     */
+    @Test
+    public void testIpcBytesCountPaddingInSize() {
+        boolean sawPadding = false;
+        for (int nameLength = 1; nameLength <= 8; ++nameLength) {
+            final Schema schema =
+                    new Schema(List.of(Field.nullable("C".repeat(nameLength), Types.MinorType.INT.getType())));
+            final FlatBufferBuilder builder = new FlatBufferBuilder();
+            builder.finish(MessageHelper.wrapInMessage(builder, schema.getSchema(builder), MessageHeader.Schema));
+            final int metadataSize = builder.dataBuffer().remaining();
+            sawPadding |= metadataSize % 8 != 0;
+
+            final byte[] bytes = MessageHelper.toIpcBytes(builder);
+            final ByteBuffer bb = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
+            assertThat(bb.getInt(0)).as("continuation token").isEqualTo(-1);
+            assertThat(bb.getInt(4)).as("size, for a name of length " + nameLength)
+                    .isEqualTo(bytes.length - 8)
+                    .isGreaterThanOrEqualTo(metadataSize);
+            assertThat(bytes.length % 8).as("message length").isZero();
+        }
+        assertThat(sawPadding).as("some metadata needed padding").isTrue();
+    }
+
+    @Test
     public void testExplicitBarrageSchemaAttributeSuppressesAutoREE() {
         final Table base = newTable(
                 stringCol("Symbol", "AAPL", "MSFT"),
@@ -500,6 +663,43 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     @Test
+    public void testDefaultConfigAutoREEThroughSchemaFromTable() {
+        // With the default configuration, an unannotated table with a repetitive column (runs of 4) gets REE on the
+        // wire through the public schema path; the all-distinct column stays plain.
+        final int N = 100;
+        final int[] y = new int[N];
+        final int[] x = new int[N];
+        for (int i = 0; i < N; i++) {
+            y[i] = i / 4; // runs of 4
+            x[i] = i;
+        }
+        final Table table = newTable(intCol("Y", y), intCol("X", x));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertFieldIsREE(schema, "Y");
+        assertFieldIsNotREE(schema, "X");
+    }
+
+    @Test
+    public void testDefaultConfigAutoDictionaryThroughSchemaFromTable() {
+        // With the default configuration, an unannotated table with a low-cardinality String column that never
+        // repeats adjacently gets dictionary encoding (and not REE) through the public schema path.
+        final int N = 100;
+        final String[] symbols = new String[N];
+        final String[] pool = {"AAPL", "MSFT", "GOOG", "AMZN"};
+        for (int i = 0; i < N; i++) {
+            symbols[i] = pool[i % pool.length];
+        }
+        final Table table = newTable(stringCol("Symbol", symbols));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertFieldIsDictionary(schema, "Symbol", 32);
+        assertFieldIsNotREE(schema, "Symbol");
+    }
+
+    @Test
     public void testSamplingSkippedForSmallTable() {
         // Tables with fewer than REE_MIN_SAMPLE_SIZE rows return early without sampling.
         final int N = BarrageUtil.REE_MIN_SAMPLE_SIZE - 1;
@@ -531,6 +731,42 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         sampleColumnsForEncoding(table, detected, false, true);
 
         assertThat(detected.get("Symbol")).isEqualTo(ColumnEncoding.DICTIONARY_ENCODED_INT32);
+    }
+
+    /**
+     * An inconsistent snapshot attempt in {@code inferEncodings} is retried. Simulate an attempt that read previous
+     * values, where the column had few distinct values, and its retry, which reads current values that are all
+     * distinct: the retry must not keep the dictionary encoding the rejected attempt chose.
+     */
+    @Test
+    public void testRejectedSnapshotAttemptLeavesNoEncodingChoices() {
+        final int N = 100;
+        final String[] pool = {"AAPL", "MSFT", "GOOG", "AMZN"};
+        final String[] lowCardinality = new String[N];
+        final String[] distinct = new String[N];
+        for (int i = 0; i < N; i++) {
+            lowCardinality[i] = pool[i % pool.length];
+            distinct[i] = "SYM" + i;
+        }
+        final QueryTable table = TstUtils.testRefreshingTable(RowSetFactory.flat(N).toTracking(),
+                stringCol("Symbol", lowCardinality));
+        final Map<String, ColumnEncoding> startingEncodings =
+                new HashMap<>(Map.of("Other", ColumnEncoding.RUN_END_ENCODED_INT32));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, RowSetFactory.flat(N), stringCol("Symbol", distinct));
+
+            final Map<String, ColumnEncoding> rejected =
+                    BarrageUtil.detectEncodingsFromData(table, startingEncodings, true, false, false, true);
+            assertThat(rejected.get("Symbol")).isEqualTo(ColumnEncoding.DICTIONARY_ENCODED_INT32);
+
+            final Map<String, ColumnEncoding> accepted =
+                    BarrageUtil.detectEncodingsFromData(table, startingEncodings, false, false, false, true);
+            assertThat(accepted).doesNotContainKey("Symbol");
+            assertThat(accepted.get("Other")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
+        });
+        assertThat(startingEncodings).containsOnlyKeys("Other");
     }
 
     @Test
@@ -585,9 +821,10 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     @Test
-    public void testExplicitReeSchemaHonoredWhenGlobalDisabled() {
-        // Even when REE_AUTO_DETECT_ENABLED is false, a user-supplied BARRAGE_SCHEMA_ATTRIBUTE with
-        // REE columns must be passed through verbatim.
+    public void testExplicitReeEncodingHonored() {
+        // The REE encoding requested by a user-supplied BARRAGE_SCHEMA_ATTRIBUTE must be honored, whatever the
+        // auto-detect switches say. The table is too small to sample and has no structural REE hint, so Symbol can
+        // only come back REE because the attribute asked for it.
         //
         // Build the REE schema the exhaustive way per barrage-schema.md: extract the base schema,
         // reuse the original field's FieldType so deephaven:type metadata is preserved, then
@@ -684,6 +921,41 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(((ArrowType.Int) runEnds.getType()).getBitWidth())
                 .as("field %s run_ends bitWidth", columnName)
                 .isEqualTo(expectedBitWidth);
+    }
+
+    @Test
+    public void testRestrictSortToNoColumnsSchema() {
+        final Table table = newTable(
+                intCol("A", 1, 2),
+                doubleCol("B", 1.0, 2.0))
+                .restrictSortTo();
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertFieldIsNotSortable(schema, "A");
+        assertFieldIsNotSortable(schema, "B");
+    }
+
+    @Test
+    public void testSortableColumnsAttributeWithUnknownColumnSchema() {
+        final Table table = newTable(
+                intCol("A", 1, 2),
+                doubleCol("B", 1.0, 2.0))
+                .withAttributes(Map.of(Table.SORTABLE_COLUMNS_ATTRIBUTE, "A,Missing"));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertThat(schema.findField("A").getMetadata())
+                .containsEntry(BarrageUtil.ATTR_DH_PREFIX + "isSortable", "true");
+        assertFieldIsNotSortable(schema, "B");
+    }
+
+    private static void assertFieldIsNotSortable(final Schema schema, final String columnName) {
+        final Field field = schema.findField(columnName);
+        assertThat(field).as("field %s", columnName).isNotNull();
+        assertThat(field.getMetadata())
+                .as("field %s should not be sortable", columnName)
+                .doesNotContainKey(BarrageUtil.ATTR_DH_PREFIX + "isSortable");
     }
 
     private static void assertFieldIsNotREE(final Schema schema, final String columnName) {

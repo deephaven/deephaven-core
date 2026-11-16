@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.web.shared.data.RangeSet;
 
@@ -15,9 +16,12 @@ public class RowSetFactory {
         return new WebRowSetBuilderSequentialImpl();
     }
     public static WritableRowSet fromRange(long first, long last) {
+        Assert.geqZero(first, "first");
+        Assert.leq(first, "first", last, "last");
         return new WebRowSetImpl(RangeSet.ofRange(first, last));
     }
     public static WritableRowSet flat(long size) {
-        return size <= 0 ? empty() : new WebRowSetImpl(RangeSet.ofRange(0, size - 1));
+        Assert.geqZero(size, "size");
+        return size == 0 ? empty() : new WebRowSetImpl(RangeSet.ofRange(0, size - 1));
     }
 }

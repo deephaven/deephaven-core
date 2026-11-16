@@ -42,6 +42,9 @@ public abstract class BaseGridAttributes<IFACE_TYPE extends GridAttributes<IFACE
         if (sortingRestrictions == null) {
             return null;
         }
+        if (sortingRestrictions.isEmpty()) {
+            return Collections.emptySet();
+        }
         return Stream.of(sortingRestrictions.split(",")).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 

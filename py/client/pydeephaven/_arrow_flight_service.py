@@ -9,7 +9,7 @@ import pyarrow as pa
 import pyarrow.flight as paflight
 from pyarrow.flight import FlightCallOptions
 
-from pydeephaven._arrow import map_arrow_type
+from pydeephaven._arrow import decode_for_pyarrow, map_arrow_type, value_type_of
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
 
@@ -25,13 +25,21 @@ class ArrowFlightService:
     def import_table(self, data: pa.Table) -> Table:
         """Uploads a pyarrow table into Deephaven via Flight do_put."""
         try:
-            if not isinstance(data, (pa.Table, pa.RecordBatch)):
-                raise DHError("source data must be either a pa table or RecordBatch.")
+            if not isinstance(data, pa.Table):
+                raise DHError("source data must be a pyarrow Table.")
             ticket = self.session.next_export_ticket_number()
             dh_fields = []
             for f in data.schema:
+                # Copy nullable from data. pa.field defaults to nullable=True, and the writer below rejects data
+                # whose schema differs from dh_schema. data can have non-nullable fields, such as the REE fields
+                # Table.to_arrow() returns.
                 dh_fields.append(
-                    pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type))
+                    pa.field(
+                        name=f.name,
+                        type=f.type,
+                        nullable=f.nullable,
+                        metadata=map_arrow_type(f.type),
+                    )
                 )
             dh_schema = pa.schema(dh_fields)
 
@@ -46,8 +54,20 @@ class ArrowFlightService:
             # knows what it is for and sends a RST_STREAM causing a failure.
             _ = reader.read()
             flight_ticket = self.session.make_export_ticket(ticket)
+            # The server stores an encoded column as a plain column of its value type.
+            table_schema = pa.schema(
+                [
+                    pa.field(f.name, value_type_of(f.type), True, f.metadata)
+                    if value_type_of(f.type) != f.type
+                    else f
+                    for f in dh_schema
+                ]
+            )
             return Table(
-                self.session, ticket=flight_ticket, size=data.num_rows, schema=dh_schema
+                self.session,
+                ticket=flight_ticket,
+                size=data.num_rows,
+                schema=table_schema,
             )
         except Exception as e:
             raise DHError("failed to create a Deephaven table from Arrow data.") from e
@@ -60,7 +80,7 @@ class ArrowFlightService:
                 flight_ticket, FlightCallOptions(headers=self.session.grpc_metadata)
             )
 
-            return reader.read_all()
+            return decode_for_pyarrow(reader.read_all())
         except Exception as e:
             raise DHError("failed to perform a flight DoGet on the table.") from e
 

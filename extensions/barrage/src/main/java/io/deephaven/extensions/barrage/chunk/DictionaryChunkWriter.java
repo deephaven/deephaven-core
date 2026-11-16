@@ -7,6 +7,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -17,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.function.UnaryOperator;
 
 /**
  * Serializes a flat column chunk as Arrow Dictionary Encoded on the wire.
@@ -43,13 +45,31 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     private final ChunkWriter<Chunk<Values>> valuesWriter;
     private final int indexBitWidth;
     private final ChunkType valuesChunkType;
+    /**
+     * Converts a source chunk to {@link #valuesChunkType} before it is matched against the dictionary, or {@code null}
+     * when sources always arrive as {@link #valuesChunkType}. A transform returns its argument when no conversion is
+     * needed, and otherwise a new chunk that this writer closes.
+     */
+    @Nullable
+    private final UnaryOperator<Chunk<Values>> sourceTransform;
 
+    /**
+     * @param dictId the Arrow dictionary id
+     * @param indexWriter writes the index column that goes into the RecordBatch
+     * @param valuesWriter writes the dictionary values that go into the DictionaryBatch
+     * @param indexBitWidth the bit width of the index type (8, 16, 32 or 64)
+     * @param valuesChunkType the chunk type {@code valuesWriter} consumes, and that the dictionary state holds
+     * @param sourceTransform converts source chunks that do not arrive as {@code valuesChunkType}; see
+     *        {@link #sourceTransform}
+     * @param fieldNullable whether the field is nullable
+     */
     public DictionaryChunkWriter(
             final long dictId,
             @NotNull final ChunkWriter<IntChunk<Values>> indexWriter,
             @NotNull final ChunkWriter<Chunk<Values>> valuesWriter,
             final int indexBitWidth,
             @NotNull final ChunkType valuesChunkType,
+            @Nullable final UnaryOperator<Chunk<Values>> sourceTransform,
             final boolean fieldNullable) {
         super(null, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
         this.dictId = dictId;
@@ -57,10 +77,29 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         this.valuesWriter = valuesWriter;
         this.indexBitWidth = indexBitWidth;
         this.valuesChunkType = valuesChunkType;
+        this.sourceTransform = sourceTransform;
     }
 
     public long getDictId() {
         return dictId;
+    }
+
+    /**
+     * Returns the number of distinct values that a dictionary with an index of {@code indexBitWidth} bits can address,
+     * or {@link Long#MAX_VALUE} when the index is wide enough that the dictionary is not limited by it.
+     *
+     * @param indexBitWidth the bit width of the dictionary's signed index type (8, 16, 32 or 64)
+     * @return the maximum number of distinct values in the dictionary
+     */
+    public static long maxDictionarySize(final int indexBitWidth) {
+        switch (indexBitWidth) {
+            case 8:
+                return Byte.MAX_VALUE + 1;
+            case 16:
+                return Short.MAX_VALUE + 1;
+            default:
+                return Long.MAX_VALUE;
+        }
     }
 
     public ChunkWriter<Chunk<Values>> getValuesWriter() {
@@ -244,7 +283,14 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         boolean success = false;
         try {
             out.setSize(logicalSize);
-            state.fillIndexChunk(source, subset, options, out);
+            final Chunk<Values> converted = sourceTransform == null ? source : sourceTransform.apply(source);
+            try {
+                state.fillIndexChunk(converted, subset, options, out);
+            } finally {
+                if (converted != source) {
+                    ((WritableChunk<Values>) converted).close();
+                }
+            }
             final int total = state.totalSize();
             if (indexBitWidth == 8 && total > Byte.MAX_VALUE + 1) {
                 throw new IllegalStateException(

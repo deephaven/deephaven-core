@@ -10,6 +10,8 @@ import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.AttributeMap;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
@@ -25,6 +27,7 @@ import io.deephaven.util.annotations.ReflexiveUse;
 import io.grpc.stub.StreamObserver;
 
 import java.util.BitSet;
+import java.util.function.Supplier;
 
 /**
  * An ExchangeMarshaller for {@link HierarchicalTableView}. Subscriptions are supported, with each subsequent update
@@ -46,6 +49,11 @@ public class HierarchicalTableViewExchangeMarshaller implements ExchangeMarshall
     @Override
     public boolean accept(final Object export) {
         return export instanceof HierarchicalTableView;
+    }
+
+    @Override
+    public AttributeMap<?> attributesFor(final Object export) {
+        return ((HierarchicalTableView) export).getHierarchicalTable();
     }
 
     @Override
@@ -118,7 +126,8 @@ public class HierarchicalTableViewExchangeMarshaller implements ExchangeMarshall
         @Override
         public HierarchicalTableViewExchangeMarshaller create(final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
-                final BarrageMessageWriter.Factory streamGeneratorFactory) {
+                final BarrageMessageWriter.Factory streamGeneratorFactory,
+                final Supplier<JobScheduler> propagationJobSchedulerFactory) {
             final HierarchicalTableViewSubscription.Factory htvsFactory = (view, listener, subscriptionOptions,
                     intervalMillis) -> new HierarchicalTableViewSubscription(scheduler, errorTransformer,
                             streamGeneratorFactory, view, listener, subscriptionOptions, intervalMillis);

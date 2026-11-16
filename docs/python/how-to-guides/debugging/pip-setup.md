@@ -1,28 +1,31 @@
 ---
 id: pip-setup
-title: Debug pip-installed Deephaven with PyCharm
+title: Debug pip-installed Deephaven
 ---
 
-This guide shows you how to set up a debugger for [pip-installed Deephaven](../../getting-started/pip-install.md).
+This guide shows you how to set up a debugger for [pip-installed Deephaven](../../getting-started/pip-install.md). There are two main debugging approaches, and which one you use depends on which process starts the Deephaven server:
 
-With pip-installed Deephaven, there are two main debugging approaches:
+1. **Local debugging** (recommended): Your Python script starts the Deephaven server, and you run that script in your IDE's debugger. The debugger attaches to the process your IDE launched, so you don't need a separate debug server. This simpler approach works with [VS Code](https://code.visualstudio.com) and [PyCharm](https://www.jetbrains.com/pycharm/). On macOS and Linux, PyCharm's free tier is enough. On Windows, PyCharm needs a WSL interpreter, which requires PyCharm Pro. See [Local debugging with PyCharm](#local-debugging-with-pycharm) or [Local debugging with VS Code](#local-debugging-with-vs-code).
 
-1. **Local debugging with IDE scripts** (Recommended): Write your Deephaven code in Python scripts and use your IDE's built-in debugger. This works with [PyCharm](https://www.jetbrains.com/pycharm/) Community/Professional and [VS Code](https://code.visualstudio.com). This is the simpler approach.
+2. **Remote debugging** (advanced): You start the server with the [`deephaven server`](../../getting-started/pip-install.md#from-the-command-line) command and run code in the Deephaven web IDE. Your IDE didn't launch that server, so the server connects to a remote debug server in [PyCharm Pro](https://www.jetbrains.com/pycharm/), the paid tier of PyCharm. This takes more setup, but it lets you debug code that you type into the Deephaven console. See [Remote debugging with PyCharm Pro](#remote-debugging-with-pycharm-pro).
 
-2. **Remote debugging with Deephaven web IDE** (Advanced): Use the Deephaven web IDE to run queries and connect a remote debugger from [PyCharm Professional](https://www.jetbrains.com/pycharm/buy/?section=commercial&billing=yearly). This requires more setup but allows debugging code written in the Deephaven console.
-
-This guide covers both approaches.
+> [!NOTE]
+> Some problems you may hit while debugging come from how Deephaven evaluates tables, not from your debugger setup. See [Common problems when debugging Deephaven](./common-problems.md).
 
 ## Setup
 
-Every case covered in this guide assumes that Deephaven is installed in a [Python virtual environment](https://docs.python.org/3/library/venv.html). This is the strongly-recommended approach to using pip-installed Deephaven. Create and activate a virtual environment as follows:
+Every case covered in this guide assumes that Deephaven is installed in a [Python virtual environment](https://docs.python.org/3/library/venv.html), which is the approach that the [pip install guide](../../getting-started/pip-install.md#install-deephaven) recommends. Deephaven installed with pip also requires Java 17 or later, with `JAVA_HOME` set to your Java installation. See the [prerequisites](../../getting-started/pip-install.md#prerequisites).
+
+On Windows, [pip-installed Deephaven](../../getting-started/pip-install.md) requires [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install). Run the following commands in WSL 2, along with every other terminal command in this guide.
+
+Create and activate a virtual environment as follows:
 
 ```bash
 python3 -m venv dh-venv
 source dh-venv/bin/activate
 ```
 
-This creates a virtual environment called `dh-venv` and makes it usable. The rest of this guide assumes that your virtual environment is called `dh-venv`.
+This creates a virtual environment called `dh-venv` and activates it. The rest of this guide assumes that your virtual environment is called `dh-venv`.
 
 Then, install Deephaven into this environment using `pip`:
 
@@ -30,32 +33,50 @@ Then, install Deephaven into this environment using `pip`:
 pip install deephaven-server
 ```
 
-## PyCharm
+On Windows, `dh-venv` lives inside WSL 2, so point your IDE at it through WSL:
+
+- **PyCharm**: Choose **Add New Interpreter** > **On WSL**. WSL interpreters require PyCharm Pro. With PyCharm's free tier on Windows, use [VS Code](#local-debugging-with-vs-code) instead.
+- **VS Code**: Install the WSL extension and run **WSL: Connect to WSL** before you open the project folder.
+
+The Windows notes in each section below cover the remaining differences: the PyCharm terminal, the VS Code WSL window, and the debug server host name.
+
+## Local debugging with PyCharm
 
 > [!WARNING]
-> Debugging Deephaven with PyCharm has only been shown to work for PyCharm major version **2024** or higher. Some issues have been discovered with using PyCharm 2023, and there is no plan to fix these issues.
+> Use PyCharm 2024 or later. Debugging Deephaven with PyCharm 2023 has known problems.
 
-With the proper setup, PyCharm's built-in debugger works well with Deephaven scripts hosted in PyCharm. The steps given here will work with both PyCharm Community Edition and PyCharm Professional. If an existing PyCharm project is set up for using pip-installed Deephaven, skip to step 2.
+After the setup below, PyCharm's built-in debugger works well with Deephaven scripts that you run from PyCharm. On macOS and Linux, these steps work with both the free and Pro tiers of PyCharm. On Windows, this setup uses a WSL interpreter, which requires PyCharm Pro. [Debug Python code in Deephaven](./debugging-landing.md) explains how these tiers map to the older Community and Professional editions.
 
-### 1. Create and configure PyCharm project
+If you already have a PyCharm project that uses [pip-installed Deephaven](../../getting-started/pip-install.md), skip to step 2.
+
+### 1. Create and configure a PyCharm project
 
 First, create a new PyCharm project from the directory containing the `dh-venv` virtual environment. The fresh PyCharm project looks like this:
 
 ![img](../../assets/how-to/debugging/pc-1.png)
 
-Next, click on **No interpreter** in the bottom-right-hand corner, click **Add New Interpreter** > **Add Local Interpreter**, select **Existing**, and navigate to the `python` executable in `dh-venv`:
+Next, click on **No interpreter** in the bottom-right corner, click **Add New Interpreter** > **Add Local Interpreter**, choose **Virtualenv Environment** > **Existing**, and navigate to the `python` executable in `dh-venv`:
 
 ![img](../../assets/how-to/debugging/pc-2.png)
 
+On Windows, choose **On WSL** instead of **Add Local Interpreter**, as described in [Setup](#setup).
+
 Click **OK**.
 
-Verify that the interpreter is configured correctly by opening the terminal and running `which deephaven`. It should return the path of the `deephaven` package inside of `dh-venv`:
+On Windows, open a WSL tab in the PyCharm terminal before you run the next command. To make every terminal command in this guide run in WSL, set **Settings** > **Tools** > **Terminal** > **Shell path** to `wsl.exe`.
+
+Verify that the interpreter is configured correctly by opening the terminal and running `which deephaven`. The command should return the path of the `deephaven` command inside `dh-venv` (for example, `.../dh-venv/bin/deephaven`):
 
 ![img](../../assets/how-to/debugging/pc-3.png)
 
-### 2. Test debugger
+### 2. Test the debugger
 
-To ensure that PyCharm's debugger will run correctly with Deephaven, create a test script called `script.py` that starts and uses the Deephaven server:
+To ensure that PyCharm's debugger runs correctly with Deephaven, create a test script called `script.py` that starts and uses the Deephaven server. The script passes two JVM arguments, and debugging needs neither of them:
+
+- `-Xmx4g` sets a 4 GB maximum heap. Adjust or remove it to suit your machine.
+- `-Dprocess.info.system-info.enabled=false` turns off the collection of system information when the server starts. You can remove it, except on M2 Macs, where the [pip install guide](../../getting-started/pip-install.md#start-a-deephaven-server) recommends keeping it.
+
+The screenshot shows an earlier version of the script, with `-Xmx16g` and an `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` argument. That argument replaces the default [pre-shared key](../authentication/auth-psk.md) login with [anonymous authentication](../authentication/auth-anon.md), which lets anyone who can reach the server connect. Leave it out of your script.
 
 ![img](../../assets/how-to/debugging/pc-4.png)
 
@@ -68,8 +89,7 @@ from deephaven_server import Server
 s = Server(
     port=10000,
     jvm_args=[
-        "-Xmx16g",
-        "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler",
+        "-Xmx4g",
         "-Dprocess.info.system-info.enabled=false",
     ],
 )
@@ -86,48 +106,59 @@ Then, right-click anywhere in the editor window and select **Debug 'script'**:
 
 ![img](../../assets/how-to/debugging/pc-5.png)
 
-This will start the debugger and execute the test script in debug mode. If the test is successful, the debug console will contain output like this:
+This starts the debugger and runs the test script in debug mode. If the test is successful, the debug console contains output like this:
 
 ![img](../../assets/how-to/debugging/pc-6.png)
 
-If the test fails, the Python interpreter may not be configured correctly, or the Deephaven Python package may not be available in the current environment. Follow the previous steps closely to ensure a correctly-configured environment.
+If the test fails, check for these causes:
 
-### 3. Use debugger with Deephaven
+- The Python interpreter isn't set to `dh-venv`. Repeat step 1.
+- The Deephaven Python package isn't installed in `dh-venv`. Run `pip install deephaven-server`.
+- Java 17 or later isn't installed, or `JAVA_HOME` isn't set. See the [prerequisites](../../getting-started/pip-install.md#prerequisites).
 
-Once the debugger is set up and working, all of the features in PyCharm's debugger will be available. Set breakpoints, step through functions, and inspect source code:
+### 3. Use the debugger with Deephaven
+
+Once the debugger is set up and working, all of the features in PyCharm's debugger are available. Set breakpoints, step through functions, and inspect source code:
 
 ![img](../../assets/how-to/debugging/pc-7.png)
 
-**There are some Deephaven-specific things that must be taken into consideration.** See the guide on [common problems when debugging](./common-problems.md) for information on some subtle problems that can creep into debugging sessions.
+Deephaven has some debugging pitfalls of its own, such as [lazy evaluation](./common-problems.md#lazy-evaluation-of-some-table-operations) and [ticking tables when your script starts the server](./common-problems.md#ticking-tables-when-your-script-starts-the-server). See [Common problems when debugging Deephaven](./common-problems.md).
 
-## VS Code
+## Local debugging with VS Code
 
 > [!WARNING]
-> Debugging Deephaven with VS Code has only been verified to work on **VS Code 1.94 and higher**. Older versions may have compatibility issues.
+> Debugging Deephaven works with **VS Code 1.94** and later. Deephaven hasn't tested earlier versions.
 
-VS Code's built-in debugger is useful for debugging Deephaven scripts hosted in VS Code's environment. If there is an existing VS Code project set up to work with the `dh-venv` virtual environment, skip to step 2.
+VS Code's built-in debugger is a good fit for Deephaven scripts that you run in VS Code. VS Code debugs Python with Microsoft's [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python), which also installs the Python Debugger extension. Install the Python extension from the Extensions view before you continue.
 
-### 1. Create and configure VS Code project
+If you already have the parent directory of `dh-venv` open in VS Code with `dh-venv` as its interpreter, skip to step 2.
 
-First, create a new VS Code project by opening the parent directory of `dh-venv` in the VS Code launch window. This creates a brand new VS Code project:
+### 1. Open the folder and select the interpreter
+
+First, open the parent directory of `dh-venv` in VS Code with **File** > **Open Folder**. On Windows, run **WSL: Connect to WSL** before this step and open the folder from the WSL window, as described in [Setup](#setup). After you open the folder, the Explorer shows `dh-venv`:
 
 ![img](../../assets/how-to/debugging/vs-1.png)
 
-Then, configure the interpreter by typing **> Python: Select Interpreter** into the search bar at the top:
+Then, configure the interpreter by typing **> Python: Select Interpreter** into the command palette at the top:
 
 ![img](../../assets/how-to/debugging/vs-2.png)
 
-Select the `dh-venv` environment that was created earlier. VS Code may recommend that environment by default since it's present in the project directory:
+Select the `dh-venv` environment that you created in [Setup](#setup). VS Code may recommend that environment by default since it's present in the project directory:
 
 ![img](../../assets/how-to/debugging/vs-3.png)
 
-Verify that the interpreter is configured correctly by opening a terminal and running `which deephaven`. It should point to the VS Code project directory:
+Verify that the interpreter is configured correctly by opening a terminal and running `which deephaven`. It should return the path of the `deephaven` command inside the `dh-venv` directory of your project:
 
 ![img](../../assets/how-to/debugging/vs-4.png)
 
-### 2. Test debugger
+### 2. Test the debugger
 
-To ensure that the debugger is configured correctly, create and run a script to start the Deephaven server and run a command. This example is called `script.py`:
+To ensure that the debugger is configured correctly, create a script called `script.py` that starts the Deephaven server and runs a command. It is the same test script as in the [PyCharm section](#2-test-the-debugger). The script passes two JVM arguments, and debugging needs neither of them:
+
+- `-Xmx4g` sets a 4 GB maximum heap. Adjust or remove it to suit your machine.
+- `-Dprocess.info.system-info.enabled=false` turns off the collection of system information when the server starts. You can remove it, except on M2 Macs, where the [pip install guide](../../getting-started/pip-install.md#start-a-deephaven-server) recommends keeping it.
+
+The screenshot shows an earlier version of the script, with `-Xmx16g` and an `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` argument. That argument replaces the default [pre-shared key](../authentication/auth-psk.md) login with [anonymous authentication](../authentication/auth-anon.md), which lets anyone who can reach the server connect. Leave it out of your script.
 
 ![img](../../assets/how-to/debugging/vs-5.png)
 
@@ -140,8 +171,7 @@ from deephaven_server import Server
 s = Server(
     port=10000,
     jvm_args=[
-        "-Xmx16g",
-        "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler",
+        "-Xmx4g",
         "-Dprocess.info.system-info.enabled=false",
     ],
 )
@@ -158,43 +188,46 @@ Click on the small downward-facing arrow toward the top-right corner of the scre
 
 ![img](../../assets/how-to/debugging/vs-6.png)
 
-This will execute the test script in the debugger for this environment. If the test is successful, it will start the Deephaven server, execute the script, and exit the debugger:
+This runs the test script in the debugger for this environment. If the test is successful, the debugger starts the Deephaven server, runs the script, and exits:
 
 ![img](../../assets/how-to/debugging/vs-7.png)
 
-In this case, the debugger is ready for use. If the test fails, ensure that the environment is configured correctly by carefully following the setup in step 1.
+The debugger is then ready for use. If the test fails, check for these causes:
 
-### 3. Use debugger with Deephaven
+- The Python interpreter isn't set to `dh-venv`. Repeat step 1.
+- The Deephaven Python package isn't installed in `dh-venv`. Run `pip install deephaven-server`.
+- Java 17 or later isn't installed, or `JAVA_HOME` isn't set. See the [prerequisites](../../getting-started/pip-install.md#prerequisites).
 
-Once the debugger is set up and working, all of the features in VS Code's debugger will be available. Set breakpoints, step through functions, and inspect source code:
+### 3. Use the debugger with Deephaven
+
+Once the debugger is set up and working, all of the features in VS Code's debugger are available. Set breakpoints, step through functions, and inspect source code:
 
 ![img](../../assets/how-to/debugging/vs-8.png)
 
-**There are some Deephaven-specific things that must be taken into consideration.** See the guide on [common problems when debugging](./common-problems.md) for information on some subtle problems that can creep into debugging sessions.
+Deephaven has some debugging pitfalls of its own, such as [lazy evaluation](./common-problems.md#lazy-evaluation-of-some-table-operations) and [ticking tables when your script starts the server](./common-problems.md#ticking-tables-when-your-script-starts-the-server). See [Common problems when debugging Deephaven](./common-problems.md).
 
-## Remote debugging with Deephaven IDE (Advanced)
+## Remote debugging with PyCharm Pro
 
-The Deephaven web IDE has no built-in debugger. However, you can use PyCharm Professional's remote debugging server to debug code executed in the Deephaven console. This approach is more complex than local debugging but useful when working primarily in the Deephaven web interface.
+The Deephaven web IDE has no built-in debugger. However, you can debug code that runs in the Deephaven console with the remote debug server in [PyCharm Pro](https://www.jetbrains.com/pycharm/). PyCharm Pro is the paid tier of PyCharm. Before version 2025.1, it was called PyCharm Professional. This approach is more complex than local debugging, but it's useful when you work mainly in the Deephaven web IDE.
 
-> [!NOTE]
-> PyCharm Professional is a paid product with remote debugging capabilities.
+> [!WARNING]
+> Use PyCharm 2024 or later. Debugging Deephaven with PyCharm 2023 has known problems.
 
 ### 1. Install `pydevd`
 
-First, install `pydevd` into the `dh-venv` virtual environment:
+First, install [`pydevd`](https://pypi.org/project/pydevd/) into the `dh-venv` virtual environment. `pydevd` is the Python debugger library that PyCharm's debugger is built on. The Deephaven server's Python process uses it to connect to PyCharm's debug server.
 
 ```bash
 pip install pydevd
 ```
 
-Verify that this package is installed and available by starting a Python console and importing the package:
+Verify that this package is installed and available by importing it:
 
-```python skip-test
-python3
->>> import pydevd
+```bash
+python3 -c "import pydevd"
 ```
 
-This will display some output like this:
+The import may print a warning like the following, which doesn't stop debugging:
 
 ```text
 0.00s - Debugger warning: It seems that frozen modules are being used, which may
@@ -203,66 +236,61 @@ This will display some output like this:
 0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
 ```
 
-### 2. Create and configure PyCharm project
+### 2. Create and configure a PyCharm project
 
-First, create a new PyCharm project from the directory containing the `dh-venv` virtual environment. The fresh PyCharm project looks like this:
+Create and configure a PyCharm project that uses the `dh-venv` interpreter, as described in [Create and configure a PyCharm project](#1-create-and-configure-a-pycharm-project). If you already did this, skip to step 3.
 
-![img](../../assets/how-to/debugging/dh-1.png)
+### 3. Create a debug server
 
-Next, click on **No interpreter** in the bottom-right-hand corner, click **Add New Interpreter** > **Add Local Interpreter**, select **Existing**, and navigate to the `python` executable in `dh-venv`:
+Next, create a remote debug server from PyCharm.
 
-![img](../../assets/how-to/debugging/dh-2.png)
-
-Click **OK**.
-
-Verify that the interpreter is configured correctly by opening the terminal and running `which deephaven`. It should return the path of the `deephaven` package inside of `dh-venv`:
-
-![img](../../assets/how-to/debugging/dh-3.png)
-
-### 3. Create debugging server
-
-Next, create a remote debugging server from PyCharm.
-
-Go to **Run > Edit Configurations**, which opens up the **Run/Debug Configurations** window. Click on **+** in the top left corner to add a new configuration. This will bring up a list of configuration types to select. Scroll down and select the **Python Debug Server** configuration option:
+Go to **Run** > **Edit Configurations**, which opens the **Run/Debug Configurations** window. Click on **+** in the top-left corner to add a new configuration. This brings up a list of configuration types to select. Scroll down and select the **Python Debug Server** configuration option:
 
 ![img](../../assets/how-to/debugging/dh-4.png)
 
-Give the configuration a reasonable, memorable name. The virtual environment is named `dh-venv`, so the configuration will be named `dh-venv-debugging-server`.
+Give the configuration a reasonable, memorable name. The virtual environment is named `dh-venv`, so this guide names the configuration `dh-venv-debugging-server`.
 
-Next, set the IDE host name. Since the pip-installed Deephaven server is going to be running locally, the hostname is `localhost`.
+Next, set the IDE host name. The [pip-installed Deephaven](../../getting-started/pip-install.md) server runs locally, so use one of these host names:
 
-Finally, choose a port for the debug server to run on. Note that this is _not the same_ as the port that the _Deephaven_ server runs on, which is port `10000` by default. Any unused port will work for this - we will use port `4444`.
+- **macOS and Linux**: `localhost`.
+- **Windows with WSL 2 [mirrored networking mode](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking)**: `localhost`.
+- **Windows without mirrored networking mode**: the Windows host's IP address. Use it here and in the `settrace` call in step 4.
+
+Finally, choose a port for the debug server to run on. Note that this is _not the same_ as the port that the _Deephaven_ server runs on, which is port `10000` by default. Any unused port works. This guide uses port `4444`.
 
 ![img](../../assets/how-to/debugging/dh-5.png)
 
-Click **Apply** and **Ok**, and the new debug server will be immediately available for use.
+The **Python Debug Server** configuration window also shows a `pydevd-pycharm` version that matches your PyCharm build. Note that version. If `settrace` fails to connect in step 4, install that package in place of `pydevd`, as described in [Version compatibility issues](#version-compatibility-issues).
 
-### 4. Attach debugger to Deephaven
+Click **Apply** and **OK**. The new debug server configuration is ready to use.
 
-> [!WARNING]
-> The Deephaven server must be run with anonymous authentication for this kind of debugging to work. Otherwise, the debugger will fail to connect with the server.
+### 4. Attach the debugger to Deephaven
 
-Start the debugger in PyCharm by clicking the small green bug icon in the window's top right corner. This will start the debugger and open a debugging console:
+Select the `dh-venv-debugging-server` configuration in the run configuration menu at the top right of the window, then click the small green bug icon next to it. This starts the debugger and opens a debug console:
 
 ![img](../../assets/how-to/debugging/dh-6.png)
 
 The output above states that the debugger is "waiting for process connection". This means that the debugger is not yet attached to the Deephaven process.
 
-Now, _from the same virtual environment that the PyCharm debugger is running in_, start the Deephaven server with anonymous authentication enabled. The easiest way to do this is to create a startup script or open up a new terminal in the current PyCharm project and run:
+Now, start the Deephaven server _from the `dh-venv` virtual environment where you installed `pydevd`_. The easiest way to do this is to open a new terminal in the current PyCharm project and run the following command:
 
 ```bash
-deephaven server --jvm-args "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler"
+deephaven server
 ```
 
 ![img](../../assets/how-to/debugging/dh-7.png)
 
-To attach the debugger, navigate to the Deephaven IDE and execute the following commands in the _console_:
+If you plan to set breakpoints in your own modules in step 5, run `PYTHONPATH=$PWD deephaven server` from your project directory instead. That lets the console import those modules.
+
+The command opens the Deephaven web IDE in your browser and prints its URL, which includes the [pre-shared key](../authentication/auth-psk.md) that logs you in. The debugger connection doesn't go through Deephaven's authentication, so you can keep the default [pre-shared key authentication](../authentication/auth-psk.md).
+
+To attach the debugger, navigate to the Deephaven web IDE and execute the following commands in the _console_. Use the same host name that you set in the debug server configuration in step 3: `localhost`, or the Windows host's IP address if you use WSL 2 without mirrored networking mode.
 
 ```python skip-test
 import pydevd
 
 pydevd.settrace(
-    "localhost",  # Host where PyCharm is running (local machine)
+    "localhost",  # IDE host name from step 3
     port=4444,  # Port matching your PyCharm debug config
     suspend=False,  # Don't pause execution immediately
 )
@@ -270,17 +298,17 @@ pydevd.settrace(
 
 ![img](../../assets/how-to/debugging/dh-8.png)
 
-This will produce some output, indicating that Deephaven is connected to the debugger:
+The Deephaven console may print the frozen-modules warning from step 1. That warning doesn't mean the connection failed:
 
 ![img](../../assets/how-to/debugging/dh-9.png)
 
-Navigate back to PyCharm and verify that Deephaven is connected by finding this new line of output in the debugging console:
+Navigate back to PyCharm and verify that Deephaven is connected. The debug console shows a new line like the following, with a build number that matches your PyCharm version:
 
 ```text
 Connected to pydev debugger (build 242.23726.102)
 ```
 
-The debugger is ready to be used!
+The debugger is ready to use!
 
 ![img](../../assets/how-to/debugging/dh-10.png)
 
@@ -288,17 +316,18 @@ The debugger is ready to be used!
 
 Once connected, you can use the PyCharm debugger in two ways:
 
-1. **Set breakpoints in PyCharm**: Click in the left margin of your code editor to set breakpoints on any line.
-2. **Use `pydevd.settrace()` in code**: Call this function to programmatically pause execution at that point.
+- **Set breakpoints in PyCharm**: Click in the left margin of a Python file that the server imports, such as a Deephaven module in `dh-venv`'s `site-packages` or a module in your project directory.
+- **Call `pydevd.settrace` in code**: Execution pauses on the line after the call. Use this for code you type into the Deephaven console, which has no file in PyCharm to put a breakpoint in.
 
-After the initial connection (step 4), you no longer need to pass parameters to `settrace`. Here's an example using it as a breakpoint:
+After the initial connection in step 4, you no longer need to pass arguments to `settrace`. Here's an example using it as a breakpoint:
 
 ```python skip-test
 from deephaven import empty_table
+import pydevd
 
 
 def udf(x) -> int:
-    # Acts like a breakpoint - execution will pause here
+    # Acts like a breakpoint: execution pauses on the next line
     pydevd.settrace()
     y = x + 1
     return y
@@ -309,60 +338,72 @@ t = empty_table(10).update("X = ii")
 t_new = t.update("Y = udf(X)")
 ```
 
-Navigating over to PyCharm, the debugger's full suite of capabilities is on offer. It can assist in stepping through Deephaven source code, setting breakpoints to halt execution, inspecting variables and intermediate values from deep within function calls, and much more. Many resources are available online for using PyCharm's debugger, and [this Jetbrains guide](https://www.jetbrains.com/help/pycharm/using-debug-console.html) is a good starting point.
+When the [`update`](../../reference/table-operations/select/update.md) call runs `udf`, execution pauses on the line after the `pydevd.settrace` call. PyCharm then shows the paused frame, with `x` available to inspect. [`update`](../../reference/table-operations/select/update.md) calls `udf` once for each of the 10 rows, so PyCharm pauses 10 times. The console command finishes after you resume the last pause.
 
-**There are some Deephaven-specific things to consider when debugging**. Check out [Common problems](./common-problems.md) for issues specific to debugging Deephaven's table operations and ticking tables.
+From there, the PyCharm debugger's full set of tools is available. You can step through Deephaven's Python source code, set breakpoints to halt execution, and inspect variables and intermediate values deep within function calls. Many resources about PyCharm's debugger are available online, and the [JetBrains guide to the PyCharm debug console](https://www.jetbrains.com/help/pycharm/using-debug-console.html) is a good starting point.
+
+Deephaven has some debugging pitfalls of its own, such as [lazy evaluation](./common-problems.md#lazy-evaluation-of-some-table-operations). See [Common problems when debugging Deephaven](./common-problems.md).
 
 ## Troubleshooting
 
 ### Virtual environment not activated
 
-**Problem**: Commands like `deephaven server` or imports fail with "command not found" or "module not found" errors.
+**Problem**: Commands like [`deephaven server`](../../getting-started/pip-install.md#from-the-command-line) or imports fail with "command not found" or "module not found" errors.
 
 **Solutions**:
 
 - Verify the virtual environment is activated: look for `(dh-venv)` in your terminal prompt.
-- Activate the environment: `source dh-venv/bin/activate` (on macOS/Linux) or `dh-venv\Scripts\activate` (on Windows).
+- Activate the environment: `source dh-venv/bin/activate`. On Windows, run this command in [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install), which [pip-installed Deephaven](../../getting-started/pip-install.md) requires.
 - Verify Deephaven is installed: `pip list | grep deephaven`.
 
 ### IDE not using correct interpreter
 
-**Problem**: Debugger fails to start or can't find Deephaven modules.
+**Problem**: The debugger fails to start or can't find Deephaven modules.
 
 **Solutions**:
 
 - Verify the IDE is configured to use the `dh-venv` Python interpreter.
-- In PyCharm: Check the interpreter selector in the bottom-right corner.
-- In VS Code: Check the interpreter selector in the bottom-left status bar.
+- In PyCharm, check the interpreter selector in the bottom-right corner.
+- In VS Code, check the Python interpreter shown in the status bar, or run **> Python: Select Interpreter** from the command palette.
 - Restart the IDE after changing the interpreter.
 
 ### Debugger won't connect (remote debugging)
 
-**Problem**: `pydevd.settrace()` fails with connection error when using Deephaven IDE approach.
+**Problem**: `pydevd.settrace` fails with a connection error when you use the remote debugging approach.
 
 **Solutions**:
 
-- Verify the PyCharm debug server is running (green bug icon should be active).
-- Check that port 4444 is not blocked by a firewall.
+- Verify that the PyCharm debug server is running. Its debug console shows "waiting for process connection".
+- Check that no firewall blocks the debug server port that you chose in [step 3 of remote debugging](#3-create-a-debug-server).
 - Ensure the port in `settrace` matches the PyCharm configuration.
-- Verify both the Deephaven server and PyCharm are using the same `dh-venv` environment.
+- Verify that the Deephaven server was started from the `dh-venv` environment where `pydevd` is installed.
+- If the debug server is running and the ports match, your `pydevd` version may not match your PyCharm build. Install the `pydevd-pycharm` version that PyCharm recommends, as described in [Version compatibility issues](#version-compatibility-issues).
 
 ### Version compatibility issues
 
-**Problem**: Debugger behaves unexpectedly, shows errors, or features don't work.
+**Problem**: The debugger behaves unexpectedly, shows errors, or some of its features don't work.
 
 **Solutions**:
 
-- Verify PyCharm version is 2024 or higher (earlier versions have known compatibility issues).
-- For VS Code, verify version 1.94 or higher.
-- Check that `pydevd` version is compatible with your IDE version.
-  - Run `pip show pydevd` to check installed version.
-  - PyCharm may suggest a specific version in the debug server configuration.
-- If versions mismatch, reinstall `pydevd` with the version your IDE recommends.
+- Use PyCharm 2024 or later. Debugging Deephaven with PyCharm 2023 has known problems.
+- Verify that your VS Code version is 1.94 or later.
+- For remote debugging, check that your `pydevd` version is compatible with your PyCharm build. Run `pip show pydevd` to check the installed version.
+- If the versions don't match, switch to the package that PyCharm recommends:
+  1. Copy the `pip install pydevd-pycharm~=<build>` command from the **Python Debug Server** configuration window, for example `pip install pydevd-pycharm~=242.23726.102`, and run it in place of `pip install pydevd` from [step 1](#1-install-pydevd).
+  2. In the code from [steps 4 and 5](#4-attach-the-debugger-to-deephaven), change `import pydevd` to `import pydevd_pycharm`, and `pydevd.settrace` to `pydevd_pycharm.settrace`.
 
 ## Related documentation
 
-- [Install Deephaven with pip](../../getting-started/pip-install.md)
-- [Common problems with debugging](./common-problems.md)
-- [Set up debugger for Docker-run Deephaven](./docker-setup.md)
-- [Set up debugger for built-from-source Deephaven](./source-setup.md)
+- [Deephaven's table types](../../conceptual/table-types.md)
+- [Install and run Deephaven with pip](../../getting-started/pip-install.md)
+- [Debug Python code in Deephaven](./debugging-landing.md)
+- [Common problems when debugging Deephaven](./common-problems.md)
+- [Debug Docker-run Deephaven with PyCharm](./docker-setup.md)
+- [Debug built-from-source Deephaven with PyCharm](./source-setup.md)
+- [Debug an embedded Deephaven server with PyCharm](./embedded-setup.md)
+- [Configure and use pre-shared key authentication](../authentication/auth-psk.md)
+- [Enable anonymous authentication](../authentication/auth-anon.md)
+- [`empty_table`](../../reference/table-operations/create/emptyTable.md)
+- [`update`](../../reference/table-operations/select/update.md)
+- [`empty_table` Pydoc](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.empty_table)
+- [`update` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update)

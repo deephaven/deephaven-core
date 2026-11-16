@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.LongUnaryOperator;
 
 /**
  * The JS API's {@link DictionaryWriterRegistry}. The JS API does not yet write dictionary-encoded columns, so this
@@ -45,5 +46,5 @@ public final class WebDictionaryWriterRegistryImpl implements DictionaryWriterRe
     public void resetDeltas() {}
 
     @Override
-    public void resetOverflowedEntries(final long liveRowCount) {}
+    public void maybeResetEntries(@NotNull final LongUnaryOperator maxSizeForDictId) {}
 }

@@ -29,11 +29,16 @@ public class CharChunkedSumOperator implements IterativeChunkedAggregationOperat
     private final boolean absolute;
     private final String name;
     private final LongArraySource resultColumn = new LongArraySource();
-    private final NonNullCounter nonNullCount = new NonNullCounter();
+    /**
+     * The number of non-null values in each destination, or null when the operator only receives additions; a null
+     * result then means that no non-null value has been added.
+     */
+    private final NonNullCounter nonNullCount;
 
-    CharChunkedSumOperator(boolean absolute, String name) {
+    CharChunkedSumOperator(boolean absolute, boolean addOnly, String name) {
         this.absolute = absolute;
         this.name = name;
+        nonNullCount = addOnly ? null : new NonNullCounter();
     }
 
     @Override
@@ -103,6 +108,7 @@ public class CharChunkedSumOperator implements IterativeChunkedAggregationOperat
 
     private boolean modifyChunk(CharChunk<? extends Values> oldValues, CharChunk<? extends Values> newValues,
             long destination, int chunkStart, int chunkSize) {
+        requireNonNullCount();
         final MutableInt oldNonNullCount = new MutableInt(0);
         final MutableInt newNonNullCount = new MutableInt(0);
         final long oldSum = doSum(chunkStart, chunkSize, oldNonNullCount, oldValues);
@@ -111,6 +117,7 @@ public class CharChunkedSumOperator implements IterativeChunkedAggregationOperat
     }
 
     private boolean removeChunk(CharChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
+        requireNonNullCount();
         final MutableInt nonNullCount = new MutableInt(0);
         final long sum = doSum(chunkStart, chunkSize, nonNullCount, values);
         return updateInternal(destination, -sum, -nonNullCount.get());
@@ -127,7 +134,9 @@ public class CharChunkedSumOperator implements IterativeChunkedAggregationOperat
 
     private boolean updateInternal(long destPos, long sum, int nonNullValues) {
         if (nonNullValues > 0) {
-            nonNullCount.addNonNullUnsafe(destPos, nonNullValues);
+            if (nonNullCount != null) {
+                nonNullCount.addNonNullUnsafe(destPos, nonNullValues);
+            }
             resultColumn.set(destPos, plusLong(resultColumn.getUnsafe(destPos), sum));
             return true;
         } else if (nonNullValues < 0) {
@@ -166,10 +175,18 @@ public class CharChunkedSumOperator implements IterativeChunkedAggregationOperat
         return true;
     }
 
+    private void requireNonNullCount() {
+        if (nonNullCount == null) {
+            throw new UnsupportedOperationException("Add-only sum operators do not support removals or modifications");
+        }
+    }
+
     @Override
     public void ensureCapacity(long tableSize) {
         resultColumn.ensureCapacity(tableSize);
-        nonNullCount.ensureCapacity(tableSize);
+        if (nonNullCount != null) {
+            nonNullCount.ensureCapacity(tableSize);
+        }
     }
 
     @Override

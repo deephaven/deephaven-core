@@ -1,0 +1,1 @@
+{"file":"how-to-guides/grouping-data.md","objects":{"t":{"type":"Table","data":{"columns":[{"name":"X","type":"int[]"}],"rows":[[{"value":""}]]}},"tUngrouped":{"type":"Table","data":{"columns":[{"name":"X","type":"int"}],"rows":[]}}}}

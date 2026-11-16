@@ -3,16 +3,25 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.TableAlreadyFailedException;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdateListener;
@@ -23,27 +32,38 @@ import io.deephaven.engine.table.impl.ForcedParallelWhere;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
+import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.sources.IntTestSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableArray;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -54,14 +74,19 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.booleanCol;
 import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.newTable;
+import static io.deephaven.engine.util.TableTools.stringCol;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -84,6 +109,12 @@ import static org.junit.Assert.fail;
 public class TestDynamicWhereFilter {
 
     private static final long TIMEOUT_SECONDS = 10;
+
+    /** A second key column, for a filter that an index on {@link #KEY} covers only in part. */
+    private static final String OTHER = "W";
+
+    /** The rows of {@link #indexedSource()}. */
+    private static final int INDEXED_SIZE = 40;
 
     /** The set key column on both the source and the set table. */
     private static final String KEY = "Z";
@@ -548,11 +579,22 @@ public class TestDynamicWhereFilter {
         @Override
         public @NotNull RowKeyLookup rowKeyLookup(final DataIndexOptions options) {
             requests.add(options);
-            return (final Object key, final boolean usePrev) -> {
-                gate.passThrough();
-                lookups.incrementAndGet();
-                final Long indexRowKey = indexRowKeyByKey.get(key);
-                return indexRowKey == null ? RowSequence.NULL_ROW_KEY : indexRowKey;
+            return new RowKeyLookup() {
+                @Override
+                public long apply(@Nullable final Object key, final boolean usePrev) {
+                    gate.passThrough();
+                    lookups.incrementAndGet();
+                    final Long indexRowKey = indexRowKeyByKey.get(key);
+                    return indexRowKey == null ? RowSequence.NULL_ROW_KEY : indexRowKey;
+                }
+
+                @Override
+                public void apply(
+                        @NotNull final Chunk<? extends Values>[] keyChunks,
+                        @NotNull final WritableLongChunk<RowKeys> rowKeys,
+                        final boolean usePrev) {
+                    DataIndexUtils.lookupRowKeysBoxed(this, keyChunks, rowKeys, usePrev);
+                }
             };
         }
 
@@ -563,21 +605,24 @@ public class TestDynamicWhereFilter {
     }
 
     /**
-     * A source table of {@code 5} rows for each of the keys {@code 1} and {@code 2}, with a {@link GatedSourceIndex}
-     * over its key column. The row count is deliberately more than
-     * {@value io.deephaven.engine.table.impl.QueryTable#DATA_INDEX_FOR_WHERE_THRESHOLD} times the index table's size,
-     * so that {@link DynamicWhereFilter} filters through the index rather than linearly.
+     * A source table with the same number of rows for each of the keys {@code 1} and {@code 2}, with a
+     * {@link GatedSourceIndex} over its key column. The rows per key are deliberately more than
+     * {@code 1 / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD}, so that {@link DynamicWhereFilter} filters through the
+     * index rather than linearly.
      */
     private static QueryTable indexedSourceTable(final GatedSourceIndex[] indexOut, final Gate lookupGate) {
-        final int[] values = new int[10];
+        final int rowsPerKey = (int) Math.ceil(1 / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD) + 1;
+        final int[] values = new int[2 * rowsPerKey];
         for (int ii = 0; ii < values.length; ++ii) {
-            values[ii] = ii < 5 ? 1 : 2;
+            values[ii] = ii < rowsPerKey ? 1 : 2;
         }
         final QueryTable source = sourceTable(new GatedIntegerArraySource(new Gate()), true, values);
         final QueryTable indexTable = TstUtils.testTable(i(0, 1).toTracking(), intCol(KEY, 1, 2),
                 col(ROW_SET_COLUMN,
-                        (RowSet) RowSetFactory.fromRange(0, 4),
-                        (RowSet) RowSetFactory.fromRange(5, 9)));
+                        (RowSet) RowSetFactory.fromRange(0, rowsPerKey - 1),
+                        (RowSet) RowSetFactory.fromRange(rowsPerKey, 2L * rowsPerKey - 1)));
+        assertTrue("the source must be large enough relative to its index for the index path to be taken",
+                source.size() > indexTable.size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
         final GatedSourceIndex index =
                 new GatedSourceIndex(source, indexTable, Map.of(1, 0L, 2, 1L), lookupGate);
         assertEquals(ROW_SET_COLUMN, index.rowSetColumnName());
@@ -1003,6 +1048,423 @@ public class TestDynamicWhereFilter {
     }
 
     /**
+     * A filter that looks up its source's data index reports the step on which the index began changing, which a
+     * snapshot control that read previous values compares to its own step.
+     */
+    @Test
+    public void testFilterReportsItsIndexChange() {
+        final QueryTable source = indexedSource();
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(source, KEY);
+        final DynamicWhereFilter filter = new DynamicWhereFilter(newTable(intCol(KEY, 3)), true, pairs());
+        filter.beginOperation(source).close();
+
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            addIndexedRow(source, 3);
+            final long step = updateGraph.clock().currentStep();
+            assertTrue(filter.lastStateChangeStep() < step);
+            flushIndexUpdate(index);
+            assertEquals(step, filter.lastStateChangeStep());
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A filter of previous values looks up the index's rows until the index's update begins, and then abandons the
+     * snapshot attempt rather than use lookups that no longer answer for previous values. Current values, once the
+     * index is satisfied, are looked up again. A filter on more columns than the index covers looks up the index's rows
+     * before filtering them, and abandons its attempt the same way.
+     */
+    @Test
+    public void testPreviousValuesIndexLookupsAreAbandonedOnceTheIndexChanges() {
+        checkPreviousValuesIndexLookupsAbandoned(false);
+        checkPreviousValuesIndexLookupsAbandoned(true);
+    }
+
+    /**
+     * @param partial whether the filter also matches {@link #OTHER}, which the index on {@link #KEY} does not cover
+     */
+    private void checkPreviousValuesIndexLookupsAbandoned(final boolean partial) {
+        final int[] keys = new int[INDEXED_SIZE];
+        for (int ii = 0; ii < INDEXED_SIZE; ++ii) {
+            keys[ii] = ii % 2 == 0 ? 3 : 5;
+        }
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(INDEXED_SIZE).toTracking(),
+                keyColumns(intCol(KEY, keys), partial));
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(source, KEY);
+        final DynamicWhereFilter filter =
+                new DynamicWhereFilter(newTable(keyColumns(intCol(KEY, 3), partial)), true, keyPairs(partial));
+        filter.beginOperation(source).close();
+
+        updateGraph.startCycleForUnitTests(false);
+        try (final RowSet prevRows = source.getRowSet().copyPrev()) {
+            TstUtils.addToTable(source, i(INDEXED_SIZE), keyColumns(intCol(KEY, 3), partial));
+            source.notifyListeners(i(INDEXED_SIZE), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+            try (final RowSet matched = filter.filter(prevRows, prevRows, source, true);
+                    final RowSet expected = evenRows(INDEXED_SIZE)) {
+                assertEquals(expected, matched);
+            }
+
+            flushIndexUpdate(index);
+            assertThrows(ConstructSnapshot.SnapshotInconsistentException.class,
+                    () -> filter.filter(prevRows, prevRows, source, true));
+            try (final RowSet currentRows = source.getRowSet().copy();
+                    final RowSet matched = filter.filter(currentRows, currentRows, source, false);
+                    final RowSet evens = evenRows(INDEXED_SIZE);
+                    final RowSet expected = evens.union(i(INDEXED_SIZE))) {
+                assertEquals(expected, matched);
+            }
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A lookup that throws is reported as the failure it is while the index is unchanged, and abandons the snapshot
+     * attempt once the index's update has begun, when the throw may come from a read the update tore; with a full index
+     * and with a partial one.
+     */
+    @Test
+    public void testIndexLookupThatThrowsIsAbandonedOnlyOnceTheIndexChanges() {
+        checkThrowingIndexLookupAbandoned(false);
+        checkThrowingIndexLookupAbandoned(true);
+    }
+
+    /**
+     * @param partial whether the filter also matches {@link #OTHER}, which the index on {@link #KEY} does not cover
+     */
+    private void checkThrowingIndexLookupAbandoned(final boolean partial) {
+        final ThrowingKey[] sourceKeys = new ThrowingKey[INDEXED_SIZE];
+        for (int ii = 0; ii < INDEXED_SIZE; ++ii) {
+            sourceKeys[ii] = new ThrowingKey(ii % 2 == 0 ? 3 : 5);
+        }
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(INDEXED_SIZE).toTracking(),
+                keyColumns(col(KEY, sourceKeys), partial));
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(source, KEY);
+        final ThrowingKey setKey = new ThrowingKey(3);
+        final DynamicWhereFilter filter =
+                new DynamicWhereFilter(newTable(keyColumns(col(KEY, setKey), partial)), true, keyPairs(partial));
+        filter.beginOperation(source).close();
+
+        updateGraph.startCycleForUnitTests(false);
+        try (final RowSet prevRows = source.getRowSet().copyPrev()) {
+            TstUtils.addToTable(source, i(INDEXED_SIZE), keyColumns(col(KEY, new ThrowingKey(3)), partial));
+            source.notifyListeners(i(INDEXED_SIZE), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+
+            setKey.throwOnHash = true;
+            assertThrows(IllegalStateException.class, () -> filter.filter(prevRows, prevRows, source, true));
+
+            setKey.throwOnHash = false;
+            flushIndexUpdate(index);
+            setKey.throwOnHash = true;
+            assertThrows(ConstructSnapshot.SnapshotInconsistentException.class,
+                    () -> filter.filter(prevRows, prevRows, source, true));
+        } finally {
+            setKey.throwOnHash = false;
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A filter of current values whose index lookups a later cycle's update of the index overlaps abandons the snapshot
+     * attempt, since the lookups may have read the later cycle's changes.
+     */
+    @Test
+    public void testCurrentValuesIndexLookupsOverlappedByALaterCycleAreAbandoned() throws Exception {
+        final BlockingKey[] sourceKeys = new BlockingKey[INDEXED_SIZE];
+        for (int ii = 0; ii < INDEXED_SIZE; ++ii) {
+            sourceKeys[ii] = new BlockingKey(ii % 2 == 0 ? 3 : 5);
+        }
+        final QueryTable source =
+                TstUtils.testRefreshingTable(RowSetFactory.flat(INDEXED_SIZE).toTracking(), col(KEY, sourceKeys));
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(source, KEY);
+        index.table();
+        final BlockingKey setKey = new BlockingKey(3);
+        final DynamicWhereFilter filter = new DynamicWhereFilter(newTable(col(KEY, setKey)), true, pairs());
+        filter.beginOperation(source).close();
+
+        try (final RowSet rows = source.getRowSet().copy()) {
+            setKey.arm();
+            final Future<WritableRowSet> filtered = pool.submit(() -> filter.filter(rows, rows, source, false));
+            assertTrue(setKey.entered.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            try {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(source, i(INDEXED_SIZE), col(KEY, new BlockingKey(11)));
+                    source.notifyListeners(i(INDEXED_SIZE), i(), i());
+                });
+            } finally {
+                setKey.release.countDown();
+            }
+            final ExecutionException failure =
+                    assertThrows(ExecutionException.class, () -> filtered.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            assertTrue(failure.getCause() instanceof ConstructSnapshot.SnapshotInconsistentException);
+        }
+    }
+
+    /**
+     * A where on an indexed source with a refreshing set commits once the index has changed on a later step than the
+     * set ever has, since the filter's change step is then the index's, and follows the set's changes after.
+     */
+    @Test
+    public void testWhereInRefreshingSetAfterTheIndexChanges() throws Exception {
+        final QueryTable source = indexedSource();
+        // built now, so that its aggregation follows the source's next cycle
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(source, KEY);
+        index.table();
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 3));
+        updateGraph.runWithinUnitTestCycle(() -> addIndexedRow(source, 3));
+        assertEquals(updateGraph.clock().currentStep(), index.rowKeyLookup().lastStateChangeStep());
+
+        final Table result = pool.submit(() -> source.whereIn(setTable, KEY)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        try (final RowSet evens = evenRows(INDEXED_SIZE);
+                final RowSet expected = evens.union(i(INDEXED_SIZE))) {
+            assertEquals(expected, result.getRowSet());
+        }
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(setTable, i(1), intCol(KEY, 5));
+            setTable.notifyListeners(i(1), i(), i());
+        });
+        assertEquals(source.getRowSet(), result.getRowSet());
+    }
+
+    /**
+     * {@code keys}, and when {@code partial}, a column of {@link #OTHER} that is 7 in every row, for a filter on
+     * {@link #KEY} and {@link #OTHER} that an index on {@link #KEY} covers only in part.
+     */
+    private static ColumnHolder<?>[] keyColumns(final ColumnHolder<?> keys, final boolean partial) {
+        if (!partial) {
+            return new ColumnHolder<?>[] {keys};
+        }
+        final int[] others = new int[keys.size()];
+        Arrays.fill(others, 7);
+        return new ColumnHolder<?>[] {keys, intCol(OTHER, others)};
+    }
+
+    private static MatchPair[] keyPairs(final boolean partial) {
+        return partial ? MatchPairFactory.getExpressions(KEY, OTHER) : pairs();
+    }
+
+    /**
+     * A table that shares its source's rows and key column shares its index too. Once the index's aggregation begins
+     * its update, and before the index table is satisfied, a where on that table would filter previous values, which
+     * the index's lookup no longer answers for. Its concurrent attempts are abandoned and retried, and it then waits
+     * for the update graph lock, filtering the cycle's current values once the cycle completes.
+     */
+    @Test
+    public void testWhereInOnSharedIndexDuringIndexUpdate() throws Exception {
+        final QueryTable source = indexedSource();
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(source, KEY);
+        // like a view, but notified only when the test opens its gate, so that it is not satisfied in between
+        final AtomicBoolean gateOpen = new AtomicBoolean();
+        final QueryTable shared = source.withAdditionalColumns(Map.of());
+        shared.addParentReference(source);
+        shared.addParentReference(new NotificationQueue.Dependency() {
+            @Override
+            public boolean satisfied(final long step) {
+                return gateOpen.get();
+            }
+
+            @Override
+            public UpdateGraph getUpdateGraph() {
+                return source.getUpdateGraph();
+            }
+
+            @Override
+            public LogOutput append(final LogOutput logOutput) {
+                return logOutput.append("gate");
+            }
+        });
+        assertNotNull(DataIndexer.getDataIndex(shared, KEY));
+        // built now, so that its aggregation follows the source's next cycle
+        index.table();
+        final Table set = newTable(intCol(KEY, 3, 11));
+
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            addIndexedRow(source, 11);
+            final long step = updateGraph.clock().currentStep();
+            // run the index's aggregation, which notifies the index table's own listener but leaves it unsatisfied, so
+            // that nothing the where depends on is satisfied and it reads previous values
+            final DataIndex.RowKeyLookup lookup = index.rowKeyLookup();
+            while (lookup.lastStateChangeStep() < step) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+            assertFalse(index.table().satisfied(step));
+            assertFalse(shared.satisfied(step));
+
+            final MutableObject<Thread> whereThread = new MutableObject<>();
+            final CountDownLatch whereStarted = new CountDownLatch(1);
+            final Future<Table> filtered = pool.submit(() -> {
+                whereThread.setValue(Thread.currentThread());
+                whereStarted.countDown();
+                return shared.whereIn(set, KEY);
+            });
+            assertTrue(whereStarted.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            // the cycle holds the update graph lock, which the where waits for once its concurrent attempts fail
+            final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
+            while (!waitingForReadWriteLock(whereThread.getValue())) {
+                assertFalse("the where completed during the index's update", filtered.isDone());
+                assertTrue("the where never waited for the update graph lock", System.nanoTime() < deadline);
+                Thread.sleep(1);
+            }
+
+            gateOpen.set(true);
+            shared.notifyListeners(i(INDEXED_SIZE), i(), i());
+            updateGraph.completeCycleForUnitTests();
+            final Table result = filtered.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            try (final RowSet evens = evenRows(INDEXED_SIZE);
+                    final RowSet expected = evens.union(i(INDEXED_SIZE))) {
+                assertEquals(expected, result.getRowSet());
+            }
+
+            // the result follows the next cycle
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addIndexedRow(source, 3);
+                shared.notifyListeners(i(INDEXED_SIZE + 1), i(), i());
+            });
+            try (final RowSet evens = evenRows(INDEXED_SIZE);
+                    final RowSet expected = evens.union(i(INDEXED_SIZE, INDEXED_SIZE + 1))) {
+                assertEquals(expected, result.getRowSet());
+            }
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * Whether {@code thread} is parked on a {@link ReentrantReadWriteLock}, which is how a snapshot waits for the
+     * update graph's lock.
+     */
+    private static boolean waitingForReadWriteLock(final Thread thread) {
+        final Object blocker = LockSupport.getBlocker(thread);
+        return thread.getState() == Thread.State.WAITING && blocker != null
+                && blocker.getClass().getEnclosingClass() == ReentrantReadWriteLock.class;
+    }
+
+    /**
+     * A refreshing source of {@link #INDEXED_SIZE} rows whose keys alternate between 3 and 5, enough rows per key that
+     * a where uses its index.
+     */
+    private static QueryTable indexedSource() {
+        final int[] keys = new int[INDEXED_SIZE];
+        for (int ii = 0; ii < INDEXED_SIZE; ++ii) {
+            keys[ii] = ii % 2 == 0 ? 3 : 5;
+        }
+        return TstUtils.testRefreshingTable(RowSetFactory.flat(INDEXED_SIZE).toTracking(), intCol(KEY, keys));
+    }
+
+    /**
+     * Add a row with {@code key} after the last row of {@code source}, within the open cycle, and mark the sources
+     * refreshed.
+     */
+    private void addIndexedRow(final QueryTable source, final int key) {
+        final long rowKey = source.getRowSet().lastRowKey() + 1;
+        TstUtils.addToTable(source, i(rowKey), intCol(KEY, key));
+        source.notifyListeners(i(rowKey), i(), i());
+        if (updateGraph.clock().currentState() == LogicalClock.State.Updating
+                && !updateGraph.satisfied(updateGraph.clock().currentStep())) {
+            updateGraph.markSourcesRefreshedForUnitTests();
+        }
+    }
+
+    private static RowSet evenRows(final int size) {
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        for (int ii = 0; ii < size; ii += 2) {
+            builder.appendKey(ii);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Run notifications until {@code index} has processed this cycle's update.
+     */
+    private void flushIndexUpdate(final DataIndex index) {
+        final long step = updateGraph.clock().currentStep();
+        while (!index.table().satisfied(step)) {
+            assertTrue(updateGraph.flushOneNotificationForUnitTests());
+        }
+    }
+
+    /**
+     * A key whose hash, the first time it is computed after {@link #arm()}, signals {@link #entered} and waits for
+     * {@link #release}.
+     */
+    private static final class BlockingKey {
+        private final int value;
+        private final CountDownLatch entered = new CountDownLatch(1);
+        private final CountDownLatch release = new CountDownLatch(1);
+        private final AtomicBoolean armed = new AtomicBoolean();
+
+        private BlockingKey(final int value) {
+            this.value = value;
+        }
+
+        private void arm() {
+            armed.set(true);
+        }
+
+        @Override
+        public int hashCode() {
+            if (armed.compareAndSet(true, false)) {
+                entered.countDown();
+                try {
+                    if (!release.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                        throw new AssertionError("the test never released the lookup");
+                    }
+                } catch (final InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError(interrupted);
+                }
+            }
+            return Integer.hashCode(value);
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            return other instanceof BlockingKey && ((BlockingKey) other).value == value;
+        }
+
+        @Override
+        public String toString() {
+            return "BlockingKey(" + value + ")";
+        }
+    }
+
+    /**
+     * A key whose hash throws while {@link #throwOnHash} is set.
+     */
+    private static final class ThrowingKey {
+        private final int value;
+        private volatile boolean throwOnHash;
+
+        private ThrowingKey(final int value) {
+            this.value = value;
+        }
+
+        @Override
+        public int hashCode() {
+            if (throwOnHash) {
+                throw new IllegalStateException("lookup failed");
+            }
+            return Integer.hashCode(value);
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            return other instanceof ThrowingKey && ((ThrowingKey) other).value == value;
+        }
+
+        @Override
+        public String toString() {
+            return "ThrowingKey(" + value + ")";
+        }
+    }
+
+    /**
      * A reader that arrives while the set listener is midway through mutating the kernel abandons its attempt at once,
      * rather than reading a half-rewritten set. This is the window that the kernel's odd generation marks, and the only
      * one that {@link SharedSetKernel#beginRead()} can detect by itself.
@@ -1122,7 +1584,7 @@ public class TestDynamicWhereFilter {
                 () -> source.where(new DynamicWhereFilter(setTable, true, pairs())));
 
         assertTrue("where filtered through the index", index.lookups.get() > 0);
-        assertEquals(5, result.size());
+        assertEquals("the rows of key 1, half of the source", source.size() / 2, result.size());
         assertFalse(index.requests.isEmpty());
         for (final DataIndexOptions options : index.requests) {
             assertTrue("requested the fully merged index table", options.operationUsesPartialTable());
@@ -1918,4 +2380,178 @@ public class TestDynamicWhereFilter {
     }
 
     // endregion Attempts that cannot commit over the set they read (DH-23666)
+
+    /**
+     * A key of four columns makes {@code ArrayTuple}s of boxed values, unboxed to be matched and exported: a null
+     * element must match the type's null value, and doubles must match as they do for {@code ==}, so the set holds -0.0
+     * where the source holds 0.0. The four values identify each id, so matching keys selects the ids in the set's
+     * window, and exporting them yields each of the window's keys once, in any projection of the columns.
+     */
+    @Test
+    public void testFourColumnKeysMatchArrayTuples() {
+        final int sourceIds = 6_000;
+        final int windowSize = 1_500;
+        final int slide = 400;
+        final int[] ids = new int[sourceIds];
+        final long[] key1 = new long[sourceIds];
+        final int[] key2 = new int[sourceIds];
+        final String[] key3 = new String[sourceIds];
+        final double[] key4 = new double[sourceIds];
+        for (int id = 0; id < sourceIds; ++id) {
+            ids[id] = id;
+            key1[id] = fourColumnKey1(id);
+            key2[id] = fourColumnKey2(id);
+            key3[id] = fourColumnKey3(id);
+            key4[id] = fourColumnKey4(id, false);
+        }
+        final Table source = newTable(intCol("Id", ids), longCol("K1", key1), intCol("K2", key2),
+                stringCol("K3", key3), doubleCol("K4", key4));
+
+        // Set row key r holds id r, so the window [first, first + windowSize) is also its row set.
+        final QueryTable setTable = TstUtils.testRefreshingTable(RowSetFactory.empty().toTracking(),
+                intCol("Id"), longCol("K1"), intCol("K2"), stringCol("K3"), doubleCol("K4"));
+        addFourColumnIds(setTable, 0, windowSize);
+
+        final MatchPair[] keyPairs = MatchPairFactory.getExpressions("K1", "K2", "K3", "K4");
+        final DynamicWhereFilter inFilter = new DynamicWhereFilter(setTable, true, keyPairs);
+        final Table in = source.where(inFilter);
+        final Table notIn = source.where(new DynamicWhereFilter(setTable, false, keyPairs));
+        checkFourColumnExport(inFilter.sharedSet().kernel(), 0, windowSize);
+
+        for (int cycle = 0; cycle <= 20; ++cycle) {
+            final long first = (long) cycle * slide;
+            if (cycle > 0) {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    final RowSet removed = RowSetFactory.fromRange(first - slide, first - 1);
+                    final RowSet added = RowSetFactory.fromRange(first - slide + windowSize, first + windowSize - 1);
+                    TstUtils.removeRows(setTable, removed);
+                    addFourColumnIds(setTable, first - slide + windowSize, slide);
+                    setTable.notifyListeners(added, removed, i());
+                });
+            }
+            final String inWindow = "Id >= " + first + " && Id < " + (first + windowSize);
+            assertTableEquals(source.where(inWindow), in);
+            checkFourColumnExport(inFilter.sharedSet().kernel(), first, windowSize);
+            assertTableEquals(source.where("!(" + inWindow + ")"), notIn);
+        }
+    }
+
+    /**
+     * Export {@code kernel}'s keys, all four columns in order and then {@code K4} and {@code K2} alone, and check that
+     * each export yields one key per id in {@code [first, first + count)}.
+     */
+    private static void checkFourColumnExport(final SetKernel kernel, final long first, final int count) {
+        final int[] allColumns = {0, 1, 2, 3};
+        final int[] projected = {3, 1};
+        final ChunkType[] allTypes = {ChunkType.Long, ChunkType.Int, ChunkType.Object, ChunkType.Double};
+        final Set<Long> exportedIds = new HashSet<>();
+        final WritableChunk<Values>[] keyChunks = makeChunks(allTypes, 100);
+        try (final SetKernel.ExportContext context = kernel.makeExportContext(allColumns);
+                final SafeCloseableArray<WritableChunk<Values>> ignored = new SafeCloseableArray<>(keyChunks)) {
+            while (kernel.exportKeys(context, keyChunks)) {
+                for (int ii = 0; ii < keyChunks[0].size(); ++ii) {
+                    final long key1 = keyChunks[0].asLongChunk().get(ii);
+                    final int key2 = keyChunks[1].asIntChunk().get(ii);
+                    final String key3 = (String) keyChunks[2].asObjectChunk().get(ii);
+                    final double key4 = keyChunks[3].asDoubleChunk().get(ii);
+                    final long id = fourColumnId(key1, key2, key3, key4);
+                    assertTrue("exported " + id + " twice", exportedIds.add(id));
+                }
+            }
+        }
+        assertEquals(count, exportedIds.size());
+        for (long id = first; id < first + count; ++id) {
+            assertTrue("missing " + id, exportedIds.contains(id));
+        }
+
+        final Map<Integer, Integer> projectedKey2s = new HashMap<>();
+        int projectedCount = 0;
+        final WritableChunk<Values>[] projectedChunks =
+                makeChunks(new ChunkType[] {ChunkType.Double, ChunkType.Int}, 64);
+        try (final SetKernel.ExportContext context = kernel.makeExportContext(projected);
+                final SafeCloseableArray<WritableChunk<Values>> ignored =
+                        new SafeCloseableArray<>(projectedChunks)) {
+            while (kernel.exportKeys(context, projectedChunks)) {
+                projectedCount += projectedChunks[0].size();
+                for (int ii = 0; ii < projectedChunks[1].size(); ++ii) {
+                    projectedKey2s.merge(projectedChunks[1].asIntChunk().get(ii), 1, Integer::sum);
+                }
+            }
+        }
+        // A projection exports one entry per set key, so each id's K2 appears as often as ids share it.
+        assertEquals(count, projectedCount);
+        final Map<Integer, Integer> expectedKey2s = new HashMap<>();
+        for (long id = first; id < first + count; ++id) {
+            expectedKey2s.merge(fourColumnKey2(Math.toIntExact(id)), 1, Integer::sum);
+        }
+        assertEquals(expectedKey2s, projectedKey2s);
+    }
+
+    private static WritableChunk<Values>[] makeChunks(final ChunkType[] types, final int capacity) {
+        // noinspection unchecked
+        final WritableChunk<Values>[] chunks = new WritableChunk[types.length];
+        for (int ii = 0; ii < types.length; ++ii) {
+            chunks[ii] = types[ii].makeWritableChunk(capacity);
+        }
+        return chunks;
+    }
+
+    /**
+     * @return The id whose four column key this is, from the columns that identify it
+     */
+    private static long fourColumnId(final long key1, final int key2, final String key3, final double key4) {
+        if (key1 != QueryConstants.NULL_LONG) {
+            return key1 * 7 + key2;
+        }
+        // K1 is null only for ids divisible by 11, whose K3 is never null; K3 holds id / 5, and K2 holds id % 7.
+        final long block = Long.parseLong(key3.substring(1)) * 5;
+        for (long id = block; id < block + 5; ++id) {
+            if (id % 11 == 0 && id % 7 == key2) {
+                return id;
+            }
+        }
+        throw new AssertionError("No id for " + key2 + ", " + key3 + ", " + key4);
+    }
+
+    private static long fourColumnKey1(final int id) {
+        return id % 11 == 0 ? QueryConstants.NULL_LONG : id / 7;
+    }
+
+    private static int fourColumnKey2(final int id) {
+        return id % 7;
+    }
+
+    private static String fourColumnKey3(final int id) {
+        // Never null where K1 is, so that K3 and K4 identify the ids K1 and K2 cannot.
+        return id % 13 == 0 && id % 11 != 0 ? null : "S" + id / 5;
+    }
+
+    private static double fourColumnKey4(final int id, final boolean negativeZero) {
+        if (id % 17 == 0) {
+            return Double.NaN;
+        }
+        if (id % 19 == 0) {
+            return QueryConstants.NULL_DOUBLE;
+        }
+        final int remainder = id % 5;
+        return remainder == 0 && negativeZero ? -0.0 : remainder * 0.5;
+    }
+
+    private static void addFourColumnIds(final QueryTable setTable, final long firstId, final int count) {
+        final int[] ids = new int[count];
+        final long[] key1 = new long[count];
+        final int[] key2 = new int[count];
+        final String[] key3 = new String[count];
+        final double[] key4 = new double[count];
+        for (int ii = 0; ii < count; ++ii) {
+            final int id = Math.toIntExact(firstId + ii);
+            ids[ii] = id;
+            key1[ii] = fourColumnKey1(id);
+            key2[ii] = fourColumnKey2(id);
+            key3[ii] = fourColumnKey3(id);
+            key4[ii] = fourColumnKey4(id, true);
+        }
+        TstUtils.addToTable(setTable, RowSetFactory.fromRange(firstId, firstId + count - 1), intCol("Id", ids),
+                longCol("K1", key1), intCol("K2", key2), stringCol("K3", key3), doubleCol("K4", key4));
+    }
 }
