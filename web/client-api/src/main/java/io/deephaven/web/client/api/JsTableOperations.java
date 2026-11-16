@@ -198,7 +198,7 @@ public interface JsTableOperations extends ServerObject {
                                     .setTicket(typedTicket().getTicket())
                                     .build())
                             .setResultId(ticket)
-                            .setNumRows(size.asInt())));
+                            .setNumRows(size.toLong())));
         } catch (RuntimeException e) {
             return rejected(e);
         }
@@ -221,7 +221,7 @@ public interface JsTableOperations extends ServerObject {
                                     .setTicket(typedTicket().getTicket())
                                     .build())
                             .setResultId(ticket)
-                            .setNumRows(size.asInt())));
+                            .setNumRows(size.toLong())));
         } catch (RuntimeException e) {
             return rejected(e);
         }
@@ -484,8 +484,8 @@ public interface JsTableOperations extends ServerObject {
                     .setSourceId(TableReference.newBuilder()
                             .setTicket(typedTicket().getTicket())
                             .build())
-                    .setFirstPositionInclusive(firstPositionInclusive.getLongValue())
-                    .setLastPositionExclusive(lastPositionExclusive.getLongValue())
+                    .setFirstPositionInclusive(firstPositionInclusive.toLong())
+                    .setLastPositionExclusive(lastPositionExclusive.toLong())
                     .build()));
         } catch (RuntimeException e) {
             return rejected(e);

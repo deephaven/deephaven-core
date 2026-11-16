@@ -747,10 +747,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             try {
                 checkOpen();
                 // Field reads only, so an object literal works as well as an instance
-                TableData.RowPositionUnion startingRow = options.startingRow;
-                long start = startingRow.isLongWrapper() ? startingRow.asLongWrapper().getWrapped()
-                        : (long) Js.asDouble(startingRow);
-                return JsTable.seekRow(connection, typedTicket().getTicket(), start, options.column,
+                return JsTable.seekRow(connection, typedTicket().getTicket(), options.startingRow.toLong(),
+                        options.column,
                         options.valueType, options.seekValue, options.insensitive, options.contains,
                         options.isBackwards);
             } catch (RuntimeException e) {

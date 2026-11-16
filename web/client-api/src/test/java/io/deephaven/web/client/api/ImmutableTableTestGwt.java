@@ -1734,6 +1734,39 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testRowPositionsBeyondInt() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_074);
+                    return session.getTable("source", null).asPromise();
+                })
+                .then(table -> {
+                    // 2^31 and beyond is a valid count or position on a large table; this 5-row table keeps all rows
+                    TableData.RowPositionUnion big = Js.uncheckedCast(3_000_000_000.0);
+                    return expectSize("head(3e9)", table.operations().head(big), 5)
+                            .then(ignore -> expectSize("tail(3e9)", table.operations().tail(big), 5))
+                            .then(ignore -> expectSize("slice(0, 3e9)",
+                                    table.operations().slice(Js.uncheckedCast(0.0), big), 5))
+                            // A fractional count is truncated, as a cast to long does
+                            .then(ignore -> expectSize("head(2.7)",
+                                    table.operations().head(Js.uncheckedCast(2.7)), 2))
+                            .then(ignore -> {
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /** Resolves {@code pending}, checks its size, and closes it; a rejection fails naming {@code what}. */
+    private static Promise<Object> expectSize(String what, JsPendingTable<JsResolvedTable> pending, double size) {
+        return pending.resolve().then(table -> {
+            assertEquals(what, size, table.getSize(), 0);
+            table.close();
+            return Promise.resolve((Object) null);
+        }, err -> Promise.reject(what + " rejected: " + err));
+    }
+
     public void testResolveAllGivesTablesInOrder() {
         connect(tables)
                 .then(session -> {

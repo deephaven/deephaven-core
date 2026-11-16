@@ -33,21 +33,11 @@ public interface TableData {
     int NO_ROW_FORMAT_COLUMN = -1;
 
     /**
-     * TS type union to allow either "int" or "LongWrapper" to be passed as an argument for various methods.
+     * TS type union to allow either a number or a LongWrapper to be passed as an argument for various methods.
      */
     @TsUnion
     @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
     interface RowPositionUnion {
-        @JsOverlay
-        default boolean isLongWrapper() {
-            return this instanceof LongWrapper;
-        }
-
-        @JsOverlay
-        default boolean isInt() {
-            return (Object) this instanceof Double;
-        }
-
         @JsOverlay
         @TsUnionMember
         default LongWrapper asLongWrapper() {
@@ -56,16 +46,19 @@ public interface TableData {
 
         @JsOverlay
         @TsUnionMember
-        default int asInt() {
-            return Js.asInt(this);
+        default double asDouble() {
+            return Js.asDouble(this);
         }
 
+        /**
+         * The value as a long, for a count or position that may be 2^31 or more. A number is truncated toward zero.
+         */
         @JsOverlay
-        default long getLongValue() {
-            if (isInt()) {
-                return asInt();
+        default long toLong() {
+            if ((Object) this instanceof LongWrapper) {
+                return asLongWrapper().getWrapped();
             }
-            return asLongWrapper().getWrapped();
+            return (long) asDouble();
         }
     }
 
@@ -83,10 +76,7 @@ public interface TableData {
      */
     @JsMethod
     default Row get(RowPositionUnion index) {
-        if (index.isLongWrapper()) {
-            return get((index.asLongWrapper()).getWrapped());
-        }
-        return get(Js.coerceToInt(index));
+        return get(index.toLong());
     }
 
     @JsIgnore
@@ -105,10 +95,7 @@ public interface TableData {
     // TODO (deephaven-core#5927) Consider a get/fillChunk API as an efficient alternative
     @JsMethod
     default Any getData(RowPositionUnion index, Column column) {
-        if (index.isLongWrapper()) {
-            return getData(index.asLongWrapper().getWrapped(), column);
-        }
-        return getData(index.asInt(), column);
+        return getData(index.toLong(), column);
     }
 
     @JsIgnore
@@ -126,10 +113,7 @@ public interface TableData {
      */
     @JsMethod
     default Format getFormat(RowPositionUnion index, Column column) {
-        if (index.isLongWrapper()) {
-            return getFormat(index.asLongWrapper().getWrapped(), column);
-        }
-        return getFormat(index.asInt(), column);
+        return getFormat(index.toLong(), column);
     }
 
     @JsIgnore
