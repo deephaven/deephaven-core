@@ -59,6 +59,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -203,7 +204,7 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         final Status status = Status.fromThrowable(call.error);
         assertEquals(Status.Code.INVALID_ARGUMENT, status.getCode());
         assertEquals("cannot change from full subscription to viewport or vice versa", status.getDescription());
-        assertEquals("the stream ends with the error, not a completion", 0, call.completions);
+        assertEquals("the stream ends with the error, not a completion", 0, call.completions.get());
     }
 
     /**
@@ -245,7 +246,7 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         assertTrue("the later request should finish", laterRequestFinished.get());
         assertNull("the later request should be ignored", laterRequestFailure.get());
         assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(call.error).getCode());
-        assertEquals(0, call.completions);
+        assertEquals(0, call.completions.get());
     }
 
     /**
@@ -288,7 +289,7 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         assertNull(rejectingFailure.get());
         producerScheduler.runUntilQueueEmpty();
 
-        assertEquals("the client should be sent one error", 1, call.errors);
+        assertEquals("the client should be sent one error", 1, call.errors.get());
     }
 
     /**
@@ -307,13 +308,13 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         updateGraph.runWithinUnitTestCycle(
                 () -> source.notifyListenersOnError(new RuntimeException("the source failed"), null));
         producerScheduler.runUntilQueueEmpty();
-        assertEquals("the source failure should end the stream", 1, call.errors);
+        assertEquals("the source failure should end the stream", 1, call.errors.get());
 
         // a full subscription cannot change to a viewport
         marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(0, 9)));
         producerScheduler.runUntilQueueEmpty();
 
-        assertEquals("the client should be sent one error", 1, call.errors);
+        assertEquals("the client should be sent one error", 1, call.errors.get());
     }
 
     /**
@@ -391,11 +392,11 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         sessionScheduler.runUntilQueueEmpty();
         producerScheduler.runUntilQueueEmpty();
 
-        assertEquals("the client should be sent one error", 1, call.errors);
+        assertEquals("the client should be sent one error", 1, call.errors.get());
         final Status status = Status.fromThrowable(call.error);
         assertEquals(Status.Code.INVALID_ARGUMENT, status.getCode());
         assertEquals("cannot change from full subscription to viewport or vice versa", status.getDescription());
-        assertEquals(0, call.completions);
+        assertEquals(0, call.completions.get());
     }
 
     /**
@@ -418,11 +419,11 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         marshaller.onNext(subscriptionRequest(RowSetFactory.fromRange(0, 4), true));
         producerScheduler.runUntilQueueEmpty();
 
-        assertEquals("the client should be sent one error", 1, call.errors);
+        assertEquals("the client should be sent one error", 1, call.errors.get());
         final Status status = Status.fromThrowable(call.error);
         assertEquals(Status.Code.INVALID_ARGUMENT, status.getCode());
         assertEquals("Reverse viewport is not supported for blink tables", status.getDescription());
-        assertEquals(0, call.completions);
+        assertEquals(0, call.completions.get());
     }
 
     /**
@@ -451,7 +452,7 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         postSnapshotColumns.set(producer.get(), null);
         producerScheduler.runUntilQueueEmpty();
 
-        assertEquals("the client should be sent one error", 1, call.errors);
+        assertEquals("the client should be sent one error", 1, call.errors.get());
         final Status status = Status.fromThrowable(call.error);
         assertEquals(Status.Code.INVALID_ARGUMENT, status.getCode());
         assertEquals("cannot change from full subscription to viewport or vice versa", status.getDescription());
@@ -788,8 +789,8 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         }
 
         volatile Throwable error;
-        volatile int errors;
-        volatile int completions;
+        final AtomicInteger errors = new AtomicInteger();
+        final AtomicInteger completions = new AtomicInteger();
 
         /** runs when the error is written, while the writer holds the response stream's monitor */
         volatile Runnable onErrorHook;
@@ -797,7 +798,7 @@ public class BarrageSubscriptionUpdateDeadlockTest {
         @Override
         public void onError(final Throwable t) {
             error = t;
-            ++errors;
+            errors.incrementAndGet();
             final Runnable toRun = onErrorHook;
             if (toRun != null) {
                 toRun.run();
@@ -806,7 +807,7 @@ public class BarrageSubscriptionUpdateDeadlockTest {
 
         @Override
         public void onCompleted() {
-            ++completions;
+            completions.incrementAndGet();
         }
 
         @Override
