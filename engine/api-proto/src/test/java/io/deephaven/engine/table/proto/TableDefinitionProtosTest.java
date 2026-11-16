@@ -48,8 +48,6 @@ public class TableDefinitionProtosTest {
             ColumnDefinition.ofDouble("Double"),
             ColumnDefinition.fromGenericType("BoxedInt", Integer.class),
             ColumnDefinition.fromGenericType("PrimitiveBoolean", boolean.class),
-            ColumnDefinition.fromGenericType("PrimitiveVoid", void.class),
-            ColumnDefinition.fromGenericType("BoxedVoid", Void.class),
             ColumnDefinition.ofString("String"),
             ColumnDefinition.ofTime("Instant"),
             ColumnDefinition.ofLocalDate("LocalDate"),
@@ -242,6 +240,13 @@ public class TableDefinitionProtosTest {
     void unspecifiedPrimitive() {
         assertInvalid(column("X").setDataType(primitive(PrimitiveTypeProto.PRIMITIVE_TYPE_UNSPECIFIED)),
                 "unsupported primitive type");
+    }
+
+    @Test
+    void invalidDataType() {
+        // Valid to encode, but not a valid column data type; rejected by ColumnDefinition.create
+        assertInvalid(column("X").setDataType(primitive(PrimitiveTypeProto.PRIMITIVE_TYPE_VOID)),
+                "Invalid data type");
     }
 
     @Test

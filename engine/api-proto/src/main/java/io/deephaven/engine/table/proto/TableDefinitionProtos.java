@@ -221,8 +221,8 @@ public final class TableDefinitionProtos {
                 ? fromProto(name, proto.getComponentType(), classLoader)
                 : null;
         final ColumnDefinition.ColumnType columnType = fromProto(name, proto.getColumnType());
-        // Validates that componentType is consistent with dataType
-        return ColumnDefinition.fromGenericType(name, dataType, componentType, columnType);
+        // Used exactly as persisted, with validation; no normalization or inference
+        return ColumnDefinition.create(name, dataType, componentType, columnType);
     }
 
     /**
