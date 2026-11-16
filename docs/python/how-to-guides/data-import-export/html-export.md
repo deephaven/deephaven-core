@@ -63,7 +63,7 @@ Keep these limitations of [`to_html`](../../reference/data-import-export/HTML/to
 ### Untrusted string values
 
 > [!WARNING]
-> Because [`to_html`](../../reference/data-import-export/HTML/to-html.md) doesn't HTML-escape string values, a value that contains HTML markup becomes active markup in any page that displays the output. Convert only tables whose contents you trust, or HTML-escape untrusted string values before you convert the table.
+> Because [`to_html`](../../reference/data-import-export/HTML/to-html.md) doesn't HTML-escape cell values, a value that contains HTML markup becomes active markup in any page that displays the output. Convert only tables whose contents you trust, or HTML-escape untrusted values before you convert the table. Escaping a `String` column doesn't cover strings inside other columns, such as vector or map columns, because [`to_html`](../../reference/data-import-export/HTML/to-html.md) writes their text form unchanged.
 
 To HTML-escape a string column, call the `escapeHtml4` method of the Apache Commons Text `StringEscapeUtils` class in a query string, then convert the result. Let's escape the `Letter` column of the example table:
 
