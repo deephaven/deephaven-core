@@ -2,7 +2,7 @@
 title: merge_sorted
 ---
 
-`merge_sorted` combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top of the other and sorts the result. Null tables are ignored. `merge_sorted` is more efficient than using [`merge`](./merge.md) followed by [`sort`](../sort/sort.md).
+`merge_sorted` combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top of the other and sorts the result. `merge_sorted` is more efficient than using [`merge`](./merge.md) followed by [`sort`](../sort/sort.md).
 
 ## Syntax
 
@@ -19,7 +19,7 @@ Source tables to be merged.
 
 - The tables to be merged must include the same columns of the same type.
 - Each table must be already sorted.
-- Null inputs are skipped.
+- Every element must be a table. `None` raises an error.
 
 </Param>
 <Param name="order_by" type="str">

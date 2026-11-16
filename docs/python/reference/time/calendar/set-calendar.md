@@ -53,9 +53,8 @@ For [pip-installed Deephaven](../../../getting-started/pip-install.md), the equi
 ```python skip-test
 from deephaven_server import Server
 
-s = Server(
-    port=10000, jvm_args=["-Xmx4g", "-DCalendar.default=`USNYSE_EXAMPLE`"]
-).start()
+s = Server(port=10000, jvm_args=["-Xmx4g", "-DCalendar.default=USNYSE_EXAMPLE"])
+s.start()
 ```
 
 ## Related documentation

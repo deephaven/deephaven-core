@@ -28,7 +28,7 @@ Interpreter("", []).complete(1, 0)
 
 def set_max_recursion_limit(limit: int) -> None:
     """
-    Utility method to raise/lower the limit that our autocompletion will impose on Python 3.9 and 3.10.
+    Utility method to raise/lower the limit that our autocompletion will impose on Python 3.10.
     """
     from . import _completer
 

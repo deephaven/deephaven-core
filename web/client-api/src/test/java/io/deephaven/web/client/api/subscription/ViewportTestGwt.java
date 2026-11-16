@@ -1085,6 +1085,27 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testClosingSubscriptionTwice() {
+        connect(tables)
+                .then(table("staticTable"))
+                .then(t -> {
+                    delayTestFinish(5002);
+
+                    TableSubscription sub = t.subscribe(t.getColumns());
+                    return waitForEvent(sub, TableSubscription.EVENT_UPDATED, 2000).onInvoke(sub);
+                })
+                .then(sub -> {
+                    sub.close();
+                    try {
+                        sub.close();
+                    } catch (RuntimeException e) {
+                        fail("second close() of an already closed subscription threw: " + e);
+                    }
+                    return null;
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     @Override
     public String getModuleName() {
         return "io.deephaven.web.DeephavenIntegrationTest";

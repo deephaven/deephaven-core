@@ -10,6 +10,7 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
@@ -21,11 +22,17 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
+import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.FieldType;
+import org.apache.arrow.vector.types.pojo.Schema;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -47,6 +54,7 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -66,6 +74,14 @@ import java.util.function.Supplier;
  * <p>
  * Subscription growth is disabled in the forked JVM so that an initial snapshot is one snapshot and one write per
  * subscriber, rather than a series sized to the update graph's cycle time.
+ *
+ * <p>
+ * Full subscribers with the same options share one write of each tick (see
+ * {@link BarrageMessageProducer#DEDUP_IDENTICAL_SUBSCRIBERS}), so in the {@code full} mix a tick is one write however
+ * many subscribers there are. To measure the producer writing to each subscriber alone instead, run with
+ * {@code -jvmArgsPrepend -DBarrageMessageProducer.dedupIdenticalSubscribers=false}; {@code -jvmArgsAppend} would
+ * replace the fork's arguments below rather than add to them. The {@code dictString} column type dictionary encodes
+ * every column, so a tick also exercises the shared dictionaries.
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -79,6 +95,8 @@ public class BarrageMessageProducerPropagateBenchmark {
 
     private static final long UPDATE_INTERVAL_MS = 1000;
     private static final int SINK_SCRATCH_BYTES = 1 << 20;
+    /** The number of distinct values a {@code dictString} column draws from. */
+    private static final int STRING_POOL_SIZE = 1000;
 
     /** Parameters and the table, producer and subscribers that both benchmarks share. */
     @State(Scope.Thread)
@@ -97,6 +115,13 @@ public class BarrageMessageProducerPropagateBenchmark {
         /** {@code full} subscribes everyone to the whole table; {@code mixed} alternates full and viewport. */
         @Param({"full", "mixed"})
         String mix;
+
+        /**
+         * The type of every column: {@code long}, or {@code dictString} for dictionary encoded strings drawn from a
+         * pool of a thousand values.
+         */
+        @Param({"long", "dictString"})
+        String columnType;
 
         @Param({"200000"})
         int numRows;
@@ -125,13 +150,12 @@ public class BarrageMessageProducerPropagateBenchmark {
             final Random random = new Random(0xB33FCAFEL);
             final ColumnHolder<?>[] columns = new ColumnHolder[numColumns];
             for (int ci = 0; ci < numColumns; ++ci) {
-                final long[] values = new long[numRows];
-                for (int ri = 0; ri < numRows; ++ri) {
-                    values[ri] = random.nextLong();
-                }
-                columns[ci] = TableTools.longCol("C" + ci, values);
+                columns[ci] = makeColumn("C" + ci, numRows, random);
             }
             table = TstUtils.testRefreshingTable(RowSetFactory.flat(numRows).toTracking(), columns);
+            if (columnType.equals("dictString")) {
+                table.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE, dictionaryEncodedSchema(table));
+            }
             allColumns = new BitSet(numColumns);
             allColumns.set(0, numColumns);
 
@@ -163,6 +187,37 @@ public class BarrageMessageProducerPropagateBenchmark {
             }
             return new BarrageMessageProducer.Operation(scheduler, errorTransformer, writerFactory, table,
                     UPDATE_INTERVAL_MS, null, propagationJobSchedulerFactory);
+        }
+
+        /** A column of {@code size} random values of {@link #columnType}. */
+        ColumnHolder<?> makeColumn(final String name, final int size, final Random random) {
+            if (columnType.equals("dictString")) {
+                final String[] values = new String[size];
+                for (int ri = 0; ri < size; ++ri) {
+                    values[ri] = "v" + random.nextInt(STRING_POOL_SIZE);
+                }
+                return TableTools.stringCol(name, values);
+            }
+            final long[] values = new long[size];
+            for (int ri = 0; ri < size; ++ri) {
+                values[ri] = random.nextLong();
+            }
+            return TableTools.longCol(name, values);
+        }
+
+        /** The natural schema of {@code source}, with every column dictionary encoded under its own id. */
+        private static Schema dictionaryEncodedSchema(final QueryTable source) {
+            final Schema natural = BarrageUtil.makeSchema(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
+                    source.getDefinition(), Map.of(), false);
+            final List<Field> fields = new ArrayList<>();
+            for (final Field field : natural.getFields()) {
+                fields.add(new Field(field.getName(),
+                        new FieldType(field.isNullable(), field.getType(),
+                                new DictionaryEncoding(fields.size(), false, new ArrowType.Int(32, true)),
+                                field.getMetadata()),
+                        field.getChildren()));
+            }
+            return new Schema(fields, natural.getCustomMetadata());
         }
 
         /** Subscribes {@code subscribers} new sinks; the next run of the scheduler sends their initial snapshots. */
@@ -250,11 +305,7 @@ public class BarrageMessageProducerPropagateBenchmark {
             final Random random = new Random(0xFEEDL);
             modifiedValues = new ColumnHolder[numColumns];
             for (int ci = 0; ci < numColumns; ++ci) {
-                final long[] values = new long[rowsPerTick];
-                for (int ri = 0; ri < rowsPerTick; ++ri) {
-                    values[ri] = random.nextLong();
-                }
-                modifiedValues[ci] = TableTools.longCol("C" + ci, values);
+                modifiedValues[ci] = makeColumn("C" + ci, rowsPerTick, random);
             }
         }
 

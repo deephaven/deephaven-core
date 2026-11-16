@@ -9,6 +9,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -87,6 +88,63 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
     public SharedDictionaryWriterState(@NotNull final SharedWriterDictionary shared) {
         this.shared = shared;
         this.lastSeenGeneration = shared.getGeneration();
+    }
+
+    /** The shared dictionary this state delegates to. */
+    @InternalUseOnly
+    @NotNull
+    public SharedWriterDictionary shared() {
+        return shared;
+    }
+
+    /**
+     * Returns the number of values of the shared dictionary's current generation that have been sent, after detecting
+     * any reset since this state last looked.
+     */
+    @InternalUseOnly
+    public int flushedOffset() {
+        syncGeneration();
+        return flushedOffset;
+    }
+
+    /**
+     * Advances this state to a position: from now on it behaves as though it had sent exactly the values below
+     * {@code flushedOffset} of the shared dictionary's current generation, and as though its last batch had been
+     * accepted. A producer that writes one message for a group of subscribers uses this to start the group's state
+     * where its members are, and then to advance each member to where the group ends once the group's messages have
+     * been written to it.
+     *
+     * <p>
+     * A state never moves back within a generation: one credited with fewer values than its subscriber holds would send
+     * them again, and every later index would refer to the wrong value. Only a reset of the shared dictionary, which
+     * starts a new generation, returns a state to the start, and this first detects any such reset.
+     *
+     * @param flushedOffset the number of values sent; no fewer than this state has sent, and no more than the shared
+     *        dictionary holds
+     * @param needsFullBatch whether the next DictionaryBatch must be {@code isDelta=false}; only while this state still
+     *        needs one, and so has sent no value
+     * @throws IllegalArgumentException if the position is behind this state's own, or past the end of the dictionary
+     */
+    @InternalUseOnly
+    public void advanceTo(final int flushedOffset, final boolean needsFullBatch) {
+        syncGeneration();
+        if (flushedOffset < this.flushedOffset || flushedOffset > shared.getTotalSize()) {
+            throw new IllegalArgumentException("Cannot advance from offset " + this.flushedOffset + " to "
+                    + flushedOffset + " of dictionary id " + shared.getDictId() + ", which holds "
+                    + shared.getTotalSize() + " values");
+        }
+        if (needsFullBatch && flushedOffset != 0) {
+            throw new IllegalArgumentException(
+                    "A state that needs a full batch has sent no values, not " + flushedOffset);
+        }
+        if (needsFullBatch && !this.needsFullBatch) {
+            throw new IllegalArgumentException("Cannot require a full batch of dictionary id " + shared.getDictId()
+                    + " again once one has been sent");
+        }
+        this.flushedOffset = flushedOffset;
+        this.needsFullBatch = needsFullBatch;
+        builtDeltaEnd = -1;
+        referenced = false;
     }
 
     /**

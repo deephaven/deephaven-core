@@ -6,6 +6,8 @@ package io.deephaven.util.profiling;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.util.QueryConstants;
 
+import java.lang.management.ManagementFactory;
+
 /**
  * Interface for thread profiling utilities which may be platform or JVM dependent.
  */
@@ -67,14 +69,22 @@ public interface ThreadProfiler {
         if (!CPU_PROFILING_ENABLED && !MEMORY_PROFILING_ENABLED) {
             return NullThreadProfiler.INSTANCE;
         }
-        final String vendor = System.getProperty("java.vendor");
-        if (vendor.contains("Sun")
-                || vendor.contains("Oracle")
-                || vendor.contains("OpenJDK")
-                || vendor.contains("Adoptium")) {
+        // The com.sun.management extension, which HotSpot builds from every vendor (e.g. Oracle, Adoptium, Azul Zulu,
+        // Corretto) implement, exposes per-thread allocation measurement; the profiler checks whether it is supported.
+        if (hasSunThreadMXBean()) {
             return new SunThreadMXBeanThreadProfiler();
         }
         return new BaselineThreadMXBeanThreadProfiler();
+    }
+
+    private static boolean hasSunThreadMXBean() {
+        final java.lang.management.ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        try {
+            return threadMXBean instanceof com.sun.management.ThreadMXBean;
+        } catch (LinkageError e) {
+            // com.sun.management lives in the jdk.management module, which a custom runtime image may omit
+            return false;
+        }
     }
 
     /**

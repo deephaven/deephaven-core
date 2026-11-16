@@ -6,7 +6,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional, Sequence, Union, cast
+from collections.abc import Callable, Sequence
+from typing import cast
 from warnings import warn
 
 import jpy
@@ -146,7 +147,7 @@ TableType.Append = TableType.append()
 TableType.Blink = TableType.blink()
 
 
-def _j_partitions(partitions: Optional[Sequence[int]]) -> jpy.JType:
+def _j_partitions(partitions: Sequence[int] | None) -> jpy.JType:
     if partitions is None:
         partitions = ALL_PARTITIONS
     else:
@@ -165,11 +166,11 @@ def _dict_to_j_func(dict_mapping: dict, mapped_only: bool) -> Callable[[str], st
 def consume(
     kafka_config: dict,
     topic: str,
-    partitions: Optional[Sequence[int]] = None,
-    offsets: Optional[dict[int, int]] = None,
-    key_spec: Optional[KeyValueSpec] = None,
-    value_spec: Optional[KeyValueSpec] = None,
-    table_type: Optional[TableType] = None,
+    partitions: Sequence[int] | None = None,
+    offsets: dict[int, int] | None = None,
+    key_spec: KeyValueSpec | None = None,
+    value_spec: KeyValueSpec | None = None,
+    table_type: TableType | None = None,
 ) -> Table:
     """Consume from Kafka to a Deephaven table.
 
@@ -224,11 +225,11 @@ def consume(
 def consume_to_partitioned_table(
     kafka_config: dict,
     topic: str,
-    partitions: Optional[Sequence[int]] = None,
-    offsets: Optional[dict[int, int]] = None,
-    key_spec: Optional[KeyValueSpec] = None,
-    value_spec: Optional[KeyValueSpec] = None,
-    table_type: Optional[TableType] = None,
+    partitions: Sequence[int] | None = None,
+    offsets: dict[int, int] | None = None,
+    key_spec: KeyValueSpec | None = None,
+    value_spec: KeyValueSpec | None = None,
+    table_type: TableType | None = None,
 ) -> PartitionedTable:
     """Consume from Kafka to a Deephaven partitioned table.
 
@@ -286,13 +287,13 @@ def consume_to_partitioned_table(
 def _consume(
     kafka_config: dict,
     topic: str,
-    partitions: Optional[Sequence[int]] = None,
-    offsets: Optional[dict[int, int]] = None,
-    key_spec: Optional[KeyValueSpec] = None,
-    value_spec: Optional[KeyValueSpec] = None,
+    partitions: Sequence[int] | None = None,
+    offsets: dict[int, int] | None = None,
+    key_spec: KeyValueSpec | None = None,
+    value_spec: KeyValueSpec | None = None,
     table_type: TableType = TableType.blink(),
     to_partitioned: bool = False,
-) -> Union[Table, PartitionedTable]:
+) -> Table | PartitionedTable:
     try:
         partitions = _j_partitions(partitions)
 
@@ -372,12 +373,12 @@ class ProtobufProtocol(JObjectWrapper):
 
 
 def protobuf_spec(
-    schema: Optional[str] = None,
-    schema_version: Optional[int] = None,
-    schema_message_name: Optional[str] = None,
-    message_class: Optional[str] = None,
-    include: Optional[Sequence[str]] = None,
-    protocol: Optional[ProtobufProtocol] = None,
+    schema: str | None = None,
+    schema_version: int | None = None,
+    schema_message_name: str | None = None,
+    message_class: str | None = None,
+    include: Sequence[str] | None = None,
+    protocol: ProtobufProtocol | None = None,
 ) -> KeyValueSpec:
     """Creates a spec for parsing a Kafka protobuf stream into a Deephaven table. Uses the schema, schema_version, and
     schema_message_name to fetch the schema from the schema registry; or uses message_class to to get the schema from
@@ -444,7 +445,7 @@ def protobuf_spec(
 def avro_spec(
     schema: str,
     schema_version: str = "latest",
-    mapping: Optional[dict[str, str]] = None,
+    mapping: dict[str, str] | None = None,
     mapped_only: bool = False,
 ) -> KeyValueSpec:
     """Creates a spec for how to use an Avro schema when consuming a Kafka stream to a Deephaven table.
@@ -470,7 +471,7 @@ def avro_spec(
         DHError
     """
     try:
-        mapping_func: Optional[Callable[[str], str]] = (
+        mapping_func: Callable[[str], str] | None = (
             _dict_to_j_func(mapping, mapped_only) if mapping else None
         )
 
@@ -499,8 +500,8 @@ def avro_spec(
 
 
 def json_spec(
-    col_defs: Union[TableDefinitionLike, Sequence[tuple[str, DType]]],
-    mapping: Optional[dict] = None,
+    col_defs: TableDefinitionLike | Sequence[tuple[str, DType]],
+    mapping: dict | None = None,
 ) -> KeyValueSpec:
     """Creates a spec for how to use JSON data when consuming a Kafka stream to a Deephaven table.
 
@@ -546,7 +547,7 @@ def json_spec(
         raise DHError(e, "failed to create a Kafka key/value spec") from e
 
 
-def simple_spec(col_name: str, data_type: Optional[DType] = None) -> KeyValueSpec:
+def simple_spec(col_name: str, data_type: DType | None = None) -> KeyValueSpec:
     """Creates a spec that defines a single column to receive the key or value of a Kafka message when consuming a
     Kafka stream to a Deephaven table.
 

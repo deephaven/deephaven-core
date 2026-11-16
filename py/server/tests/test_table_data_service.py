@@ -5,7 +5,7 @@
 import threading
 import time
 import unittest
-from typing import Callable, Generator, Optional
+from collections.abc import Callable, Generator
 
 import numpy as np
 import pyarrow as pa
@@ -68,7 +68,7 @@ class TestBackend(TableDataServiceBackend):
         self,
         gen_pa_table: Generator[pa.Table, None, None],
         pt_schema: pa.Schema,
-        pc_schema: Optional[pa.Schema] = None,
+        pc_schema: pa.Schema | None = None,
     ):
         self.pt_schema: pa.Schema = pt_schema
         self.pc_schema: pa.Schema = pc_schema
@@ -88,14 +88,14 @@ class TestBackend(TableDataServiceBackend):
             threading.Condition()
         )
         self.num_table_location_subs: int = 0
-        self.location_cb: Optional[
-            Callable[[TableLocationKeyImpl, Optional[pa.Table]], None]
-        ] = None
+        self.location_cb: (
+            Callable[[TableLocationKeyImpl, pa.Table | None], None] | None
+        ) = None
 
     def table_schema(
         self,
         table_key: TableKeyImpl,
-        schema_cb: Callable[[pa.Schema, Optional[pa.Schema]], None],
+        schema_cb: Callable[[pa.Schema, pa.Schema | None], None],
         failure_cb: Callable[[str], None],
     ) -> None:
         if table_key.key == "test":
@@ -106,7 +106,7 @@ class TestBackend(TableDataServiceBackend):
     def table_locations(
         self,
         table_key: TableKeyImpl,
-        location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None],
+        location_cb: Callable[[TableLocationKeyImpl, pa.Table | None], None],
         success_cb: Callable[[], None],
         failure_cb: Callable[[str], None],
     ) -> None:
@@ -168,7 +168,7 @@ class TestBackend(TableDataServiceBackend):
         self,
         table_key: TableKeyImpl,
         exec_ctx: ExecutionContext,
-        location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None],
+        location_cb: Callable[[TableLocationKeyImpl, pa.Table | None], None],
         failure_cb: Callable[[Exception], None],
     ) -> None:
         if table_key.key != "test":
@@ -205,7 +205,7 @@ class TestBackend(TableDataServiceBackend):
     def subscribe_to_table_locations(
         self,
         table_key: TableKeyImpl,
-        location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None],
+        location_cb: Callable[[TableLocationKeyImpl, pa.Table | None], None],
         success_cb: Callable[[], None],
         failure_cb: Callable[[str], None],
     ) -> Callable[[], None]:

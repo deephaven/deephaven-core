@@ -6,6 +6,7 @@ import datetime
 import functools
 import math
 import time
+import typing
 import unittest
 
 import numpy as np
@@ -43,6 +44,19 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.float64, dtypes.double)
         self.assertEqual(dtypes.float64, dtypes.float64)
         self.assertEqual(dtypes.double, dtypes.float64)
+
+    def test_union_with_or(self):
+        # A DType is an instance, so `|` on it goes through DType.__or__/__ror__ and builds a typing.Union.
+        Union = typing.Union
+        self.assertEqual(dtypes.Instant | None, Union[dtypes.Instant, None])  # noqa: UP007
+        self.assertEqual(
+            str | dtypes.TimeZone | None,
+            Union[str, dtypes.TimeZone, None],  # noqa: UP007
+        )
+        self.assertEqual(
+            dtypes.LocalDate | dtypes.LocalTime,
+            Union[dtypes.LocalDate, dtypes.LocalTime],  # noqa: UP007
+        )
 
     def test_j_type(self):
         self.assertEqual(dtypes.bool_.j_type, jpy.get_type("java.lang.Boolean"))

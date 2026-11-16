@@ -1,0 +1,1 @@
+{"file":"conceptual/execution-context.md","objects":{"inside":{"type":"Table","data":{"columns":[{"name":"X","type":"byte"}],"rows":[[{"value":"1"}]]}},"outside":{"type":"Table","data":{"columns":[{"name":"X","type":"byte"}],"rows":[[{"value":"100"}]]}}}}

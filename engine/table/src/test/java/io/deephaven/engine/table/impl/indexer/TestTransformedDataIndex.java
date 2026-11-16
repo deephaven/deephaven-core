@@ -12,6 +12,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
@@ -27,7 +28,9 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableArray;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -35,6 +38,7 @@ import org.junit.experimental.categories.Category;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static org.junit.Assert.*;
@@ -44,6 +48,8 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
     private static final int INITIAL_SIZE = 100;
     private static final int STEP_SIZE = 100;
     private static final int MAX_STEPS = 100;
+    /** The size of the sources of the tests of a lookup's change step. */
+    private static final int KEYED_SIZE = 40;
     private ColumnInfo<?, ?>[] columnInfo;
     private QueryTable testTable;
     private List<DataIndex> dataIndexes;
@@ -398,6 +404,88 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
                     assertLookupMutator(dataIndex, subIndex, mutator);
                 }
             }
+        }
+    }
+
+    @Test
+    public void testStaticLookupsNeverChange() {
+        final Table source = TableTools.emptyTable(KEYED_SIZE).update("Key = (int) (ii % 2)");
+        final DataIndex.RowKeyLookup lookup = DataIndexer.getOrCreateDataIndex(source, "Key").rowKeyLookup();
+        assertEquals(1, lookup.apply(1, false));
+        assertEquals(QueryConstants.NULL_LONG, lookup.lastStateChangeStep());
+    }
+
+    @Test
+    public void testLastStateChangeStepAcrossUpdateCycle() {
+        final QueryTable source = keyedSource();
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(source, "Key");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        // one lookup, used across the cycle
+        final DataIndex.RowKeyLookup lookup = index.rowKeyLookup();
+        assertTrue(lookup.apply(11, false) < 0);
+
+        updateGraph.startCycleForUnitTests(false);
+        final long cycleStep = updateGraph.clock().currentStep();
+        TstUtils.addToTable(source, TstUtils.i(KEYED_SIZE), TableTools.intCol("Key", 11),
+                TableTools.intCol("Value", KEYED_SIZE));
+        source.notifyListeners(TstUtils.i(KEYED_SIZE), TstUtils.i(), TstUtils.i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+        assertTrue(lookup.lastStateChangeStep() < cycleStep);
+        flushIndexUpdate(updateGraph, index);
+        // the index's update began on the cycle's step
+        assertEquals(cycleStep, lookup.lastStateChangeStep());
+        updateGraph.completeCycleForUnitTests();
+
+        assertEquals(cycleStep, lookup.lastStateChangeStep());
+        final long rowKey = lookup.apply(11, false);
+        assertEquals(11, index.table().getColumnSource("Key").getInt(rowKey));
+    }
+
+    /**
+     * A lookup whose key columns are in another order than the index's reports the index's change step too.
+     */
+    @Test
+    public void testOutOfOrderLookupReportsTheIndexChange() {
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(4).toTracking(),
+                TableTools.intCol("A", 1, 1, 2, 2), TableTools.intCol("B", 1, 2, 1, 2));
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(source, "A", "B");
+        final DataIndex.RowKeyLookup lookup = index.rowKeyLookup(new ColumnSource<?>[] {
+                source.getColumnSource("B"), source.getColumnSource("A")});
+        assertTrue(lookup.apply(new Object[] {4, 3}, false) < 0);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(false);
+        final long cycleStep = updateGraph.clock().currentStep();
+        TstUtils.addToTable(source, TstUtils.i(4), TableTools.intCol("A", 3), TableTools.intCol("B", 4));
+        source.notifyListeners(TstUtils.i(4), TstUtils.i(), TstUtils.i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+        assertTrue(lookup.lastStateChangeStep() < cycleStep);
+        flushIndexUpdate(updateGraph, index);
+        assertEquals(cycleStep, lookup.lastStateChangeStep());
+        updateGraph.completeCycleForUnitTests();
+
+        // the lookup takes its keys in its own column order
+        final long rowKey = lookup.apply(new Object[] {4, 3}, false);
+        assertEquals(3, index.table().getColumnSource("A").getInt(rowKey));
+        assertEquals(4, index.table().getColumnSource("B").getInt(rowKey));
+    }
+
+    /**
+     * A source of {@link #KEYED_SIZE} rows alternating between keys 3 and 5.
+     */
+    private static QueryTable keyedSource() {
+        return TstUtils.testRefreshingTable(RowSetFactory.flat(KEYED_SIZE).toTracking(),
+                TableTools.intCol("Key", IntStream.range(0, KEYED_SIZE).map(ii -> ii % 2 == 0 ? 3 : 5).toArray()),
+                TableTools.intCol("Value", IntStream.range(0, KEYED_SIZE).toArray()));
+    }
+
+    /**
+     * Run notifications until the index has processed this cycle's update.
+     */
+    private static void flushIndexUpdate(final ControlledUpdateGraph updateGraph, final DataIndex index) {
+        final long step = updateGraph.clock().currentStep();
+        while (!index.table().satisfied(step)) {
+            assertTrue(updateGraph.flushOneNotificationForUnitTests());
         }
     }
 

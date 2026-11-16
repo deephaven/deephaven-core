@@ -1,0 +1,1 @@
+{"file":"how-to-guides/new-and-empty-table.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Name","type":"java.lang.String"},{"name":"Math","type":"long"},{"name":"Gpa","type":"double"}],"rows":[[{"value":"James"},{"value":"95"},{"value":"3.5000"}],[{"value":"Lauren"},{"value":"72"},{"value":"3.1000"}],[{"value":"Zoey"},{"value":"100"},{"value":"4.0000"}]]}}}}

@@ -4,12 +4,16 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
@@ -35,7 +39,7 @@ public class ImmediateJobScheduler implements JobScheduler {
     private final Deque<Runnable> pendingJobs = new ArrayDeque<>();
 
     @Override
-    public void submit(
+    public Submission submit(
             final ExecutionContext executionContext,
             final Runnable runnable,
             final LogOutputAppendable description,
@@ -58,7 +62,7 @@ public class ImmediateJobScheduler implements JobScheduler {
 
         if (thisThreadIsProcessing) {
             // We're already draining the queue in an ancestor stack frame
-            return;
+            return Submission.NOT_WITHDRAWABLE;
         }
 
         try {
@@ -69,6 +73,19 @@ public class ImmediateJobScheduler implements JobScheduler {
         } finally {
             PROCESSING_THREAD_UPDATER.set(this, null);
         }
+        return Submission.NOT_WITHDRAWABLE;
+    }
+
+    /**
+     * Return the result of {@code future}, which the jobs have completed by the time {@link #submit} returns.
+     *
+     * @throws io.deephaven.base.verify.AssertionFailure if {@code future} is not done
+     */
+    @Override
+    public <T> T awaitCompletion(@NotNull final CompletableFuture<T> future)
+            throws InterruptedException, ExecutionException {
+        Assert.assertion(future.isDone(), "future.isDone()", "jobs run before submit returns");
+        return future.get();
     }
 
     @Override

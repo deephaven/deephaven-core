@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.BlinkTableTools;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
@@ -39,6 +40,21 @@ public class AsyncErrorLogger {
             @Nullable TableListener.Entry sourceEntry,
             Throwable originalException) {
         getInstance().add(time, entry, sourceEntry, originalException);
+    }
+
+    /**
+     * Discard the singleton instance and release the liveness scope that manages the instance's blink table. The next
+     * {@link #init()}, {@link #getErrorLog()} or {@link #log} creates a new instance.
+     */
+    @TestUseOnly
+    static void resetForUnitTests() {
+        synchronized (AsyncErrorImpl.class) {
+            if (INSTANCE == null) {
+                return;
+            }
+            INSTANCE.releaseForUnitTests();
+            INSTANCE = null;
+        }
     }
 }
 

@@ -10,6 +10,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -63,6 +64,27 @@ public interface DataIndex extends BasicDataIndex {
                 @NotNull Chunk<? extends Values>[] keyChunks,
                 @NotNull WritableLongChunk<RowKeys> rowKeys,
                 boolean usePrev);
+
+        /**
+         * The step on which the index last began changing the structure its lookups read, recorded before the change,
+         * or {@link QueryConstants#NULL_LONG} if it never changes. Calling this orders the lookups made before it ahead
+         * of reading the step.
+         * <p>
+         * A refreshing index may change that structure while a reader that is not on the update graph thread uses it.
+         * Such a reader reads its step from the update graph's clock before its lookups, and this after them. Compared
+         * to the reader's step, this is:
+         * <ul>
+         * <li>less: the lookups answered for the index's state at the reader's step, previous and current alike;</li>
+         * <li>equal: the lookups may not have answered for the previous state, and answered for the current state if
+         * the reader waited for the index to be satisfied at its step;</li>
+         * <li>greater: the lookups may not have answered for either state at the reader's step.</li>
+         * </ul>
+         *
+         * @return The step on which the index last began changing the structure its lookups read
+         */
+        default long lastStateChangeStep() {
+            return QueryConstants.NULL_LONG;
+        }
     }
 
     /**
@@ -177,6 +199,11 @@ public interface DataIndex extends BasicDataIndex {
                     indexLookup = rowKeyLookup();
                 }
                 indexLookup.apply(indexKeyChunks, rowKeys, usePrev);
+            }
+
+            @Override
+            public long lastStateChangeStep() {
+                return rowKeyLookup().lastStateChangeStep();
             }
         };
     }

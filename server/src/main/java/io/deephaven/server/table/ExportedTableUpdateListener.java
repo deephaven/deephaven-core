@@ -61,6 +61,13 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
     private final String logPrefix;
     private final StreamObserver<ExportedTableUpdateMessage> responseObserver;
     private final SessionService.ErrorTransformer errorTransformer;
+    /**
+     * Guards {@link #updateListenerMap}, {@link #isDestroyed}, each {@link ListenerImpl#sizeSent}, and messages to the
+     * {@link #responseObserver}. The session synchronizes on this listener while notifying it, and a new export's
+     * snapshot may wait for the update graph lock during that notification, so the update graph's listeners send their
+     * sizes under this separate lock, which is never held while waiting for the update graph.
+     */
+    private final Object lock = new Object();
     private final KeyedLongObjectHashMap<ListenerImpl> updateListenerMap = new KeyedLongObjectHashMap<>(EXPORT_KEY);
 
     private volatile boolean isDestroyed = false;
@@ -111,7 +118,10 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
                     }
                 }
             } else if (SessionState.isExportStateTerminal(state)) {
-                final ListenerImpl listener = updateListenerMap.remove(exportId);
+                final ListenerImpl listener;
+                synchronized (lock) {
+                    listener = updateListenerMap.remove(exportId);
+                }
                 if (listener != null) {
                     listener.dropReference();
                 }
@@ -131,26 +141,29 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
     }
 
     @Override
-    public synchronized void onCompleted() {
-        if (isDestroyed) {
-            return;
+    public void onCompleted() {
+        synchronized (lock) {
+            if (isDestroyed) {
+                return;
+            }
+            isDestroyed = true;
+            safelyComplete(responseObserver);
+            updateListenerMap.forEach(ListenerImpl::dropReference);
+            updateListenerMap.clear();
         }
-        isDestroyed = true;
-        safelyComplete(responseObserver);
-        updateListenerMap.forEach(ListenerImpl::dropReference);
-        updateListenerMap.clear();
         log.info().append(logPrefix).append("is complete").endl();
     }
 
     /**
-     * Initialize the listener for a newly exported table. This method is synchronized to prevent a race from the table
-     * ticking before we append the initial run msg.
+     * Initialize the listener for a newly exported table. The snapshot that subscribes the listener does not hold
+     * {@link #lock}, so the listener may send a size before the initial size is sent; the initial size is then stale,
+     * and is not sent.
      *
      * @param ticket of the table being exported
      * @param exportId the export id of the table being exported
      * @param table the table that was just exported
      */
-    private synchronized void onNewTableExport(final Ticket ticket, final int exportId, final BaseTable<?> table) {
+    private void onNewTableExport(final Ticket ticket, final int exportId, final BaseTable<?> table) {
         if (table instanceof UncoalescedTable) {
             // uncoalesced tables have no size and don't get updates
             return;
@@ -165,31 +178,47 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             return;
         }
 
-        // we may receive duplicate creation messages
-        if (updateListenerMap.contains(exportId)) {
-            return;
+        final ListenerImpl listener;
+        synchronized (lock) {
+            // we may receive duplicate creation messages
+            if (isDestroyed || updateListenerMap.contains(exportId)) {
+                return;
+            }
+            listener = new ListenerImpl(table, exportId);
+            listener.tryRetainReference();
+            updateListenerMap.put(exportId, listener);
         }
 
         final OperationSnapshotControl snapshotControl = new OperationSnapshotControl(table);
-        final ListenerImpl listener = new ListenerImpl(table, exportId);
-        listener.tryRetainReference();
-        updateListenerMap.put(exportId, listener);
-
+        final MutableLong initSize = new MutableLong();
+        Throwable initError = null;
         try {
-            final MutableLong initSize = new MutableLong();
             BaseTable.initializeWithSnapshot(logPrefix, snapshotControl, (usePrev, beforeClockValue) -> {
                 snapshotControl.setListenerAndResult(listener, NOOP_NOTIFICATION_STEP_RECEIVER);
                 final TrackingRowSet rowSet = table.getRowSet();
                 initSize.set(usePrev ? rowSet.sizePrev() : rowSet.size());
                 return true;
             });
-            sendUpdateMessage(ticket, initSize.get(), null);
         } catch (final SnapshotUnsuccessfulException err) {
+            initSize.set(-1);
             if (err.getCause() instanceof TableAlreadyFailedException) {
-                sendUpdateMessage(ticket, -1, Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "Exported Table Already Failed"));
+                initError = Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Exported Table Already Failed");
             } else {
-                sendUpdateMessage(ticket, -1, errorTransformer.transform(err));
+                initError = errorTransformer.transform(err);
+            }
+        }
+
+        synchronized (lock) {
+            if (updateListenerMap.get(exportId) != listener) {
+                // the export was released, or this listener completed, during the snapshot; the dropped listener's
+                // destroy may have run before the snapshot subscribed it
+                table.removeUpdateListener(listener);
+                return;
+            }
+            if (!listener.sizeSent) {
+                listener.sizeSent = true;
+                sendUpdateMessage(ticket, initSize.get(), initError);
             }
         }
     }
@@ -202,25 +231,31 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
      * @param size the current size of the table
      * @param error any propagated error of the table
      */
-    private synchronized void sendUpdateMessage(final Ticket ticket, final long size, final Throwable error) {
-        if (isDestroyed) {
-            return;
-        }
+    private void sendUpdateMessage(final Ticket ticket, final long size, final Throwable error) {
+        synchronized (lock) {
+            if (isDestroyed) {
+                return;
+            }
 
-        final ExportedTableUpdateMessage.Builder update = ExportedTableUpdateMessage.newBuilder()
-                .setExportId(ticket).setSize(size);
+            final ExportedTableUpdateMessage.Builder update = ExportedTableUpdateMessage.newBuilder()
+                    .setExportId(ticket).setSize(size);
 
-        if (error != null) {
-            // TODO (core#801): revisit this error communication to properly match the API Error mode
-            // Note if this does get turned into an INTERNAL_ERROR we should re-use the same UUID for all listeners.
-            update.setUpdateFailureMessage(error.getMessage());
-        }
+            if (error != null) {
+                // TODO (core#801): revisit this error communication to properly match the API Error mode
+                // Note if this does get turned into an INTERNAL_ERROR we should re-use the same UUID for all listeners.
+                update.setUpdateFailureMessage(error.getMessage());
+            }
 
-        try {
-            responseObserver.onNext(update.build());
-        } catch (final RuntimeException err) {
-            log.debug().append(logPrefix).append("failed to notify listener of state change: ").append(err).endl();
-            session.removeExportListener(this);
+            try {
+                responseObserver.onNext(update.build());
+            } catch (final RuntimeException err) {
+                log.debug().append(logPrefix).append("failed to notify listener of state change: ").append(err)
+                        .endl();
+                // The session synchronizes on this listener to remove it, and may hold that monitor while waiting for
+                // the update graph, so the session removes this listener when it next notifies it, or when the client
+                // cancels
+                onCompleted();
+            }
         }
     }
 
@@ -231,6 +266,11 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         final private BaseTable<?> table;
         final private int exportId;
 
+        /**
+         * Whether a size has been sent for this export, guarded by {@link #lock}.
+         */
+        private boolean sizeSent;
+
         private ListenerImpl(final BaseTable<?> table, final int exportId) {
             super("ExportedTableUpdateListener (" + exportId + ")");
             this.table = table;
@@ -240,13 +280,19 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
         @Override
         public void onUpdate(final TableUpdate upstream) {
-            sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(), null);
+            sendSize(null);
         }
 
         @Override
         public void onFailureInternal(final Throwable error, final Entry sourceEntry) {
-            sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(),
-                    errorTransformer.transform(error));
+            sendSize(errorTransformer.transform(error));
+        }
+
+        private void sendSize(final Throwable error) {
+            synchronized (lock) {
+                sizeSent = true;
+                sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(), error);
+            }
         }
 
         @OverridingMethodsMustInvokeSuper

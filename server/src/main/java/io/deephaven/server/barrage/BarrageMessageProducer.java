@@ -178,6 +178,26 @@ public class BarrageMessageProducer extends LivenessArtifact
      */
     public static final String PROPAGATION_JOB_SCHEDULER = "BarrageMessageProducer.propagationJobScheduler";
 
+    /**
+     * Whether a propagation phase writes the propagated message once for each group of full subscriptions that would be
+     * sent identical bytes, handing each stream of the message to every member of the group as the stream is written,
+     * instead of writing the message once per subscription. A full subscription joins a group once the subscription has
+     * the whole table, and a group's members share their subscription options and columns. Viewport subscriptions, and
+     * full subscriptions still growing toward the whole table, are always written alone.
+     */
+    public static final boolean DEDUP_IDENTICAL_SUBSCRIBERS = Configuration.getInstance()
+            .getBooleanForClassWithDefault(BarrageMessageProducer.class, "dedupIdenticalSubscribers", true);
+
+    /**
+     * A group of subscriptions sharing one write copies each batch it captures to its members in parallel, on the
+     * propagation job scheduler, when the batch's size multiplied by one less than its members reaches this many bytes:
+     * the bytes the copies would move off the group's thread. Smaller rounds are copied one after another on the
+     * group's thread, where handing the copies out would cost more than it saves. With {@link #PROPAGATION_THREADS} of
+     * one or less, every round is copied on the group's thread.
+     */
+    public static final long PARALLEL_COPY_MIN_BYTES = Configuration.getInstance().getLongForClassWithDefault(
+            BarrageMessageProducer.class, "parallelCopyMinBytes", 4L * 1024 * 1024);
+
     private long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
     private double snapshotNanosPerCell = 0;
 
@@ -2002,16 +2022,98 @@ public class BarrageMessageProducer extends LivenessArtifact
             final RowSet propRowSetForMessage) {
         maybeResetSharedDictionaries(message, propRowSetForMessage.size());
 
-        final List<Subscription> targets = collectPropagationTargets();
+        final List<List<Subscription>> units = groupPropagationTargets(collectPropagationTargets());
 
         // message is released via transfer to stream generator (as it must live until all views are closed)
         try (final BarrageMessageWriter bmw = streamGeneratorFactory.newMessageWriter(
                 message, chunkWriters, this::recordWriteMetrics)) {
-            // Each subscriber's view is written independently of the others', so they are written in parallel; the
-            // writer is closed only once every one of them has finished.
-            forEachInParallel(targets, subscription -> propagateToSubscriber(
-                    bmw, subscription, propRowSetForMessagePrev, propRowSetForMessage));
+            // Each unit's view is written independently of the others', so they are written in parallel; the writer is
+            // closed only once every one of them has finished.
+            forEachInParallel(units, unit -> {
+                if (unit.size() == 1) {
+                    propagateSingle(bmw, unit.get(0), propRowSetForMessagePrev, propRowSetForMessage);
+                } else {
+                    propagateGroup(bmw, unit);
+                }
+            });
         }
+    }
+
+    /**
+     * The arguments of {@link BarrageMessageWriter#getSubView} that can differ between stable full subscriptions, and
+     * so what decides the bytes one is sent for a propagated message: its effective options, the viewport direction its
+     * updates report, and its columns, since each view of a message writes only its subscription's columns.
+     * Subscriptions with equal keys are sent the same view, which is why they can share one write.
+     */
+    private static final class SubViewKey {
+        private final BarrageSubscriptionOptions options;
+        private final boolean reverseViewport;
+        private final BitSet columns;
+
+        /**
+         * @param options the subscription's effective options
+         * @param reverseViewport the subscription's viewport direction
+         * @param columns the subscribed columns; not copied, since a key lives only for one propagation phase, during
+         *        which no subscription's columns change
+         */
+        private SubViewKey(
+                final BarrageSubscriptionOptions options,
+                final boolean reverseViewport,
+                final BitSet columns) {
+            this.options = options;
+            this.reverseViewport = reverseViewport;
+            this.columns = columns;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof SubViewKey)) {
+                return false;
+            }
+            final SubViewKey that = (SubViewKey) o;
+            return reverseViewport == that.reverseViewport
+                    && options.equals(that.options)
+                    && columns.equals(that.columns);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * (31 * options.hashCode() + Boolean.hashCode(reverseViewport)) + columns.hashCode();
+        }
+    }
+
+    /**
+     * Splits {@code targets} into the units a propagation phase writes: the stable full subscriptions with one
+     * {@link SubViewKey} form one unit, written once for all of them, and every other subscription is a unit by itself.
+     * A stable full subscription has the whole table and shares the producer's dictionaries, so its view of a
+     * propagated message is decided by its key alone. Any other subscription's view also depends on its own state: a
+     * viewport subscription is sent only its viewport's rows, a growing one only the rows it has so far, and one with a
+     * snapshot viewport the deltas before this cycle's snapshot as its previous viewport, columns and direction see
+     * them. When grouping is off, every subscription is a unit by itself. Larger units come first, so that the longest
+     * writes start first.
+     */
+    private List<List<Subscription>> groupPropagationTargets(final List<Subscription> targets) {
+        final List<List<Subscription>> units = new ArrayList<>(targets.size());
+        final Map<SubViewKey, List<Subscription>> groups = new LinkedHashMap<>();
+        for (final Subscription subscription : targets) {
+            final boolean isStableFullSubscription = subscription.viewport == null
+                    && subscription.snapshotViewport == null
+                    && !subscription.isGrowingViewport
+                    && subscription.dictionaryRegistry != null;
+            if (DEDUP_IDENTICAL_SUBSCRIBERS && isStableFullSubscription) {
+                final SubViewKey key = new SubViewKey(effectiveOptions(subscription.options),
+                        subscription.reverseViewport, subscription.subscribedColumns);
+                groups.computeIfAbsent(key, k -> new ArrayList<>()).add(subscription);
+            } else {
+                units.add(List.of(subscription));
+            }
+        }
+        units.addAll(groups.values());
+        units.sort((a, b) -> Integer.compare(b.size(), a.size()));
+        return units;
     }
 
     /**
@@ -2124,12 +2226,12 @@ public class BarrageMessageProducer extends LivenessArtifact
     /**
      * Runs {@code action} once for each of {@code targets}, in parallel on as many threads as the propagation job
      * scheduler supplies, and returns only once every run has finished, so that the caller may then release what they
-     * were reading. Runs for different subscriptions happen at the same time, so {@code action} may change only its own
-     * subscription's state and shared state that is thread-safe, such as the {@link SharedWriterDictionary}s that full
-     * subscriptions add to. Each run handles its own subscriber's failure; what this throws is a failure none of them
-     * handled, once the runs already started have finished.
+     * were reading. Runs for different targets happen at the same time, so {@code action} may change only the state of
+     * its own target's subscriptions and shared state that is thread-safe, such as the {@link SharedWriterDictionary}s
+     * that full subscriptions add to. Each run handles its own subscribers' failures; what this throws is a failure
+     * none of them handled, once the runs already started have finished.
      */
-    private void forEachInParallel(final List<Subscription> targets, final Consumer<Subscription> action) {
+    private <T> void forEachInParallel(final List<T> targets, final Consumer<T> action) {
         propagationJobSchedulerFactory.get().invokeParallel(
                 ExecutionContext.getContext(),
                 logOutput -> logOutput.append(logPrefix).append("propagation"),
@@ -2158,7 +2260,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      * subscription, the thread-safe {@link SharedWriterDictionary}s its registry adds to; a failure is reported to this
      * subscriber alone, which is then removed.
      */
-    private void propagateToSubscriber(
+    private void propagateSingle(
             final BarrageMessageWriter bmw,
             final Subscription subscription,
             final RowSet propRowSetForMessagePrev,
@@ -2195,12 +2297,41 @@ public class BarrageMessageProducer extends LivenessArtifact
                     subscription.reverseViewport, clientViewPrev, clientView, cols,
                     subscription.dictionaryRegistry));
         } catch (final Exception e) {
-            try {
-                subscription.listener.onError(errorTransformer.transform(e));
-            } catch (final Exception ignored) {
-            }
-            removeSubscription(subscription.listener);
+            failSubscription(subscription, e);
         }
+    }
+
+    /**
+     * Writes {@code bmw}'s message once for {@code members}, which must be stable full subscriptions with one
+     * {@link SubViewKey}, so that each would be sent identical bytes, and delivers it to every one of them; see
+     * {@link SharedMessageFanOut}, which also brings the members' dictionaries level first. Writes for the phase's
+     * other units happen at the same time, so this changes only its members' state and the thread-safe
+     * {@link SharedWriterDictionary}s. A member whose delivery fails is failed alone; a failure writing the message
+     * fails all of them.
+     */
+    private void propagateGroup(final BarrageMessageWriter bmw, final List<Subscription> members) {
+        final List<StreamObserver<BarrageMessageWriter.MessageView>> listeners = new ArrayList<>(members.size());
+        final List<DictionaryWriterRegistry> registries = new ArrayList<>(members.size());
+        for (final Subscription member : members) {
+            listeners.add(member.listener);
+            registries.add(member.dictionaryRegistry);
+        }
+        // the members are identical in configuration, so the first's options, direction and columns are every member's
+        final Subscription first = members.get(0);
+        new SharedMessageFanOut(listeners, registries, sharedDictionaryStates,
+                (member, failure) -> failSubscription(members.get(member), failure), this::recordCopyBytes,
+                propagationJobSchedulerFactory.get(), PARALLEL_COPY_MIN_BYTES)
+                .propagateToSubscribers(bmw, effectiveOptions(first.options), first.reverseViewport,
+                        first.subscribedColumns);
+    }
+
+    /** Tells {@code subscription}'s listener that {@code failure} has ended it, and removes it. */
+    private void failSubscription(final Subscription subscription, final Exception failure) {
+        try {
+            subscription.listener.onError(errorTransformer.transform(failure));
+        } catch (final Exception ignored) {
+        }
+        removeSubscription(subscription.listener);
     }
 
     private void propagateSnapshotForSubscription(final Subscription subscription,
@@ -2777,9 +2908,22 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
     }
 
-    private void recordWriteMetrics(final long bytes, final long cpuNanos) {
+    private void recordWriteMetrics(final long bytes, final long writeNanos) {
         recordMetric(stats -> stats.writeBytes, bytes);
-        recordMetric(stats -> stats.writeTime, cpuNanos);
+        recordMetric(stats -> stats.writeTime, writeNanos);
+    }
+
+    /**
+     * Records the copies of a shared write that the write itself did not record, as one {@code WriteBytes} sample each,
+     * so that every subscriber sent the write has a sample of the bytes it received.
+     */
+    private void recordCopyBytes(final long bytes, final int copies) {
+        if (stats == null) {
+            return;
+        }
+        synchronized (stats) {
+            stats.writeBytes.recordValueWithCount(bytes, copies);
+        }
     }
 
     private void recordMetric(final Function<Stats, Histogram> hist, final long value) {

@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class DictionaryWriterStateTest {
 
@@ -384,6 +385,43 @@ public class DictionaryWriterStateTest {
         } catch (final UnsupportedOperationException e) {
             // expected
         }
+    }
+
+    /**
+     * A full subscription's state advances, but never moves back within a generation; only a reset returns it to the
+     * start.
+     */
+    @Test
+    public void testFullSubscriptionAdvancesButNeverMovesBack() {
+        final SharedWriterDictionary shared = new SharedWriterDictionary(13L, ChunkType.Object);
+        final SharedDictionaryWriterState sub = new SharedDictionaryWriterState(shared);
+        indexForObject(shared, "a");
+        indexForObject(shared, "b");
+        indexForObject(shared, "c");
+
+        sub.advanceTo(2, false);
+        assertThat(sub.flushedOffset()).isEqualTo(2);
+        assertThat(sub.needsFullBatch()).isFalse();
+        // staying where it is counts as advancing
+        sub.advanceTo(2, false);
+
+        // behind its own position, past the dictionary's end, or needing a full batch again: each is refused, and the
+        // state is left where it was
+        assertThatThrownBy(() -> sub.advanceTo(1, false)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> sub.advanceTo(4, false)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> sub.advanceTo(2, true)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> sub.advanceTo(0, true)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(sub.flushedOffset()).isEqualTo(2);
+        assertThat(sub.needsFullBatch()).isFalse();
+
+        // a reset starts a new generation, which returns the state to the start, needing a full batch
+        shared.reset();
+        indexForObject(shared, "x");
+        sub.advanceTo(0, true);
+        assertThat(sub.needsFullBatch()).isTrue();
+        sub.advanceTo(1, false);
+        assertThat(sub.flushedOffset()).isEqualTo(1);
+        assertThat(sub.needsFullBatch()).isFalse();
     }
 
     @Test

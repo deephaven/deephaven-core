@@ -192,3 +192,4 @@ Each call to [`import_table`](/core/client-api/python/code/pydeephaven.session.h
 - [Python client quickstart](../getting-started/pyclient-quickstart.md)
 - [`pydeephaven` API reference](/core/client-api/python/code/pydeephaven.html)
 - [Write data to an in-memory, real-time table](./table-publisher.md)
+- [Protocol Buffers and remote procedure calls](./protobuf.md)

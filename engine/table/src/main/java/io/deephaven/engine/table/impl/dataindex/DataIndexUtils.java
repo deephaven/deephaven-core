@@ -12,6 +12,8 @@ import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -21,6 +23,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.ToLongFunction;
 
@@ -151,6 +156,54 @@ public class DataIndexUtils {
                 rowKeys.set(ii, lookup.apply(key, usePrev));
             }
         }
+    }
+
+    /**
+     * Present the key columns of an index table under the names a filter reads the key columns by, so that the filter
+     * can be applied to the index table. Several filter columns may name one key column, as when a filter reads a
+     * column and an alias of the column.
+     * <p>
+     * The result serves one filter operation and is then discarded, so the result is a static view with no listener,
+     * built over the index table's own row set and column sources. The view does not follow the index table's updates,
+     * yet shares the index table's row set and column sources, so the view drifts as the index table updates. Use the
+     * view only within the operation that makes the view, and never publish the view. A caller that filters previous
+     * values passes {@link io.deephaven.engine.table.impl.PrevTableTools#prevTable the index table's previous state} in
+     * place of the index table, so the result presents the previous state under the filter's names.
+     *
+     * @param indexTable The index table
+     * @param rowSetColumnName The name of the index table's row set column, which the result keeps
+     * @param filterColumns The names of the columns the filter reads
+     * @param renameMap A map from filter column name to key column name, for each filter column whose name differs from
+     *        the name of the key column
+     * @return {@code indexTable} itself if {@code indexTable} is static and the filter reads every key column under the
+     *         key column's own name; otherwise a static view that holds each filter column under the filter's name, and
+     *         the row set column
+     */
+    public static Table indexTableForFilter(
+            @NotNull final Table indexTable,
+            @NotNull final String rowSetColumnName,
+            @NotNull final List<String> filterColumns,
+            @NotNull final Map<String, String> renameMap) {
+        if (renameMap.isEmpty() && !indexTable.isRefreshing()) {
+            return indexTable;
+        }
+        final QueryTable source = (QueryTable) indexTable.coalesce();
+        // Creating a new table lets one key column appear under several filter names, which renameColumns cannot do.
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>(filterColumns.size() + 1);
+        for (final String filterColumn : filterColumns) {
+            columns.put(filterColumn, source.getColumnSource(renameMap.getOrDefault(filterColumn, filterColumn)));
+        }
+        columns.put(rowSetColumnName, source.getColumnSource(rowSetColumnName));
+        final QueryTable result =
+                new QueryTable(TableDefinition.inferFrom(source, columns), source.getRowSet(), columns);
+        // The table carries no other attribute. A filter reads only the sort order, and the attribute copy rules key
+        // the sort order by column name, which the table changes. So each filter name takes the order of the key
+        // column the filter name reads, and every filter name reading a sorted key column is sorted the same way.
+        for (final String filterColumn : filterColumns) {
+            SortedColumnsAttribute.getOrderForColumn(source, renameMap.getOrDefault(filterColumn, filterColumn))
+                    .ifPresent(order -> SortedColumnsAttribute.setOrderForColumn(result, filterColumn, order));
+        }
+        return result;
     }
 
     /**

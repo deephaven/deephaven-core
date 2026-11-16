@@ -738,7 +738,6 @@ public class TableTools {
      * @return an empty Deephaven Table
      */
     public static Table newTable(TableDefinition definition) {
-        definition.checkHasValidColumnNames();
         Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             columns.put(columnDefinition.getName(), NullValueColumnSource.getInstance(
@@ -772,7 +771,6 @@ public class TableTools {
 
     public static Table newTable(TableDefinition definition, @Nullable Map<String, Object> attributes,
             ColumnHolder<?>... columnHolders) {
-        definition.checkHasValidColumnNames();
         checkSizes(columnHolders);
         final WritableRowSet rowSet = getRowSet(columnHolders);
         final LinkedHashMap<String, ColumnSource<?>> columns =
@@ -1080,6 +1078,10 @@ public class TableTools {
                     .getTablesToMerge(Arrays.stream(tables), tables.length);
             if (tablesToMerge == null || tablesToMerge.isEmpty()) {
                 throw new IllegalArgumentException("No non-null tables provided to merge");
+            }
+            if (tablesToMerge.size() == 1) {
+                // A single table is its own merge; coalesce manages it with the enclosing scope when refreshing.
+                return tablesToMerge.get(0).coalesce();
             }
             return PartitionedTableFactory.ofTables(tablesToMerge.toArray(ZERO_LENGTH_TABLE_ARRAY)).merge();
         });

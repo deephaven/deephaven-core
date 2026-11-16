@@ -154,14 +154,14 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
         return endPositionExclusive - startPositionInclusive;
     }
 
-    private long groupAndOffsetToOuterRowKey(final long groupRowKey, final int offsetInGroup) {
+    private long groupAndOffsetToOuterRowKey(final long groupRowKey, final long offsetInGroup) {
         // noinspection resource
         final RowSet groupRowSet = groupRowSet(groupRowKey);
         final int startPositionInclusive = startPositionInclusive(groupRowKey);
         return groupRowSet.get(startPositionInclusive + offsetInGroup);
     }
 
-    private long prevGroupAndOffsetToOuterRowKey(final long groupRowKey, final int offsetInGroup) {
+    private long prevGroupAndOffsetToOuterRowKey(final long groupRowKey, final long offsetInGroup) {
         // noinspection resource
         final RowSet groupRowSet = prevGroupRowSet(groupRowKey);
         final int startPositionInclusive = prevStartPositionInclusive(groupRowKey);
@@ -169,7 +169,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final Object getUngrouped(final long groupRowKey, final int offsetInGroup) {
+    public final Object getUngrouped(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return null;
         }
@@ -178,7 +178,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final Object getUngroupedPrev(final long groupRowKey, final int offsetInGroup) {
+    public final Object getUngroupedPrev(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return null;
         }
@@ -187,7 +187,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final Boolean getUngroupedBoolean(final long groupRowKey, final int offsetInGroup) {
+    public final Boolean getUngroupedBoolean(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return null;
         }
@@ -196,7 +196,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final Boolean getUngroupedPrevBoolean(final long groupRowKey, final int offsetInGroup) {
+    public final Boolean getUngroupedPrevBoolean(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
@@ -205,7 +205,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final double getUngroupedDouble(final long groupRowKey, final int offsetInGroup) {
+    public final double getUngroupedDouble(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
@@ -214,7 +214,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final double getUngroupedPrevDouble(final long groupRowKey, final int offsetInGroup) {
+    public final double getUngroupedPrevDouble(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
@@ -223,7 +223,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final float getUngroupedFloat(final long groupRowKey, final int offsetInGroup) {
+    public final float getUngroupedFloat(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
@@ -232,7 +232,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final float getUngroupedPrevFloat(final long groupRowKey, final int offsetInGroup) {
+    public final float getUngroupedPrevFloat(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
@@ -241,7 +241,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final byte getUngroupedByte(final long groupRowKey, final int offsetInGroup) {
+    public final byte getUngroupedByte(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_BYTE;
         }
@@ -250,7 +250,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final byte getUngroupedPrevByte(final long groupRowKey, final int offsetInGroup) {
+    public final byte getUngroupedPrevByte(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_BYTE;
         }
@@ -259,7 +259,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final char getUngroupedChar(final long groupRowKey, final int offsetInGroup) {
+    public final char getUngroupedChar(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_CHAR;
         }
@@ -268,7 +268,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final char getUngroupedPrevChar(final long groupRowKey, final int offsetInGroup) {
+    public final char getUngroupedPrevChar(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_CHAR;
         }
@@ -277,7 +277,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final short getUngroupedShort(final long groupRowKey, final int offsetInGroup) {
+    public final short getUngroupedShort(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_SHORT;
         }
@@ -286,7 +286,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final short getUngroupedPrevShort(final long groupRowKey, final int offsetInGroup) {
+    public final short getUngroupedPrevShort(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_SHORT;
         }
@@ -295,7 +295,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final int getUngroupedInt(final long groupRowKey, final int offsetInGroup) {
+    public final int getUngroupedInt(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_INT;
         }
@@ -304,7 +304,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final int getUngroupedPrevInt(final long groupRowKey, final int offsetInGroup) {
+    public final int getUngroupedPrevInt(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_INT;
         }
@@ -313,7 +313,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final long getUngroupedLong(final long groupRowKey, final int offsetInGroup) {
+    public final long getUngroupedLong(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_LONG;
         }
@@ -322,7 +322,7 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
     }
 
     @Override
-    public final long getUngroupedPrevLong(final long groupRowKey, final int offsetInGroup) {
+    public final long getUngroupedPrevLong(final long groupRowKey, final long offsetInGroup) {
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_LONG;
         }

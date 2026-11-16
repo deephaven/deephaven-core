@@ -32,14 +32,14 @@ In the last form, the three booleans passed to [`SnapshotWhenOptions.of`](../ref
 
 ## Requirements and limitations
 
-With the [`HISTORY`](../reference/table-operations/snapshot/snapshot-when.md#snapshotwhenoptions) flag, the trigger table must be append-only. A time table meets this requirement unless you build it as a [blink table](../conceptual/table-types.md#specialization-3-blink) with [`timeTableBuilder`](../how-to-guides/time-table.md#timetable-as-a-blink-table) and `blinkTable(true)`. A blink table keeps only the rows added in the current [update graph cycle](../conceptual/periodic-update-graph-configuration.md). If the trigger table modifies or removes rows, or adds a row anywhere but after its last row, the snapshot raises an assertion error and the result table stops updating.
+With the [`HISTORY`](../reference/table-operations/snapshot/snapshot-when.md#snapshotwhenoptions) flag, the trigger table must be append-only. A time table meets this requirement unless you build it as a [blink table](../conceptual/table-types.md#specialization-3-blink) with [`timeTableBuilder`](../how-to-guides/time-table.md#create-a-blink-time-table) and `blinkTable(true)`. A blink table keeps only the rows added in the current [update graph cycle](../conceptual/periodic-update-graph-configuration.md). If the trigger table modifies or removes rows, or adds a row anywhere but after its last row, the snapshot raises an assertion error and the result table stops updating.
 
 You can't combine [`HISTORY`](../reference/table-operations/snapshot/snapshot-when.md#snapshotwhenoptions) with the [`INITIAL` or `INCREMENTAL`](../reference/table-operations/snapshot/snapshot-when.md#snapshotwhenoptions) flags.
 
 The result records the source table only at trigger events. If the source table changes more than once between two trigger rows, the result keeps only the state at the next trigger.
 
 > [!CAUTION]
-> If the source table has a column with the same name as a stamp column, the result table doesn't keep the trigger table's values for that column. With the [`HISTORY`](../reference/table-operations/snapshot/snapshot-when.md#snapshotwhenoptions) flag, Deephaven doesn't reliably detect this conflict. The stamp column's values can be silently lost, or the snapshot can fail. To avoid this problem, rename the stamp column, either in the trigger table with [`renameColumns`](../reference/table-operations/select/rename-columns.md) or in `stampColumns` itself (for example, `"TriggerTimestamp = Timestamp"`). You can also pass only the stamp columns you need in `stampColumns`.
+> If the source table has a column with the same name as a stamp column, `snapshotWhen` throws an exception. To avoid this, rename the stamp column, either in the trigger table with [`renameColumns`](../reference/table-operations/select/rename-columns.md) or in `stampColumns` itself (for example, `"TriggerTimestamp = Timestamp"`). You can also pass only the stamp columns you need in `stampColumns`.
 
 > [!CAUTION]
 > When you use [`snapshotWhen`](../reference/table-operations/snapshot/snapshot-when.md) to capture full table history, Deephaven stores a copy of the entire source table for every trigger event. A large source table or a frequently ticking trigger table can use a lot of memory.

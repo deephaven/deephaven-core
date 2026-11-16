@@ -3,7 +3,9 @@
 //
 package io.deephaven.engine.table.impl.dataindex;
 
+import io.deephaven.api.Pair;
 import io.deephaven.api.RawString;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
@@ -21,6 +23,8 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import org.junit.Rule;
@@ -33,6 +37,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
@@ -208,9 +213,18 @@ public class DataIndexPushdownManagerTest {
             final WhereFilter filter,
             final List<ColumnSource<?>> sources,
             final RowSet selection) {
+        return pushdown(matcher, filter, sources, selection, false);
+    }
+
+    private static PushdownResult pushdown(
+            final PushdownFilterMatcher matcher,
+            final WhereFilter filter,
+            final List<ColumnSource<?>> sources,
+            final RowSet selection,
+            final boolean usePrev) {
         final AtomicReference<PushdownResult> delivered = new AtomicReference<>();
         try (final PushdownFilterContext context = matcher.makePushdownFilterContext(filter, sources)) {
-            matcher.pushdownFilter(filter, selection, false, context, Long.MAX_VALUE, new ImmediateJobScheduler(),
+            matcher.pushdownFilter(filter, selection, usePrev, context, Long.MAX_VALUE, new ImmediateJobScheduler(),
                     delivered::set, e -> {
                         throw new AssertionError(e);
                     });
@@ -356,6 +370,130 @@ public class DataIndexPushdownManagerTest {
 
         assertThat(DataIndexPushdownManager.wrap(recording, null)).isInstanceOf(DataIndexPushdownManager.class);
         assertThat(requests).allMatch(DataIndexOptions::operationUsesPartialTable);
+    }
+
+    /**
+     * A filter that reads an indexed column and an alias of that column names one index column twice.
+     */
+    @Test
+    public void filterOnIndexedColumnAndAlias() {
+        final Table table = indexedTable();
+        checkIndexedFilter(table, DataIndexer.getOrCreateDataIndex(table, "A"), table.updateView("A2 = A"),
+                "A == 5 && A2 == 5");
+    }
+
+    /**
+     * A filter that reads two aliases of an indexed column names one index column twice, under names that are both
+     * different from the index column's.
+     */
+    @Test
+    public void filterOnTwoAliasesOfIndexedColumn() {
+        final Table table = indexedTable();
+        checkIndexedFilter(table, DataIndexer.getOrCreateDataIndex(table, "A"),
+                table.updateView("A2 = A", "A3 = A").dropColumns("A"), "A2 == 5 && A3 == 5");
+    }
+
+    /**
+     * A filter that reads indexed columns A and B under swapped names must still see each index column under the
+     * filter's name for the indexed column.
+     */
+    @Test
+    public void filterOnSwappedNamesOfIndexedColumns() {
+        // B divides A's period, so the index has no more keys than an index on A alone.
+        final Table table = indexedTable().update("B = ii % 4");
+        checkIndexedFilter(table, DataIndexer.getOrCreateDataIndex(table, "A", "B"),
+                table.renameColumns(List.of(Pair.parse("A = B"), Pair.parse("B = A"))), "A == 1 && B == 5");
+    }
+
+    /**
+     * A filter that reads swapped names of indexed columns A and B, and a second name for the index's B, must see each
+     * index column under every name the filter reads the index column by.
+     */
+    @Test
+    public void filterOnSwappedNamesAndAliasOfIndexedColumns() {
+        // B divides A's period, so the index has no more keys than an index on A alone.
+        final Table table = indexedTable().update("B = ii % 4");
+        checkIndexedFilter(table, DataIndexer.getOrCreateDataIndex(table, "A", "B"),
+                table.renameColumns(List.of(Pair.parse("A = B"), Pair.parse("B = A"))).updateView("A2 = A"),
+                "A == 1 && A2 == 1 && B == 5");
+    }
+
+    /**
+     * A filter that reads indexed column A as X and as B, and indexed column B as Y, gives the index's A the name of
+     * the index's B, and must still see the index's B as Y.
+     */
+    @Test
+    public void filterOnAliasNamedLikeAnotherIndexedColumn() {
+        // B divides A's period, so the index has no more keys than an index on A alone.
+        final Table table = indexedTable().update("B = ii % 4");
+        checkIndexedFilter(table, DataIndexer.getOrCreateDataIndex(table, "A", "B"),
+                table.renameColumns(List.of(Pair.parse("X = A"), Pair.parse("Y = B"))).updateView("B = X"),
+                "X == 5 && B == 5 && Y == 1");
+    }
+
+    /**
+     * A filter that reads an alias of an indexed column, and filters previous values after the index has updated the
+     * index's row sets in place, must see the index's previous state under the alias.
+     */
+    @Test
+    public void filterOnAliasReadsPreviousIndexState() {
+        final int size = KEYS * ROWS_PER_KEY;
+        final QueryTable table = TstUtils.testRefreshingTable(RowSetFactory.flat(size).toTracking(),
+                TableTools.intCol("A", IntStream.range(0, size).map(ii -> ii % KEYS).toArray()));
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+        final Table aliased = table.updateView("A2 = A");
+        final WhereFilter filter = initializedFilter(aliased, "A2 == 5");
+        final List<ColumnSource<?>> sources = List.of(aliased.getColumnSource("A2"));
+        assertThat(dataIndex.keyColumnNamesByIndexedColumn()).containsKey(sources.get(0));
+        final PushdownFilterMatcher matcher = DataIndexPushdownManager.wrap(dataIndex, null);
+
+        try (final RowSet previousMatches =
+                filter.filter(aliased.getRowSet(), aliased.getRowSet(), aliased, false)) {
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                // Row 5 leaves key 5, and row 6 joins key 5.
+                TstUtils.addToTable(table, TstUtils.i(5, 6), TableTools.intCol("A", 6, 5));
+                table.notifyListeners(TstUtils.i(), TstUtils.i(), TstUtils.i(5, 6));
+                // The index updates the index's row sets in place.
+                updateGraph.flushAllNormalNotificationsForUnitTests();
+
+                try (final RowSet previousRows = table.getRowSet().copyPrev();
+                        final PushdownResult previous = pushdown(matcher, filter, sources, previousRows, true);
+                        final PushdownResult current = pushdown(matcher, filter, sources, table.getRowSet(), false);
+                        final RowSet currentMatches =
+                                filter.filter(aliased.getRowSet(), aliased.getRowSet(), aliased, false)) {
+                    assertThat(currentMatches).isNotEqualTo(previousMatches);
+                    assertThat(previous.maybeMatch().isEmpty()).isTrue();
+                    assertThat(previous.match()).isEqualTo(previousMatches);
+                    assertThat(current.maybeMatch().isEmpty()).isTrue();
+                    assertThat(current.match()).isEqualTo(currentMatches);
+                }
+            });
+        }
+    }
+
+    /**
+     * Push {@code expression} down to {@code dataIndex} as a filter of {@code filtered}, a table whose filter columns
+     * share sources with the indexed {@code table}, and check that the index matches what the filter itself matches.
+     */
+    private static void checkIndexedFilter(
+            final Table table,
+            final DataIndex dataIndex,
+            final Table filtered,
+            final String expression) {
+        final WhereFilter filter = initializedFilter(filtered, expression);
+        final List<ColumnSource<?>> sources = new ArrayList<>();
+        filter.getColumns().forEach(column -> sources.add(filtered.getColumnSource(column)));
+        assertThat(sources).allMatch(source -> dataIndex.keyColumnNamesByIndexedColumn().containsKey(source));
+
+        final PushdownFilterMatcher matcher = DataIndexPushdownManager.wrap(dataIndex, null);
+        try (final PushdownResult result = pushdown(matcher, filter, sources, table.getRowSet());
+                // Apply the filter itself, since filtered.where could push down to the same index.
+                final RowSet expected = filter.filter(filtered.getRowSet(), filtered.getRowSet(), filtered, false)) {
+            assertThat(result.maybeMatch().isEmpty()).isTrue();
+            assertThat(expected.isEmpty()).isFalse();
+            assertThat(result.match()).isEqualTo(expected);
+        }
     }
 
     private static void checkEstimateAgreesWithPushdownAtThreshold(final PushdownFilterMatcher wrapped) {

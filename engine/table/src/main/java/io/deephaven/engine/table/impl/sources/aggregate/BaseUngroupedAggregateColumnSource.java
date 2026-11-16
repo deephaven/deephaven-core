@@ -43,7 +43,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
         // noinspection unchecked
-        return (DATA_TYPE) aggregateColumnSource.getUngrouped(groupRowKey, (int) offsetInGroup);
+        return (DATA_TYPE) aggregateColumnSource.getUngrouped(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -53,7 +53,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         }
         final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedBoolean(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedBoolean(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -63,7 +63,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         }
         final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedByte(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedByte(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -73,7 +73,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         }
         final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedChar(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedChar(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -83,7 +83,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         }
         final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedDouble(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedDouble(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -93,7 +93,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         }
         final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedFloat(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedFloat(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -103,7 +103,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         }
         final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedInt(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedInt(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -113,7 +113,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         }
         final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedLong(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedLong(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -123,7 +123,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         }
         final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedShort(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedShort(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -135,7 +135,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
         // noinspection unchecked
-        return (DATA_TYPE) aggregateColumnSource.getUngroupedPrev(groupRowKey, (int) offsetInGroup);
+        return (DATA_TYPE) aggregateColumnSource.getUngroupedPrev(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -146,7 +146,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         final long prevBase = getPrevBase();
         final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevBoolean(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevBoolean(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -157,7 +157,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         final long prevBase = getPrevBase();
         final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevByte(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevByte(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -168,7 +168,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         final long prevBase = getPrevBase();
         final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevChar(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevChar(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -179,7 +179,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         final long prevBase = getPrevBase();
         final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevDouble(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevDouble(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -190,7 +190,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         final long prevBase = getPrevBase();
         final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevFloat(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevFloat(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -201,7 +201,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         final long prevBase = getPrevBase();
         final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevInt(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevInt(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -212,7 +212,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         final long prevBase = getPrevBase();
         final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevLong(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevLong(groupRowKey, offsetInGroup);
     }
 
     @Override
@@ -223,7 +223,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         final long prevBase = getPrevBase();
         final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevShort(groupRowKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevShort(groupRowKey, offsetInGroup);
     }
     // endregion
 

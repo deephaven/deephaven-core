@@ -30,6 +30,10 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
     private final boolean exposeInternalColumns;
 
     private long tableSize;
+    /**
+     * The number of rows with a non-null value and weight in each destination, or null when the operator only receives
+     * additions; a null weighted sum then means that no such row has been added, and a NaN weighted sum never changes.
+     */
     private final LongArraySource normalCount;
     private LongArraySource nanCount;
     private final DoubleArraySource sumOfWeights;
@@ -40,14 +44,15 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
             ChunkType chunkType,
             DoubleWeightRecordingInternalOperator weightOperator,
             String name,
-            boolean exposeInternalColumns) {
+            boolean exposeInternalColumns,
+            boolean addOnly) {
         this.chunkType = chunkType;
         this.weightOperator = weightOperator;
         this.resultName = name;
         this.exposeInternalColumns = exposeInternalColumns;
 
         tableSize = 0;
-        normalCount = new LongArraySource();
+        normalCount = addOnly ? null : new LongArraySource();
         weightedSum = new DoubleArraySource();
         sumOfWeights = new DoubleArraySource();
         resultColumn = new DoubleArraySource();
@@ -190,6 +195,29 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
         final double newSumOfWeights = sumOfWeightsOut.doubleValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
+        if (normalCount == null) {
+            final double existingWeightedSum = weightedSum.getUnsafe(destination);
+            if (Double.isNaN(existingWeightedSum)) {
+                return false;
+            }
+            if (newNans > 0) {
+                weightedSum.set(destination, Double.NaN);
+                resultColumn.set(destination, Double.NaN);
+                return true;
+            }
+            if (newNormal == 0) {
+                return false;
+            }
+            final double totalWeightedSum = NullSafeAddition.plusDouble(existingWeightedSum, newWeightedSum);
+            final double totalSumOfWeights =
+                    NullSafeAddition.plusDouble(sumOfWeights.getUnsafe(destination), newSumOfWeights);
+            weightedSum.set(destination, totalWeightedSum);
+            sumOfWeights.set(destination, totalSumOfWeights);
+            final double newResult = totalWeightedSum / totalSumOfWeights;
+            final double existingResult = resultColumn.getAndSetUnsafe(destination, newResult);
+            return newResult != existingResult;
+        }
+
         final long totalNans;
         if (nanCount == null && newNans > 0) {
             totalNans = allocateNans(destination, newNans);
@@ -252,6 +280,7 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
     private boolean removeChunk(DoubleChunk<? extends Values> doubleValues, DoubleChunk<? extends Values> weightValues,
             int start, int length, long destination) {
+        requireCounts();
         final MutableInt nanOut = new MutableInt();
         final MutableInt normalOut = new MutableInt();
         final MutableDouble sumOfWeightsOut = new MutableDouble();
@@ -323,6 +352,7 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
     private boolean modifyChunk(DoubleChunk<? extends Values> prevDoubleValues,
             DoubleChunk<? extends Values> prevWeightValues, DoubleChunk<? extends Values> newDoubleValues,
             DoubleChunk<? extends Values> newWeightValues, int start, int length, long destination) {
+        requireCounts();
         final MutableInt nanOut = new MutableInt();
         final MutableInt normalOut = new MutableInt();
         final MutableDouble sumOfWeightsOut = new MutableDouble();
@@ -410,13 +440,22 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
         }
     }
 
+    private void requireCounts() {
+        if (normalCount == null) {
+            throw new UnsupportedOperationException(
+                    "Add-only weighted average operators do not support removals or modifications");
+        }
+    }
+
     @Override
     public void ensureCapacity(long tableSize) {
         this.tableSize = tableSize;
         if (nanCount != null) {
             nanCount.ensureCapacity(tableSize);
         }
-        normalCount.ensureCapacity(tableSize);
+        if (normalCount != null) {
+            normalCount.ensureCapacity(tableSize);
+        }
         weightedSum.ensureCapacity(tableSize);
         sumOfWeights.ensureCapacity(tableSize);
         resultColumn.ensureCapacity(tableSize);

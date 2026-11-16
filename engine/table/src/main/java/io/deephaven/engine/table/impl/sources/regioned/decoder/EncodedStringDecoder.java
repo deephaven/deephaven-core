@@ -33,7 +33,7 @@ public class EncodedStringDecoder<STRING_LIKE_TYPE extends CharSequence> impleme
         if (length == 0) {
             return null;
         }
-        if (length == 1 && data[0] == 0) {
+        if (length == 1 && data[offset] == 0) {
             return cache.getEmptyString();
         }
         return cache.getCachedString(new String(data, offset, length, encodingInfo.getCharset()));

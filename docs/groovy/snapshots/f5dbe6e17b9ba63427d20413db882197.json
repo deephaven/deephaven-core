@@ -1,0 +1,1 @@
+{"file":"how-to-guides/initialization-and-updates.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"}],"rows":[]}},"totals":{"type":"Table","data":{"columns":[{"name":"X","type":"long"}],"rows":[]}},":log":{"type":"Log","data":"Source rows: 0, totals rows: 0\n"}}}

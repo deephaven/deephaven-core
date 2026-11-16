@@ -110,9 +110,9 @@ classMatches = iris.where("Class.matches(`Iris-v.*`)")
 
 ### Regular expression (regex) filters
 
-The [`matches`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html#matches(java.lang.String)) method in the previous section already takes a [regular expression](https://en.wikipedia.org/wiki/Regular_expression), but the expression must match the whole string. To build a regex filter as an object rather than in a query string, use Deephaven's [`FilterPattern`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/FilterPattern.html) class, and pass the filter to [`where`](../reference/table-operations/filter/where.md). Its `FIND` mode matches the expression anywhere in the string, so the expression needs no `.*` at either end.
+The [`matches`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html#matches(java.lang.String)) method in the previous section already takes a [regular expression](https://en.wikipedia.org/wiki/Regular_expression), but the expression must match the whole string. To build a regex filter as an object rather than in a query string, use Deephaven's [`FilterPattern`](/core/javadoc/io/deephaven/api/filter/FilterPattern.html) class, and pass the filter to [`where`](../reference/table-operations/filter/where.md). Its `FIND` mode matches the expression anywhere in the string, so the expression needs no `.*` at either end.
 
-When performing regex filtering with [`FilterPattern`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/FilterPattern.html), you apply a specific pattern mode from [`FilterPattern.Mode`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/FilterPattern.Mode.html). Two pattern modes exist:
+When performing regex filtering with [`FilterPattern`](/core/javadoc/io/deephaven/api/filter/FilterPattern.html), you apply a specific pattern mode from [`FilterPattern.Mode`](/core/javadoc/io/deephaven/api/filter/FilterPattern.Mode.html). Two pattern modes exist:
 
 - `FIND` looks for a subsequence match in the string.
 - `MATCHES` matches an entire string against the given pattern.
@@ -147,7 +147,7 @@ conjunctiveFilteredIris = iris.where("Class in `Iris-setosa`", "PetalLengthCM >=
 
 ### Disjunctive
 
-Disjunctive (OR) filtering returns a table where _one or more_ of the filters return `true`. You can accomplish this by using the `||` operator in a [`where`](../reference/table-operations/filter/where.md) call, or by using [`Filter.or`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#or(java.util.Collection)) to combine multiple filters.
+Disjunctive (OR) filtering returns a table where _one or more_ of the filters return `true`. You can accomplish this by using the `||` operator in a [`where`](../reference/table-operations/filter/where.md) call, or by using [`Filter.or`](/core/javadoc/io/deephaven/api/filter/Filter.html#or(java.util.Collection)) to combine multiple filters.
 
 In the following example, two filters work disjunctively to return a new table where the petal length is greater than 6.0 cm or the petal width is less than 0.2 cm.
 
@@ -199,14 +199,14 @@ irisTailPct = iris.tailPct(0.1)
 
 ## Simulate ticking data with an incremental release filter
 
-The filters earlier on this page keep a fixed set of rows from the static `iris` table. The [`IncrementalReleaseFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html) instead releases the rows of a [static](../conceptual/table-types.md#static-tables) or [add-only](../conceptual/table-types.md#specialization-2-add-only) table over time. The result is a ticking table, which is a table whose rows change as Deephaven processes updates.
+The filters earlier on this page keep a fixed set of rows from the static `iris` table. The [`IncrementalReleaseFilter`](/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html) instead releases the rows of a [static](../conceptual/table-types.md#static-tables) or [add-only](../conceptual/table-types.md#specialization-2-add-only) table over time. The result is a ticking table, which is a table whose rows change as Deephaven processes updates.
 
 Use it to simulate ticking data during development, or to limit the number of rows a complex query processes at one time.
 
-The [`IncrementalReleaseFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html) constructor takes two parameters:
+The [`IncrementalReleaseFilter`](/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html) constructor takes two parameters:
 
 - The initial number of rows to present in the resulting table.
-- The number of rows to release at the beginning of each [update graph](../conceptual/dag.md#update-graph-ug-cycles) cycle, which is one round in which Deephaven processes table updates.
+- The number of rows to release at the beginning of each [update graph](../conceptual/dag.md#update-graph-cycles) cycle, which is one round in which Deephaven processes table updates.
 
 ```groovy test-set=1 ticking-table order=null
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter

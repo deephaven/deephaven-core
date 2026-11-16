@@ -244,6 +244,13 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     /**
      * Create a {@link DataIndex} for {@code table} indexing {@code keyColumns}, if no valid, live data index already
      * exists for these inputs.
+     * <p>
+     * The returned index's {@link DataIndex#table() table} may not be {@link DataIndex#tableIsCached() cached}; it is
+     * created when first requested. Some operations, such as {@link Table#where(io.deephaven.api.filter.Filter) where},
+     * use only data indexes whose tables are cached, and do not create them. To ensure that the table is cached, the
+     * caller must call {@link DataIndex#table()} on the returned index. The index retains its table once created, but
+     * this DataIndexer may reference the index only weakly, so the caller must keep the index reachable and live for as
+     * long as other operations should find it with its table cached.
      *
      * @param table The {@link Table} to index
      * @param keyColumnNames The key column names to include
@@ -259,6 +266,13 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     /**
      * Create a {@link DataIndex} for {@code table} indexing {@code keyColumns}, if no valid, live data index already
      * exists for these inputs.
+     * <p>
+     * The returned index's {@link DataIndex#table() table} may not be {@link DataIndex#tableIsCached() cached}; it is
+     * created when first requested. Some operations, such as {@link Table#where(io.deephaven.api.filter.Filter) where},
+     * use only data indexes whose tables are cached, and do not create them. To ensure that the table is cached, the
+     * caller must call {@link DataIndex#table()} on the returned index. The index retains its table once created, but
+     * this DataIndexer may reference the index only weakly, so the caller must keep the index reachable and live for as
+     * long as other operations should find it with its table cached.
      *
      * @param table The {@link Table} to index
      * @param keyColumnNames The key column names to include
@@ -304,7 +318,8 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /**
-     * Test whether {@code dataIndex} is {@code null} or invalid for use. This test does not evaluate liveness.
+     * Test whether {@code dataIndex} is {@code null} or invalid for use. This test does not evaluate liveness, and does
+     * not create the index's table; a refreshing index whose table has not been created cannot yet have failed.
      *
      * @param dataIndex The {@link DataIndex} to test
      * @return Whether {@code dataIndex} is {@code null} or invalid for use
@@ -316,7 +331,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         if (dataIndex instanceof AbstractDataIndex && !((AbstractDataIndex) dataIndex).isValid()) {
             return true;
         }
-        return dataIndex.isRefreshing() && dataIndex.table().isFailed();
+        return dataIndex.isRefreshing() && dataIndex.tableIsCached() && dataIndex.table().isFailed();
     }
 
     /**
@@ -363,12 +378,16 @@ public class DataIndexer implements TrackingRowSet.Indexer {
          * for it to become satisfied from an update graph thread. Consequently, it's best to pretend we don't have a
          * valid, live data index in this case. If a user or engine developer really wants to use a data index from an
          * update graph thread, they should have already looked it up and made their listener's Notification.canExecute
-         * dependent on the data index table's satisfaction.
+         * dependent on the data index table's satisfaction. An index whose table has not been created is not checked
+         * here, since creating it may wait for the update graph; its table is created by the caller that uses it.
          */
-        final UpdateGraph updateGraph = dataIndex.table().getUpdateGraph();
-        if (updateGraph.currentThreadProcessesUpdates()
-                && !dataIndex.table().satisfied(updateGraph.clock().currentStep())) {
-            return null;
+        if (dataIndex.tableIsCached()) {
+            final Table indexTable = dataIndex.table();
+            final UpdateGraph updateGraph = indexTable.getUpdateGraph();
+            if (updateGraph.currentThreadProcessesUpdates()
+                    && !indexTable.satisfied(updateGraph.clock().currentStep())) {
+                return null;
+            }
         }
         if (!LivenessScopeStack.peek().tryManage(dataIndex)) {
             return null;

@@ -31,7 +31,7 @@ The command's options do the following:
 - `--rm` deletes the container when it stops.
 - `--name deephaven` names the container `deephaven`, so you can refer to it by name in other Docker commands, such as `docker stop deephaven`.
 
-Files you save in the IDE go to `data/storage` on your machine. Anything your code writes under `/data` in the container also appears in your local `data` directory. Because these files live on your machine, you won't lose your work when `--rm` deletes the container. To learn more about mounting directories in Docker, see [Docker data volumes](../../conceptual/docker-data-volumes.md).
+Files you save in the IDE go to `data/storage` on your machine. Anything your code writes under `/data` in the container also appears in your local `data` directory. Because these files live on your machine, you won't lose your work when `--rm` deletes the container. To learn more about mounting directories in Docker, see [Docker bind mounts](../../conceptual/docker-data-volumes.md).
 
 ## Get the example data
 

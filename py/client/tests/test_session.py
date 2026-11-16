@@ -140,6 +140,17 @@ t1 = empty_table(0) if t.is_blink else None
         df = pa_table2.to_pandas()
         self.assertEqual(1000, len(df.index))
 
+    def test_import_table_rejects_record_batch(self) -> None:
+        batch = pa.record_batch([pa.array([1, 2])], names=["a"])
+        with self.assertRaises(DHError) as cm:
+            self.session.import_table(batch)
+        self.assertIn("must be a pyarrow Table", str(cm.exception.__cause__))
+
+    def test_log_prefix_has_port(self) -> None:
+        self.assertTrue(
+            self.session._logpfx.endswith(f"{self.session.host}:{self.session.port}")
+        )
+
     def test_input_table(self):
         pa_types = [
             pa.bool_(),
@@ -295,16 +306,23 @@ t1 = empty_table(0) if t.is_blink else None
         finally:
             session.close()
 
-    def test_reconnect_leaves_one_release_thread(self):
+    def test_enter_refuses_closed_session(self):
         session = Session()
-        old_thread = session._release_thread
+        session.close()
+        with self.assertRaises(DHError):
+            with session:
+                pass
+
+    def test_enter_refuses_disconnected_session(self):
+        session = Session()
         session.is_connected = False  # as a failed is_alive check leaves it
-        with session:  # reconnects
-            new_thread = session._release_thread
-            self.assertIsNot(new_thread, old_thread)
-            old_thread.join(5)
-            self.assertFalse(old_thread.is_alive())
-            self.assertTrue(new_thread.is_alive())
+        try:
+            with self.assertRaises(DHError):
+                with session:
+                    pass
+        finally:
+            session.is_connected = True
+            session.close()
 
     def test_paused_release_does_not_block_token_refresh(self):
         refreshed = threading.Event()

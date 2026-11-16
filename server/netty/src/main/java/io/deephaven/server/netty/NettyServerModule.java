@@ -8,6 +8,7 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.grpc.MTlsCertificate;
+import io.deephaven.server.arrow.TransportCompression;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.plugin.js.JsPluginNoopConsumerModule;
 import io.deephaven.server.runner.GrpcServer;
@@ -15,6 +16,9 @@ import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
 import io.grpc.BindableService;
+import io.grpc.Codec;
+import io.grpc.CompressorRegistry;
+import io.grpc.DecompressorRegistry;
 import io.grpc.Server;
 import io.grpc.ServerInterceptor;
 import io.grpc.netty.GrpcSslContexts;
@@ -53,6 +57,13 @@ public interface NettyServerModule {
         interceptors.forEach(serverBuilder::intercept);
         serverBuilder.intercept(MTlsCertificate.DEFAULT_INTERCEPTOR);
         serverBuilder.maxInboundMessageSize(serverConfig.maxInboundMessageSize());
+        if (!TransportCompression.ENABLED_TYPES.contains("gzip")) {
+            // grpc-java's default registries, which this server otherwise keeps, hold gzip
+            final CompressorRegistry compressors = CompressorRegistry.newEmptyInstance();
+            compressors.register(Codec.Identity.NONE);
+            serverBuilder.compressorRegistry(compressors);
+            serverBuilder.decompressorRegistry(DecompressorRegistry.emptyInstance().with(Codec.Identity.NONE, false));
+        }
         if (serverConfig.ssl().isPresent()) {
             final SSLConfig ssl = serverConfig.ssl().get().orTrust(TrustJdk.of());
             final SSLFactory kickstart = KickstartUtils.create(ssl);

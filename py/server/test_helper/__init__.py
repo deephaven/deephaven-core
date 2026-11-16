@@ -29,8 +29,8 @@ def start_jvm_for_tests(jvm_props: Optional[dict[str, str]] = None):
             "java.awt.headless": "true",
             "MetricsManager.enabled": "true",
             "Configuration.rootFile": propfile,
-            "deephaven.dataDir": "/data",
-            "deephaven.cacheDir": "/cache",
+            "deephaven.dataDir": os.environ.get("DEEPHAVEN_DATA_DIR", "/data"),
+            "deephaven.cacheDir": os.environ.get("DEEPHAVEN_CACHE_DIR", "/cache"),
             "Calendar.default": "USNYSE_EXAMPLE",
             "Calendar.importPath": "/test_calendar_imports.txt",
             "SystemicObjectTracker.enabled": "true",
@@ -46,6 +46,8 @@ def start_jvm_for_tests(jvm_props: Optional[dict[str, str]] = None):
             "--add-exports=java.management/sun.management=ALL-UNNAMED",
             # Allow our clock-impl project to access internals
             "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
+            # Enable unsafe memory access for Netty 4.2, required as of Arrow 19 on Java 25
+            "-Dio.netty.noUnsafe=false",
         }
         jvm_classpath = os.environ.get("DEEPHAVEN_CLASSPATH", "")
 

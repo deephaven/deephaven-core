@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Return the rows with the highest commonly available ID from multiple tables.
+ * For each key, return the rows with the highest ID that every input table has.
  * <p>
  * The Deephaven system does not provide cross table (or partition) transactions. However, you may have a producer that
  * generates more than one table, which you would like to then use in a coordinated fashion. The Deephaven system
@@ -42,18 +42,19 @@ import java.util.stream.Collectors;
  * <p>
  * If you tag each row with a long column that can be used to correlate the two tables, the SyncTableFilter can release
  * only rows with matching values in all the input tables. For example, if you have input tables "a" "b" and "c", with a
- * key of "USym", if "a" has rows for SPY with IDs of 1, 2, and 3, but "b" and "c" only have rows for "2", the filter
- * will pass through the rows with ID 2. When both "b" and "c" have SPY rows for 3, then the rows for ID 2 are removed
- * and the rows for ID 3 are added to the result tables.
+ * key of "USym", if "a" has rows for SPY with IDs of 1, 2, and 3, but "b" and "c" only have rows for 2, the filter will
+ * pass through the rows with ID 2. When both "b" and "c" have SPY rows for 3, then the rows for ID 2 are removed and
+ * the rows for ID 3 are added to the result tables.
  * <p>
  * The SyncTableFilter is configured through the Builder inner class. Tables are added to the builder, providing a name
  * for each table. The return value is a map of the results with each filtered input table accessible according to the
  * name provided to the builder.
  * <p>
- * For each key, only pass through the rows that have the minimum value of an ID across all tables. The IDs must be
- * monotonically increasing for each key. Your underlying tables must make use of transactions such that all rows for a
- * given ID appear in a input table at once. Please consult your Deephaven representative before deploying a query that
- * includes this filter to ensure that the assumptions are not violated.
+ * For each key, only pass through the rows that have the highest ID present in every table. Many rows may share an ID.
+ * The IDs for each key must not decrease: rows with an ID lower than the one already passed through are ignored. Your
+ * underlying tables must make use of transactions such that all rows for a given ID appear in an input table at once.
+ * Please consult your Deephaven representative before deploying a query that includes this filter to ensure that the
+ * assumptions are not violated.
  */
 public class SyncTableFilter {
 
@@ -582,8 +583,9 @@ public class SyncTableFilter {
 
         /**
          * Instantiate the map of synchronized tables.
-         *
-         * This must be called under the PeriodicUpdateGraph lock.
+         * <p>
+         * If any input table is refreshing, this must be called while holding the update graph's shared or exclusive
+         * lock, or from a context where serial table operations are otherwise safe.
          *
          * @return a map with one entry for each input table
          */

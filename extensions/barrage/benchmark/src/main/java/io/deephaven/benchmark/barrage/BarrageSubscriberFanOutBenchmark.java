@@ -67,8 +67,11 @@ import java.util.function.Supplier;
  * Measures what one propagation phase of a {@code BarrageMessageProducer} costs once the message is in hand: a
  * {@link BarrageMessageWriter} is made for one snapshot message, and every subscriber's view of it is serialized, with
  * the subscribers' writes fanned out over {@code threads} threads by a {@link JobScheduler#invokeParallel} on an
- * {@link ExecutorJobScheduler}, exactly as the producer fans them out. A {@code threads} of one runs them in turn on an
- * {@link ImmediateJobScheduler}, the sequential loop the producer ran before parallel writes.
+ * {@link ExecutorJobScheduler}, as the producer fans out writes to subscriptions it writes alone. The producer writes a
+ * propagated update once for full subscriptions with the same options instead; this benchmark measures the writes it
+ * makes one subscriber at a time, and {@code BarrageMessageProducerPropagateBenchmark} the producer as a whole. A
+ * {@code threads} of one runs them in turn on an {@link ImmediateJobScheduler}, the sequential loop the producer ran
+ * before parallel writes.
  *
  * <p>
  * Each subscriber drains its streams into its own sink, which copies every buffer it is handed into a small scratch

@@ -3,7 +3,7 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from deephaven_core.proto import table_pb2
 from pydeephaven._table_ops import TableOp
@@ -17,7 +17,7 @@ class BatchOpAssembler:
         self.session = session
         self.table_ops = table_ops
         self.grpc_table_ops: list[Any] = []
-        self._curr_source: Optional[table_pb2.TableReference] = None
+        self._curr_source: table_pb2.TableReference | None = None
 
     @property
     def batch(self) -> list[Any]:

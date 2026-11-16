@@ -45,7 +45,7 @@ irisNew = readCsv("/data/irisNew.csv")
 
 ## Parquet
 
-[Apache Parquet](https://parquet.apache.org/) is a columnar storage format that supports compression to store more data in less space. Deephaven reads and writes single Parquet files as well as [partitioned Parquet directories](../../how-to-guides/data-import-export/parquet-import.md#partitioned-parquet-directories), where one table's data is split across many Parquet files in a directory. Deephaven reads Parquet data stored locally or in cloud object storage, such as Amazon S3, any S3-compatible object store, and Google Cloud Storage.
+[Apache Parquet](https://parquet.apache.org/) is a columnar storage format that supports compression to store more data in less space. Deephaven reads and writes single Parquet files as well as [partitioned Parquet directories](../../how-to-guides/data-import-export/parquet-import.md#read-partitioned-parquet-directories), where one table's data is split across many Parquet files in a directory. Deephaven reads Parquet data stored locally or in cloud object storage, such as Amazon S3, any S3-compatible object store, and Google Cloud Storage.
 
 The example below reads from a local Parquet file.
 

@@ -7,7 +7,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.util.TableTools;
 
-import static io.deephaven.engine.testutil.TstUtils.prevTable;
+import static io.deephaven.engine.testutil.TstUtils.prevTableCopy;
 
 public class FuzzerPrintListener extends InstrumentedTableUpdateListener {
     private final String description;
@@ -32,7 +32,7 @@ public class FuzzerPrintListener extends InstrumentedTableUpdateListener {
         if (rowCount > 0) {
             TableTools.showWithRowSet(table, rowCount);
             System.out.println("Previous: " + table.getRowSet().sizePrev());
-            TableTools.showWithRowSet(prevTable(table), rowCount);
+            TableTools.showWithRowSet(prevTableCopy(table), rowCount);
         }
     }
 

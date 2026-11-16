@@ -1,16 +1,13 @@
 #
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
-from typing import TYPE_CHECKING, cast
+from typing import TypeAlias, cast
 
 import jpy
 
-if TYPE_CHECKING:
-    from typing_extensions import TypeAlias  # novermin  # noqa
-
-_JCallbackAdapter = cast(
+_JCallbackAdapter: TypeAlias = cast(
     type, jpy.get_type("io.deephaven.server.plugin.python.CallbackAdapter")
-)  # type: TypeAlias
+)
 
 
 def initialize_all_and_register_into(callback: _JCallbackAdapter):

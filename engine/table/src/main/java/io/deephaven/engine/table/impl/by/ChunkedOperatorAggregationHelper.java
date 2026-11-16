@@ -33,6 +33,7 @@ import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseableList;
@@ -181,8 +182,12 @@ public class ChunkedOperatorAggregationHelper {
         final ColumnSource<?>[] reinterpretedKeySources = Arrays.stream(keySources)
                 .map(ReinterpretUtils::maybeConvertToPrimitive).toArray(ColumnSource[]::new);
 
+        // Without initial keys, every state of an add-only or blink input is created by an add and is never emptied,
+        // so only other refreshing inputs need to record emptied and reincarnated states.
+        final boolean recordStateChanges = input.isRefreshing() && !preserveEmpty
+                && (initialKeys != null || !(input.isAddOnly() || input.isBlink()));
         final AggregationContext ac = aggregationContextFactory.makeAggregationContext(
-                input, input.isRefreshing() && !preserveEmpty, keyNames);
+                input, recordStateChanges, keyNames);
 
         final PermuteKernel[] permuteKernels = ac.makePermuteKernels();
 
@@ -242,10 +247,15 @@ public class ChunkedOperatorAggregationHelper {
                 // noinspection ConstantConditions,unchecked
                 keyColumnsCopied[kci] = ArrayBackedColumnSource.getMemoryColumnSource(outputPosition.get(),
                         keyColumnsRaw[kci].getType());
-                resultColumnSourceMap.put(keyNames[kci], keyColumnsCopied[kci]);
-            } else {
-                resultColumnSourceMap.put(keyNames[kci], keyColumnsRaw[kci]);
             }
+            final ColumnSource<?> resultKeySource = input.isRefreshing() ? keyColumnsCopied[kci] : keyColumnsRaw[kci];
+            // A single key column answers match filters by probing the hash table. The symbol table manager builds its
+            // lookup map of every key on the first probe, so its key column is scanned instead.
+            resultColumnSourceMap.put(keyNames[kci], keyHashTableSources.length == 1
+                    && !(stateManager instanceof StaticSymbolTableChunkedOperatorAggregationStateManager)
+                            ? AggregationKeyColumnSource.maybeWrap(resultKeySource, stateManager,
+                                    keySources[kci] != reinterpretedKeySources[kci], input.getUpdateGraph())
+                            : resultKeySource);
         }
         ac.getResultColumns(resultColumnSourceMap);
 
@@ -254,7 +264,11 @@ public class ChunkedOperatorAggregationHelper {
                 ? RowSetFactory.flat(outputPosition.get())
                 : initialRowsBuilder.build()).toTracking();
         if (input.isRefreshing()) {
-            copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
+            // Copy the keys of every state, including initial groups that start empty and stay out of the result row
+            // set until they are filled; later cycles copy keys only for newly created states.
+            try (final RowSet allStates = RowSetFactory.flat(outputPosition.get())) {
+                copyKeyColumns(keyColumnsRaw, keyColumnsCopied, allStates);
+            }
         }
 
         // Construct the result table
@@ -279,13 +293,13 @@ public class ChunkedOperatorAggregationHelper {
                         ac.initializeRefreshing(result, this);
 
                 final StateChangeRecorder stateChangeRecorder =
-                        preserveEmpty ? null : ac.getStateChangeRecorder();
+                        recordStateChanges ? ac.getStateChangeRecorder() : null;
                 // reused by every update, so that its bitset is allocated once and grows with the output positions
                 final BitmapRandomBuilder modifiedStatesBuilder = new BitmapRandomBuilder(0);
 
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
-                    incrementalStateManager.beginUpdateCycle();
+                    incrementalStateManager.beginUpdateCycle(getUpdateGraph().clock().currentStep());
 
                     final TableUpdate upstreamToUse = isBlink ? adjustForBlinkTable(upstream) : upstream;
                     if (upstreamToUse.empty()) {
@@ -355,6 +369,10 @@ public class ChunkedOperatorAggregationHelper {
                         control.getTargetLoadFactor());
             }
         }
+        final IncrementalOperatorAggregationStateManager incrementalStateManager =
+                stateManager instanceof IncrementalOperatorAggregationStateManager
+                        ? (IncrementalOperatorAggregationStateManager) stateManager
+                        : null;
         ac.supplyRowLookup(() -> new AggregationRowLookup() {
             @Override
             public int get(@Nullable final Object key) {
@@ -366,6 +384,13 @@ public class ChunkedOperatorAggregationHelper {
                     @NotNull final Chunk<? extends Values>[] keyChunks,
                     @NotNull final WritableLongChunk<RowKeys> rowKeys) {
                 stateManager.findPositionsForKeys(keyChunks, rowKeys);
+            }
+
+            @Override
+            public long lastStateChangeStep() {
+                return incrementalStateManager == null
+                        ? QueryConstants.NULL_LONG
+                        : incrementalStateManager.lastStateChangeStep();
             }
         });
         return stateManager;
@@ -1711,6 +1736,12 @@ public class ChunkedOperatorAggregationHelper {
                         @NotNull final WritableLongChunk<RowKeys> rowKeys) {
                     AggregationRowLookup.boxedGet(this, keyChunks, rowKeys);
                 }
+
+                @Override
+                public long lastStateChangeStep() {
+                    // the aggregation of a static source never changes
+                    return QueryConstants.NULL_LONG;
+                }
             };
         });
 
@@ -2279,6 +2310,12 @@ public class ChunkedOperatorAggregationHelper {
                     @NotNull final WritableLongChunk<RowKeys> rowKeys) {
                 throw new UnsupportedOperationException(
                         "A chunked lookup needs a key column, and a no-key aggregation has none");
+            }
+
+            @Override
+            public long lastStateChangeStep() {
+                // the only key is always at row 0
+                return QueryConstants.NULL_LONG;
             }
         });
 

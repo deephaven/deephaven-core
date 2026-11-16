@@ -135,6 +135,13 @@ public abstract class CommonBase : IObserver<TickingUpdate> {
   protected void NotifyDone() {
     _channel.Writer.TryWrite((true, null));
   }
+
+  /// <summary>
+  /// Wakes WaitForUpdateAsync with a message that is neither done nor an error.
+  /// </summary>
+  protected void NotifyInitialSnapshot() {
+    _channel.Writer.TryWrite((false, null));
+  }
 }
 
 public sealed class ReachesNRowsCallback: CommonBase {

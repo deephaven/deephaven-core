@@ -63,18 +63,17 @@ setup(
     packages=find_packages(where="src", exclude=("tests",)),
     package_dir={"": "src"},
     url="https://deephaven.io/",
-    license="Deephaven Community License Agreement Version 1.0",
+    license="Apache-2.0",
     author="Deephaven Data Labs",
     author_email="python@deephaven.io",
     zip_safe=False,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
-        "License :: Other/Proprietary License",
+        "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
@@ -92,7 +91,7 @@ setup(
             )
         ]
     ),
-    python_requires=">=3.9",
+    python_requires=">=3.10",
     install_requires=[f"pydeephaven=={_version}"],
     package_data={"pydeephaven_ticking": ["py.typed"]},
 )

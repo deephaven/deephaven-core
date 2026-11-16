@@ -6,8 +6,9 @@
 
 import threading
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Generator, Sequence
 from inspect import signature
-from typing import Callable, Generator, Optional, Sequence, TypeVar, Union
+from typing import TypeVar
 
 import pyarrow as pa
 import pyarrow.flight as flight
@@ -31,7 +32,7 @@ T = TypeVar("T")
 def _make_generator(
     table: dhc.ClientTable,
     rows: dhc.RowSequence,
-    col_names: Optional[Union[str, Sequence[str]]],
+    col_names: str | Sequence[str] | None,
     chunk_size: int,
 ) -> DictGeneratorType:
     """Repeatedly pulls up to chunk_size elements from the indicated columns of the ClientTable, collects them
@@ -62,7 +63,7 @@ def _make_generator(
         yield result
 
 
-def _first_or_default(generator: Generator[T, S, R]) -> Union[T, dict]:
+def _first_or_default(generator: Generator[T, S, R]) -> T | dict:
     """Takes a generator which is assumed to generate 0 or 1 dictionaries, and returns
     either the first dictionary or the empty dictionary.
 
@@ -94,7 +95,7 @@ class TableUpdate:
 
         self.update = update
 
-    def removed(self, cols: Optional[Union[str, Sequence[str]]] = None) -> ColDictType:
+    def removed(self, cols: str | Sequence[str] | None = None) -> ColDictType:
         """Gets all the data that was removed in this TableUpdate.
 
         Args:
@@ -109,7 +110,7 @@ class TableUpdate:
         )
 
     def removed_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, Sequence[str]]] = None
+        self, chunk_size: int, cols: str | Sequence[str] | None = None
     ) -> DictGeneratorType:
         """Creates a generator yielding chunks of the data that was removed in this TableUpdate.
 
@@ -126,7 +127,7 @@ class TableUpdate:
             self.update.before_removes, self.update.removed_rows, cols, chunk_size
         )
 
-    def added(self, cols: Optional[Union[str, Sequence[str]]] = None) -> ColDictType:
+    def added(self, cols: str | Sequence[str] | None = None) -> ColDictType:
         """Gets all the data that was added in this TableUpdate.
 
         Args:
@@ -139,7 +140,7 @@ class TableUpdate:
         return _first_or_default(self.added_chunks(self.update.added_rows.size, cols))
 
     def added_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, Sequence[str]]] = None
+        self, chunk_size: int, cols: str | Sequence[str] | None = None
     ) -> DictGeneratorType:
         """Creates a generator yielding chunks of the data that was added in this TableUpdate.
 
@@ -156,9 +157,7 @@ class TableUpdate:
             self.update.after_adds, self.update.added_rows, cols, chunk_size
         )
 
-    def modified_prev(
-        self, cols: Optional[Union[str, Sequence[str]]] = None
-    ) -> ColDictType:
+    def modified_prev(self, cols: str | Sequence[str] | None = None) -> ColDictType:
         """Gets all the data as it existed *before* the modify operation in this TableUpdate.
 
         Args:
@@ -173,7 +172,7 @@ class TableUpdate:
         )
 
     def modified_prev_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, Sequence[str]]] = None
+        self, chunk_size: int, cols: str | Sequence[str] | None = None
     ) -> DictGeneratorType:
         """Creates a generator yielding chunks of the data as it existed *before* the modify operation in this
         TableUpdate.
@@ -191,7 +190,7 @@ class TableUpdate:
             self.update.before_modifies, self.update.all_modified_rows, cols, chunk_size
         )
 
-    def modified(self, cols: Optional[Union[str, Sequence[str]]] = None) -> ColDictType:
+    def modified(self, cols: str | Sequence[str] | None = None) -> ColDictType:
         """Gets all the modified data *after* the modify operation in this TableUpdate.
 
         Args:
@@ -206,7 +205,7 @@ class TableUpdate:
         )
 
     def modified_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, Sequence[str]]] = None
+        self, chunk_size: int, cols: str | Sequence[str] | None = None
     ) -> DictGeneratorType:
         """Creates a generator yielding chunks of the modified data *after* the modify operation in this TableUpdate.
 
@@ -342,8 +341,8 @@ class TableListenerHandle:
 
 def listen(
     table: Table,
-    listener: Union[Callable, TableListener],
-    on_error: Optional[Callable[[Exception], None]] = None,
+    listener: Callable | TableListener,
+    on_error: Callable[[Exception], None] | None = None,
 ) -> TableListenerHandle:
     """A convenience method to create a TableListenerHandle. This method can be called in one of three ways:
 

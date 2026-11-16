@@ -62,7 +62,7 @@ Each Kafka event belongs to a topic and a partition, and carries a timestamp, a 
 
 _`TotalRequests` above indicates the total number of requests received across all machines in the single 10-second period defined by `t0`. The Kafka value is an [Avro](../conceptual/kafka-basic-terms.md#avro) record that stores this count as a 64-bit integer in its `Value` field._
 
-A historical capture of the feed is also stored as Parquet files. The files form a [key-value partitioned Parquet directory](./data-import-export/parquet-import.md#partitioned-parquet-directories) with one subdirectory per day, named like `Date=2021-05-01`. The capture adds a `Date` column to the columns listed above. `Date` is the partitioning column, and its values are strings in `'YYYY-MM-DD'` form.
+A historical capture of the feed is also stored as Parquet files. The files form a [key-value partitioned Parquet directory](./data-import-export/parquet-import.md#read-a-key-value-partitioned-parquet-directory) with one subdirectory per day, named like `Date=2021-05-01`. The capture adds a `Date` column to the columns listed above. `Date` is the partitioning column, and its values are strings in `'YYYY-MM-DD'` form.
 
 Our goal is to flag periods when overall system use falls outside a baseline of expected use. Defining that baseline is our first step.
 

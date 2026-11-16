@@ -3,7 +3,7 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from deephaven_core.proto import console_pb2, console_pb2_grpc
 from pydeephaven.dherror import DHError
@@ -40,7 +40,7 @@ class ConsoleService:
                 except Exception as e:
                     raise DHError("failed to start a console.") from e
 
-    def run_script(self, server_script: str, systemic: Optional[bool] = None) -> Any:
+    def run_script(self, server_script: str, systemic: bool | None = None) -> Any:
         """Runs a Python script in the console.
         Args:
             server_script (str): The script code to run

@@ -48,12 +48,12 @@ public class UngroupedBoxedByteArrayColumnSource extends UngroupedColumnSource<B
             return NULL_BYTE;
         }
         long segment = rowKey >> base;
-        int offset = (int) (rowKey & ((1 << base) - 1));
+        long offset = rowKey & ((1L << base) - 1);
         Byte[] array = innerSource.get(segment);
-        if (array == null || offset >= array.length || array[offset] == null) {
+        if (array == null || offset >= array.length || array[(int) offset] == null) {
             return NULL_BYTE;
         }
-        return array[offset];
+        return array[(int) offset];
     }
 
 
@@ -69,12 +69,12 @@ public class UngroupedBoxedByteArrayColumnSource extends UngroupedColumnSource<B
             return NULL_BYTE;
         }
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
+        long offset = rowKey & ((1L << getPrevBase()) - 1);
         Byte[] array = innerSource.getPrev(segment);
-        if (array == null || offset >= array.length || array[offset] == null) {
+        if (array == null || offset >= array.length || array[(int) offset] == null) {
             return NULL_BYTE;
         }
-        return array[offset];
+        return array[(int) offset];
     }
 
     @Override

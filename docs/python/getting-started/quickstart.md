@@ -25,7 +25,7 @@ For additional configuration options, see the [install guide for Docker](./docke
 
 ### With pip
 
-To install Deephaven with pip, you need Java 17 or later and Python 3.9 or later, and your `JAVA_HOME` environment variable must point to your Java installation. On Windows, pip-installed Deephaven also requires [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install). See the [pip install prerequisites](./pip-install.md#prerequisites) for details.
+To install Deephaven with pip, you need Java 17 or later and Python 3.10 or later, and your `JAVA_HOME` environment variable must point to your Java installation. On Windows, pip-installed Deephaven also requires [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install). See the [pip install prerequisites](./pip-install.md#prerequisites) for details.
 
 > [!NOTE]
 > For pip-installed Deephaven, we recommend using a Python [virtual environment](https://docs.python.org/3/library/venv.html) to decouple and isolate Python installs and associated packages.
@@ -381,7 +381,7 @@ time_series_join = (
 
 ## 5. Plot data via query or the UI
 
-Deephaven supports _updating, real-time plots_. [Deephaven Express](/core/plotly/docs/), a plotting plugin, is the recommended plotting library for most tasks. It builds real-time [Plotly Express](https://plotly.com/python/plotly-express/) plots directly from Deephaven tables. See [how to plot real-time data](../how-to-guides/plotting/overview.md) to compare Deephaven's plotting options.
+Deephaven supports _updating, real-time plots_. [Deephaven Express](/core/plotly/docs/), a plotting plugin, is the recommended plotting library for most tasks. It builds real-time [Plotly Express](https://plotly.com/python/plotly-express/) plots directly from Deephaven tables. See the [plotting overview](../how-to-guides/plotting/overview.md) to compare Deephaven's plotting options.
 
 The `ghcr.io/deephaven/server` Docker image includes Deephaven Express. If you installed with pip, you installed it [along with Deephaven](#with-pip). If you run the production application, you installed it [before starting the server](#with-the-production-application).
 
@@ -445,6 +445,6 @@ To go further with the topics in this guide, see:
 - [Read Parquet files](../how-to-guides/data-import-export/parquet-import.md)
 - [Connect to a Kafka stream](../how-to-guides/data-import-export/kafka-stream.md)
 - [Filter table data](../how-to-guides/use-filters.md)
-- [Plot real-time data](../how-to-guides/plotting/overview.md)
-- [Use pandas in Deephaven queries](../how-to-guides/use-pandas.md)
-- [Navigate the Deephaven UI](../how-to-guides/user-interface/navigating-the-ui.md)
+- [Plotting overview](../how-to-guides/plotting/overview.md)
+- [Convert between Deephaven tables and pandas DataFrames](../how-to-guides/use-pandas.md)
+- [Navigate the GUI](../how-to-guides/user-interface/navigating-the-ui.md)

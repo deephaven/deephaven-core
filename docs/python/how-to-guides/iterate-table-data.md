@@ -105,7 +105,7 @@ for chunk in source.iter_chunk_dict():
 
 [`iter_dict`](../reference/data-import-export/iterate/iter-dict.md), [`iter_tuple`](../reference/data-import-export/iterate/iter-tuple.md), [`iter_chunk_dict`](../reference/data-import-export/iterate/iter-chunk-dict.md), and [`iter_chunk_tuple`](../reference/data-import-export/iterate/iter-chunk-tuple.md) each take an optional column name or list of column names as their first argument. Pass it to iterate over only those columns.
 
-The values always arrive in the table's column order, whatever order you list the columns in. [`iter_dict`](../reference/data-import-export/iterate/iter-dict.md) and [`iter_chunk_dict`](../reference/data-import-export/iterate/iter-chunk-dict.md) key each value by column name, so the list order doesn't matter for them. With [`iter_tuple`](../reference/data-import-export/iterate/iter-tuple.md) and [`iter_chunk_tuple`](../reference/data-import-export/iterate/iter-chunk-tuple.md), list the columns in the same order as the table. [Column order and unpacking](#column-order-and-unpacking) explains what goes wrong otherwise.
+The values arrive in the order you list the columns, whatever the table's column order. A dictionary's keys and a named tuple's fields follow that order too.
 
 The following example only iterates over the `X` and `Z` columns in the `source` table:
 
@@ -129,15 +129,15 @@ for row in source.iter_tuple(["X", "Z"]):
 
 ## Column order and unpacking
 
-Unpacking values in the `for` statement, as in `for x, y in source.iter_tuple()`, assigns them to variables in the table's column order. The tuple methods also depend on column order when you pass them a column list. Column order causes problems in these cases:
+Unpacking values in the `for` statement, as in `for x, y in source.iter_tuple()`, assigns them to variables in the table's column order. Column order causes problems in these cases:
 
 - If a query reorders the columns, unpacking silently assigns values to the wrong variables.
 - If a query adds or removes columns, unpacking fails with a `ValueError`.
-- If you pass a column list to [`iter_tuple`](../reference/data-import-export/iterate/iter-tuple.md) or [`iter_chunk_tuple`](../reference/data-import-export/iterate/iter-chunk-tuple.md) in a different order from the table, the tuple fields are named in your list's order, but the values arrive in the table's order. Accessing values by name then reads the wrong columns.
 
-There are two ways to guard against these problems:
+There are three ways to guard against these problems:
 
-- Access values by name inside the loop. Use [`iter_dict`](../reference/data-import-export/iterate/iter-dict.md) or [`iter_chunk_dict`](../reference/data-import-export/iterate/iter-chunk-dict.md), or use [`iter_tuple`](../reference/data-import-export/iterate/iter-tuple.md) or [`iter_chunk_tuple`](../reference/data-import-export/iterate/iter-chunk-tuple.md) without a column list.
+- Access values by name inside the loop. Use [`iter_dict`](../reference/data-import-export/iterate/iter-dict.md) or [`iter_chunk_dict`](../reference/data-import-export/iterate/iter-chunk-dict.md), or the attribute names of the named tuples from [`iter_tuple`](../reference/data-import-export/iterate/iter-tuple.md) or [`iter_chunk_tuple`](../reference/data-import-export/iterate/iter-chunk-tuple.md).
+- Pass a column list in the order you unpack the values, as in `for x, y in source.iter_tuple(cols=["X", "Y"])`.
 - Use [`view`](../reference/table-operations/select/view.md) to put the columns in the order you unpack them before you iterate.
 
 In the following example, `reordered` has the same columns as `source`, but in the order `Y`, `X`. Accessing values by name gives the right values, positional unpacking assigns the `Y` values to `x`, and calling [`view`](../reference/table-operations/select/view.md) first restores the correct order:
@@ -165,7 +165,7 @@ for x, y in reordered.view(["X", "Y"]).iter_tuple():
 
 ## Iterate over refreshing tables
 
-The [update graph](../conceptual/dag.md#update-graph-ug-cycles) processes table updates in cycles. When you iterate over a [refreshing table](../conceptual/table-types.md), Deephaven can lock the update graph for the whole iteration. The lock stops the table from updating, so all of the values come from one consistent view of the table. Iteration runs under an update graph lock in the following cases:
+The [update graph](../conceptual/dag.md#update-graph-cycles) processes table updates in cycles. When you iterate over a [refreshing table](../conceptual/table-types.md), Deephaven can lock the update graph for the whole iteration. The lock stops the table from updating, so all of the values come from one consistent view of the table. Iteration runs under an update graph lock in the following cases:
 
 - Code you run in the console or in a script already holds the update graph's [exclusive lock](../conceptual/query-engine/engine-locking.md#exclusive-lock), so no table can update until the code finishes.
 - On a thread you start yourself, the iterator acquires the update graph's [shared lock](../conceptual/query-engine/engine-locking.md#shared-lock) and holds it until the generator is exhausted, closed, or destroyed. It does this only when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, which it is by default, and the thread isn't already marked as safe to run table operations without a lock.

@@ -2,13 +2,19 @@
 title: Strings
 ---
 
-A [String](https://en.wikipedia.org/wiki/String_(computer_science)) is a sequence of characters, such as letters, numbers, or symbols, that is treated as a single data type. Strings frequently contain words or text. Deephaven queries use strings ubiquitously. The Deephaven engine uses [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) but is designed to interoperate with Python strings as well.
+A [string](https://en.wikipedia.org/wiki/String_(computer_science)) is a sequence of characters, such as letters, numbers, or symbols, that a program handles as a single value. Deephaven queries use strings for column values, [filters](./filters.md), and [formulas](./formulas.md).
 
-This guide focuses on the use of both Python and Java strings interchangeably in queries.
+The Deephaven engine represents strings as [`java.lang.String`](../reference/query-language/types/strings.md). It converts [Python strings](./python-variables.md#strings) for you, so your Python string variables work in queries with no extra steps.
+
+This guide shows how to use Python strings and Java strings in [query strings](./query-string-overview.md).
 
 ## Python strings in queries
 
-Python strings are analogous to Java strings, as they share many similarities. [Python string variables](./python-variables.md) can be passed into table operations, and the engine knows how to handle them without any additional input. Note the column types. The Python strings are automatically converted to Java [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) strings.
+You can use [Python string variables](./python-variables.md#strings) in [query strings](./query-string-overview.md) directly. The engine converts them to [`java.lang.String`](../reference/query-language/types/strings.md) objects.
+
+Inside a [query string](./query-string-overview.md), a [string literal](./string-char-literals.md#string-literals) usually goes between backticks, which avoids escaping double quotes.
+
+Let's add the literal `` `Hello, ` `` to the variable `my_str`. The `source_meta` table, from [`meta_table`](../reference/table-operations/metadata/meta_table.md), lists each column's name and type. Its `DataType` column shows `java.lang.String`:
 
 ```python order=source,source_meta
 from deephaven import empty_table
@@ -19,7 +25,7 @@ source = empty_table(1).update("MyStringColumn = `Hello, ` + my_str")
 source_meta = source.meta_table
 ```
 
-[Python functions](./python-functions.md) that return strings are no different:
+[Python functions](./python-functions.md) that return strings work too, as long as they have a `str` return [type hint](./python-functions.md#type-hints). The hint tells the engine to make a [`String`](../reference/query-language/types/strings.md) column:
 
 ```python order=source,source_meta
 from deephaven import empty_table
@@ -33,17 +39,19 @@ source = empty_table(1).update("StringColumn = string_function()")
 source_meta = source.meta_table
 ```
 
+Without the hint, the column doesn't hold strings. It holds [`PyObject`](./pyobjects.md) or `java.lang.Object` values instead.
+
 ## Java strings in queries
 
-String columns in Deephaven tables are stored as [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) objects. This provides three powerful ways to manipulate text in [query strings](./query-string-overview.md):
+Deephaven stores string columns as [`java.lang.String`](../reference/query-language/types/strings.md) objects, so you work with them in [query strings](./query-string-overview.md) the way Java does:
 
-1. Native Java string methods (like `length`, `substring`, etc.)
-2. Deephaven's [built-in string functions](./built-in-functions.md)
-3. String-specific [operators](./operators.md) (such as `+` for concatenation)
+- String concatenation with the `+` [operator](./operators.md), which concatenates when either operand is a string
+- Native [`java.lang.String`](../reference/query-language/types/strings.md) methods, such as [`indexOf`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html#indexOf(java.lang.String)) and [`substring`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html#substring(int,int))
+- Deephaven's [built-in functions](./built-in-functions.md) that work with strings
 
 ### String concatenation
 
-Like Python strings, [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) objects can be concatenated with the `+` [operator](./operators.md):
+The `+` [operator](./operators.md) concatenates [`java.lang.String`](../reference/query-language/types/strings.md) objects, just as it concatenates Python strings:
 
 ```python order=source,source_meta
 from deephaven import empty_table
@@ -56,7 +64,7 @@ source_meta = source.meta_table
 
 ### String methods
 
-[`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) methods can be called from [query strings](./query-string-overview.md) and can yield very powerful queries:
+You can call [`java.lang.String`](../reference/query-language/types/strings.md) methods directly from [query strings](./query-string-overview.md) to search, slice, and change the case of text without leaving the query. Because the column holds [`java.lang.String`](../reference/query-language/types/strings.md) values, use Java method names such as `toUpperCase`, not Python ones such as `upper`:
 
 ```python order=source,result
 from deephaven import empty_table
@@ -65,7 +73,7 @@ source = empty_table(1).update(
     [
         "StrCol1 = `Learning `",
         "StrCol2 = `about `",
-        "StrCol3 = ` strings.`",
+        "StrCol3 = `strings.`",
         "StrCol4 = StrCol1 + StrCol2 + StrCol3",
     ]
 )
@@ -80,9 +88,11 @@ result = source.update(
 )
 ```
 
-### String filtering
+In `Learning about strings.`, the text `ings.` starts at index 18, so `IndexOfSubstring` is `18`. `Substring` is `ning about`, the characters from index 4 up to but not including index 14.
 
-A common use of string methods is for [string filtering](./use-filters.md#string-filters):
+#### String filtering
+
+A common use of string methods is [string filtering](./use-filters.md#string-filters):
 
 ```python order=source,result
 from deephaven import new_table
@@ -95,11 +105,13 @@ source = new_table(
 result = source.where(filters=["X.startsWith(`C`)"])
 ```
 
+`result` keeps only the rows whose `X` value starts with `C`: `Ca` and `Cb`.
+
 ### Built-in functions
 
-Many [built-in functions](./built-in-functions.md) work with strings. For instance, you can parse the numeric values in strings:
+Many [built-in functions](./built-in-functions.md) work with strings. For instance, the [parse functions](../reference/query-language/query-library/auto-imported/parse.md) convert strings to numeric and boolean values:
 
-```python order=result,result_meta,source
+```python order=source,result,result_meta
 from deephaven import empty_table
 
 source = empty_table(1).update(
@@ -121,15 +133,33 @@ result = source.update(
 result_meta = result.meta_table
 ```
 
+`result_meta` shows that `Int` is an `int` column, `Float` a `float` column, `Double` a `double` column, and `Bool` a `java.lang.Boolean` column.
+
 ## Related documentation
 
 - [Filter table data](./use-filters.md)
-- [New and empty table](./new-and-empty-table.md#new_table)
-- [Query strings](./query-string-overview.md)
-- [String literals in query strings](./string-char-literals.md)
+- [Create static tables](./new-and-empty-table.md)
+- [An overview of query strings](./query-string-overview.md)
+- [String and char literals in query strings](./string-char-literals.md)
 - [Python variables in query strings](./python-variables.md)
 - [Python functions in query strings](./python-functions.md)
-- [Java objects in query strings](./java-classes.md)
+- [Handle PyObjects in tables](./pyobjects.md)
+- [Java objects and classes in query strings](./java-classes.md)
+- [Built-in query language functions](./built-in-functions.md)
 - [Filters](./filters.md)
 - [Formulas](./formulas.md)
-- [Operators in query strings](./operators.md)
+- [Operators](./operators.md)
+- [Strings](../reference/query-language/types/strings.md)
+- [`empty_table`](../reference/table-operations/create/emptyTable.md)
+- [`new_table`](../reference/table-operations/create/newTable.md)
+- [`string_col`](../reference/table-operations/create/stringCol.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [`where`](../reference/table-operations/filter/where.md)
+- [`meta_table`](../reference/table-operations/metadata/meta_table.md)
+- [Parse functions](../reference/query-language/query-library/auto-imported/parse.md)
+- [`empty_table` Pydoc](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.empty_table)
+- [`new_table` Pydoc](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.new_table)
+- [`string_col` Pydoc](/core/pydoc/code/deephaven.column.html#deephaven.column.string_col)
+- [`update` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update)
+- [`where` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.where)
+- [`meta_table` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.meta_table)

@@ -49,7 +49,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Creates a table that captures a snapshot of {@code this} whenever {@code trigger} updates.
      *
      * <p>
-     * Equivalent to {@code snapshotWhen(trigger, SnapshotWhenControl.of(features))}.
+     * Equivalent to {@code snapshotWhen(trigger, SnapshotWhenOptions.of(features))}.
      *
      * @param trigger the trigger table
      * @param features the snapshot features
@@ -63,7 +63,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Creates a table that captures a snapshot of {@code this} whenever {@code trigger} updates.
      *
      * <p>
-     * Equivalent to {@code snapshotWhen(trigger, SnapshotWhenControl.of(features, stampColumns))}.
+     * Equivalent to {@code snapshotWhen(trigger, SnapshotWhenOptions.of(features, stampColumns))}.
      *
      * <p>
      * See {@link SnapshotWhenOptions} for details on the {@code stampColumns}.

@@ -3945,7 +3945,11 @@ public class QueryTableAggregationTest {
     @Test
     public void testIds7553() {
         final Table result = emptyTable(100).updateView("K=ii%10", "V=ii/10").groupBy("K").ungroup();
-        final Table prevResult = prevTableColumnSources(result);
+        // The result is static, and PrevTableTools.prevTable presents a static table as the table itself, so wrap the
+        // result's column sources directly to read the previous values of a static ungroup.
+        final Map<String, ColumnSource<?>> prevSources = new LinkedHashMap<>();
+        result.getColumnSourceMap().forEach((name, source) -> prevSources.put(name, new PrevColumnSource<>(source)));
+        final Table prevResult = new QueryTable(result.getRowSet().copyPrev().toTracking(), prevSources);
         assertTableEquals(result, prevResult);
     }
 
@@ -4017,6 +4021,25 @@ public class QueryTableAggregationTest {
         assertEquals(5, aggregated.size());
 
         assertTableEquals(initialState, aggregated);
+    }
+
+    @Test
+    public void testInitialGroupsRefreshingWithoutPreserveEmpty() {
+        // initial group A starts empty, so it is absent from the result until a row for it arrives
+        final TrackingWritableRowSet inputRows = RowSetFactory.fromRange(0, 1).toTracking();
+        final QueryTable input = testRefreshingTable(inputRows, col("C", 'A', 'B'));
+        inputRows.remove(0);
+
+        final Table initialKeys = testTable(col("C", 'A', 'B'));
+        final Table aggregated = input.aggBy(List.of(AggCount("Count")), false, initialKeys, ColumnName.from("C"));
+        assertTableEquals(testTable(col("C", 'B'), longCol("Count", 1)), aggregated);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            inputRows.insert(0);
+            input.notifyListeners(i(0), i(), i());
+        });
+        assertTableEquals(testTable(col("C", 'A', 'B'), longCol("Count", 1, 1)), aggregated);
     }
 
     @Test

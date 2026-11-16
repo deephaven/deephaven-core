@@ -31,6 +31,7 @@ public class ReplicateOperators {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumFloatChunk.java");
         floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedSumOperator.java");
+        fixupDoubleSum();
         floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedAvgOperator.java");
         floatToAllFloatingPoints(TASK,
@@ -55,6 +56,18 @@ public class ReplicateOperators {
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/alternatingcolumnsource/CharAlternatingColumnSourceUnorderedMergeKernel.java");
         replicateObjectUnorderedMergeKernel();
+    }
+
+    private static void fixupDoubleSum() throws IOException {
+        final File doubleSumFile = new File(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/DoubleChunkedSumOperator.java");
+        List<String> lines = FileUtils.readLines(doubleSumFile, Charset.defaultCharset());
+        lines = ReplicationUtils.replaceRegion(lines, "runningSum", List.of(
+                "        // an add-only double sum accumulates every non-null value in its result column",
+                "        runningSum = addOnly ? null : new DoubleArraySource();"));
+        lines = ReplicationUtils.replaceRegion(lines, "addOnlySum", List.of(
+                "        resultColumn.set(destination, NullSafeAddition.plusDouble(resultColumn.getUnsafe(destination), chunkSum));"));
+        FileUtils.writeLines(doubleSumFile, lines);
     }
 
     private static void replicateObjectAddOnlyMinMax() throws IOException {

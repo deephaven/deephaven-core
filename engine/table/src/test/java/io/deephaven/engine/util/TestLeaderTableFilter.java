@@ -12,6 +12,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -485,6 +486,61 @@ public class TestLeaderTableFilter {
         assertTableEquals(notQuiteMostRecentLeader, fl);
         assertTableEquals(a.where("Sentinel in 104, 102, 103, 120, 130, 132, 133, 134"), fa);
         assertTableEquals(b.where("Sentinel in 210, 211, 203, 220, 221, 231, 233"), fb);
+    }
+
+    @Test
+    public void testMaxFollowers() {
+        testManyFollowers(31);
+        testManyFollowers(32);
+    }
+
+    private void testManyFollowers(final int followerCount) {
+        final ColumnHolder<?>[] leaderColumns = new ColumnHolder[followerCount];
+        for (int tt = 0; tt < followerCount; ++tt) {
+            leaderColumns[tt] = longCol("F" + tt, 0, 1);
+        }
+        final QueryTable leader = TstUtils.testRefreshingTable(leaderColumns);
+
+        final QueryTable[] followers = new QueryTable[followerCount];
+        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader.assertAddOnly());
+        for (int tt = 0; tt < followerCount; ++tt) {
+            followers[tt] = TstUtils.testRefreshingTable(longCol("ID", 1), intCol("Sentinel", tt));
+            builder.addTable("f" + tt, followers[tt].assertAddOnly(), "F" + tt + "=ID");
+        }
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final LeaderTableFilter.Results<Table> results = updateGraph.sharedLock().computeLocked(builder::build);
+        final Table fl = results.get(LeaderTableFilter.DEFAULT_LEADER_NAME);
+
+        // the row with all IDs 0 is never satisfied; the row with all IDs 1 is satisfied by every follower
+        assertTableEquals(leader.where("F0 = 1"), fl);
+        for (int tt = 0; tt < followerCount; ++tt) {
+            assertTableEquals(newTable(longCol("ID", 1), intCol("Sentinel", tt)), results.get("f" + tt));
+        }
+
+        // a new leader row is not released until the last follower has its ID
+        for (int tt = 0; tt < followerCount; ++tt) {
+            final ColumnHolder<?>[] newLeaderColumns = new ColumnHolder[followerCount];
+            for (int cc = 0; cc < followerCount; ++cc) {
+                newLeaderColumns[cc] = longCol("F" + cc, 2);
+            }
+            final int ftt = tt;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                if (ftt == 0) {
+                    TstUtils.addToTable(leader, i(2), newLeaderColumns);
+                    leader.notifyListeners(i(2), i(), i());
+                }
+                TstUtils.addToTable(followers[ftt], i(1), longCol("ID", 2), intCol("Sentinel", ftt));
+                followers[ftt].notifyListeners(i(1), i(), i());
+            });
+            if (tt < followerCount - 1) {
+                assertTableEquals(leader.where("F0 = 1"), fl);
+            } else {
+                assertTableEquals(leader.where("F0 = 2"), fl);
+            }
+        }
+        for (int tt = 0; tt < followerCount; ++tt) {
+            assertTableEquals(newTable(longCol("ID", 2), intCol("Sentinel", tt)), results.get("f" + tt));
+        }
     }
 
     @Test

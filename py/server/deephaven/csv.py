@@ -7,7 +7,6 @@ Deephaven table out as a CSV file.
 """
 
 from collections.abc import Sequence
-from typing import Optional
 
 import jpy
 
@@ -24,7 +23,7 @@ _JArrays = jpy.get_type("java.util.Arrays")
 
 def read(
     path: str,
-    header: Optional[dict[str, DType]] = None,
+    header: dict[str, DType] | None = None,
     headless: bool = False,
     header_row: int = 0,
     skip_rows: int = 0,

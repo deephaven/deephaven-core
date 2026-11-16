@@ -5,10 +5,9 @@
 
 import importlib
 from types import ModuleType
-from typing import Optional
 
 
-def soft_dependency(module_name: str) -> Optional[ModuleType]:
+def soft_dependency(module_name: str) -> ModuleType | None:
     """Attempt to import a module and return it if it exists, otherwise return None.
     Args:
         module_name (str): the name of the module to import

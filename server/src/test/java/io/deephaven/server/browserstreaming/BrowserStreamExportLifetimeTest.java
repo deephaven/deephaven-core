@@ -7,6 +7,7 @@ import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
@@ -27,9 +28,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static org.junit.Assert.assertThrows;
@@ -130,9 +137,15 @@ public class BrowserStreamExportLifetimeTest {
         /** when set, the call is already cancelled: a handler runs as soon as it is registered */
         boolean cancelledAlready;
         Runnable onCancelHandler;
+        /** runs on every write, so a test can act as the transport does while the writer holds its locks */
+        Runnable onWrite;
 
         @Override
-        public void onNext(final T value) {}
+        public void onNext(final T value) {
+            if (onWrite != null) {
+                onWrite.run();
+            }
+        }
 
         @Override
         public void onError(final Throwable t) {}
@@ -251,6 +264,63 @@ public class BrowserStreamExportLifetimeTest {
         Assert.eqTrue(delegate.error instanceof StatusRuntimeException, "delegate.error instanceof SRE");
         Assert.eq(((StatusRuntimeException) delegate.error).getStatus().getCode(), "code", Status.Code.CANCELLED);
         Assert.eq(streamExport.getState(), "streamExport.getState()", ExportNotification.State.RELEASED);
+    }
+
+    /**
+     * On the emulated transport a client's last Next, the half-close in particular, is a separate call from its cancel
+     * of the open request, and nothing orders them. A Next that arrives after the cancel has released the stream's
+     * export is that client's message losing the race with its own cancel. A half-close carries nothing to deliver and
+     * completes quietly; a message is an undelivered body and the caller is told so. Neither is a failed dependency or
+     * an internal error.
+     */
+    @Test
+    public void testNextAfterCancelledOpenIsDroppedQuietly() {
+        final RecordingDelegate delegate = new RecordingDelegate();
+        final GrpcServiceOverrideBuilder.BrowserStreamMethod<String, String, Object> method =
+                new GrpcServiceOverrideBuilder.BrowserStreamMethod<>(log, BrowserStream.Mode.IN_ORDER, delegate,
+                        sessionService);
+        final int rpcTicketId = 13;
+        final Ticket rpcTicket = ExportTicketHelper.wrapExportIdInTicket(rpcTicketId);
+        final CapturingServerCallObserver<String> openCall = new CapturingServerCallObserver<>();
+
+        inStreamContext(new StreamData(rpcTicket, 0, false), () -> method.invokeOpen("first", openCall));
+        runPendingWork();
+        Assert.eq(delegate.received.size(), "delegate.received.size()", 1);
+        openCall.onCancelHandler.run();
+        Assert.eq(session.getExportIfExists(rpcTicketId).getState(), "stream export state",
+                ExportNotification.State.RELEASED);
+
+        // a message and then the half-close, both sent before the client cancelled but delivered after
+        final StatusRuntimeException undelivered = assertThrows(StatusRuntimeException.class,
+                () -> inStreamContext(new StreamData(rpcTicket, 1, false),
+                        () -> method.invokeNext("second", new NoopObserver<>())));
+        Assert.eq(undelivered.getStatus().getCode(), "undelivered.getStatus().getCode()", Status.Code.CANCELLED);
+        final RecordingObserver<Object> halfClose = new RecordingObserver<>();
+        inStreamContext(new StreamData(rpcTicket, 2, true), () -> method.invokeNext(null, halfClose));
+        runPendingWork();
+
+        Assert.eqNull(halfClose.error, "halfClose.error");
+        Assert.eqTrue(halfClose.completed, "halfClose.completed");
+        // nothing reached the ended stream
+        Assert.eq(delegate.received.size(), "delegate.received.size()", 1);
+    }
+
+    private static final class RecordingObserver<T> implements StreamObserver<T> {
+        Throwable error;
+        boolean completed;
+
+        @Override
+        public void onNext(final T value) {}
+
+        @Override
+        public void onError(final Throwable t) {
+            error = t;
+        }
+
+        @Override
+        public void onCompleted() {
+            completed = true;
+        }
     }
 
     /**
@@ -488,5 +558,93 @@ public class BrowserStreamExportLifetimeTest {
         Assert.neqNull(streamExport, "streamExport");
         Assert.eqTrue(SessionState.isExportStateTerminal(streamExport.getState()),
                 "SessionState.isExportStateTerminal(streamExport.getState())");
+    }
+
+    /**
+     * When a write to the open call's response stream fails, the servlet transport runs the call's cancel handler
+     * inline, on the writing thread, which still holds the response stream's monitor. Services complete that same
+     * response stream when the client half-closes, taking its monitor through {@link GrpcUtil#safelyComplete}. A
+     * half-close that arrives while such a write is failing must therefore not hold the browser stream's own monitor
+     * while it completes the service, because the inline cancel needs that monitor to end the stream.
+     */
+    @Test
+    public void testHalfCloseDoesNotDeadlockWithCancelFromFailedWrite() throws InterruptedException {
+        final AtomicReference<StreamObserver<String>> responseStream = new AtomicReference<>();
+        final CountDownLatch writerHoldsResponseStream = new CountDownLatch(1);
+        final CountDownLatch serviceCompleting = new CountDownLatch(1);
+        final GrpcServiceOverrideBuilder.BidiDelegate<String, String> delegate = responseObserver -> {
+            responseStream.set(responseObserver);
+            return new StreamObserver<>() {
+                @Override
+                public void onNext(final String value) {}
+
+                @Override
+                public void onError(final Throwable t) {}
+
+                @Override
+                public void onCompleted() {
+                    serviceCompleting.countDown();
+                    // as the services do when the client half-closes
+                    GrpcUtil.safelyComplete(responseObserver);
+                }
+            };
+        };
+        final GrpcServiceOverrideBuilder.BrowserStreamMethod<String, String, Object> method =
+                new GrpcServiceOverrideBuilder.BrowserStreamMethod<>(log, BrowserStream.Mode.IN_ORDER, delegate,
+                        sessionService);
+        final int rpcTicketId = 13;
+        final Ticket rpcTicket = ExportTicketHelper.wrapExportIdInTicket(rpcTicketId);
+        final CapturingServerCallObserver<String> openCall = new CapturingServerCallObserver<>();
+
+        inStreamContext(new StreamData(rpcTicket, 0, false), () -> method.invokeOpen("first", openCall));
+        runPendingWork();
+        final SessionState.ExportObject<?> streamExport = session.getExportIfExists(rpcTicketId);
+        Assert.neqNull(streamExport, "streamExport");
+        Assert.eq(streamExport.getState(), "streamExport.getState()", ExportNotification.State.EXPORTED);
+        Assert.neqNull(responseStream.get(), "responseStream.get()");
+
+        // the write fails once the half-close is completing the service, and the transport cancels the call inline
+        openCall.onWrite = () -> {
+            writerHoldsResponseStream.countDown();
+            try {
+                if (!serviceCompleting.await(30, TimeUnit.SECONDS)) {
+                    return;
+                }
+            } catch (final InterruptedException err) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            openCall.onCancelHandler.run();
+        };
+        final Thread writer = new Thread(() -> GrpcUtil.safelyOnNext(responseStream.get(), "update"),
+                "BrowserStreamTest-writer");
+        writer.setDaemon(true);
+        writer.start();
+        Assert.eqTrue(writerHoldsResponseStream.await(30, TimeUnit.SECONDS), "writerHoldsResponseStream.await");
+
+        final Thread halfCloser = new Thread(() -> {
+            inStreamContext(new StreamData(rpcTicket, 1, true), () -> method.invokeNext(null, new NoopObserver<>()));
+            runPendingWork();
+        }, "BrowserStreamTest-halfClose");
+        halfCloser.setDaemon(true);
+        halfCloser.start();
+
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        writer.join(Math.max(1, TimeUnit.NANOSECONDS.toMillis(deadlineNanos - System.nanoTime())));
+        halfCloser.join(Math.max(1, TimeUnit.NANOSECONDS.toMillis(deadlineNanos - System.nanoTime())));
+        if (writer.isAlive() || halfCloser.isAlive()) {
+            final ThreadMXBean threads = ManagementFactory.getThreadMXBean();
+            final long[] deadlocked = threads.findDeadlockedThreads();
+            final StringBuilder message = new StringBuilder("half-close and inline cancel did not finish");
+            if (deadlocked != null) {
+                message.append("; deadlocked:");
+                for (final ThreadInfo info : threads.getThreadInfo(deadlocked, true, true)) {
+                    message.append('\n').append(info);
+                }
+            }
+            throw new AssertionError(message.toString());
+        }
+
+        Assert.eq(streamExport.getState(), "streamExport.getState()", ExportNotification.State.RELEASED);
     }
 }

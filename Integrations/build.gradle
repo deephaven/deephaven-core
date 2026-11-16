@@ -19,6 +19,11 @@ dependencies {
     implementation libs.commons.lang3
     implementation libs.google.findbugs.jsr305
 
+    // Keep netty at the repo's version. This classpath is copied into the test container ahead of the server's
+    // lib directory, so an older transitive netty (via arrow flight-core) would shadow the server's and break
+    // Arrow's netty-based allocator.
+    testImplementation platform(libs.netty.bom)
+
     testImplementation project(':engine-test-utils')
     testImplementation project(path: ':Base', configuration: 'tests')
 
@@ -70,7 +75,7 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
                 include 'README.md'
                 into 'python/client'
             }
-            from('run-tests.sh') {
+            from('run-tests-docker.sh') {
             	into 'python'
             }
 
@@ -141,7 +146,7 @@ Closure composeConfig = { task ->
 }
 
 def pyTest = runInDocker('test-py-deephaven', '../py/server', 
-    ['./run-tests.sh', project.hasProperty("coverage.enabled")?project.property("coverage.enabled"):'false'], 
+    ['./run-tests-docker.sh', project.hasProperty("coverage.enabled")?project.property("coverage.enabled"):'false'], 
     composeConfig)
 
 pyTest.configure({
