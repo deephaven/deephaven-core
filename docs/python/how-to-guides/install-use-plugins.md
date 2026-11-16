@@ -161,6 +161,7 @@ You can install each of the following user interface plugins with `pip`. The `gh
 - [`deephaven-plugin-plotly-express`](https://pypi.org/project/deephaven-plugin-plotly-express/): A plugin, [Deephaven Express](/core/plotly/docs/), that makes [Plotly Express](https://plotly.com/python/plotly-express/) compatible with Deephaven tables.
 - [`deephaven-plugin-matplotlib`](https://pypi.org/project/deephaven-plugin-matplotlib/): A plugin that makes [Matplotlib](https://matplotlib.org/) and [Seaborn](https://seaborn.pydata.org/) compatible with Deephaven tables. See [Matplotlib and Seaborn](./plotting/matplot-seaborn.md).
 - [`deephaven-plugin-theme-pack`](https://pypi.org/project/deephaven-plugin-theme-pack/): A plugin that adds UI themes such as Dracula, Night Owl, and Solarized Dark to the Deephaven IDE.
+- [`deephaven-plugin-tradingview-lightweight`](https://pypi.org/project/deephaven-plugin-tradingview-lightweight/): A plugin for creating [TradingView Lightweight Charts](https://www.tradingview.com/lightweight-charts/) from Python.
 
 ### Remote file sourcing
 
