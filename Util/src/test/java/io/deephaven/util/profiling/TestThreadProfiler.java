@@ -14,6 +14,8 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assume.assumeTrue;
+
 /**
  * Unit tests for {@link ThreadProfiler}.
  */
@@ -61,6 +63,16 @@ public class TestThreadProfiler {
                 && oldThreadAllocatedMemoryEnabled) {
             threadMXBean.setThreadAllocatedMemoryEnabled(true);
         }
+    }
+
+    @Test
+    public void testMemoryProfilingAvailableWhenSupported() {
+        assumeTrue(ThreadProfiler.MEMORY_PROFILING_ENABLED
+                && SunThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_ALLOCATED_MEMORY);
+        assumeTrue(threadMXBean.isThreadAllocatedMemorySupported());
+        TestCase.assertTrue("Expected a SunThreadMXBeanThreadProfiler on " + System.getProperty("java.vendor")
+                + ", got " + SUT.getClass().getName(), SUT instanceof SunThreadMXBeanThreadProfiler);
+        TestCase.assertTrue(SUT.memoryProfilingAvailable());
     }
 
     @Test
