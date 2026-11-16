@@ -2,7 +2,7 @@
 title: to_html
 ---
 
-The `to_html` method writes a Deephaven table to a string HTML table.
+The `to_html` function converts a Deephaven table to a string containing an HTML table.
 
 ## Syntax
 
@@ -22,11 +22,11 @@ The Deephaven table to convert to an HTML table.
 
 ## Returns
 
-A new HTML string.
+A string containing an HTML `<table>` element. The string is a copy of the table's rows at the moment of the call. If the table is ticking, the string does not update, and `to_html` reads the table without taking a snapshot, so the copy can mix values from before and after an update. Call `to_html(table.snapshot())` for a consistent copy, and call it again to get the latest rows.
 
 ## Examples
 
-The `to_html` function requires only a single argument - the table to convert. Here, we'll create a simple table and convert it to HTML.
+The `to_html` function takes one argument: the table to convert. The example below creates a table with a comma-containing string value and a null value, then converts it to HTML.
 
 ```python order=:log,table
 from deephaven import new_table
@@ -35,7 +35,7 @@ from deephaven import html
 
 table = new_table(
     [
-        string_col("Letter", ["A", "B", "C"]),
+        string_col("Letter", ["A", "B, C", None]),
         int_col("Num", [1, 2, 3]),
         datetime_col(
             "Datetime",
@@ -53,11 +53,14 @@ html_table = html.to_html(table)
 print(html_table)
 ```
 
+> [!WARNING]
+> `to_html` builds the whole table into a single in-memory string, so use it only on small tables to avoid running out of memory.
+
 > [!NOTE]
-> Since HTML tables represent all data as plain, untyped text, all typing will be lost.
+> HTML tables represent all data as plain, untyped text, so the output carries no column type information. `to_html` escapes string values with CSV rules, not HTML rules, so a value that contains HTML markup becomes active markup in any page that displays the output. `to_html` formats `Instant` values in the server JVM's default time zone and writes null values as `(null)`.
 
 ## Related documentation
 
-- [Import HTML Files](../../../how-to-guides/data-import-export/html-import.md)
+- [Read HTML files](../../../how-to-guides/data-import-export/html-import.md)
 - [Convert tables to HTML strings](../../../how-to-guides/data-import-export/html-export.md)
 - [Pydoc](/core/pydoc/code/deephaven.html.html)

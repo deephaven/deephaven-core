@@ -309,7 +309,7 @@ The [`filters`](/core/pydoc/code/deephaven.filters.html) submodule implements fi
 
 ### `html`
 
-The [`html`](/core/pydoc/code/deephaven.html.html) submodule supports [exporting Deephaven data in HTML format](./data-import-export/html-export.md).
+The [`html`](/core/pydoc/code/deephaven.html.html) submodule [converts tables to HTML strings](./data-import-export/html-export.md).
 
 ### `jcompat`
 

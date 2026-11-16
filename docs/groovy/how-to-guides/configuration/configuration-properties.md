@@ -291,6 +291,15 @@ These properties configure query formula validation for security. See [Formula v
 | `UpdatePerformanceTracker.reportingMode`        | Performance reporting mode: `NONE`, `LISTENER_ONLY`, `ALL` | `LISTENER_ONLY` |
 | `UpdatePerformanceTracker.reportIntervalMillis` | Performance report interval                                | `60000`         |
 
+### Barrage encoding
+
+These properties control whether the server picks run-end or dictionary encoding for columns of tables it exports without a schema annotation. See [Barrage schema annotation](../data-import-export/barrage-schema.md#encoding-auto-detection) for details.
+
+| Property                                   | Description                                                                                                                                                                                                   | Default                   |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `BarrageUtil.ree.autoDetectEnabled`        | Let the server run-end encode exported columns of tables that have no [`BarrageSchema`](/core/javadoc/io/deephaven/engine/table/Table.html#BARRAGE_SCHEMA_ATTRIBUTE) attribute                                | `true` (starting in 43.0) |
+| `BarrageUtil.dictionary.autoDetectEnabled` | Let the server dictionary encode exported `String` and other `Object` columns of tables that have no [`BarrageSchema`](/core/javadoc/io/deephaven/engine/table/Table.html#BARRAGE_SCHEMA_ATTRIBUTE) attribute | `true` (starting in 43.0) |
+
 ## Related documentation
 
 - [Deephaven configuration files](./config-file.md)
@@ -298,5 +307,6 @@ These properties configure query formula validation for security. See [Formula v
 - [Configure the production application](./configure-production-application.md)
 - [Pre-shared key authentication](../authentication/auth-psk.md)
 - [Anonymous authentication](../authentication/auth-anon.md)
+- [Barrage schema annotation](../data-import-export/barrage-schema.md)
 - [Formula validation configuration](../../conceptual/formula-validation-configuration.md)
 - [Periodic Update Graph configuration](../../conceptual/periodic-update-graph-configuration.md)
