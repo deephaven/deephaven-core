@@ -37,9 +37,9 @@ public class ReferenceCounting implements AutoCloseable {
 
     /**
      * Checks that {@code object} is immortal (PEP 683). The raw refcount is narrowed to an {@code int}, and CPython
-     * marks immortal objects by setting the sign bit of the low 32 bits of {@code ob_refcnt}: the value is -1 on
-     * Python 3.12, and a different negative value on later versions (for example, -1073741824 on 3.14). Only the sign
-     * is stable across versions, so this does not compare against a specific value.
+     * marks immortal objects by setting the sign bit of the low 32 bits of {@code ob_refcnt}: the value is -1 on Python
+     * 3.12, and a different negative value on later versions (for example, -1073741824 on 3.14). Only the sign is
+     * stable across versions, so this does not compare against a specific value.
      */
     public void checkImmortal(PyObject object) {
         gc.collect();
