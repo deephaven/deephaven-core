@@ -130,8 +130,6 @@ include(':Base')
 
 include(':base-test-utils')
 
-include(':SevenZip')
-
 include(':IO')
 
 include(':DataStructures')

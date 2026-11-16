@@ -302,10 +302,10 @@ result_via_proxy = pt_joined.merge()
 >
 > The `sanity_check_joins` argument to [`proxy`](../reference/table-operations/partitioned-tables/proxy.md) controls an extra check on proxied joins and filters:
 >
-> - It defaults to `True`.
+> - It defaults to `False`, which skips the check.
 > - When it is `True` and the right-hand table is also a proxy, the engine checks that each join, [`where_in`](../reference/table-operations/filter/where-in.md), or [`where_not_in`](../reference/table-operations/filter/where-not-in.md) key exists in only one partition of each input.
 > - The check does not verify that a key is in the same partition of the left and right tables.
-> - The check adds work and reduces parallelism. Set `sanity_check_joins=False` to skip it.
+> - The check adds work and reduces parallelism. Set `sanity_check_joins=True` to run it.
 
 ## Why use partitioned tables?
 
@@ -393,7 +393,7 @@ If you are unsure whether partitioned tables could improve your query's performa
 
 ### Avoid tick amplification
 
-Partitioned tables also help avoid [tick amplification](../conceptual/troubleshooting-steps.md#tick-amplification). Tick amplification occurs when an operation produces downstream updates that touch many more cells than the upstream change. A common example is [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md) followed by [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md). If you use [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [`merge`](../reference/table-operations/partitioned-tables/partitioned-table-merge.md) instead, the engine processes each constituent independently and does not check entire groups for changes.
+Partitioned tables also help avoid [tick amplification](../conceptual/troubleshooting-steps.md#tick-amplification). Tick amplification occurs when an operation produces downstream updates that touch many more cells than the upstream change. A common example is [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md) followed by [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md). If you use [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [`merge`](../reference/table-operations/partitioned-tables/partitioned-table-merge.md) instead, the engine updates each constituent independently, so a change to one row isn't spread to the other rows of its group.
 
 ## Related documentation
 

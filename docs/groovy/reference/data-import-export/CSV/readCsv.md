@@ -128,13 +128,13 @@ import static io.deephaven.csv.CsvTools.readCsv
 result = readCsv("https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro.csv")
 ```
 
-In the following example, `read_csv` is used to load the file [DeNiro TSV](https://raw.githubusercontent.com/deephaven/examples/main/DeNiro/csv/deniro.tsv) into a Deephaven table. The second argument, `"\t"`, indicates that the file contains tab-separated values.
+In the following example, `readCsv` loads the file [DeNiro TSV](https://raw.githubusercontent.com/deephaven/examples/main/DeNiro/csv/deniro.tsv) into a Deephaven table. The `specs` argument sets the delimiter to a tab, so the file is read as tab-separated values.
 
 ```groovy
 import static io.deephaven.csv.CsvTools.readCsv
-import io.deephaven.csv.CsvSpecs
+import io.deephaven.csv.CsvTools
 
-specs = CsvSpecs.tsv()
+specs = CsvTools.builder().delimiter('\t' as char).build()
 
 deniroTSV = readCsv("https://raw.githubusercontent.com/deephaven/examples/main/DeNiro/csv/deniro.tsv", specs)
 ```
@@ -143,16 +143,16 @@ Any character can be used as a delimiter. The pipe character (`|`) is common. In
 
 ```groovy
 import static io.deephaven.csv.CsvTools.readCsv
-import io.deephaven.csv.CsvSpecs
+import io.deephaven.csv.CsvTools
 
-specs = CsvSpecs.builder().delimiter('|' as char).build()
+specs = CsvTools.builder().delimiter('|' as char).build()
 
 result = readCsv("https://raw.githubusercontent.com/deephaven/examples/main/DeNiro/csv/deniro.psv", specs)
 ```
 
 ## Related documentation
 
-- [CSV import via query](../../../how-to-guides/data-import-export/csv-import.md)
-- [CSV export via query](../../../how-to-guides/data-import-export/csv-export.md)
+- [Read CSV or other delimited files](../../../how-to-guides/data-import-export/csv-import.md)
+- [Export data to CSV or other delimited files](../../../how-to-guides/data-import-export/csv-export.md)
 - [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/csv/CsvTools.html#readCsv(java.nio.file.Path))

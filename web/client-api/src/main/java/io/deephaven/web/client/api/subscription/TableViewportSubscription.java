@@ -39,10 +39,11 @@ import static io.deephaven.web.client.api.JsTable.EVENT_ROWUPDATED;
 
 /**
  * This object serves as a "handle" to a subscription, allowing it to be acted on directly or canceled outright. If you
- * retain an instance of this, you have two choices - either only use it to call {@code close} on it to stop the table's
- * viewport without creating a new one, or listen directly to this object instead of the table for data events, and
- * always call {@code close} when finished. Calling any method on this object other than {@code close} will result in it
- * continuing to live on after {@code setViewport} is called on the original table, or after the table is modified.
+ * retain an instance of this, you have two choices - either only use it to call {@link #close()} on it to stop the
+ * {@link JsTable table}'s viewport without creating a new one, or listen directly to this object instead of the table
+ * for data events, and always call {@link #close()} when finished. Calling any method on this object other than
+ * {@link #close()} will result in it continuing to live on after {@link JsTable#setViewport(double, double)
+ * setViewport} is called on the original table, or after the table is modified.
  */
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
@@ -270,7 +271,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     /**
-     * Changes the rows and columns set on this viewport. This cannot be used to change the update interval.
+     * Changes the rows and {@link Column columns} set on this viewport. This cannot be used to change the update
+     * interval.
      * 
      * @param firstRow the first row to make visible in the viewport
      * @param lastRow the last row to make visible in the viewport
@@ -292,7 +294,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     /**
      * Update the options for this viewport subscription. This cannot alter the update interval or preview options.
      * 
-     * @param options The subscription options.
+     * @param options The subscription options; see {@link DataOptions.ViewportSubscriptionOptions} for details.
      */
     @JsMethod
     public void update(@TsTypeRef(DataOptions.ViewportSubscriptionOptions.class) Object options) {
@@ -387,7 +389,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     /**
-     * Stops this viewport from running, stopping all events on itself and on the table that created it.
+     * Stops this viewport from running, stopping all events on itself and on the {@link JsTable table} that created it.
      */
     @JsMethod
     public void close() {
@@ -422,7 +424,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     /**
-     * Gets the data currently visible in this viewport
+     * Gets the data currently visible in this viewport, as a {@link ViewportData}.
      * 
      * @return Promise of {@link TableData}.
      */

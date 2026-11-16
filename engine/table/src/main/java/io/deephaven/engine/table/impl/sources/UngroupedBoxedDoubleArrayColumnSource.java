@@ -48,12 +48,12 @@ public class UngroupedBoxedDoubleArrayColumnSource extends UngroupedColumnSource
             return NULL_DOUBLE;
         }
         long segment = rowKey >> base;
-        int offset = (int) (rowKey & ((1 << base) - 1));
+        long offset = rowKey & ((1L << base) - 1);
         Double[] array = innerSource.get(segment);
-        if (array == null || offset >= array.length || array[offset] == null) {
+        if (array == null || offset >= array.length || array[(int) offset] == null) {
             return NULL_DOUBLE;
         }
-        return array[offset];
+        return array[(int) offset];
     }
 
 
@@ -69,12 +69,12 @@ public class UngroupedBoxedDoubleArrayColumnSource extends UngroupedColumnSource
             return NULL_DOUBLE;
         }
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
+        long offset = rowKey & ((1L << getPrevBase()) - 1);
         Double[] array = innerSource.getPrev(segment);
-        if (array == null || offset >= array.length || array[offset] == null) {
+        if (array == null || offset >= array.length || array[(int) offset] == null) {
             return NULL_DOUBLE;
         }
-        return array[offset];
+        return array[(int) offset];
     }
 
     @Override

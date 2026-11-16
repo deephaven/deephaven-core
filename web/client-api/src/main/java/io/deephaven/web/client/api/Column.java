@@ -59,8 +59,8 @@ public class Column {
     private final JsArray<ColumnRestriction> columnRestrictions;
 
     /**
-     * Format entire rows colors using the expression specified. Returns a {@code CustomColumn} object to apply to a
-     * table using {@code applyCustomColumns} with the parameters specified.
+     * Format entire rows colors using the expression specified. Returns a {@link CustomColumn} object to apply to a
+     * table using {@link JsTable#applyCustomColumns(JsArray) applyCustomColumns} with the parameters specified.
      *
      * @param expression
      * @param options
@@ -73,7 +73,8 @@ public class Column {
     }
 
     /**
-     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
+     * A {@link CustomColumn} object to apply using {@link JsTable#applyCustomColumns(JsArray) applyCustomColumns} with
+     * the expression specified.
      *
      * @param name
      * @param expression
@@ -107,7 +108,8 @@ public class Column {
     }
 
     /**
-     * The value for this column in the given row. Type will be consistent with the type of the Column.
+     * The value for this column in the given {@link TableData.Row}. Type will be consistent with the {@link #getType()
+     * type} of the Column.
      *
      * @param row
      * @return Any
@@ -123,7 +125,8 @@ public class Column {
     }
 
     /**
-     * @deprecated Do not use. Internal index of the column in the table, to be used as a key on the Row.
+     * @deprecated Do not use. Internal index of the column in the table, to be used as a key on the
+     *             {@link TableData.Row}.
      * @return int
      */
     @Deprecated
@@ -176,7 +179,8 @@ public class Column {
 
     /**
      * If this column is part of a roll-up tree table, represents the type of the row data that can be found in this
-     * column for leaf nodes if {@code includeConstituents} is enabled. Otherwise, it is {@code null}.
+     * column for leaf nodes if {@link io.deephaven.web.client.api.tree.JsRollupConfig#includeConstituents
+     * RollupConfig.includeConstituents} is enabled. Otherwise, it is {@code null}.
      *
      * @return String
      */
@@ -200,7 +204,7 @@ public class Column {
 
     /**
      * {@code true} if this column is a partition column. Partition columns are used for filtering uncoalesced tables -
-     * see {@link JsTable#isUncoalesced()}.
+     * see {@link JsTable#isUncoalesced() Table.isUncoalesced}.
      *
      * @return {@code true} if the column is a partition column.
      */
@@ -233,11 +237,12 @@ public class Column {
     }
 
     /**
-     * Returns the column restrictions for input table columns, or an empty array if this is not an input table column
-     * or if no restrictions are defined. The restrictions are implementation-specific constraints that the server
-     * enforces on column values. The returned array is a copy and may be safely modified by the caller.
+     * Returns the column restrictions for {@link io.deephaven.web.client.api.input.JsInputTable input table} columns,
+     * or an empty array if this is not an input table column or if no restrictions are defined. The restrictions are
+     * implementation-specific constraints that the server enforces on column values. The returned array is a copy and
+     * may be safely modified by the caller.
      *
-     * @return Array of column restrictions, empty if none are defined
+     * @return Array of {@link ColumnRestriction}, empty if none are defined
      */
     @JsProperty
     public JsArray<ColumnRestriction> getColumnRestrictions() {
@@ -256,7 +261,8 @@ public class Column {
     }
 
     /**
-     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
+     * A {@link CustomColumn} object to apply using {@link JsTable#applyCustomColumns(JsArray) applyCustomColumns} with
+     * the expression specified.
      *
      * @param expression
      * @return {@link CustomColumn}
@@ -268,7 +274,8 @@ public class Column {
     }
 
     /**
-     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
+     * A {@link CustomColumn} object to apply using {@link JsTable#applyCustomColumns(JsArray) applyCustomColumns} with
+     * the expression specified.
      *
      * @param expression
      * @return {@link CustomColumn}
@@ -280,7 +287,8 @@ public class Column {
     }
 
     /**
-     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
+     * A {@link CustomColumn} object to apply using {@link JsTable#applyCustomColumns(JsArray) applyCustomColumns} with
+     * the expression specified.
      *
      * @param expression
      * @return {@link CustomColumn}

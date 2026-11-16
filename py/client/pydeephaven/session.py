@@ -845,8 +845,8 @@ class Session:
         """Imports the pyarrow table as a new Deephaven table on the server.
 
         Deephaven supports most of the Arrow data types. Before sending any data, the client checks each field's data
-        type and rejects the import if it does not map the type. Rejected types include dictionary-encoded and
-        run-end encoded fields. To upload a table with such fields, use pyarrow.flight directly.
+        type and rejects the import if it does not map the type. A dictionary-encoded or run-end encoded field is
+        checked by the type of its values.
 
         Args:
             data (pa.Table): a pyarrow Table object

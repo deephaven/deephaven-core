@@ -31,13 +31,13 @@ public class UngroupedObjectVectorColumnSource<T> extends UngroupedColumnSource<
             return null;
         }
         long segment = rowKey >> base;
-        long offset = rowKey & ((1 << base) - 1);
+        long offset = rowKey & ((1L << base) - 1);
         if (isUngroupable) {
             // noinspection unchecked
-            return (T) ((UngroupableColumnSource) innerSource).getUngrouped(segment, (int) offset);
+            return (T) ((UngroupableColumnSource) innerSource).getUngrouped(segment, offset);
         } else {
             final ObjectVector<T> vector = innerSource.get(segment);
-            return vector == null ? null : vector.get((int) offset);
+            return vector == null ? null : vector.get(offset);
         }
     }
 
@@ -47,15 +47,15 @@ public class UngroupedObjectVectorColumnSource<T> extends UngroupedColumnSource<
             return null;
         }
         long segment = rowKey >> getPrevBase();
-        long offset = rowKey & ((1 << getPrevBase()) - 1);
+        long offset = rowKey & ((1L << getPrevBase()) - 1);
 
         if (isUngroupable) {
             // noinspection unchecked
-            return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(segment, (int) offset);
+            return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(segment, offset);
         } else {
             Assert.neqNull(innerSource, "innerSource");
             final ObjectVector<T> prevArray = innerSource.getPrev(segment);
-            return prevArray == null ? null : prevArray.get((int) offset);
+            return prevArray == null ? null : prevArray.get(offset);
         }
     }
 

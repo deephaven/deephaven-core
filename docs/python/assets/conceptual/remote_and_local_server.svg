@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 470" width="820" height="470" role="img" aria-labelledby="t d">
+  <title id="t">Capturing a remote table with Barrage</title>
+  <desc id="d">A client publishes a table to the remote server, where a ticket addresses it. Barrage carries the table&#x27;s data from the remote server to a local table on the local server, which connects through BarrageSession. Queries on the local server use the local table.</desc>
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1c7ed6"/></marker><marker id="ah-start" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1c7ed6"/></marker></defs>
+  <rect x="20" y="40" width="170" height="70" rx="10" fill="#e9ecef" stroke="#1e1e1e" stroke-width="1.5"/>
+  <text x="105.0" y="70.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1e1e1e">Client</text>
+  <text x="105.0" y="90.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#1e1e1e">publishes a table</text>
+  <rect x="240" y="20" width="560" height="150" rx="14" fill="none" stroke="#1c7ed6" stroke-width="2" stroke-dasharray="8 5"/>
+  <text x="254" y="44" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#1c7ed6">Remote server</text>
+  <rect x="270" y="60" width="220" height="80" rx="10" fill="#8fd6e1" stroke="#1e1e1e" stroke-width="1.5"/>
+  <text x="380.0" y="95.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1e1e1e">Table</text>
+  <text x="380.0" y="115.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#1e1e1e">(the data)</text>
+  <rect x="550" y="60" width="220" height="80" rx="10" fill="#f2d273" stroke="#1e1e1e" stroke-width="1.5"/>
+  <text x="660.0" y="95.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1e1e1e">Ticket</text>
+  <text x="660.0" y="115.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#1e1e1e">(a reference, no data)</text>
+  <line x1="190" y1="75" x2="268" y2="90" stroke="#1c7ed6" stroke-width="2" marker-end="url(#ah)"/>
+  <text x="218" y="30" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#1c7ed6">publish</text>
+  <line x1="548" y1="100" x2="492" y2="100" stroke="#1c7ed6" stroke-width="2" marker-end="url(#ah)"/>
+  <text x="520" y="52" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#1c7ed6">addresses</text>
+  <rect x="240" y="260" width="560" height="190" rx="14" fill="none" stroke="#1c7ed6" stroke-width="2" stroke-dasharray="8 5"/>
+  <text x="254" y="284" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#1c7ed6">Local server</text>
+  <rect x="270" y="300" width="220" height="60" rx="10" fill="#c0c0c0" stroke="#1e1e1e" stroke-width="1.5"/>
+  <text x="380.0" y="334.6666666666667" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1e1e1e">BarrageSession</text>
+  <rect x="550" y="300" width="220" height="60" rx="10" fill="#8fd6e1" stroke="#1e1e1e" stroke-width="1.5"/>
+  <text x="660.0" y="325.1666666666667" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1e1e1e">Local table</text>
+  <text x="660.0" y="344.1666666666667" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#1e1e1e">(full copy)</text>
+  <rect x="550" y="380" width="220" height="56" rx="10" fill="#e9ecef" stroke="#1e1e1e" stroke-width="1.5"/>
+  <text x="660.0" y="403.1666666666667" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1e1e1e">Local queries</text>
+  <text x="660.0" y="422.1666666666667" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#1e1e1e">(joins, filters, aggregations)</text>
+  <line x1="380" y1="142" x2="380" y2="298" stroke="#1c7ed6" stroke-width="2" marker-end="url(#ah)"/>
+  <text x="392" y="205" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#1c7ed6">Barrage</text>
+  <text x="392" y="223" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#1c7ed6">(Arrow Flight + update metadata)</text>
+  <line x1="492" y1="330" x2="548" y2="330" stroke="#1c7ed6" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="660" y1="362" x2="660" y2="378" stroke="#1c7ed6" stroke-width="2" marker-end="url(#ah)"/>
+</svg>

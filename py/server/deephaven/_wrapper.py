@@ -55,6 +55,10 @@ class JObjectWrapper(ABC):
     j_object_type: type[jpy.JType]
 
     def __init_subclass__(cls, *args, **kwargs):
+        # Python calls only the first __init_subclass__ in the MRO. Each hook must pass the call on with super().
+        # Without this call, the hooks of the classes after JObjectWrapper in a subclass's MRO never run. Generic's
+        # hook is one of them, so a Generic subclass such as Table would keep the TypeVar in its __parameters__.
+        super().__init_subclass__(**kwargs)
         if inspect.isabstract(cls):
             return
 

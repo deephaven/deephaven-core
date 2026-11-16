@@ -66,11 +66,12 @@ public class TypeUtils {
      *
      * @param type The type
      */
-    public static Class<?> getBoxedType(Class<?> type) {
+    public static <T> Class<T> getBoxedType(Class<T> type) {
         if (!type.isPrimitive()) {
             return type;
         }
-        return primitiveToBoxed.get(type);
+        // noinspection unchecked
+        return (Class<T>) primitiveToBoxed.get(type);
     }
 
     /**
@@ -81,11 +82,12 @@ public class TypeUtils {
      * @param type The type
      * @return type's primitive equivalent, or null
      */
-    public static Class<?> getUnboxedType(Class<?> type) {
+    public static <T> Class<T> getUnboxedType(Class<T> type) {
         if (type.isPrimitive()) {
             return type;
         }
-        return boxedToPrimitive.get(type);
+        // noinspection unchecked
+        return (Class<T>) boxedToPrimitive.get(type);
     }
 
     /**
@@ -94,8 +96,8 @@ public class TypeUtils {
      * @param type The type
      * @return type's unboxed equivalent, or type
      */
-    public static Class<?> getUnboxedTypeIfBoxed(@NotNull final Class<?> type) {
-        final Class<?> unboxedType = getUnboxedType(type);
+    public static <T> Class<T> getUnboxedTypeIfBoxed(@NotNull final Class<T> type) {
+        final Class<T> unboxedType = getUnboxedType(type);
         return unboxedType != null ? unboxedType : type;
     }
 

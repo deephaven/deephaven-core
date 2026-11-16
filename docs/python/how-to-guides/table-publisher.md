@@ -433,7 +433,7 @@ table_writer.write_row(4, "Writer")
 print(result.size == 0)
 ```
 
-The `print` statement prints `True`: it runs in the same command as the `write_row` calls, so the UG cycle that adds the queued rows to `result` has not run yet.
+The `print` statement prints `True`: it runs in the same command as the `write_row` calls. The Python script session holds the exclusive [UpdateGraph lock](../conceptual/query-engine/engine-locking.md#query-engine-locks) while a command executes, so the UG cycle that adds the queued rows to `result` can't run until the command finishes.
 
 A second command can still start before that cycle runs, so wait for the table to update if it is still empty. Then the same `print` statement prints `False`.
 

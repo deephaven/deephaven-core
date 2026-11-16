@@ -2,19 +2,21 @@
 title: Chart Builder
 ---
 
-Deephaven makes it easy to visualize your data. Users can plot data using the Deephaven Query Language, or directly in the Deephaven IDE user interface. This guide focuses on the Chart Builder feature.
+Deephaven makes it easy to visualize your data. You can plot data with code by using [Deephaven Express](/core/plotly/docs/) or the [built-in plotting API](../plotting/api-plotting.md). You can also plot data directly in the [Deephaven IDE](./navigating-the-ui.md) user interface. This guide focuses on the Chart Builder feature, which creates line, bar, scatter, and pie charts from a table without writing any code. Charts you build from a [ticking table](../../conceptual/table-types.md) update as new data arrives.
 
-## Chart Builder
+## Open the Chart Builder
 
-Access the Chart Builder by clicking the **Table Options** menu icon at the right of any table (circled in the screenshot below) and selecting **Chart Builder** from the drop-down.
+To open the Chart Builder, click the **Table Options** icon at the right of a table (circled in the screenshot below). Then select **Chart Builder** from the [**Table Options** menu](./formatting-tables.md#table-options-menu). [Tree tables](../tree-table.md) and [rollup tables](../rollup-table.md) don't offer the Chart Builder.
 
-![The mouse hovers over the hamburger icon (**Table Options**) at the top right of a table](../../assets/how-to/plots/plots1.png)
+![The mouse hovers over the hamburger icon (Table Options) at the top right of a table](../../assets/how-to/plots/plots1.png)
 
-![**Table Options** expands to show available options](../../assets/how-to/plots/plots2.png)
+![The Table Options menu expands to show available options](../../assets/how-to/plots/plots2.png)
 
-The Chart Builder allows you to create applicable charts from that table's data. These configuration options change to reflect relevant chart types, and each field is automatically populated with the column values in the table from which you opened the menu.
+The menu then shows the Chart Builder form, where you configure a chart of the table's data. Click **Back** to return to the menu.
 
 ![The Chart Builder screen](../../assets/how-to/plots/plots3.png)
+
+## Configure and create a chart
 
 You can choose from four different chart types:
 
@@ -23,88 +25,169 @@ You can choose from four different chart types:
 - [Scatter](#line-bar-and-scatter)
 - [Pie](#pie)
 
-Above, **Line** is selected, so the Chart Builder presents the appropriate configuration options: X-Axis and Series values.
+Each chart type has its own fields. Click in a field to see the table's column names.
 
-Plots are created based on the current table data and any active filters. (If no filters are applied, all of the data will be plotted.) The next selections determine how your plot will respond to new filters applied to the source data:
+- **Line**, **Bar**, and **Scatter** charts take an **X-Axis** column and one or more **Series** columns. The **X-Axis** column sets each point's horizontal position. Each **Series** column sets the values plotted against it, and appears as its own line, set of bars, or set of points.
+- **Pie** charts take a **Labels** column, which names the slices, and a **Values** column, which sets each slice's size.
 
-- **Sync State**: When selected, the chart will update to match any filters or other user modifications made to the parent table.
-- **Freeze State**: When selected, the chart will not update regardless of any changes made to the parent table.
+Each field starts with one of the table's columns already selected, so you only need to change the fields you want to be different.
 
-Once you make your selections, click **Create**. The plot will open as a new panel in your workspace with an automatically generated title. Any additional plots created using the Chart Builder will open as new panels.
+To plot another column in a line, bar, or scatter chart, click **Add Series**. The new **Series** field starts with the table's first column selected, so change it to the column you want.
+
+To remove a series, click the trash can icon to the right of its **Series** field. The icon appears only when the chart has more than one series.
+
+To start over, click **Reset**. The Chart Builder returns to a line chart with its default columns and **Sync State**.
+
+The Chart Builder plots the table as it currently appears, with any active [filters](./filters.md), [sorts](./formatting-tables.md#sort-by), and [custom columns](./formatting-tables.md#custom-columns) applied. If the table has no [filters](./filters.md), it plots all of the data.
+
+The table you open the Chart Builder from is the _parent table_. Below the column fields, choose whether the chart follows later [filters](./filters.md) and other changes you make to the parent table:
+
+- **Sync State**: When selected, the chart updates to match any [filters](./filters.md) or other user modifications made to the parent table.
+- **Freeze State**: When selected, the chart ignores [filters](./filters.md) and other user modifications made to the parent table after you create it. If the parent table is a [ticking table](../../conceptual/table-types.md), the chart still updates when new data arrives.
+
+Once you make your selections, click **Create**. The chart opens as a new panel in your [workspace](./navigating-the-ui.md) with a title built from the column names, such as **Avg_Temp by Year**. Each time you click **Create**, the Chart Builder opens another new panel.
 
 > [!CAUTION]
-> Currently, existing plot configurations cannot be edited. If you make changes in the **Chart Builder**, you'll need to create a new plot.
+> You can't edit an existing chart configuration. To change a chart, create a new one in the Chart Builder.
 
-In the next sections, we'll show you examples of each chart type using two tables of weather data. Run this script if you'd like to follow along:
+## Examples
 
-```python skip-test
-#not yet implemented for v2
+The next sections show an example of each chart type, using two tables of Seattle weather data:
+
+- `hi_lo_by_year` has one row for each year from 2000 through 2020. Its `Avg_Temp`, `Lo_Temp`, and `Hi_Temp` columns hold the average, lowest, and highest of Seattle's daily mean temperatures for that year. The line, bar, and scatter examples use this table.
+- `temp_bands` counts the days in 2020 that fell into each temperature band. The pie example uses this table.
+
+Run this script if you'd like to follow along:
+
+```python test-set=1 order=hi_lo_by_year,temp_bands
 from deephaven import read_csv
+from deephaven import agg
 
-seattle_weather = read_csv("https://media.githubusercontent.com/media/deephaven/examples/main/GSOD/csv/seattle.csv")
+seattle_weather = read_csv(
+    "https://media.githubusercontent.com/media/deephaven/examples/main/GSOD/csv/seattle.csv"
+)
 
-from deephaven.time import TimeZone
-from deephaven import agg as agg
+hi_lo_by_year = (
+    seattle_weather.view(
+        formulas=["Year = year(ObservationDate, timeZone(`UTC`))", "TemperatureF"]
+    )
+    .where(filters=["Year >= 2000 && Year <= 2020"])
+    .agg_by(
+        [
+            agg.avg(cols=["Avg_Temp = TemperatureF"]),
+            agg.min_(cols=["Lo_Temp = TemperatureF"]),
+            agg.max_(cols=["Hi_Temp = TemperatureF"]),
+        ],
+        by=["Year"],
+    )
+    .format_columns("Year = Decimal(`#`)")
+)
 
-
-hi_lo_by_year = seattle_weather.view(formulas=["Year = year(ObservationDate, time_zone("ET"))", "TemperatureF"])\
-    .where(filters=["Year >= 2000"])\
-    .agg_by([agg.avg(cols=["Avg_Temp = TemperatureF"])], by=["Year"])\
-    .formatColumns("Year = Decimal(`#`)")
+temp_bands = (
+    seattle_weather.view(
+        formulas=["Year = year(ObservationDate, timeZone(`UTC`))", "TemperatureF"]
+    )
+    .where(filters=["Year == 2020"])
+    .update(
+        formulas=[
+            "Band = TemperatureF < 45 ? `Cold` : TemperatureF < 65 ? `Mild` : `Warm`"
+        ]
+    )
+    .count_by("Days", by=["Band"])
+)
 ```
 
-### Line, Bar, and Scatter
+### Line, bar, and scatter
 
-For Line, Bar, and Scatter plots, select an **X-Axis** value and a **Series** value. Clicking in each field reveals the available column values in that table:
+Open the Chart Builder from the `hi_lo_by_year` table to chart the average temperature for each year. Select **Line**, then click in the **X-Axis** field to see the table's column names:
 
-![The Chart Builder, with line plot selected. The user has clicked on the X-axis field to reveal available column values](../../assets/how-to/plots/plots5.png)
+![The Chart Builder, with line plot selected. The user has clicked on the X-axis field to reveal available column names](../../assets/how-to/plots/plots5.png)
 
-From the `hi_lo_by_year` table, let's chart the average temperature for each year. Click **Create** to generate a single series plot.
+Select `Year` for the **X-Axis** and `Avg_Temp` for the **Series**. Click **Create** to generate a single-series chart.
 
 ![A line plot](../../assets/how-to/plots/plots6.png)
 
-Let's make a multiple series bar chart. This time, we'll select the `Lo_Temp` column for our first series, then click **Add Series** and select `Hi_Temp`:
+Let's make a multi-series bar chart. This time, select **Bar**, set the **X-Axis** to `Year`, and select `Lo_Temp` for the first **Series** field. Then click **Add Series**, select `Hi_Temp`, and click **Create**:
 
-![A user creates a multiple series bar chart with the Chart Builder](../../assets/how-to/plots/plots4.gif)
+![A user creates a multi-series bar chart with the Chart Builder](../../assets/how-to/plots/plots4.gif)
 
 ![A multi-series bar chart](../../assets/how-to/plots/plots7.png)
 
-Series can be removed from the dialog by clicking the trash can icon to the right of the **Series** value. Note that this will not affect a plot already created.
+To make a scatter chart, select **Scatter** and set the **X-Axis** and **Series** fields the same way as in the line chart.
 
 ### Pie
 
-For Pie charts, select the column names to use for **Labels** and **Values**.
+To chart the `temp_bands` table, open the Chart Builder from that table, select **Pie**, select `Band` for **Labels** and `Days` for **Values**, and click **Create**:
 
 ![The pie chart options in the Chart Builder](../../assets/how-to/plots/plots10.png)
 
 ![A pie chart](../../assets/how-to/plots/plots11.png)
 
-## Plot hover menu
+## Interact with charts
+
+The following features work on any chart made with the Chart Builder, [Deephaven Express](/core/plotly/docs/), or the [built-in plotting API](../plotting/api-plotting.md). [Matplotlib and Seaborn](../plotting/matplot-seaborn.md) figures appear as static images, so these features don't apply to them.
+
+### Plot hover menu
 
 Hovering your cursor over a chart brings up the following menu:
 
-![A menu with options to download the snapshot, zoom, pan, scale, and reset axes](../../assets/how-to/plots/plots12.png)
+![A menu with buttons to download the plot as a PNG, zoom, pan, zoom in and out, autoscale, and reset axes](../../assets/how-to/plots/plots12.png)
 
-- **Download plot as PNG** - Save the plot locally as a PNG file.
-- **Zoom** - Use the cursor to "draw" the portion of the chart you want to magnify. Double-click on the chart to return the image to its original view.
-- **Pan** - Click and drag the plot to move other areas of the chart into view. Double-click on the chart to return the image to its original view.
-- **Zoom In** - Zoom in on the plot.
-- **Zoom Out** - Zoom out on the plot.
-- **AutoScale** - Enables the chart to be sized automatically in the panel.
-- **Reset Axes** - Resets the chart to its original ranges.
+- **Download plot as a png**: Save the plot locally as a PNG file.
+- **Zoom**: Drag across the part of the chart you want to magnify. Double-click the chart to return it to its original view.
+- **Pan**: Click and drag the chart to move other areas of it into view. Double-click the chart to return it to its original view.
+- **Zoom in**: Zoom in on the chart.
+- **Zoom out**: Zoom out on the chart.
+- **Autoscale**: Rescale the axes so that all of the data fits in view.
+- **Reset axes**: Return the axes to their original ranges.
 
-## Tooltips
+For a large chart, Deephaven may downsample the data, plotting fewer points than the table holds so that the chart stays responsive. The menu then adds buttons for this:
 
-If you hover your cursor over the data shown in a plot, a tooltip displays detailed information about that portion of the data. In the example below, the cursor tooltip shows the exact value over which it is positioned.
+- **Downsampling status**: Click to turn downsampling off or back on.
+- **Downsampling failed** or **Error**: A warning button that appears when downsampling fails or the chart reports an error. Click it to see the error message.
+
+While downsampling is in progress, or while a warning is showing, the menu stays visible without hovering.
+
+On a 3D chart, such as one made with the [`scatter_3d`](/core/plotly/docs/scatter-3d/) function in [Deephaven Express](/core/plotly/docs/), the menu shows rotation and camera-reset buttons in place of **Zoom in**, **Zoom out**, **Autoscale**, and **Reset axes**.
+
+### Tooltips
+
+If you hover your cursor over the data shown in a chart, a tooltip shows the exact value of the data under the cursor.
 
 ![A tooltip displays when the user hovers over the plot data](../../assets/how-to/plots/plots13.png)
 
-## Toggling series visibility
+### Toggle series visibility
 
-When multiple series are plotted, you might want to temporarily hide one or more of the series. Clicking once on the series name in the plot legend of the plot hides the series; clicking again shows the series.
+When a chart plots multiple series, you might want to temporarily hide one or more of them. A multi-series chart made with [Deephaven Express](/core/plotly/docs/) or the [built-in plotting API](../plotting/api-plotting.md) shows a legend. Click a series name in the legend to hide that series. Click it again to show it.
 
-![The user toggles which series are visible by clicking on their names](../../assets/how-to/plots/plots14.gif)
+Charts made with the Chart Builder don't show a legend.
+
+![The user toggles which series are visible by clicking on their names in the legend](../../assets/how-to/plots/plots14.gif)
 
 ## Related documentation
 
-- [Quickstart](../../getting-started/quickstart.md)
+- [Deephaven's table types](../../conceptual/table-types.md)
+- [Real-time plots](../../getting-started/crash-course/plots.md)
+- [Plotting overview](../plotting/overview.md)
+- [Deephaven Express](/core/plotly/docs/)
+- [Built-in plotting API](../plotting/api-plotting.md)
+- [Matplotlib and Seaborn](../plotting/matplot-seaborn.md)
+- [Navigate the GUI](./navigating-the-ui.md)
+- [Filter without writing queries](./filters.md)
+- [Use table tools in the UI](./formatting-tables.md)
+- [Create a hierarchical tree table](../tree-table.md)
+- [Create a hierarchical rollup table programmatically](../rollup-table.md)
+- [Read CSV or other delimited files](../data-import-export/csv-import.md)
+- [Multi-aggregation](../combined-aggregations.md)
+- [`read_csv`](../../reference/data-import-export/CSV/readCsv.md)
+- [`view`](../../reference/table-operations/select/view.md)
+- [`where`](../../reference/table-operations/filter/where.md)
+- [`update`](../../reference/table-operations/select/update.md)
+- [`count_by`](../../reference/table-operations/group-and-aggregate/countBy.md)
+- [`agg_by`](../../reference/table-operations/group-and-aggregate/aggBy.md)
+- [`avg`](../../reference/table-operations/group-and-aggregate/AggAvg.md)
+- [`min_`](../../reference/table-operations/group-and-aggregate/AggMin.md)
+- [`max_`](../../reference/table-operations/group-and-aggregate/AggMax.md)
+- [`format_columns`](../../reference/table-operations/format/format-columns.md)
+- [`Table` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table)
+- [`agg` Pydoc](/core/pydoc/code/deephaven.agg.html#module-deephaven.agg)

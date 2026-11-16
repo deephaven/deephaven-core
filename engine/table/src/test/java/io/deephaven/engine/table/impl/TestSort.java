@@ -111,6 +111,20 @@ public class TestSort extends RefreshingTableTestCase {
     }
 
     @Test
+    public void testNotSortableMessage() {
+        final Table source = TableTools.emptyTable(1).update("A = 1", "B = 2");
+
+        final NotSortableException restricted = assertThrows(NotSortableException.class,
+                () -> source.restrictSortTo("A").sort("B"));
+        assertEquals("Sorting is not allowed on this table, but was attempted on: B; sortable columns: A",
+                restricted.getMessage());
+
+        final NotSortableException none = assertThrows(NotSortableException.class,
+                () -> source.restrictSortTo().sort("B"));
+        assertEquals("Sorting is not allowed on this table, but was attempted on: B", none.getMessage());
+    }
+
+    @Test
     public void testRestrictSortToNoColumns() {
         final QueryTable source = (QueryTable) TableTools.emptyTable(10)
                 .update("ID = i", "Parent = i == 0 ? NULL_INT : i - 1")

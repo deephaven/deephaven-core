@@ -13,12 +13,15 @@ general OpenID Connect services, but also other kinds of single-sign on services
 ## Example Keycloak setup
 In this directory, run `docker compose up` to start Keycloak and database for it. When the container first starts up, a
 [JSON file](deephaven_realm.json) configures a realm and a client that can access it, and two users: `admin`/`admin` and
-`user`/`user`. This docker compose configuration is designed to be fast to start and ephemeral, and is not meant for
-production use.
+`user`/`user`. Both users have an email address and first and last name, because Keycloak rejects logins from users
+whose profile is incomplete ("Account is not fully set up"). This docker compose configuration is designed to be fast
+to start and ephemeral, and is not meant for production use.
 
 After that has run, there will be a docker container running with port 6060 exposed on localhost. The account to
-administer the keycloak instance is `admin`/`admin`. Note that this account is for the "master" realm, and isn't related
-to the admin account above for the "deephaven_core" realm.
+administer the keycloak instance is `admin`/`admin`, created from the `KC_BOOTSTRAP_ADMIN_*` variables in
+[docker-compose.yml](docker-compose.yml). Keycloak marks it as a temporary admin account, which is fine for this
+example. Note that this account is for the "master" realm, and isn't related to the admin account above for the
+"deephaven_core" realm.
 
 ## Server setup
 To test this when building from gradle with `:server-jetty-app:run`, specify `-Poidc` to enable this.

@@ -40,6 +40,7 @@ The string is a copy of the table's rows at the moment you call [`html`](/core/j
 
 ## Related documentation
 
+- [`html`](../../reference/data-import-export/HTML/html.md)
 - [Read HTML files](./html-import.md)
 - [Export CSV files](./csv-export.md)
 - [`html` Javadoc](/core/javadoc/io/deephaven/engine/util/TableTools.html#html(io.deephaven.engine.table.Table))
