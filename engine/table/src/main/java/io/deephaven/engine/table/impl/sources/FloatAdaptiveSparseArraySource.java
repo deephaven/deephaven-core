@@ -1821,8 +1821,8 @@ public class FloatAdaptiveSparseArraySource extends SparseArrayColumnSource<Floa
     /**
      * Read the current value at {@code offset} of the leaf at {@code block2} of {@code level2} while this cycle may be
      * writing the source. The cycle may be making the leaf a full block, storing the block before clearing the compact
-     * leaf, so the compact leaf is read first, which finds either the compact leaf or, once that is cleared, the
-     * block, and never neither.
+     * leaf, so the compact leaf is read first, which finds either the compact leaf or, once that is cleared, the block,
+     * and never neither.
      *
      * @return the current value, which may be null
      */

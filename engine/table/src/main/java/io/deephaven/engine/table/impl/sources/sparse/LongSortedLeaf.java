@@ -13,7 +13,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import java.util.Arrays;
 
-import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.INDEX_MASK;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -33,8 +32,6 @@ public final class LongSortedLeaf extends LongCompactLeaf {
     private static final long LANE_ONES = 0x0001_0001_0001_0001L;
     private static final long GUARD_BITS = 0x8000_8000_8000_8000L;
     private static final long PAST_BLOCK_LANES = PAST_BLOCK * LANE_ONES;
-    /** The words of the bitmap of a bitmap leaf, which a sorted leaf makes when it grows past its threshold. */
-    private static final int BITMAP_WORDS = BLOCK_SIZE / Long.SIZE;
 
     /** A leaf holding no values. */
     public static final LongSortedLeaf EMPTY = new LongSortedLeaf(newWords(0), new long[0]);
@@ -81,8 +78,15 @@ public final class LongSortedLeaf extends LongCompactLeaf {
     /**
      * @return the offset at {@code index}, which is less than {@link #size}
      */
-    private int offsetAt(final int index) {
+    int offsetAt(final int index) {
         return (int) (words[index >>> 2] >>> ((index & 3) << 4)) & 0xFFFF;
+    }
+
+    /**
+     * @return the value at {@code index}, which is less than {@link #size}
+     */
+    long valueAt(final int index) {
+        return values[index];
     }
 
     private static void setOffset(final long[] words, final int index, final int offset) {
@@ -149,19 +153,13 @@ public final class LongSortedLeaf extends LongCompactLeaf {
             return this;
         }
         index = -index - 1;
-        // a bitmap leaf holds its values in offset order too, so either leaf takes the same values
+        if (size + 1 > sortedThreshold) {
+            return new LongBitmapLeaf(this, offset, value, index);
+        }
         final long[] newValues = new long[size + 1];
         System.arraycopy(values, 0, newValues, 0, index);
         newValues[index] = value;
         System.arraycopy(values, index, newValues, index + 1, size - index);
-        if (size + 1 > sortedThreshold) {
-            final long[] bits = new long[BITMAP_WORDS];
-            for (int ii = 0; ii < size; ++ii) {
-                setBit(bits, offsetAt(ii));
-            }
-            setBit(bits, offset);
-            return new LongBitmapLeaf(bits, newValues);
-        }
         final long[] newWords = newWords(size + 1);
         for (int ii = 0; ii < index; ++ii) {
             setOffset(newWords, ii, offsetAt(ii));
@@ -171,10 +169,6 @@ public final class LongSortedLeaf extends LongCompactLeaf {
             setOffset(newWords, ii + 1, offsetAt(ii));
         }
         return new LongSortedLeaf(newWords, newValues);
-    }
-
-    private static void setBit(final long[] bits, final int offset) {
-        bits[offset >>> 6] |= 1L << offset;
     }
 
     @Override
@@ -237,10 +231,10 @@ public final class LongSortedLeaf extends LongCompactLeaf {
             final int count,
             final int newSize,
             final int sortedThreshold) {
-        // the values are in offset order for either leaf; the offsets go to packed lanes or to a bitmap
-        final boolean bitmap = newSize > sortedThreshold;
-        final long[] newWords = bitmap ? null : newWords(newSize);
-        final long[] bits = bitmap ? new long[BITMAP_WORDS] : null;
+        if (newSize > sortedThreshold) {
+            return new LongBitmapLeaf(this, offsets, src, srcOffset, count, newSize);
+        }
+        final long[] newWords = newWords(newSize);
         final long[] newValues = new long[newSize];
         int index = 0;
         int dest = 0;
@@ -248,11 +242,11 @@ public final class LongSortedLeaf extends LongCompactLeaf {
             final int offset = offsets[ii];
             int existing;
             while (index < size && (existing = offsetAt(index)) < offset) {
-                placeOffset(newWords, bits, dest, existing);
+                setOffset(newWords, dest, existing);
                 newValues[dest++] = values[index++];
             }
             final boolean present = index < size && offsetAt(index) == offset;
-            placeOffset(newWords, bits, dest, offset);
+            setOffset(newWords, dest, offset);
             if (src != null) {
                 newValues[dest++] = src.get(srcOffset + ii);
             } else {
@@ -263,22 +257,10 @@ public final class LongSortedLeaf extends LongCompactLeaf {
             }
         }
         while (index < size) {
-            placeOffset(newWords, bits, dest, offsetAt(index));
+            setOffset(newWords, dest, offsetAt(index));
             newValues[dest++] = values[index++];
         }
-        return bitmap ? new LongBitmapLeaf(bits, newValues) : new LongSortedLeaf(newWords, newValues);
-    }
-
-    /**
-     * Record {@code offset}, the offset of the value at {@code index}, in {@code words} at that index, or if
-     * {@code words} is null, in {@code bits}.
-     */
-    private static void placeOffset(final long[] words, final long[] bits, final int index, final int offset) {
-        if (words != null) {
-            setOffset(words, index, offset);
-        } else {
-            setBit(bits, offset);
-        }
+        return new LongSortedLeaf(newWords, newValues);
     }
 
     @Override

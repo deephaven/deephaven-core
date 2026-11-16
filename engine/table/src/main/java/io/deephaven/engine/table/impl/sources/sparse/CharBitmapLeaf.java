@@ -21,7 +21,7 @@ public final class CharBitmapLeaf extends CharCompactLeaf {
     private static final int WORDS = BLOCK_SIZE / Long.SIZE;
 
     /** A leaf holding no values. */
-    public static final CharBitmapLeaf EMPTY = new CharBitmapLeaf(new long[WORDS], new char[0]);
+    public static final CharBitmapLeaf EMPTY = new CharBitmapLeaf();
 
     /** Bit {@code offset % 64} of word {@code offset / 64} is set when {@code offset} holds a value. */
     private final long[] bits;
@@ -30,17 +30,178 @@ public final class CharBitmapLeaf extends CharCompactLeaf {
     /** The values, in offset order. */
     private final char[] values;
 
-    /**
-     * Make a leaf of the offsets in {@code bits} and their values. The arrays are complete before the leaf is made, so
+    /*
+     * Each constructor allocates the leaf's arrays after the leaf, in the order a read visits them (the bitmap, the
+     * ranks, the values), so that a leaf and its arrays lie together in memory, and fills them before it returns, so
      * that a reader on another thread that finds the leaf sees them in full.
-     *
-     * @param bits the offsets that hold a value
-     * @param values the values of those offsets, in offset order, one for each set bit of {@code bits}
      */
-    CharBitmapLeaf(final long[] bits, final char[] values) {
-        this.bits = bits;
-        this.values = values;
+
+    /**
+     * Make a leaf holding no values.
+     */
+    private CharBitmapLeaf() {
+        bits = new long[WORDS];
         rankBefore = new short[WORDS];
+        values = new char[0];
+    }
+
+    /**
+     * Make a leaf of {@code newSize} values holding the offsets of {@code base} and {@code offsets[0, count)},
+     * ascending and distinct, with the values of {@code src} from {@code srcOffset} for those offsets, or, if
+     * {@code src} is null, keeping the values of the offsets {@code base} holds and null for the others.
+     */
+    CharBitmapLeaf(
+            final CharCompactLeaf base,
+            final int[] offsets,
+            final CharChunk<?> src,
+            final int srcOffset,
+            final int count,
+            final int newSize) {
+        bits = new long[WORDS];
+        rankBefore = new short[WORDS];
+        values = new char[newSize];
+        if (base instanceof CharBitmapLeaf) {
+            mergeBitmap((CharBitmapLeaf) base, offsets, src, srcOffset, count);
+        } else {
+            mergeSorted((CharSortedLeaf) base, offsets, src, srcOffset, count);
+        }
+        computeRanks();
+    }
+
+    /**
+     * Make a leaf holding the offsets and values of {@code base} and {@code value} at {@code offset}, which
+     * {@code base} does not hold, and whose value belongs at {@code index} among the values in offset order.
+     */
+    CharBitmapLeaf(final CharCompactLeaf base, final int offset, final char value, final int index) {
+        bits = new long[WORDS];
+        rankBefore = new short[WORDS];
+        final int baseSize = base.size();
+        values = new char[baseSize + 1];
+        if (base instanceof CharBitmapLeaf) {
+            final CharBitmapLeaf bitmap = (CharBitmapLeaf) base;
+            System.arraycopy(bitmap.bits, 0, bits, 0, WORDS);
+            System.arraycopy(bitmap.values, 0, values, 0, index);
+            System.arraycopy(bitmap.values, index, values, index + 1, baseSize - index);
+        } else {
+            final CharSortedLeaf sorted = (CharSortedLeaf) base;
+            for (int ii = 0; ii < baseSize; ++ii) {
+                setBit(sorted.offsetAt(ii));
+                values[ii < index ? ii : ii + 1] = sorted.valueAt(ii);
+            }
+        }
+        setBit(offset);
+        values[index] = value;
+        computeRanks();
+    }
+
+    /**
+     * Make a leaf holding the offsets and values of {@code base} except those from {@code firstOffset} through
+     * {@code lastOffset} inclusive.
+     */
+    private CharBitmapLeaf(final CharBitmapLeaf base, final int firstOffset, final int lastOffset) {
+        bits = base.bits.clone();
+        int removed = 0;
+        for (int wi = firstOffset >>> 6; wi <= lastOffset >>> 6; ++wi) {
+            final long cleared = bits[wi] & rangeMask(wi, firstOffset, lastOffset);
+            removed += Long.bitCount(cleared);
+            bits[wi] &= ~cleared;
+        }
+        rankBefore = new short[WORDS];
+        values = new char[base.values.length - removed];
+        // the removed values are consecutive, starting at the rank of the first offset
+        final int start = base.rank(firstOffset);
+        System.arraycopy(base.values, 0, values, 0, start);
+        System.arraycopy(base.values, start + removed, values, start, values.length - start);
+        computeRanks();
+    }
+
+    /**
+     * Fill this leaf's bitmap and values with those of {@code base} merged with {@code offsets[0, count)}, as the
+     * merging constructor describes.
+     */
+    private void mergeBitmap(
+            final CharBitmapLeaf base,
+            final int[] offsets,
+            final CharChunk<?> src,
+            final int srcOffset,
+            final int count) {
+        System.arraycopy(base.bits, 0, bits, 0, WORDS);
+        for (int ii = 0; ii < count; ++ii) {
+            setBit(offsets[ii]);
+        }
+        // walk the offsets of the result in ascending order, taking each value from src or from base
+        int index = 0;
+        int ii = 0;
+        int dest = 0;
+        for (int wi = 0; wi < WORDS; ++wi) {
+            long wordBits = bits[wi];
+            while (wordBits != 0) {
+                final int offset = (wi << 6) + Long.numberOfTrailingZeros(wordBits);
+                final boolean present = (base.bits[wi] & (1L << offset)) != 0;
+                if (ii < count && offsets[ii] == offset) {
+                    if (src != null) {
+                        values[dest] = src.get(srcOffset + ii);
+                    } else {
+                        values[dest] = present ? base.values[index] : NULL_CHAR;
+                    }
+                    ++ii;
+                } else {
+                    values[dest] = base.values[index];
+                }
+                if (present) {
+                    ++index;
+                }
+                ++dest;
+                wordBits &= wordBits - 1;
+            }
+        }
+    }
+
+    /**
+     * Fill this leaf's bitmap and values with those of {@code base}, a sorted leaf, merged with
+     * {@code offsets[0, count)}, as the merging constructor describes.
+     */
+    private void mergeSorted(
+            final CharSortedLeaf base,
+            final int[] offsets,
+            final CharChunk<?> src,
+            final int srcOffset,
+            final int count) {
+        final int baseSize = base.size();
+        int index = 0;
+        int dest = 0;
+        for (int ii = 0; ii < count; ++ii) {
+            final int offset = offsets[ii];
+            int existing;
+            while (index < baseSize && (existing = base.offsetAt(index)) < offset) {
+                setBit(existing);
+                values[dest++] = base.valueAt(index++);
+            }
+            final boolean present = index < baseSize && base.offsetAt(index) == offset;
+            setBit(offset);
+            if (src != null) {
+                values[dest++] = src.get(srcOffset + ii);
+            } else {
+                values[dest++] = present ? base.valueAt(index) : NULL_CHAR;
+            }
+            if (present) {
+                ++index;
+            }
+        }
+        while (index < baseSize) {
+            setBit(base.offsetAt(index));
+            values[dest++] = base.valueAt(index++);
+        }
+    }
+
+    private void setBit(final int offset) {
+        bits[offset >>> 6] |= 1L << offset;
+    }
+
+    /**
+     * Set the rank of each bitmap word from the bitmap.
+     */
+    private void computeRanks() {
         int rank = 0;
         for (int wi = 0; wi < WORDS; ++wi) {
             rankBefore[wi] = (short) rank;
@@ -92,13 +253,7 @@ public final class CharBitmapLeaf extends CharCompactLeaf {
             values[index] = value;
             return this;
         }
-        final long[] newBits = bits.clone();
-        newBits[offset >>> 6] |= 1L << offset;
-        final char[] newValues = new char[values.length + 1];
-        System.arraycopy(values, 0, newValues, 0, index);
-        newValues[index] = value;
-        System.arraycopy(values, index, newValues, index + 1, values.length - index);
-        return new CharBitmapLeaf(newBits, newValues);
+        return new CharBitmapLeaf(this, offset, value, index);
     }
 
     @Override
@@ -114,93 +269,28 @@ public final class CharBitmapLeaf extends CharCompactLeaf {
             }
             return this;
         }
-        return merge(offsets, src, srcOffset, count, values.length + absent);
+        return new CharBitmapLeaf(this, offsets, src, srcOffset, count, values.length + absent);
     }
 
     @Override
     public CharCompactLeaf insertAbsent(final int[] offsets, final int count, final int sortedThreshold) {
         final int absent = countAbsent(offsets, count);
-        return absent == 0 ? this : merge(offsets, null, 0, count, values.length + absent);
-    }
-
-    /**
-     * @return a new leaf of {@code newSize} values holding this leaf's offsets and {@code offsets[0, count)}, ascending
-     *         and distinct, with the values of {@code src} from {@code srcOffset} for those offsets, or, if {@code src}
-     *         is null, keeping the values of the offsets this leaf holds and null for the others
-     */
-    private CharBitmapLeaf merge(
-            final int[] offsets,
-            final CharChunk<?> src,
-            final int srcOffset,
-            final int count,
-            final int newSize) {
-        final long[] newBits = bits.clone();
-        for (int ii = 0; ii < count; ++ii) {
-            final int offset = offsets[ii];
-            newBits[offset >>> 6] |= 1L << offset;
-        }
-        // walk the offsets of the result in ascending order, taking each value from src or from this leaf
-        final char[] newValues = new char[newSize];
-        int index = 0;
-        int ii = 0;
-        int dest = 0;
-        for (int wi = 0; wi < WORDS; ++wi) {
-            long wordBits = newBits[wi];
-            while (wordBits != 0) {
-                final int offset = (wi << 6) + Long.numberOfTrailingZeros(wordBits);
-                final boolean present = (bits[wi] & (1L << offset)) != 0;
-                if (ii < count && offsets[ii] == offset) {
-                    if (src != null) {
-                        newValues[dest] = src.get(srcOffset + ii);
-                    } else {
-                        newValues[dest] = present ? values[index] : NULL_CHAR;
-                    }
-                    ++ii;
-                } else {
-                    newValues[dest] = values[index];
-                }
-                if (present) {
-                    ++index;
-                }
-                ++dest;
-                wordBits &= wordBits - 1;
-            }
-        }
-        return new CharBitmapLeaf(newBits, newValues);
+        return absent == 0 ? this : new CharBitmapLeaf(this, offsets, null, 0, count, values.length + absent);
     }
 
     @Override
     public CharCompactLeaf remove(final int offset) {
-        if (!contains(offset)) {
-            return this;
-        }
-        final int index = rank(offset);
-        final long[] newBits = bits.clone();
-        newBits[offset >>> 6] &= ~(1L << offset);
-        final char[] newValues = new char[values.length - 1];
-        System.arraycopy(values, 0, newValues, 0, index);
-        System.arraycopy(values, index + 1, newValues, index, values.length - index - 1);
-        return new CharBitmapLeaf(newBits, newValues);
+        return contains(offset) ? new CharBitmapLeaf(this, offset, offset) : this;
     }
 
     @Override
     public CharCompactLeaf removeRange(final int firstOffset, final int lastOffset) {
-        final long[] newBits = bits.clone();
-        int removed = 0;
         for (int wi = firstOffset >>> 6; wi <= lastOffset >>> 6; ++wi) {
-            final long cleared = newBits[wi] & rangeMask(wi, firstOffset, lastOffset);
-            removed += Long.bitCount(cleared);
-            newBits[wi] &= ~cleared;
+            if ((bits[wi] & rangeMask(wi, firstOffset, lastOffset)) != 0) {
+                return new CharBitmapLeaf(this, firstOffset, lastOffset);
+            }
         }
-        if (removed == 0) {
-            return this;
-        }
-        // the removed values are consecutive, starting at the rank of the first offset
-        final int start = rank(firstOffset);
-        final char[] newValues = new char[values.length - removed];
-        System.arraycopy(values, 0, newValues, 0, start);
-        System.arraycopy(values, start + removed, newValues, start, values.length - start - removed);
-        return new CharBitmapLeaf(newBits, newValues);
+        return this;
     }
 
     @Override

@@ -129,9 +129,9 @@ merge of ascending offsets), `insertAbsent` (add offsets holding null, for paral
 
 The offsets of a leaf never change. Setting the value of an offset the leaf holds writes it in place; `put`,
 `putSorted`, `insertAbsent`, `remove` and `removeRange` return a new leaf when they add or remove offsets, and the writer
-puts it in the page table in place of the old one (`setCompact`). A leaf builds its arrays before its constructor takes
-them into final fields, so a reader on another thread that finds the leaf sees it whole, and a reader that loaded the
-old leaf finds every value at the correct offset, however the leaf is concurrently written (see
+puts it in the page table in place of the old one (`setCompact`). A leaf's arrays are filled before its constructor
+returns, and held in final fields, so a reader on another thread that finds the leaf sees it whole, and a reader that
+loaded the old leaf finds every value at the correct offset, however the leaf is concurrently written (see
 [Reading previous values during a cycle](#reading-previous-values-during-a-cycle)). Each tier has a shared empty leaf
 (`EMPTY`), which no write changes, since it holds no offset to write in place.
 
@@ -467,6 +467,12 @@ that writers never needed an array of compact leaves, moved the allocation and n
 thread that prepares: a parallel Dense initial update over 2^23 rows took 7.6 ms instead of 3.5. The writers allocate
 their own blocks; the preparation leaves no room for a compact leaf where none is needed, and the writer makes such a
 leaf a full block from its first chunk.
+
+**Allocating a bitmap leaf's arrays before the leaf.** Building the bitmap and values of a new bitmap leaf and then
+passing them to its constructor, which allocated the ranks, laid out each leaf as bitmap, values, leaf, ranks, apart
+from the order a read visits them. Random `set` over Stride8 took 1.25x as long as with the leaf first, and random
+`get` 1.09x. Each `CharBitmapLeaf` constructor now allocates the bitmap, the ranks and the values after the leaf, in
+that order, and fills them before it returns. The sorted leaf, whose reads visit two arrays, showed no difference.
 
 **An immutable holder between a level and its arrays.** Holding a `Level2`'s positions and arrays in a separate
 immutable object, which the `Level2` replaced, kept readers consistent but added a dependent load to every read and
