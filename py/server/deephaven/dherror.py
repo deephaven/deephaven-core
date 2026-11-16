@@ -55,8 +55,53 @@ class DHError(Exception):
             if for_compact_tb:
                 self._compact_tb.append(tb_ln)
 
+        self._use_python_exception_as_root_cause(tb_lines)
+
         if not self._root_cause:
             self._root_cause = self._message
+
+    def _use_python_exception_as_root_cause(self, tb_lines: list[str]) -> None:
+        """When the deepest Java cause is a Python error, such as an exception raised in a Python function called
+        from a query string, uses the Python exception line as the root cause.
+
+        Java reports such an error as 'caused by java.lang.RuntimeException: Error in Python interpreter:',
+        followed by the Python traceback and then the Java stack frames. The exception line is the first unindented
+        line after the traceback's last 'File' line. Taking the last non-blank line instead would pick the end of a
+        multi-line exception message. Without this method, the root cause stops at the 'Error in Python
+        interpreter' line for any Python exception whose name doesn't end in 'Error', such as Exception or
+        KeyboardInterrupt.
+        """
+        caused_by = [i for i, ln in enumerate(tb_lines) if ln.startswith("caused by")]
+        if not caused_by or not tb_lines[caused_by[-1]].rstrip().endswith(
+            "Error in Python interpreter:"
+        ):
+            return
+
+        py_tb_lines = []
+        for tb_ln in tb_lines[caused_by[-1] + 1 :]:
+            if tb_ln.startswith("\tat "):
+                break
+            py_tb_lines.append(tb_ln)
+
+        file_lines = [
+            i for i, ln in enumerate(py_tb_lines) if ln.startswith('  File "')
+        ]
+        if not file_lines:
+            return
+        py_exc_line = next(
+            (
+                ln
+                for ln in py_tb_lines[file_lines[-1] + 1 :]
+                if ln.strip() and not ln.startswith(" ")
+            ),
+            "",
+        )
+        if not py_exc_line:
+            return
+
+        self._root_cause = py_exc_line
+        if not self._compact_tb or self._compact_tb[-1] != py_exc_line:
+            self._compact_tb.append(py_exc_line)
 
     @property
     def root_cause(self):

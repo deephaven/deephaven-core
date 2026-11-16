@@ -198,9 +198,6 @@ table = time_table("PT0.1S").update("X = i").last_by()
 handle = listen(table, listener_function)
 ```
 
-> [!WARNING]
-> `modified_prev` reads previous values at the modified rows' current row keys. If the same update also shifts those rows, as a sorted table can, `modified_prev` returns values from other rows. See [Removed or modified values](../conceptual/table-update-model.md#removed-or-modified-values).
-
 ![`table` updates while the listener prints modified rows](../assets/how-to/listen-modified-prev.gif)
 
 Each chunked accessor takes a required `chunk_size` argument and returns a generator. Each iteration of the generator yields a subset (chunk) of the changed rows as a dictionary, with column names as keys and [NumPy arrays](https://numpy.org/doc/stable/reference/generated/numpy.array.html) as values. To see all rows, iterate over all chunks in the generator. The chunked accessors are:
@@ -230,6 +227,8 @@ handle = listen(source, listener_function)
 ```
 
 ![`source` updates while the listener prints added rows](../assets/how-to/listen-added-chunks.gif)
+
+NumPy `bool` and string arrays have no null value. By default, a null in a Boolean column reads as `True` in a chunk, and a null in a String column reads as the string `'None'`. To tell nulls apart, pass `null_as_none=True` to a chunked accessor. Boolean and String columns then become `object` arrays that hold `None` for a null.
 
 ## Error handling
 

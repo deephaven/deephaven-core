@@ -41,6 +41,8 @@ Which `dtype_backend` to use. The default is "numpy_nullable".
 
 Both "numpy_nullable" and "pyarrow" automatically convert Deephaven nulls to pandas NA and enable pandas extension types. Extension types are needed to support types beyond NumPy's type system. Extension types support operations such as properly mapping Java Strings to Python strings.
 
+With `None`, and with `"numpy_nullable"` on pandas 3.0.0 or later, a Deephaven [`NaN`](../query-language/types/NaNs.md) in a `float` or `double` column also becomes `pandas.NA`, because pandas treats `NaN` as missing in its nullable float dtypes. [`to_table`](./to-table.md) then turns it into a Deephaven [null](../query-language/types/nulls.md). To keep `NaN` and null apart in a round trip, use `"pyarrow"`.
+
 </Param>
 <Param name="conv_null" type="bool" optional>
 
