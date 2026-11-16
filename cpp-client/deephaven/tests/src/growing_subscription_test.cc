@@ -38,10 +38,15 @@ using deephaven::dhcore::ticking::TickingUpdate;
 //
 // Whether the delta lands between rounds is not left to timing. The part of a table that changes
 // is an input table, empty when the subscription opens, and the test waits for the first round to
-// arrive before adding rows to it with a second script, so that the change is applied while the
-// rest of the snapshot is still being delivered. The helper hands back what the subscription
-// reported for every update from that point on, and each test asserts that its delta was observed,
-// so that it cannot pass without the scenario it describes. The one table that ticks on its own
+// arrive before adding rows to it, so that the change is applied while the rest of the snapshot is
+// still being delivered. The rows are added through the client rather than a script, because a
+// script queues behind every other script on the server's shared session and holds the update
+// graph's exclusive lock for as long as it runs, formula compilation included, while snapshot
+// rounds carry on without that lock. The helper hands back what the subscription reported for
+// every update from the delta on, and each test says what observing its delta looks like, so that
+// it cannot pass without the scenario it describes. A loaded server can still complete a snapshot
+// before the delta is applied; the helper then starts over with a fresh table, a bounded number of
+// times, and fails loudly if the delta never lands in time. The one table that ticks on its own
 // does so on every update graph cycle for as long as the subscription lives.
 //
 // Two things about the tables are deliberate. Each has a column computed by a Python function that
@@ -69,7 +74,7 @@ def expensive(i):
 
 // A suffix that makes a test's server-side names its own. The server's script session is shared by
 // every console, so two clients running this test against one server at the same time would
-// otherwise rebind each other's tables between a test's first script and its second.
+// otherwise rebind each other's tables, and an attempt that starts over needs a table of its own.
 std::string RunId() {
   std::random_device device;
   return fmt::format("{:08x}", device());
@@ -90,6 +95,28 @@ struct Delivery {
   std::shared_ptr<ClientTable> table;
   std::vector<Reported> since_delta;
 };
+
+// A table to subscribe to and the change to make to it once its first snapshot round has arrived.
+struct Scenario {
+  // The table's name on the server, before the run id is appended.
+  std::string table_name;
+  // The script that defines the table, given the run id.
+  std::function<std::string(const std::string &run)> script;
+  // The change to make once the first round has arrived, given the manager and the run id; empty
+  // for a table that ticks on its own.
+  std::function<void(TableHandleManager &thm, const std::string &run)> delta;
+  // Whether what the subscription reported from the delta on shows the delta having landed while
+  // the snapshot was still being delivered.
+  std::function<bool(const std::vector<Reported> &since)> delta_observed;
+  // What delta_observed looks for, for the failure message.
+  std::string delta_description;
+  // Whether the table is complete: for a table of fixed size, once it has reached the row count it
+  // had when it was opened; for a table whose row count the delta changes, exactly the row count it
+  // settles at.
+  std::function<bool(const ClientTable &table)> is_complete;
+};
+
+constexpr int kMaxAttempts = 3;
 
 // Logs each update and completes once 'is_complete' accepts the table, or on error. Keeps the
 // table as of the completing update for the caller to inspect, and what every update reported, so
@@ -190,31 +217,57 @@ private:
   std::exception_ptr exception_ptr_;
 };
 
-// Defines the table, subscribes, and once the first snapshot round has arrived runs 'delta', the
-// script that changes the table while the rest of the snapshot is still being delivered. Then
-// waits for the first update that 'is_complete' accepts and returns its table, along with what the
-// subscription reported for each update from the delta on (for a table that ticks on its own, each
-// update after the first), so that the caller can check that the delta was observed.
-Delivery SubscribeUntil(const std::string &script, const std::string &table_name,
-    const std::optional<std::string> &delta, std::function<bool(const ClientTable &)> is_complete) {
-  auto client = TableMakerForTests::CreateClient();
-  auto thm = client.GetManager();
-  thm.RunScript(script);
+// One attempt at the scenario, on a table of its own: defines the table, subscribes, and once the
+// first snapshot round has arrived makes the delta, so that the change is applied while the rest of
+// the snapshot is still being delivered. Then waits for the first update that 'is_complete'
+// accepts and returns its table, along with what the subscription reported for each update from
+// the delta on (for a table that ticks on its own, every update).
+Delivery Attempt(TableHandleManager &thm, const Scenario &scenario) {
+  auto run = RunId();
+  thm.RunScript(scenario.script(run));
+  auto table_name = fmt::format("{}_{}", scenario.table_name, run);
   auto table = thm.FetchTable(table_name);
   fmt::print(std::cerr, "{}: {} rows at open\n", table_name, table.NumRows());
 
-  auto observer = std::make_shared<SnapshotObserver>(std::move(is_complete));
+  auto observer = std::make_shared<SnapshotObserver>(scenario.is_complete);
   auto cookie = table.Subscribe(observer);
   const auto timeout = std::chrono::seconds(120);
   observer->WaitForFirstUpdate(timeout);
-  if (delta.has_value()) {
-    // Mark before the script runs so that none of its updates precedes the mark.
+  if (scenario.delta) {
+    // Marked before the delta is made, so that no update it produces can land ahead of the mark.
     observer->MarkDelta();
-    thm.RunScript(*delta);
+    scenario.delta(thm, run);
   }
   auto result = observer->WaitForCompletion(timeout);
   table.Unsubscribe(std::move(cookie));
   return result;
+}
+
+// Runs the scenario and returns what it delivered. A delta is applied only once the server's
+// update graph gets to it, and a loaded server can finish the snapshot first, in which case the
+// subscription reports nothing of the kind the scenario describes. Such an attempt is discarded and
+// the scenario is tried again with a fresh table, up to kMaxAttempts times.
+Delivery SubscribeUntil(const Scenario &scenario) {
+  auto client = TableMakerForTests::CreateClient();
+  auto thm = client.GetManager();
+  for (int attempt = 1; ; ++attempt) {
+    auto delivery = Attempt(thm, scenario);
+    if (scenario.delta_observed(delivery.since_delta)) {
+      return delivery;
+    }
+    if (attempt == kMaxAttempts) {
+      throw std::runtime_error(fmt::format(
+          "In {} attempts the snapshot was never still being delivered when the delta landed, so it "
+          "could not be checked that {}", attempt, scenario.delta_description));
+    }
+    fmt::print(std::cerr,
+        "  attempt {}: the delta landed after the snapshot had completed; starting over with a fresh "
+        "table\n", attempt);
+  }
+}
+
+bool IsComplete(const ClientTable &table, int64_t rows) {
+  return table.NumRows() == static_cast<size_t>(rows);
 }
 
 std::vector<int64_t> Longs(const ClientTable &table, size_t column_index) {
@@ -249,30 +302,32 @@ std::string FirstBadRow(size_t num_rows,
 // meanwhile had more data than it was willing to take: "There is excess data in the chunk".
 TEST_CASE("Growing subscription: large appending table is fully delivered", "[growing]") {
   constexpr int64_t kAppendedRows = 2'000;
-  auto run = RunId();
-  auto script = std::string(kExpensive) + fmt::format(R"xxx(
+  auto delivery = SubscribeUntil(Scenario{
+      .table_name = "growing_appends",
+      .script = [](const std::string &run) {
+        return std::string(kExpensive) + fmt::format(R"xxx(
 _base = empty_table({0}).update(["K = ii", "Price = ii * 1.5"]).update_view(["Slow = (long) expensive(K)"])
 # The rows appended once the snapshot is under way; empty until then, with the columns of the rows
 # to come.
 appended_{1} = input_table(init_table=empty_table(0).update(["K = ii", "Price = ii * 2.5"]))
 growing_appends_{1} = merge([_base, appended_{1}.update_view(["Slow = (long) expensive(K)"])])
 )xxx", kBaseRows, run);
-  auto delta = fmt::format(R"xxx(
-appended_{1}.add(empty_table({0}).update(["K = 9_000_000 + ii", "Price = ii * 2.5"]))
-)xxx", kAppendedRows, run);
-  auto delivery = SubscribeUntil(script, fmt::format("growing_appends_{}", run), delta,
-      [](const ClientTable &t) {
-        return t.NumRows() == static_cast<size_t>(kBaseRows + kAppendedRows);
-      });
-
-  // The appended rows lie beyond the region the snapshot has delivered, so their delta reaches the
-  // client with no data for them: an update that adds nothing. The rows themselves follow in a
-  // later round.
-  const auto &since = delivery.since_delta;
-  INFO("the delta appending rows beyond the delivered region should arrive as an update that adds "
-      "nothing");
-  CHECK(std::any_of(since.begin(), since.end(),
-      [](const Reported &r) { return r.added == 0 && r.removed == 0; }));
+      },
+      .delta = [](TableHandleManager &thm, const std::string &run) {
+        auto appended = thm.FetchTable(fmt::format("appended_{}", run));
+        appended.AddTable(thm.EmptyTable(kAppendedRows).Update("K = 9_000_000 + ii", "Price = ii * 2.5"));
+      },
+      // The appended rows lie beyond the region the snapshot has delivered, so their delta reaches
+      // the client with no data for them: an update that adds nothing. The rows themselves follow in
+      // a later round.
+      .delta_observed = [](const std::vector<Reported> &since) {
+        return std::any_of(since.begin(), since.end(),
+            [](const Reported &r) { return r.added == 0 && r.removed == 0; });
+      },
+      .delta_description = "the delta appending rows beyond the delivered region arrives as an update "
+          "that adds nothing",
+      .is_complete = [](const ClientTable &t) { return IsComplete(t, kBaseRows + kAppendedRows); },
+  });
 
   // The base rows come first, with keys 0, 1, 2, ...; the appended rows follow, with keys from
   // 9,000,000 up. Every row's other columns are functions of its key, so a misaligned row shows up
@@ -303,8 +358,10 @@ appended_{1}.add(empty_table({0}).update(["K = 9_000_000 + ii", "Price = ii * 2.
 // which legitimately has data for one column and none for the others: "Chunks have inconsistent
 // sizes".
 TEST_CASE("Growing subscription: wide modified table is fully delivered", "[growing]") {
-  auto run = RunId();
-  auto script = std::string(kExpensive) + fmt::format(R"xxx(
+  auto delivery = SubscribeUntil(Scenario{
+      .table_name = "growing_modifies",
+      .script = [](const std::string &run) {
+        return std::string(kExpensive) + fmt::format(R"xxx(
 # A one-row table that ticks, joined to every row of the big table so that every row is modified
 # each cycle.
 _seed = empty_table(1).update(["Beat = (long) 0"])
@@ -316,14 +373,15 @@ growing_modifies_{1} = (empty_table({0}).update(["K = ii"] + _cols)
     .update_view(["BeatK = Beat * 1_000_000 + K"])
     .drop_columns("Beat"))
 )xxx", kBaseRows, run);
-  auto delivery = SubscribeUntil(script, fmt::format("growing_modifies_{}", run), std::nullopt,
-      [](const ClientTable &t) { return t.NumRows() == static_cast<size_t>(kBaseRows); });
-
-  // The beat ticks on every cycle, so the deltas between rounds modify the rows delivered so far.
-  const auto &since = delivery.since_delta;
-  INFO("the rows delivered so far should have been modified between rounds");
-  CHECK(std::any_of(since.begin(), since.end(),
-      [](const Reported &r) { return r.modified != 0; }));
+      },
+      // The beat ticks on every cycle, so the deltas between rounds modify the rows delivered so far.
+      .delta_observed = [](const std::vector<Reported> &since) {
+        return std::any_of(since.begin(), since.end(),
+            [](const Reported &r) { return r.modified != 0; });
+      },
+      .delta_description = "the rows delivered so far are modified between rounds",
+      .is_complete = [](const ClientTable &t) { return IsComplete(t, kBaseRows); },
+  });
 
   // Columns are K, C0..C29, Slow, BeatK. BeatK combines the beat the row was last modified with and
   // the row's own key; every row has seen the same beat, because each round carries the beat as of
@@ -369,8 +427,10 @@ TEST_CASE("Growing subscription: table losing undelivered rows is fully delivere
   // the delta visible to the client.
   constexpr int64_t kRemovedFromBottom = 10;
   constexpr int64_t kRemovedFromTop = 1'000;
-  auto run = RunId();
-  auto script = std::string(kExpensive) + fmt::format(R"xxx(
+  auto delivery = SubscribeUntil(Scenario{
+      .table_name = "growing_removes",
+      .script = [](const std::string &run) {
+        return std::string(kExpensive) + fmt::format(R"xxx(
 # The keys of the rows removed once the snapshot is under way; empty until then.
 blacklist_{1} = input_table(init_table=empty_table(0).update(["K = ii"]))
 _cols = ["C%d = ii * %d" % (i, i + 1) for i in range(30)]
@@ -378,14 +438,28 @@ growing_removes_{1} = (empty_table({0}).update(["K = ii"] + _cols)
     .update_view(["Slow = (long) expensive(K)"])
     .where_not_in(blacklist_{1}, "K"))
 )xxx", kBaseRows, run);
-  auto delta = fmt::format(R"xxx(
-blacklist_{2}.add(merge([empty_table({0}).update(["K = ii"]),
-    empty_table({1}).update(["K = {3} + ii"])]))
-)xxx", kRemovedFromBottom, kRemovedFromTop, run, kBaseRows - kRemovedFromTop);
-  auto delivery = SubscribeUntil(script, fmt::format("growing_removes_{}", run), delta,
-      [](const ClientTable &t) {
-        return t.NumRows() == static_cast<size_t>(kBaseRows - kRemovedFromBottom - kRemovedFromTop);
-      });
+      },
+      .delta = [](TableHandleManager &thm, const std::string &run) {
+        auto blacklist = thm.FetchTable(fmt::format("blacklist_{}", run));
+        auto bottom = thm.EmptyTable(kRemovedFromBottom).Update("K = ii");
+        auto top = thm.EmptyTable(kRemovedFromTop).Update(
+            fmt::format("K = {} + ii", kBaseRows - kRemovedFromTop));
+        blacklist.AddTable(bottom.Merge(top));
+      },
+      // A delta that lands after the snapshot has completed removes rows too, all of them at once;
+      // only one that arrives while the rows removed from the top are still undelivered shows the
+      // scenario.
+      .delta_observed = [](const std::vector<Reported> &since) {
+        return std::any_of(since.begin(), since.end(), [](const Reported &r) {
+          return r.removed != 0 && r.rows_before <= static_cast<size_t>(kBaseRows - kRemovedFromTop);
+        });
+      },
+      .delta_description = "the delta removing rows arrives while the rows removed from the top are "
+          "still undelivered",
+      .is_complete = [](const ClientTable &t) {
+        return IsComplete(t, kBaseRows - kRemovedFromBottom - kRemovedFromTop);
+      },
+  });
 
   // The delta is the one update that removes rows. It must have erased only the rows from the
   // bottom, and it must have arrived while the client held fewer rows than the first key removed
@@ -426,6 +500,70 @@ blacklist_{2}.add(merge([empty_table({0}).update(["K = ii"]),
       if (columns[c + 1][i] != expected) {
         return fmt::format("C{} is {}, expected {}", c, columns[c + 1][i], expected);
       }
+    }
+    if (slow[i] != keys[i] * 3) {
+      return fmt::format("Slow is {}, expected {}", slow[i], keys[i] * 3);
+    }
+    return {};
+  }) == "");
+}
+
+// A table that gains rows ahead of the region the snapshot has delivered. The server tracks what
+// the client holds as a range of positions, so each insertion pushes the last delivered rows out of
+// that range, and the next round sends them again. This client used to insert a re-sent row
+// strictly: "Some elements of [...] were already in the set".
+TEST_CASE("Growing subscription: table gaining rows ahead of the snapshot is fully delivered",
+    "[growing]") {
+  constexpr int64_t kInsertedRows = 1'000;
+  auto delivery = SubscribeUntil(Scenario{
+      .table_name = "growing_inserts",
+      .script = [](const std::string &run) {
+        return std::string(kExpensive) + fmt::format(R"xxx(
+# The rows inserted once the snapshot is under way; empty until then. This constituent comes first
+# in the merge, so its rows take the lowest row keys and land ahead of every base row.
+inserted_{1} = input_table(init_table=empty_table(0).update(["K = ii", "Price = ii * 2.5"]))
+_base = empty_table({0}).update(["K = ii", "Price = ii * 1.5"]).update_view(["Slow = (long) expensive(K)"])
+growing_inserts_{1} = merge([inserted_{1}.update_view(["Slow = (long) expensive(K)"]), _base])
+)xxx", kBaseRows, run);
+      },
+      .delta = [](TableHandleManager &thm, const std::string &run) {
+        auto inserted = thm.FetchTable(fmt::format("inserted_{}", run));
+        inserted.AddTable(thm.EmptyTable(kInsertedRows).Update("K = 9_000_000 + ii", "Price = ii * 2.5"));
+      },
+      // The inserted rows push as many delivered rows out of the server's range, and the rounds
+      // that follow send each of those again, which this client reports as a row removed and added
+      // back. Nothing else removes a row.
+      .delta_observed = [](const std::vector<Reported> &since) {
+        return std::any_of(since.begin(), since.end(),
+            [](const Reported &r) { return r.removed != 0; });
+      },
+      .delta_description = "the rows the insertion pushed out of the server's range are sent again",
+      .is_complete = [](const ClientTable &t) { return IsComplete(t, kInsertedRows + kBaseRows); },
+  });
+
+  size_t re_sent = 0;
+  for (const auto &reported : delivery.since_delta) {
+    re_sent += reported.removed;
+  }
+  INFO("each delivered row the insertion pushed out of the server's range should have been sent "
+      "again");
+  CHECK(re_sent == static_cast<size_t>(kInsertedRows));
+
+  // The inserted rows come first, with keys from 9,000,000 up; the base rows follow, with keys 0,
+  // 1, 2, ...
+  const auto &table = *delivery.table;
+  auto keys = Longs(table, 0);
+  auto prices = Doubles(table, 1);
+  auto slow = Longs(table, 2);
+  CHECK(FirstBadRow(keys.size(), [&](size_t i) -> std::optional<std::string> {
+    auto index = static_cast<int64_t>(i);
+    auto expected_key = index < kInsertedRows ? 9'000'000 + index : index - kInsertedRows;
+    if (keys[i] != expected_key) {
+      return fmt::format("K is {}, expected {}", keys[i], expected_key);
+    }
+    auto expected_price = index < kInsertedRows ? (keys[i] - 9'000'000) * 2.5 : keys[i] * 1.5;
+    if (prices[i] != expected_price) {
+      return fmt::format("Price is {}, expected {}", prices[i], expected_price);
     }
     if (slow[i] != keys[i] * 3) {
       return fmt::format("Slow is {}, expected {}", slow[i], keys[i] * 3);

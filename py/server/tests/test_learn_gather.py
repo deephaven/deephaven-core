@@ -198,14 +198,8 @@ class LearnGatherTestCase(BaseTestCase):
             self.assertTrue(gathered_rowmajor.dtype == gathered_colmajor.dtype)
             print("Array dtype: {}".format(np_dtype))
         with self.subTest(msg="Contiguity"):
-            self.assertTrue(
-                gathered_rowmajor.flags["C_CONTIGUOUS"]
-                or gathered_rowmajor.flags["F_CONTIGUOUS"]
-            )
-            self.assertTrue(
-                gathered_colmajor.flags["C_CONTIGUOUS"]
-                or gathered_colmajor.flags["F_CONTIGUOUS"]
-            )
+            self.assertTrue(gathered_rowmajor.flags["C_CONTIGUOUS"])
+            self.assertTrue(gathered_colmajor.flags["F_CONTIGUOUS"])
             print("Array contiguity checked")
 
 

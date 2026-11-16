@@ -44,12 +44,12 @@ public class UngroupedBoxedCharArrayColumnSource extends UngroupedColumnSource<C
             return NULL_CHAR;
         }
         long segment = rowKey >> base;
-        int offset = (int) (rowKey & ((1 << base) - 1));
+        long offset = rowKey & ((1L << base) - 1);
         Character[] array = innerSource.get(segment);
-        if (array == null || offset >= array.length || array[offset] == null) {
+        if (array == null || offset >= array.length || array[(int) offset] == null) {
             return NULL_CHAR;
         }
-        return array[offset];
+        return array[(int) offset];
     }
 
 
@@ -65,12 +65,12 @@ public class UngroupedBoxedCharArrayColumnSource extends UngroupedColumnSource<C
             return NULL_CHAR;
         }
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
+        long offset = rowKey & ((1L << getPrevBase()) - 1);
         Character[] array = innerSource.getPrev(segment);
-        if (array == null || offset >= array.length || array[offset] == null) {
+        if (array == null || offset >= array.length || array[(int) offset] == null) {
             return NULL_CHAR;
         }
-        return array[offset];
+        return array[(int) offset];
     }
 
     @Override

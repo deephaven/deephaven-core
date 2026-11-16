@@ -72,9 +72,10 @@ Any field without type tags gets the default Deephaven type for its Arrow wire t
 The [`import_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.import_table) method of the [Python client](../../getting-started/pyclient-quickstart.md) replaces each field's metadata with its own:
 
 - It sets `deephaven:type` from a fixed mapping for simple Arrow types.
-- It leaves `deephaven:type` off for parameterized types, such as lists, maps, 128-bit and 256-bit decimals, and timestamps with a time zone. Those columns get their default Deephaven type.
+- It leaves `deephaven:type` off for parameterized types, such as lists, maps, 128-bit and 256-bit decimals, and timestamps with a time zone. Those columns get their default Deephaven type. It raises an error for a list, map, or union whose element type it doesn't map.
 - It never sets `deephaven:componentType`.
-- It raises an error for any other Arrow type, including dictionary-encoded and run-end encoded columns.
+- It maps a dictionary-encoded or run-end encoded column by the type of its values. The column arrives as a plain column of that type.
+- It raises an error for any other Arrow type.
 
 To upload a type that `import_table` rejects, or to choose the column types yourself, upload with a Flight client such as [`pyarrow.flight`](https://arrow.apache.org/docs/python/flight.html), and put the type tags in each field's metadata.
 

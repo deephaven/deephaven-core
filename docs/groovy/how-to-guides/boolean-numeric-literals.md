@@ -25,10 +25,12 @@ Numeric literals in DQL can be integers or floating-point numbers. By default, t
 
 Java rejects an integer literal that is too large for an `int`. The engine makes it a `long` instead. For a hexadecimal or binary literal, the engine compares the unsigned value with the `int` maximum, so `0xFFFFFFFF` is the `long` 4294967295, not the `int` -1 that Java produces.
 
+Java reads an integer literal with a leading zero, such as `0777`, as octal. The query language does not support octal literals, so the engine rejects an integer literal with a leading zero. Write `777` for the decimal value, or a hexadecimal literal such as `0x1FF` for the same bits.
+
 You can specify the type of a numeric literal by appending a suffix to the number:
 
 - `L` or `l` for a 64-bit signed integer ([Java primitive](./data-types.md#primitive-types) `long`).
-- `f` for a 32-bit floating-point number ([Java primitive](./data-types.md#primitive-types) `float`). The suffix must be lowercase. With an uppercase `F`, as in `3.14F`, the engine creates a `double` column that holds the `float`-rounded value 3.140000104904175.
+- `f` or `F` for a 32-bit floating-point number ([Java primitive](./data-types.md#primitive-types) `float`).
 - `d` or `D` for a 64-bit floating-point number ([Java primitive](./data-types.md#primitive-types) `double`). This suffix is optional on a literal that already has a decimal point or exponent, since `double` is the default there. On a whole number, `5d` is a `double`, while `5` is an `int`.
 
 Groovy's `G` and `I` suffixes are not valid in DQL. A [query string](./query-string-overview.md) that uses either one fails to compile.
@@ -37,7 +39,6 @@ Numeric literals can also be written in these forms:
 
 - **Hexadecimal**: prefix the digits with `0x` or `0X`, as in `0xABCD` (43981).
 - **Binary**: prefix the digits with `0b` or `0B`, as in `0b1010` (10).
-- **Octal**: start the digits with `0`, so `0123` is the octal number 83, not 123.
 - **Scientific notation**: use `e` or `E` for a decimal exponent, as in `1.23e3` (1230.0).
 - **Hexadecimal floating point**: use `p` or `P` for a binary exponent after `0x`-prefixed hexadecimal digits, as in `0x1.23p3` (9.09375).
 - **Underscores**: place `_` between digits for readability, as in `1_000_000`. The underscores don't change the value.
@@ -47,7 +48,6 @@ The following example constructs a column for each default type, suffix, and for
 ```groovy order=source,sourceMeta
 source = emptyTable(1).update(
     "IntLiteral = 5",
-    "IntOctalLiteral = 0123",
     "IntHexadecimalLiteral = 0xABCD",
     "IntBinaryLiteral = 0b1010",
     "LongLiteral = 123456789L",
@@ -68,7 +68,7 @@ source = emptyTable(1).update(
 sourceMeta = source.meta()
 ```
 
-In `sourceMeta`, each column's type follows the rules above. `PromotedLongLiteral` and `PromotedHexadecimalLiteral` have no suffix, but they are `long` columns because their values are too large for an `int`. `DoubleSuffixLiteral` is a `double` column. In `source`, `PromotedHexadecimalLiteral` holds 4294967295 and `IntOctalLiteral` holds 83.
+In `sourceMeta`, each column's type follows the rules above. `PromotedLongLiteral` and `PromotedHexadecimalLiteral` have no suffix, but they are `long` columns because their values are too large for an `int`. `DoubleSuffixLiteral` is a `double` column. In `source`, `PromotedHexadecimalLiteral` holds 4294967295.
 
 ## Related documentation
 

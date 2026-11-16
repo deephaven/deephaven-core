@@ -8,11 +8,14 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -78,6 +81,19 @@ public class TestFormulaColumn {
     // ---------- TESTS
 
     @SuppressWarnings("RedundantCast")
+    @Test
+    public void testUnsafeRefreshingMessageNamesConfigurationProperty() {
+        final BaseTable<?> refreshing = (BaseTable<?>) TstUtils.testRefreshingTable(TableTools.intCol("X", 1))
+                .withoutAttributes(List.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE));
+        final FormulaColumn column = FormulaColumn.createFormulaColumn("Y", "X + ii");
+        column.initDef(refreshing.getDefinition().getColumnNameMap());
+        final IllegalArgumentException e =
+                assertThrows(IllegalArgumentException.class, () -> column.validateSafeForRefresh(refreshing));
+        assertTrue(e.getMessage(),
+                e.getMessage().endsWith(
+                        " set the system property AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true."));
+    }
+
     @Test
     public void testSimpleLiterals() {
         check("(byte) 42", (byte) 42);

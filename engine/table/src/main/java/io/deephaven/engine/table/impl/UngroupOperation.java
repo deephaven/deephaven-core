@@ -612,7 +612,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             resultRowset.remove(removedRowSet);
 
             final int prevBase = shiftState.getPrevNumShiftBits();
-            final int maxOldSlotSize = 1 << prevBase;
+            final long maxOldSlotSize = 1L << prevBase;
 
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();

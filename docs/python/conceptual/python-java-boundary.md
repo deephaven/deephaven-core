@@ -2,27 +2,61 @@
 title: The Python-Java boundary and how it affects query efficiency
 ---
 
-This guide discusses the relationship between Python and Java in Deephaven Python queries and how it affects query efficiency.
+This guide discusses the relationship between Python and Java in Deephaven Python queries and how it affects query efficiency. Calls pass between the two languages in both directions:
+
+- Python code calls into the Java engine when you run a table operation.
+- The engine calls back into Python when a [query string](../how-to-guides/query-string-overview.md) uses a Python function.
+
+The short version: table operations you call from Python are inexpensive. A Python function inside a query string, however, can run once for every row. So prefer [built-in functions](../how-to-guides/built-in-functions.md), and write the Python calls you keep so that the engine can vectorize them.
+
+The first section shows how the Python API wraps Java table operations. [Why crossing the boundary affects performance](#why-crossing-the-boundary-affects-performance) covers the other direction and explains why it can dominate query cost. The remaining sections cover how to reduce boundary crossings and the memory that Python functions in query strings use.
 
 ## From Python to Java
 
-Deephaven, on the backend, is written almost entirely in Java.
+Deephaven's backend is written almost entirely in Java. Over 90% of the code in the Deephaven Community Core repository is Java.
 
-![A breakdown of languages used in Deephaven Community Core](../assets/conceptual/dhc-languages.png)
+Deephaven's Python API wraps the engine's powerful Java table operations in idiomatic Python that follows [PEP 8](https://peps.python.org/pep-0008/) conventions. Python developers don't have to write Java or call Java classes directly. The wrappers rely on [jpy](../how-to-guides/use-jpy.md), a powerful bidirectional Python-Java bridge.
 
-Deephaven's Python API allows users to perform tasks by wrapping the Java operations in Python. This is accomplished via [jpy](https://pypi.org/project/jpy/), a bi-directional Python-Java bridge that can be used to embed Java code in Python programs. This guide will cover Python -> Java.
+The Python-Java boundary is the point where a call passes from the Python interpreter to the Java engine, or back. Each crossing takes time, because [jpy](../how-to-guides/use-jpy.md) has to convert the arguments and the return value between Python and Java types.
 
-[jpy](https://pypi.org/project/jpy/) is a powerful tool taken full advantage of in Deephaven. However, Python developers typically don't want to have to write Java code. Moreover, they don't want to use Python just to invoke Java. So, the Deephaven Python API has wrapped Deephaven's powerful table operations in Python to make them PEP-compliant and easy for Python developers.
+The [`update`](../reference/table-operations/select/update.md) table operation shows the pattern. It creates a new table containing a new, in-memory column for each formula given in a list. Below is a simplified version of the Python [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) class and its [`update`](../reference/table-operations/select/update.md) method.
 
-## Why does this matter?
+```python skip-test
+from __future__ import annotations
 
-The Python-Java boundary can be crossed numerous times throughout a single query. Crossing this boundary takes time. So, the number of times this boundary is crossed will affect the query's efficiency. This concept becomes very important when working with real-time and big data, where speed can make or break them.
+from collections.abc import Sequence
 
-Here's a screenshot showing execution times between the built-in query language [`sin`](https://deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) function, and [`numpy.sin`](https://numpy.org/doc/stable/reference/generated/numpy.sin.html):
+import jpy
 
-![Print statements. The built-in sin function took 0.045 seconds, while NumPy's `sin` function took 1.341 seconds](../assets/conceptual/sine-timed.png)
+_JTable = jpy.get_type("io.deephaven.engine.table.Table")
 
-That's a pretty significant difference in execution time. Below is the code that produces it:
+
+class Table:
+    def __init__(self, j_table: jpy.JType):
+        self.j_table = jpy.cast(j_table, _JTable)
+
+    def update(self, formulas: Sequence[str]) -> Table:
+        return Table(j_table=self.j_table.update(*formulas))
+```
+
+- [`deephaven.table.Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) is the Python class that wraps the Java class [`io.deephaven.engine.table.Table`](/core/javadoc/io/deephaven/engine/table/Table.html) in a Pythonic interface.
+- `_JTable` is [jpy](../how-to-guides/use-jpy.md)'s reference to the Java class.
+- `jpy.JType` is the type hint the Deephaven Python API uses for a Java object.
+- `jpy.cast` casts `j_table` to the Java [`Table`](/core/javadoc/io/deephaven/engine/table/Table.html) type so that [jpy](../how-to-guides/use-jpy.md) has the correct signatures for making calls into Java.
+- `j_table.update(*formulas)` calls the Java [`update`](/core/javadoc/io/deephaven/api/TableOperations.html#update(java.lang.String...)) method through [jpy](../how-to-guides/use-jpy.md).
+- `Table(j_table=...)` wraps the Java result in a new Python [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table), which [`update`](../reference/table-operations/select/update.md) returns.
+
+Much of Deephaven's Python API looks like this under the hood. This thin-wrapper design serves two purposes: convenience and speed. The thin wrappers make the API feel Pythonic and add only a small overhead for each operation. The Java query engine still does the actual work, so table operations keep the concurrency and efficiency it offers.
+
+## Why crossing the boundary affects performance
+
+A table operation called from Python, like [`update`](../reference/table-operations/select/update.md) in the wrapper above, crosses the boundary only a few times, however many rows the table has. A [Python function called inside a query string](../how-to-guides/python-functions.md) is different. The engine calls it from Java once per row. When the engine can [vectorize](#vectorize-the-python-calls-you-keep) the call, it calls it once per chunk (a block of rows the engine processes together) instead. Either way, a single query can cross the boundary many times.
+
+Each crossing takes time, so the number of boundary crossings affects the query's efficiency. This matters most with real-time and large data, where speed can make or break an application.
+
+Calling Python also costs parallelism. Unless the Python build is free-threaded, the engine doesn't split a column or filter that calls Python across threads. [Parallelization](./query-engine/parallelization.md) explains how the engine parallelizes queries.
+
+The following code times the [built-in](../how-to-guides/built-in-functions.md) [`sin`](/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) function against [`numpy.sin`](https://numpy.org/doc/stable/reference/generated/numpy.sin.html) on 100,000 rows:
 
 ```python skip-test
 from deephaven import empty_table
@@ -34,105 +68,154 @@ n_tries = 100
 source = empty_table(100_000).update(["X = 0.1 * ii"])
 
 start = time()
-for idx in range(n_tries):
+for _ in range(n_tries):
     result_builtin = source.update(["Y = sin(X)"])
 end = time()
 elapsed = (end - start) / n_tries
 
-print(f"Built-in sin function - {(elapsed):.3f} seconds.")
+print(f"Built-in sine function - {elapsed:.3f} seconds.")
 
 start = time()
-for idx in range(n_tries):
+for _ in range(n_tries):
     result_numpy = source.update(["Y = (double)np.sin(X)"])
 end = time()
 elapsed = (end - start) / n_tries
 
-print(f"NumPy sin function - {(elapsed):.3f} seconds.")
+print(f"NumPy sine function - {elapsed:.3f} seconds.")
 ```
 
-Why is [NumPy](https://numpy.org/) so much slower?
+One run printed the following times:
 
-- When creating `result_builtin`, the query string uses built-in methods. This requires no crossings of the Python-Java boundary.
-  - The [`sin`](https://deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) method is built into the query language.
-- When creating `result_numpy`, the query engine calls NumPy's [`sin`](https://numpy.org/doc/stable/reference/generated/numpy.sin.html) method for every row. So, it has to cross the Python-Java boundary twice for each row.
-  - The first time, it goes from Java to Python to calculate the sine of `X`.
-  - The second time, it converts the result from Python to Java.
-  - Deephaven can vectorize some Python function calls, making one call per chunk of rows instead of one per row. A call is vectorized only when it is a plain function call (not called through a module or object) that is not cast or used inside a larger expression. `np.sin(X)` breaks two of these rules: it is called through the `np` module, and its result is explicitly cast. So the engine calls it once per row, and 100,000 rows means 100,000 round trips.
+```text
+Built-in sine function - 0.045 seconds.
+NumPy sine function - 1.341 seconds.
+```
 
-## What's built into the query language?
+That's a significant difference: the NumPy version takes about 30 times as long.
 
-Deephaven is written in Java under the hood, so all Java built-in classes are available. A list can be found [here](https://docs.oracle.com/en/java/javase/17/docs/api/allclasses-index.html). Some of the most useful classes (and their subclasses) in queries are given below:
+Why is the [NumPy](https://numpy.org/) version so much slower?
 
-- [java.lang](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/package-summary.html)
-  - [java.lang.Math](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Math.html) - Contains useful math functions.
-  - [java.lang.Number](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Number.html) - Useful for converting `BigDecimal` and `BigInteger` to primitive types.
-  - [java.lang.String](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) - The Java String. This is the data type of any Deephaven string column.
-- [java.math](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/package-summary.html)
-  - [java.math.BigDecimal](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) - Arbitrary precision floating point value.
-  - [java.math.BigInteger](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigInteger.html) - Arbitrary precision integer value.
-- [java.util](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/package-summary.html)
-  - [java.util.Arrays](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Arrays.html) - Routines for searching and manipulating arrays.
-  - [java.util.Collections](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collections.html) - Routines that operate on or return collections.
-  - [java.util.Random](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Random.html) - Routines to generate pseudorandom numbers.
+- The [query string](../how-to-guides/query-string-overview.md) that creates `result_builtin` uses only the [built-in](../how-to-guides/built-in-functions.md) [`sin`](/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) function, so evaluating it never crosses the Python-Java boundary.
+- The [query string](../how-to-guides/query-string-overview.md) that creates `result_numpy` calls into Python at least twice for every row:
+  - It looks up `sin` on the `np` module.
+  - It calls `sin` on the value of `X`, and [jpy](../how-to-guides/use-jpy.md) converts the argument to Python and the result back to Java.
 
-Not only that, but Deephaven has its own [classes and methods built into the query language](../how-to-guides/built-in-functions.md).
-
-For guidance on using date-time types efficiently, see [Time in Deephaven](./time-in-deephaven.md).
+The engine also can't vectorize this call. [Vectorize the Python calls you keep](#vectorize-the-python-calls-you-keep) explains why.
 
 ## How to minimize the number of boundary crossings
 
-Efficient queries typically make minimal Python-Java boundary crossings. They all have one thing in common:
+Efficient queries make as few Python-Java boundary crossings as possible. There are two ways to get there:
 
-**They use Java methods and variables built-in to the query language.**
+- **Use Java methods and variables built into the query language.** When a function has a Java equivalent, use it, and that call never crosses the boundary. [What's built into the query language?](#whats-built-into-the-query-language) lists where to find them.
+- **Vectorize the Python calls you keep.** When a function has no Java equivalent, write the call so the engine can run it once per chunk of rows instead of once per row. See [Vectorize the Python calls you keep](#vectorize-the-python-calls-you-keep).
 
-When there is a one-to-one translation for a function, you should prefer to use the Java equivalent. If there is no Java equivalent, simply be aware of the size of your data and the number of boundary crossings. In the above example, processing 100,000 rows took about 1.3 seconds longer with NumPy. Whether that overhead is acceptable depends on your data size and update frequency.
+### What's built into the query language?
+
+Start with Deephaven's own [built-in query language functions](../how-to-guides/built-in-functions.md), which include the [`sin`](/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) function from the timing example.
+
+Not every function in the Deephaven Python API is built into the query language. The date-time conversion helpers in [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) are Python functions, so calling them in a [query string](../how-to-guides/query-string-overview.md) crosses the boundary on every call. For built-in alternatives, see [Time in Deephaven](./time-in-deephaven.md#performance-and-the-python-java-boundary).
+
+Because Deephaven is written in Java, a [query string](../how-to-guides/query-string-overview.md) can also use any public Java class on the server's classpath. See [Java objects and classes in query strings](../how-to-guides/java-classes.md).
+
+- [Query strings](../how-to-guides/query-string-overview.md) can use classes in `java.lang` and `java.util` without importing them.
+- To use a class from another package, such as `java.math.BigDecimal`, write its fully qualified name or import it with [`query_library.import_class`](/core/pydoc/code/deephaven.query_library.html#deephaven.query_library.import_class).
+
+The [Java SE API class index](https://docs.oracle.com/en/java/javase/17/docs/api/allclasses-index.html) lists every class in the Java SE API. These packages and classes are especially useful in queries:
+
+- [`java.lang`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/package-summary.html)
+  - [`java.lang.Math`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Math.html) — Standard math functions. Most of them, including `cbrt`, `hypot`, and `log10`, are also [built-in query language functions](../reference/query-language/query-library/auto-imported/math.md) that handle Deephaven null values, so prefer the built-in. Call `Math` directly only for a method with no built-in, such as `fma`.
+  - [`java.lang.Number`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Number.html) — Methods for converting [`BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) and [`BigInteger`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigInteger.html) values to primitive types.
+  - [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) — Methods such as `contains`, `startsWith`, and `substring` that you can call directly on a non-null `String` column value.
+- [`java.math`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/package-summary.html)
+  - [`java.math.BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) — Arbitrary-precision signed decimal values.
+  - [`java.math.BigInteger`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigInteger.html) — Arbitrary-precision integer values.
+- [`java.util`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/package-summary.html)
+  - [`java.util.Arrays`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Arrays.html) — Methods for searching and manipulating arrays.
+  - [`java.util.Collections`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collections.html) — Methods that operate on or return collections.
+  - [`java.util.Random`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Random.html) — A seeded pseudorandom generator. For unseeded values, [built-in functions](../reference/query-language/query-library/auto-imported/math.md) such as `random` and `randomInt` need no setup.
+
+### Vectorize the Python calls you keep
+
+When a query must call a [Python function](../how-to-guides/python-functions.md), write the call so the engine can vectorize it. A vectorized call crosses into Python once per chunk of rows instead of once per row.
+
+This is not NumPy vectorization:
+
+- Inside each chunk, Deephaven still calls the Python function once per value, even when the function is a [NumPy ufunc](https://numpy.org/doc/stable/reference/ufuncs.html) (a function that NumPy applies element by element to an array) such as `numpy.sin`.
+- Vectorizing changes only how many times the engine crosses the boundary to make those calls.
+- A [Numba](../how-to-guides/use-numba.md) `@vectorize` function is the exception: Deephaven passes it the whole chunk as arrays.
+
+To be vectorized, a call must meet several requirements, including these:
+
+- It is a plain function call, not one made through a module or object.
+- Its result is not explicitly cast.
+- Its result is not used inside a larger expression.
+- Each argument is a column, a variable, or a constant, not an expression such as `X + 1`.
+- It passes exactly as many arguments as the function has parameters, so it doesn't use `*args` or leave out parameters that have defaults.
+
+The `np.sin(X)` call in the timing example fails the first two requirements: it goes through the `np` module, and its result is cast to `double`.
+
+To make the call vectorizable, wrap `np.sin` in a plain Python function with type hints. The `float` return type hint tells Deephaven the result type, so the query string doesn't need a cast:
+
+```python order=result_vectorized,result_numpy
+from deephaven import empty_table
+import numpy as np
+
+source = empty_table(100_000).update(["X = 0.1 * ii"])
+
+
+def np_sin(x: float) -> float:
+    return np.sin(x)
+
+
+# Not vectorized: the call goes through the np module, and its result is cast.
+result_numpy = source.update(["Y = (double)np.sin(X)"])
+
+# Vectorized: a plain function call with a column argument and no cast.
+result_vectorized = source.update(["Y = np_sin(X)"])
+```
+
+Both tables hold the same values. The engine crosses into Python far fewer times for `result_vectorized`. Inside each chunk, `np_sin` still runs once per row, so it remains slower than the built-in [`sin`](/core/javadoc/io/deephaven/function/Numeric.html#sin(double)).
+
+Vectorizing reduces the number of boundary crossings, but it doesn't remove them. Whether the overhead of the Python calls you keep is acceptable depends on your data size and update frequency.
 
 ## Memory considerations
 
-When using [Python user-defined functions (UDFs)](../how-to-guides/python-functions.md) in Deephaven query strings, Python memory is allocated outside the Java heap. This has important implications:
+[Python user-defined functions (UDFs)](../how-to-guides/python-functions.md) are Python functions called in [query strings](../how-to-guides/query-string-overview.md). They cost memory as well as time:
 
-- **OOM risk** — When total process memory grows too large, the Linux Out-Of-Memory (OOM) killer may terminate processes. This can happen when the combined Java heap and Python memory exceed the available system or container memory.
-- **Unbounded memory growth** — Python objects allocated during UDF execution can accumulate over time, especially in long-running or high-throughput queries. This can lead to resident memory far exceeding the configured Java heap size.
+- Each call runs in Python, so the objects it creates live in Python's memory, outside the Java heap.
+- When a UDF returns a Python object that the engine stores in a column, the Java side holds a reference to it. Python can't free that object until the JVM garbage collects the reference.
+
+Resident memory is the physical memory the whole process occupies, including both the Java heap and Python's memory. Python UDFs can make resident memory grow, and that growth has a cost:
+
+- **Memory growth beyond the Java heap** — Python objects allocated during [UDF](../how-to-guides/python-functions.md) execution can accumulate over time, especially in long-running or high-throughput queries, so resident memory can grow far beyond the configured Java heap size.
+- **Out-of-memory (OOM) risk** — When resident memory exceeds the available system or container memory, the Linux OOM killer may terminate processes.
 
 ### Recommendations
 
-To minimize memory risks when using Python UDFs:
+To minimize memory risks when using [Python UDFs](../how-to-guides/python-functions.md):
 
-- **Convert performance-critical UDFs to Java** — For frequently called functions, consider implementing them in Java or using built-in query language functions instead.
-- **Avoid returning large Python objects in UDFs** — They can remain in Python memory for extended periods, and if not freed in a timely manner, may cause a Python `MemoryError` and crash the worker process. Instead, when possible, have UDFs return only the data needed for table columns, which are typically primitive types and text. If Java is not actively garbage collecting unused table columns that store Python objects, call [`deephaven.garbage_collect`](../reference/garbage-collect.md) to run Python garbage collection and request a JVM garbage collection. The JVM treats the request as advisory, so the effect is not guaranteed.
-- **Monitor resident memory** — Track total process memory, not just Java heap usage, for queries using Python UDFs.
-
-## The Python API under the hood
-
-Deephaven's Python API wraps its engine, written in Java, in Python. It adds small amounts of initialization overhead all for the sake of ease of use. For example, the [`update`](../reference/table-operations/select/update.md) table operation creates a new table containing new, in-memory columns for each operation given in a list. Below is a simplified snippet of the Python source code for a Deephaven table with the `update` method.
-
-```python skip-test
-import jpy
-
-_J_Table = jpy.get_type("io.deephaven.engine.table.Table")
-
-
-class Table:
-    def __init__(self, j_table: jpy.JType):
-        self.j_table = jpy.cast(j_table, _J_Table)
-
-    def update(self, formulas: Sequence[str]) -> Table:
-        return Table(j_table=self.j_table.update(*formulas))
-```
-
-- The Python class `deephaven.table.Table` is a wrapper around the Java class, `io.deephaven.engine.table.Table`. This allows for a Pythonic interface for a Java method.
-
-- `_J_Table` is jpy's reference to the Java class.
-- `jpy.JType` is jpy's type for Java objects.
-- `jpy.cast` ensures that `j_table` is the correct type, and ensures that jpy has the correct signatures for making calls into Java.
-- `j_table.update(*formulas)` is how jpy can call into [`update`](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#update(java.lang.String...)).
-- The returned result is a Python-wrapped Deephaven table.
-
-Much of Deephaven's Python API looks like this under the hood. It serves two primary purposes: convenience and speed. The Python wrappers make using Deephaven feel Pythonic without losing the concurrency and efficiency offered by the query engine.
+- **Convert performance-critical [UDFs](../how-to-guides/python-functions.md) to Java** — Implement frequently called functions in Java, or use [built-in query language functions](../how-to-guides/built-in-functions.md) instead. To call your own Java code, [install it as a Java package](../how-to-guides/install-and-use-java-packages.md) and [call its classes in query strings](../how-to-guides/java-classes.md). See also [How to minimize the number of boundary crossings](#how-to-minimize-the-number-of-boundary-crossings).
+- **Avoid returning large Python objects in [UDFs](../how-to-guides/python-functions.md)** — Large Python objects can stay in Python memory for a long time. If Python doesn't free them soon enough, Python can raise a [`MemoryError`](https://docs.python.org/3/library/exceptions.html#MemoryError) that fails the query, or resident memory can grow until the OOM killer terminates the Deephaven server process. Where possible, have UDFs return only the data the table columns need, which is typically primitive values and strings.
+- **Trigger garbage collection when needed** — If the JVM hasn't yet freed unused table columns that hold Python objects, call [`deephaven.garbage_collect`](../reference/garbage-collect.md) to run Python [garbage collection](../how-to-guides/performance/garbage-collection.md) and request a JVM garbage collection. The JVM treats the request as advisory, so the effect is not guaranteed.
+- **Monitor resident memory** — Track total process memory, not just Java heap usage, for queries using [Python UDFs](../how-to-guides/python-functions.md).
 
 ## Related documentation
 
+- [Time in Deephaven](./time-in-deephaven.md)
+- [Parallelization](./query-engine/parallelization.md)
 - [Query string overview](../how-to-guides/query-string-overview.md)
 - [Python functions in query strings](../how-to-guides/python-functions.md)
 - [Built-in query language functions](../how-to-guides/built-in-functions.md)
-- [Time in Deephaven](../conceptual/time-in-deephaven.md)
+- [Java objects and classes in query strings](../how-to-guides/java-classes.md)
+- [Install and use Java packages](../how-to-guides/install-and-use-java-packages.md)
+- [Use jpy](../how-to-guides/use-jpy.md)
+- [Use Numba in Deephaven queries](../how-to-guides/use-numba.md)
+- [Run garbage collection](../how-to-guides/performance/garbage-collection.md)
+- [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)
+- [`empty_table`](../reference/table-operations/create/emptyTable.md)
+- [`garbage_collect`](../reference/garbage-collect.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [`query_library.import_class` Pydoc](/core/pydoc/code/deephaven.query_library.html#deephaven.query_library.import_class)
+- [`Table` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table)
+- [`deephaven.time` Pydoc](/core/pydoc/code/deephaven.time.html#module-deephaven.time)
+- [`jpy` Pydoc](/core/pydoc/code/jpy.html)

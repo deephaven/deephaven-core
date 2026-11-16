@@ -133,6 +133,19 @@ class TableFactoryTestCase(BaseTestCase):
             ),
         )
 
+    def test_time_table_epoch_start(self) -> None:
+        # A start_time of 0 nanoseconds is the Epoch. The period is long, so the table holds one row, not one per
+        # period since 1970.
+        hundred_years_ns = 100 * 365 * 24 * 3600 * 1_000_000_000
+        t = time_table(hundred_years_ns, start_time=0)
+        self.assertEqual(
+            "1970-01-01T00:00:00.000000000 UTC",
+            _JDateTimeUtils.formatDateTime(
+                t.j_table.getColumnSource("Timestamp").get(0),
+                time.to_j_time_zone("UTC"),
+            ),
+        )
+
     def test_time_table_blink(self):
         t = time_table("PT1s", blink_table=True)
         self.assertEqual(1, len(t.definition))

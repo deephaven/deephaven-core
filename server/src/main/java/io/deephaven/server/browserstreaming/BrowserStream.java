@@ -245,17 +245,24 @@ public class BrowserStream<T> implements Closeable {
         }
 
         do {
+            final boolean complete;
             synchronized (this) {
                 if (ended) {
                     // the stream ended while the previous message was being delivered; drop whatever is still queued
                     processingMessage = false;
                     return;
                 }
-                if (streamData.isHalfClose()) {
-                    onComplete();
+                complete = streamData.isHalfClose();
+                if (complete) {
+                    markEnded();
                     processingMessage = false;
-                    return;
                 }
+            }
+            if (complete) {
+                // notify outside the monitor: completing writes to the response stream, and a failed write on
+                // another thread can cancel inline while holding that stream's locks, then need this monitor
+                onComplete();
+                return;
             }
             try {
                 marshaller.onMessageReceived(message);
