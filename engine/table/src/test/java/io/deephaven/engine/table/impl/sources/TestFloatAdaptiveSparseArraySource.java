@@ -475,6 +475,43 @@ public class TestFloatAdaptiveSparseArraySource extends AbstractFloatColumnSourc
     }
 
     /**
+     * Release a middle level from among the ranked children of the top level, and then add a child past the last one,
+     * which the top level appends in place.
+     */
+    @Test
+    public void testAppendAfterClearingRankedTopLevel() {
+        final FloatAdaptiveSparseArraySource source = makeTestSource();
+        final Random random = new Random(0);
+        final Long2FloatOpenHashMap expected = new Long2FloatOpenHashMap();
+        expected.defaultReturnValue(NULL_FLOAT);
+        // top level children too far apart for a window
+        for (final long level1 : new long[] {0, 100, 200}) {
+            final float value = randomValue(random);
+            source.set(level1 << BLOCK0_SHIFT, value);
+            expected.put(level1 << BLOCK0_SHIFT, value);
+        }
+        source.startTrackingPrevValues();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            try (final RowSet removed = RowSetFactory.fromKeys(100L << BLOCK0_SHIFT);
+                    final RowSet live = RowSetFactory.fromKeys(0, 200L << BLOCK0_SHIFT)) {
+                expected.remove(100L << BLOCK0_SHIFT);
+                source.setNull(removed);
+                SparseArrayColumnSource.clearBlocksWithoutLiveRows(removed, live, source);
+            }
+        });
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final float value = randomValue(random);
+            source.set(300L << BLOCK0_SHIFT, value);
+            expected.put(300L << BLOCK0_SHIFT, value);
+        });
+        for (final long level1 : new long[] {0, 100, 200, 300}) {
+            checkValue("key " + (level1 << BLOCK0_SHIFT), expected.get(level1 << BLOCK0_SHIFT),
+                    source.getFloat(level1 << BLOCK0_SHIFT));
+        }
+    }
+
+    /**
      * Write every fourth leaf of one bottom page table level in an order that adds leaves among those it holds, release
      * some, and write more until it holds a quarter of its leaves, spread across the whole level, checking current and
      * previous values throughout.

@@ -370,7 +370,9 @@ public class CharacterAdaptiveSparseArraySource extends SparseArrayColumnSource<
             if (keptCount == 0) {
                 return empty();
             }
-            return new Level0(kept, gather(children, new Level1[keptCount], keptFrom, keptCount), keptCount);
+            return new Level0(Arrays.copyOf(kept, keptCount),
+                    gather(children, new Level1[keptCount], keptFrom, keptCount),
+                    keptCount);
         }
 
         private long estimateSize() {
