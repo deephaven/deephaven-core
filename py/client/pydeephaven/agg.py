@@ -409,7 +409,7 @@ def std(cols: str | list[str] | None = None) -> Aggregation:
 def unique(
     cols: str | list[str] | None = None,
     include_nulls: bool = False,
-    non_unique_sentinel: np.number | str | bool | None = None,
+    non_unique_sentinel: np.number | np.bool_ | int | float | str | bool | None = None,
 ) -> Aggregation:
     """Creates a Unique aggregation which computes the single unique value within an aggregation group for each of
     the given columns. If all values in a column are null, or if there is more than one distinct value in a column, the
@@ -420,10 +420,11 @@ def unique(
             default is None, only valid when used in Table agg_all_by operation
         include_nulls (bool): whether null is treated as a value for the purpose of determining if the values in the
             aggregation group are unique, default is False.
-        non_unique_sentinel (Optional[Union[np.number, str, bool]]): the non-null sentinel value when no unique value exists,
-            default is None. Must be a non-None value when include_nulls is True. When passed in as a numpy scalar
-            number value, it must be of one of these types: np.int8, np.int16, np.uint16, np.int32, np.int64(int),
-            np.float32, np.float64(float). Please note that np.uint16 is interpreted as a Deephaven/Java char.
+        non_unique_sentinel (Optional[Union[np.number, np.bool_, int, float, str, bool]]): the non-null sentinel value
+            when no unique value exists, default is None. Must be a non-None value when include_nulls is True. When
+            passed in as a numpy scalar number value, it must be of one of these types: np.int8, np.int16, np.uint16,
+            np.int32, np.int64(int), np.float32, np.float64(float). Please note that np.uint16 is interpreted as a
+            Deephaven/Java char. bool and np.bool_ are sent as a boolean.
 
     Raises:
         TypeError
@@ -432,7 +433,12 @@ def unique(
         an aggregation
     """
     if non_unique_sentinel is not None:
-        if isinstance(non_unique_sentinel, np.byte):
+        # bool comes first because bool is a subclass of int, so the int branch would catch True and False.
+        if isinstance(non_unique_sentinel, (bool, np.bool_)):
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+                bool_value=bool(non_unique_sentinel)
+            )
+        elif isinstance(non_unique_sentinel, np.byte):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
                 byte_value=int(non_unique_sentinel)
             )
@@ -463,10 +469,6 @@ def unique(
         elif isinstance(non_unique_sentinel, str):
             agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
                 string_value=non_unique_sentinel
-            )
-        elif isinstance(non_unique_sentinel, (bool, np.bool_)):
-            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
-                bool_value=bool(non_unique_sentinel)
             )
         else:
             raise TypeError(

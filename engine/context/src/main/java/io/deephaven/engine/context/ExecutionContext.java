@@ -309,7 +309,7 @@ public class ExecutionContext {
         }
 
         /**
-         * Instantiate an empty query library.
+         * Instantiate a new query library with the default imports.
          */
         @ScriptApi
         public Builder newQueryLibrary() {
@@ -318,7 +318,8 @@ public class ExecutionContext {
         }
 
         /**
-         * Instantiate an empty query library using the provided libraryVersion. This is useful for testing.
+         * Instantiate a new query library with the default imports, using the provided libraryVersion. This is useful
+         * for testing.
          */
         @ScriptApi
         public Builder newQueryLibrary(String libraryVersion) {

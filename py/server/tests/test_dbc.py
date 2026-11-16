@@ -113,6 +113,27 @@ class DbcTestCase(BaseTestCase):
         with self.assertRaises(Exception) as cm:
             dh_table = read_sql(conn="garbage", query=query, driver="odbc")
 
+    def test_read_sql_error_hides_conn(self) -> None:
+        secret = "s3cr3t-marker"
+
+        class FakeConn:
+            def __repr__(self) -> str:
+                return f"FakeConn(password={secret})"
+
+            __str__ = __repr__
+
+        with self.assertRaises(DHError) as cm:
+            read_sql(
+                conn=f"mysql://user:{secret}@host/db", query="SELECT 1", driver="adbc"
+            )
+        self.assertIn("unsupported ADBC connection string", str(cm.exception))
+        self.assertNotIn(secret, str(cm.exception))
+
+        with self.assertRaises(DHError) as cm:
+            read_sql(conn=FakeConn(), query="SELECT 1")
+        self.assertIn("FakeConn", str(cm.exception))
+        self.assertNotIn(secret, str(cm.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -275,7 +275,7 @@ tableWriter.logRow(4, "Writer")
 println result.isEmpty()
 ```
 
-The `println` statement prints `true`: it runs in the same command as the `logRow` calls, so the UG cycle that adds the queued rows to `result` has not run yet.
+The `println` statement prints `true`: it runs in the same command as the `logRow` calls. The Groovy script session holds the exclusive [UpdateGraph lock](../conceptual/query-engine/engine-locking.md#query-engine-locks) while a command executes, so the UG cycle that adds the queued rows to `result` can't run until the command finishes.
 
 A second command can still start before that cycle runs, so wait for the table to update if it is still empty. Then the same `println` statement prints `false`.
 

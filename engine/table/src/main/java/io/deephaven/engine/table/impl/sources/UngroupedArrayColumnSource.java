@@ -27,7 +27,7 @@ public class UngroupedArrayColumnSource<T> extends UngroupedColumnSource<T>
             return null;
         }
         long segment = rowKey >> base;
-        long offset = rowKey & ((1 << base) - 1);
+        long offset = rowKey & ((1L << base) - 1);
         // noinspection unchecked
         T[] array = (T[]) innerSource.get(segment);
         if (array == null || offset >= array.length) {
@@ -43,7 +43,7 @@ public class UngroupedArrayColumnSource<T> extends UngroupedColumnSource<T>
             return null;
         }
         long segment = rowKey >> getPrevBase();
-        long offset = rowKey & ((1 << getPrevBase()) - 1);
+        long offset = rowKey & ((1L << getPrevBase()) - 1);
         // noinspection unchecked
         T[] array = (T[]) innerSource.getPrev(segment);
         if (array == null || offset >= array.length) {

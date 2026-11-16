@@ -20,7 +20,7 @@ For the examples below, we will provide code that makes time bins start at 9:30A
 
 ## Bin without an offset
 
-Bin sizes of 1, 2, 3, 5, 10, 15, and 30 minutes will _always_ snap to 9:30AM ET every day, since they are factors of 24 hours. Bin sizes, such as 7 minutes, that are not factors of 24 hours will not always snap to the specific time:
+Bin sizes of 1, 2, 3, 5, 6, 10, 15, and 30 minutes will _always_ snap to 9:30AM ET every day. Each of these sizes divides both 24 hours (1440 minutes) and the 870 minutes between midnight UTC and 9:30AM ET (2:30PM UTC). Other bin sizes, such as 7 minutes or 60 minutes, do not always snap to 9:30AM ET:
 
 ```python test-set=1 order=result,source
 from deephaven.time import to_j_instant

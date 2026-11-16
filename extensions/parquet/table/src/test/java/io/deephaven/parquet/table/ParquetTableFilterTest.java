@@ -11,6 +11,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
@@ -26,6 +27,8 @@ import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.filters.ParallelizedRowSetCapturingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -59,6 +62,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import static io.deephaven.engine.table.impl.select.WhereFilterFactory.getExpression;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -3007,7 +3012,50 @@ public final class ParquetTableFilterTest {
         filter.init(table.getDefinition());
         try (final RowSet selection = table.getRowSet().copy();
                 final PushdownResult input = PushdownResult.allMaybeMatch(selection)) {
-            return location.pushdownDataIndex(selection, filter, Map.of(), dataIndex, input);
+            return location.pushdownDataIndex(selection, filter, false, Map.of(), dataIndex, input);
+        }
+    }
+
+    /**
+     * A filter that reads an indexed column under two names, as when the filter reads the column and an alias of the
+     * column, reaches the location's index with both names mapped to the one index column.
+     */
+    @Test
+    public void testLocationDataIndexFilterOnAliasedColumn() {
+        final Table table = TableTools.emptyTable(1000).update("A = ii % 10");
+        // The index is the engine's, so the location is only the receiver: any location will do.
+        final File file = new File(rootFile, "locationDataIndexFilterOnAliasedColumn.parquet");
+        writeTable(table, file.getPath());
+        final ParquetTableLocation location = new ParquetTableLocation(StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(file.toURI(), 0, null, ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY);
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+
+        // The indexed column's own name and an alias of the column.
+        checkLocationDataIndexFilter(location, dataIndex, table.updateView("A2 = A"),
+                "A == 5 && A2 == A", Map.of("A2", "A"));
+        // Two aliases, neither of which is the indexed column's name.
+        checkLocationDataIndexFilter(location, dataIndex, table.updateView("Col1 = A", "dup0_Col1 = A"),
+                "Col1 == 5 && dup0_Col1 == Col1", Map.of("Col1", "A", "dup0_Col1", "A"));
+    }
+
+    private static void checkLocationDataIndexFilter(
+            final ParquetTableLocation location,
+            final DataIndex dataIndex,
+            final Table aliased,
+            final String expression,
+            final Map<String, String> renameMap) {
+        final WhereFilter filter = getExpression(expression);
+        filter.init(aliased.getDefinition());
+        try (final RowSet selection = aliased.getRowSet().copy();
+                final PushdownResult input = PushdownResult.allMaybeMatch(selection);
+                final PushdownResult result =
+                        location.pushdownDataIndex(selection, filter, false, renameMap, dataIndex, input);
+                // Apply the filter itself, since aliased.where could push down to the same index.
+                final RowSet expected = filter.filter(selection, selection, aliased, false)) {
+            assertEquals(0, result.maybeMatch().size());
+            assertFalse(expected.isEmpty());
+            assertEquals(expected, result.match());
         }
     }
 
@@ -3049,6 +3097,46 @@ public final class ParquetTableFilterTest {
             assertEquals(0, result.match().size());
             assertEquals(1000, result.maybeMatch().size());
         }
+    }
+
+    /**
+     * A location applies whatever data index the caller passes, and a refreshing index updates the index table's row
+     * sets in place. During an update cycle, after the index has updated, a pushdown that uses previous values still
+     * finds the previous matches.
+     */
+    @Test
+    public void testLocationDataIndexUsesPreviousValues() {
+        final QueryTable table = TstUtils.testRefreshingTable(RowSetFactory.flat(100).toTracking(),
+                intCol("A", IntStream.range(0, 100).map(ii -> ii % 2 == 0 ? 1 : 2).toArray()));
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+        final Table indexTable = dataIndex.table();
+        // The index is the engine's, so the location is only the receiver: any location will do.
+        final File file = new File(rootFile, "locationDataIndexUsesPreviousValues.parquet");
+        writeTable(TableTools.emptyTable(1).update("A = 1"), file.getPath());
+        final ParquetTableLocation location = new ParquetTableLocation(StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(file.toURI(), 0, null, ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY);
+        final WhereFilter filter = new MatchFilter(MatchOptions.REGULAR, "A", 1);
+        filter.init(table.getDefinition());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // Row 0 leaves A = 1, and row 1 joins A = 1.
+            TstUtils.addToTable(table, TstUtils.i(0, 1), intCol("A", 2, 1));
+            table.notifyListeners(TstUtils.i(), TstUtils.i(), TstUtils.i(0, 1));
+            updateGraph.flushAllNormalNotificationsForUnitTests();
+            assertTrue(indexTable.satisfied(updateGraph.clock().currentStep()));
+
+            try (final RowSet previousMatches = RowSetFactory.fromKeys(
+                    LongStream.range(0, 100).filter(k -> k % 2 == 0).toArray());
+                    final RowSet selection = table.getRowSet().copyPrev();
+                    final PushdownResult input = PushdownResult.allMaybeMatch(selection);
+                    final PushdownResult result =
+                            location.pushdownDataIndex(selection, filter, true, Map.of(), dataIndex, input)) {
+                assertEquals(previousMatches, result.match());
+                assertEquals(0, result.maybeMatch().size());
+            }
+        });
     }
 
     /**

@@ -4,8 +4,9 @@ plugins {
 
 dependencies {
     implementation project(':Base')
-    implementation project(':SevenZip')
     implementation libs.commons.compress
+    // Commons Compress decodes LZMA (7z) with xz, which it declares as an optional dependency
+    runtimeOnly libs.xz
     testImplementation project(path: ':Base', configuration: 'tests')
     testImplementation project(':base-test-utils')
     testImplementation libs.junit4

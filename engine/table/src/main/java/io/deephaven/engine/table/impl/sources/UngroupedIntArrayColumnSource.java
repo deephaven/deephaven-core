@@ -33,12 +33,12 @@ public class UngroupedIntArrayColumnSource extends UngroupedColumnSource<Integer
             return NULL_INT;
         }
         long segment = rowKey >> base;
-        int offset = (int) (rowKey & ((1 << base) - 1));
+        long offset = rowKey & ((1L << base) - 1);
         int[] array = innerSource.get(segment);
         if (array == null || offset >= array.length) {
             return NULL_INT;
         }
-        return array[offset];
+        return array[(int) offset];
     }
 
     @Override
@@ -47,12 +47,12 @@ public class UngroupedIntArrayColumnSource extends UngroupedColumnSource<Integer
             return NULL_INT;
         }
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
+        long offset = rowKey & ((1L << getPrevBase()) - 1);
         int[] array = innerSource.getPrev(segment);
         if (array == null || offset >= array.length) {
             return NULL_INT;
         }
-        return array[offset];
+        return array[(int) offset];
     }
 
     @Override

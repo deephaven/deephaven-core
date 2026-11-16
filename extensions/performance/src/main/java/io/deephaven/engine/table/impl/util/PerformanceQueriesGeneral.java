@@ -107,7 +107,7 @@ public class PerformanceQueriesGeneral {
         queryUpdatePerformance = queryUpdatePerformance
                 .updateView(
                         "IntervalDurationNanos = IntervalEndTime - IntervalStartTime",
-                        // % of time during this interval that the operation was using CPU
+                        // Fraction of this interval (wall-clock time) that the operation spent running
                         "Ratio = UsageNanos / IntervalDurationNanos",
                         // Memory in use by the query. (Only includes active heap memory.)
                         "QueryMemUsed = MaxTotalMemory - MinFreeMemory",

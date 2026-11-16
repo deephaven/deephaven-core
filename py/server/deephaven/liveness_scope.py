@@ -20,7 +20,7 @@ Examples:
 
     .. code-block:: python
 
-        @liveness_scope
+        @liveness_scope()
         def get_values():
             ticking_table = some_ticking_source().last_by("Sym")
             return dhnp.to_numpy(ticking_table)
@@ -36,7 +36,7 @@ Examples:
             scope = LivenessScope()
             with scope.open():
                 ticking_table = some_ticking_source().where(f"A={a}")
-                return some_ticking_table, scope
+                return ticking_table, scope
 
         t1, s1 = make_table_and_scope(1)
         # .. wait for a while
@@ -46,7 +46,7 @@ Examples:
 
     In both cases, the scope object has a few methods that can be used to more directly manage liveness referents:
      * `scope.preserve(obj)` will preserve the given instance in the next scope outside the specified scope instance
-     * `scope.manange(obj)` will directly manage the given instance in the specified scope. Take care not to
+     * `scope.manage(obj)` will directly manage the given instance in the specified scope. Take care not to
        double-manage objects when using in conjunction with a `with` block or function decorator.
      * `scope.unmanage(obj)` will stop managing the given instance. This can be used regardless of how the instance
        was managed to begin with.
@@ -122,7 +122,7 @@ class _BaseLivenessScope(JObjectWrapper):
             referent (Union[JObjectWrapper, jpy.JType]): an object to preserve in the next outer liveness scope
 
         Raises:
-            DHError if the object isn't a liveness node, or this instance isn't currently at the stop of the stack
+            DHError if the object isn't a liveness node, or this instance isn't currently at the top of the stack
         """
         referent = _unwrap_to_liveness_referent(referent)
         try:
@@ -253,7 +253,7 @@ def liveness_scope() -> Iterator[SimpleLivenessScope]:
     this function to wrap a block of code using a `with` statement.
 
     For the duration of the `with` block, the liveness scope will be open
-    and any liveness referents created will be manged by it automatically.
+    and any liveness referents created will be managed by it automatically.
 
     Yields:
         a SimpleLivenessScope

@@ -74,7 +74,8 @@ class Fetchable(ServerObject):
         this method will also close the other, take care when signaling that it is safe to release this object on
         the server.
         """
-        if self.pb_typed_ticket.type is None:
+        # An unset proto string is "", never None.
+        if not self.pb_typed_ticket.type:
             raise DHError(
                 "Cannot fetch an object with no type, the server has no ObjectType plugin registered to "
                 "support it."

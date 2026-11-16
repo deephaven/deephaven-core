@@ -10,11 +10,13 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.BlinkTableTools;
+import io.deephaven.engine.table.impl.PrevTableTools;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.time.DateTimeUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,7 +26,6 @@ import java.time.Instant;
 
 import static io.deephaven.engine.testutil.TstUtils.assertEqualsByElements;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
-import static io.deephaven.engine.testutil.TstUtils.prevTableColumnSources;
 import static io.deephaven.engine.testutil.TstUtils.subset;
 import static io.deephaven.engine.util.TableTools.booleanCol;
 import static io.deephaven.engine.util.TableTools.byteCol;
@@ -125,11 +126,17 @@ public class RingTableToolsTest {
     private static void checkEquals(Table tail, Table ring) {
         // Bulk equals
         assertTableEquals(tail, ring);
-        assertTableEquals(prevTableColumnSources(tail), prevTableColumnSources(ring));
 
         // Element equals
         assertEqualsByElements(ring, tail);
-        assertEqualsByElements(prevTableColumnSources(ring), prevTableColumnSources(tail));
+
+        // A view of the previous state is good only during the updating phase. The callers that check outside a cycle
+        // do so before the first cycle or on static tables, where the previous state is the current state that the
+        // checks above compare.
+        if (ExecutionContext.getContext().getUpdateGraph().clock().currentState() == LogicalClock.State.Updating) {
+            assertTableEquals(PrevTableTools.prevTable(tail), PrevTableTools.prevTable(ring));
+            assertEqualsByElements(PrevTableTools.prevTable(ring), PrevTableTools.prevTable(tail));
+        }
 
         // Dense indices
         assertTableEquals(subset(tail, 8, 1), subset(ring, 8, 1));

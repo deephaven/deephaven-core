@@ -387,8 +387,8 @@ public interface Table extends
      * simultaneous and unordered, enabling direct swaps between column names. The resulting table retains the original
      * column ordering after applying the specified renames.
      * <p>
-     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
-     * silently replaced.
+     * NOTE: If a new column name matches an existing column that is not itself renamed, that existing column is
+     * silently dropped from the result. When the existing column is also renamed (a swap), nothing is dropped.
      * <p>
      * {@link IllegalArgumentException} will be thrown:
      * <ul>
@@ -408,8 +408,8 @@ public interface Table extends
      * The renames are simultaneous and unordered, enabling direct swaps between column names. The resulting table
      * retains the original column ordering after applying the specified renames.
      * <p>
-     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
-     * silently replaced.
+     * NOTE: If a new column name matches an existing column that is not itself renamed, that existing column is
+     * silently dropped from the result. When the existing column is also renamed (a swap), nothing is dropped.
      * <p>
      * {@link IllegalArgumentException} will be thrown:
      * <ul>
@@ -535,7 +535,7 @@ public interface Table extends
      * Provides a head that selects a dynamic number of rows based on a percent.
      *
      * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
-     *        example if there are 3 rows, headPct(50) returns the first two rows. For percent values outside [0, 1],
+     *        example if there are 3 rows, headPct(0.5) returns the first two rows. For percent values outside [0, 1],
      *        the function will throw an exception.
      */
     @ConcurrentMethod
@@ -545,8 +545,8 @@ public interface Table extends
      * Provides a tail that selects a dynamic number of rows based on a percent.
      *
      * @param percent the fraction of the table to return between [0, 1]. The number of rows will be rounded up. For
-     *        example if there are 3 rows, tailPct(50) returns the last two rows. For percent values outside [0, 1], the
-     *        function will throw an exception.
+     *        example if there are 3 rows, tailPct(0.5) returns the last two rows. For percent values outside [0, 1],
+     *        the function will throw an exception.
      */
     @ConcurrentMethod
     Table tailPct(double percent);

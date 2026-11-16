@@ -2,6 +2,8 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
+import os
+import time
 import unittest
 
 from deephaven_core.proto.table_pb2 import (
@@ -9,7 +11,7 @@ from deephaven_core.proto.table_pb2 import (
     Condition,
     Value,
 )
-from pydeephaven import filters
+from pydeephaven import DHError, filters
 from pydeephaven.filters import (
     ColumnName,
     Filter,
@@ -153,6 +155,59 @@ class FiltersTestCase(BaseTestCase):
         epoch = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
         nanos = filters._datetime_to_nanos(epoch)
         self.assertEqual(nanos, 0)
+
+    def test_datetime_to_nanos_keeps_microseconds(self) -> None:
+        """Test that a Python datetime keeps every microsecond. A float conversion loses some."""
+        import datetime
+
+        base_nanos = 1704110400 * 1_000_000_000  # 2024-01-01 12:00:00 UTC
+        for us in (1, 7, 654321, 999999):
+            dt = datetime.datetime(
+                2024, 1, 1, 12, 0, 0, us, tzinfo=datetime.timezone.utc
+            )
+            self.assertEqual(filters._datetime_to_nanos(dt), base_nanos + us * 1000)
+
+    @unittest.skipUnless(hasattr(time, "tzset"), "time.tzset is Unix only")
+    def test_datetime_to_nanos_naive_is_local_time(self) -> None:
+        """Test that a naive Python datetime is read as local time. The test sets a non-UTC zone, because the CI
+        container runs in UTC, where local time and UTC give the same answer."""
+        import datetime
+
+        saved_tz = os.environ.get("TZ")
+        os.environ["TZ"] = "America/New_York"
+        time.tzset()
+        try:
+            naive = datetime.datetime(2024, 1, 1, 12, 0, 0)
+            # 12:00 in New York in January is 17:00 UTC.
+            self.assertEqual(
+                filters._datetime_to_nanos(naive), 1704128400 * 1_000_000_000
+            )
+        finally:
+            if saved_tz is None:
+                del os.environ["TZ"]
+            else:
+                os.environ["TZ"] = saved_tz
+            time.tzset()
+
+    def test_datetime_to_nanos_tzinfo_without_offset_is_local_time(self) -> None:
+        """Test that a datetime whose tzinfo gives no UTC offset is read as local time, like a naive one."""
+        import datetime
+
+        class NoOffset(datetime.tzinfo):
+            def utcoffset(self, dt: datetime.datetime | None) -> None:
+                return None
+
+            def dst(self, dt: datetime.datetime | None) -> None:
+                return None
+
+            def tzname(self, dt: datetime.datetime | None) -> None:
+                return None
+
+        no_offset = datetime.datetime(2024, 1, 1, 12, 0, 0, tzinfo=NoOffset())
+        naive = datetime.datetime(2024, 1, 1, 12, 0, 0)
+        self.assertEqual(
+            filters._datetime_to_nanos(no_offset), filters._datetime_to_nanos(naive)
+        )
 
     def test_eq_filter_with_datetime(self):
         """Test eq() function with datetime values."""
@@ -459,6 +514,39 @@ class FiltersTestCase(BaseTestCase):
         condition = filter_obj.make_grpc_message()
         self.assertTrue(condition.HasField("in"))
         self.assertEqual(len(condition.__getattribute__("in").candidates), 1)
+
+    def test_in_filter_with_single_string(self) -> None:
+        """Test in_() function with one string, which is one value and not a sequence of characters."""
+        condition = in_("Sym", "AAPL").make_grpc_message()
+        candidates = condition.__getattribute__("in").candidates
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0].literal.string_value, "AAPL")
+
+    def test_in_filter_with_non_sequence_iterables(self) -> None:
+        """Test in_() function with iterables that are not Sequences. Each element is one value."""
+        import numpy as np
+        import pandas as pd
+
+        for values in (np.array([1, 2]), pd.Series([1, 2]), {1, 2}):
+            with self.subTest(type(values).__name__):
+                condition = in_("Id", values).make_grpc_message()
+                candidates = condition.__getattribute__("in").candidates
+                self.assertEqual(
+                    sorted(c.literal.long_value for c in candidates), [1, 2]
+                )
+
+    def test_in_filter_with_numpy_bools(self) -> None:
+        """Test in_() function with a NumPy bool array, whose elements are np.bool_ and not bool."""
+        import numpy as np
+
+        condition = in_("Flag", np.array([True, False])).make_grpc_message()
+        candidates = condition.__getattribute__("in").candidates
+        self.assertEqual([c.literal.bool_value for c in candidates], [True, False])
+
+    def test_in_filter_with_non_iterable_raises_dherror(self) -> None:
+        """Test in_() function with a value that is neither a string nor an iterable."""
+        with self.assertRaises(DHError):
+            in_("Id", 5)  # type: ignore[arg-type]
 
     def test_in_filter_with_mixed_numeric_types(self):
         """Test in_() function with mixed integer and float values."""

@@ -83,8 +83,8 @@ def process_metrics_log() -> Table:
 
 
 def query_operation_performance_log() -> Table:
-    """Returns a table with Deephaven performance data for individual subqueries. Performance data for the entire query
-    is available from calling 'query_performance_log'.
+    """Returns a table with Deephaven performance data for the individual operations within each query. Performance
+    data for the entire query is available from calling 'query_performance_log'.
 
     Returns:
         a Table
@@ -117,7 +117,7 @@ def query_performance_log() -> Table:
 
 
 def query_operation_performance_tree_table() -> TreeTable:
-    """Returns a tree table with Deephaven performance data for individual subqueries.
+    """Returns a tree table with Deephaven performance data for the individual operations within each query.
 
     Returns:
         a TreeTable
@@ -193,7 +193,7 @@ def update_performance_ancestors_log() -> Table:
 
 def barrage_subscription_performance_log() -> Table:
     """Returns a table with Deephaven Barrage subscription performance data. Barrage is Deephaven's IPC table
-    transport; these statistics are recorded for ticking subscriptions.
+    transport; these statistics are recorded for subscriptions to static or ticking tables.
 
     Each row summarizes one statistic for one subscription over one flush cycle. The percentile columns hold raw
     values in the unit named by StatType: durations are nanoseconds and payload sizes are bytes.
@@ -218,7 +218,8 @@ def barrage_snapshot_performance_log() -> Table:
     """Returns a table with Deephaven Barrage snapshot performance data. Barrage is Deephaven's IPC table
     transport; these statistics are recorded for one-off requests such as an Arrow Flight `DoGet`.
 
-    Each row describes one request. Durations are nanoseconds and payload sizes are bytes.
+    Each row describes one request for a refreshing table, or one chunk of a static table's snapshot.
+    Durations are nanoseconds and payload sizes are bytes.
 
     Returns:
         a Table

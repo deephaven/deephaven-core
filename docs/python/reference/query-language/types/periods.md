@@ -28,6 +28,8 @@ from deephaven import empty_table
 source = empty_table(1).update("Timestamp = now() + 'P1d'")
 ```
 
+A period added to an `Instant` can contain only days and weeks. To add months or years, add the period to a `ZonedDateTime`.
+
 ## Related Documentation
 
 - [Built-in query language constants](../../../how-to-guides/built-in-constants.md)

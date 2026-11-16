@@ -13,25 +13,18 @@ services:
     # Specify a custom command, turning off safety features for faster LOCAL-ONLY development. Do not use this in production.
     command: postgres -c fsync=off -c synchronous_commit=off
   keycloak:
-    image: quay.io/keycloak/keycloak:19.0.1
+    image: quay.io/keycloak/keycloak:26.8.1
     environment:
-      - KEYCLOAK_LOGLEVEL=ALL
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
-      - DB_VENDOR=postgres
-      - DB_ADDR=postgres
-      - DB_DATABASE=postgres
-      - DB_USER=postgres
-      - DB_SCHEMA=keycloak
-      - DB_PASSWORD=password
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
     command:
       - start-dev
-      - --db postgres
-      - --db-url-host postgres
-      - --db-url-database postgres
-      - --db-username postgres
-      - --db-password password
-      - --db-schema keycloak
+      - --db=postgres
+      - --db-url-host=postgres
+      - --db-url-database=postgres
+      - --db-username=postgres
+      - --db-password=password
+      - --db-schema=keycloak
       - --import-realm
     ports:
       - "6060:8080"

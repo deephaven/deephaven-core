@@ -51,7 +51,7 @@ literals = empty_table(10).update(
 )
 ```
 
-The [`meta_table`](../../how-to-guides/metadata.md#meta_table) attribute is useful for assessing a table's schema. You can use it to confirm that the resulting columns are of the correct type.
+The [`meta_table`](../../how-to-guides/metadata.md#meta_table) property is useful for assessing a table's schema. You can use it to confirm that the resulting columns are of the correct type.
 
 ```python test-set=1
 literals_meta = literals.meta_table
@@ -263,7 +263,7 @@ converted_meta = converted_date_times.meta_table
 
 The [time user guide](../../conceptual/time-in-deephaven.md) provides a comprehensive overview of working with date-time data in Deephaven.
 
-These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
+The numeric and date-time functions in this section provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
 
 ## Java methods
 

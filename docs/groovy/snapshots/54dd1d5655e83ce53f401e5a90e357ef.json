@@ -1,0 +1,1 @@
+{"file":"reference/engine/getDataIndex.md","objects":{":log":{"type":"Log","data":"Has index on Symbol BEFORE: false\nIndex on Symbol (create): TableBackedDataIndex-1902176011[1]\nHas index on Symbol AFTER: true\n"}}}

@@ -769,8 +769,7 @@ def delta(
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the delta operation on all the applicable
             columns.
-        delta_control (DeltaControl): defines how special cases should behave; when None, the default DeltaControl
-            settings of VALUE_DOMINATES will be used
+        delta_control (DeltaControl): defines how special cases should behave; defaults to NULL_DOMINATES
 
     Returns:
         an UpdateByOperation
@@ -805,7 +804,7 @@ def rolling_sum_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -911,7 +910,7 @@ def rolling_group_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1017,7 +1016,7 @@ def rolling_avg_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1123,7 +1122,7 @@ def rolling_min_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1229,7 +1228,7 @@ def rolling_max_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1335,7 +1334,7 @@ def rolling_prod_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1443,7 +1442,7 @@ def rolling_count_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1552,7 +1551,7 @@ def rolling_std_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1661,7 +1660,7 @@ def rolling_wavg_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1774,7 +1773,7 @@ def rolling_formula_tick(
     set within the formula string.
 
     The second (deprecated) variant allows the user to apply a formula expression to one input column, producing one
-    input column. In this call the `formula_param` is used as a placeholder for the input column name and the `cols`
+    output column. In this call the `formula_param` is used as a placeholder for the input column name and the `cols`
     argument is used to identify the output column name and the input source column when applying the formula. If
     multiple input/output pairs are specified in the `cols` argument, the formula will be applied to each column in the
     list. The format for this call is the following:
@@ -1794,7 +1793,7 @@ def rolling_formula_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:
@@ -1855,7 +1854,7 @@ def rolling_formula_time(
     set within the formula string.
 
     The second (deprecated) variant allows the user to apply a formula expression to one input column, producing one
-    input column. In this call the `formula_param` is used as a placeholder for the input column name and the `cols`
+    output column. In this call the `formula_param` is used as a placeholder for the input column name and the `cols`
     argument is used to identify the output column name and the input source column when applying the formula. If
     multiple input/output pairs are specified in the `cols` argument, the formula will be applied to each column in the
     list. The format for this call is the following:
@@ -1951,7 +1950,7 @@ def rolling_count_where_tick(
             current row (inclusive)
         |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
             current row (inclusive)
-        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 6 rows following, ending at 10 rows  following the
             current row (inclusive)
 
     Args:

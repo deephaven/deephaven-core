@@ -243,7 +243,7 @@ def formula(
         formula (str): the user defined formula to apply
         formula_param (Optional[str]): If provided, supplies the parameter name for the input column's vector within the
             formula. If formula is `max(each)`, then `each` should be the formula_param. This must be set to None (the
-            default when omitted) when the `formula`argument specifies the input and output columns.
+            default when omitted) when the `formula` argument specifies the input and output columns.
         cols (Optional[Union[str, Sequence[str]]]): If provided, supplies the column(s) to aggregate, can be renaming
             expressions, i.e. "new_col = col". This must be set to None (the default when omitted) when the `formula`
             argument specifies the input and output columns.

@@ -24,9 +24,8 @@ public interface ConcurrencyControl<T> {
      * <p>
      * The serial wrapped filter/selectable is guaranteed to process exactly the set of rows as if any prior
      * filters/selectables were applied, but it will do so in a serial manner. If this is a filter, then the expression
-     * will not evaluate additional rows or skip rows that future filters may eliminate. Take care when selecting
-     * marking filters/selectables as serial, as the operation will not be able to take advantage of powerful
-     * optimizations.
+     * will not evaluate additional rows or skip rows that future filters may eliminate. Take care when marking
+     * filters/selectables as serial, as the operation will not be able to take advantage of powerful optimizations.
      * <p>
      * <ul>
      * <li>Concurrency impact: The expression will never be invoked concurrently with itself.</li>
@@ -39,7 +38,7 @@ public interface ConcurrencyControl<T> {
      * <p>
      * For selectables, additional ordering constraints are controlled by the value of the
      * {@code QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS}. This is set by the property
-     * {@code QueryTable.serialSelectImplicitBarriers} (defaulting to the value of
+     * {@code QueryTable.serialSelectImplicitBarriers} (defaulting to the opposite of the value of
      * {@code QueryTable.statelessSelectByDefault}).
      * </p>
      *

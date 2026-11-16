@@ -88,7 +88,7 @@ def _run_release_worker(
     session_ref: weakref.ReferenceType[Session],
     jobs: queue.SimpleQueue[_SessionJob],
 ) -> None:
-    """Runs a session's queued jobs. It ends when the session is closed or reconnects, or when the session is gone.
+    """Runs a session's queued jobs. It ends when the session is closed or when the session is gone.
     While it waits for a job it holds the session only weakly, so a dropped session can be collected. A failing job is
     logged and does not end the thread."""
     while True:
@@ -182,7 +182,8 @@ class Session:
     execute queries.
 
     Session objects can be used in Python with statement so that whatever happens in the with statement block, they
-    are guaranteed to be closed upon exit.
+    are guaranteed to be closed upon exit. A closed or disconnected session cannot be used again.
+    Create a new Session instead.
 
     Attributes:
         tables (list[str]): names of the global tables available in the server after running scripts
@@ -258,7 +259,7 @@ class Session:
         else:
             self._port = port
 
-        self._logpfx = f"pydh.Session {id(self)} {host}:port: "
+        self._logpfx = f"pydh.Session {id(self)} {self._host}:{self._port}"
         self._use_tls = use_tls
         self._tls_root_certs = tls_root_certs
         self._client_cert_chain = client_cert_chain
@@ -308,10 +309,9 @@ class Session:
         self._connect()
 
     def __enter__(self) -> Session:
+        # A session does not reconnect. Its services and auth token are bound to its first connection.
         if not self.is_connected:
-            # double-checked locking, is_connected is checked inside _connect again, which
-            # may not end up connecting.
-            self._connect()
+            raise DHError("the session is not connected. Create a new Session.")
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -382,6 +382,8 @@ class Session:
 
     @property
     def exportable_objects(self) -> dict[str, ServerObject]:
+        """The objects the server can export to this session, keyed by field name. Each value is a ServerObject
+        holding the object's type and a ticket to it."""
         with self._r_lock:
             fields = self._fetch_fields()
             return {
@@ -396,7 +398,7 @@ class Session:
         )  # ensure it doesn't change while doing multiple reads
         if not header_value_snap or not isinstance(header_value_snap, bytes):
             logger.warning(
-                f"{self._logpfx} internal invariant violated, _auth_header_value={header_value_snap}"
+                f"{self._logpfx}: internal invariant violated, _auth_header_value={header_value_snap}"
             )
             tuple_l = []
         else:
@@ -498,8 +500,6 @@ class Session:
     def _connect(self) -> None:
         _trace(f"_connect id={id(self)}")
         with self._r_lock:
-            if self.is_connected:
-                return
             _trace(f"_connect id={id(self)} connecting.")
             try:
                 scheme = "grpc+tls" if self._use_tls else "grpc"
@@ -558,11 +558,6 @@ class Session:
             if self._never_timeout:
                 self._next_refresh = time.monotonic() + 0.5 * self._timeout_seconds
 
-            # New threads per connection: tickets from an earlier connection are invalid. Stop the earlier release
-            # thread, which still runs if the session was marked disconnected without close(). The earlier refresh
-            # thread ends when it next wakes.
-            self._release_queue.put(_STOP)
-            self._release_queue = queue.SimpleQueue()
             self._release_thread = threading.Thread(
                 target=_run_release_worker,
                 args=(weakref.ref(self), self._release_queue),
@@ -617,7 +612,7 @@ class Session:
             return True
         except Exception as ex:
             logger.warning(
-                f"{self._logpfx} Caught exception while refreshing auth token: {ex}."
+                f"{self._logpfx}: caught exception while refreshing auth token: {ex}."
             )
             return False
 
@@ -849,8 +844,9 @@ class Session:
     def import_table(self, data: pa.Table) -> Table:
         """Imports the pyarrow table as a new Deephaven table on the server.
 
-        Deephaven supports most of the Arrow data types. However, if the pyarrow table contains any field with a data
-        type not supported by Deephaven, the import operation will fail.
+        Deephaven supports most of the Arrow data types. Before sending any data, the client checks each field's data
+        type and rejects the import if it does not map the type. A dictionary-encoded or run-end encoded field is
+        checked by the type of its values.
 
         Args:
             data (pa.Table): a pyarrow Table object
