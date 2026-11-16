@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.AuthenticationConstantsRequest;
@@ -21,6 +22,7 @@ import io.deephaven.web.shared.fu.JsFunction;
 import io.grpc.stub.StreamObserver;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -92,6 +94,14 @@ public class CoreClient extends HasEventHandling {
              */
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
+    /**
+     * A configuration entry, as a two-element {@code [key, value]} array of strings.
+     */
+    @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Array")
+    @TsName(name = "[string, string]")
+    public interface ConfigValuePair {
+    }
+
     private final IdeConnection ideConnection;
 
     public CoreClient(String serverUrl,
@@ -99,12 +109,12 @@ public class CoreClient extends HasEventHandling {
         ideConnection = new IdeConnection(serverUrl, connectOptions);
     }
 
-    private <R> Promise<String[][]> getConfigs(Consumer<StreamObserver<R>> rpcCall,
+    private <R> Promise<ConfigValuePair[]> getConfigs(Consumer<StreamObserver<R>> rpcCall,
             JsFunction<R, Map<String, ConfigValue>> getConfigValues) {
         return Callbacks.grpcUnaryPromise(rpcCall).then(response -> {
-            String[][] result = new String[0][];
+            ConfigValuePair[] result = new ConfigValuePair[0];
             getConfigValues.apply(response).forEach((key, value) -> {
-                result[result.length] = new String[] {key, value.getStringValue()};
+                result[result.length] = Js.uncheckedCast(new String[] {key, value.getStringValue()});
             });
             return Promise.resolve(result);
         });
@@ -139,7 +149,7 @@ public class CoreClient extends HasEventHandling {
      *
      * @return a promise of key/value pairs, returned as a two-element string array per entry
      */
-    public Promise<String[][]> getAuthConfigValues() {
+    public Promise<ConfigValuePair[]> getAuthConfigValues() {
         ConfigServiceGrpc.ConfigServiceStub configService = ideConnection.createStubNoAuth(ConfigServiceGrpc::newStub);
         return this.getConfigs(
                 // Explicitly creating a new client, and not passing auth details, so this works pre-connection
@@ -216,7 +226,7 @@ public class CoreClient extends HasEventHandling {
      *
      * @return a promise of configuration entries as an array of {@code [key, value]} string pairs
      */
-    public Promise<String[][]> getServerConfigValues() {
+    public Promise<ConfigValuePair[]> getServerConfigValues() {
         return getConfigs(
                 c -> ideConnection.connection.get().configServiceClient().getConfigurationConstants(
                         ConfigurationConstantsRequest.getDefaultInstance(),
