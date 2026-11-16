@@ -70,10 +70,10 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * <p>
  * Each table holds server resources until it is closed, by whoever owns it:
  * <ul>
- * <li>Awaiting a {@link JsPendingTable} gives the table it produces, and {@link JsPendingTable#resolve()} gives it as a
- * {@link JsResolvedTable}. Repeating either gives the same instance, as awaiting a promise twice does. A pending table
- * has no owner: awaiting or resolving it retains the table it produces, one instance shared by every await and
- * {@code resolve()} of it, and whoever does so is responsible for closing it.</li>
+ * <li>Awaiting a {@link JsPendingTable} gives the table it produces, and {@link JsPendingTable#resolve(Object)} gives
+ * it as a {@link JsResolvedTable}. Repeating either gives the same instance, as awaiting a promise twice does. A
+ * pending table has no owner: awaiting or resolving it retains the table it produces, one instance shared by every
+ * await and {@code resolve()} of it, and whoever does so is responsible for closing it.</li>
  * <li>A {@link JsResolvedTable} is already the table: it cannot be awaited, since awaiting a thenable would also await
  * what it resolves to, and needs no resolving.</li>
  * <li>Code that receives a table and its caller agree on whether that code may close it. Code given a

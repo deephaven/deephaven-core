@@ -25,8 +25,8 @@ import jsinterop.annotations.JsOptional;
  * {@link JsResolvedTable}</li>
  * <li>an API that has always produced a {@link JsTable}, such as fetching a named table — a {@link JsTable}</li>
  * </ul>
- * {@link #resolve()} always gives a {@link JsResolvedTable}. For an operation, awaiting and resolving give the same
- * table. A fetched pending table produces only one of the two, so await it or resolve it, not both. Either may be
+ * {@link #resolve(Object)} always gives a {@link JsResolvedTable}. For an operation, awaiting and resolving give the
+ * same table. A fetched pending table produces only one of the two, so await it or resolve it, not both. Either may be
  * repeated within the task that created it, and gives the same table each time.
  * <p>
  * A pending table has no {@code catch} or {@code finally}. For those, wrap it with {@code Promise.resolve(...)} in the
@@ -36,7 +36,7 @@ import jsinterop.annotations.JsOptional;
  * its resources. {@link JsTableOperations} describes who owns what.
  * <p>
  * A pending table may only be used in the task that created it, before control returns to the event loop: awaited,
- * {@code then} or {@link #resolve()} called on it, chained on, passed as an operand, or passed to
+ * {@code then} or {@link #resolve(Object)} called on it, chained on, passed as an operand, or passed to
  * {@code dh.resolveAll}, {@code Promise.resolve} or {@code Promise.all}. What lasts is the result: the table an await
  * produces, which is retained until it is closed and has the same operations, or the promise from
  * {@code Promise.resolve}. A pending table that is not awaited is freed automatically as soon as possible: once its
@@ -62,14 +62,14 @@ import jsinterop.annotations.JsOptional;
 public interface JsPendingTable<@TsDefault(JsResolvedTable.class) T> extends JsTableOperations, PromiseLike<T> {
     /**
      * Releases everything this pending table produced, whichever stage it is at. If the operation is still pending, it
-     * is canceled: the promise from {@link #resolve()} rejects with "Operation canceled" and the ticket is released. If
-     * the table was already delivered, it is closed, for every awaiter. Operations already chained on it that have not
-     * yet produced their table reject with "Source table failed: " and the cancel message. Operations chained on it
-     * afterward are never sent, and reject with "Cannot use source table: " and the cancel message. The server cancels
-     * work it has not started, but work it has already begun runs to completion there, so callers that cancel often
-     * should debounce. Canceling the {@link JsTable#operations()} of a {@link JsTable} works the same way, except that
-     * the {@link JsTable} and its server-side table are left as they are. A call that already named this table and has
-     * an effect of its own, such as {@link io.deephaven.web.client.api.input.JsInputTable#addTable
+     * is canceled: the promise from {@link #resolve(Object)} rejects with "Operation canceled" and the ticket is
+     * released. If the table was already delivered, it is closed, for every awaiter. Operations already chained on it
+     * that have not yet produced their table reject with "Source table failed: " and the cancel message. Operations
+     * chained on it afterward are never sent, and reject with "Cannot use source table: " and the cancel message. The
+     * server cancels work it has not started, but work it has already begun runs to completion there, so callers that
+     * cancel often should debounce. Canceling the {@link JsTable#operations()} of a {@link JsTable} works the same way,
+     * except that the {@link JsTable} and its server-side table are left as they are. A call that already named this
+     * table and has an effect of its own, such as {@link io.deephaven.web.client.api.input.JsInputTable#addTable
      * InputTable.addTable}, {@link io.deephaven.web.client.ide.IdeConnection#shareObject IdeConnection.shareObject} or
      * {@link io.deephaven.web.client.ide.IdeSession#shareObject IdeSession.shareObject}, is not withdrawn.
      */
