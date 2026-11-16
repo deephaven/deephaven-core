@@ -17,6 +17,7 @@ public final class UpdateByRollingCountWhere extends UpdateByRollingSpec {
 
     /** The name of the output column that holds the count. */
     public String resultColumn;
+
     /** Filter expressions, such as {@code "X > 5"}. The operation counts a row only if it matches all of them. */
-    public ReadonlyArray<String> filters;// TODO
+    public ReadonlyArray<String> filters;
 }
