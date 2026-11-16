@@ -6,7 +6,6 @@ package io.deephaven.web.client.api.agg;
 import elemental2.core.ReadonlyArray;
 import io.deephaven.web.client.api.Column.ColumnOrName;
 import io.deephaven.web.client.api.JsTable.MatchPairUnion;
-import io.deephaven.web.client.api.Sort;
 import io.deephaven.web.client.api.agg.Unique.NonUniqueSentinelUnion;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -37,7 +36,7 @@ public abstract sealed class Aggregation
      * Creates a Sum aggregation.
      *
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
-     *        to null, which is valid only in {@code aggAllBy}.
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -50,7 +49,8 @@ public abstract sealed class Aggregation
     /**
      * Creates an absolute-sum aggregation.
      *
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -63,7 +63,8 @@ public abstract sealed class Aggregation
     /**
      * Creates an Average (arithmetic mean) aggregation.
      *
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -76,7 +77,8 @@ public abstract sealed class Aggregation
     /**
      * Creates a First aggregation, returning the first value in each group.
      *
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -89,7 +91,8 @@ public abstract sealed class Aggregation
     /**
      * Creates a Freeze aggregation, which keeps the first value seen and ignores subsequent changes.
      *
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -102,7 +105,8 @@ public abstract sealed class Aggregation
     /**
      * Creates a Group aggregation, collecting values into arrays.
      *
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -115,7 +119,8 @@ public abstract sealed class Aggregation
     /**
      * Creates a Last aggregation, returning the last value in each group.
      *
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -128,7 +133,8 @@ public abstract sealed class Aggregation
     /**
      * Creates a Max aggregation.
      *
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -141,7 +147,8 @@ public abstract sealed class Aggregation
     /**
      * Creates a Min aggregation.
      *
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -154,7 +161,8 @@ public abstract sealed class Aggregation
     /**
      * Creates a Std (sample standard deviation) aggregation, computed using Bessel's correction.
      *
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -167,7 +175,8 @@ public abstract sealed class Aggregation
     /**
      * Creates a Var (sample variance) aggregation, computed using Bessel's correction.
      *
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -183,7 +192,8 @@ public abstract sealed class Aggregation
      * @param averageEvenlyDivided when the group size is even, whether to average the two middle values. When
      *        {@code true}, averages the two middle values. When {@code false}, uses the smaller value. Only applies to
      *        numeric types. Defaults to {@code true}.
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -201,7 +211,8 @@ public abstract sealed class Aggregation
      * @param percentile the percentile to calculate, must be in the range [0.0, 1.0]
      * @param averageEvenlyDivided whether to average the two boundary values when the percentile falls evenly between
      *        them. Only applies to numeric types. Defaults to false if not specified
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -220,7 +231,8 @@ public abstract sealed class Aggregation
      * @param percentile the percentile to calculate, must be in the range [0.0, 1.0]
      * @param compression T-Digest compression factor, which must be &ge; 1. Values above 1000 are not recommended. If
      *        null, the server chooses a default.
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -237,7 +249,8 @@ public abstract sealed class Aggregation
      * Creates a Count Distinct aggregation, counting the number of distinct values in each group.
      *
      * @param countNulls whether null values should be counted as distinct values
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -254,7 +267,8 @@ public abstract sealed class Aggregation
      *
      * @param includeNulls whether null values should be included in the distinct output values. Defaults to
      *        {@code false}.
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -270,7 +284,8 @@ public abstract sealed class Aggregation
      * Creates a Unique aggregation, returning the single unique value within each group. If there is more than one
      * distinct value, the result is {@code nonUniqueSentinel}.
      *
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @param includeNulls whether null is treated as a value for determining uniqueness. Defaults to {@code false}.
      * @param nonUniqueSentinel the value for a group with more than one distinct value. Defaults to {@code null}.
      * @return an aggregation
@@ -290,7 +305,8 @@ public abstract sealed class Aggregation
      * Creates a Weighted Average aggregation.
      *
      * @param weightColumn the column containing the weights
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -306,7 +322,8 @@ public abstract sealed class Aggregation
      * Creates a Weighted Sum aggregation.
      *
      * @param weightColumn the column containing the weights
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -322,7 +339,8 @@ public abstract sealed class Aggregation
      * Creates a SortedFirst aggregation, returning the first value when each group is sorted by the given columns.
      *
      * @param sortedColumns the columns to sort by when determining the "first" row
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -338,7 +356,8 @@ public abstract sealed class Aggregation
      * Creates a SortedLast aggregation, returning the last value when each group is sorted by the given columns.
      *
      * @param sortedColumns the columns to sort by when determining the "last" row
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
@@ -354,7 +373,8 @@ public abstract sealed class Aggregation
      * Creates a T-Digest aggregation, storing the T-Digest data structure for later percentile calculations.
      *
      * @param compression T-Digest compression factor, which must be &ge; 1. If null, the server chooses a default.
-     * @param columns the column(s) to aggregate
+     * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
+     *        to null, which is valid only in {@code aggAllBy} where it will be ignored.
      * @return an aggregation
      */
     @JsMethod
