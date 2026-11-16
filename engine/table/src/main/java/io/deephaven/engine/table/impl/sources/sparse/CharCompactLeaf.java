@@ -15,7 +15,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
  * <p>
  * The offsets a leaf holds never change. Setting the value of an offset the leaf holds writes it in place; adding or
  * removing offsets makes a new leaf, which the caller puts in place of this one. A reader of this leaf therefore finds
- * each value at its offset however the leaf is written meanwhile.
+ * each value at the correct offset, however the leaf is concurrently written.
  */
 public abstract sealed class CharCompactLeaf permits CharSortedLeaf, CharBitmapLeaf {
 

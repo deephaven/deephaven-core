@@ -131,7 +131,7 @@ The offsets of a leaf never change. Setting the value of an offset the leaf hold
 `putSorted`, `insertAbsent`, `remove` and `removeRange` return a new leaf when they add or remove offsets, and the writer
 puts it in the page table in place of the old one (`setCompact`). A leaf builds its arrays before its constructor takes
 them into final fields, so a reader on another thread that finds the leaf sees it whole, and a reader that loaded the
-old leaf finds every value at its offset however the leaf is written meanwhile (see
+old leaf finds every value at the correct offset, however the leaf is concurrently written (see
 [Reading previous values during a cycle](#reading-previous-values-during-a-cycle)). Each tier has a shared empty leaf
 (`EMPTY`), which no write changes, since it holds no offset to write in place.
 
