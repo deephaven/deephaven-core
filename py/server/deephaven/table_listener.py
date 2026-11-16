@@ -70,10 +70,7 @@ class TableUpdate(JObjectWrapper):
         )
 
     def added_chunks(
-        self,
-        chunk_size: int,
-        cols: str | list[str] | None = None,
-        null_as_none: bool = False,
+        self, chunk_size: int, cols: str | list[str] | None = None
     ) -> Generator[dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of added rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the rows in the chunk.
@@ -81,10 +78,6 @@ class TableUpdate(JObjectWrapper):
         Args:
             chunk_size (int): the size of the chunk
             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the added rows
-            null_as_none (bool): Whether Boolean and String columns become object arrays that hold None for a null.
-                Default is False, meaning they become bool and str arrays, where a null Boolean reads as True and a
-                null String reads as 'None'. Other columns aren't affected: a null in a primitive column reads as its
-                null constant, such as NULL_INT.
 
         Returns:
             a generator
@@ -98,7 +91,6 @@ class TableUpdate(JObjectWrapper):
             row_set=added.asRowSet(),
             chunk_size=chunk_size,
             prev=False,
-            null_as_none=null_as_none,
         )
 
     def removed(self, cols: str | list[str] | None = None) -> dict[str, numpy.ndarray]:
@@ -119,10 +111,7 @@ class TableUpdate(JObjectWrapper):
         )
 
     def removed_chunks(
-        self,
-        chunk_size: int,
-        cols: str | list[str] | None = None,
-        null_as_none: bool = False,
+        self, chunk_size: int, cols: str | list[str] | None = None
     ) -> Generator[dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of removed rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the rows in the chunk.
@@ -130,10 +119,6 @@ class TableUpdate(JObjectWrapper):
         Args:
             chunk_size (int): the size of the chunk
             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the removed rows
-            null_as_none (bool): Whether Boolean and String columns become object arrays that hold None for a null.
-                Default is False, meaning they become bool and str arrays, where a null Boolean reads as True and a
-                null String reads as 'None'. Other columns aren't affected: a null in a primitive column reads as its
-                null constant, such as NULL_INT.
 
         Returns:
             a generator
@@ -147,7 +132,6 @@ class TableUpdate(JObjectWrapper):
             row_set=removed.asRowSet(),
             chunk_size=chunk_size,
             prev=True,
-            null_as_none=null_as_none,
         )
 
     def modified(self, cols: str | list[str] | None = None) -> dict[str, numpy.ndarray]:
@@ -172,10 +156,7 @@ class TableUpdate(JObjectWrapper):
         )
 
     def modified_chunks(
-        self,
-        chunk_size: int,
-        cols: str | list[str] | None = None,
-        null_as_none: bool = False,
+        self, chunk_size: int, cols: str | list[str] | None = None
     ) -> Generator[dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of modified rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the current values of the rows in the chunk.
@@ -183,10 +164,6 @@ class TableUpdate(JObjectWrapper):
         Args:
             chunk_size (int): the size of the chunk
             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the modified rows
-            null_as_none (bool): Whether Boolean and String columns become object arrays that hold None for a null.
-                Default is False, meaning they become bool and str arrays, where a null Boolean reads as True and a
-                null String reads as 'None'. Other columns aren't affected: a null in a primitive column reads as its
-                null constant, such as NULL_INT.
 
         Returns:
             a generator
@@ -200,7 +177,6 @@ class TableUpdate(JObjectWrapper):
             row_set=modified.asRowSet(),
             chunk_size=chunk_size,
             prev=False,
-            null_as_none=null_as_none,
         )
 
     def modified_prev(
@@ -228,10 +204,7 @@ class TableUpdate(JObjectWrapper):
         )
 
     def modified_prev_chunks(
-        self,
-        chunk_size: int,
-        cols: str | list[str] | None = None,
-        null_as_none: bool = False,
+        self, chunk_size: int, cols: str | list[str] | None = None
     ) -> Generator[dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of modified rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the previous values of the rows in the chunk.
@@ -239,10 +212,6 @@ class TableUpdate(JObjectWrapper):
         Args:
             chunk_size (int): the size of the chunk
             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the modified rows
-            null_as_none (bool): Whether Boolean and String columns become object arrays that hold None for a null.
-                Default is False, meaning they become bool and str arrays, where a null Boolean reads as True and a
-                null String reads as 'None'. Other columns aren't affected: a null in a primitive column reads as its
-                null constant, such as NULL_INT.
 
         Returns:
             a generator
@@ -257,7 +226,6 @@ class TableUpdate(JObjectWrapper):
             row_set=self.j_table_update.getModifiedPreShift(),
             chunk_size=chunk_size,
             prev=True,
-            null_as_none=null_as_none,
         )
 
     @property

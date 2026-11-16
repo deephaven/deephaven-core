@@ -27,16 +27,12 @@ def _to_column_name(name: str) -> str:
     return re.sub(r"\s+", "_", tmp_name)
 
 
-def _column_to_numpy_array(
-    col_def: ColumnDefinition, j_array: jpy.JType, null_as_none: bool = False
-) -> np.ndarray:
+def _column_to_numpy_array(col_def: ColumnDefinition, j_array: jpy.JType) -> np.ndarray:
     """Produces a numpy array from the given Java array and the Table column definition.
 
     Args:
         col_def (ColumnDefinition): the column definition
         j_array (jpy.JType): the Java array
-        null_as_none (bool): whether Boolean and String columns become object arrays that hold None for a null.
-            Default is False, meaning a null Boolean reads as True and a null String reads as 'None'.
 
     Returns:
         np.ndarray
@@ -45,8 +41,6 @@ def _column_to_numpy_array(
         DHError
     """
     try:
-        if null_as_none and col_def.data_type in (dtypes.bool_, dtypes.string):
-            return np.array(j_array, dtype=np.object_)
         return _j_array_to_numpy_array(
             col_def.data_type, j_array, conv_null=False, type_promotion=False
         )

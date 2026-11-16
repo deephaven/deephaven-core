@@ -23,7 +23,6 @@ from deephaven.column import (
     short_col,
     string_col,
 )
-from deephaven.constants import NULL_INT
 from deephaven.jcompat import j_array_list
 from tests.testbase import BaseTestCase
 
@@ -444,53 +443,6 @@ class TableIteratorTestCase(BaseTestCase):
         with self.subTest("duplicate column"):
             with self.assertRaises(ValueError):
                 list(test_table.iter_dict(cols=["A", "A"]))
-
-    def test_iteration_in_chunks_null_as_none(self) -> None:
-        test_table = new_table(
-            [
-                bool_col("B", [True, None, False]),
-                string_col("S", ["a", None, "c"]),
-                int_col("I", [1, NULL_INT, 3]),
-            ]
-        )
-
-        with self.subTest("default"):
-            chunk = next(test_table.iter_chunk_dict())
-            self.assertEqual(np.bool_, chunk["B"].dtype)
-            self.assertEqual([True, True, False], chunk["B"].tolist())
-            self.assertEqual(["a", "None", "c"], chunk["S"].tolist())
-            self.assertEqual([1, NULL_INT, 3], chunk["I"].tolist())
-
-        with self.subTest("iter_chunk_dict"):
-            chunk = next(test_table.iter_chunk_dict(null_as_none=True))
-            self.assertEqual(np.object_, chunk["B"].dtype)
-            self.assertEqual(np.object_, chunk["S"].dtype)
-            self.assertEqual([True, None, False], chunk["B"].tolist())
-            self.assertEqual(["a", None, "c"], chunk["S"].tolist())
-            self.assertEqual(np.int32, chunk["I"].dtype)
-            self.assertEqual([1, NULL_INT, 3], chunk["I"].tolist())
-
-            # The object arrays turn back into the same table.
-            round_trip = new_table(
-                [
-                    bool_col("B", chunk["B"]),
-                    string_col("S", chunk["S"]),
-                    int_col("I", chunk["I"]),
-                ]
-            )
-            self.assert_table_equals(test_table, round_trip)
-
-        with self.subTest("iter_chunk_tuple"):
-            chunk_tuple = next(test_table.iter_chunk_tuple(null_as_none=True))
-            self.assertEqual([True, None, False], chunk_tuple.B.tolist())
-            self.assertEqual(["a", None, "c"], chunk_tuple.S.tolist())
-
-        with self.subTest("no nulls"):
-            chunk = next(
-                test_table.where("!isNull(B)").iter_chunk_dict(null_as_none=True)
-            )
-            self.assertEqual(np.object_, chunk["B"].dtype)
-            self.assertEqual([True, False], chunk["B"].tolist())
 
     def test_iteration_errors(self):
         test_table = time_table("PT00:00:00.001").update(["from = i%11"])

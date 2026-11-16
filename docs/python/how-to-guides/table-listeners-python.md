@@ -228,8 +228,6 @@ handle = listen(source, listener_function)
 
 ![`source` updates while the listener prints added rows](../assets/how-to/listen-added-chunks.gif)
 
-NumPy `bool` and string arrays have no null value. By default, a null in a Boolean column reads as `True` in a chunk, and a null in a String column reads as the string `'None'`. To tell nulls apart, pass `null_as_none=True` to a chunked accessor. Boolean and String columns then become `object` arrays that hold `None` for a null.
-
 ## Error handling
 
 You can give a table listener an error handler. Deephaven calls the handler when the listener function or class raises an exception, or when a table the listener listens to fails. It passes the handler a [`RuntimeError`](https://docs.python.org/3/library/exceptions.html#RuntimeError) whose message contains the stack trace of the original error.
