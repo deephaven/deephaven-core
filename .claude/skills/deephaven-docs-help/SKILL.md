@@ -61,7 +61,10 @@ Features usually need more than one doc. Say so when it applies, for example a r
 for each new method plus a how-to for the main workflow, and let the person choose which to
 write now. Present the result as a short plan: the category, the target directory and filename,
 and the pages to update (Python and Groovy pairs, sidebar entries, Related documentation).
-Then confirm before writing.
+When the subject is a user-facing code change (new or changed API, behavior, configuration
+property, or breaking change), add one line to the plan: it likely needs a release-notes entry
+(the `ReleaseNotesNeeded` label), which is drafted with the `deephaven-release-notes` skill in
+the deephaven.io repo, not here. Then confirm before writing.
 
 When they agree, write following `deephaven-writing-style`, and offer the review pick list above
 once the draft exists.

@@ -365,6 +365,19 @@ only for findings that aren't part of a pattern.
 Questions the review couldn't resolve from source — mostly technical claims that need an SME.
 Format: AQ1 [heading, para N or line N]: question
 
+## Release notes and missing docs
+Only when the page or PR describes a user-facing code change (a new or changed API, behavior,
+configuration property, or breaking change). Reviewing a page's wording never checks these, so
+state both answers even when the answer is "no":
+- **Release notes:** does the change need a release-notes entry? Say whether the PR carries
+  `ReleaseNotesNeeded` or `NoReleaseNotesNeeded` and whether that matches the change. Don't draft
+  the entry here; release-notes drafting lives in the `deephaven-release-notes` skill in the
+  deephaven.io repo.
+- **Missing docs:** search `docs/` for each user-facing change. List any change with no page that
+  covers it (a new method with no reference entry, a new property absent from the configuration
+  reference), and whether the PR carries `DocumentationNeeded` or `NoDocumentationNeeded`. For
+  release-wide gaps, point to `deephaven-documentation-needs-check`.
+
 ## Coverage
 Factual or behavioral claims in prose, headings, lists, tables, captions, and code comments (the
 accuracy check's claim ledger): how many rows, how many were verified against source, and how many

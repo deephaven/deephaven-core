@@ -59,7 +59,8 @@
         "Identifies a reference guide entry as the primary doc and optionally a how-to for the workflow, using ref-deephaven-doc-categories rather than a made-up taxonomy",
         "Says which directory the pages belong in and notes the Python and Groovy pair and sidebar updates",
         "Searches docs/ for existing coverage before proposing a new page",
-        "Asks the person to confirm the plan before writing anything"
+        "Asks the person to confirm the plan before writing anything",
+        "Notes that the change likely needs a release-notes entry and names the deephaven-release-notes skill in the deephaven.io repo, without drafting the entry"
       ]
     },
     {
