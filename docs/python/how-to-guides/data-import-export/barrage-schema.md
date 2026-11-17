@@ -24,7 +24,7 @@ Annotate the schema when you are:
 
 ### Encoding auto-detection
 
-You don't always need to annotate a column to get an encoding. Starting in version 43.0, the [server properties](../configuration/configuration-properties.md#how-to-set-properties) [`BarrageUtil.ree.autoDetectEnabled` and `BarrageUtil.dictionary.autoDetectEnabled`](../configuration/configuration-properties.md#barrage-encoding) are both on by default. While either is enabled, an [Arrow Flight](./arrow-flight.md) client can receive run-end encoded or dictionary-encoded columns from a table you never annotated.
+You don't always need to annotate a column to get an encoding. Starting in version 43.0, the [server properties](../configuration/configuration-properties.md#how-to-set-properties) [`BarrageUtil.ree.autoDetectEnabled` and `BarrageUtil.dictionary.autoDetectEnabled`](../configuration/configuration-properties.md#barrage-encoding) are both on by default. In 42.x releases, both properties exist but are off by default. While either is enabled, an [Arrow Flight](./arrow-flight.md) client can receive run-end encoded or dictionary-encoded columns from a table you never annotated.
 
 Once a table has a schema attribute, the server takes every column's encoding from that schema, whatever these properties are set to. It doesn't auto-detect an encoding for any column of that table.
 
@@ -262,7 +262,7 @@ A record batch is the set of rows [Barrage](../../conceptual/what-is-barrage.md)
 The `run_ends` field you supply in the [`BarrageSchema`](/core/javadoc/io/deephaven/engine/table/Table.html#BARRAGE_SCHEMA_ATTRIBUTE) attribute sets the integer width of the run ends:
 
 - `Int16` — the narrowest width, which limits each record batch to 32,767 rows (Java's `Short.MAX_VALUE`).
-- `Int32` — the recommended width.
+- `Int32` — the width auto-detection uses, which allows about 2.1 billion rows per record batch.
 - `Int64` — the widest supported width.
 
 The following example run-end encodes the `Status` column, which holds runs of `OPEN` and `CLOSED` values:

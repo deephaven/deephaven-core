@@ -22,7 +22,7 @@ The Deephaven table to convert to an HTML table.
 
 ## Returns
 
-A string containing an HTML `<table>` element. The string is a copy of the table's rows at the moment of the call. If the table is ticking, the string does not update, and `to_html` reads the table without taking a snapshot, so the copy can mix values from before and after an update. Call `to_html(table.snapshot())` for a consistent copy, and call it again to get the latest rows.
+A string containing an HTML `<table>` element. The string is a copy of the table's rows at the moment of the call. If the table is ticking, the string does not update. `to_html` reads the table without taking a snapshot or a lock. Called from the console or an [Application Mode](../../app-mode/application-mode-config.md) script, which run under the update graph's [exclusive lock](../../../conceptual/query-engine/engine-locking.md#exclusive-lock), it reads a table that cannot change during the call. Called from code that runs without the lock, such as a separate thread, the copy can mix values from before and after an update; there, call `to_html(table.snapshot())` for a consistent copy, and call it again to get the latest rows.
 
 ## Examples
 
@@ -63,4 +63,6 @@ print(html_table)
 
 - [Read HTML files](../../../how-to-guides/data-import-export/html-import.md)
 - [Convert tables to HTML strings](../../../how-to-guides/data-import-export/html-export.md)
+- [Multithreading: Synchronization, locks, and snapshots](../../../conceptual/query-engine/engine-locking.md)
+- [Application Mode configuration](../../app-mode/application-mode-config.md)
 - [Pydoc](/core/pydoc/code/deephaven.html.html)

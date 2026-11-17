@@ -81,7 +81,7 @@ The example's `Letter` values contain no markup, so the output matches the earli
 
 [`to_html`](../../reference/data-import-export/HTML/to-html.md) returns a fixed copy of the table's rows. If the table is [ticking](../../conceptual/table-types.md#standard-streaming-tables), the string doesn't change as the table updates.
 
-[`to_html`](../../reference/data-import-export/HTML/to-html.md) also reads the table cell by cell without taking a [snapshot](../../reference/table-operations/snapshot/snapshot.md), so on a [ticking table](../../conceptual/table-types.md#standard-streaming-tables) the string can mix values from before and after an update. Instead, convert a snapshot of the table:
+[`to_html`](../../reference/data-import-export/HTML/to-html.md) also reads the table cell by cell without taking a [snapshot](../../reference/table-operations/snapshot/snapshot.md) or a lock. When you call it from the console or an [Application Mode](../../reference/app-mode/application-mode-config.md) script, Deephaven already holds the [exclusive lock](../../conceptual/query-engine/engine-locking.md#exclusive-lock), so the table can't change during the read. From code that runs without the lock, such as a separate thread, the string can mix values from before and after an update. There, convert a snapshot of the table instead:
 
 - For a consistent copy, call `html.to_html(table.snapshot())`.
 - For the latest rows, run that expression again. Each call takes a new snapshot.
@@ -97,6 +97,8 @@ The example's `Letter` values contain no markup, so the output matches the earli
 - [Read HTML files](./html-import.md)
 - [Export CSV files](./csv-export.md)
 - [Access your file system with Docker bind mounts](../../conceptual/docker-data-volumes.md)
+- [Multithreading: Synchronization, locks, and snapshots](../../conceptual/query-engine/engine-locking.md)
+- [Application Mode configuration](../../reference/app-mode/application-mode-config.md)
 - [Set date-time format](../set-date-time-format.md)
 - [Arrays](../../reference/query-language/types/arrays.md)
 - [date-time](../../reference/query-language/types/date-time.md)
