@@ -42,7 +42,7 @@ class DHError(Exception):
         for_compact_tb = True
         for tb_ln in tb_lines:
             if _JAVA_CAUSE_RE.match(tb_ln):
-                self._root_cause = tb_ln.split("by")[1].strip()
+                self._root_cause = tb_ln[len("caused by") :].strip()
                 if tb_ln.strip().endswith(":"):
                     self._compact_tb.append(tb_ln[:-1].strip())
                 else:

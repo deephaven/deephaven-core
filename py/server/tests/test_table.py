@@ -291,6 +291,20 @@ class TableTestCase(BaseTestCase):
                     "caused by upstream failure", cm.exception.compact_traceback
                 )
 
+    def test_java_error_root_cause_with_by(self) -> None:
+        # The root cause keeps the whole cause line, even when the message has the word "by" in it.
+        try:
+            raise RuntimeError(
+                "io.deephaven.SomeException: failed\n"
+                "caused by java.lang.IllegalArgumentException: Group by columns are invalid"
+            )
+        except RuntimeError as e:
+            dh_error = DHError(e, "operation failed")
+        self.assertEqual(
+            "java.lang.IllegalArgumentException: Group by columns are invalid",
+            dh_error.root_cause,
+        )
+
     #
     # Table operation category: Filter
     #
