@@ -66,5 +66,8 @@ once the draft exists.
 - Ask at most one question per message, and never re-ask something the request answered.
 - Recommend; don't survey. Lead with your pick and one line on why.
 - Do not run any review or draft anything before the person has chosen.
-- If the request turns out to be specific after all (names a depth, dimension, or category),
-  skip this skill and invoke the matching one directly.
+- If a review request turns out to be specific after all (names a depth or dimension), skip
+  this skill and invoke the matching review skill directly.
+- For a writing request, naming a category ("help me write a how-to for X") answers question 2
+  only. There is no per-category drafting skill, so still do the existing-coverage search and
+  present the plan for confirmation before drafting.
