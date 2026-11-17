@@ -82,7 +82,7 @@ The snapshot appears within the stream of updates and reflects the table as of o
 - Deltas from cycles up to the one the snapshot reflects come before it.
 - Deltas from later cycles, including cycles that finish while Barrage takes the snapshot, come after it.
 
-Barrage coalesces each range separately and records an `AggregateNanos` value for each, as described in [step 2](#2-barrage-waits-for-the-update-interval-and-coalesces-deltas). When no other subscriber at that update interval is active, Barrage drops the deltas before the snapshot instead of sending them: no subscriber needs them, and the snapshot already contains their changes.
+Barrage coalesces each range separately and records an `AggregateNanos` value for each, as described in [step 2](#2-barrage-waits-for-the-update-interval-and-coalesces-deltas). When the snapshot activates the first subscription, so no subscriber at that update interval was active before it, Barrage drops the deltas before the snapshot instead of coalescing and sending them: no subscriber needs them, and the snapshot already contains their changes. A snapshot for a subscription that is already active, such as one that changes its viewport or receives a later snapshot step, still coalesces the earlier range and records its `AggregateNanos` value.
 
 ![Diagram reading "Coalesced Delta -> Snapshot -> Coalesced Delta"](../assets/how-to/barrage-coalesced-snapshot.png)
 
