@@ -382,7 +382,7 @@ How to use each type:
 - `zstd` suits most tables: it compresses smallest, and only `snappy` compresses faster.
 - `gzip` compresses slightly less than `zstd` and is about 18 times slower to compress. List it last, and only when clients that cannot decode `zstd`, such as `pydeephaven`, should also receive compressed data.
 - `deflate` is the `gzip` algorithm in the zlib format. It compresses to the same size at the same speed and decompresses slightly slower. Every client that decodes `deflate` also decodes `gzip`, so there is little reason to list `deflate` ahead of `gzip`.
-- `snappy` compresses fastest but saves the least.
+- `snappy` compresses fastest but saves the least. It saves nothing on data that is close to random: on random doubles or random hex strings, its output is the same size as the input, while `zstd` saves about 6% and 52%.
 
 ### Configure client-side compression
 
