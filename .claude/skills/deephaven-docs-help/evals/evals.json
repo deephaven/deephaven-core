@@ -24,11 +24,12 @@
     {
       "id": 3,
       "prompt": "Can you check my docs? I only changed one sentence about the default heap size in docs/python/how-to-guides/configuration/config-file.md.",
-      "expected_output": "Recognizes a one-sentence change and uses the spot check, either directly or by recommending it through the router.",
+      "expected_output": "Loads the router, recognizes a one-sentence change, recommends the spot check with the full review as the alternative, and waits for the person's choice before running either.",
       "expectations": [
-        "Ends up on the accuracy spot check (invoked directly, or recommended first with the full review as the alternative), citing that only one sentence changed",
-        "Does not run a full review of the page",
-        "Does not ask a question the request already answered"
+        "Invokes deephaven-docs-help rather than going straight to a review skill, since the person did not name a review depth",
+        "Leads with a recommendation of the accuracy spot check, citing that only one sentence changed, and mentions the full review as the alternative",
+        "Does not invoke deephaven-core-accuracy-spot-check, deephaven-docs-review-full, or any other review skill before the person has chosen",
+        "Does not ask for a target, since the request already names the page"
       ]
     },
     {
