@@ -322,7 +322,8 @@ class _FormatOperationsRecorder(Protocol):
         j_format_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFormatOperationsRecorder
         )
-        return self.__class__(j_format_ops_recorder.formatColumns(formulas))
+        with query_scope_ctx():
+            return self.__class__(j_format_ops_recorder.formatColumns(formulas))
 
     def format_row_where(self, cond: str, formula: str):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.format_row_where` operation applied to
@@ -330,7 +331,8 @@ class _FormatOperationsRecorder(Protocol):
         j_format_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFormatOperationsRecorder
         )
-        return self.__class__(j_format_ops_recorder.formatRowWhere(cond, formula))
+        with query_scope_ctx():
+            return self.__class__(j_format_ops_recorder.formatRowWhere(cond, formula))
 
     def format_column_where(self, col: str, cond: str, formula: str):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.format_column_where` operation applied to
@@ -338,9 +340,10 @@ class _FormatOperationsRecorder(Protocol):
         j_format_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFormatOperationsRecorder
         )
-        return self.__class__(
-            j_format_ops_recorder.formatColumnWhere(col, cond, formula)
-        )
+        with query_scope_ctx():
+            return self.__class__(
+                j_format_ops_recorder.formatColumnWhere(col, cond, formula)
+            )
 
 
 class _SortOperationsRecorder(Protocol):
@@ -381,7 +384,8 @@ class _FilterOperationsRecorder(Protocol):
         j_filter_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFilterOperationsRecorder
         )
-        return self.__class__(j_filter_ops_recorder.where(and_(filters).j_filter))
+        with query_scope_ctx():
+            return self.__class__(j_filter_ops_recorder.where(and_(filters).j_filter))
 
 
 class _UpdateViewOperationsRecorder(Protocol):
@@ -397,7 +401,8 @@ class _UpdateViewOperationsRecorder(Protocol):
         j_update_view_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JUpdateViewOperationsRecorder
         )
-        return self.__class__(j_update_view_ops_recorder.updateView(*formulas))
+        with query_scope_ctx():
+            return self.__class__(j_update_view_ops_recorder.updateView(*formulas))
 
 
 class RollupNodeOperationsRecorder(
@@ -591,7 +596,8 @@ class RollupTable(JObjectWrapper):
             raise DHError(e, "with_filters operation on RollupTable failed.") from e
 
     def with_update_view(self, formulas: str | Sequence[str]) -> RollupTable:
-        """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
+        """Returns a new RollupTable by applying the given formulas as a view, which adds columns at the aggregated
+        node level of this RollupTable.
 
         Args:
             formulas (Union[str, Sequence[str]]): the column formula(s)
@@ -604,8 +610,10 @@ class RollupTable(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
+            with query_scope_ctx():
+                j_rollup_table = self.j_rollup_table.withUpdateView(*formulas)
             return RollupTable(
-                j_rollup_table=self.j_rollup_table.withUpdateView(*formulas),
+                j_rollup_table=j_rollup_table,
                 include_constituents=self.include_constituents,
                 aggs=self.aggs,
                 by=self.by,

@@ -2,10 +2,13 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 """
-Support for running operations on JVM server threads, so that they can be given work from python. Initially, there
-are two executors, "serial" and "concurrent". Any task that will take an exclusive UGP lock should use the serial
-executor, otherwise the concurrent executor should be used. In the future there may be a "fast" executor, for use
-when there is no chance of using either lock.
+Support for running operations on JVM server threads, so that they can be given work from python. There are two
+executors, "serial" and "concurrent". Any task that will take an exclusive UGP lock should use the serial executor,
+otherwise the concurrent executor should be used.
+
+Both executors currently share one server thread, so tasks submitted to either one run one at a time, in the order
+they were submitted. Tasks submitted to "concurrent" do not run in parallel. A later version may give the executors
+separate thread pools, so don't rely on this ordering.
 """
 
 from collections.abc import Callable
@@ -37,8 +40,9 @@ def submit_task(executor_name: str, task: Callable[[], None]) -> None:
     Submits a task to run on a named executor. If no such executor exists, raises KeyError. The provided task should
     take care to set up any execution context or liveness scope to ensure that the task runs as intended.
 
-    Typically, tasks should not block on other threads. Ensure tasks never block on other tasks submitted to the same
-    executor.
+    Typically, tasks should not block on other threads. Ensure tasks never block on other tasks submitted to any
+    executor. The executors share one thread, so a task that waits for another submitted task deadlocks, even when the
+    two tasks were submitted to different executors.
 
     Args:
         executor_name (str): the name of the executor to submit the task to
