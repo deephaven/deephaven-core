@@ -362,21 +362,21 @@ Remote tables between servers are a separate case. A Deephaven server that fetch
 
 ### Choose compression types
 
-Choose the list based on what the server's CPU can afford. The following figures come from [`TransportCompressionBenchmark`](https://github.com/deephaven/deephaven-core/blob/main/extensions/barrage/benchmark/src/main/java/io/deephaven/benchmark/barrage/TransportCompressionBenchmark.java), a Java Microbenchmark Harness (JMH) benchmark in the Deephaven Core repository, run on a one-million-row table of mixed trade data. The benchmark ran with JDK 21 on one thread of an Apple M1 Max and of an Intel Core i9-14900KS. The speeds are megabytes of uncompressed data per second. Absolute speeds depend on the hardware and the data, so use them to compare the compression types rather than to predict throughput:
+Choose the list based on what the server's CPU can afford. The following figures come from [`TransportCompressionBenchmark`](https://github.com/deephaven/deephaven-core/blob/main/extensions/barrage/benchmark/src/main/java/io/deephaven/benchmark/barrage/TransportCompressionBenchmark.java), a Java Microbenchmark Harness (JMH) benchmark in the Deephaven Core repository, run on a one-million-row table of mixed trade data. The speeds were measured with JDK 21 on one thread of an Intel Core i9-14900KS, and are megabytes of uncompressed data per second. The sizes come from [`TransportCompressionSizeReport`](https://github.com/deephaven/deephaven-core/blob/main/extensions/barrage/benchmark/src/main/java/io/deephaven/benchmark/barrage/TransportCompressionSizeReport.java), in the same module, on the same table. Absolute speeds depend on the hardware and the data, so use them to compare the compression types rather than to predict throughput:
 
-| Compression type | Size after compression | Compression speed (M1 Max / i9-14900KS) | Decompression speed (M1 Max / i9-14900KS) |
-| ---------------- | ---------------------- | --------------------------------------- | ----------------------------------------- |
-| `zstd`           | 31% of the original    | 380 / 550 MB/s                          | 1010 / 1270 MB/s                          |
-| `gzip`           | 28% of the original    | 18 / 30 MB/s                            | 400 / 600 MB/s                            |
-| `snappy`         | 59% of the original    | 800 / 880 MB/s                          | 1460 / 1080 MB/s                          |
-| `deflate`        | 28% of the original    | 18 / 30 MB/s                            | 360 / 550 MB/s                            |
+| Compression type | Size after compression | Compression speed | Decompression speed |
+| ---------------- | ---------------------- | ----------------- | ------------------- |
+| `zstd`           | 26% of the original    | 550 MB/s          | 1270 MB/s           |
+| `gzip`           | 28% of the original    | 30 MB/s           | 600 MB/s            |
+| `snappy`         | 54% of the original    | 880 MB/s          | 1080 MB/s           |
+| `deflate`        | 28% of the original    | 30 MB/s           | 550 MB/s            |
 
 How to use each type:
 
-- `zstd` suits most tables.
-- `gzip` compresses slightly smaller than `zstd` but is about 20 times slower to compress. List it last, and only when clients that cannot decode `zstd`, such as `pydeephaven`, should also receive compressed data.
+- `zstd` suits most tables: it compresses smallest, and only `snappy` compresses faster.
+- `gzip` compresses slightly less than `zstd` and is about 18 times slower to compress. List it last, and only when clients that cannot decode `zstd`, such as `pydeephaven`, should also receive compressed data.
 - `deflate` is the `gzip` algorithm in the zlib format. It compresses to the same size at the same speed and decompresses slightly slower. Every client that decodes `deflate` also decodes `gzip`, so there is little reason to list `deflate` ahead of `gzip`.
-- `snappy` compresses fastest but saves the least, and it saves nothing on data that is already close to random.
+- `snappy` compresses fastest but saves the least.
 
 ### Configure client-side compression
 
@@ -446,7 +446,7 @@ If the server experiences out-of-memory errors during subscriptions:
 
 Common subscription issues:
 
-- **Ticket not found**: An error such as `Could not resolve '...': ticket '<id>' not found` means one of three things. The ticket ID is wrong, the published table was released, or the session that published it closed. Keep the publishing session open, and keep the published table from being released, for as long as others need the ticket.
+- **Ticket not found**: An error such as `Could not resolve '...': ticket '<id>' not found` means one of three things. The ticket ID is wrong, the published table was released, or the session that published it closed. Shortly after the table is released or the session closes, the error can instead say that a dependency was released. Keep the publishing session open, and keep the published table from being released, for as long as others need the ticket.
 - **Dependency released**: A table released while a request for it is still pending can fail with a `dependency released` error instead.
 - **Authentication failures**: Verify that the client's authentication settings match the server configuration. URI resolution requires anonymous authentication. See [Use URIs to share tables](../use-uris.md).
 - **Connection refused**: Ensure the server is running and the host/port are correct. Check firewall rules.
