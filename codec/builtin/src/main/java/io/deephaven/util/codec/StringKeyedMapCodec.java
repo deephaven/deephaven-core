@@ -17,7 +17,7 @@ abstract class StringKeyedMapCodec<V> extends MapCodec<String, V> {
         for (final String key : input.keySet()) {
             estimate += key.length() + Integer.BYTES;
         }
-        estimate *= 1.1;
+        estimate += estimate / 10;
         estimate += Integer.BYTES + (getValueSize() * input.size());
         return estimate;
     }
