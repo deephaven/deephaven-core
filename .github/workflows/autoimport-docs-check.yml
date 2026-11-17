@@ -11,6 +11,9 @@ on:
       - "engine/table/src/test/java/io/deephaven/engine/table/lang/impl/CheckAutoImportDocSync.java"
       - "docs/tools/autoimport/**"
 
+permissions:
+  contents: read
+
 jobs:
   check-autoimport-docs:
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}

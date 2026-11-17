@@ -18,6 +18,9 @@ on:
   push:
     branches: [ 'nightly/**', 'py-test-matrix/**' ]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}

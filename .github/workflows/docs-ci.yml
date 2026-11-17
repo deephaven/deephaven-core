@@ -6,6 +6,9 @@ on:
   push:
     branches: [ 'main', 'release/v*' ]
 
+permissions:
+  contents: read
+
 jobs:
   makedirs:
     if: ${{ github.repository_owner == 'deephaven' }}

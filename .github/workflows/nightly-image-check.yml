@@ -5,6 +5,9 @@ on:
     # 10AM EST == 14 UTC
     - cron:  '0 14 * * *'
 
+permissions:
+  contents: read
+
 jobs:
   compare:
     runs-on: ubuntu-24.04
