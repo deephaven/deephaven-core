@@ -1,0 +1,86 @@
+{
+  "skill_name": "deephaven-docs-help",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "give me a review",
+      "expected_output": "Asks which page or change to review before offering any options, and does not start a review.",
+      "expectations": [
+        "Asks for the file, diff, or PR to look at",
+        "Does not run any review skill or produce findings",
+        "Does not present the spot-check versus full-review pick list before a target exists"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Can you review docs/python/how-to-guides/use-select-view-update.md? I rewrote most of it.",
+      "expected_output": "Recommends a full review because the page was substantially rewritten, offers the spot-check and one-dimension alternatives with their costs, and waits for a choice.",
+      "expectations": [
+        "Leads with a recommendation of the full review (accuracy, structure, style) and says why",
+        "Offers quick spot check and a single-dimension review as alternatives, with a plain-words cost for each",
+        "Asks a single question and waits; does not start reviewing before the person chooses"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Can you check my docs? I only changed one sentence about the default heap size in docs/python/how-to-guides/configuration/config-file.md.",
+      "expected_output": "Loads the router, recognizes a one-sentence change, recommends the spot check with the full review as the alternative, and waits for the person's choice before running either.",
+      "expectations": [
+        "Invokes deephaven-docs-help rather than going straight to a review skill, since the person did not name a review depth",
+        "Leads with a recommendation of the accuracy spot check, citing that only one sentence changed, and mentions the full review as the alternative",
+        "Does not invoke deephaven-core-accuracy-spot-check, deephaven-docs-review-full, or any other review skill before the person has chosen",
+        "Does not ask for a target, since the request already names the page"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Do a full review of docs/python/conceptual/table-types.md.",
+      "expected_output": "Does not use the router; goes straight to the full review because the depth is stated.",
+      "expectations": [
+        "Invokes deephaven-docs-review-full directly",
+        "Does not present a pick list or ask which kind of review is wanted"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "help me write docs for this",
+      "expected_output": "Asks what is being documented (or reads the working-tree diff to find out) before asking about the reader, and does not draft anything.",
+      "expectations": [
+        "Checks the working tree or asks what feature, API, or workflow is being documented",
+        "Asks at most one question in the message",
+        "Does not write any documentation yet"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "I added a new Table method, `tail_pct_by`, and I need docs for it. Where do they go and what should I write?",
+      "expected_output": "Concludes that a reference entry is needed plus possibly a how-to, using the categories reference, checks for existing coverage, and presents a short plan before writing.",
+      "expectations": [
+        "Identifies a reference guide entry as the primary doc and optionally a how-to for the workflow, using ref-deephaven-doc-categories rather than a made-up taxonomy",
+        "Says which directory the pages belong in and notes the Python and Groovy pair and sidebar updates",
+        "Searches docs/ for existing coverage before proposing a new page",
+        "Asks the person to confirm the plan before writing anything",
+        "Notes that the change likely needs a release-notes entry and names the deephaven-release-notes skill in the deephaven.io repo, without drafting the entry"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "I want a step-by-step walkthrough teaching new users about ticking tables. Is that a tutorial?",
+      "expected_output": "Explains that in this repo only the Crash Course is a tutorial; a walkthrough where the reader brings their own data is a how-to guide, and a why/how explanation is a concept guide.",
+      "expectations": [
+        "States that the Crash Course is the only tutorial among the four categories",
+        "Steers the person to a how-to guide or a concept guide depending on whether the reader is doing a task or building understanding",
+        "Does not call a new standalone page a tutorial"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Copilot left 6 comments on my docs PR, can you go through them?",
+      "expected_output": "Does not use the router; uses deephaven-docs-address-review-comments.",
+      "expectations": [
+        "Invokes deephaven-docs-address-review-comments directly",
+        "Does not offer the review pick list"
+      ]
+    }
+  ]
+}
