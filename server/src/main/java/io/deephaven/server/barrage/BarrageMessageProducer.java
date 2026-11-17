@@ -408,8 +408,13 @@ public class BarrageMessageProducer extends LivenessArtifact
     private final ArrayList<Subscription> activeSubscriptions = new ArrayList<>();
     /**
      * Subscriptions that have ended with an error their client has not yet been sent, guarded by this producer's
-     * monitor. Errors are sent outside the monitor, so until then a request from one of these clients is ignored rather
-     * than reported as not found, and the client sees why its subscription ended.
+     * monitor. A subscription is added when its client sends an invalid request, such as asking to change a full
+     * subscription to a viewport, or when a failure ends every subscription; it is removed once its error is sent,
+     * outside the monitor. Until then, a request from its client is ignored rather than reported as not found, so the
+     * client sees why its subscription ended.
+     * <p>
+     * Only those two events add to it, and each subscription is here only until its error is sent, so it is normally
+     * empty and is searched linearly.
      */
     private final List<Subscription> failingSubscriptions = new ArrayList<>();
 
@@ -595,7 +600,10 @@ public class BarrageMessageProducer extends LivenessArtifact
         private boolean isActive = false;
         /** is this subscription deleted as far as the client is concerned? */
         private boolean pendingDelete = false;
-        /** why a client request deleted this subscription; the client is sent this error instead of a completion */
+        /**
+         * why the client's request was invalid, such as asking to change a full subscription to a viewport; when set,
+         * the subscription is ending and its client is to be sent this error instead of a completion
+         */
         private String rejection;
         /**
          * has the client been sent an error? Read and written only while holding the propagation job's run lock, by
