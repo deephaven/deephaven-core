@@ -3191,7 +3191,8 @@ public class DateTimeUtils {
      *        minutes from the start of the day. On days when daylight savings time events occur, results may be
      *        different from what is expected based upon the local time. For example, on daylight savings time change
      *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
-     *        forwards or backwards. On non DST days, the result is the same as if asLocalTime is false.
+     *        forwards or backwards. On non DST days, the result is the same regardless of the value of
+     *        {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
      *         elapsed since the start of the day
      */
