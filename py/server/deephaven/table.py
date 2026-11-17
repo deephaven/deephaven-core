@@ -579,8 +579,10 @@ class RollupTable(JObjectWrapper):
             DHError
         """
         try:
+            with query_scope_ctx():
+                j_rollup_table = self.j_rollup_table.withFilter(and_(filters).j_filter)
             return RollupTable(
-                j_rollup_table=self.j_rollup_table.withFilter(and_(filters).j_filter),
+                j_rollup_table=j_rollup_table,
                 include_constituents=self.include_constituents,
                 aggs=self.aggs,
                 by=self.by,
@@ -763,8 +765,10 @@ class TreeTable(JObjectWrapper):
         """
 
         try:
+            with query_scope_ctx():
+                j_tree_table = self.j_tree_table.withFilter(and_(filters).j_filter)
             return TreeTable(
-                j_tree_table=self.j_tree_table.withFilter(and_(filters).j_filter),
+                j_tree_table=j_tree_table,
                 id_col=self.id_col,
                 parent_col=self.parent_col,
             )
@@ -2192,7 +2196,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         try:
             ops = to_sequence(ops)
             by = to_sequence(by)
-            with auto_locking_ctx(self):
+            with query_scope_ctx(), auto_locking_ctx(self):
                 return self._wrap_result(self.j_object.updateBy(j_array_list(ops), *by))
         except Exception as e:
             raise self._make_op_error(e, "update_by") from e
@@ -2876,6 +2880,23 @@ class Table(_TableOperations["Table"]):
             return Table(self.j_table.restrictSortTo(*cols))
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
+
+    def clear_sorting_restrictions(self) -> Table:
+        """The clear_sorting_restrictions method removes the sorting restrictions that restrict_sort_to applied to the
+        table, so the output table allows sorting on any column.
+
+        Returns:
+            a new table, or this table if it has no sorting restrictions
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(self.j_table.clearSortingRestrictions())
+        except Exception as e:
+            raise DHError(
+                e, "table clear_sorting_restrictions operation failed."
+            ) from e
 
     def with_order_for_column(
         self,
@@ -3604,9 +3625,9 @@ class PartitionedTable(JObjectWrapper):
                     for f in to_sequence(filters)
                 ]
             )
-            return PartitionedTable(
-                j_partitioned_table=self.j_partitioned_table.filter(j_filters)
-            )
+            with query_scope_ctx():
+                j_partitioned_table = self.j_partitioned_table.filter(j_filters)
+            return PartitionedTable(j_partitioned_table=j_partitioned_table)
         except Exception as e:
             raise DHError(e, "failed to apply filters to the partitioned table.") from e
 
@@ -3784,7 +3805,7 @@ class PartitionedTable(JObjectWrapper):
             ) from e
 
     def proxy(
-        self, require_matching_keys: bool = True, sanity_check_joins: bool = True
+        self, require_matching_keys: bool = True, sanity_check_joins: bool = False
     ) -> PartitionedTableProxy:
         """Makes a proxy that allows table operations to be applied to the constituent tables of this
         PartitionedTable.
@@ -3795,8 +3816,12 @@ class PartitionedTable(JObjectWrapper):
                 :meth:`~PartitionedTable.partitioned_transform`, default is True
             sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs
                 in exactly one constituent table of the underlying partitioned table. If the other table argument is
-                also a
-                PartitionedTableProxy, its constituents will also be subjected to this constraint.
+                also a PartitionedTableProxy, its constituents will also be subjected to this constraint. The check
+                also applies to :meth:`~PartitionedTableProxy.where_in` and :meth:`~PartitionedTableProxy.where_not_in`.
+                Default is False, meaning the check is skipped. The check adds work and limits the parallelism of
+                proxied joins, because it examines every row of every constituent and updates a shared data structure.
+                It can catch data errors that would otherwise produce results that differ from the same operation on
+                unpartitioned tables. Set it to True to run the check.
         """
         return PartitionedTableProxy(
             j_pt_proxy=self.j_partitioned_table.proxy(
@@ -3817,7 +3842,8 @@ class PartitionedTableProxy(_TableOperations["PartitionedTableProxy"]):
             :meth:`~PartitionedTable.partitioned_transform`, default is True
         sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs
             in exactly one constituent table of the underlying partitioned table. If the other table argument is also a
-            PartitionedTableProxy, its constituents will also be subjected to this constraint.
+            PartitionedTableProxy, its constituents will also be subjected to this constraint. The check also applies
+            to :meth:`~PartitionedTableProxy.where_in` and :meth:`~PartitionedTableProxy.where_not_in`.
     """
 
     j_object_type = _JPartitionedTableProxy

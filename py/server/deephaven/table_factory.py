@@ -114,7 +114,8 @@ def time_table(
 
         builder.period(to_j_duration(period))
 
-        if start_time:
+        # An int start_time of 0 is the Epoch, so test for None rather than for truth.
+        if start_time is not None:
             builder.startTime(to_j_instant(start_time))
 
         if blink_table:

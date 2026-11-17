@@ -470,6 +470,20 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             NameValidator.validateColumnName(columnName);
         }
 
+        /**
+         * Returns an independent copy of these instructions, so that changing the copy leaves these unchanged.
+         */
+        ColumnInstructions copy() {
+            final ColumnInstructions copy = new ColumnInstructions(columnName);
+            copy.parquetColumnName = parquetColumnName;
+            copy.codecName = codecName;
+            copy.codecArgs = codecArgs;
+            copy.useDictionary = useDictionary;
+            copy.fieldId = fieldId;
+            copy.unsignedLongTarget = unsignedLongTarget;
+            return copy;
+        }
+
         public String getColumnName() {
             return columnName;
         }
@@ -803,18 +817,29 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return Optional.ofNullable(onWriteCompleted);
         }
 
-        KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
-            // noinspection unchecked
-            return (columnNameToInstructions == null)
-                    ? null
-                    : (KeyedObjectHashMap<String, ColumnInstructions>) columnNameToInstructions.clone();
-        }
-
-        KeyedObjectHashMap<String, ColumnInstructions> copyParquetColumnNameToInstructions() {
-            // noinspection unchecked
-            return (parquetColumnNameToInstructions == null)
-                    ? null
-                    : (KeyedObjectHashMap<String, ColumnInstructions>) parquetColumnNameToInstructions.clone();
+        /**
+         * Copies these instructions' per-column instructions into {@code builder}, each column's as an independent
+         * copy, so that changing the builder leaves these instructions unchanged. A column's entry in the parquet
+         * column name map is the same object as its entry in the column name map, in the copy as here.
+         */
+        void copyColumnInstructionsInto(@NotNull final Builder builder) {
+            if (columnNameToInstructions != null) {
+                builder.columnNameToInstructions = new KeyedObjectHashMap<>(ColumnInstructions.COLUMN_NAME_KEY);
+                for (final ColumnInstructions columnInstructions : columnNameToInstructions.values()) {
+                    builder.columnNameToInstructions.put(columnInstructions.getColumnName(), columnInstructions.copy());
+                }
+            }
+            if (parquetColumnNameToInstructions != null) {
+                builder.parquetColumnNameToInstructions =
+                        new KeyedObjectHashMap<>(ColumnInstructions.PARQUET_COLUMN_NAME_KEY);
+                for (final ColumnInstructions columnInstructions : parquetColumnNameToInstructions.values()) {
+                    final ColumnInstructions copy = builder.columnNameToInstructions == null
+                            ? null
+                            : builder.columnNameToInstructions.get(columnInstructions.getColumnName());
+                    builder.parquetColumnNameToInstructions.put(columnInstructions.getParquetColumnName(),
+                            copy != null ? copy : columnInstructions.copy());
+                }
+            }
         }
 
         /**
@@ -916,8 +941,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 return;
             }
             final ReadOnly readOnlyParquetInstructions = (ReadOnly) parquetInstructions;
-            columnNameToInstructions = readOnlyParquetInstructions.copyColumnNameToInstructions();
-            parquetColumnNameToInstructions = readOnlyParquetInstructions.copyParquetColumnNameToInstructions();
+            readOnlyParquetInstructions.copyColumnInstructionsInto(this);
             compressionCodecName = readOnlyParquetInstructions.getCompressionCodecName();
             maximumDictionaryKeys = readOnlyParquetInstructions.getMaximumDictionaryKeys();
             maximumDictionarySize = readOnlyParquetInstructions.getMaximumDictionarySize();
@@ -938,6 +962,15 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             writeRowGroupStatistics = readOnlyParquetInstructions.writeRowGroupStatistics();
         }
 
+        /**
+         * Maps a parquet column name to a Deephaven column name: reads read parquet column {@code parquetColumnName} as
+         * Deephaven column {@code columnName}, and writes write Deephaven column {@code columnName} as parquet column
+         * {@code parquetColumnName}. When reading with a
+         * {@link #setColumnResolverFactory(ParquetColumnResolver.Factory) column resolver}, the mapping is ignored.
+         *
+         * @param parquetColumnName the parquet column name
+         * @param columnName the Deephaven column name
+         */
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
             final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
             ci.setParquetColumnName(parquetColumnName);
@@ -953,6 +986,24 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                                 + columnName
                                 + ": already mapped to columnName="
                                 + existing.getColumnName());
+            }
+            return this;
+        }
+
+        /**
+         * Removes every instruction for the Deephaven column {@code columnName}: its parquet column name mapping,
+         * codec, unsigned long target, field id and dictionary hint. Used for the columns of a data index or grouping
+         * table that are not key columns, which instructions copied from the indexed table must not affect.
+         *
+         * @param columnName the Deephaven column name
+         */
+        @InternalUseOnly
+        public Builder removeColumnInstructions(final String columnName) {
+            final ColumnInstructions ci =
+                    columnNameToInstructions == null ? null : columnNameToInstructions.remove(columnName);
+            if (ci != null && parquetColumnNameToInstructions != null
+                    && parquetColumnNameToInstructions.get(ci.getParquetColumnName()) == ci) {
+                parquetColumnNameToInstructions.remove(ci.getParquetColumnName());
             }
             return this;
         }
@@ -1209,6 +1260,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * resolution logic based on the table key and table location key. When set,
          * {@link #setTableDefinition(TableDefinition)} must also be set. As such, the factory is <i>not</i> used for
          * inference purposes.
+         *
+         * <p>
+         * A column resolver is the alternative to {@link #addColumnNameMapping(String, String) column name mappings}:
+         * when one is set, reads find every column, and all of a file's metadata, through the resolver, and any column
+         * name mappings are ignored. Per-column instructions keyed by Deephaven column name, such as codecs, still
+         * apply.
          *
          * <p>
          * This is not typically set by end-users.

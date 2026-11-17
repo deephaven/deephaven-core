@@ -35,10 +35,7 @@ Deephaven also doesn't search Python's built-in namespace. To use a Python built
 
 Some [query strings](./query-string-overview.md) can't use a function's local variables at all. They see only the global scope of the main script. The following query strings work this way:
 
-- [Formulas](./formulas.md) in [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) operations, such as [`rolling_formula_tick`](../reference/table-operations/update-by-operations/rolling-formula-tick.md).
-- [Filters](./filters.md) passed to a [partitioned table](./partitioned-tables.md)'s [`filter`](../reference/table-operations/partitioned-tables/partitioned-table-filter.md) method.
-- [Filters](./filters.md) passed to the [`with_filters`](../reference/table-operations/create/rollup.md#methods) method of a [rollup table](./rollup-table.md), and [formulas](./formulas.md) passed to its [`with_update_view`](../reference/table-operations/create/rollup.md#methods) method.
-- [Filters](./filters.md) passed to the [`with_filters`](/core/pydoc/code/deephaven.table.html#deephaven.table.TreeTable.with_filters) method of a [tree table](./tree-table.md).
+- [Formulas](./formulas.md) passed to the [`with_update_view`](../reference/table-operations/create/rollup.md#methods) method of a [rollup table](./rollup-table.md).
 - [Filters](./filters.md) and [formulas](./formulas.md) in node operations. You record these with the recorder that [`node_operation_recorder`](../reference/table-operations/create/rollup.md#methods) returns, then apply them with [`with_node_operations`](../reference/table-operations/create/rollup.md#methods).
 
 Deephaven's own [built-in functions, constants, and variables](#built-in-functions-constants-and-variables) are always available and don't come from the query scope.

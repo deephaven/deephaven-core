@@ -91,6 +91,13 @@ public class TestGroovyDeephavenSession {
     }
 
     @Test
+    public void testScriptPrefixRestoredAfterNamedScript() {
+        session.evaluateScript("x = 1", "namedScript").throwIfError();
+        final String className = session.getShell().parse("1").getClass().getName();
+        Assert.assertTrue(className, className.startsWith("Script_"));
+    }
+
+    @Test
     public void testNullCast() {
         session.evaluateScript("x = null; y = emptyTable(0).update(\"X = (java.util.List)x\")").throwIfError();
         final Table y = fetchTable("y");
