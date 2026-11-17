@@ -72,7 +72,8 @@ class KeyValueSpec(JObjectWrapper):
     """ The spec for specifying that when consuming a Kafka stream, the names for the key or value columns can be provided
     in the properties as 'deephaven.key.column.name' or 'deephaven.value.column.name' in the config, and otherwise default
     to 'KafkaKey' or 'KafkaValue'. The column type comes from 'deephaven.key.column.type' or 'deephaven.value.column.type',
-    or else from a recognized 'key.deserializer' or 'value.deserializer'; if neither is set, consuming raises an error.
+    or, when that is not set, from 'key.deserializer' or 'value.deserializer'. Consuming raises an error if neither is
+    set, or if the one used names an unsupported type or deserializer.
     """
 
     j_object_type = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume$KeyOrValueSpec")
@@ -189,18 +190,15 @@ def consume(
         key_spec (Optional[KeyValueSpec]): specifies how to map the Key field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(), avro_spec(), json_spec(),
             protobuf_spec(), or object_processor_spec() in this module, or the predefined KeyValueSpec.IGNORE or
-            KeyValueSpec.FROM_PROPERTIES. The default is None which
-            works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
-            for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
-            column name and type
+            KeyValueSpec.FROM_PROPERTIES. The default is None, which works the same as KeyValueSpec.FROM_PROPERTIES:
+            the single resulting column's name and type come from the kafka_config properties that
+            KeyValueSpec.FROM_PROPERTIES describes.
         value_spec (Optional[KeyValueSpec]): specifies how to map the Value field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(), avro_spec(), json_spec(),
             protobuf_spec(), or object_processor_spec() in this module, or the predefined KeyValueSpec.IGNORE or
-            KeyValueSpec.FROM_PROPERTIES. The default is None which
-            works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
-            for dictionary keys 'deephaven.value.column.name' and 'deephaven.value.column.type', for the single
-            resulting
-            column name and type
+            KeyValueSpec.FROM_PROPERTIES. The default is None, which works the same as KeyValueSpec.FROM_PROPERTIES:
+            the single resulting column's name and type come from the kafka_config properties that
+            KeyValueSpec.FROM_PROPERTIES describes.
         table_type (Optional[TableType]): a TableType, default is None, meaning to use TableType.blink()
 
     Returns:
@@ -250,18 +248,15 @@ def consume_to_partitioned_table(
         key_spec (Optional[KeyValueSpec]): specifies how to map the Key field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(), avro_spec(), json_spec(),
             protobuf_spec(), or object_processor_spec() in this module, or the predefined KeyValueSpec.IGNORE or
-            KeyValueSpec.FROM_PROPERTIES. The default is None which
-            works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
-            for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
-            column name and type
+            KeyValueSpec.FROM_PROPERTIES. The default is None, which works the same as KeyValueSpec.FROM_PROPERTIES:
+            the single resulting column's name and type come from the kafka_config properties that
+            KeyValueSpec.FROM_PROPERTIES describes.
         value_spec (Optional[KeyValueSpec]): specifies how to map the Value field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(), avro_spec(), json_spec(),
             protobuf_spec(), or object_processor_spec() in this module, or the predefined KeyValueSpec.IGNORE or
-            KeyValueSpec.FROM_PROPERTIES. The default is None which
-            works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
-            for dictionary keys 'deephaven.value.column.name' and 'deephaven.value.column.type', for the single
-            resulting
-            column name and type
+            KeyValueSpec.FROM_PROPERTIES. The default is None, which works the same as KeyValueSpec.FROM_PROPERTIES:
+            the single resulting column's name and type come from the kafka_config properties that
+            KeyValueSpec.FROM_PROPERTIES describes.
         table_type (Optional[TableType]): a TableType, specifying the type of the expected result's constituent tables,
             default is None, meaning to use TableType.blink()
 
