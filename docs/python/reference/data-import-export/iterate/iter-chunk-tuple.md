@@ -68,7 +68,7 @@ for chunk in source.iter_chunk_tuple(cols=["X", "Z"]):
     print(f"Column Z: {z}")
 ```
 
-The following example iterates over two of three columns a table, unpacking the rows in the for loop itself. Because the column are specified in the function call, it is tolerant of schema ordering changes.
+The following example iterates over two of three columns in a table and unpacks the rows in the for loop itself. Because the columns are specified in the function call, the code is tolerant of schema ordering changes.
 
 ```python
 from deephaven import empty_table

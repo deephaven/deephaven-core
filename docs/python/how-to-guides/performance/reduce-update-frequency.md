@@ -29,7 +29,7 @@ result = source.snapshot_when(trigger_table=trigger)
 
 ![The ticking `source`, `trigger`, and `result` tables above](../../assets/how-to/snapshot-when-basic.gif)
 
-The `trigger` time table adds its first row right away, so the first snapshot appears almost immediately. After that, `result` and its downstream tables change once every 5 seconds instead of every second. This design pattern is useful for reducing the amount of data that must be processed.
+The `trigger` time table adds its first row right away, so the first snapshot appears almost immediately. After that, `result` and its downstream tables change once every 5 seconds instead of every second.
 
 Each snapshot replaces the entire result, so every update sends all rows of `source` downstream. To pass along only the rows that changed since the previous snapshot, add `incremental=True` to the [`snapshot_when`](../../reference/table-operations/snapshot/snapshot-when.md) call:
 

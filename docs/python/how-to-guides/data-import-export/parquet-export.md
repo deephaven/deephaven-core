@@ -260,7 +260,7 @@ The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write
 - `max_dictionary_size`: The maximum number of bytes the writer should add to the dictionary before switching to non-dictionary encoding. The writer applies this limit only to `String` columns and columns of `String` arrays or vectors, and ignores it for a column whose [`use_dictionary`](#column-instructions) hint is `True`. Defaults to 2^20 (1,048,576).
 - `target_page_size`: The target page size in bytes. Defaults to 65,536 bytes (64 KiB), which you can change with the `Parquet.defaultTargetPageSize` configuration property.
 - `generate_metadata_files`: Whether to generate Parquet `_metadata` and `_common_metadata` files. Defaults to `False`.
-- `row_group_info`: Sets how the written data is divided into [row groups](./parquet-formats.md), the horizontal slices of rows that make up a Parquet file. The available [`RowGroupInfo`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.RowGroupInfo) options are:
+- `row_group_info`: Sets how the written data is divided into [row groups](./parquet-formats.md), the horizontal slices of rows that make up a Parquet file. Import [`RowGroupInfo`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.RowGroupInfo) with `from deephaven.parquet import RowGroupInfo`. The available [`RowGroupInfo`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.RowGroupInfo) options are:
   - `RowGroupInfo.single_group`: All data is within a single row group. This is the default.
   - `RowGroupInfo.max_rows(max_rows)`: Splits the data into row groups of no more than `max_rows` rows each.
   - `RowGroupInfo.max_groups(num_row_groups)`: Splits the data into the requested number of row groups of nearly equal size. If the row count is not evenly divisible by that number, some row groups contain one fewer row.
@@ -272,11 +272,15 @@ The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write
   - `write_partitioned` with a partitioned table: Writes no indexes.
 - `special_instructions`: Connection details for writing to S3 or Google Cloud Storage, provided as an [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) instance. See [Special instructions (S3 and GCS)](#special-instructions-s3-and-gcs).
 
-[`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md) also accepts a `base_name` argument, which sets the names of the Parquet files it writes in each partition directory.
+[`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md) also accepts a `base_name` argument, which sets the names of the Parquet files it writes in each partition directory. The default is `{uuid}`, which names each file `<uuid>.parquet`. The name can include these tokens:
+
+- `{uuid}`: a random UUID.
+- `{partitions}`: the partition values, joined with underscores. For example, `{partitions}-table` with partitioning columns `PC1` and `PC2` produces `PC1=pc1_PC2=pc2-table.parquet`.
+- `{i}`: an integer that counts up from 0 for the files in each directory.
 
 ### Column instructions
 
-The `col_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write), [`write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) must be a list of [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) instances. Each `ColumnInstruction` maps a column in the Deephaven table to a column in the resulting Parquet files, and optionally sets an object codec or dictionary encoding for that column.
+The `col_instructions` argument to [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) must be a list of [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) instances. Each `ColumnInstruction` maps a column in the Deephaven table to a column in the resulting Parquet files, and optionally sets an object codec or dictionary encoding for that column.
 
 [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) has the following arguments that apply when writing:
 
@@ -288,7 +292,7 @@ The `col_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.
 
 ### Special instructions (S3 and GCS)
 
-The `special_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write), [`write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) is relevant when writing to S3, an S3-compatible store, or Google Cloud Storage (`gs://` URIs), and takes an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. This class specifies details for connecting to the store.
+The `special_instructions` argument to [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) is relevant when writing to S3, an S3-compatible store, or Google Cloud Storage (`gs://` URIs), and takes an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. This class specifies details for connecting to the store.
 
 The following [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) arguments are relevant when writing. The API documentation lists the rest, including arguments that apply only to reads.
 

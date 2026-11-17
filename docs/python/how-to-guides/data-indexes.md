@@ -219,8 +219,7 @@ How [`where`](../reference/table-operations/filter/where.md) uses a data index d
   - Reading the index's [`table`](/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.DataIndex.table) property.
 - A file-level data index is one stored on disk with the data, such as an index [written with Parquet](#persist-data-indexes-with-parquet). Nothing has to compute it first. The engine uses it to filter that file without loading the entire index into memory.
 
-> [!NOTE]
-> Support for using data indexes with most filter types, beyond exact matches, came with the [predicate pushdown](./predicate-pushdown.md) framework. File-level data indexes support this starting in Deephaven 0.40.0, and table-level data indexes starting in Deephaven 41.0.
+File-level data indexes speed up these filter types starting in Deephaven 0.40.0, and table-level data indexes starting in Deephaven 41.0.
 
 The following filters can use the index created at the top of the code block. The example accesses the index's [`table`](/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.DataIndex.table) property before filtering:
 
@@ -432,7 +431,7 @@ print(has_data_index(disk_table_new, ["Key1", "Key2"]))
 A partitioning column is a column whose values come from the directory layout of a partitioned dataset, such as the `Date=2024-01-01` directories in a [key-value partitioned Parquet directory](./data-import-export/parquet-formats.md#key-value-partitioned-directories). Deephaven automatically creates a data index for each partitioning column. The engine first uses partitioning column values to choose which files to read. After that, it uses the partitioning column indexes like any other data index in query operations.
 
 > [!WARNING]
-> Do not create data indexes on partitioning or grouping columns. Deephaven automatically manages indexes for these columns internally. Adding a manual data index can interfere with this process and cause unexpected behavior. For example, passing a partitioning column by itself as an index in `index_columns` when you write a key-value partitioned Parquet directory raises an error. Calling [`data_index`](../reference/engine/data-index.md) on a partitioning column returns the index Deephaven already created.
+> Do not create data indexes on partitioning columns. Deephaven automatically manages indexes for these columns internally. Adding a manual data index can interfere with this process and cause unexpected behavior. For example, passing a partitioning column by itself as an index in `index_columns` when you write a key-value partitioned Parquet directory raises an error. Calling [`data_index`](../reference/engine/data-index.md) on a partitioning column returns the index Deephaven already created.
 
 ## Performance
 
@@ -450,7 +449,7 @@ Even when a usable index exists, the engine skips it in these cases:
 
 ### Benchmark scripts
 
-If you're interested in how data indexes affect query performance, the scripts below measure each operation with and without indexes. You'll notice that performance improves in some cases and gets worse in others.
+If you're interested in how data indexes affect query performance, the scripts below measure each operation with and without indexes. Performance improves in some cases and gets worse in others.
 
 This first script sets up the tests:
 
