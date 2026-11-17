@@ -2,7 +2,9 @@
 title: Arrays
 ---
 
-Arrays are an in-memory ordered data structure common in many programming languages. They are typically used to store multiple elements of the same type in an easily iterable manner. Arrays in the Deephaven engine are implemented by [Vector](https://deephaven.io/core/javadoc/io/deephaven/vector/Vector.html) and its subclasses.
+Arrays are an in-memory ordered data structure common in many programming languages. They are typically used to store multiple elements of the same type in an easily iterable manner.
+
+Columns can hold Java arrays, such as `int[]`, or Deephaven vectors, implemented by [Vector](/core/javadoc/io/deephaven/vector/Vector.html) and its subinterfaces. Grouping operations and column arrays such as `X_` produce vectors. See [Arrays vs vectors](../../../conceptual/arrays-vs-vectors.md).
 
 The Deephaven Query Language comes with its own built-in array functionality.
 

@@ -597,4 +597,42 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         // an ordinary endpoint includes the null row, which sorts below every value
         assertEquals(3, table.where(DoubleRangeFilter.lt("D", 0)).size());
     }
+
+    @Test
+    public void testOctalLiteralsRejected() {
+        final Table table = TableTools.emptyTable(3).update(
+                "I = ii == 0 ? 0 : ii == 1 ? 511 : 777",
+                "B = (byte) (I % 128)",
+                "S = (short) I",
+                "L = (long) I",
+                "F = (float) I",
+                "D = (double) I",
+                "C = (char) I",
+                "BI = java.math.BigInteger.valueOf(I)",
+                "BD = java.math.BigDecimal.valueOf(I)");
+        for (final String column : new String[] {"I", "B", "S", "L", "F", "D", "C", "BI", "BD"}) {
+            for (final String filter : new String[] {
+                    "%s == 0777", "%s = 0777", "%s != 0777", "0777 == %s",
+                    "%s < 0777", "%s <= 0777", "%s > 0777", "%s >= 0777", "0777 < %s",
+                    "%s in 0777", "%s in 0, 0777", "%s not in 0777",
+                    "%s == -0777", "%s == 0777L", "%s == 0_7", "%s == 00", "%s == 08",
+                    "%s + 0 == 0777"}) {
+                final String expression = String.format(filter, column);
+                final RuntimeException ex = assertThrows(expression, RuntimeException.class,
+                        () -> table.where(expression));
+                final String trace = org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(ex);
+                if (!trace.contains("would be interpreted as octal, which the query language does not support")) {
+                    fail("Unexpected exception for " + expression + ":\n" + trace);
+                }
+            }
+        }
+
+        // a lone zero and hexadecimal literals are not octal
+        assertEquals(1, table.where("I == 0").size());
+        assertEquals(1, table.where("I == 0x1FF").size());
+        assertEquals(1, table.where("I == 0X1FF").size());
+        assertEquals(2, table.where("I in 0, 511").size());
+        assertEquals(2, table.where("I < 0x309").size());
+        assertEquals(1, table.where("L == 0L").size());
+    }
 }

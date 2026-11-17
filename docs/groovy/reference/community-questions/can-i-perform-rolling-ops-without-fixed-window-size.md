@@ -6,11 +6,20 @@ title: How can I perform rolling operations without a fixed window size?
 
 <p></p>
 
-You can accomplish this with an [`update`](../table-operations/select/update.md) or an [`updateView`](../table-operations/select/update-view.md) and two [`updateBy`](../table-operations/update-by-operations/updateBy.md) operations. Say, for instance, you have a `source` table with two columns: `Value` and `Sym`. You want to calculate the running sum of `Value`, but have that sum reset every time `DesiredValue` occurs in `Sym`. A solution would look something like this:
+You can accomplish this with an [`updateView`](../table-operations/select/update-view.md) and two [`updateBy`](../table-operations/update-by-operations/updateBy.md) operations. Say, for instance, you have a `source` table with two columns: `Value` and `Sym`. You want to calculate the running sum of `Value`, but have that sum reset every time `DesiredValue` occurs in `Sym`. The first `updateBy` numbers each segment with a cumulative sum of the reset marker, and the second sums `Value` within each segment:
 
-```groovy skip-test
-result = source.updateView("Counter = Sym == `DesiredValue`").updateBy(CumSum("SumValue = Value", "Counter"))
+```groovy order=source,result
+source = newTable(
+    stringCol("Sym", "A", "A", "DesiredValue", "B", "B", "DesiredValue", "C"),
+    intCol("Value", 1, 2, 3, 4, 5, 6, 7),
+)
+
+result = source.updateView("IsReset = Sym == `DesiredValue` ? 1 : 0")
+    .updateBy(CumSum("GroupId = IsReset"))
+    .updateBy(CumSum("SumValue = Value"), "GroupId")
 ```
+
+This uses [`CumSum`](../table-operations/update-by-operations/cum-sum.md); the same group-ID column works with any windowed `Rolling*` operation.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

@@ -25,9 +25,9 @@ DynamicTableWriter(definition, constantValues)
 Column names.
 
 </Param>
-<Param name="columnTypes" type="Class[]">
+<Param name="columnTypes" type="Type[]">
 
-Column data types.
+Column data types, as [`io.deephaven.qst.type.Type`](/core/javadoc/io/deephaven/qst/type/Type.html) objects, such as `Type.intType` or `Type.stringType`.
 
 </Param>
 <Param name="header" type="TableHeader">
@@ -71,11 +71,15 @@ In this example, `DynamicTableWriter` is used to create a table with two columns
 - The second contains a string.
 
 ```groovy ticking-table order=null reset
+import io.deephaven.engine.table.ColumnDefinition
+import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.table.impl.util.DynamicTableWriter
 
-columnNames = ["Numbers", "Words"] as String[]
-columnTypes = [int.class, String.class] as Class[]
-tableWriter = new DynamicTableWriter(columnNames, columnTypes)
+definition = TableDefinition.of(
+    ColumnDefinition.ofInt("Numbers"),
+    ColumnDefinition.ofString("Words")
+)
+tableWriter = new DynamicTableWriter(definition)
 
 result = tableWriter.getTable()
 
@@ -96,11 +100,15 @@ The example above writes data to `result` from the main thread. As a result, the
 The example below uses a dedicated thread to write data to the table. The Deephaven web interface immediately updates to display all `result` table changes.
 
 ```groovy ticking-table order=null reset
+import io.deephaven.engine.table.ColumnDefinition
+import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.table.impl.util.DynamicTableWriter
 
-columnNames = ["Numbers", "Words"] as String[]
-columnTypes = [int.class, String.class] as Class[]
-tableWriter = new DynamicTableWriter(columnNames, columnTypes)
+definition = TableDefinition.of(
+    ColumnDefinition.ofInt("Numbers"),
+    ColumnDefinition.ofString("Words")
+)
+tableWriter = new DynamicTableWriter(definition)
 
 result = tableWriter.getTable()
 

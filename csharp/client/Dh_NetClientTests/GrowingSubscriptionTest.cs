@@ -154,6 +154,122 @@ public class GrowingSubscriptionTest {
   }
 
   /// <summary>
+  /// A table whose rows are being removed from the top of its key space while the snapshot is delivering it from
+  /// the bottom. A full subscription receives the server's entire removed set, so a delta between rounds names
+  /// rows this client has not been given yet. Those used to be converted strictly and throw out of SpaceMapper:
+  /// "Of the 25 keys specified in Interval { Begin = 299960, ... }, the set only contains 0 keys".
+  /// </summary>
+  [Test]
+  public async Task TableLosingUndeliveredRowsIsFullyDelivered() {
+    // The delta removes a few rows from the bottom of the key space, which the first round has delivered, along
+    // with many from the top, which the snapshot has not reached. The former make the delta visible to the client.
+    const int removedFromBottom = 10;
+    const int removedFromTop = 1_000;
+    var delivery = await AssertFullyDelivered(new Scenario {
+      TableName = "growing_removes",
+      Script = run => Expensive + "\n\n" + $"""
+        # The keys of the rows removed once the snapshot is under way; empty until then.
+        blacklist_{run} = input_table(init_table=empty_table(0).update(["K = ii"]))
+        _cols = ["C%d = ii * %d" % (i, i + 1) for i in range(30)]
+        growing_removes_{run} = (empty_table({BaseRows}).update(["K = ii"] + _cols)
+            .update_view(["Slow = (long) expensive(K)"])
+            .where_not_in(blacklist_{run}, "K"))
+        """,
+      Delta = (manager, run) => {
+        using var blacklist = manager.FetchTable($"blacklist_{run}");
+        using var bottom = manager.EmptyTable(removedFromBottom).Update("K = ii");
+        using var top = manager.EmptyTable(removedFromTop).Update($"K = {BaseRows - removedFromTop} + ii");
+        using var keys = bottom.Merge(top);
+        blacklist.AddTable(keys);
+      },
+      // A delta that lands after the snapshot has completed removes rows too, all of them at once; only one that
+      // arrives while the rows removed from the top are still undelivered shows the scenario.
+      DeltaObserved = since => since.Any(r => r.Removed != 0 && r.RowsBefore <= BaseRows - removedFromTop),
+      DeltaDescription = "the delta removing rows arrives while the rows removed from the top are still undelivered",
+      SettlesAt = BaseRows - removedFromBottom - removedFromTop,
+    });
+
+    // The delta is the one update that removes rows. It must have erased only the rows from the bottom, and it must
+    // have arrived while the client held fewer rows than the first key removed from the top, so that none of the
+    // rows removed from the top was held and the removes naming them had to be skipped.
+    var removes = delivery.SinceDelta.Where(r => r.Removed != 0).ToList();
+    await Assert.That(removes.Count).IsEqualTo(1).Because("exactly one update should have removed rows");
+    await Assert.That(removes[0].Removed).IsEqualTo((UInt64)removedFromBottom);
+    await Assert.That(removes[0].RowsBefore).IsLessThanOrEqualTo((Int64)(BaseRows - removedFromTop))
+      .Because("the delta should have arrived before the snapshot reached the rows removed from the top");
+
+    // Columns are K, C0..C29, Slow. What survives is the keys between the two removed ranges, in order.
+    var table = delivery.Table;
+    var columns = Enumerable.Range(0, 32).Select(c => Longs(table, c)).ToArray();
+    var keys = columns[0];
+    var slow = columns[31];
+    await Assert.That(FirstBadRow(keys.Length, i => {
+      var expectedKey = removedFromBottom + i;
+      if (keys[i] != expectedKey) {
+        return $"K is {keys[i]}, expected {expectedKey}";
+      }
+      for (var c = 0; c != 30; ++c) {
+        if (columns[c + 1][i] != keys[i] * (c + 1)) {
+          return $"C{c} is {columns[c + 1][i]}, expected {keys[i] * (c + 1)}";
+        }
+      }
+      return slow[i] == keys[i] * 3 ? null : $"Slow is {slow[i]}, expected {keys[i] * 3}";
+    })).IsEqualTo("");
+  }
+
+  /// <summary>
+  /// A table that gains rows ahead of the region the snapshot has delivered. The server tracks what the client
+  /// holds as a range of positions, so each insertion pushes the last delivered rows out of that range, and the
+  /// next round sends them again. This client used to insert a re-sent row strictly: "This probably means
+  /// duplicates were inserted".
+  /// </summary>
+  [Test]
+  public async Task TableGainingRowsAheadOfTheSnapshotIsFullyDelivered() {
+    const int insertedRows = 1_000;
+    var delivery = await AssertFullyDelivered(new Scenario {
+      TableName = "growing_inserts",
+      Script = run => Expensive + "\n\n" + $"""
+        # The rows inserted once the snapshot is under way; empty until then. This constituent comes first in the
+        # merge, so its rows take the lowest row keys and land ahead of every base row.
+        inserted_{run} = input_table(init_table=empty_table(0).update(["K = ii", "Price = ii * 2.5"]))
+        _base = empty_table({BaseRows}).update(["K = ii", "Price = ii * 1.5"]).update_view(["Slow = (long) expensive(K)"])
+        growing_inserts_{run} = merge([inserted_{run}.update_view(["Slow = (long) expensive(K)"]), _base])
+        """,
+      Delta = (manager, run) => {
+        using var inserted = manager.FetchTable($"inserted_{run}");
+        using var rows = manager.EmptyTable(insertedRows).Update("K = 9_000_000 + ii", "Price = ii * 2.5");
+        inserted.AddTable(rows);
+      },
+      // The inserted rows push as many delivered rows out of the server's range, and the rounds that follow send
+      // each of those again, which this client reports as a row removed and added back. Nothing else removes a row.
+      DeltaObserved = since => since.Any(r => r.Removed != 0),
+      DeltaDescription = "the rows the insertion pushed out of the server's range are sent again",
+      SettlesAt = insertedRows + BaseRows,
+    });
+
+    var reSent = delivery.SinceDelta.Aggregate(0UL, (sum, r) => sum + r.Removed);
+    await Assert.That(reSent).IsEqualTo((UInt64)insertedRows)
+      .Because("each delivered row the insertion pushed out of the server's range should have been sent again");
+
+    // The inserted rows come first, with keys from 9,000,000 up; the base rows follow, with keys 0, 1, 2, ...
+    var table = delivery.Table;
+    var keys = Longs(table, 0);
+    var prices = Doubles(table, 1);
+    var slow = Longs(table, 2);
+    await Assert.That(FirstBadRow(keys.Length, i => {
+      var expectedKey = i < insertedRows ? 9_000_000 + i : i - insertedRows;
+      if (keys[i] != expectedKey) {
+        return $"K is {keys[i]}, expected {expectedKey}";
+      }
+      var expectedPrice = i < insertedRows ? (keys[i] - 9_000_000) * 2.5 : keys[i] * 1.5;
+      if (prices[i] != expectedPrice) {
+        return $"Price is {prices[i]}, expected {expectedPrice}";
+      }
+      return slow[i] == keys[i] * 3 ? null : $"Slow is {slow[i]}, expected {keys[i] * 3}";
+    })).IsEqualTo("");
+  }
+
+  /// <summary>
   /// What the subscription reported for one update: the row count before it, and the sizes of the removed, added
   /// and modified sets it carried, the last being the largest over the columns.
   /// </summary>

@@ -25,7 +25,7 @@ import java.util.Set;
 public abstract class DataIndexInfo {
 
     /**
-     * @return The column names
+     * @return The parquet names of the key columns
      */
     @Value.Parameter
     public abstract Set<String> columns();
