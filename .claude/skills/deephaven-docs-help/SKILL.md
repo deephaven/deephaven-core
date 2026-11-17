@@ -29,7 +29,7 @@ if it answers a question below, don't ask that question.
    - A new page, a rewritten page, a PR touching several sections, or "is this ready to
      publish": recommend a **full review** (`deephaven-docs-review-full`: accuracy, then
      structure, then style).
-   - Unclear: recommend the full review, since it is the safer miss.
+   - Unclear: recommend the full review, since it is a safe fallback.
 3. **Offer the pick list**, with your recommendation first and each option's cost in plain words:
    - **Quick spot check**: verifies the changed lines and the sentences directly around them
      against source, for one isolated change. Fastest.
