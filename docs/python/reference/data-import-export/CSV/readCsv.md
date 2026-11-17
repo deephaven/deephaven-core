@@ -9,7 +9,7 @@ The `read_csv` method will read a CSV file into an in-memory table.
 ```python syntax
 read_csv(
     path: str,
-    header: dict[str, dht.DType] = None,
+    header: Sequence[str] | dict[str, dht.DType] = None,
     headless: bool = False,
     header_row: int = 0
     skip_rows: int = 0,
@@ -21,6 +21,7 @@ read_csv(
     quote: str = '"',
     ignore_surrounding_spaces: bool = True,
     trim: bool = False,
+    col_types: dict[str, dht.DType] = None,
 ) -> Table:
 ```
 
@@ -35,9 +36,12 @@ read_csv(
 The file to load into a table. Note that compressed files _are_ accepted: paths ending in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst", or ".tar" will automatically be decompressed before they are read.
 
 </Param>
-<Param name="header" type="dict" optional>
+<Param name="header" type="Sequence[str] | dict" optional>
 
-Define a dictionary for the header and the data type: `[str, DataType]`. Default is `None`.
+The column names, applied by position. The first name goes to the first column of the file, the second name to the second column, and so on. When the file has a header row, these names replace the names in it. They are not matched against it. The number of names sets the number of columns. Default is `None`, which uses the file's header row, or `Column1`, `Column2`, and so on for a headless file.
+
+- A sequence of names only renames the columns. Their types are inferred, and `col_types` can set them.
+- A dict maps each name to its data type and sets both. Its keys are still applied by position, so list them in the file's column order. A dict in a different order puts names and types on the wrong columns, with no error when the types happen to parse. To set types by name, use `col_types` instead. A dict can't be combined with `col_types`.
 
 </Param>
 <Param name="headless" type="bool" optional>
@@ -106,6 +110,13 @@ Trim leading and trailing blanks from non-quoted values. Default is `True`.
 Trim leading and trailing blanks from inside quoted values. Default is `False`.
 
 </Param>
+<Param name="col_types" type="dict" optional>
+
+The data types of some or all columns, matched by name, in any order: `dict[str, DType]`. A column left out keeps its inferred type. Default is `None`, which infers every type that a `header` dict doesn't set.
+
+The names are the header names before Deephaven turns them into legal column names. These are the names in `header` when it's given. Otherwise they're the file's header names as written, such as `my venue` for the column that the table shows as `my_venue`, or `Column1`, `Column2`, and so on for a headless file. A name that matches no column raises an error.
+
+</Param>
 <Param name="charset" type="str" optional>
 
 The character set. Default is `utf-8`.
@@ -161,6 +172,18 @@ from deephaven import read_csv
 
 result = read_csv(
     "https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro.csv"
+)
+```
+
+In the following example, `col_types` sets the types of two columns by name. The keys can be in any order, and the `Year` column, which is left out, keeps its inferred type.
+
+```python
+from deephaven import read_csv
+import deephaven.dtypes as dht
+
+result = read_csv(
+    "https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro.csv",
+    col_types={"Title": dht.string, "Score": dht.double},
 )
 ```
 

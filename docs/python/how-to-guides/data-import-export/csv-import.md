@@ -82,19 +82,38 @@ deniro = read_csv(
 )
 ```
 
-Because no column names are provided, the table uses default column names (`Column1`, `Column2`, etc.). To name the columns, pass `header` a dict that maps each column name to its type. Keys are applied by position, so list them in the file's column order.
+Because no column names are provided, the table uses default column names (`Column1`, `Column2`, etc.). To name the columns, pass `header` a list of names in the file's column order. To set the types of some columns, pass `col_types` a dict that maps those names to types.
 
 ```python order=deniro
 from deephaven import read_csv
 import deephaven.dtypes as dht
 
-header = {"Year": dht.int64, "Score": dht.int64, "Title": dht.string}
 deniro = read_csv(
     "https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro_headerless.csv",
-    header=header,
+    header=["Year", "Score", "Title"],
+    col_types={"Year": dht.int64, "Score": dht.int64},
     headless=True,
 )
 ```
+
+### Set column types
+
+[`read_csv`](../../reference/data-import-export/CSV/readCsv.md) infers each column's type from its data. To set the types yourself, pass `col_types` a dict that maps column names to types. It matches columns by name, so the keys can be in any order, and you only list the columns you want to set. The other columns keep their inferred types.
+
+```python order=deniro
+from deephaven import read_csv
+import deephaven.dtypes as dht
+
+deniro = read_csv(
+    "https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro.csv",
+    col_types={"Title": dht.string, "Score": dht.double},
+)
+```
+
+The names in `col_types` are the header names as written in the file, or the names in `header` when you pass a list there. Deephaven changes some header names to make them legal column names, for example `my venue` becomes `my_venue`. In `col_types`, use `my venue`. A name that matches no column raises an error.
+
+> [!WARNING]
+> `header` also accepts a dict that maps names to types, but it applies the keys by position and replaces the file's column names. If the dict lists the columns in a different order than the file, the names and types go to the wrong columns, with no error when the types happen to parse. To set types by name, use `col_types`.
 
 ### Other delimiters
 
