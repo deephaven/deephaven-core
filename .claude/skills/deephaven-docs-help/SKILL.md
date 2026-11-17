@@ -20,14 +20,19 @@ if it answers a question below, don't ask that question.
    docs changes, ask which page or change to look at, even when the tree has other changes
    such as code or skill edits. Stop there until you have one.
 2. **Size it.** Use the target to pick a recommendation:
-   - One sentence, one snippet, one parameter name, or one paragraph changed: recommend a
-     **spot check** (`deephaven-core-accuracy-spot-check`).
+   - One isolated change (one sentence, one snippet, one parameter name, or a paragraph that
+     makes a single claim): recommend a **spot check** (`deephaven-core-accuracy-spot-check`).
+     The spot check excludes edits that touch several sections or make several independent
+     claims, so don't recommend it for those.
+   - Several independent claims or several sections changed, and the person only cares whether
+     it is true: recommend an **accuracy check** (`deephaven-core-accuracy-check`).
    - A new page, a rewritten page, a PR touching several sections, or "is this ready to
      publish": recommend a **full review** (`deephaven-docs-review-full`: accuracy, then
      structure, then style).
    - Unclear: recommend the full review, since it is the safer miss.
 3. **Offer the pick list**, with your recommendation first and each option's cost in plain words:
-   - **Quick spot check**: verifies only the changed lines against source. Fastest.
+   - **Quick spot check**: verifies the changed lines and the sentences directly around them
+     against source, for one isolated change. Fastest.
    - **Full review**: accuracy, structure, and style on the whole page. Slowest, most thorough.
    - **One dimension**: accuracy only (`deephaven-core-accuracy-check`), structure only
      (`deephaven-doc-structure-review`), or style only (`deephaven-writing-style`).
