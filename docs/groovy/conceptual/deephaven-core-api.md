@@ -291,7 +291,7 @@ To use websockets over HTTPS as well, set the `useWebsockets` connection option 
 - [Tree tables](../how-to-guides/tree-table.md)
 - [Partitioned tables](../how-to-guides/partitioned-tables.md)
 - [Input tables](../how-to-guides/input-tables.md)
-- [Barrage performance](../how-to-guides/performance/barrage-performance.md)
+- [Monitor and tune Barrage performance](../how-to-guides/performance/barrage-performance.md)
 - [Arrow Flight and Deephaven](../how-to-guides/data-import-export/arrow-flight.md)
 - [Connecting to a Deephaven Flight SQL server](../how-to-guides/flight-sql.md)
 - [Use the JS API](../how-to-guides/use-jsapi.md)

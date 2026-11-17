@@ -208,7 +208,7 @@ localFiltered = barrageSession.subscribe(filteredRef, subOptions).entireTable().
 ## Related documentation
 
 - [What is Barrage?](../conceptual/what-is-barrage.md)
-- [Barrage metrics](./performance/barrage-performance.md)
+- [Monitor and tune Barrage performance](./performance/barrage-performance.md)
 - [Share tables with URIs](./use-uris.md)
 - [Capture Python client tables with Barrage](/core/docs/how-to-guides/capture-tables/)
 - [Anonymous authentication](./authentication/auth-anon.md)
