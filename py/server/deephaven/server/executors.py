@@ -4,12 +4,11 @@
 """
 Support for running operations on JVM server threads, so that they can be given work from python. There are two
 executors, "serial" and "concurrent". Any task that will take an exclusive UGP lock should use the serial executor,
-otherwise the concurrent executor should be used. In the future there may be a "fast" executor, for use when there is
-no chance of using either lock.
+otherwise the concurrent executor should be used.
 
 Both executors currently share one server thread, so tasks submitted to either one run one at a time, in the order
 they were submitted. Tasks submitted to "concurrent" do not run in parallel. A later version may give the executors
-separate thread pools (deephaven-core#4942), so don't rely on this ordering.
+separate thread pools, so don't rely on this ordering.
 """
 
 from collections.abc import Callable
