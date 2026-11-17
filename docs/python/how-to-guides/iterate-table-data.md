@@ -85,9 +85,9 @@ for x, y in source.iter_chunk_tuple(chunk_size=5):
 
 Null values in primitive columns arrive as Deephaven's [null constants](../reference/query-language/types/nulls.md), not as `None` or `NaN`. For example, a null `int` value arrives as `-2147483648`, the value of `NULL_INT`. This applies to both the row-based and chunk-based methods.
 
-Null values in object columns arrive differently in the two kinds of method. The row-based methods return `None`. The chunk-based methods convert each column to a NumPy array, so a null `String` arrives as the string `"None"`, a null `Instant` arrives as `NaT`, and a null `Boolean` arrives as `True`. If a `String` or `Boolean` column can contain nulls, use a row-based method, or filter out the nulls with [`where`](../reference/table-operations/filter/where.md) before you iterate.
+Null values in object columns arrive differently in the two kinds of method. The row-based methods return `None`. The chunk-based methods convert each column to a NumPy array, so a null `String` arrives as the string `"None"`, a null `Instant` arrives as `NaT`, and a null `Boolean` arrives as `True`. If a `String` or `Boolean` column can contain nulls, pass `null_as_none=True` to a chunk-based method. Those two column types then become `object` arrays that hold `None` for a null. You can also use a row-based method, or filter out the nulls with [`where`](../reference/table-operations/filter/where.md) before you iterate.
 
-The following example iterates over a table that has a null in its second row, first one row at a time and then one chunk at a time:
+The following example iterates over a table that has a null in its second row: first one row at a time, then one chunk at a time, and then one chunk at a time with `null_as_none=True`:
 
 ```python order=:log,source
 from deephaven import empty_table
@@ -98,6 +98,9 @@ for row in source.iter_dict():
     print(row)
 
 for chunk in source.iter_chunk_dict():
+    print(chunk)
+
+for chunk in source.iter_chunk_dict(null_as_none=True):
     print(chunk)
 ```
 

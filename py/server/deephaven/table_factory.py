@@ -130,9 +130,11 @@ def new_table(cols: Sequence[InputColumn] | Mapping[str, Sequence]) -> Table:
     """Creates an in-memory table from a list of input columns or a Dict (mapping) of column names and column data.
     Each column must have an equal number of elements.
 
-    When the input is a mapping, an intermediary Pandas DataFrame is created from the mapping, which then is converted
-    to an in-memory table. In this case, as opposed to when the input is a list of InputColumns, the column types are
-    determined by Pandas' type inference logic.
+    When the input is a mapping, pyarrow infers each column's type from its data. In a float column, a None becomes a
+    null and a NaN stays NaN. When pyarrow can't type a column, such as a list that mixes ints and strings, or when a
+    column is empty or all None, the mapping goes through a pandas DataFrame instead, and pandas infers the types. So
+    does a mapping with a pandas Series value, so that rows line up by the index. On the pandas path, NaN and None
+    both become nulls in every float column.
 
     Args:
         cols (Union[Sequence[InputColumn], Mapping[str, Sequence]]): a list of InputColumns or a mapping of columns
@@ -146,16 +148,43 @@ def new_table(cols: Sequence[InputColumn] | Mapping[str, Sequence]) -> Table:
     """
     try:
         if isinstance(cols, Mapping):
-            from deephaven.pandas import to_table
-
-            df = pd.DataFrame(cols).convert_dtypes()
-            return to_table(df)
+            return _new_table_from_mapping(cols)
         else:
             return Table(
                 j_table=_JTableFactory.newTable(*[col.j_column for col in cols])
             )
     except Exception as e:
         raise DHError(e, "failed to create a new time table.") from e
+
+
+def _new_table_from_mapping(cols: Mapping[str, Sequence]) -> Table:
+    """Creates an in-memory table from a mapping of column names to column data."""
+    import pyarrow as pa
+
+    from deephaven import arrow
+    from deephaven.pandas import to_table
+
+    # Arrow keeps a None apart from a float NaN, and keeps a float column a float column. pandas turns a None in a
+    # float column into NaN, and convert_dtypes turns a float column of whole numbers into an integer column.
+    # pandas lines up Series values by their index and Arrow ignores the index, so Series go through pandas.
+    pa_table = None
+    if not any(isinstance(v, pd.Series) for v in cols.values()):
+        try:
+            pa_table = pa.table(dict(cols))
+        except (pa.ArrowException, OverflowError, TypeError):
+            # TypeError covers a key that isn't a str.
+            pass
+
+    # An empty or all-None column gets the Arrow null type, which would become a java.lang.Object column.
+    if pa_table is not None and all(
+        field.type != pa.null() and arrow.is_deephaven_compatible(field.type)
+        for field in pa_table.schema
+    ):
+        return arrow.to_table(pa_table)
+
+    # pyarrow can't type some columns, such as a list that mixes ints and strings, or an int too big for 64 bits.
+    # pandas types them as Python objects.
+    return to_table(pd.DataFrame(cols).convert_dtypes())
 
 
 def merge(tables: Sequence[Table]) -> Table:

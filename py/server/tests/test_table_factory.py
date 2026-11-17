@@ -2,6 +2,9 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
+import datetime
+import decimal
+import math
 import threading
 import unittest
 from dataclasses import dataclass
@@ -9,6 +12,7 @@ from time import monotonic, sleep
 
 import jpy
 import numpy as np
+import pandas as pd
 
 from deephaven import (
     DHError,
@@ -264,6 +268,61 @@ class TableFactoryTestCase(BaseTestCase):
         t = new_table(cols=d_cols)
         for tc, dtype in zip(t.columns, dtype_np_cols_map.keys()):
             self.assertEqual(tc.data_type, dtype)
+
+    def test_new_table_dict_arrow_types(self) -> None:
+        t = new_table(
+            {
+                "Whole": [1.0, 2.0, 3.0],
+                "NanNone": [1.5, math.nan, None],
+                "Date": [datetime.date(2024, 1, 1), None, None],
+                "Time": [datetime.time(1, 2), None, None],
+                "Delta": [datetime.timedelta(seconds=5), None, None],
+                "Decimal": [decimal.Decimal("1.5"), None, None],
+                "Bytes": [b"ab", None, None],
+                "List": [[1, 2], [3], None],
+            }
+        )
+        self.assertEqual(
+            [
+                dtypes.double,
+                dtypes.double,
+                dtypes.LocalDate,
+                dtypes.LocalTime,
+                dtypes.Duration,
+                dtypes.BigDecimal,
+                dtypes.byte_array,
+                dtypes.long_array,
+            ],
+            [c.data_type for c in t.columns],
+        )
+        nan_none = [row[0] for row in t.iter_tuple(cols="NanNone")]
+        self.assertEqual(1.5, nan_none[0])
+        self.assertTrue(math.isnan(nan_none[1]))
+        self.assertEqual(NULL_DOUBLE, nan_none[2])
+
+    def test_new_table_dict_pandas_fallback(self) -> None:
+        t = new_table(
+            {
+                "Mixed": [1, "x"],
+                "AllNone": [None, None],
+                "BigInt": [2**64, 1],
+            }
+        )
+        for c in t.columns:
+            self.assertEqual(dtypes.PyObject, c.data_type)
+
+        self.assertEqual(dtypes.int64, new_table({"Empty": []}).columns[0].data_type)
+
+        aligned = new_table(
+            {
+                "A": pd.Series([1, 2], index=[5, 6]),
+                "B": pd.Series([3, 4], index=[6, 5]),
+            }
+        )
+        self.assertEqual([(1, 4), (2, 3)], [tuple(r) for r in aligned.iter_tuple()])
+
+        half = new_table({"Half": np.array([1.5, 2.5], dtype=np.float16)})
+        self.assertEqual([1.5, 2.5], [r[0] for r in half.iter_tuple()])
 
     def test_new_table_nulls(self):
         null_cols = [

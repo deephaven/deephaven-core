@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
+import math
 import unittest
 from dataclasses import dataclass
 
@@ -38,6 +39,7 @@ from deephaven.constants import (
 )
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import _decode_for_pandas, to_pandas, to_table
+from deephaven.table import Table
 from tests.barrage_encodings import with_barrage_encodings
 from tests.testbase import BaseTestCase
 
@@ -46,6 +48,30 @@ from tests.testbase import BaseTestCase
 class CustomClass:
     f1: int
     f2: str
+
+
+def _nan_as_null_where_missing(source: Table, df: pd.DataFrame) -> Table:
+    """Returns the table that to_table(df) should produce for a df made from source by to_pandas.
+
+    to_table turns every missing value in a nullable float column into a Deephaven null. Depending on the pandas version
+    and the dtype backend, to_pandas can turn a Deephaven NaN into a missing value, so such a NaN comes back as null.
+    """
+    formulas = []
+    for name, null, j_type in [
+        ("Float_", "NULL_FLOAT", "float"),
+        ("Double_", "NULL_DOUBLE", "double"),
+    ]:
+        if name not in df.columns:
+            continue
+        values = [row[name] for row in source.iter_dict(cols=name)]
+        nan_is_missing = [
+            is_missing
+            for value, is_missing in zip(values, df[name].isna(), strict=True)
+            if math.isnan(value)
+        ]
+        if any(nan_is_missing):
+            formulas.append(f"{name} = ({j_type}) replaceIfNaN({name}, {null})")
+    return source.update(formulas) if formulas else source
 
 
 class PandasTestCase(BaseTestCase):
@@ -247,8 +273,8 @@ class PandasTestCase(BaseTestCase):
 
         self.assertEqual(table.size, 3)
         table_string = table.to_string()
-        self.assertEqual(9, table_string.count("null"))
-        self.assertEqual(2, table_string.count("NaN"))
+        self.assertEqual(11, table_string.count("null"))
+        self.assertEqual(0, table_string.count("NaN"))
 
     def test_arrow_backend(self):
         with self.subTest("pyarrow-backend"):
@@ -328,7 +354,7 @@ class PandasTestCase(BaseTestCase):
         test_table = new_table(cols=input_cols)
         df = to_pandas(test_table, dtype_backend="numpy_nullable")
         dh_table = to_table(df)
-        self.assert_table_equals(test_table, dh_table)
+        self.assert_table_equals(_nan_as_null_where_missing(test_table, df), dh_table)
 
     def test_to_pandas_with_barrage_encodings(self) -> None:
         # Dictionary columns become category columns. Run-end columns get their unencoded dtype.
@@ -479,14 +505,46 @@ class PandasTestCase(BaseTestCase):
         t = new_table(cols=input_cols)
         df = to_pandas(t, conv_null=True)
         dh_table = to_table(df)
-        self.assert_table_equals(t, dh_table)
+        self.assert_table_equals(_nan_as_null_where_missing(t, df), dh_table)
 
         dtype_backends = ["numpy_nullable", "pyarrow"]
         for dbe in dtype_backends:
             with self.subTest(dbe):
                 df = to_pandas(t, dtype_backend=dbe)
                 dh_table = to_table(df)
-                self.assert_table_equals(t, dh_table)
+                self.assert_table_equals(_nan_as_null_where_missing(t, df), dh_table)
+
+    def test_to_table_nullable_float_missing(self) -> None:
+        for pd_dtype, dh_dtype in [
+            (pd.Float32Dtype(), dtypes.float32),
+            (pd.Float64Dtype(), dtypes.double),
+        ]:
+            with self.subTest(pd_dtype=pd_dtype):
+                missing = pd.array([1.5, None, pd.NA], dtype=pd_dtype)
+                # An unmasked NaN, which is what pandas 2 makes from an Arrow NaN.
+                unmasked_nan = pd.arrays.FloatingArray(
+                    np.array([np.nan], dtype=pd_dtype.numpy_dtype), np.array([False])
+                )
+                df = pd.DataFrame(
+                    {
+                        "X": pd.concat(
+                            [pd.Series(missing), pd.Series(unmasked_nan)],
+                            ignore_index=True,
+                        )
+                    }
+                )
+                self.assertEqual([False, True, True, False], df["X"].isna().tolist())
+
+                t = to_table(df)
+                self.assertEqual(dh_dtype, t.columns[0].data_type)
+                self.assertEqual(
+                    [False, True, True, False],
+                    [row["N"] for row in t.update("N = isNull(X)").iter_dict(cols="N")],
+                )
+                self.assertEqual(
+                    [False, False, False, True],
+                    [row["N"] for row in t.update("N = isNaN(X)").iter_dict(cols="N")],
+                )
 
     def test_to_table_readonly(self):
         source = new_table(

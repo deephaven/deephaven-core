@@ -5,12 +5,13 @@
 import threading
 import time
 import unittest
+from collections.abc import Callable
 
 import jpy
 import numpy
 
-from deephaven import DHError, empty_table, input_table, new_table, time_table
-from deephaven.column import bool_col, int_col, string_col
+from deephaven import DHError, dtypes, empty_table, input_table, new_table, time_table
+from deephaven.column import bool_col, int_col, long_col, string_col
 from deephaven.execution_context import get_exec_ctx
 from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
@@ -306,6 +307,76 @@ class TableListenerTestCase(BaseTestCase):
             [1, 3, 5, 7],
             [v for chunk in modified_prev_chunks for v in chunk["V"]],
         )
+
+    def test_chunks_null_as_none(self) -> None:
+        source = input_table(
+            {"B": dtypes.bool_, "S": dtypes.string},
+        )
+        added_chunks: list[dict[str, numpy.ndarray]] = []
+        update_received = threading.Event()
+
+        def on_update(update: TableUpdate, is_replay: bool) -> None:
+            added_chunks.extend(update.added_chunks(chunk_size=10, null_as_none=True))
+            update_received.set()
+
+        handle = listen(source, on_update)
+        try:
+            source.add(
+                new_table([bool_col("B", [True, None]), string_col("S", [None, "b"])])
+            )
+            self.assertTrue(update_received.wait(10))
+        finally:
+            handle.stop()
+
+        self.assertEqual([True, None], added_chunks[0]["B"].tolist())
+        self.assertEqual([None, "b"], added_chunks[0]["S"].tolist())
+
+    def test_null_as_none(self) -> None:
+        source = input_table(
+            {"K": dtypes.int64, "B": dtypes.bool_, "S": dtypes.string}, key_cols="K"
+        )
+        updates: list[dict[str, dict[str, numpy.ndarray]]] = []
+        update_received = threading.Event()
+
+        def on_update(update: TableUpdate, is_replay: bool) -> None:
+            updates.append(
+                {
+                    "added": update.added(null_as_none=True),
+                    "removed": update.removed(null_as_none=True),
+                    "modified": update.modified(null_as_none=True),
+                    "modified_prev": update.modified_prev(null_as_none=True),
+                }
+            )
+            update_received.set()
+
+        def apply(change: Callable[[], None]) -> None:
+            update_received.clear()
+            change()
+            self.assertTrue(update_received.wait(10))
+
+        def row(b: bool | None, s: str | None) -> Table:
+            return new_table(
+                [long_col("K", [1]), bool_col("B", [b]), string_col("S", [s])]
+            )
+
+        handle = listen(source, on_update)
+        try:
+            apply(lambda: source.add(row(None, None)))
+            apply(lambda: source.add(row(True, "x")))
+            apply(lambda: source.add(row(None, None)))
+            apply(lambda: source.delete(new_table([long_col("K", [1])])))
+        finally:
+            handle.stop()
+
+        added, modified_to_set, modified_to_null, removed = updates
+        self.assertEqual([None], added["added"]["B"].tolist())
+        self.assertEqual([None], added["added"]["S"].tolist())
+        self.assertEqual([None], modified_to_set["modified_prev"]["B"].tolist())
+        self.assertEqual([None], modified_to_set["modified_prev"]["S"].tolist())
+        self.assertEqual([None], modified_to_null["modified"]["B"].tolist())
+        self.assertEqual([None], modified_to_null["modified"]["S"].tolist())
+        self.assertEqual([None], removed["removed"]["B"].tolist())
+        self.assertEqual([None], removed["removed"]["S"].tolist())
 
     def test_listener_obj_with_deps(self):
         dep_table = time_table("PT00:00:05").update("X = i % 11")

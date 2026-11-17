@@ -366,7 +366,11 @@ def array(
             return _instant_array(seq)
 
         if isinstance(seq, np.ndarray):
-            if dtype == bool_:
+            if dtype == bool_ and seq.dtype == np.object_:
+                # An object array can hold None for a null, which astype(np.int8) rejects. jpy maps each bool or
+                # None in a list to a Boolean.
+                seq = seq.tolist()
+            elif dtype == bool_:
                 bytes_ = seq.astype(dtype=np.int8)
                 j_bytes = array(byte, bytes_)
                 seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(
