@@ -140,6 +140,7 @@ public class CrossJoinHelper {
         final QueryTable result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits,
                 control, false);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
+        leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
         // A static right table fixes every left row's group and the number of right bits, so a left add only adds
         // result rows within the added left row's own key range; an append to the left appends to the result.
         if (leftTable.isAddOnly() && !rightTable.isRefreshing()) {
@@ -173,6 +174,7 @@ public class CrossJoinHelper {
                     final QueryTable result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd,
                             numReserveRightBits, control, true);
                     leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
+                    leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
                     // A static right table fixes every left row's group, or its null row, and the number of right
                     // bits, so a left add only adds result rows within the added left row's own key range; an append
                     // to the left appends to the result.

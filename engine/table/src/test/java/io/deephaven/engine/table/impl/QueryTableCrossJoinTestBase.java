@@ -29,6 +29,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.CrossJoinRightColumnSource;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.sources.IntTestSource;
@@ -1524,6 +1525,61 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                         }
                         listener.close();
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * The result of a join or left outer join with a blink left table is itself a blink table, with and without match
+     * columns and against a static or refreshing right table, so a downstream aggregation accumulates over every row
+     * the left table has produced.
+     */
+    @Test
+    public void testBlinkLeftResultIsBlink() {
+        for (final boolean rightRefreshing : new boolean[] {false, true}) {
+            for (final String columnsToMatch : new String[] {"Key", ""}) {
+                for (final boolean leftOuter : new boolean[] {false, true}) {
+                    final String description = "rightRefreshing=" + rightRefreshing + ", columnsToMatch="
+                            + columnsToMatch + ", leftOuter=" + leftOuter;
+                    final QueryTable source = testRefreshingTable(i(0).toTracking(),
+                            intCol("Key", 1), intCol("LVal", 10));
+                    final Table blinkLeft = source.assertBlink();
+                    final QueryTable rTable = rightRefreshing
+                            ? testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4))
+                            : testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+
+                    final QueryTable result = (QueryTable) (leftOuter
+                            ? OuterJoinTools.leftOuterJoin(blinkLeft, rTable, columnsToMatch, "RVal",
+                                    numRightBitsToReserve)
+                            : blinkLeft.join(rTable, columnsToMatch, "RVal", numRightBitsToReserve));
+                    assertTrue(description, result.isBlink());
+                    final Table count = result.countBy("N");
+                    final SimpleListener listener = new SimpleListener(result);
+                    result.addUpdateListener(listener);
+                    final RowSet rowsBefore = result.getRowSet().copy();
+
+                    ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                            .runWithinUnitTestCycle(() -> {
+                                removeRows(source, i(0));
+                                addToTable(source, i(1), intCol("Key", 1), intCol("LVal", 20));
+                                source.notifyListeners(i(1), i(0), i());
+                                if (rightRefreshing) {
+                                    // the right table modifies a matched row and adds a third match
+                                    addToTable(rTable, i(0, 2), intCol("Key", 1, 1), intCol("RVal", 5, 6));
+                                    rTable.notifyListeners(i(2), i(), i(0));
+                                }
+                            });
+
+                    assertEquals(description, 1, listener.getCount());
+                    final TableUpdate update = listener.getUpdate();
+                    assertEquals(description, rowsBefore, update.removed());
+                    assertEquals(description, rightRefreshing ? 3 : 2, update.added().size());
+                    assertTrue(description, update.modified().isEmpty());
+                    assertTrue(description, update.shifted().empty());
+                    assertEquals(description, rightRefreshing ? 5L : 4L, ColumnVectors.ofLong(count, "N").get(0));
+                    listener.close();
+                    rowsBefore.close();
                 }
             }
         }
