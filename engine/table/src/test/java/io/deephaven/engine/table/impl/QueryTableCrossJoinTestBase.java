@@ -1748,4 +1748,66 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             }
         }
     }
+
+    /**
+     * With memoization enabled, a copy that differs from its parent in an attribute the join derives from the left
+     * table does not share the parent's join, whichever join is cached first, and each result carries its own left
+     * table's attributes.
+     */
+    @Test
+    public void testMemoizedJoinCopyWithDifferentAttributes() {
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            for (final String variant : new String[] {"addOnly", "appendOnly", "description"}) {
+                for (final boolean copyFirst : new boolean[] {true, false}) {
+                    final String description = "variant=" + variant + ", copyFirst=" + copyFirst;
+                    final QueryTable source =
+                            testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10));
+                    final QueryTable rTable =
+                            testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+                    final Table copy;
+                    switch (variant) {
+                        case "addOnly":
+                            copy = source.assertAddOnly();
+                            break;
+                        case "appendOnly":
+                            copy = source.assertAppendOnly();
+                            break;
+                        default:
+                            copy = source.withColumnDescription("LVal", "left value");
+                            break;
+                    }
+
+                    final QueryTable copyResult;
+                    final QueryTable plainResult;
+                    if (copyFirst) {
+                        copyResult = (QueryTable) copy.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                        plainResult = (QueryTable) source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    } else {
+                        plainResult = (QueryTable) source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                        copyResult = (QueryTable) copy.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    }
+                    assertNotSame(description, plainResult, copyResult);
+                    assertFalse(description, plainResult.isAddOnly());
+                    assertNull(description, plainResult.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+                    switch (variant) {
+                        case "addOnly":
+                            assertTrue(description, copyResult.isAddOnly());
+                            assertFalse(description, copyResult.isAppendOnly());
+                            break;
+                        case "appendOnly":
+                            assertTrue(description, copyResult.isAppendOnly());
+                            break;
+                        default:
+                            assertFalse(description, copyResult.isAddOnly());
+                            assertEquals(description, Map.of("LVal", "left value"),
+                                    copyResult.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+                            break;
+                    }
+                }
+            }
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
 }
