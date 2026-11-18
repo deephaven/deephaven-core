@@ -142,12 +142,31 @@ public class ReplicateSortKernel {
 
         if (!ascending) {
             lines = ascendingNameToDescendingName(objectPath, lines);
-            lines = invertComparisons(lines);
+            lines = invertObjectComparisons(lines);
         }
 
         lines = fixupChunkAttributes(lines);
 
         FileUtils.writeLines(objectFile, fixupColumnSourceGetObject(lines));
+    }
+
+    /**
+     * Make the comparison functions region descending by swapping the arguments of {@code ObjectComparisons.compare}. A
+     * compareTo result may be {@code Integer.MIN_VALUE}, which negation leaves negative, so the descending Object
+     * comparison never negates.
+     *
+     * @param lines the lines of the file to fix up
+     * @return the fixed up lines
+     */
+    private static List<String> invertObjectComparisons(List<String> lines) {
+        final List<String> descendingComment = Collections.singletonList(
+                "    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)");
+        lines = applyFixup(lines, "comparison functions", "(\\s+return )ObjectComparisons\\.compare\\(lhs, rhs\\);",
+                m -> Collections.singletonList(m.group(1) + "ObjectComparisons.compare(rhs, lhs);"));
+        if (lines.stream().noneMatch(line -> line.contains("ObjectComparisons.compare(rhs, lhs);"))) {
+            throw new IllegalStateException("comparison functions region does not use ObjectComparisons.compare");
+        }
+        return insertRegion(lines, "comparison functions", descendingComment);
     }
 
     private static List<String> fixupColumnSourceGetObject(List<String> lines) {

@@ -203,12 +203,15 @@ public class GenerateTimsortKernels {
         }
     }
 
-    /** Comparison through a {@link java.util.Comparator} held by the kernel instance. */
+    /**
+     * Comparison through a {@link java.util.Comparator} held by the kernel instance; descending swaps the arguments
+     * rather than negating, as a comparator may return Integer.MIN_VALUE.
+     */
     static final class ComparatorCompare implements Comparison {
         @Override
         public CodeBlock comparisonExpression(final Direction direction) {
             if (direction == Direction.DESCENDING) {
-                return CodeBlock.of("-1 * comparator.compare(lhs, rhs)");
+                return CodeBlock.of("comparator.compare(rhs, lhs)");
             }
             return CodeBlock.of("comparator.compare(lhs, rhs)");
         }
