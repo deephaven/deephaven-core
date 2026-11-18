@@ -312,10 +312,14 @@ public class ParquetTools {
      * {@link ParquetInstructions#baseNameForPartitionedParquetData()}. By default, any indexing columns present on the
      * source table will be written as sidecar tables. To write only a subset of the indexes or add additional indexes
      * while writing, use {@link ParquetInstructions.Builder#addIndexColumns}.
+     * <p>
+     * If the table has no rows, there are no partitions and no data files to write, so reading the destination back may
+     * require a {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition) table definition} in the read
+     * instructions.
      *
      * @param sourceTable The table to partition and write
      * @param destinationDir The path or URI to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created.
+     *        Non-existing directories are created as needed.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(
@@ -359,10 +363,14 @@ public class ParquetTools {
      * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}. By default, this
      * method does not write any indexes as sidecar tables to disk. To write such indexes, use
      * {@link ParquetInstructions.Builder#addIndexColumns}.
+     * <p>
+     * If the partitioned table has no constituents, there are no partitions and no data files to write, so reading the
+     * destination back may require a {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition) table
+     * definition} in the read instructions.
      *
      * @param partitionedTable The partitioned table to write
      * @param destinationDir The path or URI to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created.
+     *        Non-existing directories are created as needed.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(
@@ -500,6 +508,11 @@ public class ParquetTools {
                 row++;
             }
         }
+        if (destinations.isEmpty()) {
+            // The partitioned table has no constituents (as for a source table with no rows), so there are no
+            // partitions and no data files to write.
+            return;
+        }
         final MessageType partitioningColumnsSchema;
         if (writeInstructions.generateMetadataFiles()) {
             // Generate schema for partitioning columns for _common_metadata file. The schema for remaining columns will
@@ -620,6 +633,7 @@ public class ParquetTools {
             @Nullable final URI metadataRootDir,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
+        Require.gtZero(destinations.length, "destinations.length");
         if (writeInstructions.getFileLayout().isPresent()) {
             throw new UnsupportedOperationException("File layout is not supported for writing parquet files, use the " +
                     "appropriate API");

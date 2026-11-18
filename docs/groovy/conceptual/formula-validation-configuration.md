@@ -190,32 +190,34 @@ When designing your annotations, follow these recommendations:
 
 Use this approach to permit methods from libraries you don't control, such as the JDK's built-in classes or third-party libraries.
 
-Since you can't add annotations to external code, you use pointcut expressions instead. Deephaven reads these patterns with [OpenRewrite's method matcher](https://docs.openrewrite.org/reference/method-patterns#examples), which uses the pointcut syntax from the AspectJ language. One pattern can match one Java method or many.
+Since you can't add annotations to external code, you use pointcut expressions instead: patterns that match method signatures. The pattern syntax is adapted from AspectJ method patterns. One pattern can match one Java method or many.
 
 ### Understanding pointcut patterns
 
-A pointcut expression has three parts:
+A pointcut expression has three parts. Separate the class name from the method name with a space or `#` (`java.lang.String length()` and `java.lang.String#length()` are the same).
 
-1. **Class name**: The fully qualified class name, for example `java.lang.String`.
-2. **Method name**: The specific method, `*` for any method or constructor, or `<constructor>` for constructors only.
-3. **Parameters**: The parameter types or `(..)` for any parameters.
+1. **Class name**: The fully qualified class name, for example `java.util.Collections`. A class in `java.lang` may omit its package (`String` is the same as `java.lang.String`). Write a nested class as `java.util.Map.Entry` or `java.util.Map$Entry`, and use `*..*` for every class. Only a name without dots or wildcards is taken to be in `java.lang`, so a nested `java.lang` class without its package must use `$`: `Thread$State` works, but `Thread.State` is taken as a fully qualified name and does not match `java.lang.Thread.State` (write that instead).
+2. **Method name**: The specific method, a name with `*` wildcards such as `to*Case`, `<constructor>` for a constructor, or `*` for any method or constructor.
+3. **Parameters**: The parameter types or `(..)` for any parameters. Write primitive types by their keyword (`int`, `double`). Other types must be fully qualified, except for types in `java.lang` such as `String`. Write an array parameter as `T[]` in any position, such as `java.util.Arrays fill(int[], int)`. The last parameter may instead be written `T...`, which is the same as `T[]`; `...` is rejected anywhere else.
 
-Write the class name, a space, then the method name followed by its parameters in parentheses. For example:
+For example:
 
 - `java.lang.Math max(int, int)` matches `Math.max` with two `int` parameters.
-- `java.lang.Math *(..)` matches every method and constructor on `Math`.
+- `java.lang.Math *(..)` matches every method and constructor that `Math` declares.
 - `java.math.MathContext <constructor>(int)` matches the `MathContext` constructor that takes an `int`.
-
-A pattern that names `java.lang.Object` matches that method on every class, so `java.lang.Object toString()` permits every class's `toString` method.
-
-For any other class, a pattern matches a method only when the named class declares it. A subclass that inherits the method without overriding it still calls the named class's method, so the pattern matches. A subclass or implementation that overrides the method declares its own version, which the pattern doesn't match. For example, `java.util.List size()` permits `size` on a value whose type is `List`, but not on a value whose type is `ArrayList`, because `ArrayList` declares its own `size` method.
 
 ### Pattern matching symbols
 
 Two symbols match more than one name or type, in more places than the examples above show:
 
-- `*`: A wildcard in a class or method name (for example, `unmodifiable*`), or one parameter type in the argument list.
-- `..`: Any number of parameters of any type in the argument list, or any subpackage in the class name.
+- `*`: A wildcard within a name. In a method name, or in one segment of a class or parameter type name, it matches any run of characters but never crosses a `.`: `to*Case` matches `toUpperCase` and `toLowerCase`, and `java.lang.*` matches every class in `java.lang`, but not arrays of them, which `java.lang.*[]` matches. In a class name, a segment also matches the binary name of a nested class, so `java.util.*` also matches `java.util.Map$Entry`. A parameter of only `*` matches any one parameter type, including primitive and array types, while a parameter of `*..*` matches any one type that is not an array (write `*..*[]` for a one-dimensional array), and a method name of only `*` matches constructors as well as methods.
+- `..`: In a parameter list, match any number of parameters of any type; a parameter list may contain at most one `..`. In a class name, match any number of package or enclosing class names — `java.util..*` matches every class in `java.util` and its sub-packages, and `java.util..Entry` matches `java.util.Map.Entry`, while `java.util.*` does not include sub-packages.
+
+### Inherited methods
+
+A pattern also matches every instance method that overrides a matching method. For example, `java.lang.Object toString()` permits `toString` on any class, and `java.lang.Number intValue()` permits `intValue` on `Integer`, `BigDecimal`, and every other subclass of `Number`. Static methods match only the class that declares them.
+
+A class pattern matches only the methods and constructors that the class itself declares, plus overrides of those methods in subclasses. It does not match methods the class inherits without overriding: `java.lang.String *(..)` does not permit `getClass` on a `String`, because `Object` declares it and `String` does not override it.
 
 ### Enable pointcut patterns
 
@@ -227,16 +229,16 @@ A property in the form `ColumnExpressionValidator.allowedMethods.<label>=<patter
 The built-in `dh-defaults.prop` file permits these methods and constructors from common Java classes:
 
 ```properties
-# All methods and constructors on primitive wrapper classes (Integer, Double, etc.)
+# Methods and constructors declared by the primitive wrapper classes (Integer, Double, etc.)
 ColumnExpressionValidator.allowedMethods.primitives=java.lang.Character *(..);java.lang.Byte *(..);java.lang.Short *(..);java.lang.Integer *(..);java.lang.Long *(..);java.lang.Float *(..);java.lang.Double *(..);java.lang.Boolean *(..)
 
-# All String methods and constructors (safe because strings are immutable)
+# Methods and constructors declared by String (safe because strings are immutable)
 ColumnExpressionValidator.allowedMethods.basic=java.lang.String *(..)
 
-# Number and math classes
+# Methods and constructors declared by the number and math classes, and overrides of those methods in subclasses
 ColumnExpressionValidator.allowedMethods.numbers=java.math.BigInteger *(..);java.math.BigDecimal *(..);java.lang.Number *(..)
 
-# Date and time classes
+# Methods and constructors declared by the date and time classes
 ColumnExpressionValidator.allowedMethods.time=java.time.Instant *(..);java.time.LocalTime *(..);java.time.LocalDate *(..);java.time.ZonedDateTime *(..)
 
 # Common Object methods that are permitted
@@ -256,16 +258,16 @@ Every method or constructor a pattern matches becomes callable by any client tha
 Each of these properties adds a new group of patterns:
 
 ```properties
-# Allow any method or constructor on the Math class with any parameters
+# Allow any method or constructor declared by Math, with any parameters
 ColumnExpressionValidator.allowedMethods.math=java.lang.Math *(..)
 
-# Allow size() on values typed as java.util.List (no parameters)
+# Allow size() on java.util.List and every override of it, such as ArrayList.size (no parameters)
 ColumnExpressionValidator.allowedMethods.list_size=java.util.List size()
 
 # Allow specific methods on the StrictMath class
 ColumnExpressionValidator.allowedMethods.strict_math=java.lang.StrictMath sqrt(double);java.lang.StrictMath hypot(double, double)
 
-# Allow all methods and constructors on multiple time classes
+# Allow the methods and constructors declared by several time classes
 ColumnExpressionValidator.allowedMethods.more_time=java.time.Duration *(..);java.time.Period *(..);java.time.LocalDateTime *(..)
 
 # Allow the MathContext constructor that takes a precision
@@ -277,8 +279,8 @@ ColumnExpressionValidator.allowedMethods.math_context=java.math.MathContext <con
 When writing pointcut patterns, follow these recommendations:
 
 - **Prefer exact signatures for classes whose methods have side effects.** A pattern such as `*(..)` permits every method and constructor on the class, including ones you didn't review.
-- **Never write a wildcard pattern on `java.lang.Object`.** Because every class is an `Object`, `java.lang.Object *(..)` permits every method and constructor of every class, which turns off validation.
-- **Name the class that declares the method formulas call.** A pattern on an interface or superclass doesn't cover a subclass's override. To permit `size` on `ArrayList` values, name `java.util.ArrayList`.
+- **Never write a wildcard pattern on `java.lang.Object`.** `java.lang.Object *(..)` permits all of `Object`'s own methods, such as `getClass`, and every override of them on every class, including user classes, such as each class's `toString` and `equals`.
+- **Remember that a pattern also covers overrides.** A pattern that names an interface or a class that isn't final also permits every override of the methods it matches, in any subclass or implementation on the classpath, including user classes. For example, `java.util.List size()` also permits `size` on `ArrayList` and every other `List` implementation.
 - **Add a property with a new label rather than redefining a default one.** Redefining a default label, such as `numbers`, removes the patterns it held.
 
 ## Test your configuration from a client
@@ -354,5 +356,4 @@ With this setting, Deephaven ignores the `ColumnExpressionValidator.annotationSe
 - [`updateView`](../reference/table-operations/select/update-view.md)
 - [`view`](../reference/table-operations/select/view.md)
 - [`where`](../reference/table-operations/filter/where.md)
-- [OpenRewrite method patterns](https://docs.openrewrite.org/reference/method-patterns#examples)
 - [`UserInvocationPermitted` Javadoc](/core/javadoc/io/deephaven/util/annotations/UserInvocationPermitted.html)

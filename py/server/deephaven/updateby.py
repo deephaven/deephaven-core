@@ -844,7 +844,7 @@ def rolling_sum_time(
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
-        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+        |  `rev_time = "PT00:10:00", fwd_time = 0` - contains rows from 10m before through the current row timestamp (
             inclusive)
         |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
@@ -950,7 +950,7 @@ def rolling_group_time(
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
-        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+        |  `rev_time = "PT00:10:00", fwd_time = 0` - contains rows from 10m before through the current row timestamp (
             inclusive)
         |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
@@ -1056,7 +1056,7 @@ def rolling_avg_time(
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
-        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+        |  `rev_time = "PT00:10:00", fwd_time = 0` - contains rows from 10m before through the current row timestamp (
             inclusive)
         |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
@@ -1162,7 +1162,7 @@ def rolling_min_time(
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
-        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+        |  `rev_time = "PT00:10:00", fwd_time = 0` - contains rows from 10m before through the current row timestamp (
             inclusive)
         |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
@@ -1268,7 +1268,7 @@ def rolling_max_time(
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
-        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+        |  `rev_time = "PT00:10:00", fwd_time = 0` - contains rows from 10m before through the current row timestamp (
             inclusive)
         |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
@@ -1376,7 +1376,7 @@ def rolling_prod_time(
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
-        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+        |  `rev_time = "PT00:10:00", fwd_time = 0` - contains rows from 10m before through the current row timestamp (
             inclusive)
         |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
@@ -1482,7 +1482,7 @@ def rolling_count_time(
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
-        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+        |  `rev_time = "PT00:10:00", fwd_time = 0` - contains rows from 10m before through the current row timestamp (
             inclusive)
         |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
@@ -1594,7 +1594,7 @@ def rolling_std_time(
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
-        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+        |  `rev_time = "PT00:10:00", fwd_time = 0` - contains rows from 10m before through the current row timestamp (
             inclusive)
         |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
@@ -1704,7 +1704,7 @@ def rolling_wavg_time(
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
-        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+        |  `rev_time = "PT00:10:00", fwd_time = 0` - contains rows from 10m before through the current row timestamp (
             inclusive)
         |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
@@ -1867,7 +1867,7 @@ def rolling_formula_time(
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
-        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+        |  `rev_time = "PT00:10:00", fwd_time = 0` - contains rows from 10m before through the current row timestamp (
             inclusive)
         |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
@@ -1999,7 +1999,7 @@ def rolling_count_where_time(
 
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
-        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+        |  `rev_time = "PT00:10:00", fwd_time = 0` - contains rows from 10m before through the current row timestamp (
             inclusive)
         |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
             current row timestamp (inclusive)

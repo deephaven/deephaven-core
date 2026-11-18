@@ -21,7 +21,7 @@ jobs:
           
       - name: Deploy Directories
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@b8733f9f81fe2d9c29b756e57cd373429be7bae2 # 9.0.4
         with:
           switches: -rlptDvz
           path: tmp-deephaven-core-v2/
@@ -45,7 +45,7 @@ jobs:
           ln -s ../main latest
           
       - name: Deploy Symlinks
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@b8733f9f81fe2d9c29b756e57cd373429be7bae2 # 9.0.4
         with:
           switches: -rlptDvz
           path: tmp-deephaven-core-v2/
@@ -129,7 +129,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: 'temurin'
           java-version: |
@@ -159,7 +159,7 @@ jobs:
 
       - name: Deploy Javadoc
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@b8733f9f81fe2d9c29b756e57cd373429be7bae2 # 9.0.4
         with:
           switches: -rlptDvz --delete
           path: combined-javadoc/build/docs/javadoc/
@@ -181,7 +181,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: 'temurin'
           java-version: |
@@ -211,7 +211,7 @@ jobs:
 
       - name: Deploy JavaScript/TypeScript docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@b8733f9f81fe2d9c29b756e57cd373429be7bae2 # 9.0.4
         with:
           switches: -rlptDvz --delete
           path: web/client-api/types/build/documentation/
@@ -233,7 +233,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: 'temurin'
           java-version: |
@@ -270,7 +270,7 @@ jobs:
 
       - name: Deploy Python Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@b8733f9f81fe2d9c29b756e57cd373429be7bae2 # 9.0.4
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/docs/
@@ -282,7 +282,7 @@ jobs:
 
       - name: Deploy Client Python Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@b8733f9f81fe2d9c29b756e57cd373429be7bae2 # 9.0.4
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/pyclient-docs/
@@ -312,7 +312,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: 'temurin'
           java-version: |
@@ -349,7 +349,7 @@ jobs:
 
       - name: Deploy Client C++ Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@b8733f9f81fe2d9c29b756e57cd373429be7bae2 # 9.0.4
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/cppClientDocs/
@@ -361,7 +361,7 @@ jobs:
 
       - name: Deploy Client C++ Example Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@b8733f9f81fe2d9c29b756e57cd373429be7bae2 # 9.0.4
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/cppExamplesDocs/
@@ -383,7 +383,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: 'temurin'
           java-version: |
@@ -413,7 +413,7 @@ jobs:
 
       - name: Deploy R Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@b8733f9f81fe2d9c29b756e57cd373429be7bae2 # 9.0.4
         with:
           switches: -rlptDvz --delete
           path: R/rdeephaven/docs/
@@ -442,7 +442,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: 'temurin'
           java-version: |
@@ -472,7 +472,7 @@ jobs:
 
       - name: Deploy Protobuf Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@2cbb5ed94b73d111d07a40b071b1c7d3c0272435 # 9.0.2
+        uses: burnett01/rsync-deployments@b8733f9f81fe2d9c29b756e57cd373429be7bae2 # 9.0.4
         with:
           switches: -rlptDvz --delete
           path: proto/proto-backplane-grpc/build/protoc-output/proto-doc/single-html/index.html
