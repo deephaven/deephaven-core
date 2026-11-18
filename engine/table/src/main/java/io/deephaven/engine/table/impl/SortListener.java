@@ -461,6 +461,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                         writesUntilGap = REBALANCE_RANGE_SIZE;
                     }
 
+                    checkDestinationSlotOk(destKey);
                     resultAdded.appendKey(destKey);
                     mappingChanges.append(destKey, qs.addedInputKeys[qs.addedCurrent]);
                     destKey += qs.direction;
