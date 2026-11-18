@@ -20,6 +20,10 @@ jobs:
 
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # Publishes the surefire test report as a check run on main.
+      checks: write
     concurrency:
       group: ${{ matrix.gradle-task }}-${{ matrix.test-jvm-version }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true

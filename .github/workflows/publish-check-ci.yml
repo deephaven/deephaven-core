@@ -10,6 +10,13 @@ on:
     types:
       - completed
 
+permissions:
+  contents: read
+  # Downloads the Check CI run's test result artifacts.
+  actions: read
+  # Publishes the test report as a check run.
+  checks: write
+
 jobs:
   # Job based on https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
   publish-check-ci:
