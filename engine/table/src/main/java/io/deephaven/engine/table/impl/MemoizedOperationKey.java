@@ -47,6 +47,16 @@ public abstract class MemoizedOperationKey {
         return BaseTable.CopyAttributeOperation.None;
     }
 
+    /**
+     * Whether {@link #getParentCopyType()} is exactly the attributes the operation sets on its result. If so, a copy's
+     * memoized result takes those attributes from its parent's result, in place of the copy's own values.
+     *
+     * @return true if the parent copy type is exactly the attributes the operation sets on its result
+     */
+    boolean parentCopyTypeIsResultAttributes() {
+        return false;
+    }
+
     abstract static class AttributeAgnosticMemoizedOperationKey extends MemoizedOperationKey {
         @Override
         boolean attributesCompatible(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
@@ -279,6 +289,16 @@ public abstract class MemoizedOperationKey {
         @Override
         BaseTable.CopyAttributeOperation copyType() {
             return BaseTable.CopyAttributeOperation.Sort;
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation getParentCopyType() {
+            return BaseTable.CopyAttributeOperation.SortCopy;
+        }
+
+        @Override
+        boolean parentCopyTypeIsResultAttributes() {
+            return true;
         }
     }
 

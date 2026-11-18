@@ -263,6 +263,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         // Copy attributes
         RollupCopy, TreeCopy, CrossJoinCopy,
+        // Attributes carried over on a copy of a sort.
+        SortCopy,
 
         Preview
     }
@@ -298,7 +300,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         tempMap.put(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, EnumSet.complementOf(EnumSet.of(
                 CopyAttributeOperation.Rollup,
-                CopyAttributeOperation.Tree)));
+                CopyAttributeOperation.Tree,
+                CopyAttributeOperation.SortCopy)));
         tempMap.put(SORTABLE_COLUMNS_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.Sort,
@@ -321,7 +324,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.WouldMatch,
                 CopyAttributeOperation.Preview));
 
-        tempMap.put(LAYOUT_HINTS_ATTRIBUTE, EnumSet.allOf(CopyAttributeOperation.class));
+        tempMap.put(LAYOUT_HINTS_ATTRIBUTE, EnumSet.complementOf(EnumSet.of(CopyAttributeOperation.SortCopy)));
 
         tempMap.put(TOTALS_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
@@ -363,7 +366,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.TreeCopy,
                 CopyAttributeOperation.Preview));
 
-        tempMap.put(SNAPSHOT_VIEWPORT_TYPE, EnumSet.allOf(CopyAttributeOperation.class));
+        tempMap.put(SNAPSHOT_VIEWPORT_TYPE, EnumSet.complementOf(EnumSet.of(CopyAttributeOperation.SortCopy)));
 
         // Note: The logic applying this attribute for select/update/view/updateView is in SelectAndViewAnalyzerWrapper.
         tempMap.put(ADD_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
@@ -407,7 +410,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.Filter,
-                CopyAttributeOperation.PartitionBy));
+                CopyAttributeOperation.PartitionBy,
+                CopyAttributeOperation.SortCopy));
+
+        final EnumSet<CopyAttributeOperation> sortResultCopyAttributes = EnumSet.copyOf(LEGACY_COPY_ATTRIBUTES);
+        sortResultCopyAttributes.add(CopyAttributeOperation.SortCopy);
+        tempMap.put(SORT_ROW_REDIRECTION_ATTRIBUTE, sortResultCopyAttributes);
+        tempMap.put(SORT_REVERSE_LOOKUP_ATTRIBUTE, sortResultCopyAttributes);
 
         // Note: The logic applying this attribute for select/update/view/updateView is in SelectAndViewAnalyzerWrapper.
         tempMap.put(BLINK_TABLE_ATTRIBUTE, EnumSet.of(
