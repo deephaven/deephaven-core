@@ -410,7 +410,7 @@ Value: run_end_encoded=false dictionary_encoded=false arrow_type=Int(32, true)
 
 The same check works on a static table you did not annotate: it shows which encodings [auto-detection](#encoding-auto-detection) picked. With both auto-detection properties turned off, it prints `false` for `run_end_encoded` and `dictionary_encoded` on every column.
 
-On a ticking table you did not annotate, the attribute can name a different encoding than the subscription uses, because the server samples the current data each time it computes the schema. Subscriptions to the table that use the same update interval share one schema, which the server computed when the first of them started. Subscriptions at a different update interval get their own schema, and the [server log](#verify-the-encoding-from-the-server-log) records each computation. To get an encoding that stays fixed and that this check reports exactly, annotate the table.
+Don't rely on this check for a ticking table you didn't annotate. The server picks encodings by sampling the table's current data each time it computes a schema, so the encoding this check reports can differ from the one the subscription uses. Subscriptions at the same update interval share one schema, computed when the first of them started. A subscription at a different update interval gets its own. The [server log](#verify-the-encoding-from-the-server-log) records each computation. For an encoding that stays fixed, and that this check reports exactly, annotate the table.
 
 Use `print(wire_schema.toJson())` to dump the entire export schema, including each field's `deephaven:type` metadata, which records the Deephaven column type the field came from.
 
