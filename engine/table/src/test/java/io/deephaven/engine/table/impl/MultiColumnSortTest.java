@@ -8,6 +8,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortSpec;
 import io.deephaven.api.SortColumn;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -15,9 +16,11 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
@@ -29,6 +32,7 @@ import org.junit.experimental.categories.Category;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
@@ -452,6 +456,38 @@ public class MultiColumnSortTest {
                 SortColumn.asc(ColumnName.of("ConstStr")), SortColumn.asc(ColumnName.of("Var")));
         // Row content (independent of order on the constant column) must equal sorting by Var alone.
         TstUtils.assertTableEquals(table.sort("Var"), sortedWithComparator);
+    }
+
+    /**
+     * A data index on a constant sort column, which the sort drops, does not apply to the remaining sort columns: a
+     * sort by (C, A) with a data index on C sorts by A.
+     */
+    @Test
+    public void testIndexOnSkippedConstantSortColumn() {
+        final Table table = TableTools.emptyTable(6).update("A = 6 - i").updateView("C = 7");
+        DataIndexer.getOrCreateDataIndex(table, "C");
+        final Table sorted = table.sort("C", "A");
+        assertArrayEquals(new int[] {1, 2, 3, 4, 5, 6}, ColumnVectors.ofInt(sorted, "A").toArray());
+    }
+
+    /**
+     * A sort drops a constant sort column and uses a data index on the remaining column: a sort by (C, A) with a data
+     * index on A reads none of A's values.
+     */
+    @Test
+    public void testIndexOnColumnAfterSkippedConstantSortColumn() {
+        final int size = 3000;
+        final AtomicInteger aReads = new AtomicInteger();
+        QueryScope.addParam("aReads", aReads);
+        final Table table = TableTools.emptyTable(size)
+                .update("RawA = (int) (ii % 10)")
+                .updateView("A = RawA + 0 * aReads.getAndIncrement()", "C = 7");
+        // computing the index reads A, so it is computed before the reads are counted
+        DataIndexer.getOrCreateDataIndex(table, "A").table();
+        aReads.set(0);
+        final Table sorted = table.sort("C", "A");
+        assertEquals("reads of A", 0, aReads.get());
+        TstUtils.assertTableEquals(table.select().sort("A"), sorted);
     }
 
     @Test

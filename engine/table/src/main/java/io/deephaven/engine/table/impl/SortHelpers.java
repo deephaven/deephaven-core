@@ -300,7 +300,7 @@ public class SortHelpers {
      * dropped when its comparator respects equality; a comparator with respectsEquality=false may still rely on the
      * column's sort pass for tie-handling order.
      */
-    private static int[] effectiveSortColumns(
+    static int[] effectiveSortColumns(
             final ColumnSource<Comparable<?>>[] columnsToSortBy,
             final boolean[] comparatorsRespectEquality) {
         return IntStream.range(0, columnsToSortBy.length)
