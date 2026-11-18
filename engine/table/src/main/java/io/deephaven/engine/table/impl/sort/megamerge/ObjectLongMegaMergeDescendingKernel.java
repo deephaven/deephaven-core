@@ -182,7 +182,7 @@ public class ObjectLongMegaMergeDescendingKernel {
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(Object lhs, Object rhs) {
-        return -1 * ObjectComparisons.compare(lhs, rhs);
+        return ObjectComparisons.compare(rhs, lhs);
     }
     // endregion comparison functions
 
