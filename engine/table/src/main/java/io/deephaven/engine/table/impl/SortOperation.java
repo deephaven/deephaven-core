@@ -270,11 +270,17 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     private void setSorted(QueryTable table) {
-        // no matter what we are always sorted by the first column
-        SortedColumnsAttribute.setOrderForColumn(table, sortColumnNames[0], sortOrder[0]);
+        // The attribute declares the natural order of the first column, so a first column ordered by an explicit
+        // comparator is not recorded.
+        if (!ComparatorSortColumn.hasComparator(sortSpec[0])) {
+            SortedColumnsAttribute.setOrderForColumn(table, sortColumnNames[0], sortOrder[0]);
+        }
     }
 
     private QueryTable withSorted(QueryTable table) {
+        if (ComparatorSortColumn.hasComparator(sortSpec[0])) {
+            return (QueryTable) table.withAttributes(IDENTITY_REDIRECTION_ATTRIBUTES);
+        }
         return (QueryTable) SortedColumnsAttribute.withOrderForColumn(table, sortColumnNames[0], sortOrder[0],
                 IDENTITY_REDIRECTION_ATTRIBUTES);
     }
