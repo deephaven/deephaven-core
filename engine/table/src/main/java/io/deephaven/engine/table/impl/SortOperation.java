@@ -146,18 +146,24 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     /**
-     * Returns the optimal data index for the supplied table, or null if no index is available. The ideal index would
-     * contain all key columns but matching the first column is still useful.
+     * Returns the optimal data index for the supplied table, or null if no index is available. The sort drops constant
+     * columns, so the index is chosen from the remaining columns: the ideal index contains all of them, but an index on
+     * the first of them is still useful.
      */
     @Nullable
     private DataIndex optimalIndex(final Table inputTable) {
-        final DataIndex full = DataIndexer.getDataIndex(inputTable, sortColumnNames);
+        final String[] effectiveColumnNames =
+                Arrays.stream(SortHelpers.effectiveSortColumns(sortColumns, comparatorsRespectEquality))
+                        .mapToObj(ii -> sortColumnNames[ii])
+                        .toArray(String[]::new);
+        if (effectiveColumnNames.length == 0) {
+            return null;
+        }
+        final DataIndex full = DataIndexer.getDataIndex(inputTable, effectiveColumnNames);
         if (full != null) {
-            // We have an index for all sort columns.
             return full;
         }
-        // Return an index for the first column (if one exists) or null.
-        return DataIndexer.getDataIndex(inputTable, sortColumnNames[0]);
+        return DataIndexer.getDataIndex(inputTable, effectiveColumnNames[0]);
     }
 
     private static boolean alreadySorted(final QueryTable parent, @NotNull final SortHelpers.SortMapping sortedKeys) {
