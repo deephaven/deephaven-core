@@ -123,8 +123,10 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             // first to need it, on an update graph thread that cannot compile. This is required even when this sort
             // has a data index: the index accelerates the initial sort, but the listener's incremental sorts of
             // added and modified rows do not use it. For an initially empty table (a refreshing blink table, for
-            // instance) the listener is always first.
-            SortHelpers.prepareSortKernel(sortOrder, sortColumns, comparators, comparatorsRespectEquality);
+            // instance) the listener is always first. A data index on the first column alone sorts the rows of each
+            // of its groups by the remaining columns, with their own kernel.
+            SortHelpers.prepareSortKernel(sortOrder, sortColumns, comparators, comparatorsRespectEquality,
+                    dataIndex != null && dataIndex.keyColumnNames().size() == 1);
         }
     }
 
