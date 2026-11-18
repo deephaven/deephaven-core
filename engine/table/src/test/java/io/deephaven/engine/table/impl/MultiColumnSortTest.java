@@ -29,6 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.*;
@@ -488,6 +489,95 @@ public class MultiColumnSortTest {
         final Table sorted = table.sort("C", "A");
         assertEquals("reads of A", 0, aReads.get());
         TstUtils.assertTableEquals(table.select().sort("A"), sorted);
+    }
+
+    /**
+     * BigDecimal 1.0 and 1.00 compare equal, so a sort by (BD, N) orders those rows by N. The data index on (BD, N) is
+     * too selective for the full-index route, so the sort runs the one-column-at-a-time path, whose runs of the first
+     * column are its ties under compareTo.
+     */
+    @Test
+    public void testBigDecimalTiesOfFirstColumnSortedBySecondColumn() {
+        final Table table = TableTools.newTable(
+                TableTools.col("BD", new BigDecimal("1.0"), new BigDecimal("1.00"), new BigDecimal("1.0"),
+                        new BigDecimal("1.00")),
+                TableTools.intCol("N", 4, 3, 2, 1));
+        assertArrayEquals(new int[] {1, 2, 3, 4}, ColumnVectors.ofInt(table.sort("BD", "N"), "N").toArray());
+        DataIndexer.getOrCreateDataIndex(table, "BD", "N");
+        assertArrayEquals(new int[] {1, 2, 3, 4}, ColumnVectors.ofInt(table.sort("BD", "N"), "N").toArray());
+    }
+
+    /**
+     * BigDecimal 1.0 and 1.00 compare equal, so a sort by (Group, Amount, Tie) orders those rows by Tie. With a data
+     * index on Group, the sort runs the one-column-at-a-time path, whose runs of the second column are its ties under
+     * compareTo.
+     */
+    @Test
+    public void testBigDecimalTiesOfSecondColumnSortedByThirdColumn() {
+        final Table table = TableTools.newTable(
+                TableTools.intCol("Group", 0, 0, 0, 0),
+                TableTools.col("Amount", new BigDecimal("1.0"), new BigDecimal("1.00"), new BigDecimal("1.0"),
+                        new BigDecimal("1.00")),
+                TableTools.intCol("Tie", 4, 3, 2, 1));
+        assertArrayEquals(new int[] {1, 2, 3, 4},
+                ColumnVectors.ofInt(table.sort("Group", "Amount", "Tie"), "Tie").toArray());
+        DataIndexer.getOrCreateDataIndex(table, "Group");
+        assertArrayEquals(new int[] {1, 2, 3, 4},
+                ColumnVectors.ofInt(table.sort("Group", "Amount", "Tie"), "Tie").toArray());
+    }
+
+    /**
+     * A case-insensitive comparator makes "a" and "A" ties, so a sort by (S case-insensitively, N) orders those rows by
+     * N. A data index on S does not apply to a comparator that does not respect equality, so the sort runs the
+     * one-column-at-a-time path, whose runs of the first column are its ties under the comparator.
+     */
+    @Test
+    public void testComparatorTiesOfFirstColumnSortedBySecondColumn() {
+        final QueryTable table = (QueryTable) TableTools.newTable(
+                TableTools.stringCol("S", "a", "A", "b", "B"),
+                TableTools.intCol("N", 2, 1, 4, 3));
+        final SortSpec caseInsensitive = ComparatorSortColumn.asc("S", String.CASE_INSENSITIVE_ORDER);
+        final SortSpec byN = SortColumn.asc(ColumnName.of("N"));
+        assertArrayEquals(new int[] {1, 2, 3, 4},
+                ColumnVectors.ofInt(table.sort(caseInsensitive, byN), "N").toArray());
+        DataIndexer.getOrCreateDataIndex(table, "S");
+        assertArrayEquals(new int[] {1, 2, 3, 4},
+                ColumnVectors.ofInt(table.sort(caseInsensitive, byN), "N").toArray());
+    }
+
+    /**
+     * A case-insensitive comparator makes "a" and "A" ties, so a sort by (Group, Name case-insensitively, Tie) orders
+     * those rows by Tie. With a data index on Group, the sort runs the one-column-at-a-time path, whose runs of the
+     * second column are its ties under the comparator.
+     */
+    @Test
+    public void testComparatorTiesOfSecondColumnSortedByThirdColumn() {
+        final QueryTable table = (QueryTable) TableTools.newTable(
+                TableTools.intCol("Group", 0, 0, 0, 0),
+                TableTools.stringCol("Name", "a", "A", "B", "b"),
+                TableTools.intCol("Tie", 2, 1, 4, 3));
+        DataIndexer.getOrCreateDataIndex(table, "Group");
+        final Table sorted = table.sort(
+                SortColumn.asc(ColumnName.of("Group")),
+                ComparatorSortColumn.asc("Name", String.CASE_INSENSITIVE_ORDER, false),
+                SortColumn.asc(ColumnName.of("Tie")));
+        assertArrayEquals(new int[] {1, 2, 3, 4}, ColumnVectors.ofInt(sorted, "Tie").toArray());
+    }
+
+    /**
+     * Array columns sort with the comparator from the ComparatorRegistry, under which distinct arrays with the same
+     * contents are ties, so a sort by (Group, Path, Tie) orders those rows by Tie. With a data index on Group, the sort
+     * runs the one-column-at-a-time path, whose runs of the second column are its ties under that comparator.
+     */
+    @Test
+    public void testArrayTiesOfSecondColumnSortedByThirdColumn() {
+        final Table table = TableTools.newTable(
+                TableTools.intCol("Group", 0, 0, 0, 0),
+                TableTools.col("Path", new int[] {1, 2}, new int[] {1, 2}, new int[] {1, 2}, new int[] {1, 2}),
+                TableTools.intCol("Tie", 4, 3, 2, 1));
+        DataIndexer.getOrCreateDataIndex(table, "Group");
+        assertArrayEquals(new int[] {1, 2, 3, 4},
+                ColumnVectors.ofInt(table.sort("Group", "Path", "Tie"), "Tie").toArray());
     }
 
     @Test

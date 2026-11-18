@@ -899,7 +899,7 @@ public class SortHelpers {
                 sortContext.sort(rowKeys, values);
             }
 
-            final FindRunsKernel findRunsKernel = FindRunsKernel.getInstance(chunkType);
+            final FindRunsKernel findRunsKernel = FindRunsKernel.getInstance(chunkType, comparators[0]);
             findRunsKernel.findRuns(values, offsetsOut, lengthsOut);
             values.close();
         }
@@ -937,7 +937,9 @@ public class SortHelpers {
             for (int columnIndex = 2; columnIndex < columnSources.length; ++columnIndex) {
                 columnSource = columnSources[columnIndex];
 
-                final FindRunsKernel findRunsKernel = FindRunsKernel.getInstance(chunkType);
+                // values holds the previous column, whose ties are the runs to sort by this column
+                final FindRunsKernel findRunsKernel =
+                        FindRunsKernel.getInstance(chunkType, comparators[columnIndex - 1]);
                 findRunsKernel.findRuns(values, offsetsIn, lengthsIn, offsetsOut, lengthsOut);
                 if (offsetsOut.size() == 0) {
                     break;

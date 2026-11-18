@@ -14,8 +14,8 @@ import static io.deephaven.util.compare.CharComparisons.leq;
 
 public class CharFindRunsKernel {
     /**
-     * Find runs of two or more identical values in a sorted chunk. This is used as part of an overall sort, after the
-     * timsort (or other sorting) kernel to identify the runs that must be sorted according to secondary keys.
+     * Find runs of two or more values that compare equal in a sorted chunk. This is used as part of an overall sort,
+     * after the timsort (or other sorting) kernel to identify the runs that must be sorted according to secondary keys.
      *
      * @param sortedValues a chunk of sorted values
      * @param offsetsOut an output chunk, with offsets of starting locations that a run occurred
@@ -34,7 +34,8 @@ public class CharFindRunsKernel {
     }
 
     /**
-     * Find runs of identical values in a sorted chunk. If a single value exists, it is included as run of length 1.
+     * Find runs of values that compare equal in a sorted chunk. If a single value exists, it is included as run of
+     * length 1.
      *
      * @param sortedValues a chunk of sorted values
      * @param offsetsOut an output chunk, with offsets of starting locations that a run occurred
@@ -51,8 +52,8 @@ public class CharFindRunsKernel {
     }
 
     /**
-     * Find runs of two or more identical values in a sorted chunk. This is used as part of an overall sort, after the
-     * timsort (or other sorting) kernel to identify the runs that must be sorted according to secondary keys.
+     * Find runs of two or more values that compare equal in a sorted chunk. This is used as part of an overall sort,
+     * after the timsort (or other sorting) kernel to identify the runs that must be sorted according to secondary keys.
      *
      * @param sortedValues a chunk of sorted values
      * @param offsetsIn the offsets within the chunk to check for runs
