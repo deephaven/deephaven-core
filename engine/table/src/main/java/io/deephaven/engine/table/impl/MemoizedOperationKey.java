@@ -49,7 +49,8 @@ public abstract class MemoizedOperationKey {
 
     /**
      * Whether {@link #getParentCopyType()} is exactly the attributes the operation sets on its result. If so, a copy's
-     * memoized result takes those attributes from its parent's result, in place of the copy's own values.
+     * memoized result takes those attributes from its parent's result, in place of the copy's own values, and a result
+     * a copy computes for its parent takes the parent's values of the other attributes that {@link #copyType()} copies.
      *
      * @return true if the parent copy type is exactly the attributes the operation sets on its result
      */
@@ -277,12 +278,17 @@ public abstract class MemoizedOperationKey {
             return Arrays.hashCode(sortColumns);
         }
 
+        /**
+         * The sort depends on two attributes of its source: blink, which selects the blink sort, and the sortable
+         * columns, which the sort is checked against. Tables that agree on both share a memoized sort.
+         */
         @Override
         boolean attributesCompatible(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
             final String parentRestrictions = (String) oldAttributes.get(Table.SORTABLE_COLUMNS_ATTRIBUTE);
             final String newRestrictions = (String) newAttributes.get(Table.SORTABLE_COLUMNS_ATTRIBUTE);
 
-            return Objects.equals(parentRestrictions, newRestrictions);
+            return BlinkTableTools.hasBlink(oldAttributes) == BlinkTableTools.hasBlink(newAttributes)
+                    && Objects.equals(parentRestrictions, newRestrictions);
         }
 
 
