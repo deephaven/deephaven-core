@@ -1213,7 +1213,7 @@ public class CrossJoinHelper {
                     long existingRightShift = 0; // how far existingRight has been shifted
                     final WritableRowSet existingRight = closer.add(currRight.minus(rightUpdate.added()));
                     boolean modifyNullKeys = leftOuterJoin && prevRight.isEmpty() && currRight.isEmpty();
-                    boolean removeNullKeys = leftOuterJoin && prevRight.isEmpty() && currRight.isNonempty();
+                    boolean removeNullKeys = leftOuterJoin && prevRight.isEmpty();
 
                     final boolean rightHasAdds = addRight.isNonempty();
                     final boolean rightHasRemoves = rmRight.isNonempty();

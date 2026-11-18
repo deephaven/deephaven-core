@@ -1853,4 +1853,48 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 intCol("RS", NULL_INT, 12, NULL_INT, NULL_INT, 13, 15, 16));
         assertTableEquals(expected, result);
     }
+
+    /**
+     * A zero-key left outer join against a right table that stays empty while it notifies a shift-only update removes
+     * the null row of each removed left row, for a blink left table and for an ordinary one.
+     */
+    @Test
+    public void testZeroKeyLeftRemoveWithEmptyRightShift() {
+        for (final boolean blink : new boolean[] {false, true}) {
+            final String description = "blink=" + blink;
+            final QueryTable lTable = testRefreshingTable(i(0).toTracking(), intCol("X", 1));
+            final Table left = blink ? lTable.assertBlink() : lTable;
+            final QueryTable rTable = testRefreshingTable(i().toTracking(), longCol("Y"));
+
+            final QueryTable jt = (QueryTable) doLeftOuterJoin(left, rTable, "", "Y");
+            assertEquals(description, blink, jt.isBlink());
+            final SimpleListener listener = new SimpleListener(jt);
+            jt.addUpdateListener(listener);
+            final RowSet rowsBefore = jt.getRowSet().copy();
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(lTable, i(0));
+                addToTable(lTable, i(1), intCol("X", 2));
+                lTable.notifyListeners(i(1), i(0), i());
+
+                final TableUpdateImpl update = new TableUpdateImpl();
+                update.added = i();
+                update.removed = i();
+                update.modified = i();
+                update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+                final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+                shiftBuilder.shiftRange(0, 10, 5);
+                update.shifted = shiftBuilder.build();
+                rTable.notifyListeners(update);
+            });
+
+            assertEquals(description, 1, listener.getCount());
+            assertEquals(description, rowsBefore, listener.getUpdate().removed());
+            assertEquals(description, 1, listener.getUpdate().added().size());
+            assertEquals(description, 1, jt.size());
+            listener.close();
+            rowsBefore.close();
+        }
+    }
 }
