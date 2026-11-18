@@ -566,7 +566,8 @@ public abstract class MemoizedOperationKey {
 
     private static class CrossJoin extends MemoizedOperationKey {
         /**
-         * The left table attributes that determine the attributes of a cross join result.
+         * The left table attributes that determine the attributes of a cross join result. A cross join result carries
+         * only these attributes, and {@link BaseTable.CopyAttributeOperation#CrossJoinCopy} copies each of them.
          */
         private static final List<String> RESULT_ATTRIBUTE_SOURCES = List.of(
                 Table.BLINK_TABLE_ATTRIBUTE,
@@ -623,8 +624,7 @@ public abstract class MemoizedOperationKey {
 
         @Override
         BaseTable.CopyAttributeOperation getParentCopyType() {
-            // a coalesce copies every attribute that a cross join result carries
-            return BaseTable.CopyAttributeOperation.Coalesce;
+            return BaseTable.CopyAttributeOperation.CrossJoinCopy;
         }
 
         @Override
