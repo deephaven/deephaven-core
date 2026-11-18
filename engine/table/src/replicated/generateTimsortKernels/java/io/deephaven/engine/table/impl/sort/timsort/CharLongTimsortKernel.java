@@ -414,7 +414,7 @@ public final class CharLongTimsortKernel {
             // nodataleft
             while (ii >= mergeStartPosition) {
                 // if we had a lot of things from run2, we take the next thing from run1 then find it in run2
-                final int copyUntil2 = gallopBackward(context.temporaryValues, 0, tempCursor, val1, true) + 1;
+                final int copyUntil2 = gallopBackward(context.temporaryValues, 0, tempCursor + 1, val1, true);
                 final int gallopLength2 = tempCursor - copyUntil2 + 1;
                 if (gallopLength2 > 0) {
                     copyToChunk(context.temporaryKeys, context.temporaryValues, valuesToPermute, valuesToSort, copyUntil2, ii - gallopLength2 + 1, gallopLength2);
@@ -427,10 +427,10 @@ public final class CharLongTimsortKernel {
                     context.minGallop--;
                 }
                 // if we had a lot of things from run1, we take the next thing from run2 and then find it in run1
-                final int copyUntil1 = gallopBackward(valuesToSort, mergeStartPosition, run1Cursor, val2, false);
-                final int gallopLength1 = run1Cursor - copyUntil1;
+                final int copyUntil1 = gallopBackward(valuesToSort, mergeStartPosition, run1Cursor + 1, val2, false);
+                final int gallopLength1 = run1Cursor - copyUntil1 + 1;
                 if (gallopLength1 > 0) {
-                    copyToChunk(valuesToPermute, valuesToSort, valuesToPermute, valuesToSort, copyUntil1, ii - gallopLength1, gallopLength1 + 1);
+                    copyToChunk(valuesToPermute, valuesToSort, valuesToPermute, valuesToSort, copyUntil1, ii - gallopLength1 + 1, gallopLength1);
                     run1Cursor -= gallopLength1;
                     ii -= gallopLength1;
                     if (run1Cursor < mergeStartPosition) {

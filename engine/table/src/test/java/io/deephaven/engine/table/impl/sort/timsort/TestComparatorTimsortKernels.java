@@ -258,4 +258,25 @@ public class TestComparatorTimsortKernels {
             }
         }
     }
+
+    /**
+     * Two runs that interleave in blocks of 100 merge by galloping through the blocks, whichever run is longer: a
+     * galloping merge needs O(blocks * log(block)) comparisons (java.util TimSort uses about 0.14 per value), far fewer
+     * than the n - 1 of a linear merge. Allow a quarter of a linear merge.
+     */
+    @Test
+    public void timsortMergeGallopsThroughLongInterleavedBlocks() {
+        final int size = 1 << 16;
+        for (final boolean indirect : new boolean[] {false, true}) {
+            for (final boolean oddBlocksFirst : new boolean[] {false, true}) {
+                final int[] firstRunLength = new int[1];
+                // the longer run (even blocks) first merges from the back; the shorter run first merges from the front
+                final Integer[] values = interleavedRuns(size, 100, oddBlocksFirst, firstRunLength);
+                final long comparisons = countMergeComparisons(indirect, values, firstRunLength[0]);
+                assertTrue(kernelName(indirect) + " comparisons to merge " + size
+                        + " values interleaved in blocks of 100, first run length " + firstRunLength[0] + ": "
+                        + comparisons + " (bound " + size / 4 + ")", comparisons <= size / 4);
+            }
+        }
+    }
 }
