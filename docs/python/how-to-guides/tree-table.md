@@ -8,7 +8,7 @@ If your rows don't reference each other and you instead want to group rows by co
 
 A tree table is a table with an expandable [tree structure](https://en.wikipedia.org/wiki/Tree_(data_structure)). The following diagram shows one:
 
-![A diagram of a hierarchical tree structure with parent and child nodes](../assets/how-to/new-tree2.png)
+![A tree diagram: an implicit root above the top-level nodes A1, A2, and A3, their descendants down to C1 and C2, and a separate orphan node whose parent ID matches no row](../assets/how-to/new-tree2.svg)
 
 In computer science, trees are data structures used to represent hierarchical relationships between pieces of data. A tree stores its data in _nodes_. Each box in the diagram above is a node.
 
