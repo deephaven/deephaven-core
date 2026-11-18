@@ -3369,9 +3369,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                 if (parentResult instanceof QueryTable) {
                     final QueryTable myResult = ((QueryTable) parentResult).copy(StandardOptions.COPY_NONE);
                     copyAttributes(myResult, memoKey.copyType());
+                    final boolean parentResultAttributesPrevail = memoKey.parentCopyTypeIsResultAttributes();
                     copyAttributes((QueryTable) parentResult, myResult,
                             attributeName -> shouldCopyAttribute(attributeName, memoKey.getParentCopyType())
-                                    && !shouldCopyAttribute(attributeName, memoKey.copyType()));
+                                    && (parentResultAttributesPrevail
+                                            || !shouldCopyAttribute(attributeName, memoKey.copyType())));
                     // noinspection unchecked
                     return (R) myResult;
                 }

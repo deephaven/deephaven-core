@@ -3919,6 +3919,88 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     /**
+     * A sort of a copy shares its parent's memoized sort and carries the sort result attributes: it is marked sorted,
+     * and its row redirection and reverse lookup map between the copy and the sort result.
+     */
+    @Test
+    public void testMemoizedSortOfCopiedTable() {
+        final boolean old = QueryTable.setMemoizeResults(true);
+        try {
+            final QueryTable source = testRefreshingTable(i(2, 4, 6, 8).toTracking(),
+                    intCol("A", 30, 10, 40, 20), intCol("B", 1, 3, 2, 4));
+            final Table copy = source.assertAddOnly();
+            final Table copySorted = copy.sort("A");
+            final Table sorted = source.sort("A");
+            assertTrue(((QueryTable.CopiedTable) copySorted).checkParent(sorted));
+            assertMemoizedSortResult(copy, copySorted, "A");
+            assertMemoizedSortResult(source, sorted, "A");
+
+            final Table sortedCopy = sorted.assertAddOnly();
+            final Table sortedCopySorted = sortedCopy.sort("B");
+            assertTrue(((QueryTable.CopiedTable) sortedCopySorted).checkParent(sorted.sort("B")));
+            assertMemoizedSortResult(sortedCopy, sortedCopySorted, "B");
+        } finally {
+            QueryTable.setMemoizeResults(old);
+        }
+    }
+
+    /**
+     * A sort of a static copy shares its parent's memoized sort and is marked sorted, so sorting it again by the same
+     * column returns it.
+     */
+    @Test
+    public void testMemoizedSortOfStaticCopiedTable() {
+        final boolean old = QueryTable.setMemoizeResults(true);
+        try {
+            final QueryTable source = (QueryTable) newTable(intCol("A", 30, 10, 40, 20));
+            final Table sorted = source.sort("A");
+            final Table copy = source.assertAddOnly();
+            final Table copySorted = copy.sort("A");
+            assertTrue(((QueryTable.CopiedTable) copySorted).checkParent(sorted));
+            assertMemoizedSortResult(copy, copySorted, "A");
+        } finally {
+            QueryTable.setMemoizeResults(old);
+        }
+    }
+
+    /**
+     * A sort of a copy that changes or removes the original table's layout hints and description shares the original
+     * table's memoized sort, and carries the copy's own layout hints and description.
+     */
+    @Test
+    public void testMemoizedSortOfCopyKeepsItsOwnAttributes() {
+        final boolean old = QueryTable.setMemoizeResults(true);
+        try {
+            final QueryTable source = testRefreshingTable(i(2, 4, 6, 8).toTracking(), intCol("A", 30, 10, 40, 20));
+            source.setAttribute(Table.LAYOUT_HINTS_ATTRIBUTE, "parentHints");
+            source.setAttribute(Table.DESCRIPTION_ATTRIBUTE, "parentDescription");
+            final Table sorted = source.sort("A");
+
+            final Table changedCopy = source.withAttributes(Map.of(
+                    Table.LAYOUT_HINTS_ATTRIBUTE, "copyHints",
+                    Table.DESCRIPTION_ATTRIBUTE, "copyDescription"));
+            final Table changedCopySorted = changedCopy.sort("A");
+            assertTrue(((QueryTable.CopiedTable) changedCopySorted).checkParent(sorted));
+            assertEquals("copyHints", changedCopySorted.getAttribute(Table.LAYOUT_HINTS_ATTRIBUTE));
+            assertEquals("copyDescription", changedCopySorted.getAttribute(Table.DESCRIPTION_ATTRIBUTE));
+            assertMemoizedSortResult(changedCopy, changedCopySorted, "A");
+
+            final Table removedCopy =
+                    source.withoutAttributes(List.of(Table.LAYOUT_HINTS_ATTRIBUTE, Table.DESCRIPTION_ATTRIBUTE));
+            final Table removedCopySorted = removedCopy.sort("A");
+            assertTrue(((QueryTable.CopiedTable) removedCopySorted).checkParent(sorted));
+            assertNull(removedCopySorted.getAttribute(Table.LAYOUT_HINTS_ATTRIBUTE));
+            assertNull(removedCopySorted.getAttribute(Table.DESCRIPTION_ATTRIBUTE));
+            assertMemoizedSortResult(removedCopy, removedCopySorted, "A");
+
+            assertEquals("parentHints", sorted.getAttribute(Table.LAYOUT_HINTS_ATTRIBUTE));
+            assertEquals("parentDescription", sorted.getAttribute(Table.DESCRIPTION_ATTRIBUTE));
+        } finally {
+            QueryTable.setMemoizeResults(old);
+        }
+    }
+
+    /**
      * A reverse of a copy that changes the original table's layout hints shares the original table's memoized reverse,
      * and carries the copy's own layout hints.
      */
@@ -3962,6 +4044,23 @@ public class QueryTableTest extends QueryTableTestBase {
         } finally {
             QueryTable.setMemoizeResults(old);
         }
+    }
+
+    private static void assertMemoizedSortResult(final Table sortInput, final Table sortResult, final String column) {
+        assertEquals(column + "=Ascending", sortResult.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE));
+        assertSame(sortResult, sortResult.sort(column));
+
+        final RowRedirection redirection = SortOperation.getRowRedirection(sortResult);
+        final LongUnaryOperator reverseLookup = SortOperation.getReverseLookup(sortInput, sortResult);
+        assertNotNull(redirection);
+        assertNotNull(reverseLookup);
+        final ColumnSource<Integer> inputSource = sortInput.getColumnSource(column, int.class);
+        final ColumnSource<Integer> resultSource = sortResult.getColumnSource(column, int.class);
+        sortResult.getRowSet().forAllRowKeys(outerRowKey -> {
+            final long innerRowKey = redirection.get(outerRowKey);
+            assertEquals(inputSource.getInt(innerRowKey), resultSource.getInt(outerRowKey));
+            assertEquals(outerRowKey, reverseLookup.applyAsLong(innerRowKey));
+        });
     }
 
     @Test
