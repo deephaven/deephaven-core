@@ -265,11 +265,14 @@ The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write
   - `RowGroupInfo.max_rows(max_rows)`: Splits the data into row groups of no more than `max_rows` rows each.
   - `RowGroupInfo.max_groups(num_row_groups)`: Splits the data into the requested number of row groups of nearly equal size. If the row count is not evenly divisible by that number, some row groups contain one fewer row.
   - `RowGroupInfo.by_groups(groups, max_rows)`: Writes the rows for each unique combination of values in the `groups` columns as their own row group. `groups` is a list of column names. The rows for each group must be contiguous in the table, or the write raises an error. The optional `max_rows` argument splits any group with more rows than `max_rows` into smaller row groups, as `RowGroupInfo.max_rows` does.
-- `index_columns`: The sets of columns to write [data indexes](../data-indexes.md) for, as a sequence of sequences. For example, `[["Col1"], ["Col1", "Col2"]]` writes an index on `Col1` and an index on `Col1` and `Col2`. Deephaven writes each index to its own Parquet file under a `.dh_metadata/indexes` subdirectory of the data file's directory. If the source table lacks a listed index, Deephaven computes it. The default depends on the function:
-  - [`write`](../../reference/data-import-export/Parquet/writeTable.md): Writes the indexes on the source table.
-  - [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md) with a regular table: Writes the indexes on the source table, except single-column indexes on a partitioning column.
-  - [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write): Writes the indexes on the first table.
-  - `write_partitioned` with a partitioned table: Writes no indexes.
+- `index_columns`: The sets of columns to write [data indexes](../data-indexes.md) for, as a sequence of sequences. For example, `[["Col1"], ["Col1", "Col2"]]` writes an index on `Col1` and an index on `Col1` and `Col2`.
+  - Deephaven writes each index to its own Parquet file under a `.dh_metadata/indexes` subdirectory of the data file's directory.
+  - If the source table lacks a listed index, Deephaven computes it.
+  - The default depends on the function:
+    - [`write`](../../reference/data-import-export/Parquet/writeTable.md): Writes the indexes on the source table.
+    - [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md) with a regular table: Writes the indexes on the source table, except single-column indexes on a partitioning column.
+    - [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write): Writes the indexes on the first table.
+    - `write_partitioned` with a partitioned table: Writes no indexes.
 - `special_instructions`: Connection details for writing to S3 or Google Cloud Storage, provided as an [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) instance. See [Special instructions (S3 and GCS)](#special-instructions-s3-and-gcs).
 
 [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md) also accepts a `base_name` argument, which sets the names of the Parquet files it writes in each partition directory. The default is `{uuid}`, which names each file `<uuid>.parquet`. The name can include these tokens:
