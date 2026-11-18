@@ -183,7 +183,7 @@ def _new_table_from_mapping(cols: Mapping[str, Sequence]) -> Table:
     ):
         return arrow.to_table(pa_table)
 
-    # pyarrow can't type some columns, such as a list that mixes ints and strings, or an int too big for 64 bits.
+    # pyarrow can't type some columns, such as a list that mixes ints and strings.
     # pandas types them as Python objects.
     return to_table(pd.DataFrame(cols).convert_dtypes())
 

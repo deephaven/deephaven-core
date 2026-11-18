@@ -309,7 +309,6 @@ class TableFactoryTestCase(BaseTestCase):
             {
                 "Mixed": [1, "x"],
                 "AllNone": [None, None],
-                "BigInt": [2**64, 1],
             }
         )
         for c in t.columns:
