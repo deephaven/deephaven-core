@@ -300,6 +300,10 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertTrue(math.isnan(nan_none[1]))
         self.assertEqual(NULL_DOUBLE, nan_none[2])
 
+    def test_new_table_dict_column_names(self) -> None:
+        t = new_table({"A.B": [1.5], "AB": [2.5]})
+        self.assertEqual(["A_B", "AB"], [c.name for c in t.columns])
+
     def test_new_table_dict_pandas_fallback(self) -> None:
         t = new_table(
             {
