@@ -602,17 +602,20 @@ public class SortListener extends BaseTable.ListenerImpl {
     /**
      * The following may clarify what we are doing: lKey (the "target") is in input coordinates rKey (the "probe") is in
      * output coordinates. Each probe looks up the previous input key of rKey once, and then compares the previous
-     * values of the input columns at that key, which are the previous values of the sorted columns at rKey.
+     * values of the input columns at that key, which are the previous values of the sorted columns at rKey. Each
+     * column's comparator holds the target's current value, read by the first probe that compares that column, so one
+     * placement reads each of the target's values at most once.
      */
     private class TargetComparator implements RowSet.TargetComparator {
         private long lKey;
-        private final ColumnComparatorFactory.IComparator[] comparators;
+        // The comparators of columns [0, numTargetColumnsHeld) hold lKey's current values.
+        private int numTargetColumnsHeld;
+        private final ColumnComparatorFactory.HeldTargetComparator[] comparators;
 
         TargetComparator() {
-            this.comparators = new ColumnComparatorFactory.IComparator[columnsToSortBy.length];
+            this.comparators = new ColumnComparatorFactory.HeldTargetComparator[columnsToSortBy.length];
             for (int ii = 0; ii < columnsToSortBy.length; ii++) {
-                comparators[ii] = ColumnComparatorFactory.createComparatorLeftCurrRightPrev(columnsToSortBy[ii],
-                        columnsToSortBy[ii],
+                comparators[ii] = ColumnComparatorFactory.createHeldTargetComparatorCurrToPrev(columnsToSortBy[ii],
                         SortListener.this.comparators[ii]);
             }
             setTarget(-1);
@@ -620,13 +623,18 @@ public class SortListener extends BaseTable.ListenerImpl {
 
         public void setTarget(final long lKey) {
             this.lKey = lKey;
+            numTargetColumnsHeld = 0;
         }
 
         @Override
         public int compareTargetTo(final long rKey, final int dir) {
             final long rInputKey = sortMapping.getPrev(rKey);
-            for (int ii = 0; ii < columnsToSortBy.length; ++ii) {
-                final int difference = comparators[ii].compare(lKey, rInputKey);
+            for (int ii = 0; ii < comparators.length; ++ii) {
+                if (ii == numTargetColumnsHeld) {
+                    comparators[ii].setTarget(lKey);
+                    ++numTargetColumnsHeld;
+                }
+                final int difference = comparators[ii].compareTargetToPrev(rInputKey);
                 if (difference != 0) {
                     return difference * order[ii].direction * dir;
                 }
