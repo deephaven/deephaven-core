@@ -367,8 +367,8 @@ def array(
 
         if isinstance(seq, np.ndarray):
             if dtype == bool_ and seq.dtype == np.object_:
-                # An object array can hold None for a null, which astype(np.int8) rejects. jpy maps each bool or
-                # None in a list to a Boolean.
+                # astype(np.int8) fails on the None in an object array. A list works, because jpy maps each bool
+                # or None to a Boolean.
                 seq = seq.tolist()
             elif dtype == bool_:
                 bytes_ = seq.astype(dtype=np.int8)

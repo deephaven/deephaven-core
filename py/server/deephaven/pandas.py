@@ -173,12 +173,10 @@ def to_pandas(
             timestamp types, and requires pandas 2.0.0 or later. Other types use pyarrow's default conversion.
             Deephaven nulls become pd.NA in the columns that use these dtypes. Columns that use pyarrow's default
             conversion get its missing-value marker instead, such as NaT for timestamp columns with "numpy_nullable".
-            None reads the column data into NumPy-backed Series; when conv_null is
-            True, boolean, char, and numeric columns then use pandas nullable dtypes so that Deephaven nulls become
-            pd.NA. Default is "numpy_nullable". With None and conv_null True, and with "numpy_nullable" on pandas
-            3.0.0 or later, a Deephaven NaN in a float or double column also becomes pd.NA, because pandas treats NaN
-            as missing in its nullable float dtypes. to_table then turns it into a Deephaven null. Use "pyarrow" to
-            keep NaN and null apart.
+            None reads the column data into NumPy-backed Series; when conv_null is True, boolean, char, numeric, and
+            string columns then use pandas nullable dtypes so that Deephaven nulls become pd.NA. Default is
+            "numpy_nullable". With None and conv_null True, or with "numpy_nullable" on pandas 3.0.0 or later, a NaN
+            in a float or double column also becomes pd.NA. Use "pyarrow" to keep NaN and null apart.
         conv_null (bool): when dtype_backend is set to None, whether to check for Deephaven nulls in the data and
             automatically replace them with pd.NA. default is True.
 
@@ -266,14 +264,11 @@ def _map_na(array: np.ndarray | ExtensionArray) -> np.ndarray:
     dh_null = _PANDAS_EXTYPE_DH_NULL_MAP.get(
         type(pd_dtype)
     ) or _PANDAS_EXTYPE_DH_NULL_MAP.get(pd_dtype)
-    # A nullable float array has a mask that marks missing slots. Every masked slot becomes a Deephaven null, and an
-    # unmasked NaN stays NaN. A masked slot means "missing" to pandas: isna() is True and mean()/sum() skip it. That
-    # matches a Deephaven null, which aggregations also skip. A Deephaven NaN would turn a whole group's avg into NaN.
+    # Every masked slot becomes a Deephaven null, and an unmasked NaN stays NaN. A masked slot is "missing" to pandas,
+    # and aggregations skip it, just as they skip a Deephaven null.
     #
-    # Don't look at the data under the mask to tell null from NaN. The data there is unreliable: None and np.nan both
-    # leave NaN under the mask, and pd.Series(np_array, dtype="Float64") masks every NaN on pandas 2 and 3. On pandas
-    # 3, NaN and NA are the same thing in these dtypes unless the user turns on
-    # pd.options.future.distinguish_nan_and_na. Reading the data under the mask turned a user's None into NaN.
+    # Don't read the data under the mask to tell None from NaN. Both leave NaN there, and on pandas 3 NaN and NA are
+    # the same in these dtypes unless pd.options.future.distinguish_nan_and_na is on.
     #
     # The cost: a Deephaven NaN that goes through to_pandas() with dtype_backend=None, or "numpy_nullable" on pandas
     # 3, comes back as null. dtype_backend="pyarrow" keeps NaN and null apart.
@@ -313,9 +308,8 @@ def to_table(
     removed: "Shades.1" becomes "Shades_1". This second conversion changes nothing else, so a name such as "123" or
     the reserved word "in" is still rejected.
 
-    A missing value in a pandas nullable column, one for which isna() is True, becomes a Deephaven null. In a
-    Float32 or Float64 column, that includes None and np.nan, because pandas marks them missing. A NaN that pandas
-    doesn't mark missing stays NaN.
+    In a pandas nullable column, each value where isna() is True becomes a Deephaven null. In a Float32 or Float64
+    column, that includes None and np.nan. A NaN that pandas doesn't mark missing stays NaN.
 
     Args:
         df (DataFrame): the pandas DataFrame instance

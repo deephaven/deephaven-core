@@ -230,7 +230,7 @@ handle = listen(source, listener_function)
 
 ![`source` updates while the listener prints added rows](../assets/how-to/listen-added-chunks.gif)
 
-NumPy `bool` and string arrays have no null value. By default, a null in a Boolean column reads as `True`, and a null in a String column reads as the string `'None'`. To tell nulls apart, pass `null_as_none=True` to any [`TableUpdate`](https://deephaven.io/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate) accessor, such as `added` or `added_chunks`. Boolean and String columns then become `object` arrays that hold `None` for a null.
+NumPy `bool` and string arrays have no null value. By default, a null in a Boolean column reads as `True`, and a null in a String column reads as the string `'None'`. To tell nulls apart, pass `bool_str_null_as_none=True` to any [`TableUpdate`](https://deephaven.io/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate) accessor, such as `added` or `added_chunks`. Boolean and String columns then become `object` arrays that hold `None` for a null.
 
 ## Error handling
 

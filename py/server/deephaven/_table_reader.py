@@ -100,7 +100,7 @@ def _table_reader_all_dict(
     row_set: jpy.JType,
     prev: bool = False,
     to_numpy: bool = True,
-    null_as_none: bool = False,
+    bool_str_null_as_none: bool = False,
 ) -> dict[str, np.ndarray | jpy.JType]:
     """Reads all the rows in the given row set of a table into a dictionary. The dictionary is a map of column names
     to numpy arrays or Java arrays.
@@ -119,8 +119,9 @@ def _table_reader_all_dict(
         row_set (jpy.JType): The row set to read.
         prev (bool): If True, read the previous values. Default is False.
         to_numpy (bool): If True, convert the column data to numpy arrays. Default is True.
-        null_as_none (bool): If True and to_numpy is True, Boolean and String columns become object arrays that hold
-            None for a null. Default is False, meaning a null Boolean reads as True and a null String reads as 'None'.
+        bool_str_null_as_none (bool): If True and to_numpy is True, Boolean and String columns become object arrays
+            that hold None for a null. Default is False, meaning a null Boolean reads as True and a null String reads
+            as 'None'.
 
     Returns:
         A dictionary of column names to numpy arrays or Java arrays.
@@ -131,7 +132,9 @@ def _table_reader_all_dict(
 
     def _emitter(col_defs, j_array):
         return {
-            col_def.name: _column_to_numpy_array(col_def, j_array[i], null_as_none)
+            col_def.name: _column_to_numpy_array(
+                col_def, j_array[i], bool_str_null_as_none
+            )
             if to_numpy
             else j_array[i]
             for i, col_def in enumerate(col_defs)
@@ -205,7 +208,7 @@ def _table_reader_chunk_dict(
     row_set: jpy.JType,
     chunk_size: int = 2048,
     prev: bool = False,
-    null_as_none: bool = False,
+    bool_str_null_as_none: bool = False,
 ) -> Generator[dict[str, np.ndarray], None, None]:
     """Returns a generator that reads one chunk of rows at a time from the table into a dictionary. The dictionary is
     a map of column names to numpy arrays or Java arrays.
@@ -224,8 +227,8 @@ def _table_reader_chunk_dict(
         row_set (jpy.JType): The row set to read.
         chunk_size (int): The number of rows to read at a time. Default is 2048.
         prev (bool): If True, read the previous values. Default is False.
-        null_as_none (bool): If True, Boolean and String columns become object arrays that hold None for a null.
-            Default is False, meaning a null Boolean reads as True and a null String reads as 'None'.
+        bool_str_null_as_none (bool): If True, Boolean and String columns become object arrays that hold None for a
+            null. Default is False, meaning a null Boolean reads as True and a null String reads as 'None'.
 
     Returns:
         A generator that yields a dictionary of column names to numpy arrays or Java arrays.
@@ -238,7 +241,9 @@ def _table_reader_chunk_dict(
         col_defs: Sequence[ColumnDefinition], j_array: jpy.JType
     ) -> Generator[dict[str, np.ndarray], None, None]:
         yield {
-            col_def.name: _column_to_numpy_array(col_def, j_array[i], null_as_none)
+            col_def.name: _column_to_numpy_array(
+                col_def, j_array[i], bool_str_null_as_none
+            )
             for i, col_def in enumerate(col_defs)
         }
 
@@ -253,7 +258,7 @@ def _table_reader_chunk_tuple(
     *,
     tuple_name: str = "Deephaven",
     chunk_size: int = 2048,
-    null_as_none: bool = False,
+    bool_str_null_as_none: bool = False,
 ) -> Generator[tuple[np.ndarray, ...], None, None]:
     """Returns a generator that reads one chunk of rows at a time from the table into a named tuple. The named
     tuple is made up of fields with their names being the column names and their values being numpy arrays of the
@@ -272,8 +277,8 @@ def _table_reader_chunk_tuple(
         cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
         tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
         chunk_size (int): The number of rows to read at a time. Default is 2048.
-        null_as_none (bool): If True, Boolean and String columns become object arrays that hold None for a null.
-            Default is False, meaning a null Boolean reads as True and a null String reads as 'None'.
+        bool_str_null_as_none (bool): If True, Boolean and String columns become object arrays that hold None for a
+            null. Default is False, meaning a null Boolean reads as True and a null String reads as 'None'.
 
     Returns:
         A generator that yields a named tuple for each row in the table.
@@ -292,7 +297,7 @@ def _table_reader_chunk_tuple(
             tuple,
             named_tuple_class._make(
                 [
-                    _column_to_numpy_array(col_def, j_array[i], null_as_none)
+                    _column_to_numpy_array(col_def, j_array[i], bool_str_null_as_none)
                     for i, col_def in enumerate(col_defs)
                 ]
             ),

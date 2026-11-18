@@ -131,10 +131,9 @@ def new_table(cols: Sequence[InputColumn] | Mapping[str, Sequence]) -> Table:
     Each column must have an equal number of elements.
 
     When the input is a mapping, pyarrow infers each column's type from its data. In a float column, a None becomes a
-    null and a NaN stays NaN. When pyarrow can't type a column, such as a list that mixes ints and strings, or when a
-    column is empty or all None, the mapping goes through a pandas DataFrame instead, and pandas infers the types. So
-    does a mapping with a pandas Series value, so that rows line up by the index. On the pandas path, NaN and None
-    both become nulls in every float column.
+    null and a NaN stays NaN. pandas infers the types instead when a value is a pandas Series, so rows line up by the
+    index, or when pyarrow can't type a column, such as a list that mixes ints and strings or a column that is empty
+    or all None. On the pandas path, NaN and None both become nulls in every float column.
 
     Args:
         cols (Union[Sequence[InputColumn], Mapping[str, Sequence]]): a list of InputColumns or a mapping of columns
@@ -165,9 +164,8 @@ def _new_table_from_mapping(cols: Mapping[str, Sequence]) -> Table:
     from deephaven.numpy import _to_column_name
     from deephaven.pandas import to_table
 
-    # Arrow keeps a None apart from a float NaN, and keeps a float column a float column. pandas turns a None in a
-    # float column into NaN, and convert_dtypes turns a float column of whole numbers into an integer column.
-    # pandas lines up Series values by their index and Arrow ignores the index, so Series go through pandas.
+    # Arrow goes first because it keeps None apart from NaN and keeps whole-number floats as floats. pandas loses
+    # both. A Series goes through pandas, because pandas lines up rows by the index and Arrow ignores it.
     pa_table = None
     if not any(isinstance(v, pd.Series) for v in cols.values()):
         try:

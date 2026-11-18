@@ -91,7 +91,7 @@ source = new_table([int_array_col])
 
 ### Create a table from a dictionary
 
-When you pass a dictionary, [`new_table`](../reference/table-operations/create/newTable.md) uses [pyarrow](https://arrow.apache.org/docs/python/) to infer each column's type from its data. In a float column, `None` becomes a [null](../reference/query-language/types/nulls.md) and `NaN` stays `NaN`. When pyarrow can't type a column, such as a list that mixes integers and strings, `new_table` lets pandas infer the types of the whole dictionary instead, and `NaN` and `None` both become nulls in every float column. `new_table` also uses pandas when a value is a pandas `Series`, so that rows line up by the index. In the following example, the `Name` column is a `String` column, `Math` is a `long` column, and `Gpa` is a `double` column:
+When you pass a dictionary, [`new_table`](../reference/table-operations/create/newTable.md) infers each column's type from its data. In a float column, `None` becomes a [null](../reference/query-language/types/nulls.md) and `NaN` stays `NaN`. In the following example, the `Name` column is a `String` column, `Math` is a `long` column, and `Gpa` is a `double` column:
 
 ```python order=result
 from deephaven import new_table

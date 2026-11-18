@@ -28,14 +28,14 @@ def _to_column_name(name: str) -> str:
 
 
 def _column_to_numpy_array(
-    col_def: ColumnDefinition, j_array: jpy.JType, null_as_none: bool = False
+    col_def: ColumnDefinition, j_array: jpy.JType, bool_str_null_as_none: bool = False
 ) -> np.ndarray:
     """Produces a numpy array from the given Java array and the Table column definition.
 
     Args:
         col_def (ColumnDefinition): the column definition
         j_array (jpy.JType): the Java array
-        null_as_none (bool): whether Boolean and String columns become object arrays that hold None for a null.
+        bool_str_null_as_none (bool): whether Boolean and String columns become object arrays that hold None for a null.
             Default is False, meaning a null Boolean reads as True and a null String reads as 'None'.
 
     Returns:
@@ -45,10 +45,8 @@ def _column_to_numpy_array(
         DHError
     """
     try:
-        if null_as_none and col_def.data_type in (dtypes.bool_, dtypes.string):
-            return np.array(j_array, dtype=np.object_)
         return _j_array_to_numpy_array(
-            col_def.data_type, j_array, conv_null=False, type_promotion=False
+            col_def.data_type, j_array, bool_str_null_as_none=bool_str_null_as_none
         )
     except DHError:
         raise
@@ -59,7 +57,9 @@ def _column_to_numpy_array(
 
 
 def _columns_to_2d_numpy_array(
-    col_def: ColumnDefinition, j_arrays: list[jpy.JType]
+    col_def: ColumnDefinition,
+    j_arrays: list[jpy.JType],
+    bool_str_null_as_none: bool = False,
 ) -> np.ndarray:
     """Produces a 2d numpy array from the given Java arrays of the same component type and the Table column
     definition"""
@@ -75,7 +75,11 @@ def _columns_to_2d_numpy_array(
             np_arrays = []
             for j_array in j_arrays:
                 np_arrays.append(
-                    _column_to_numpy_array(col_def=col_def, j_array=j_array)
+                    _column_to_numpy_array(
+                        col_def=col_def,
+                        j_array=j_array,
+                        bool_str_null_as_none=bool_str_null_as_none,
+                    )
                 )
             return np.stack(np_arrays, axis=1)
     except DHError:
@@ -91,7 +95,11 @@ def _make_input_column(col: str, np_array: np.ndarray, dtype: DType) -> InputCol
     return InputColumn(name=_to_column_name(col), data_type=dtype, input_data=np_array)
 
 
-def to_numpy(table: Table, cols: Sequence[str] | None = None) -> np.ndarray:
+def to_numpy(
+    table: Table,
+    cols: Sequence[str] | None = None,
+    bool_str_null_as_none: bool = False,
+) -> np.ndarray:
     """Produces a numpy array from a table.
 
     Note that the **entire table** is going to be cloned into memory, so the total number of entries in the table
@@ -102,6 +110,9 @@ def to_numpy(table: Table, cols: Sequence[str] | None = None) -> np.ndarray:
         table (Table): the source table
         cols (Optional[Sequence[str]]): the names of the columns; if None, all columns are included, default is
             None
+        bool_str_null_as_none (bool): whether Boolean and String columns become object arrays that hold None for
+            a null. Default is False, meaning a null Boolean reads as True and a null String reads as 'None'.
+            Other columns aren't affected.
     Returns:
         a numpy ndarray
 
@@ -130,7 +141,7 @@ def to_numpy(table: Table, cols: Sequence[str] | None = None) -> np.ndarray:
             j_arrays.append(
                 _JColumnVectors.of(table.j_table, col_def.name).copyToArray()
             )
-        return _columns_to_2d_numpy_array(col_defs[0], j_arrays)
+        return _columns_to_2d_numpy_array(col_defs[0], j_arrays, bool_str_null_as_none)
     except DHError:
         raise
     except Exception as e:

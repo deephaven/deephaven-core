@@ -83,11 +83,23 @@ for x, y in source.iter_chunk_tuple(chunk_size=5):
 
 ## Null values
 
-Null values in primitive columns arrive as Deephaven's [null constants](../reference/query-language/types/nulls.md), not as `None` or `NaN`. For example, a null `int` value arrives as `-2147483648`, the value of `NULL_INT`. This applies to both the row-based and chunk-based methods.
+What a null value arrives as depends on the column type and the kind of method:
 
-Null values in object columns arrive differently in the two kinds of method. The row-based methods return `None`. The chunk-based methods convert each column to a NumPy array, so a null `String` arrives as the string `"None"`, a null `Instant` arrives as `NaT`, and a null `Boolean` arrives as `True`. If a `String` or `Boolean` column can contain nulls, pass `null_as_none=True` to a chunk-based method. Those two column types then become `object` arrays that hold `None` for a null. You can also use a row-based method, or filter out the nulls with [`where`](../reference/table-operations/filter/where.md) before you iterate.
+| Column type | Row-based methods | Chunk-based methods | Chunk-based methods with `bool_str_null_as_none=True` |
+| ----------- | ----------------- | ------------------- | ----------------------------------------------------- |
+| Primitive   | Null constant     | Null constant       | Null constant                                         |
+| `Boolean`   | `None`            | `True`              | `None`                                                |
+| `String`    | `None`            | `"None"`            | `None`                                                |
+| `Instant`   | `None`            | `NaT`               | `NaT`                                                 |
 
-The following example iterates over a table that has a null in its second row: first one row at a time, then one chunk at a time, and then one chunk at a time with `null_as_none=True`:
+The primitive column types are `byte`, `short`, `int`, `long`, `float`, `double`, and `char`. A null in one of them arrives as Deephaven's [null constant](../reference/query-language/types/nulls.md) for the type, not as `None` or `NaN`. For example, a null `int` arrives as `-2147483648`, the value of `NULL_INT`.
+
+A Deephaven table has no primitive `boolean` column. A formula that returns a `boolean`, such as `B = i % 2 == 0`, makes a `Boolean` column, which can hold a null.
+
+> [!WARNING]
+> In the chunk-based methods, a null `Boolean` arrives as `True` and a null `String` arrives as the string `"None"`. Both look like real values. NumPy `bool` and `str` arrays have no null value, so the chunk-based methods have nothing else to put there. If a `Boolean` or `String` column can contain nulls, pass `bool_str_null_as_none=True` to a chunk-based method. Those two column types then become `object` arrays that hold `None` for a null. You can also use a row-based method, or filter out the nulls with [`where`](../reference/table-operations/filter/where.md) before you iterate.
+
+The following example iterates over a table that has a null in its second row: first one row at a time, then one chunk at a time, and then one chunk at a time with `bool_str_null_as_none=True`:
 
 ```python order=:log,source
 from deephaven import empty_table
@@ -100,7 +112,7 @@ for row in source.iter_dict():
 for chunk in source.iter_chunk_dict():
     print(chunk)
 
-for chunk in source.iter_chunk_dict(null_as_none=True):
+for chunk in source.iter_chunk_dict(bool_str_null_as_none=True):
     print(chunk)
 ```
 

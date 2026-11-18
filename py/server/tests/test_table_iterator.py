@@ -445,7 +445,7 @@ class TableIteratorTestCase(BaseTestCase):
             with self.assertRaises(ValueError):
                 list(test_table.iter_dict(cols=["A", "A"]))
 
-    def test_iteration_in_chunks_null_as_none(self) -> None:
+    def test_iteration_in_chunks_bool_str_null_as_none(self) -> None:
         test_table = new_table(
             [
                 bool_col("B", [True, None, False]),
@@ -462,7 +462,7 @@ class TableIteratorTestCase(BaseTestCase):
             self.assertEqual([1, NULL_INT, 3], chunk["I"].tolist())
 
         with self.subTest("iter_chunk_dict"):
-            chunk = next(test_table.iter_chunk_dict(null_as_none=True))
+            chunk = next(test_table.iter_chunk_dict(bool_str_null_as_none=True))
             self.assertEqual(np.object_, chunk["B"].dtype)
             self.assertEqual(np.object_, chunk["S"].dtype)
             self.assertEqual([True, None, False], chunk["B"].tolist())
@@ -481,13 +481,15 @@ class TableIteratorTestCase(BaseTestCase):
             self.assert_table_equals(test_table, round_trip)
 
         with self.subTest("iter_chunk_tuple"):
-            chunk_tuple = next(test_table.iter_chunk_tuple(null_as_none=True))
+            chunk_tuple = next(test_table.iter_chunk_tuple(bool_str_null_as_none=True))
             self.assertEqual([True, None, False], chunk_tuple.B.tolist())
             self.assertEqual(["a", None, "c"], chunk_tuple.S.tolist())
 
         with self.subTest("no nulls"):
             chunk = next(
-                test_table.where("!isNull(B)").iter_chunk_dict(null_as_none=True)
+                test_table.where("!isNull(B)").iter_chunk_dict(
+                    bool_str_null_as_none=True
+                )
             )
             self.assertEqual(np.object_, chunk["B"].dtype)
             self.assertEqual([True, False], chunk["B"].tolist())

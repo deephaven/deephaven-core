@@ -308,7 +308,7 @@ class TableListenerTestCase(BaseTestCase):
             [v for chunk in modified_prev_chunks for v in chunk["V"]],
         )
 
-    def test_chunks_null_as_none(self) -> None:
+    def test_chunks_bool_str_null_as_none(self) -> None:
         source = input_table(
             {"B": dtypes.bool_, "S": dtypes.string},
         )
@@ -316,7 +316,9 @@ class TableListenerTestCase(BaseTestCase):
         update_received = threading.Event()
 
         def on_update(update: TableUpdate, is_replay: bool) -> None:
-            added_chunks.extend(update.added_chunks(chunk_size=10, null_as_none=True))
+            added_chunks.extend(
+                update.added_chunks(chunk_size=10, bool_str_null_as_none=True)
+            )
             update_received.set()
 
         handle = listen(source, on_update)
@@ -331,7 +333,7 @@ class TableListenerTestCase(BaseTestCase):
         self.assertEqual([True, None], added_chunks[0]["B"].tolist())
         self.assertEqual([None, "b"], added_chunks[0]["S"].tolist())
 
-    def test_null_as_none(self) -> None:
+    def test_bool_str_null_as_none(self) -> None:
         source = input_table(
             {"K": dtypes.int64, "B": dtypes.bool_, "S": dtypes.string}, key_cols="K"
         )
@@ -341,10 +343,10 @@ class TableListenerTestCase(BaseTestCase):
         def on_update(update: TableUpdate, is_replay: bool) -> None:
             updates.append(
                 {
-                    "added": update.added(null_as_none=True),
-                    "removed": update.removed(null_as_none=True),
-                    "modified": update.modified(null_as_none=True),
-                    "modified_prev": update.modified_prev(null_as_none=True),
+                    "added": update.added(bool_str_null_as_none=True),
+                    "removed": update.removed(bool_str_null_as_none=True),
+                    "modified": update.modified(bool_str_null_as_none=True),
+                    "modified_prev": update.modified_prev(bool_str_null_as_none=True),
                 }
             )
             update_received.set()

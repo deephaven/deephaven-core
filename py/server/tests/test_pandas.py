@@ -514,6 +514,19 @@ class PandasTestCase(BaseTestCase):
                 dh_table = to_table(df)
                 self.assert_table_equals(_nan_as_null_where_missing(t, df), dh_table)
 
+    def test_to_pandas_string_null(self) -> None:
+        t = new_table([string_col("S", ["a", None])])
+
+        df = to_pandas(t, dtype_backend=None)
+        self.assertIsInstance(df["S"].dtype, pd.StringDtype)
+        self.assertEqual("a", df["S"][0])
+        self.assertIs(pd.NA, df["S"][1])
+        self.assert_table_equals(t, to_table(df))
+
+        # Without null conversion, NumPy has no null for a str array.
+        df = to_pandas(t, dtype_backend=None, conv_null=False)
+        self.assertEqual(["a", "None"], df["S"].tolist())
+
     def test_to_table_nullable_float_missing(self) -> None:
         for pd_dtype, dh_dtype in [
             (pd.Float32Dtype(), dtypes.float32),

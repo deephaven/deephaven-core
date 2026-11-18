@@ -9,7 +9,7 @@ If locking is not explicitly specified, this method will automatically lock to e
 ## Syntax
 
 ```python syntax
-iter_chunk_dict(cols: Optional[Union[str, Sequence[str]]] = None, chunk_size: int = 2048, null_as_none: bool = False) -> Generator[Dict[str, np.ndarray], None, None]
+iter_chunk_dict(cols: Optional[Union[str, Sequence[str]]] = None, chunk_size: int = 2048, bool_str_null_as_none: bool = False) -> Generator[Dict[str, np.ndarray], None, None]
 ```
 
 ## Parameters
@@ -25,7 +25,7 @@ The columns to read. If not given, all columns are read. The default is `None`, 
 The number of rows to read at a time. If not given, the default is 2048.
 
 </Param>
-<Param name="null_as_none" type="bool" Optional>
+<Param name="bool_str_null_as_none" type="bool" Optional>
 
 Whether Boolean and String columns become `object` arrays that hold `None` for a null. The default is `False`, which gives `bool` and string arrays, where a null Boolean reads as `True` and a null String reads as `'None'`. Other columns aren't affected: a null in a primitive column reads as its [null constant](../../query-language/types/nulls.md), such as `NULL_INT`.
 

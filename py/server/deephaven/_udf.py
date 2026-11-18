@@ -89,8 +89,6 @@ class _ParsedParam:
                     self.arg_converter = partial(
                         _j_array_to_numpy_array,
                         dtype,
-                        conv_null=False,
-                        type_promotion=False,
                     )
                 elif arg_type_str == "N":
                     self.arg_converter = None
