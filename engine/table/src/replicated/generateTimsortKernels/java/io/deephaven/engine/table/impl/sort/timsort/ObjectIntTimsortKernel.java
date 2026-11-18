@@ -88,6 +88,8 @@ public final class ObjectIntTimsortKernel {
             insertionSort(valuesToPermute, valuesToSort, offset, length);
             return;
         }
+        // each sort starts galloping from the initial threshold, independent of earlier sorts with this context
+        context.minGallop = TimsortUtils.INITIAL_GALLOP;
         context.runCount = 0;
         int startRun = offset;
         while (startRun < offset + length) {
@@ -615,6 +617,8 @@ public final class ObjectIntTimsortKernel {
         public void merge(WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort, int start1, int length1,
                 int length2) {
+            // each merge starts galloping from the initial threshold, independent of earlier sorts with this context
+            minGallop = TimsortUtils.INITIAL_GALLOP;
             ObjectIntTimsortKernel.this.merge(this, valuesToPermute, valuesToSort.asWritableObjectChunk(), start1, length1, length2);
         }
 

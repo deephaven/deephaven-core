@@ -597,6 +597,9 @@ public class IndirectTimsortKernelFactory {
                     .addParameter(int.class, "start1")
                     .addParameter(int.class, "length1")
                     .addParameter(int.class, "length2")
+                    .addComment("each merge starts galloping from the initial threshold, independent of earlier sorts "
+                            + "with this context")
+                    .addStatement("minGallop = $T.INITIAL_GALLOP", TIMSORT_UTILS)
                     .addStatement(mergePositionsFormat, mergePositionsArgs.toArray())
                     .build());
 
@@ -669,6 +672,9 @@ public class IndirectTimsortKernelFactory {
                     .addStatement("insertionSort(" + contextArg() + "positions, " + valuesArgs() + ", offset, length)")
                     .addStatement("return")
                     .endControlFlow()
+                    .addComment("each sort starts galloping from the initial threshold, independent of earlier sorts "
+                            + "with this context")
+                    .addStatement("context.minGallop = $T.INITIAL_GALLOP", TIMSORT_UTILS)
                     .addStatement("context.runCount = 0")
                     .addStatement("int startRun = offset")
                     .beginControlFlow("while (startRun < offset + length)")

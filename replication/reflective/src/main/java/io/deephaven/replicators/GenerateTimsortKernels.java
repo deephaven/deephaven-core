@@ -666,6 +666,9 @@ public class GenerateTimsortKernels {
                         .addParameter(int.class, "start1")
                         .addParameter(int.class, "length1")
                         .addParameter(int.class, "length2")
+                        .addComment("each merge starts galloping from the initial threshold, independent of earlier "
+                                + "sorts with this context")
+                        .addStatement("minGallop = $T.INITIAL_GALLOP", TIMSORT_UTILS)
                         .addStatement(
                                 "$T.this.merge(this, valuesToPermute, valuesToSort.$L(), start1, length1, length2)",
                                 kernelClass, keyChunks.asWritableChunkMethod())
@@ -824,6 +827,9 @@ public class GenerateTimsortKernels {
                     .addStatement("insertionSort(" + permute + "valuesToSort, offset, length)")
                     .addStatement("return")
                     .endControlFlow()
+                    .addComment("each sort starts galloping from the initial threshold, independent of earlier sorts "
+                            + "with this context")
+                    .addStatement("context.minGallop = $T.INITIAL_GALLOP", TIMSORT_UTILS)
                     .addStatement("context.runCount = 0")
                     .addStatement("int startRun = offset")
                     .beginControlFlow("while (startRun < offset + length)")

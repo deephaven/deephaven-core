@@ -18,6 +18,7 @@ import io.deephaven.util.SafeCloseable;
 import org.junit.Test;
 
 import java.util.Comparator;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -276,6 +277,61 @@ public class TestComparatorTimsortKernels {
                 assertTrue(kernelName(indirect) + " comparisons to merge " + size
                         + " values interleaved in blocks of 100, first run length " + firstRunLength[0] + ": "
                         + comparisons + " (bound " + size / 4 + ")", comparisons <= size / 4);
+            }
+        }
+    }
+
+    /** Sorts {@code count} chunks of random values with the kernel. */
+    private static void sortRandomChunks(final IntegerKernel kernel, final Random random, final int size,
+            final int count) {
+        final Integer[] values = new Integer[size];
+        for (int rep = 0; rep < count; ++rep) {
+            for (int ii = 0; ii < size; ++ii) {
+                values[ii] = random.nextInt();
+            }
+            kernel.sort(values);
+        }
+    }
+
+    /**
+     * A sort kernel context is reused for many sorts (e.g., the SortListener mapping aggregator sorts every chunk with
+     * one context). Each sort or merge performs exactly as it would with a fresh context: earlier sorts of random data
+     * do not change the comparisons that a later galloping merge or sort needs.
+     */
+    @Test
+    public void timsortContextReuseDoesNotDisableGalloping() {
+        final int size = 1 << 16;
+        final int[] firstRunLength = new int[1];
+        // the shorter run (odd blocks) first, so the merge proceeds from the front
+        final Integer[] blocks = interleavedRuns(size, 10, true, firstRunLength);
+        for (final boolean indirect : new boolean[] {false, true}) {
+            final long freshMerge = countMergeComparisons(indirect, blocks, firstRunLength[0]);
+            final CountingComparator freshComparator = new CountingComparator();
+            final Integer[] freshSorted = blocks.clone();
+            try (final IntegerKernel kernel = makeKernel(indirect, size, freshComparator)) {
+                kernel.sort(freshSorted);
+            }
+            assertIdentity(kernelName(indirect) + " fresh sort", freshSorted);
+            final long freshSort = freshComparator.count;
+
+            final CountingComparator comparator = new CountingComparator();
+            final Random random = new Random(1);
+            try (final IntegerKernel kernel = makeKernel(indirect, size, comparator)) {
+                sortRandomChunks(kernel, random, size, 20);
+                final Integer[] merged = blocks.clone();
+                comparator.count = 0;
+                kernel.merge(merged, firstRunLength[0]);
+                assertIdentity(kernelName(indirect) + " reused merge", merged);
+                assertEquals(kernelName(indirect) + " comparisons for the merge after 20 sorts with the context",
+                        freshMerge, comparator.count);
+
+                sortRandomChunks(kernel, random, size, 20);
+                final Integer[] sorted = blocks.clone();
+                comparator.count = 0;
+                kernel.sort(sorted);
+                assertIdentity(kernelName(indirect) + " reused sort", sorted);
+                assertEquals(kernelName(indirect) + " comparisons for the sort after 20 sorts with the context",
+                        freshSort, comparator.count);
             }
         }
     }
