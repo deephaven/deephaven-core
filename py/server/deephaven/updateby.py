@@ -1849,7 +1849,7 @@ def rolling_formula_time(
 
     There are two variants of this call. The preferred variant requires the formula to provide the output column name
     and specific input column names in the following format:
-        |  rolling_formula_time(ts_col='tstamp', formula='output_col=(input_col1 + input_col2) * input_col3', rev_time='PT00:10:00', fwd_time='0'`)
+        |  rolling_formula_time(ts_col='tstamp', formula='output_col=(input_col1 + input_col2) * input_col3', rev_time='PT00:10:00', fwd_time=0)
     This form does not accept `formula_param` or `cols` arguments because the input and output columns are explicitly
     set within the formula string.
 
@@ -1858,7 +1858,7 @@ def rolling_formula_time(
     argument is used to identify the output column name and the input source column when applying the formula. If
     multiple input/output pairs are specified in the `cols` argument, the formula will be applied to each column in the
     list. The format for this call is the following:
-        |  rolling_formula_time(ts_col='tstamp', formula='min(x * x + 5)', formula_param='x', rev_time='PT00:10:00', fwd_time='0'`)
+        |  rolling_formula_time(ts_col='tstamp', formula='min(x * x + 5)', formula_param='x', rev_time='PT00:10:00', fwd_time=0)
 
     User-defined formula can contain a combination of any of the following:
         |  Built-in functions such as `min`, `max`, etc.
