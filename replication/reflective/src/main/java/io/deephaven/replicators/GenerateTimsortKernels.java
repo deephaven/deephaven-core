@@ -1216,7 +1216,7 @@ public class GenerateTimsortKernels {
                     .addComment(
                             "if we had a lot of things from run2, we take the next thing from run1 then find it in run2")
                     .addStatement(
-                            "final int copyUntil2 = gallopBackward(context.temporaryValues, 0, tempCursor, val1, true) + 1")
+                            "final int copyUntil2 = gallopBackward(context.temporaryValues, 0, tempCursor + 1, val1, true)")
                     .addStatement("final int gallopLength2 = tempCursor - copyUntil2 + 1")
                     .beginControlFlow("if (gallopLength2 > 0)")
                     .addStatement("copyToChunk(" + copyChunkArgs1
@@ -1232,11 +1232,11 @@ public class GenerateTimsortKernels {
                     .addComment(
                             "if we had a lot of things from run1, we take the next thing from run2 and then find it in run1")
                     .addStatement(
-                            "final int copyUntil1 = gallopBackward(valuesToSort, mergeStartPosition, run1Cursor, val2, false)")
-                    .addStatement("final int gallopLength1 = run1Cursor - copyUntil1")
+                            "final int copyUntil1 = gallopBackward(valuesToSort, mergeStartPosition, run1Cursor + 1, val2, false)")
+                    .addStatement("final int gallopLength1 = run1Cursor - copyUntil1 + 1")
                     .beginControlFlow("if (gallopLength1 > 0)")
                     .addStatement("copyToChunk(" + copyChunkArgs2
-                            + ", copyUntil1, ii - gallopLength1, gallopLength1 + 1)")
+                            + ", copyUntil1, ii - gallopLength1 + 1, gallopLength1)")
                     .addStatement("run1Cursor -= gallopLength1")
                     .addStatement("ii -= gallopLength1")
                     .beginControlFlow("if (run1Cursor < mergeStartPosition)")
