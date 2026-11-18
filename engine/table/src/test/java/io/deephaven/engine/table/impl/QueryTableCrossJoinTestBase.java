@@ -1644,23 +1644,40 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     /**
-     * A left row can produce several result rows, so the result keeps the left table's key columns but not the claim
-     * that they are unique.
+     * With memoization enabled, a copy whose attributes match its parent's shares the parent's join, and the result
+     * keeps the attributes the join derived from the left table.
      */
     @Test
-    public void testUniqueKeysNotCopied() {
-        final Table left = testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10))
-                .withUniqueKeys("Key");
-        final QueryTable rTable = testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
-        for (final boolean leftOuter : new boolean[] {false, true}) {
-            final String description = "leftOuter=" + leftOuter;
-            final Table result = leftOuter
-                    ? OuterJoinTools.leftOuterJoin(left, rTable, "Key", "RVal", numRightBitsToReserve)
-                    : left.join(rTable, "Key", "RVal", numRightBitsToReserve);
-            assertEquals(description, 2, result.size());
-            assertEquals(description, left.getAttribute(Table.KEY_COLUMNS_ATTRIBUTE),
-                    result.getAttribute(Table.KEY_COLUMNS_ATTRIBUTE));
-            assertNull(description, result.getAttribute(Table.UNIQUE_KEYS_ATTRIBUTE));
+    public void testMemoizedJoinSharedWithCopy() {
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            final QueryTable source = testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10));
+            source.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+            final QueryTable rTable = testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+
+            final Table plainResult = source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+            assertTrue(((QueryTable) plainResult).isAddOnly());
+            final Table copiedResult = source.copy().join(rTable, "Key", "RVal", numRightBitsToReserve);
+            assertTrue(copiedResult instanceof QueryTable.CopiedTable);
+            assertTrue(((QueryTable.CopiedTable) copiedResult).checkParent(plainResult));
+            assertTrue(((QueryTable) copiedResult).isAddOnly());
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
+     * An inner join of a blink left table with a static empty right table is static, so it is not marked blink.
+     */
+    @Test
+    public void testBlinkLeftStaticEmptyRight() {
+        final Table blinkLeft =
+                testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10)).assertBlink();
+        final QueryTable rTable = testTable(i().toTracking(), intCol("Key"), intCol("RVal"));
+        for (final String columnsToMatch : new String[] {"Key", ""}) {
+            final Table result = blinkLeft.join(rTable, columnsToMatch, "RVal", numRightBitsToReserve);
+            assertFalse(columnsToMatch, result.isRefreshing());
+            assertNull(columnsToMatch, result.getAttribute(Table.BLINK_TABLE_ATTRIBUTE));
         }
     }
 }

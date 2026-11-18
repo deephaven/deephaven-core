@@ -172,21 +172,17 @@ public class CrossJoinHelper {
     }
 
     /**
-     * Copy the left table's join attributes to a join or left outer join result, and mark the result add-only or
-     * append-only where the left table and a static right table guarantee it.
+     * Mark a join or left outer join result blink when the left table is blink, and add-only or append-only where the
+     * left table and a static right table guarantee it.
      */
     private static void setResultAttributes(
             final QueryTable leftTable,
             final QueryTable rightTable,
             final QueryTable result) {
-        // A left row can produce several result rows, so the left table's keys are not unique in the result. A static
-        // left table marked blink never removes its rows, so a result that refreshes with the right table is not a
-        // blink table.
-        final boolean copyBlink = leftTable.isBlink();
-        leftTable.copyAttributes(result,
-                attrName -> BaseTable.shouldCopyAttribute(attrName, BaseTable.CopyAttributeOperation.Join)
-                        && !attrName.equals(Table.UNIQUE_KEYS_ATTRIBUTE)
-                        && (copyBlink || !attrName.equals(Table.BLINK_TABLE_ATTRIBUTE)));
+        // every result row comes from a left row, so the result removes all of its rows when a blink left table does
+        if (leftTable.isBlink() && result.isRefreshing()) {
+            result.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        }
         // A static right table fixes every left row's group, or its null row, and the number of right bits, so a left
         // add only adds result rows within the added left row's own key range; an append to the left appends to the
         // result.

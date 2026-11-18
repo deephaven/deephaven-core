@@ -564,11 +564,16 @@ public abstract class MemoizedOperationKey {
         return null;
     }
 
-    /**
-     * The result of a cross join carries attributes derived from the left table's, so a table that differs from its
-     * parent only by attributes cannot share the parent's result.
-     */
     private static class CrossJoin extends MemoizedOperationKey {
+        /**
+         * The left table attributes that determine the attributes of a cross join result.
+         */
+        private static final List<String> RESULT_ATTRIBUTE_SOURCES = List.of(
+                Table.BLINK_TABLE_ATTRIBUTE,
+                Table.ADD_ONLY_TABLE_ATTRIBUTE,
+                Table.APPEND_ONLY_TABLE_ATTRIBUTE,
+                Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+
         private final WeakReference<Table> rightTableReference;
         private final MatchPair[] columnsToMatch;
         private final MatchPair[] columnsToAdd;
@@ -608,6 +613,23 @@ public abstract class MemoizedOperationKey {
         @Override
         public int hashCode() {
             return cachedHashCode;
+        }
+
+        @Override
+        boolean attributesCompatible(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
+            return RESULT_ATTRIBUTE_SOURCES.stream()
+                    .allMatch(attrName -> Objects.equals(oldAttributes.get(attrName), newAttributes.get(attrName)));
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation getParentCopyType() {
+            // a coalesce copies every attribute that a cross join result carries
+            return BaseTable.CopyAttributeOperation.Coalesce;
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation copyType() {
+            return BaseTable.CopyAttributeOperation.None;
         }
     }
 
