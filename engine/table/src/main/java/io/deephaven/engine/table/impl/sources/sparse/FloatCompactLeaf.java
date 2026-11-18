@@ -91,8 +91,8 @@ public abstract sealed class FloatCompactLeaf permits FloatSortedLeaf, FloatBitm
      *
      * @param sortedThreshold the most values a sorted leaf holds; a bitmap leaf left holding no more makes a sorted
      *        leaf instead
-     * @return this leaf, if it holds none of those offsets; otherwise a leaf holding its other values, or null if
-     *         there are none
+     * @return this leaf, if it holds none of those offsets; otherwise a leaf holding its other values, or null if there
+     *         are none
      */
     public abstract FloatCompactLeaf removeRange(int firstOffset, int lastOffset, int sortedThreshold);
 

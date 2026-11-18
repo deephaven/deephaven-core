@@ -87,23 +87,23 @@ public final class ShortBitmapLeaf extends ShortCompactLeaf {
     }
 
     /**
-     * Make a leaf holding the offsets and values of {@code base} except those from {@code firstOffset} through
-     * {@code lastOffset} inclusive.
+     * Make a leaf of the {@code newSize} offsets and values of {@code base} other than those from
+     * {@code firstOffsetToRemove} through {@code lastOffsetToRemove} inclusive. {@code newSize} comes first so that no
+     * call can match both this constructor and the one inserting a value, whose value may widen to an {@code int}.
      */
-    private ShortBitmapLeaf(final ShortBitmapLeaf base, final int firstOffset, final int lastOffset) {
+    private ShortBitmapLeaf(final int newSize, final ShortBitmapLeaf base, final int firstOffsetToRemove,
+            final int lastOffsetToRemove) {
         bits = base.bits.clone();
-        int removed = 0;
-        for (int wi = firstOffset >>> 6; wi <= lastOffset >>> 6; ++wi) {
-            final long cleared = bits[wi] & rangeMask(wi, firstOffset, lastOffset);
-            removed += Long.bitCount(cleared);
-            bits[wi] &= ~cleared;
+        for (int wi = firstOffsetToRemove >>> 6; wi <= lastOffsetToRemove >>> 6; ++wi) {
+            bits[wi] &= ~rangeMask(wi, firstOffsetToRemove, lastOffsetToRemove);
         }
         rankBefore = new short[WORDS];
-        values = new short[base.values.length - removed];
+        values = new short[newSize];
         // the removed values are consecutive, starting at the rank of the first offset
-        final int start = base.rank(firstOffset);
+        final int start = base.rank(firstOffsetToRemove);
+        final int removed = base.values.length - newSize;
         System.arraycopy(base.values, 0, values, 0, start);
-        System.arraycopy(base.values, start + removed, values, start, values.length - start);
+        System.arraycopy(base.values, start + removed, values, start, newSize - start);
         computeRanks();
     }
 
@@ -292,18 +292,18 @@ public final class ShortBitmapLeaf extends ShortCompactLeaf {
 
     /**
      * @return a leaf holding the {@code newSize} offsets and values of this leaf other than those from
-     *         {@code firstOffset} through {@code lastOffset} inclusive: null if there are none, a sorted leaf if there
-     *         are at most {@code sortedThreshold}, and otherwise a bitmap leaf
+     *         {@code firstOffsetToRemove} through {@code lastOffsetToRemove} inclusive: null if there are none, a
+     *         sorted leaf if there are at most {@code sortedThreshold}, and otherwise a bitmap leaf
      */
-    private ShortCompactLeaf without(final int firstOffset, final int lastOffset, final int newSize,
+    private ShortCompactLeaf without(final int firstOffsetToRemove, final int lastOffsetToRemove, final int newSize,
             final int sortedThreshold) {
         if (newSize == 0) {
             return null;
         }
         if (newSize <= sortedThreshold) {
-            return new ShortSortedLeaf(this, firstOffset, lastOffset, newSize);
+            return new ShortSortedLeaf(newSize, this, firstOffsetToRemove, lastOffsetToRemove);
         }
-        return new ShortBitmapLeaf(this, firstOffset, lastOffset);
+        return new ShortBitmapLeaf(newSize, this, firstOffsetToRemove, lastOffsetToRemove);
     }
 
     /**

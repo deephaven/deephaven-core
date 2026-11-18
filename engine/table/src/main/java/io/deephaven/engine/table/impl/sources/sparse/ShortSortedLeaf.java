@@ -55,10 +55,11 @@ public final class ShortSortedLeaf extends ShortCompactLeaf {
     }
 
     /**
-     * Make a leaf of the {@code newSize} offsets and values of {@code base} other than those from {@code firstOffset}
-     * through {@code lastOffset} inclusive.
+     * Make a leaf of the {@code newSize} offsets and values of {@code base} other than those from
+     * {@code firstOffsetToRemove} through {@code lastOffsetToRemove} inclusive.
      */
-    ShortSortedLeaf(final ShortBitmapLeaf base, final int firstOffset, final int lastOffset, final int newSize) {
+    ShortSortedLeaf(final int newSize, final ShortBitmapLeaf base, final int firstOffsetToRemove,
+            final int lastOffsetToRemove) {
         words = newWords(newSize);
         values = new short[newSize];
         size = newSize;
@@ -67,7 +68,7 @@ public final class ShortSortedLeaf extends ShortCompactLeaf {
         for (int wi = 0; wi < ShortBitmapLeaf.WORDS; ++wi) {
             for (long word = base.word(wi); word != 0; word &= word - 1) {
                 final int offset = (wi << 6) + Long.numberOfTrailingZeros(word);
-                if (offset < firstOffset || offset > lastOffset) {
+                if (offset < firstOffsetToRemove || offset > lastOffsetToRemove) {
                     setOffset(words, index, offset);
                     values[index++] = base.valueAtRank(rank);
                 }

@@ -56,10 +56,11 @@ public final class ObjectSortedLeaf extends ObjectCompactLeaf {
     }
 
     /**
-     * Make a leaf of the {@code newSize} offsets and values of {@code base} other than those from {@code firstOffset}
-     * through {@code lastOffset} inclusive.
+     * Make a leaf of the {@code newSize} offsets and values of {@code base} other than those from
+     * {@code firstOffsetToRemove} through {@code lastOffsetToRemove} inclusive.
      */
-    ObjectSortedLeaf(final ObjectBitmapLeaf base, final int firstOffset, final int lastOffset, final int newSize) {
+    ObjectSortedLeaf(final int newSize, final ObjectBitmapLeaf base, final int firstOffsetToRemove,
+            final int lastOffsetToRemove) {
         words = newWords(newSize);
         values = new Object[newSize];
         size = newSize;
@@ -68,7 +69,7 @@ public final class ObjectSortedLeaf extends ObjectCompactLeaf {
         for (int wi = 0; wi < ObjectBitmapLeaf.WORDS; ++wi) {
             for (long word = base.word(wi); word != 0; word &= word - 1) {
                 final int offset = (wi << 6) + Long.numberOfTrailingZeros(word);
-                if (offset < firstOffset || offset > lastOffset) {
+                if (offset < firstOffsetToRemove || offset > lastOffsetToRemove) {
                     setOffset(words, index, offset);
                     values[index++] = base.valueAtRank(rank);
                 }

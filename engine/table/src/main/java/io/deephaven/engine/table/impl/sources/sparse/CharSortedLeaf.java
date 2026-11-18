@@ -51,10 +51,11 @@ public final class CharSortedLeaf extends CharCompactLeaf {
     }
 
     /**
-     * Make a leaf of the {@code newSize} offsets and values of {@code base} other than those from {@code firstOffset}
-     * through {@code lastOffset} inclusive.
+     * Make a leaf of the {@code newSize} offsets and values of {@code base} other than those from
+     * {@code firstOffsetToRemove} through {@code lastOffsetToRemove} inclusive.
      */
-    CharSortedLeaf(final CharBitmapLeaf base, final int firstOffset, final int lastOffset, final int newSize) {
+    CharSortedLeaf(final int newSize, final CharBitmapLeaf base, final int firstOffsetToRemove,
+            final int lastOffsetToRemove) {
         words = newWords(newSize);
         values = new char[newSize];
         size = newSize;
@@ -63,7 +64,7 @@ public final class CharSortedLeaf extends CharCompactLeaf {
         for (int wi = 0; wi < CharBitmapLeaf.WORDS; ++wi) {
             for (long word = base.word(wi); word != 0; word &= word - 1) {
                 final int offset = (wi << 6) + Long.numberOfTrailingZeros(word);
-                if (offset < firstOffset || offset > lastOffset) {
+                if (offset < firstOffsetToRemove || offset > lastOffsetToRemove) {
                     setOffset(words, index, offset);
                     values[index++] = base.valueAtRank(rank);
                 }
