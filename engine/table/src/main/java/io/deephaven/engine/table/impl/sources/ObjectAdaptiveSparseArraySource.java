@@ -2286,7 +2286,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
          *
          * @return whether the recorded values are not those read before, and so must be laid over the values read
          */
-        private boolean recordedMeanwhile() {
+        private boolean changedDuringRead() {
             if (prevSnapshot != null) {
                 // a snapshot holds every row's previous value for the rest of the cycle
                 return false;
@@ -2342,7 +2342,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
             if (prevRecorded != null) {
                 prevRecorded.overlayKeys(keys, start, end, chunk, start);
             }
-            if (previous && recordedMeanwhile()) {
+            if (previous && changedDuringRead()) {
                 if (prevSnapshot != null) {
                     for (int ii = start; ii < end; ++ii) {
                         chunk.set(ii, prevSnapshot[(int) (keys.get(ii) & INDEX_MASK)]);
@@ -2372,7 +2372,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
             if (prevRecorded != null) {
                 prevRecorded.overlayRange(firstOffset, firstOffset + length - 1, chunk, destOffset);
             }
-            if (previous && recordedMeanwhile()) {
+            if (previous && changedDuringRead()) {
                 if (prevSnapshot != null) {
                     chunk.copyFromArray(prevSnapshot, firstOffset, destOffset, length);
                 } else if (prevRecorded != null) {
@@ -2539,7 +2539,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
         // a recorded value or snapshot holds its row's previous value for the rest of the cycle, so only values read
         // from current leaves may need the recorded values laid over them
         if (previous && state.readCurrentForPrevious) {
-            overlayRecordedMeanwhile(chunk, keys);
+            overlayChangedDuringRead(chunk, keys);
         }
         chunk.setSize(size);
     }
@@ -2550,7 +2550,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
      * value read from a current leaf is the new one, the row's record is found now. A chunk needs one look, after all
      * its keys are read, rather than one for each key.
      */
-    private void overlayRecordedMeanwhile(
+    private void overlayChangedDuringRead(
             final WritableObjectChunk<Object, ? super Values> chunk,
             final LongChunk<? extends RowKeys> keys) {
         VarHandle.acquireFence();
