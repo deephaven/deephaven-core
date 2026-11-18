@@ -2103,7 +2103,7 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
             if (shouldTrackPrevious()) {
                 recordPrevious(key, level2, block2, offset);
             }
-            setCompact(false, key, level2, compact.remove(offset));
+            setCompact(false, key, level2, compact.remove(offset, sortedThreshold));
         }
     }
 
@@ -2145,7 +2145,8 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
                                     recordPrevious(key, level2, block2, offsets, count, scratch);
                                 }
                             }
-                            final ShortCompactLeaf remaining = compact.removeRange(firstOffset, lastOffset);
+                            final ShortCompactLeaf remaining =
+                                    compact.removeRange(firstOffset, lastOffset, sortedThreshold);
                             if (remaining != compact) {
                                 setCompact(false, key, level2, remaining);
                             }

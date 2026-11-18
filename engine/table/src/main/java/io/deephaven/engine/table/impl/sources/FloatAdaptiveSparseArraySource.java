@@ -2103,7 +2103,7 @@ public class FloatAdaptiveSparseArraySource extends SparseArrayColumnSource<Floa
             if (shouldTrackPrevious()) {
                 recordPrevious(key, level2, block2, offset);
             }
-            setCompact(false, key, level2, compact.remove(offset));
+            setCompact(false, key, level2, compact.remove(offset, sortedThreshold));
         }
     }
 
@@ -2145,7 +2145,8 @@ public class FloatAdaptiveSparseArraySource extends SparseArrayColumnSource<Floa
                                     recordPrevious(key, level2, block2, offsets, count, scratch);
                                 }
                             }
-                            final FloatCompactLeaf remaining = compact.removeRange(firstOffset, lastOffset);
+                            final FloatCompactLeaf remaining =
+                                    compact.removeRange(firstOffset, lastOffset, sortedThreshold);
                             if (remaining != compact) {
                                 setCompact(false, key, level2, remaining);
                             }

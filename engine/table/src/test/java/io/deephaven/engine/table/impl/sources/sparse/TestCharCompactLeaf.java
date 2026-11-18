@@ -23,13 +23,17 @@ public class TestCharCompactLeaf {
         checkAgainstBlock(CharSortedLeaf.EMPTY, Integer.MAX_VALUE);
     }
 
+    /**
+     * With a sorted threshold of zero, every leaf holding a value is a bitmap leaf.
+     */
     @Test
     public void testBitmapLeaf() {
-        checkAgainstBlock(CharBitmapLeaf.EMPTY, 0);
+        checkAgainstBlock(CharSortedLeaf.EMPTY, 0);
     }
 
     /**
-     * A sorted leaf that grows past its threshold, by any write that adds offsets, becomes a bitmap leaf.
+     * A sorted leaf that grows past its threshold, by any write that adds offsets, becomes a bitmap leaf, and a bitmap
+     * leaf that removals take back to its threshold becomes a sorted leaf.
      */
     @Test
     public void testSortedLeafBecomesBitmapLeaf() {
@@ -49,7 +53,9 @@ public class TestCharCompactLeaf {
     /**
      * Apply random puts, sorted puts, absent inserts and removes to a leaf, starting from {@code empty}, and to a plain
      * block, and compare them after each step. A step that adds or removes offsets must leave the leaf it started from
-     * unchanged. A sorted leaf must hold at most {@code sortedThreshold} values, and a bitmap leaf must stay one.
+     * unchanged. A leaf holding at most {@code sortedThreshold} values must be a sorted leaf and a larger one a bitmap
+     * leaf. A removal that leaves no values returns null, and the next step starts again from {@code empty}, as the
+     * source starts a write to an absent leaf.
      */
     private static void checkAgainstBlock(final CharCompactLeaf empty, final int sortedThreshold) {
         final Random random = new Random(0);
@@ -68,7 +74,7 @@ public class TestCharCompactLeaf {
                 switch (random.nextInt(6)) {
                     case 0: {
                         final int offset = random.nextInt(offsetRange);
-                        leaf = leaf.remove(offset);
+                        leaf = leaf.remove(offset, sortedThreshold);
                         expected[offset] = NULL_CHAR;
                         present[offset] = false;
                         break;
@@ -78,7 +84,7 @@ public class TestCharCompactLeaf {
                         // mostly short ranges, and sometimes ranges across several bitmap words or the whole leaf
                         final int length = random.nextInt(4) == 0 ? random.nextInt(offsetRange) : random.nextInt(8);
                         final int last = Math.min(offsetRange - 1, first + length);
-                        leaf = leaf.removeRange(first, last);
+                        leaf = leaf.removeRange(first, last, sortedThreshold);
                         Arrays.fill(expected, first, last + 1, NULL_CHAR);
                         Arrays.fill(present, first, last + 1, false);
                         break;
@@ -116,14 +122,19 @@ public class TestCharCompactLeaf {
                         present[offset] = true;
                     }
                 }
+                if (leaf == null) {
+                    // only a removal of a leaf's last values returns null, and the block then holds no values
+                    assertTrue("emptied leaf of " + before.size(), before.size() > 0);
+                    leaf = empty;
+                    assertMatches(leaf, expected, present, random);
+                }
                 if (leaf != before) {
                     assertMatches(before, expectedBefore, presentBefore, random);
                 }
-                if (leaf instanceof CharSortedLeaf) {
-                    assertTrue("sorted leaf of " + leaf.size(), leaf.size() <= sortedThreshold);
-                }
-                if (before instanceof CharBitmapLeaf) {
-                    assertTrue("bitmap leaf became " + leaf.getClass(), leaf instanceof CharBitmapLeaf);
+                assertTrue(leaf.getClass() + " of " + leaf.size(),
+                        (leaf instanceof CharSortedLeaf) == (leaf.size() <= sortedThreshold));
+                if (leaf.size() == 0) {
+                    assertTrue("empty leaf is " + leaf.getClass(), leaf == empty);
                 }
                 if (step % 50 == 0) {
                     assertMatches(leaf, expected, present, random);

@@ -79,16 +79,22 @@ public abstract sealed class ObjectCompactLeaf permits ObjectSortedLeaf, ObjectB
     /**
      * Remove the value at {@code offset}, if it holds one.
      *
-     * @return this leaf, if it does not hold {@code offset}; otherwise a new leaf holding its other values
+     * @param sortedThreshold the most values a sorted leaf holds; a bitmap leaf left holding no more makes a sorted
+     *        leaf instead
+     * @return this leaf, if it does not hold {@code offset}; otherwise a leaf holding its other values, or null if
+     *         there are none
      */
-    public abstract ObjectCompactLeaf remove(int offset);
+    public abstract ObjectCompactLeaf remove(int offset, int sortedThreshold);
 
     /**
      * Remove the values at offsets {@code firstOffset} through {@code lastOffset} inclusive.
      *
-     * @return this leaf, if it holds none of those offsets; otherwise a new leaf holding its other values
+     * @param sortedThreshold the most values a sorted leaf holds; a bitmap leaf left holding no more makes a sorted
+     *        leaf instead
+     * @return this leaf, if it holds none of those offsets; otherwise a leaf holding its other values, or null if
+     *         there are none
      */
-    public abstract ObjectCompactLeaf removeRange(int firstOffset, int lastOffset);
+    public abstract ObjectCompactLeaf removeRange(int firstOffset, int lastOffset, int sortedThreshold);
 
     /**
      * Copy every value into {@code block} at its offset, leaving the other entries of {@code block} unchanged.

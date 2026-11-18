@@ -55,6 +55,28 @@ public final class IntSortedLeaf extends IntCompactLeaf {
     }
 
     /**
+     * Make a leaf of the {@code newSize} offsets and values of {@code base} other than those from {@code firstOffset}
+     * through {@code lastOffset} inclusive.
+     */
+    IntSortedLeaf(final IntBitmapLeaf base, final int firstOffset, final int lastOffset, final int newSize) {
+        words = newWords(newSize);
+        values = new int[newSize];
+        size = newSize;
+        int index = 0;
+        int rank = 0;
+        for (int wi = 0; wi < IntBitmapLeaf.WORDS; ++wi) {
+            for (long word = base.word(wi); word != 0; word &= word - 1) {
+                final int offset = (wi << 6) + Long.numberOfTrailingZeros(word);
+                if (offset < firstOffset || offset > lastOffset) {
+                    setOffset(words, index, offset);
+                    values[index++] = base.valueAtRank(rank);
+                }
+                ++rank;
+            }
+        }
+    }
+
+    /**
      * @return the words for {@code size} offsets, every lane holding {@link #PAST_BLOCK}
      */
     private static long[] newWords(final int size) {
@@ -265,7 +287,7 @@ public final class IntSortedLeaf extends IntCompactLeaf {
     }
 
     @Override
-    public IntCompactLeaf remove(final int offset) {
+    public IntCompactLeaf remove(final int offset, final int sortedThreshold) {
         final int index = indexOf(offset);
         if (index < 0) {
             return this;
@@ -274,17 +296,21 @@ public final class IntSortedLeaf extends IntCompactLeaf {
     }
 
     @Override
-    public IntCompactLeaf removeRange(final int firstOffset, final int lastOffset) {
+    public IntCompactLeaf removeRange(final int firstOffset, final int lastOffset, final int sortedThreshold) {
         final int start = lowerBound(firstOffset);
         final int end = lowerBound(lastOffset + 1);
         return start == end ? this : without(start, end);
     }
 
     /**
-     * @return a new leaf holding this leaf's offsets and values except those at indices {@code [start, end)}
+     * @return a leaf holding this leaf's offsets and values except those at indices {@code [start, end)}, or null if
+     *         there are none
      */
     private IntSortedLeaf without(final int start, final int end) {
         final int newSize = size - (end - start);
+        if (newSize == 0) {
+            return null;
+        }
         final long[] newWords = newWords(newSize);
         final int[] newValues = new int[newSize];
         for (int ii = 0; ii < start; ++ii) {

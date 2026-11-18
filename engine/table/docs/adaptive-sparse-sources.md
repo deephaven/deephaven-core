@@ -132,8 +132,16 @@ The offsets of a leaf never change. Setting the value of an offset the leaf hold
 puts it in the page table in place of the old one (`setCompact`). A leaf's arrays are filled before its constructor
 returns, and held in final fields, so a reader on another thread that finds the leaf sees it whole, and a reader that
 loaded the old leaf finds every value at the correct offset, however the leaf is concurrently written (see
-[Reading previous values during a cycle](#reading-previous-values-during-a-cycle)). Each tier has a shared empty leaf
-(`EMPTY`), which no write changes, since it holds no offset to write in place.
+[Reading previous values during a cycle](#reading-previous-values-during-a-cycle)).
+
+A leaf's tier follows from its size: a leaf holding at most `sortedThreshold` values is a sorted leaf, and a larger one
+is a bitmap leaf. A write that takes a sorted leaf past the threshold builds a bitmap leaf, and a removal that leaves a
+bitmap leaf at or below it builds a sorted leaf. Every change to a leaf's offsets builds a new leaf, so changing tiers
+costs no more than staying in one, and a leaf whose size moves back and forth across the threshold needs no hysteresis.
+The page table never holds an empty leaf: a removal that takes a leaf's last values returns null, and the writer clears
+the leaf's slot, which reads as null at every offset, as an absent leaf does. A write to an absent leaf starts from the
+sorted tier's shared empty leaf (`CharSortedLeaf.EMPTY`), which no write changes, since it holds no offset to write in
+place.
 
 ### Sorted leaf
 
@@ -158,7 +166,8 @@ values.
 
 A write that adds offsets copies the bitmap, sets the new bits, and merges the old and new values into a new array in
 one ascending pass over the bits; the new leaf computes its ranks once. `removeRange` clears the range's bits word by
-word in a copy of the bitmap and copies the values before and after the range.
+word in a copy of the bitmap and copies the values before and after the range, or, when at most `sortedThreshold` values
+remain, builds a sorted leaf of them in one pass over the bits.
 
 ## Writes
 

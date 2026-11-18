@@ -22,10 +22,7 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
  * start of the offset's bitmap word plus the set bits before the offset within that word.
  */
 public final class FloatBitmapLeaf extends FloatCompactLeaf {
-    private static final int WORDS = BLOCK_SIZE / Long.SIZE;
-
-    /** A leaf holding no values. */
-    public static final FloatBitmapLeaf EMPTY = new FloatBitmapLeaf();
+    static final int WORDS = BLOCK_SIZE / Long.SIZE;
 
     /** Bit {@code offset % 64} of word {@code offset / 64} is set when {@code offset} holds a value. */
     private final long[] bits;
@@ -39,15 +36,6 @@ public final class FloatBitmapLeaf extends FloatCompactLeaf {
      * ranks, the values), so that a leaf and its arrays lie together in memory, and fills them before it returns, so
      * that a reader on another thread that finds the leaf sees them in full.
      */
-
-    /**
-     * Make a leaf holding no values.
-     */
-    private FloatBitmapLeaf() {
-        bits = new long[WORDS];
-        rankBefore = new short[WORDS];
-        values = new float[0];
-    }
 
     /**
      * Make a leaf of {@code newSize} values holding the offsets of {@code base} and {@code offsets[0, count)},
@@ -283,18 +271,53 @@ public final class FloatBitmapLeaf extends FloatCompactLeaf {
     }
 
     @Override
-    public FloatCompactLeaf remove(final int offset) {
-        return contains(offset) ? new FloatBitmapLeaf(this, offset, offset) : this;
+    public FloatCompactLeaf remove(final int offset, final int sortedThreshold) {
+        if (!contains(offset)) {
+            return this;
+        }
+        return without(offset, offset, values.length - 1, sortedThreshold);
     }
 
     @Override
-    public FloatCompactLeaf removeRange(final int firstOffset, final int lastOffset) {
+    public FloatCompactLeaf removeRange(final int firstOffset, final int lastOffset, final int sortedThreshold) {
+        int removed = 0;
         for (int wi = firstOffset >>> 6; wi <= lastOffset >>> 6; ++wi) {
-            if ((bits[wi] & rangeMask(wi, firstOffset, lastOffset)) != 0) {
-                return new FloatBitmapLeaf(this, firstOffset, lastOffset);
-            }
+            removed += Long.bitCount(bits[wi] & rangeMask(wi, firstOffset, lastOffset));
         }
-        return this;
+        if (removed == 0) {
+            return this;
+        }
+        return without(firstOffset, lastOffset, values.length - removed, sortedThreshold);
+    }
+
+    /**
+     * @return a leaf holding the {@code newSize} offsets and values of this leaf other than those from
+     *         {@code firstOffset} through {@code lastOffset} inclusive: null if there are none, a sorted leaf if there
+     *         are at most {@code sortedThreshold}, and otherwise a bitmap leaf
+     */
+    private FloatCompactLeaf without(final int firstOffset, final int lastOffset, final int newSize,
+            final int sortedThreshold) {
+        if (newSize == 0) {
+            return null;
+        }
+        if (newSize <= sortedThreshold) {
+            return new FloatSortedLeaf(this, firstOffset, lastOffset, newSize);
+        }
+        return new FloatBitmapLeaf(this, firstOffset, lastOffset);
+    }
+
+    /**
+     * @return the bitmap word {@code wordIndex}, whose bit {@code offset % 64} is set when {@code offset} holds a value
+     */
+    long word(final int wordIndex) {
+        return bits[wordIndex];
+    }
+
+    /**
+     * @return the value at {@code rank} in offset order
+     */
+    float valueAtRank(final int rank) {
+        return values[rank];
     }
 
     @Override
