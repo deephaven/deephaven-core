@@ -55,7 +55,7 @@ When [`to_numpy`](../reference/numpy/to-numpy.md) converts a table, it does not 
 - Nulls in `Instant` columns appear as `NaT`.
 - Nulls in `String` columns appear as the string `'None'`, and nulls in other object columns appear as `None`.
 
-A null `Boolean` that reads as `True` and a null `String` that reads as `'None'` both look like real values. To tell them apart, pass `bool_str_null_as_none=True` to [`to_numpy`](../reference/numpy/to-numpy.md). `Boolean` and `String` columns then become `object` arrays that hold `None` for a null.
+A null `Boolean` that reads as `True` and a null `String` that reads as `'None'` both look like real values. To tell a null from a real `True` or `'None'`, pass `bool_str_null_as_none=True` to [`to_numpy`](../reference/numpy/to-numpy.md). `Boolean` and `String` columns then become `object` arrays that hold `None` for a null.
 
 Use [`dh_null_to_nan`](../reference/numpy/dh-null-to-nan.md) from [`deephaven.jcompat`](/core/pydoc/code/deephaven.jcompat.html) to convert null constants to `numpy.nan`. For integer, Boolean, or character arrays, pass `type_promotion=True`, which returns a new `float64` array. Without it, [`dh_null_to_nan`](../reference/numpy/dh-null-to-nan.md) raises an error for those arrays.
 
