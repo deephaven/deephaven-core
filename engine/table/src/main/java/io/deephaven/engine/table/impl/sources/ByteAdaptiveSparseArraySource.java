@@ -2210,6 +2210,11 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
         private ByteCompactLeaf compact;
         private byte[] prevSnapshot;
         private ByteCompactLeaf prevRecorded;
+        /**
+         * Whether {@link #getPrev(int)} has read a value from a current leaf, which may be a value written since the
+         * fill read the leaf's previous values.
+         */
+        private boolean readCurrentForPrevious;
         private int destOffset;
 
         /**
@@ -2304,6 +2309,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             if (prevRecorded != null && prevRecorded.contains(offset)) {
                 return prevRecorded.get(offset);
             }
+            readCurrentForPrevious = true;
             return get(offset);
         }
 
@@ -2526,7 +2532,9 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             final int offset = (int) (key & INDEX_MASK);
             chunk.set(ki, previous ? state.getPrev(offset) : state.get(offset));
         }
-        if (previous) {
+        // a recorded value or snapshot holds its row's previous value for the rest of the cycle, so only values read
+        // from current leaves may need the recorded values laid over them
+        if (previous && state.readCurrentForPrevious) {
             overlayRecordedMeanwhile(chunk, keys);
         }
         chunk.setSize(size);

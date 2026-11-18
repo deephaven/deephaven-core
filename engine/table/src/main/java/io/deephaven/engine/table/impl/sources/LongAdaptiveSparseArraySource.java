@@ -2216,6 +2216,11 @@ public class LongAdaptiveSparseArraySource extends SparseArrayColumnSource<Long>
         private LongCompactLeaf compact;
         private long[] prevSnapshot;
         private LongCompactLeaf prevRecorded;
+        /**
+         * Whether {@link #getPrev(int)} has read a value from a current leaf, which may be a value written since the
+         * fill read the leaf's previous values.
+         */
+        private boolean readCurrentForPrevious;
         private int destOffset;
 
         /**
@@ -2310,6 +2315,7 @@ public class LongAdaptiveSparseArraySource extends SparseArrayColumnSource<Long>
             if (prevRecorded != null && prevRecorded.contains(offset)) {
                 return prevRecorded.get(offset);
             }
+            readCurrentForPrevious = true;
             return get(offset);
         }
 
@@ -2532,7 +2538,9 @@ public class LongAdaptiveSparseArraySource extends SparseArrayColumnSource<Long>
             final int offset = (int) (key & INDEX_MASK);
             chunk.set(ki, previous ? state.getPrev(offset) : state.get(offset));
         }
-        if (previous) {
+        // a recorded value or snapshot holds its row's previous value for the rest of the cycle, so only values read
+        // from current leaves may need the recorded values laid over them
+        if (previous && state.readCurrentForPrevious) {
             overlayRecordedMeanwhile(chunk, keys);
         }
         chunk.setSize(size);

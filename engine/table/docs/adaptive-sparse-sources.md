@@ -220,9 +220,11 @@ not changed has no recorded value, so the reader reads its current leaf, which t
 
 A row that the cycle changes is recorded before it is written, and a release fence makes the record visible to other
 threads before the write. A reader that finds no recorded value reads the current value, issues an acquire fence, and
-looks for a record again, using it if one has appeared: if the current value it read is the new one, the writer's
-record is visible by then. A chunked fill looks again once for each leaf it reads, and an unordered fill once for the
-whole chunk, skipping the look when nothing is recorded; a point read (`getPrevChar`) looks again on every call. The
+looks for a record again, using it if one has appeared: if the current value it read is the new one, the writer's record
+is visible by then. A chunked fill looks again once for each leaf it reads, and an unordered fill once for the whole
+chunk, skipping the look when nothing is recorded. A recorded value holds its row's previous value for the rest of the
+cycle, so an unordered fill whose values all came from recorded values or snapshots, as a downstream read of the rows an
+upstream listener modified does, needs no second look. A point read (`getPrevChar`) looks again on every call. The
 fences emit no instruction on x86, but stop C2 from moving loads across them or keeping loaded fields in registers
 across them, so a point read pays for the second look in a longer loop body: random `getPrev` over a Dense source with
 nothing recorded takes about twice as long as a single look, because fewer of its cache misses overlap.

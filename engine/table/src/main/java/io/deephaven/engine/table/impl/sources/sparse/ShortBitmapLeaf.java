@@ -50,9 +50,9 @@ public final class ShortBitmapLeaf extends ShortCompactLeaf {
     }
 
     /**
-     * Make a leaf of {@code newSize} values holding the offsets of {@code base} and {@code offsets[0, count)}, ascending
-     * and distinct, with the values of {@code src} from {@code srcOffset} for those offsets, or, if {@code src} is null,
-     * keeping the values of the offsets {@code base} holds and null for the others.
+     * Make a leaf of {@code newSize} values holding the offsets of {@code base} and {@code offsets[0, count)},
+     * ascending and distinct, with the values of {@code src} from {@code srcOffset} for those offsets, or, if
+     * {@code src} is null, keeping the values of the offsets {@code base} holds and null for the others.
      */
     ShortBitmapLeaf(
             final ShortCompactLeaf base,
