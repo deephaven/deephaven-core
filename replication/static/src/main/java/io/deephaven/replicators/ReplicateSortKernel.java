@@ -189,6 +189,10 @@ public class ReplicateSortKernel {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = fixupChunkAttributes(lines);
+        // runs are the ties of the Object sort kernels, which order values with ObjectComparisons.compare
+        lines = globalReplacements(lines,
+                "ObjectComparisons\\.eq;", "ObjectComparisons.compareEquals;",
+                "!eq\\(last, next\\)", "!compareEquals(last, next)");
         FileUtils.writeLines(objectFile, lines);
     }
 
