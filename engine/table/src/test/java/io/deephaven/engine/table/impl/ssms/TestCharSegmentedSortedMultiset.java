@@ -374,7 +374,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
     }
 
     private void verifyScalar(CharSegmentedSortedMultiset ssm, long[] refCounts, SsaTestHelpers.TestDescriptor desc) {
-        int total = 0;
+        long total = 0;
         int distinct = 0;
         for (int offset = 0; offset < refCounts.length; ++offset) {
             total += refCounts[offset];
@@ -382,7 +382,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 distinct++;
             }
         }
-        final char[] expanded = new char[total];
+        final char[] expanded = new char[Math.toIntExact(total)];
         int position = 0;
         for (int offset = 0; offset < refCounts.length; ++offset) {
             for (long kk = 0; kk < refCounts[offset]; ++kk) {
