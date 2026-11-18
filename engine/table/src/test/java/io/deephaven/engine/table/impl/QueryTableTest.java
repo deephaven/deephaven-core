@@ -4046,6 +4046,149 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    /**
+     * A blink table and its {@code removeBlink()} view each get their own sort, whichever is sorted first: the blink
+     * table's sort result is a blink table, so an aggregation of it accumulates every cycle, and the view's sort result
+     * is a regular sort with a reverse lookup.
+     */
+    @Test
+    public void testMemoizedSortOfBlinkTableAndRemoveBlinkView() {
+        final boolean old = QueryTable.setMemoizeResults(true);
+        try {
+            final QueryTable viewFirstSource = testRefreshingTable(i().toTracking(), intCol("A"));
+            viewFirstSource.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+            final Table viewFirstSorted = viewFirstSource.removeBlink().sort("A");
+            final Table blinkSorted = viewFirstSource.sort("A");
+            assertFalse(((BaseTable<?>) viewFirstSorted).isBlink());
+            assertTrue(((BaseTable<?>) blinkSorted).isBlink());
+            final Table summed = blinkSorted.view("A").sumBy();
+
+            final QueryTable blinkFirstSource = testRefreshingTable(i().toTracking(), intCol("A"));
+            blinkFirstSource.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+            assertTrue(((BaseTable<?>) blinkFirstSource.sort("A")).isBlink());
+            final Table blinkFirstView = blinkFirstSource.removeBlink();
+            final Table blinkFirstViewSorted = blinkFirstView.sort("A");
+            assertFalse(((BaseTable<?>) blinkFirstViewSorted).isBlink());
+            assertNotNull(SortOperation.getReverseLookup(blinkFirstView, blinkFirstViewSorted));
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            for (int cycle = 0; cycle < 3; ++cycle) {
+                final long firstRowKey = 10L * cycle;
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    final RowSet removed = viewFirstSource.getRowSet().copy();
+                    removeRows(viewFirstSource, removed);
+                    addToTable(viewFirstSource, i(firstRowKey, firstRowKey + 1), intCol("A", 2, 1));
+                    viewFirstSource.notifyListeners(i(firstRowKey, firstRowKey + 1), removed, i());
+                });
+            }
+            assertEquals(2, viewFirstSorted.size());
+            assertEquals(2, blinkSorted.size());
+            assertEquals(9L, ColumnVectors.ofLong(summed, "A").get(0));
+        } finally {
+            QueryTable.setMemoizeResults(old);
+        }
+    }
+
+    /**
+     * A sort of a copy with an attribute of its own carries that attribute, and a sort of the original table does not,
+     * whichever is sorted first.
+     */
+    @Test
+    public void testMemoizedSortOfCopyKeepsAttributesSeparate() {
+        final boolean old = QueryTable.setMemoizeResults(true);
+        try {
+            final QueryTable copyFirstSource = (QueryTable) newTable(intCol("A", 30, 10, 40, 20));
+            final Table copyFirstSorted =
+                    copyFirstSource.withAttributes(Map.of("MemoizeTestMarker", "copy-only")).sort("A");
+            final Table sorted = copyFirstSource.sort("A");
+            assertEquals("copy-only", copyFirstSorted.getAttribute("MemoizeTestMarker"));
+            assertNull(sorted.getAttribute("MemoizeTestMarker"));
+
+            final QueryTable sourceFirstSource = testRefreshingTable(i(2, 4, 6, 8).toTracking(),
+                    intCol("A", 30, 10, 40, 20));
+            final Table sourceFirstSorted = sourceFirstSource.sort("A");
+            final Table copySorted =
+                    sourceFirstSource.withAttributes(Map.of("MemoizeTestMarker", "copy-only")).sort("A");
+            assertEquals("copy-only", copySorted.getAttribute("MemoizeTestMarker"));
+            assertNull(sourceFirstSorted.getAttribute("MemoizeTestMarker"));
+        } finally {
+            QueryTable.setMemoizeResults(old);
+        }
+    }
+
+    /**
+     * A copy that changes, adds or removes attributes the sort does not depend on shares the original table's memoized
+     * sort even when the copy sorts first: the original table's sort result has the original table's attributes, and
+     * the copy's sort result has the copy's.
+     */
+    @Test
+    public void testMemoizedSortOfCopyFirstSharesWithOriginal() {
+        final boolean old = QueryTable.setMemoizeResults(true);
+        try {
+            final QueryTable changedSource = testRefreshingTable(i(2, 4, 6, 8).toTracking(),
+                    intCol("A", 30, 10, 40, 20));
+            changedSource.setAttribute(Table.LAYOUT_HINTS_ATTRIBUTE, "parentHints");
+            changedSource.setAttribute(Table.DESCRIPTION_ATTRIBUTE, "parentDescription");
+            final Table changedCopy = changedSource.withAttributes(Map.of(
+                    Table.LAYOUT_HINTS_ATTRIBUTE, "copyHints",
+                    Table.DESCRIPTION_ATTRIBUTE, "copyDescription",
+                    "MemoizeTestMarker", "copy-only"));
+            final Table changedCopySorted = changedCopy.sort("A");
+            final Table changedSourceSorted = changedSource.sort("A");
+            assertTrue(((QueryTable.CopiedTable) changedCopySorted).checkParent(changedSourceSorted));
+            assertEquals("copyHints", changedCopySorted.getAttribute(Table.LAYOUT_HINTS_ATTRIBUTE));
+            assertEquals("copyDescription", changedCopySorted.getAttribute(Table.DESCRIPTION_ATTRIBUTE));
+            assertEquals("copy-only", changedCopySorted.getAttribute("MemoizeTestMarker"));
+            assertEquals("parentHints", changedSourceSorted.getAttribute(Table.LAYOUT_HINTS_ATTRIBUTE));
+            assertEquals("parentDescription", changedSourceSorted.getAttribute(Table.DESCRIPTION_ATTRIBUTE));
+            assertNull(changedSourceSorted.getAttribute("MemoizeTestMarker"));
+            assertMemoizedSortResult(changedCopy, changedCopySorted, "A");
+            assertMemoizedSortResult(changedSource, changedSourceSorted, "A");
+
+            final QueryTable removedSource = testRefreshingTable(i(2, 4, 6, 8).toTracking(),
+                    intCol("A", 30, 10, 40, 20));
+            removedSource.setAttribute(Table.LAYOUT_HINTS_ATTRIBUTE, "parentHints");
+            removedSource.setAttribute(Table.DESCRIPTION_ATTRIBUTE, "parentDescription");
+            final Table removedCopy = removedSource
+                    .withoutAttributes(List.of(Table.LAYOUT_HINTS_ATTRIBUTE, Table.DESCRIPTION_ATTRIBUTE));
+            final Table removedCopySorted = removedCopy.sort("A");
+            final Table removedSourceSorted = removedSource.sort("A");
+            assertTrue(((QueryTable.CopiedTable) removedCopySorted).checkParent(removedSourceSorted));
+            assertNull(removedCopySorted.getAttribute(Table.LAYOUT_HINTS_ATTRIBUTE));
+            assertNull(removedCopySorted.getAttribute(Table.DESCRIPTION_ATTRIBUTE));
+            assertEquals("parentHints", removedSourceSorted.getAttribute(Table.LAYOUT_HINTS_ATTRIBUTE));
+            assertEquals("parentDescription", removedSourceSorted.getAttribute(Table.DESCRIPTION_ATTRIBUTE));
+            assertMemoizedSortResult(removedCopy, removedCopySorted, "A");
+            assertMemoizedSortResult(removedSource, removedSourceSorted, "A");
+        } finally {
+            QueryTable.setMemoizeResults(old);
+        }
+    }
+
+    /**
+     * A sort that leaves an ordered table's rows in place, applied to a copy of that table's sort result, carries the
+     * copy's attributes, and the same sort of the original table does not.
+     */
+    @Test
+    public void testMemoizedSortOfCopyOfOrderedSortResult() {
+        final boolean old = QueryTable.setMemoizeResults(true);
+        try {
+            final QueryTable source =
+                    (QueryTable) newTable(intCol("A", 10, 20, 20, 30), intCol("B", 1, 1, 2, 1));
+            final Table copy = source.sort("A").withAttributes(Map.of("MemoizeTestMarker", "copy-only"));
+            final Table copySorted = copy.sort("A", "B");
+            final Table sourceSorted = source.sort("A", "B");
+            assertEquals("copy-only", copySorted.getAttribute("MemoizeTestMarker"));
+            assertNull(sourceSorted.getAttribute("MemoizeTestMarker"));
+            assertEquals("A=Ascending", copySorted.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE));
+            assertEquals("A=Ascending", sourceSorted.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE));
+            assertTableEquals(source, copySorted);
+            assertTableEquals(source, sourceSorted);
+        } finally {
+            QueryTable.setMemoizeResults(old);
+        }
+    }
+
     private static void assertMemoizedSortResult(final Table sortInput, final Table sortResult, final String column) {
         assertEquals(column + "=Ascending", sortResult.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE));
         assertSame(sortResult, sortResult.sort(column));
