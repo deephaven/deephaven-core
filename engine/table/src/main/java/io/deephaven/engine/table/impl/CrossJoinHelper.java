@@ -140,15 +140,7 @@ public class CrossJoinHelper {
         final QueryTable result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits,
                 control, false);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
-        leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
-        // A static right table fixes every left row's group and the number of right bits, so a left add only adds
-        // result rows within the added left row's own key range; an append to the left appends to the result.
-        if (leftTable.isAddOnly() && !rightTable.isRefreshing()) {
-            result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-        }
-        if (leftTable.isAppendOnly() && !rightTable.isRefreshing()) {
-            result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-        }
+        setResultAttributes(leftTable, rightTable, result);
         return result;
     }
 
@@ -174,18 +166,36 @@ public class CrossJoinHelper {
                     final QueryTable result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd,
                             numReserveRightBits, control, true);
                     leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
-                    leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
-                    // A static right table fixes every left row's group, or its null row, and the number of right
-                    // bits, so a left add only adds result rows within the added left row's own key range; an append
-                    // to the left appends to the result.
-                    if (leftTable.isAddOnly() && !rightTable.isRefreshing()) {
-                        result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-                    }
-                    if (leftTable.isAppendOnly() && !rightTable.isRefreshing()) {
-                        result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-                    }
+                    setResultAttributes(leftTable, rightTable, result);
                     return result;
                 });
+    }
+
+    /**
+     * Copy the left table's join attributes to a join or left outer join result, and mark the result add-only or
+     * append-only where the left table and a static right table guarantee it.
+     */
+    private static void setResultAttributes(
+            final QueryTable leftTable,
+            final QueryTable rightTable,
+            final QueryTable result) {
+        // A left row can produce several result rows, so the left table's keys are not unique in the result. A static
+        // left table marked blink never removes its rows, so a result that refreshes with the right table is not a
+        // blink table.
+        final boolean copyBlink = leftTable.isBlink();
+        leftTable.copyAttributes(result,
+                attrName -> BaseTable.shouldCopyAttribute(attrName, BaseTable.CopyAttributeOperation.Join)
+                        && !attrName.equals(Table.UNIQUE_KEYS_ATTRIBUTE)
+                        && (copyBlink || !attrName.equals(Table.BLINK_TABLE_ATTRIBUTE)));
+        // A static right table fixes every left row's group, or its null row, and the number of right bits, so a left
+        // add only adds result rows within the added left row's own key range; an append to the left appends to the
+        // result.
+        if (leftTable.isAddOnly() && !rightTable.isRefreshing()) {
+            result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        }
+        if (leftTable.isAppendOnly() && !rightTable.isRefreshing()) {
+            result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        }
     }
 
     private static QueryTable internalJoin(

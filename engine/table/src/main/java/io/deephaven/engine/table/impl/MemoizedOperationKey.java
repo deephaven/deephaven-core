@@ -564,7 +564,11 @@ public abstract class MemoizedOperationKey {
         return null;
     }
 
-    private static class CrossJoin extends AttributeAgnosticMemoizedOperationKey {
+    /**
+     * The result of a cross join carries attributes derived from the left table's, so a table that differs from its
+     * parent only by attributes cannot share the parent's result.
+     */
+    private static class CrossJoin extends MemoizedOperationKey {
         private final WeakReference<Table> rightTableReference;
         private final MatchPair[] columnsToMatch;
         private final MatchPair[] columnsToAdd;
@@ -604,11 +608,6 @@ public abstract class MemoizedOperationKey {
         @Override
         public int hashCode() {
             return cachedHashCode;
-        }
-
-        @Override
-        BaseTable.CopyAttributeOperation copyType() {
-            return BaseTable.CopyAttributeOperation.None;
         }
     }
 

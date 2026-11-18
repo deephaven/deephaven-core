@@ -1584,4 +1584,83 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             }
         }
     }
+
+    /**
+     * With memoization enabled, a join of a blink copy of a table is still a blink table, and does not share a result
+     * with the same join of the table itself, in either order.
+     */
+    @Test
+    public void testBlinkLeftResultIsBlinkWithMemoization() {
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            for (final boolean blinkFirst : new boolean[] {true, false}) {
+                final QueryTable source = testRefreshingTable(i(0).toTracking(),
+                        intCol("Key", 1), intCol("LVal", 10));
+                final QueryTable rTable = testRefreshingTable(i(0, 1).toTracking(),
+                        intCol("Key", 1, 1), intCol("RVal", 3, 4));
+                final Table blinkLeft = source.assertBlink();
+
+                final Table blinkResult;
+                final Table plainResult;
+                if (blinkFirst) {
+                    blinkResult = blinkLeft.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    plainResult = source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                } else {
+                    plainResult = source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    blinkResult = blinkLeft.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                }
+                final String description = "blinkFirst=" + blinkFirst;
+                assertTrue(description, ((QueryTable) blinkResult).isBlink());
+                assertFalse(description, ((QueryTable) plainResult).isBlink());
+                assertSame(description, blinkResult,
+                        blinkLeft.join(rTable, "Key", "RVal", numRightBitsToReserve));
+                assertSame(description, plainResult, source.join(rTable, "Key", "RVal", numRightBitsToReserve));
+            }
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
+     * A static left table marked blink never removes its rows, so a join against a refreshing right table is not a
+     * blink table and does not carry the attribute.
+     */
+    @Test
+    public void testStaticBlinkLeft() {
+        final Table blinkLeft = testTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10)).assertBlink();
+        for (final boolean rightRefreshing : new boolean[] {false, true}) {
+            for (final boolean leftOuter : new boolean[] {false, true}) {
+                final String description = "rightRefreshing=" + rightRefreshing + ", leftOuter=" + leftOuter;
+                final QueryTable rTable = rightRefreshing
+                        ? testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4))
+                        : testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+                final QueryTable result = (QueryTable) (leftOuter
+                        ? OuterJoinTools.leftOuterJoin(blinkLeft, rTable, "Key", "RVal", numRightBitsToReserve)
+                        : blinkLeft.join(rTable, "Key", "RVal", numRightBitsToReserve));
+                assertFalse(description, result.isBlink());
+                assertNull(description, result.getAttribute(Table.BLINK_TABLE_ATTRIBUTE));
+            }
+        }
+    }
+
+    /**
+     * A left row can produce several result rows, so the result keeps the left table's key columns but not the claim
+     * that they are unique.
+     */
+    @Test
+    public void testUniqueKeysNotCopied() {
+        final Table left = testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10))
+                .withUniqueKeys("Key");
+        final QueryTable rTable = testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+        for (final boolean leftOuter : new boolean[] {false, true}) {
+            final String description = "leftOuter=" + leftOuter;
+            final Table result = leftOuter
+                    ? OuterJoinTools.leftOuterJoin(left, rTable, "Key", "RVal", numRightBitsToReserve)
+                    : left.join(rTable, "Key", "RVal", numRightBitsToReserve);
+            assertEquals(description, 2, result.size());
+            assertEquals(description, left.getAttribute(Table.KEY_COLUMNS_ATTRIBUTE),
+                    result.getAttribute(Table.KEY_COLUMNS_ATTRIBUTE));
+            assertNull(description, result.getAttribute(Table.UNIQUE_KEYS_ATTRIBUTE));
+        }
+    }
 }
