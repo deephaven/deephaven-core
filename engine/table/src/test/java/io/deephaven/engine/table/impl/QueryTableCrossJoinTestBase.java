@@ -1687,4 +1687,65 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             assertNull(columnsToMatch, result.getAttribute(Table.BLINK_TABLE_ATTRIBUTE));
         }
     }
+
+    /**
+     * A blink left table replaces all of its rows every cycle, at the row keys it just removed, while the right table
+     * receives random removes, shifts, modifies and adds that grow its groups. The keyed and zero-key join and left
+     * outer join results must match a fresh join every cycle, and {@link BaseTable#notifyListeners(TableUpdate)}
+     * asserts that each of their updates removes every previous row and adds every current one, with no modifies or
+     * shifts.
+     */
+    @Test
+    public void testBlinkLeftRandomRightUpdates() {
+        for (int seed = 0; seed < 4; ++seed) {
+            final Random random = new Random(seed);
+            final int rightSize = 64;
+            final int leftMaxSize = 8;
+            final int numGroups = 4;
+
+            final QueryTable source = testRefreshingTable(i().toTracking(), intCol("ltSym"), intCol("ltIntCol"));
+            final Table blinkLeft = source.assertBlink();
+            final ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
+            final QueryTable rightTicking = getTable(rightSize, random, rightColumns);
+
+            final EvalNugget[] en = new EvalNugget[] {
+                    EvalNugget.from(() -> blinkLeft.join(rightTicking, "ltSym=rtSym", "rtIntCol",
+                            numRightBitsToReserve)),
+                    EvalNugget.from(() -> blinkLeft.join(rightTicking, "", "rtIntCol", numRightBitsToReserve)),
+                    EvalNugget.from(() -> OuterJoinTools.leftOuterJoin(blinkLeft, rightTicking, "ltSym=rtSym",
+                            "rtIntCol", numRightBitsToReserve)),
+                    EvalNugget.from(() -> OuterJoinTools.leftOuterJoin(blinkLeft, rightTicking, "", "rtIntCol",
+                            numRightBitsToReserve)),
+            };
+            for (final EvalNugget nugget : en) {
+                assertTrue("seed=" + seed, ((QueryTable) nugget.originalValue).isBlink());
+            }
+
+            for (int step = 0; step < 50; ++step) {
+                final int leftSize = random.nextInt(leftMaxSize + 1);
+                final int[] syms = new int[leftSize];
+                final int[] values = new int[leftSize];
+                for (int ii = 0; ii < leftSize; ++ii) {
+                    // one more than the right groups, so some left rows have no match
+                    syms[ii] = random.nextInt(numGroups + 1);
+                    values[ii] = random.nextInt(1000);
+                }
+                final boolean rightTicks = random.nextInt(4) != 0;
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> {
+                            final RowSet removed = source.getRowSet().copy();
+                            final RowSet added = RowSetFactory.flat(leftSize);
+                            removeRows(source, removed);
+                            addToTable(source, added, intCol("ltSym", syms), intCol("ltIntCol", values));
+                            source.notifyListeners(added, removed, i());
+                            if (rightTicks) {
+                                GenerateTableUpdates.generateShiftAwareTableUpdates(
+                                        GenerateTableUpdates.DEFAULT_PROFILE, rightSize / 4, random, rightTicking,
+                                        rightColumns);
+                            }
+                        });
+                TstUtils.validate("seed=" + seed + ", step=" + step, en);
+            }
+        }
+    }
 }
