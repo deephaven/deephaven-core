@@ -328,12 +328,10 @@ public class IndirectTimsortKernelFactory {
 
     private static final String MERGE_JAVADOC_FRONT =
             "Merge context temporary and run2 between mergeStartPosition and length2 (which is not the full run "
-                    + "length, but\nthe length of things we might need to merge.\n"
-                    + "<p>\nWe eventually need to do galloping here, but are skipping that for now\n";
+                    + "length, but\nthe length of things we might need to merge.\n";
 
     private static final String MERGE_JAVADOC_BACK =
-            "Merge context temporary and run1 between mergeStartPosition + length1 + temporary.length\n"
-                    + "<p>\nWe eventually need to do galloping here, but are skipping that for now\n";
+            "Merge context temporary and run1 between mergeStartPosition + length1 + temporary.length\n";
 
     /**
      * Emits an indirect kernel: the timsort permutes only a parallel chunk of int positions, reading the (never moved)
@@ -469,6 +467,8 @@ public class IndirectTimsortKernelFactory {
             builder.addMethod(emitUpperBound());
             builder.addMethod(emitLowerBound());
             builder.addMethod(emitBound());
+            builder.addMethod(emitGallopForward());
+            builder.addMethod(emitGallopBackward());
             builder.addMethod(emitInsertionSort());
             builder.addMethod(emitSwap());
             return builder.build();
@@ -934,8 +934,8 @@ public class IndirectTimsortKernelFactory {
                     .beginControlFlow("while (ii < mergeEndExclusive)")
                     .addComment(
                             "if we had a lot of things from run1, we take the next thing from run2 then find it in run1")
-                    .addStatement("final int copyUntil1 = upperBound(" + contextArg()
-                            + "context.temporaryPositions, " + valuesArgs() + ", tempCursor, run1size, val2Pos)")
+                    .addStatement("final int copyUntil1 = gallopForward(" + contextArg()
+                            + "context.temporaryPositions, " + valuesArgs() + ", tempCursor, run1size, val2Pos, false)")
                     .addStatement("final int gallopLength1 = copyUntil1 - tempCursor")
                     .beginControlFlow("if (gallopLength1 > 0)")
                     .addStatement("copyToChunk(context.temporaryPositions, positions, tempCursor, ii, gallopLength1)")
@@ -949,8 +949,8 @@ public class IndirectTimsortKernelFactory {
                     .endControlFlow()
                     .addComment(
                             "if we had a lot of things from run2, we take the next thing from run1 and then find it in run2")
-                    .addStatement("final int copyUntil2 = lowerBound(" + contextArg() + "positions, " + valuesArgs()
-                            + ", run2Cursor, mergeEndExclusive, val1Pos)")
+                    .addStatement("final int copyUntil2 = gallopForward(" + contextArg() + "positions, " + valuesArgs()
+                            + ", run2Cursor, mergeEndExclusive, val1Pos, true)")
                     .addStatement("final int gallopLength2 = copyUntil2 - run2Cursor")
                     .beginControlFlow("if (gallopLength2 > 0)")
                     .addStatement("copyToChunk(positions, positions, run2Cursor, ii, gallopLength2)")
@@ -1023,8 +1023,8 @@ public class IndirectTimsortKernelFactory {
                     .beginControlFlow("while (ii >= mergeStartPosition)")
                     .addComment(
                             "if we had a lot of things from run2, we take the next thing from run1 then find it in run2")
-                    .addStatement("final int copyUntil2 = lowerBound(" + contextArg()
-                            + "context.temporaryPositions, " + valuesArgs() + ", 0, tempCursor, val1Pos) + 1")
+                    .addStatement("final int copyUntil2 = gallopBackward(" + contextArg()
+                            + "context.temporaryPositions, " + valuesArgs() + ", 0, tempCursor, val1Pos, true) + 1")
                     .addStatement("final int gallopLength2 = tempCursor - copyUntil2 + 1")
                     .beginControlFlow("if (gallopLength2 > 0)")
                     .addStatement(
@@ -1039,8 +1039,8 @@ public class IndirectTimsortKernelFactory {
                     .endControlFlow()
                     .addComment(
                             "if we had a lot of things from run1, we take the next thing from run2 and then find it in run1")
-                    .addStatement("final int copyUntil1 = upperBound(" + contextArg() + "positions, " + valuesArgs()
-                            + ", mergeStartPosition, run1Cursor, val2Pos)")
+                    .addStatement("final int copyUntil1 = gallopBackward(" + contextArg() + "positions, " + valuesArgs()
+                            + ", mergeStartPosition, run1Cursor, val2Pos, false)")
                     .addStatement("final int gallopLength1 = run1Cursor - copyUntil1")
                     .beginControlFlow("if (gallopLength1 > 0)")
                     .addStatement(
@@ -1150,6 +1150,58 @@ public class IndirectTimsortKernelFactory {
                     .endControlFlow()
                     .endControlFlow()
                     .addStatement("return lo")
+                    .build();
+        }
+
+        /**
+         * Emits gallopForward, which finds the same position as bound with an exponential search outward from lo
+         * followed by a binary search within the range that search found, as java.util.TimSort gallops.
+         */
+        private MethodSpec emitGallopForward() {
+            return boundMethod("gallopForward")
+                    .addJavadoc("Returns the same position as bound, probing lo, lo + 1, lo + 3, lo + 7, ... before "
+                            + "the binary search, so the\nnumber of comparisons is logarithmic in the distance from lo "
+                            + "to the result.\n")
+                    .addParameter(ParameterSpec.builder(boolean.class, "lower", Modifier.FINAL).build())
+                    .addComment("lt or leq")
+                    .addStatement("final int compareLimit = lower ? -1 : 0")
+                    .addStatement("final int maxDistance = hi - lo")
+                    .addComment("every element before searchLo is before the result")
+                    .addStatement("int searchLo = lo")
+                    .addStatement("int distance = 0")
+                    .beginControlFlow("while (distance < maxDistance && "
+                            + compareCall("positions.get(lo + distance)", "searchPos") + " <= compareLimit)")
+                    .addStatement("searchLo = lo + distance + 1")
+                    .addStatement("distance = distance < (maxDistance >> 1) ? (distance << 1) + 1 : maxDistance")
+                    .endControlFlow()
+                    .addStatement("return bound(" + contextArg() + "positions, " + valuesArgs()
+                            + ", searchLo, lo + distance, searchPos, lower)")
+                    .build();
+        }
+
+        /**
+         * Emits gallopBackward, which finds the same position as bound with an exponential search outward from hi
+         * followed by a binary search within the range that search found, as java.util.TimSort gallops.
+         */
+        private MethodSpec emitGallopBackward() {
+            return boundMethod("gallopBackward")
+                    .addJavadoc("Returns the same position as bound, probing hi - 1, hi - 2, hi - 4, hi - 8, ... "
+                            + "before the binary search, so\nthe number of comparisons is logarithmic in the distance "
+                            + "from the result to hi.\n")
+                    .addParameter(ParameterSpec.builder(boolean.class, "lower", Modifier.FINAL).build())
+                    .addComment("lt or leq")
+                    .addStatement("final int compareLimit = lower ? -1 : 0")
+                    .addStatement("final int maxDistance = hi - lo")
+                    .addComment("every element at or after searchHi is after the result")
+                    .addStatement("int searchHi = hi")
+                    .addStatement("int distance = 0")
+                    .beginControlFlow("while (distance < maxDistance && "
+                            + compareCall("positions.get(hi - 1 - distance)", "searchPos") + " > compareLimit)")
+                    .addStatement("searchHi = hi - 1 - distance")
+                    .addStatement("distance = distance < (maxDistance >> 1) ? (distance << 1) + 1 : maxDistance")
+                    .endControlFlow()
+                    .addStatement("return bound(" + contextArg() + "positions, " + valuesArgs()
+                            + ", hi - distance, searchHi, searchPos, lower)")
                     .build();
         }
 
