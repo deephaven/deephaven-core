@@ -2498,7 +2498,7 @@ class Table(_TableOperations["Table"]):
             chunk_size (int): The number of rows to read at a time. Default is 2048.
 
         Returns:
-            A generator that yields a named tuple for each row in the table.
+            A generator that yields a named tuple for each chunk of rows in the table.
 
         Raises:
             ValueError
