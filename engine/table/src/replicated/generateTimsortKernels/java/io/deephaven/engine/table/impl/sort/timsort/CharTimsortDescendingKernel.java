@@ -238,8 +238,6 @@ public final class CharTimsortDescendingKernel {
     /**
      * Merge context temporary and run2 between mergeStartPosition and length2 (which is not the full run length, but
      * the length of things we might need to merge.
-     * <p>
-     * We eventually need to do galloping here, but are skipping that for now
      */
     private static <ATTR extends Any> void frontMerge(CharSortKernelContext<ATTR> context,
             WritableCharChunk<ATTR> valuesToSort, final int mergeStartPosition, final int start2,
@@ -281,7 +279,7 @@ public final class CharTimsortDescendingKernel {
             // nodataleft
             while (ii < mergeEndExclusive) {
                 // if we had a lot of things from run1, we take the next thing from run2 then find it in run1
-                final int copyUntil1 = upperBound(context.temporaryValues, tempCursor, run1size, val2);
+                final int copyUntil1 = gallopForward(context.temporaryValues, tempCursor, run1size, val2, false);
                 final int gallopLength1 = copyUntil1 - tempCursor;
                 if (gallopLength1 > 0) {
                     copyToChunk(context.temporaryValues, valuesToSort, tempCursor, ii, gallopLength1);
@@ -294,7 +292,7 @@ public final class CharTimsortDescendingKernel {
                     context.minGallop--;
                 }
                 // if we had a lot of things from run2, we take the next thing from run1 and then find it in run2
-                final int copyUntil2 = lowerBound(valuesToSort, run2Cursor, mergeEndExclusive, val1);
+                final int copyUntil2 = gallopForward(valuesToSort, run2Cursor, mergeEndExclusive, val1, true);
                 final int gallopLength2 = copyUntil2 - run2Cursor;
                 if (gallopLength2 > 0) {
                     copyToChunk(valuesToSort, valuesToSort, run2Cursor, ii, gallopLength2);
@@ -322,8 +320,6 @@ public final class CharTimsortDescendingKernel {
 
     /**
      * Merge context temporary and run1 between mergeStartPosition + length1 + temporary.length
-     * <p>
-     * We eventually need to do galloping here, but are skipping that for now
      */
     private static <ATTR extends Any> void backMerge(CharSortKernelContext<ATTR> context,
             WritableCharChunk<ATTR> valuesToSort, final int mergeStartPosition, final int length1) {
@@ -365,7 +361,7 @@ public final class CharTimsortDescendingKernel {
             // nodataleft
             while (ii >= mergeStartPosition) {
                 // if we had a lot of things from run2, we take the next thing from run1 then find it in run2
-                final int copyUntil2 = lowerBound(context.temporaryValues, 0, tempCursor, val1) + 1;
+                final int copyUntil2 = gallopBackward(context.temporaryValues, 0, tempCursor, val1, true) + 1;
                 final int gallopLength2 = tempCursor - copyUntil2 + 1;
                 if (gallopLength2 > 0) {
                     copyToChunk(context.temporaryValues, valuesToSort, copyUntil2, ii - gallopLength2 + 1, gallopLength2);
@@ -378,7 +374,7 @@ public final class CharTimsortDescendingKernel {
                     context.minGallop--;
                 }
                 // if we had a lot of things from run1, we take the next thing from run2 and then find it in run1
-                final int copyUntil1 = upperBound(valuesToSort, mergeStartPosition, run1Cursor, val2);
+                final int copyUntil1 = gallopBackward(valuesToSort, mergeStartPosition, run1Cursor, val2, false);
                 final int gallopLength1 = run1Cursor - copyUntil1;
                 if (gallopLength1 > 0) {
                     copyToChunk(valuesToSort, valuesToSort, copyUntil1, ii - gallopLength1, gallopLength1 + 1);
@@ -447,6 +443,44 @@ public final class CharTimsortDescendingKernel {
             }
         }
         return lo;
+    }
+
+    /**
+     * Returns bound(valuesToSort, lo, hi, searchValue, lower), probing lo, lo + 1, lo + 3, lo + 7, ... before the binary
+     * search, so the number of comparisons is logarithmic in the distance from lo to the result.
+     */
+    private static int gallopForward(CharChunk<?> valuesToSort, int lo, int hi, char searchValue,
+            final boolean lower) {
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
+        final int maxDistance = hi - lo;
+        // every element before searchLo is before the result
+        int searchLo = lo;
+        int distance = 0;
+        while (distance < maxDistance && doComparison(valuesToSort.get(lo + distance), searchValue) <= compareLimit) {
+            searchLo = lo + distance + 1;
+            distance = distance < (maxDistance >> 1) ? (distance << 1) + 1 : maxDistance;
+        }
+        return bound(valuesToSort, searchLo, lo + distance, searchValue, lower);
+    }
+
+    /**
+     * Returns bound(valuesToSort, lo, hi, searchValue, lower), probing hi - 1, hi - 2, hi - 4, hi - 8, ... before the
+     * binary search, so the number of comparisons is logarithmic in the distance from the result to hi.
+     */
+    private static int gallopBackward(CharChunk<?> valuesToSort, int lo, int hi, char searchValue,
+            final boolean lower) {
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
+        final int maxDistance = hi - lo;
+        // every element at or after searchHi is after the result
+        int searchHi = hi;
+        int distance = 0;
+        while (distance < maxDistance && doComparison(valuesToSort.get(hi - 1 - distance), searchValue) > compareLimit) {
+            searchHi = hi - 1 - distance;
+            distance = distance < (maxDistance >> 1) ? (distance << 1) + 1 : maxDistance;
+        }
+        return bound(valuesToSort, hi - distance, searchHi, searchValue, lower);
     }
 
     private static void insertionSort(WritableCharChunk<?> valuesToSort, int offset, int length) {
