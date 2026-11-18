@@ -50,17 +50,34 @@ import jsinterop.annotations.JsOptional;
 @TsInterface
 public interface JsPendingTable<@TsDefault(JsResolvedTable.class) T> extends JsTableOperations, PromiseLike<T> {
     /**
-     * Releases everything this pending table produced, whichever stage it is at. If the operation is still pending, it
-     * is canceled: the promise from {@link #resolve(Object)} rejects with "Operation canceled" and the ticket is
-     * released. If the table was already delivered, it is closed, for every awaiter. Operations already chained on it
-     * that have not yet produced their table reject with "Source table failed: " and the cancel message. Operations
-     * chained on it afterward are never sent, and reject with "Cannot use source table: " and the cancel message. The
-     * server cancels work it has not started, but work it has already begun runs to completion there, so callers that
-     * cancel often should debounce. Canceling the {@link JsTable#operations()} of a {@link JsTable} works the same way,
-     * except that the {@link JsTable} and its server-side table are left as they are. A call that already named this
-     * table and has an effect of its own, such as {@link io.deephaven.web.client.api.input.JsInputTable#addTable
-     * InputTable.addTable}, {@link io.deephaven.web.client.ide.IdeConnection#shareObject IdeConnection.shareObject} or
-     * {@link io.deephaven.web.client.ide.IdeSession#shareObject IdeSession.shareObject}, is not withdrawn.
+     * Abandons this table: stops the work if it is not done, and closes the table if it was already delivered. Use it
+     * when the result is no longer wanted, such as when a newer request replaces it.
+     * <ul>
+     * <li>Not yet delivered: a request not yet sent is never sent, and the server should cancel work it has not started
+     * or stop work it has started. Promises on the canceled table reject with "Operation canceled", downstream
+     * operations will instead reject indicating that a source failed.</li>
+     * <li>Already delivered: the table it produced is closed, as {@code close()} on it would. Copies made of the
+     * delivered table will stay open (e.g. {@link JsResolvedTable#copy()} and
+     * {@link JsResolvedTable#createMutableTable()}).</li>
+     * <li>Tables chained on it fail too, those still being made and those chained afterward, which are never sent.</li>
+     * </ul>
+     * A call outside the batch that already named this table, such as
+     * {@link io.deephaven.web.client.api.input.JsInputTable#addTable InputTable.addTable},
+     * {@link io.deephaven.web.client.ide.IdeConnection#shareObject IdeConnection.shareObject},
+     * {@link io.deephaven.web.client.ide.IdeSession#shareObject IdeSession.shareObject} or
+     * {@link io.deephaven.web.client.ide.IdeSession#bindTableToVariable IdeSession.bindTableToVariable}, cannot be
+     * withdrawn once sent. If it has not finished, its promise rejects, but the server may still complete it. A call
+     * that has finished is unaffected.
+     * <p>
+     * This is the only method on {@code PendingTable} that can be successfully called after the task that created it
+     * has finished.
+     * <p>
+     * See also {@link JsPendingTable#resolve(Object)} on how to use an {@code AbortSignal} to cancel pending
+     * operations. When designing a user interface that cancels operations, keep in mind that it is not always possible
+     * to cancel work on the server, and it may make sense to also debounce operations.
+     * <p>
+     * Canceling the {@link JsTable#operations()} of a {@link JsTable} leaves the {@link JsTable} and its server-side
+     * tables as they are.
      */
     @JsMethod
     void cancel();

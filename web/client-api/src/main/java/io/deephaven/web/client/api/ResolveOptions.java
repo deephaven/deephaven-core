@@ -20,6 +20,11 @@ public class ResolveOptions {
      * with the signal's reason as a string, and the table it would have produced is released. Every awaiter of the same
      * pending table is affected, since they share one operation. Unlike {@code cancel()}, aborting after the table was
      * delivered does nothing: the signal means "stop waiting", so a timeout signal cannot close a table already in use.
+     * <p>
+     * When designing a user interface that cancels operations, keep in mind that it is not always possible to cancel
+     * work on the server, and it may make sense to also debounce operations.
+     *
+     * @see JsPendingTable#cancel()
      */
     @JsNullable
     public AbortSignal signal;
