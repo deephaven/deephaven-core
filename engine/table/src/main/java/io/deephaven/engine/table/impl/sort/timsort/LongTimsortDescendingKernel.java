@@ -49,6 +49,8 @@ public final class LongTimsortDescendingKernel {
             insertionSort(valuesToSort, offset, length);
             return;
         }
+        // each sort starts galloping from the initial threshold, independent of earlier sorts with this context
+        context.minGallop = TimsortUtils.INITIAL_GALLOP;
         context.runCount = 0;
         int startRun = offset;
         while (startRun < offset + length) {

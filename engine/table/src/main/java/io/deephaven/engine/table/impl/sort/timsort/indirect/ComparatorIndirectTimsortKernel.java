@@ -64,6 +64,8 @@ public final class ComparatorIndirectTimsortKernel {
             insertionSort(context, positions, valuesToSort0, offset, length);
             return;
         }
+        // each sort starts galloping from the initial threshold, independent of earlier sorts with this context
+        context.minGallop = TimsortUtils.INITIAL_GALLOP;
         context.runCount = 0;
         int startRun = offset;
         while (startRun < offset + length) {
@@ -564,6 +566,8 @@ public final class ComparatorIndirectTimsortKernel {
         @Override
         public void mergePositions(WritableIntChunk<ChunkPositions> positions,
                 WritableChunk<? extends Any>[] valuesToSort, int start1, int length1, int length2) {
+            // each merge starts galloping from the initial threshold, independent of earlier sorts with this context
+            minGallop = TimsortUtils.INITIAL_GALLOP;
             ComparatorIndirectTimsortKernel.merge(this, positions, valuesToSort[0].<Object>asObjectChunk(), start1, length1, length2);
         }
 
