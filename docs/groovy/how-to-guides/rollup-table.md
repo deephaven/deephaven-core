@@ -22,7 +22,7 @@ Three terms name the parts of a rollup table:
 - The _leaf nodes_ are the rows at the most detailed grouping level, one for each unique combination of all the grouping columns.
 - The _constituents_ are the rows from the source table that each leaf node aggregates. If you pass `true` for `includeConstituents`, they appear one level below each leaf node.
 
-![A diagram displaying the structure of a rollup table](../assets/how-to/rollup-diagram.png)
+![A diagram of a rollup table: the root node, three first-level groups A1 to A3, and the leaf nodes B1 to B7](../assets/how-to/rollup-diagram.svg)
 
 In this diagram, `Root` is the root node, the `A` rows are the first level of grouping, and the `B` rows are the leaf nodes.
 
