@@ -331,25 +331,26 @@ public abstract class SparseArrayColumnSource<T>
             final RowSet liveRowSet,
             final int logBlockSize) {
         final long blockSize = 1L << logBlockSize;
-        final RowSet.SearchIterator liveIterator = liveRowSet.searchIterator();
-        final RowSet.SearchIterator candidateIterator = candidateRowKeys.searchIterator();
+        try (final RowSet.SearchIterator liveIterator = liveRowSet.searchIterator();
+                final RowSet.SearchIterator candidateIterator = candidateRowKeys.searchIterator()) {
 
-        final RowSetBuilderSequential removeBlockBuilder = RowSetFactory.builderSequential();
-        long startOfNextBlock = 0;
-        while (candidateIterator.advance(startOfNextBlock)) {
-            final long candidateKey = candidateIterator.currentValue();
-            final long endOfCandidateBlock = candidateKey | (blockSize - 1);
+            final RowSetBuilderSequential removeBlockBuilder = RowSetFactory.builderSequential();
+            long startOfNextBlock = 0;
+            while (candidateIterator.advance(startOfNextBlock)) {
+                final long candidateKey = candidateIterator.currentValue();
+                final long endOfCandidateBlock = candidateKey | (blockSize - 1);
 
-            final long startOfCandidateBlock = candidateKey & ~(blockSize - 1);
-            if (!liveIterator.advance(startOfCandidateBlock) || liveIterator.currentValue() > endOfCandidateBlock) {
-                removeBlockBuilder.appendKey(candidateKey >> logBlockSize);
+                final long startOfCandidateBlock = candidateKey & ~(blockSize - 1);
+                if (!liveIterator.advance(startOfCandidateBlock) || liveIterator.currentValue() > endOfCandidateBlock) {
+                    removeBlockBuilder.appendKey(candidateKey >> logBlockSize);
+                }
+                if (endOfCandidateBlock == Long.MAX_VALUE) {
+                    break;
+                }
+                startOfNextBlock = endOfCandidateBlock + 1;
             }
-            if (endOfCandidateBlock == Long.MAX_VALUE) {
-                break;
-            }
-            startOfNextBlock = endOfCandidateBlock + 1;
+            return removeBlockBuilder.build();
         }
-        return removeBlockBuilder.build();
     }
 
     public static <T> WritableColumnSource<T> getSparseMemoryColumnSource(Collection<T> data, Class<T> type) {
