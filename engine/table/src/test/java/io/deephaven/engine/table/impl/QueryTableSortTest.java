@@ -1223,6 +1223,45 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertEquals("ObjArray is not a sortable type: class [Ljava.lang.Object;", iae2.getMessage());
     }
 
+    /**
+     * A sort whose first column uses an explicit comparator does not mark that column as naturally sorted, so a later
+     * natural sort of the column reorders the data. This holds both when the comparator sort reorders rows and when its
+     * input is already in comparator order.
+     */
+    @Test
+    public void testComparatorSortDoesNotMarkColumnNaturallySorted() {
+        final QueryTable source = (QueryTable) newTable(stringCol("S", "b", "A", "c", "B", "a"));
+        final Table caseInsensitive = source.sort(ComparatorSortColumn.asc("S", String.CASE_INSENSITIVE_ORDER));
+        assertArrayEquals(new String[] {"A", "a", "b", "B", "c"},
+                ColumnVectors.ofObject(caseInsensitive, "S", String.class).toArray());
+        assertTrue(SortedColumnsAttribute.getSortedColumns(caseInsensitive).isEmpty());
+        assertArrayEquals(new String[] {"A", "B", "a", "b", "c"},
+                ColumnVectors.ofObject(caseInsensitive.sort("S"), "S", String.class).toArray());
+
+        final QueryTable reverseOrdered = (QueryTable) newTable(stringCol("S", "c", "b", "a"));
+        final Table alreadySorted =
+                reverseOrdered.sort(ComparatorSortColumn.asc("S", Comparator.reverseOrder(), true));
+        assertArrayEquals(new String[] {"c", "b", "a"},
+                ColumnVectors.ofObject(alreadySorted, "S", String.class).toArray());
+        assertTrue(SortedColumnsAttribute.getSortedColumns(alreadySorted).isEmpty());
+        assertArrayEquals(new String[] {"a", "b", "c"},
+                ColumnVectors.ofObject(alreadySorted.sort("S"), "S", String.class).toArray());
+    }
+
+    /**
+     * A range filter on the result of a sort whose first column uses an explicit comparator returns exactly the
+     * matching rows.
+     */
+    @Test
+    public void testRangeFilterOnComparatorSort() {
+        final QueryTable source = (QueryTable) newTable(stringCol("S", "b", "A", "c", "B", "a"));
+        final Table reversed = source.sort(ComparatorSortColumn.asc("S", Comparator.reverseOrder(), true));
+        assertArrayEquals(new String[] {"c", "b", "a", "B", "A"},
+                ColumnVectors.ofObject(reversed, "S", String.class).toArray());
+        assertArrayEquals(new String[] {"c", "b", "a"},
+                ColumnVectors.ofObject(reversed.where("S >= `a`"), "S", String.class).toArray());
+    }
+
     @Test
     public void testAlreadySortedEmpty() {
         final Table x = TableTools.newTable(intCol("Sentinel"), intCol("Value"));
