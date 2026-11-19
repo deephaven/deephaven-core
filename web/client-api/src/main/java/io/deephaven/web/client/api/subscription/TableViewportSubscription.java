@@ -282,6 +282,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      *        scroll to the bottom of a ticking table
      * @deprecated use {@link #update(Object)} instead
      */
+    @Deprecated
     @JsMethod
     public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable Column[] columns,
             @JsOptional @JsNullable Double updateIntervalMs,
