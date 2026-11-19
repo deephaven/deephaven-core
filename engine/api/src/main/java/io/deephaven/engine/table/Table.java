@@ -638,7 +638,12 @@ public interface Table extends
      * does not conform to blink semantics, then the returned table will notify of an error and cease updating.
      * </p>
      *
+     * <p>
+     * A static table never removes its rows, so it cannot be a blink table.
+     * </p>
+     *
      * @return A child table with the blink attribute set, or this table if already a blink table.
+     * @throws IllegalArgumentException if this table is not {@link #isRefreshing() refreshing}
      */
     @ConcurrentMethod
     Table assertBlink();
