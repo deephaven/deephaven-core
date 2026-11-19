@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;
@@ -232,9 +231,9 @@ public class BarrageMessageParallelPropagationTest extends BarrageMessageRoundTr
         // small enough that the snapshot fits in the first growth round, which sends each subscriber one message
         final int size = (int) (BarrageUtil.MIN_SNAPSHOT_CELL_COUNT / columnInfo.length);
         final QueryTable sourceTable = getTable(size, random, columnInfo);
-        // refuses every job, as a pool whose threads are all busy does
+        // queues every job and never starts one, as a pool whose threads are all busy does; the propagation job's
+        // thread then runs every queued write itself
         final Executor busyPool = runnable -> {
-            throw new RejectedExecutionException();
         };
         final BarrageMessageProducer producer = sourceTable.getResult(new BarrageMessageProducer.Operation(scheduler,
                 new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
@@ -263,8 +262,11 @@ public class BarrageMessageParallelPropagationTest extends BarrageMessageRoundTr
         updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
                 GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
         flushProducerTable();
-        // the delta, to each subscriber
-        assertEquals("delta writes " + writes, observers.size(), writes.size());
+        // the delta, to each subscriber; the identical full subscribers share one write, which sends each record batch
+        // as its own message
+        for (final RecordingObserver observer : observers) {
+            assertTrue("delta writes " + writes, writes.contains(observer.name));
+        }
         assertViewportsWrittenFirst("delta", writes);
 
         for (final RecordingObserver observer : observers) {

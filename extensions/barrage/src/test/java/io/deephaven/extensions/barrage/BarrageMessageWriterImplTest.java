@@ -106,8 +106,10 @@ public class BarrageMessageWriterImplTest {
         final DictionaryChunkWriter dictionaryWriter = (DictionaryChunkWriter) (ChunkWriter<?>) writers[2];
         try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
                 delta(columns(0, 1, 2)), writers, BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
-            // a fresh registry sends every value its first batch refers to as a replacement, before that batch
-            final List<byte[]> streams = drain(writer.getSubView(OPTIONS, false, true, null, false, null, null,
+            // a fresh registry sends every value its first batch refers to as a replacement, before that batch; one
+            // record batch, so that batch refers to every value
+            final List<byte[]> streams = drain(writer.getSubView(OPTIONS.withBatchSize(Integer.MAX_VALUE), false, true,
+                    null, false, null, null,
                     columns(0, 1, 2), new DictionaryWriterRegistryImpl()));
             assertThat(flightMessage(streams.get(0)).headerType()).isEqualTo(MessageHeader.DictionaryBatch);
 
