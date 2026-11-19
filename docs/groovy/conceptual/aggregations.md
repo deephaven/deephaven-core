@@ -102,7 +102,7 @@ On a ticking source table, these operations update incrementally.
 - **[Blink tables](./table-types.md#specialization-3-blink):** A blink table holds only the rows added in the current update cycle.
   - [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) and the [single aggregations](../how-to-guides/dedicated-aggregations.md) ignore the rows a blink table removes, so their results summarize every row seen since the operation started.
   - [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md), [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md), [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md), [`AggPartition`](../reference/table-operations/group-and-aggregate/AggPartition.md), and [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md) throw an error on a blink table.
-  - [`rollup`](../reference/table-operations/create/rollup.md) throws an error on a blink table if you pass `true` for `includeConstituents` or use a first, last, sorted first, sorted last, group, or formula aggregation.
+  - [`rollup`](../reference/table-operations/create/rollup.md) throws an error on a blink table if you pass `true` for `includeConstituents` or use [`AggFirst`](../reference/table-operations/group-and-aggregate/AggFirst.md), [`AggLast`](../reference/table-operations/group-and-aggregate/AggLast.md), [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md), [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md), [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md), or [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md).
   - [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) with key columns throws an error on a blink table. Without key columns, it sees only the rows in the current update cycle, so a cumulative operation such as [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md) starts over each cycle.
 
 ## Related documentation
@@ -119,9 +119,13 @@ On a ticking source table, these operations update incrementally.
 - [Single aggregation](../how-to-guides/dedicated-aggregations.md)
 - [`aggAllBy`](../reference/table-operations/group-and-aggregate/AggAllBy.md)
 - [`AggAvg`](../reference/table-operations/group-and-aggregate/AggAvg.md)
+- [`AggFirst`](../reference/table-operations/group-and-aggregate/AggFirst.md)
 - [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md)
 - [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md)
+- [`AggLast`](../reference/table-operations/group-and-aggregate/AggLast.md)
 - [`AggPartition`](../reference/table-operations/group-and-aggregate/AggPartition.md)
+- [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md)
+- [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md)
 - [`AggSum`](../reference/table-operations/group-and-aggregate/AggSum.md)
 - [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md)
 - [`avgBy`](../reference/table-operations/group-and-aggregate/avgBy.md)
