@@ -4,6 +4,8 @@ title: tree
 
 The Deephaven `tree` method creates a tree table from a source table given an ID column name and parent column name.
 
+`tree` does not support a [blink table](../../../conceptual/table-types.md#specialization-3-blink) source and raises an error if given one. To build a tree from a blink table, first convert it to an append-only table with [`blink_to_append_only`](./blink-to-append-only.md).
+
 ## Syntax
 
 ```python syntax
@@ -15,12 +17,12 @@ source.tree(id_col: str, parent_col: str, promote_orphans: bool = False) -> Tree
 <ParamTable>
 <Param name="id_col" type="str">
 
-The name of the ID column.
+The name of the ID column. Each ID must be unique. If the source table has a duplicate ID, `tree` raises an error.
 
 </Param>
 <Param name="parent_col" type="str">
 
-The name of the parent column.
+The name of the parent column. It must have the same type as the ID column.
 
 </Param>
 <Param name="promote_orphans" type="bool" optional>
@@ -80,6 +82,8 @@ result_w_orphans = source.tree(id_col="ID", parent_col="Parent", promote_orphans
 
 ## Related documentation
 
+- [Table types](../../../conceptual/table-types.md)
+- [`blink_to_append_only`](./blink-to-append-only.md)
 - [`empty_table`](./emptyTable.md)
 - [`time_table`](./timeTable.md)
 - [`join`](../join/join.md)
