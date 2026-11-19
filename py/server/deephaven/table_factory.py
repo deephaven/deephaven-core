@@ -161,7 +161,6 @@ def _new_table_from_mapping(cols: Mapping[str, Sequence]) -> Table:
     import pyarrow as pa
 
     from deephaven import arrow
-    from deephaven.numpy import _to_column_name
     from deephaven.pandas import to_table
 
     # Arrow goes first because it keeps None apart from NaN and keeps whole-number floats as floats. pandas loses
@@ -169,9 +168,7 @@ def _new_table_from_mapping(cols: Mapping[str, Sequence]) -> Table:
     pa_table = None
     if not any(isinstance(v, pd.Series) for v in cols.values()):
         try:
-            # Rename the columns the way the pandas path does: "A.B" becomes "A_B". Arrow's import would drop the
-            # dot instead and make "AB".
-            pa_table = pa.table({_to_column_name(k): v for k, v in cols.items()})
+            pa_table = pa.table(cols)
         except (pa.ArrowException, OverflowError, TypeError):
             # TypeError covers a key that isn't a str.
             pass

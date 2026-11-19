@@ -301,8 +301,13 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertEqual(NULL_DOUBLE, nan_none[2])
 
     def test_new_table_dict_column_names(self) -> None:
-        t = new_table({"A.B": [1.5], "AB": [2.5]})
-        self.assertEqual(["A_B", "AB"], [c.name for c in t.columns])
+        t = new_table({"A.B": [1.5], "A_B": [2.5]})
+        self.assertEqual(["AB", "A_B"], [c.name for c in t.columns])
+
+        # Two keys that become the same column name raise instead of dropping a column.
+        with self.assertRaises(DHError) as cm:
+            new_table({"A.B": [1.5], "AB": [2.5]})
+        self.assertIn("duplicate names [AB]", str(cm.exception))
 
     def test_new_table_dict_pandas_fallback(self) -> None:
         t = new_table(
