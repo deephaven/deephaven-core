@@ -99,20 +99,21 @@ def read(
 ) -> Table:
     """Read the CSV data specified by the path parameter as a table.
 
+    The column names come from the file's header row, from header, or are 'Column1', 'Column2', ... for a headless
+    file. Deephaven turns names that aren't legal column names into legal ones, for example 'my venue' becomes
+    'my_venue'. The column types are inferred from the data, unless a header dict or col_types sets them.
+
+    header applies names by position. The first name goes to the first column, the second to the second, and so on.
+    The names replace the file's header names and are not matched against them. col_types matches by name, in any
+    order, and uses the names before Deephaven makes them legal.
+
     Args:
-        header (Optional[Union[Sequence[str], Mapping[str, DType]]]): the column names, applied by position: the first
-            name goes to the first column of the file, the second to the second column, and so on. When the file has a
-            header row, these names replace the names in it; they are not matched against it. The number of names
-            sets the number of columns. A row with more cells is an error, unless ignore_excess_columns is True, which
-            drops the extra cells. Defaults to None, meaning the names come from the file's header row, or are
-            'Column1', 'Column2', ... for a headless file.
-
-            A sequence of names only renames the columns. Their types are inferred, and col_types can set them.
-
-            A dict maps each name to its data type and sets both. Its keys are still applied by position, so the dict
-            must list the columns in the file's order. A dict in a different order assigns names and types to the
-            wrong columns, silently when the types happen to parse. To set types by name, use col_types instead. A
-            dict cannot be combined with col_types.
+        header (Optional[Union[Sequence[str], Mapping[str, DType]]]): the column names, applied by position. The
+            number of names sets the number of columns. A row with more cells is an error, unless
+            ignore_excess_columns is True. A sequence only renames the columns. A dict also sets each column's
+            type, so its keys must be in the file's column order, or the names and types go to the wrong columns.
+            To set types by name, use col_types. A dict cannot be combined with col_types. Defaults to None,
+            meaning the names come from the file.
         headless (bool): whether the csv file doesn't have a header row, default is False
         header_row (int): the header row number, all the rows before it will be skipped, default is 0. Must be 0 if
             headless is True, otherwise an exception will be raised
@@ -132,12 +133,9 @@ def read(
         ignore_surrounding_spaces (bool): Indicates whether surrounding white space should be ignored for unquoted
             text fields, default is True
         trim (bool): indicates whether to trim white space inside a quoted string, default is False
-        col_types (Optional[dict[str, DType]]): the data types of some or all columns, matched by name, in any order.
-            A column left out keeps its inferred type. The names are the header names before Deephaven makes them
-            legal column names: the names in header when it is given, else the file's header row as written, such as
-            'my venue' for the column the table shows as 'my_venue', or 'Column1', 'Column2', ... for a headless file.
-            A name that matches no column raises an error. Defaults to None, meaning every type not set by a header
-            dict is inferred.
+        col_types (Optional[dict[str, DType]]): the data types of some or all columns, matched by name. A name
+            that matches no column raises an error. Defaults to None, meaning the types are inferred, except those
+            set by a header dict.
 
     Returns:
         a table

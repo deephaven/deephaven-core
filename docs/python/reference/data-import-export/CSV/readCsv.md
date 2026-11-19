@@ -11,7 +11,7 @@ read_csv(
     path: str,
     header: Sequence[str] | dict[str, dht.DType] = None,
     headless: bool = False,
-    header_row: int = 0
+    header_row: int = 0,
     skip_rows: int = 0,
     num_rows: int = MAX_LONG,
     ignore_empty_lines: bool = False,
@@ -30,6 +30,10 @@ read_csv(
 
 ## Parameters
 
+The column names come from the file's header row, from `header`, or are `Column1`, `Column2`, and so on for a headless file. Deephaven turns names that aren't legal column names into legal ones, for example `my venue` becomes `my_venue`. The column types are inferred from the data, unless a `header` dict or `col_types` sets them.
+
+`header` applies names by position. The first name goes to the first column, the second to the second, and so on. The names replace the file's header names and are not matched against them. `col_types` matches by name, in any order, and uses the names before Deephaven makes them legal.
+
 <ParamTable>
 <Param name="path" type="str">
 
@@ -38,10 +42,10 @@ The file to load into a table. Note that compressed files _are_ accepted: paths 
 </Param>
 <Param name="header" type="Sequence[str] | dict" optional>
 
-The column names, applied by position. The first name goes to the first column of the file, the second name to the second column, and so on. When the file has a header row, these names replace the names in it. They are not matched against it. The number of names sets the number of columns. Default is `None`, which uses the file's header row, or `Column1`, `Column2`, and so on for a headless file.
+The column names, applied by position. The number of names sets the number of columns. A row with more cells is an error, unless `ignore_excess_columns` is `True`. Default is `None`, which takes the names from the file.
 
-- A sequence of names only renames the columns. Their types are inferred, and `col_types` can set them.
-- A dict maps each name to its data type and sets both. Its keys are still applied by position, so list them in the file's column order. A dict in a different order puts names and types on the wrong columns, with no error when the types happen to parse. To set types by name, use `col_types` instead. A dict can't be combined with `col_types`.
+- A sequence of names only renames the columns.
+- A dict also sets each column's type, so its keys must be in the file's column order, or the names and types go to the wrong columns. To set types by name, use `col_types`. A dict can't be combined with `col_types`.
 
 </Param>
 <Param name="headless" type="bool" optional>
@@ -61,7 +65,7 @@ The header row number:
 </Param>
 <Param name="skip_rows" type="int" optional>
 
-The number of rows to skip before processing data. Default is none.
+The number of rows to skip before processing data. Default is 0.
 
 </Param>
 <Param name="num_rows" type="int" optional>
@@ -112,25 +116,10 @@ Trim leading and trailing blanks from inside quoted values. Default is `False`.
 </Param>
 <Param name="col_types" type="dict" optional>
 
-The data types of some or all columns, matched by name, in any order: `dict[str, DType]`. A column left out keeps its inferred type. Default is `None`, which infers every type that a `header` dict doesn't set.
-
-The names are the header names before Deephaven turns them into legal column names. These are the names in `header` when it's given. Otherwise they're the file's header names as written, such as `my venue` for the column that the table shows as `my_venue`, or `Column1`, `Column2`, and so on for a headless file. A name that matches no column raises an error.
-
-</Param>
-<Param name="charset" type="str" optional>
-
-The character set. Default is `utf-8`.
-
-</Param>
-<Param name="csvSpecs" type="CsvSpecs" optional>
-
-Specifications for how to load the CSV file.
+The data types of some or all columns, matched by name: `dict[str, DType]`. A name that matches no column raises an error. Default is `None`, which infers the types, except those a `header` dict sets.
 
 </Param>
 </ParamTable>
-
-> [!NOTE]
-> Only one format parameter can be used at a time.
 
 ## Returns
 
