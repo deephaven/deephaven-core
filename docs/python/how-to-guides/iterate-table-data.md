@@ -94,6 +94,8 @@ What a null value arrives as depends on the column type and the kind of method:
 
 The primitive column types are `byte`, `short`, `int`, `long`, `float`, `double`, and `char`. A null in one of them arrives as Deephaven's [null constant](../reference/query-language/types/nulls.md) for the type, not as `None` or `NaN`. For example, a null `int` arrives as `-2147483648`, the value of `NULL_INT`.
 
+The chunk-based methods return an `Instant` column as a NumPy `datetime64` array, so a null arrives as `NaT`. `NaT` means "not a time". It is NumPy's missing value for dates and times, as `NaN` ("not a number") is for floats.
+
 A Deephaven table has no primitive `boolean` column. A formula that returns a `boolean`, such as `B = i % 2 == 0`, makes a `Boolean` column, which can hold a null.
 
 > [!WARNING]
