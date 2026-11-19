@@ -926,68 +926,80 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         };
 
         final FlatBufferBuilder header = new FlatBufferBuilder();
+        final List<DefensiveDrainable> result = new ArrayList<>();
 
         final int numRows;
         final int nodesOffset;
         final int buffersOffset;
-        try (final SizedChunk<Values> nodeOffsets = new SizedChunk<>(ChunkType.Object);
-                final SizedLongChunk<Values> bufferInfos = new SizedLongChunk<>()) {
-            nodeOffsets.ensureCapacity(addColumnData.length);
-            nodeOffsets.get().setSize(0);
-            bufferInfos.ensureCapacity(addColumnData.length * 3);
-            // noinspection DataFlowIssue
-            bufferInfos.get().setSize(0);
+        try {
+            try (final SizedChunk<Values> nodeOffsets = new SizedChunk<>(ChunkType.Object);
+                    final SizedLongChunk<Values> bufferInfos = new SizedLongChunk<>()) {
+                nodeOffsets.ensureCapacity(addColumnData.length);
+                nodeOffsets.get().setSize(0);
+                bufferInfos.ensureCapacity(addColumnData.length * 3);
+                // noinspection DataFlowIssue
+                bufferInfos.get().setSize(0);
 
-            final MutableLong totalBufferLength = new MutableLong();
-            final ChunkWriter.FieldNodeListener fieldNodeListener =
-                    (numElements, nullCount) -> {
-                        nodeOffsets.ensureCapacityPreserve(nodeOffsets.get().size() + 1);
-                        // noinspection resource
-                        nodeOffsets.get().asWritableObjectChunk()
-                                .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount));
-                    };
+                final MutableLong totalBufferLength = new MutableLong();
+                final ChunkWriter.FieldNodeListener fieldNodeListener =
+                        (numElements, nullCount) -> {
+                            nodeOffsets.ensureCapacityPreserve(nodeOffsets.get().size() + 1);
+                            // noinspection resource
+                            nodeOffsets.get().asWritableObjectChunk()
+                                    .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount));
+                        };
 
-            final ChunkWriter.BufferListener bufferListener = (length) -> {
-                totalBufferLength.add(length);
-                bufferInfos.ensureCapacityPreserve(bufferInfos.get().size() + 1);
-                bufferInfos.get().add(length);
-            };
+                final ChunkWriter.BufferListener bufferListener = (length) -> {
+                    totalBufferLength.add(length);
+                    bufferInfos.ensureCapacityPreserve(bufferInfos.get().size() + 1);
+                    bufferInfos.get().add(length);
+                };
 
-            numRows = columnVisitor.visit(view, offset, targetBatchSize, addStream, fieldNodeListener, bufferListener);
-            actualBatchSize.set(numRows);
+                numRows = columnVisitor.visit(view, offset, targetBatchSize, addStream, fieldNodeListener,
+                        bufferListener);
+                actualBatchSize.set(numRows);
 
-            final WritableChunk<Values> noChunk = nodeOffsets.get();
-            RecordBatch.startNodesVector(header, noChunk.size());
-            for (int i = noChunk.size() - 1; i >= 0; --i) {
-                final ChunkWriter.FieldNodeInfo node =
-                        (ChunkWriter.FieldNodeInfo) noChunk.asObjectChunk().get(i);
-                FieldNode.createFieldNode(header, node.numElements, node.nullCount);
+                final WritableChunk<Values> noChunk = nodeOffsets.get();
+                RecordBatch.startNodesVector(header, noChunk.size());
+                for (int i = noChunk.size() - 1; i >= 0; --i) {
+                    final ChunkWriter.FieldNodeInfo node =
+                            (ChunkWriter.FieldNodeInfo) noChunk.asObjectChunk().get(i);
+                    FieldNode.createFieldNode(header, node.numElements, node.nullCount);
+                }
+                nodesOffset = header.endVector();
+
+                final WritableLongChunk<Values> biChunk = bufferInfos.get();
+                RecordBatch.startBuffersVector(header, biChunk.size());
+                for (int i = biChunk.size() - 1; i >= 0; --i) {
+                    totalBufferLength.subtract(biChunk.get(i));
+                    Buffer.createBuffer(header, totalBufferLength.get(), biChunk.get(i));
+                }
+                buffersOffset = header.endVector();
             }
-            nodesOffset = header.endVector();
 
-            final WritableLongChunk<Values> biChunk = bufferInfos.get();
-            RecordBatch.startBuffersVector(header, biChunk.size());
-            for (int i = biChunk.size() - 1; i >= 0; --i) {
-                totalBufferLength.subtract(biChunk.get(i));
-                Buffer.createBuffer(header, totalBufferLength.get(), biChunk.get(i));
-            }
-            buffersOffset = header.endVector();
-        }
-
-        // Build DictionaryBatch messages for any dict columns with pending deltas.
-        // These must precede the RecordBatch in the stream; callers call resetDelta() on success.
-        final List<DefensiveDrainable> result = new ArrayList<>();
-        final DictionaryWriterRegistry dictManager = view.dictionaryRegistry();
-        if (dictManager != null) {
-            for (final DictionaryWriterRegistry.Entry entry : dictManager.entries()) {
-                final DictionaryWriterState state = entry.state;
-                if (state.hasDelta()) {
-                    // a replacement while the subscriber needs the whole dictionary, otherwise an append
-                    final boolean isDelta = !state.needsFullBatch();
-                    result.addAll(buildDictionaryBatchStreams(state.getDictId(), entry.valuesWriter,
-                            state.buildDeltaChunk(), isDelta, dictManager.replacesEachBatch(), view.options()));
+            // Build DictionaryBatch messages for any dict columns with pending deltas.
+            // These must precede the RecordBatch in the stream; callers call resetDelta() on success.
+            final DictionaryWriterRegistry dictManager = view.dictionaryRegistry();
+            if (dictManager != null) {
+                for (final DictionaryWriterRegistry.Entry entry : dictManager.entries()) {
+                    final DictionaryWriterState state = entry.state;
+                    if (state.hasDelta()) {
+                        // a replacement while the subscriber needs the whole dictionary, otherwise an append
+                        final boolean isDelta = !state.needsFullBatch();
+                        result.addAll(buildDictionaryBatchStreams(state.getDictId(), entry.valuesWriter,
+                                state.buildDeltaChunk(), isDelta, dictManager.replacesEachBatch(), view.options()));
+                    }
                 }
             }
+        } catch (final Throwable t) {
+            // the caller retries a SizeException with fewer rows; release what this attempt built
+            for (final DefensiveDrainable stream : streams) {
+                closeQuietly(stream);
+            }
+            for (final DefensiveDrainable message : result) {
+                closeQuietly(message);
+            }
+            throw t;
         }
 
         RecordBatch.startRecordBatch(header);
