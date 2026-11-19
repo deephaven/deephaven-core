@@ -75,6 +75,23 @@ public class TestTableAssertions {
         }
     }
 
+    /**
+     * A static table never removes its rows, so asserting that it is a blink table is an error, even when the table
+     * already carries the blink attribute.
+     */
+    @Test
+    public void testBlinkStatic() {
+        final QueryTable test = TstUtils.testTable(intCol("Sentinel", 1, 2));
+        final IllegalArgumentException iae = assertThrows(IllegalArgumentException.class, test::assertBlink);
+        assertEquals("assertBlink requires a refreshing table; a static table never removes its rows",
+                iae.getMessage());
+        assertNull(test.getAttribute(Table.BLINK_TABLE_ATTRIBUTE));
+
+        final QueryTable marked = TstUtils.testTable(intCol("Sentinel", 1, 2));
+        marked.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        assertThrows(IllegalArgumentException.class, marked::assertBlink);
+    }
+
     @Test
     public void testAddOnly() {
         final QueryTable test = TstUtils.testRefreshingTable(intCol("Sentinel"));

@@ -155,7 +155,7 @@ def new_table(cols: Sequence[InputColumn] | Mapping[str, Sequence]) -> Table:
                 j_table=_JTableFactory.newTable(*[col.j_column for col in cols])
             )
     except Exception as e:
-        raise DHError(e, "failed to create a new time table.") from e
+        raise DHError(e, "failed to create a new table.") from e
 
 
 def merge(tables: Sequence[Table]) -> Table:

@@ -173,7 +173,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             if (onBudget) {
                 ++cyclesOnBudget;
             }
-            this.safePoints += safePoints;
+            this.safePoints += (int) safePoints;
             this.safePointPauseTimeMillis += safePointPauseTimeMillis;
             if (cycles >= cycleTimesMicros.length) {
                 final int newLen;
