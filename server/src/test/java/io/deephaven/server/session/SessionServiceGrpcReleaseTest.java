@@ -13,6 +13,7 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.runner.DeephavenApiServerSingleAuthenticatedBase;
 import io.deephaven.util.SafeCloseable;
+import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import org.junit.Test;
 
@@ -100,7 +101,10 @@ public class SessionServiceGrpcReleaseTest extends DeephavenApiServerSingleAuthe
 
         assertThatThrownBy(() -> release(id(nextServerId)))
                 .as("release of a server id that was never allocated")
-                .isInstanceOf(StatusRuntimeException.class);
+                .isInstanceOfSatisfying(StatusRuntimeException.class,
+                        e -> assertThat(e.getStatus().getCode())
+                                .as("status of a release that can never succeed")
+                                .isEqualTo(Code.FAILED_PRECONDITION));
 
         // the server must still be able to hand out that id
         final SessionState.ExportObject<Table> second = session.newServerSideExport(TableTools.emptyTable(1));

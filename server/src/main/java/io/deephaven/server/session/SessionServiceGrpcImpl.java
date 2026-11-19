@@ -19,6 +19,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.Context;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
@@ -144,15 +145,12 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     .onError(Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Release ticket not supplied"));
             return;
         }
-        final SessionState.ExportObject<?> export = session.getExportIfExists(request.getId(), "id");
-        if (export == null) {
-            responseObserver.onError(Exceptions.statusRuntimeException(Code.UNAVAILABLE, "Export not yet defined"));
+        final int exportId = ExportTicketHelper.ticketToExportId(request.getId(), "id");
+        if (!session.releaseExport(exportId)) {
+            responseObserver.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Export id " + exportId + " does not exist and cannot be released"));
             return;
         }
-
-        // If the export is already in a terminal state, the implementation quietly ignores the request as there
-        // are no additional resources to release.
-        export.cancel();
         responseObserver.onNext(ReleaseResponse.getDefaultInstance());
         responseObserver.onCompleted();
     }
