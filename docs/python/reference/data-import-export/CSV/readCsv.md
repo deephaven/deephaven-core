@@ -30,7 +30,7 @@ read_csv(
 
 ## Parameters
 
-The column names come from the file's header row, from `header`, or are `Column1`, `Column2`, and so on for a headless file. Deephaven turns names that aren't legal column names into legal ones, for example `my venue` becomes `my_venue`. The column types are inferred from the data, unless a `header` dict or `col_types` sets them.
+The column names come from the file's header row, from `header`, or are `Column1`, `Column2`, and so on for a headless file. Deephaven turns names that aren't legal column names into legal ones; for example, `my venue` becomes `my_venue`. The column types are inferred from the data, unless a `header` dict or `col_types` sets them.
 
 `header` applies names by position. The first name goes to the first column, the second to the second, and so on. The names replace the file's header names and are not matched against them. `col_types` matches by name, in any order, and uses the names before Deephaven makes them legal.
 

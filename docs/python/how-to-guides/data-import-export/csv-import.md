@@ -111,10 +111,10 @@ deniro = read_csv(
 )
 ```
 
-The names in `col_types` are the header names as written in the file, or the names in `header` when you pass a list there. Deephaven changes some header names to make them legal column names, for example `my venue` becomes `my_venue`. In `col_types`, use `my venue`. A name that matches no column raises an error.
+The names in `col_types` are the header names as written in the file, or the names in `header` when you pass a list there. Deephaven changes some header names to make them legal column names; for example, `my venue` becomes `my_venue`. In `col_types`, use `my venue`. A name that matches no column raises an error.
 
 > [!WARNING]
-> `header` also accepts a dict that maps names to types, but it applies the keys by position and replaces the file's column names. If the dict lists the columns in a different order than the file, the names and types go to the wrong columns, with no error when the types happen to parse. To set types by name, use `col_types`.
+> `header` also accepts a dict that maps names to types, but it applies the keys by position and replaces the file's column names. If the dict lists the columns in a different order than the file, the names and types map to the wrong columns, and no error is raised if the types parse. To set types by name, use `col_types`.
 
 ### Other delimiters
 
