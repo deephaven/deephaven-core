@@ -8,6 +8,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  # crane retags the base images on ghcr.io for release branches.
+  packages: write
+
 jobs:
   tag-base-images:
     runs-on: ubuntu-24.04

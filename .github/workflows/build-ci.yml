@@ -8,6 +8,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  # Pulls base images from ghcr.io; the image builds do not push.
+  packages: read
+
 jobs:
   server:
     runs-on: ubuntu-24.04
