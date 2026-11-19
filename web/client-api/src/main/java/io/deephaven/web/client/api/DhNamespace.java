@@ -23,13 +23,13 @@ public class DhNamespace {
 
     /**
      * Resolves each of the pending tables, as {@link JsPendingTable#resolve(Object)} does, and gives the tables in the
-     * same order once all have arrived. If one fails, the result rejects as that one did, and the others are canceled
-     * via {@link JsPendingTable#cancel()}, so nothing is left open: work still running is stopped, a table already
+     * same order once all have arrived. If one fails, the result rejects along with it, and the others are canceled via
+     * {@link JsPendingTable#cancel()}, so nothing is left open: work still running is stopped, a table already
      * delivered is closed, and anything chained on them that has not produced its table yet fails too. Aborting the
      * signal in {@code options} also cancels each pending table and closes any that did complete.
      * <p>
-     * Like any use of a pending table, call it in the task that made them, and do not also await or resolve them
-     * elsewhere.
+     * Like any use of a pending table, call {@code resolveAll} in the task that made the pending tables, and do not
+     * also await or resolve them elsewhere.
      *
      * <pre>
      * const [joined, totals] = await dh.resolveAll([

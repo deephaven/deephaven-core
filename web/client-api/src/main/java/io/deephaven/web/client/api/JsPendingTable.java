@@ -36,8 +36,9 @@ import jsinterop.annotations.JsOptional;
  * its resources. {@link JsTableOperations} describes who owns what.
  * <p>
  * A pending table is only valid in the task that created it. Any use after the task is an error, and usually rejects -
- * the one exception is {@link #cancel()}. It cannot be awaited, {@link #resolve(Object) resolved}, {@code then()}
- * invoked or otherwise used as a promise, passed as an argument to another operation, or have operations called on it.
+ * the one exception is {@link #cancel()}. It cannot be awaited, {@link #resolve(Object) resolved},
+ * {@code then()}-invoked or otherwise used as a promise, passed as an argument to another operation, or have operations
+ * called on it.
  * <p>
  *
  * When dealing with multiple pending tables, either individually use {@code Promise.resolve} or
