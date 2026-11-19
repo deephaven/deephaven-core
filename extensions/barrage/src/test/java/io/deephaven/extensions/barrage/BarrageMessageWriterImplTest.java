@@ -201,6 +201,57 @@ public class BarrageMessageWriterImplTest {
     }
 
     /**
+     * A registry that replaces each record batch's dictionaries sends one DictionaryBatch before every RecordBatch,
+     * each a replacement, so that a client that loads every DictionaryBatch as a replacement decodes the stream. The
+     * default registry sends deltas for the same message.
+     */
+    @Test
+    public void testRegistryReplacingEachBatchSendsNoDeltas() throws IOException {
+        final BarrageSubscriptionOptions twoRows = OPTIONS.withBatchSize(2);
+        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
+                delta(columns(0, 1, 2)), chunkWriters(), BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
+            final List<byte[]> withDeltas = drain(writer.getSubView(twoRows, false, true, null, false, null, null,
+                    columns(0, 1, 2), new DictionaryWriterRegistryImpl()));
+            assertThat(dictionaryBatches(withDeltas)).anyMatch(DictionaryBatch::isDelta);
+
+            final List<byte[]> replacing = drain(writer.getSubView(twoRows, false, true, null, false, null, null,
+                    columns(0, 1, 2), new DictionaryWriterRegistryImpl(true)));
+            assertThat(dictionaryBatches(replacing)).noneMatch(DictionaryBatch::isDelta);
+            assertThat(dictionaryBatches(replacing)).hasSize(recordBatchCount(replacing));
+        }
+    }
+
+    /**
+     * A registry that replaces each record batch's dictionaries never splits a dictionary into a replacement followed
+     * by deltas: when a record batch's dictionary would reach the maximum message size, the record batch is sent with
+     * fewer rows instead. Every value still arrives exactly once, as each row's value is distinct.
+     */
+    @Test
+    public void testRegistryReplacingEachBatchShrinksBatchesRatherThanSplitDictionaries() throws IOException {
+        final int limit = 2048;
+        // no batch size limit, so the message size alone decides how many rows each record batch holds
+        final BarrageSubscriptionOptions small =
+                BarrageSubscriptionOptions.builder().maxMessageSize(limit).batchSize(Integer.MAX_VALUE).build();
+        final String[] values = new String[200];
+        for (int ii = 0; ii < values.length; ++ii) {
+            values[ii] = String.format("value-%05d-padded-to-be-too-large-for-one-message", ii);
+        }
+        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
+                dictionaryRows(values), chunkWriters(), BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
+            final List<byte[]> messages = drain(writer.getSubView(small, false, true, null, false, null, null,
+                    columns(0, 1, 2), new DictionaryWriterRegistryImpl(true)));
+            final List<DictionaryBatch> batches = dictionaryBatches(messages);
+            assertThat(batches).noneMatch(DictionaryBatch::isDelta);
+            assertThat(batches).hasSize(recordBatchCount(messages));
+            assertThat(batches.size()).isGreaterThan(1);
+            assertThat(batches.stream().mapToLong(batch -> batch.data().length()).sum()).isEqualTo(values.length);
+            for (final byte[] message : messages) {
+                assertThat(message.length).isLessThan(limit);
+            }
+        }
+    }
+
+    /**
      * A write records every byte it sends, its dictionary batches included, whether it carries rows or not, and a
      * standalone dictionary batch view records a write of its own.
      */
@@ -432,6 +483,56 @@ public class BarrageMessageWriterImplTest {
             message.modColumnData[ci] = modColumn;
         }
         return message;
+    }
+
+    /** A delta that adds one row for each of {@code values}, with data only in the dictionary encoded column. */
+    private static BarrageMessage dictionaryRows(final String... values) {
+        final BarrageMessage message = new BarrageMessage();
+        message.firstSeq = message.lastSeq = 3;
+        message.isSnapshot = false;
+        message.tableSize = values.length;
+        message.rowsAdded = RowSetFactory.flat(values.length);
+        message.rowsIncluded = RowSetFactory.flat(values.length);
+        message.rowsRemoved = RowSetFactory.empty();
+        message.shifted = RowSetShiftData.EMPTY;
+        final List<WritableChunk<Values>> added = List.of(ints(), strings(), strings(values));
+        message.addColumnData = new BarrageMessage.AddColumnData[TYPES.length];
+        message.modColumnData = new BarrageMessage.ModColumnData[TYPES.length];
+        for (int ci = 0; ci < TYPES.length; ++ci) {
+            final BarrageMessage.AddColumnData addColumn = new BarrageMessage.AddColumnData();
+            addColumn.type = TYPES[ci];
+            addColumn.chunkType = added.get(ci).getChunkType();
+            addColumn.data = new ArrayList<>();
+            if (ci == 2) {
+                addColumn.data.add(added.get(ci));
+            } else {
+                added.get(ci).close();
+            }
+            final BarrageMessage.ModColumnData modColumn = new BarrageMessage.ModColumnData();
+            modColumn.type = TYPES[ci];
+            modColumn.chunkType = addColumn.chunkType;
+            modColumn.rowsModified = RowSetFactory.empty();
+            modColumn.data = new ArrayList<>();
+            message.addColumnData[ci] = addColumn;
+            message.modColumnData[ci] = modColumn;
+        }
+        return message;
+    }
+
+    /** The DictionaryBatch headers among {@code messages}, in order. */
+    private static List<DictionaryBatch> dictionaryBatches(final List<byte[]> messages) throws IOException {
+        final List<DictionaryBatch> batches = new ArrayList<>();
+        for (final byte[] message : messages) {
+            if (headerType(message) == MessageHeader.DictionaryBatch) {
+                batches.add(dictionaryBatch(message));
+            }
+        }
+        return batches;
+    }
+
+    /** The number of RecordBatch messages among {@code messages}. */
+    private static int recordBatchCount(final List<byte[]> messages) {
+        return (int) messages.stream().filter(message -> headerType(message) == MessageHeader.RecordBatch).count();
     }
 
     private static WritableChunk<Values> ints(final int... values) {

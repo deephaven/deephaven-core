@@ -58,6 +58,17 @@ public interface DictionaryWriterRegistry {
     @NotNull
     Collection<Entry> entries();
 
+    /**
+     * Whether each record batch's dictionaries replace the client's, holding only the values that record batch refers
+     * to. The writer then {@link DictionaryWriterState#reset() resets} every state before each record batch and never
+     * sends a delta. The Arrow IPC streaming format allows delta DictionaryBatches, but some Flight clients, such as
+     * Arrow Java's {@code FlightStream}, load every DictionaryBatch as a replacement; this mode exists so that those
+     * non-compliant clients decode a stream correctly.
+     */
+    default boolean replacesEachBatch() {
+        return false;
+    }
+
     /** Returns {@code true} if any registered dictionary has a pending delta that needs a DictionaryBatch message. */
     boolean hasAnyDelta();
 

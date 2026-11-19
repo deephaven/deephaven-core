@@ -1311,7 +1311,17 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         // allow the client to override the default message size
         final int maxMessageSize = maxMessageSize(view.options());
 
+        final DictionaryWriterRegistry dictRegistry = view.dictionaryRegistry();
+        final boolean replacesEachBatch = dictRegistry != null && dictRegistry.replacesEachBatch();
+
         while (offset < numRows) {
+            if (replacesEachBatch) {
+                // each record batch's dictionaries hold only the values that record batch refers to; this also
+                // discards the values of an attempt that was too large to send
+                for (final DictionaryWriterRegistry.Entry entry : dictRegistry.entries()) {
+                    entry.state.reset();
+                }
+            }
             try {
                 final List<DefensiveDrainable> messages =
                         getInputStream(view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
@@ -1323,13 +1333,23 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                     throw new IllegalStateException("No data was written for a batch");
                 }
 
+                // Every registered dictionary sends one DictionaryBatch, unless its values are too large for one
+                // message and are split into a replacement followed by deltas, which a client that loads every
+                // DictionaryBatch as a replacement cannot decode. Send fewer rows, and so fewer values, instead.
+                if (replacesEachBatch && messages.size() - 1 > dictRegistry.entries().size() && batchSize > 1) {
+                    for (final DefensiveDrainable msg : messages) {
+                        msg.close();
+                    }
+                    batchSize = Math.max(1, actualBatchSize.get() / 2);
+                    continue;
+                }
+
                 // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
                 // row then we must send and let it potentially fail)
                 if (bytesToWrite < maxMessageSize || batchSize == 1) {
                     // let's write the data — DictionaryBatch messages must precede the RecordBatch
                     visitMessages(messages, visitor, bytesWritten);
                     // accepted without error, so reset the dictionary deltas
-                    final DictionaryWriterRegistry dictRegistry = view.dictionaryRegistry();
                     if (dictRegistry != null) {
                         dictRegistry.resetDeltas();
                     }

@@ -55,6 +55,7 @@ import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
+import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry;
 import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistryImpl;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
@@ -1938,14 +1939,15 @@ public class BarrageUtil {
             StreamObserver<BarrageMessageWriter.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
         createAndSendStaticSnapshot(bmwFactory, table, columns, viewport, reverseViewport, snapshotRequestOptions,
-                schemaForTable(snapshotRequestOptions, table), listener, metrics);
+                schemaForTable(snapshotRequestOptions, table), false, listener, metrics);
     }
 
     /**
      * Like
      * {@link #createAndSendStaticSnapshot(BarrageMessageWriter.Factory, BaseTable, BitSet, RowSet, boolean, BarrageSnapshotOptions, StreamObserver, BarragePerformanceLog.SnapshotMetricsHelper)},
      * but writes the columns as {@code effectiveSchema} describes them; see
-     * {@link #schemaFromTable(BarrageOptions, Table)}.
+     * {@link #schemaFromTable(BarrageOptions, Table)}. With {@code replaceDictionariesEachBatch}, each record batch's
+     * dictionaries replace the client's; see {@link DictionaryWriterRegistry#replacesEachBatch()}.
      */
     public static void createAndSendStaticSnapshot(
             BarrageMessageWriter.Factory bmwFactory,
@@ -1955,6 +1957,7 @@ public class BarrageUtil {
             boolean reverseViewport,
             BarrageSnapshotOptions snapshotRequestOptions,
             @NotNull final Schema effectiveSchema,
+            final boolean replaceDictionariesEachBatch,
             StreamObserver<BarrageMessageWriter.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
         // start with small value and grow
@@ -2021,12 +2024,12 @@ public class BarrageUtil {
                             listener.onNext(bmw.getSnapshotView(snapshotRequestOptions,
                                     snapshotViewport, false,
                                     msg.rowsIncluded, columns,
-                                    new DictionaryWriterRegistryImpl()));
+                                    new DictionaryWriterRegistryImpl(replaceDictionariesEachBatch)));
                         } else {
                             listener.onNext(bmw.getSnapshotView(snapshotRequestOptions,
                                     viewport, reverseViewport,
                                     msg.rowsIncluded, columns,
-                                    new DictionaryWriterRegistryImpl()));
+                                    new DictionaryWriterRegistryImpl(replaceDictionariesEachBatch)));
                         }
                     }
 
@@ -2095,12 +2098,31 @@ public class BarrageUtil {
             @NotNull final Schema effectiveSchema,
             StreamObserver<BarrageMessageWriter.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
+        createAndSendSnapshot(bwmFactory, table, columns, viewport, reverseViewport, options, effectiveSchema, false,
+                listener, metrics);
+    }
+
+    /**
+     * Like
+     * {@link #createAndSendSnapshot(BarrageMessageWriter.Factory, BaseTable, BitSet, RowSet, boolean, BarrageSnapshotOptions, Schema, StreamObserver, BarragePerformanceLog.SnapshotMetricsHelper)},
+     * but with {@code replaceDictionariesEachBatch}, each record batch's dictionaries replace the client's, holding
+     * only the values that record batch refers to; see {@link DictionaryWriterRegistry#replacesEachBatch()}.
+     */
+    public static void createAndSendSnapshot(
+            BarrageMessageWriter.Factory bwmFactory,
+            BaseTable<?> table,
+            BitSet columns, RowSet viewport, boolean reverseViewport,
+            BarrageSnapshotOptions options,
+            @NotNull final Schema effectiveSchema,
+            final boolean replaceDictionariesEachBatch,
+            StreamObserver<BarrageMessageWriter.MessageView> listener,
+            BarragePerformanceLog.SnapshotMetricsHelper metrics) {
 
         // if the table is static and a full snapshot is requested, we can make and send multiple
         // snapshots to save memory and operate more efficiently
         if (!table.isRefreshing()) {
             createAndSendStaticSnapshot(bwmFactory, table, columns, viewport, reverseViewport,
-                    options, effectiveSchema, listener, metrics);
+                    options, effectiveSchema, replaceDictionariesEachBatch, listener, metrics);
             return;
         }
 
@@ -2136,7 +2158,7 @@ public class BarrageUtil {
                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
                         : null) {
             listener.onNext(bmw.getSnapshotView(options, viewport, reverseViewport, keySpaceViewport, columns,
-                    new DictionaryWriterRegistryImpl()));
+                    new DictionaryWriterRegistryImpl(replaceDictionariesEachBatch)));
         }
     }
 }
