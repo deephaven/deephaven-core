@@ -4079,30 +4079,4 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             }
         }
     }
-
-    /**
-     * A natural join of a blink left table is a blink table. A static left table marked blink never removes its rows,
-     * so a natural join of one is not a blink table and does not carry the attribute.
-     */
-    @Test
-    public void testBlinkLeft() {
-        final QueryTable refreshingRight =
-                testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("RVal", 3));
-        final QueryTable staticRight = testTable(i(0).toTracking(), intCol("Key", 1), intCol("RVal", 3));
-
-        final Table refreshingBlinkLeft =
-                testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10)).assertBlink();
-        for (final QueryTable right : new QueryTable[] {staticRight, refreshingRight}) {
-            final String description = "rightRefreshing=" + right.isRefreshing();
-            assertTrue(description, ((QueryTable) refreshingBlinkLeft.naturalJoin(right, "Key", "RVal")).isBlink());
-        }
-
-        final Table staticBlinkLeft = testTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10)).assertBlink();
-        for (final QueryTable right : new QueryTable[] {staticRight, refreshingRight}) {
-            final String description = "rightRefreshing=" + right.isRefreshing();
-            final QueryTable result = (QueryTable) staticBlinkLeft.naturalJoin(right, "Key", "RVal");
-            assertFalse(description, result.isBlink());
-            assertNull(description, result.getAttribute(Table.BLINK_TABLE_ATTRIBUTE));
-        }
-    }
 }

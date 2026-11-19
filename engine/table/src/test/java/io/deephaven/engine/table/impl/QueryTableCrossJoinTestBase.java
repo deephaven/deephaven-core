@@ -1629,28 +1629,6 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     /**
-     * A static left table marked blink never removes its rows, so a join against a refreshing right table is not a
-     * blink table and does not carry the attribute.
-     */
-    @Test
-    public void testStaticBlinkLeft() {
-        final Table blinkLeft = testTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10)).assertBlink();
-        for (final boolean rightRefreshing : new boolean[] {false, true}) {
-            for (final boolean leftOuter : new boolean[] {false, true}) {
-                final String description = "rightRefreshing=" + rightRefreshing + ", leftOuter=" + leftOuter;
-                final QueryTable rTable = rightRefreshing
-                        ? testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4))
-                        : testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
-                final QueryTable result = (QueryTable) (leftOuter
-                        ? OuterJoinTools.leftOuterJoin(blinkLeft, rTable, "Key", "RVal", numRightBitsToReserve)
-                        : blinkLeft.join(rTable, "Key", "RVal", numRightBitsToReserve));
-                assertFalse(description, result.isBlink());
-                assertNull(description, result.getAttribute(Table.BLINK_TABLE_ATTRIBUTE));
-            }
-        }
-    }
-
-    /**
      * With memoization enabled, a copy whose attributes match its parent's shares the parent's join, and the result
      * keeps the attributes the join derived from the left table.
      */

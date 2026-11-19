@@ -47,12 +47,7 @@ class NaturalJoinHelper {
         final QueryTable result =
                 naturalJoinInternal(leftTable, rightTable, columnsToMatch, columnsToAdd, joinType, control);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
-        // a static left table marked blink never removes its rows, so a result that refreshes with the right table is
-        // not a blink table
-        final boolean copyBlink = leftTable.isBlink();
-        leftTable.copyAttributes(result,
-                attrName -> BaseTable.shouldCopyAttribute(attrName, BaseTable.CopyAttributeOperation.Join)
-                        && (copyBlink || !attrName.equals(Table.BLINK_TABLE_ATTRIBUTE)));
+        leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
         // note in exact match we require that the right table can match as soon as a row is added to the left
         boolean rightDoesNotGenerateModifies =
                 !rightTable.isRefreshing() || (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && rightTable.isAddOnly());
