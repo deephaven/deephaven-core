@@ -92,10 +92,10 @@ QueryTable.forceParallelWhere=true
 QueryTable.parallelWhereSegments=2
 
 BarrageMessageProducer.subscriptionGrowthEnabled=true
-BarrageMessageProducer.targetSnapshotPercentage=0.1
-BarrageMessageProducer.minSnapshotCellCount=50
-BarrageMessageProducer.maxSnapshotCellCount=50
-BarrageStreamGenerator.batchSize=4
+BarrageUtil.targetSnapshotPercentage=0.1
+BarrageUtil.minSnapshotCellCount=50
+BarrageUtil.maxSnapshotCellCount=50
+BarrageMessageWriterImpl.batchSize=4
 
 web.storage.layout.directory=/layouts
 web.storage.notebook.directory=/notebooks

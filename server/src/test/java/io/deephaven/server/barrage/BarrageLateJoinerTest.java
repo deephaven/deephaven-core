@@ -62,8 +62,9 @@ import static org.junit.Assert.*;
 public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
 
     /**
-     * Small enough that a snapshot of the whole table fits in a single message (well under
-     * {@code BarrageUtil.MIN_SNAPSHOT_CELL_COUNT} cells), so message-count assertions stay exact.
+     * The table size most tests use. The test configuration's {@code BarrageUtil.MIN_SNAPSHOT_CELL_COUNT} and
+     * {@code BarrageUtil.MAX_SNAPSHOT_CELL_COUNT} are small enough that a newcomer's snapshot of this many rows grows
+     * over several messages, so assertions about a subscriber's messages must not assume a snapshot arrives as one.
      */
     private static final int TABLE_SIZE = 100;
 
@@ -585,11 +586,12 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
         assertNoSnapshots("existing-full", existingClient);
         assertSnapshotFirst("late-full", lateClient);
 
-        // the newcomer must have received the post-snapshot delta in addition to its snapshot
+        // The newcomer must have received the post-snapshot delta in addition to the newcomer's snapshot. The source
+        // ticked during the first of the growth rounds the snapshot may take, so the delta follows that round's
+        // message.
         final List<Boolean> lateFlags = queuedSnapshotFlags(lateClient);
         assertTrue("expected a post-snapshot delta, got " + lateFlags, lateFlags.size() > 1);
-        assertFalse("expected the trailing message to be a delta, got " + lateFlags,
-                lateFlags.get(lateFlags.size() - 1));
+        assertFalse("expected a delta right after the first snapshot message, got " + lateFlags, lateFlags.get(1));
 
         flushClients(nugget);
         nugget.validate("after joining during a snapshot");

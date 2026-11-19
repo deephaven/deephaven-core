@@ -175,13 +175,13 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
                 final BigIntVector i2Vector = (BigIntVector) root.getVector("I2");
                 final BigIntVector rcVector = (BigIntVector) root.getVector("RC");
                 final int rowCount = root.getRowCount();
-                assertThat(iVector.get(0)).isEqualTo(0);
-                assertThat(i2Vector.get(0)).isEqualTo(100);
-                assertThat(rcVector.get(0)).isEqualTo(100);
-                for (int r = 1; r < rowCount; ++r) {
-                    int isum = (i + r) + (i + r) - 1;
+                // the table may arrive in several record batches, so compute each row's sums from the row's position
+                // in the table; only the table's first row has no previous row in the rolling window
+                for (int r = 0; r < rowCount; ++r) {
+                    final int row = i + r;
+                    final int isum = row == 0 ? 0 : row + row - 1;
                     assertThat(iVector.get(r)).isEqualTo(isum);
-                    int i2sum = 200 + (i + r) + (i + r) - 1;
+                    final int i2sum = row == 0 ? 100 : 200 + row + row - 1;
                     assertThat(i2Vector.get(r)).isEqualTo(i2sum);
                     assertThat(rcVector.get(r)).isEqualTo(isum + i2sum);
                 }
@@ -384,26 +384,31 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
                 final FlightStream stream = flightSession.stream(newTableHandle);
                 final VectorSchemaRoot expectedRoot = VectorSchemaRootAdapter.of(newTable, bufferAllocator)) {
 
-            assertThat(stream.next()).isTrue();
-            final VectorSchemaRoot retrievedRoot = stream.getRoot();
+            // the table may arrive in several record batches; compare each batch with the same rows of the expected
+            // root
+            int offset = 0;
+            while (stream.next()) {
+                final VectorSchemaRoot retrievedRoot = stream.getRoot();
+                final int rowCount = retrievedRoot.getRowCount();
+                try (final VectorSchemaRoot expectedSlice = expectedRoot.slice(offset, rowCount);
+                        final VectorSchemaRoot expectedRootNoMetadata =
+                                transferStrippingMetadata(expectedSlice, bufferAllocator);
+                        final VectorSchemaRoot retrievedRootNoMetadata =
+                                transferStrippingMetadata(retrievedRoot, bufferAllocator)) {
+                    // Server-side metadata can differ while values are equivalent.
+                    Validator.compareVectorSchemaRoot(retrievedRootNoMetadata, expectedRootNoMetadata);
 
-            try (final VectorSchemaRoot expectedRootNoMetadata =
-                    transferStrippingMetadata(expectedRoot, bufferAllocator);
-                    final VectorSchemaRoot retrievedRootNoMetadata =
-                            transferStrippingMetadata(retrievedRoot, bufferAllocator)) {
-                // Server-side metadata can differ while values are equivalent.
-                Validator.compareVectorSchemaRoot(retrievedRootNoMetadata, expectedRootNoMetadata);
-
-                // Validator.compareVectorSchemaRoot provides helpful error messages but performs approximate
-                // comparisons for some field types (e.g. floating point numbers). Validate again with
-                // VectorSchemaRoot.equals() to ensure the data matches exactly.
-                assertThat(retrievedRootNoMetadata)
-                        // Specify comparison method explicitly; VectorSchemaRoot does not implement equals(Object)
-                        .usingEquals(VectorSchemaRoot::equals)
-                        .isEqualTo(expectedRootNoMetadata);
+                    // Validator.compareVectorSchemaRoot provides helpful error messages but performs approximate
+                    // comparisons for some field types (e.g. floating point numbers). Validate again with
+                    // VectorSchemaRoot.equals() to ensure the data matches exactly.
+                    assertThat(retrievedRootNoMetadata)
+                            // Specify comparison method explicitly; VectorSchemaRoot does not implement equals(Object)
+                            .usingEquals(VectorSchemaRoot::equals)
+                            .isEqualTo(expectedRootNoMetadata);
+                }
+                offset += rowCount;
             }
-
-            assertThat(stream.next()).isFalse();
+            assertThat(offset).isEqualTo(expectedRoot.getRowCount());
         }
     }
 

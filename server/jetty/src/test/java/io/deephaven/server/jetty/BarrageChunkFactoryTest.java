@@ -131,6 +131,8 @@ import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.vector.util.VectorAppender;
+import org.apache.arrow.vector.util.VectorSchemaRootAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
@@ -2132,18 +2134,79 @@ public class BarrageChunkFactoryTest {
                         FlightClient.ExchangeReaderWriter xStream = doExch
                                 ? flightClient.doExchange(flightDescriptorFor(flightDescriptorTicketValue))
                                 : null) {
-                    final VectorSchemaRoot dest;
+                    final VectorSchemaRoot payload;
                     if (!doExch) {
-                        dest = stream.getRoot();
+                        payload = stream.getRoot();
                     } else {
                         xStream.getWriter()
                                 .putMetadata(getArrowBufMetadata(rpcMethod, true, flightDescriptorTicketValue));
-                        dest = xStream.getReader().getRoot();
+                        payload = xStream.getReader().getRoot();
                     }
 
+                    // the server may split the download into any number of payloads; gather the rows of every payload
+                    // into dest, and validate dest against the whole source
                     int numPayloads = 0;
-                    while (doExch ? xStream.getReader().next() : stream.next()) {
-                        assertEquals(source.getRowCount(), dest.getRowCount());
+                    try (final VectorSchemaRoot dest = VectorSchemaRoot.create(payload.getSchema(), allocator)) {
+                        // VectorAppender reads the offset buffers of dest before growing the offset buffers
+                        dest.allocateNew();
+                        while (doExch ? xStream.getReader().next() : stream.next()) {
+                            if (rpcMethod == TestRPCMethod.COLUMNS_AS_LIST) {
+                                // every payload wraps the payload's rows in a single list, as the source does
+                                assertEquals(source.getRowCount(), payload.getRowCount());
+                            }
+
+                            final FieldVector gatheredVec = getWrapModeVector(rpcMethod, dest);
+                            final FieldVector payloadVec = getWrapModeVector(rpcMethod, payload);
+                            final int numGathered = gatheredVec.getValueCount();
+                            if (payloadVec instanceof ListViewVector) {
+                                // TODO: use VectorAppender when arrow-java's VectorAppender supports ListViewVector
+                                final ListViewVector gatheredView = (ListViewVector) gatheredVec;
+                                final ListViewVector payloadView = (ListViewVector) payloadVec;
+                                final int childOffset = gatheredView.getDataVector().getValueCount();
+                                payloadView.getDataVector().accept(
+                                        new VectorAppender(gatheredView.getDataVector()), null);
+                                for (int ii = 0; ii < payloadView.getValueCount(); ++ii) {
+                                    // setNull also grows the buffers to hold the row
+                                    gatheredView.setNull(numGathered + ii);
+                                    if (!payloadView.isNull(ii)) {
+                                        final int start = payloadView.getElementStartIndex(ii);
+                                        gatheredView.setValidity(numGathered + ii, 1);
+                                        gatheredView.setOffset(numGathered + ii, childOffset + start);
+                                        gatheredView.setSize(numGathered + ii,
+                                                payloadView.getElementEndIndex(ii) - start);
+                                    }
+                                }
+                                gatheredView.setValueCount(numGathered + payloadView.getValueCount());
+                            } else if (payloadVec instanceof UnionVector) {
+                                // TODO: use VectorAppender when arrow-java's VectorAppender can look up a UnionVector's
+                                // child of a type that needs an ArrowType, such as a decimal
+                                final UnionVector gatheredUnion = (UnionVector) gatheredVec;
+                                final UnionVector payloadUnion = (UnionVector) payloadVec;
+                                for (int cc = 0; cc < payloadUnion.getChildrenFromFields().size(); ++cc) {
+                                    payloadUnion.getChildrenFromFields().get(cc).accept(
+                                            new VectorAppender(gatheredUnion.getChildrenFromFields().get(cc)), null);
+                                }
+                                // setValueCount also grows the type buffer to hold the payload's types
+                                gatheredUnion.setValueCount(numGathered + payloadUnion.getValueCount());
+                                gatheredUnion.getTypeBuffer().setBytes(
+                                        numGathered, payloadUnion.getTypeBuffer(), 0, payloadUnion.getValueCount());
+                            } else if (payloadVec instanceof NullVector) {
+                                // VectorAppender does not count the nulls of a NullVector
+                                gatheredVec.setValueCount(numGathered + payloadVec.getValueCount());
+                            } else {
+                                payloadVec.accept(new VectorAppender(gatheredVec), null);
+                            }
+                            ++numPayloads;
+
+                            if (doExch && gatheredVec.getValueCount() >= outerRowCount) {
+                                // need to manually stop the subscription
+                                xStream.getWriter().completed();
+                                xStream.getReader().cancel("done", null);
+                                break; // otherwise .next() will throw our cancellation exception
+                            }
+                        }
+
+                        assertEquals(outerRowCount, getWrapModeVector(rpcMethod, dest).getValueCount());
 
                         if (nullMode == TestNullMode.NULL_WIRE) {
                             // do nothing
@@ -2328,18 +2391,10 @@ public class BarrageChunkFactoryTest {
                                 }
                             }
                         }
-                        ++numPayloads;
-
-                        if (doExch) {
-                            // need to manually stop the subscription
-                            xStream.getWriter().completed();
-                            xStream.getReader().cancel("done", null);
-                            break; // otherwise .next() will throw our cancellation exception
-                        }
                     }
 
-                    // if there is data, we should be able to encode in a single payload
-                    assertEquals(!doExch && nullMode == TestNullMode.EMPTY ? 0 : 1, numPayloads);
+                    // a DoGet of an empty table sends no payload; every other download sends at least one payload
+                    assertEquals(!doExch && nullMode == TestNullMode.EMPTY, numPayloads == 0);
                 }
             }
         }
@@ -3805,15 +3860,22 @@ public class BarrageChunkFactoryTest {
                     "Expected DictionaryEncoding on downloaded field " + COLUMN_NAME,
                     downloadField.getDictionary());
 
-            assertTrue("Expected at least one payload on download", stream.next());
-            assertEquals("Row count mismatch on download", numRows, stream.getRoot().getRowCount());
+            // the server may split the download into any number of payloads
+            int numPayloads = 0;
+            int numRowsDownloaded = 0;
+            while (stream.next()) {
+                ++numPayloads;
+                numRowsDownloaded += stream.getRoot().getRowCount();
 
-            // DictionaryProvider must carry the dict values for id=0.
-            final DictionaryProvider dp = stream.getDictionaryProvider();
-            final Dictionary downloadedDict = dp.lookup(0L);
-            assertNotNull("Expected dictionary id=0 in download stream", downloadedDict);
-            assertTrue("Dict values vector must be non-empty",
-                    downloadedDict.getVector().getValueCount() > 0);
+                // DictionaryProvider must carry the dict values for id=0.
+                final DictionaryProvider dp = stream.getDictionaryProvider();
+                final Dictionary downloadedDict = dp.lookup(0L);
+                assertNotNull("Expected dictionary id=0 in download stream", downloadedDict);
+                assertTrue("Dict values vector must be non-empty",
+                        downloadedDict.getVector().getValueCount() > 0);
+            }
+            assertTrue("Expected at least one payload on download", numPayloads > 0);
+            assertEquals("Row count mismatch on download", numRows, numRowsDownloaded);
         }
     }
 
@@ -3929,24 +3991,32 @@ public class BarrageChunkFactoryTest {
                     "Expected DictionaryEncoding on downloaded field " + COLUMN_NAME,
                     downloadField.getDictionary());
 
-            assertTrue("Expected at least one payload on download", stream.next());
-            assertEquals("Row count mismatch on download", numRows, stream.getRoot().getRowCount());
-
-            final Dictionary downloadedDict =
-                    stream.getDictionaryProvider().lookup(downloadField.getDictionary().getId());
-            assertNotNull("Expected dictionary in download stream", downloadedDict);
-            try (final ValueVector decoded =
-                    DictionaryEncoder.decode(stream.getRoot().getVector(COLUMN_NAME), downloadedDict)) {
-                final TimeStampVector decodedTs = (TimeStampVector) decoded;
-                for (int i = 0; i < numRows; ++i) {
-                    if (logicalNanos[i] == null) {
-                        assertTrue("Expected null at row " + i, decodedTs.isNull(i));
-                    } else {
-                        assertFalse("Unexpected null at row " + i, decodedTs.isNull(i));
-                        assertEquals("Value mismatch at row " + i, (long) logicalNanos[i], decodedTs.get(i));
+            // the server may split the download into any number of payloads; decode each payload with the dictionary
+            // that the stream holds when the payload arrives
+            int numPayloads = 0;
+            int numRowsDownloaded = 0;
+            while (stream.next()) {
+                ++numPayloads;
+                final Dictionary downloadedDict =
+                        stream.getDictionaryProvider().lookup(downloadField.getDictionary().getId());
+                assertNotNull("Expected dictionary in download stream", downloadedDict);
+                try (final ValueVector decoded =
+                        DictionaryEncoder.decode(stream.getRoot().getVector(COLUMN_NAME), downloadedDict)) {
+                    final TimeStampVector decodedTs = (TimeStampVector) decoded;
+                    for (int i = 0; i < decodedTs.getValueCount(); ++i) {
+                        final int row = numRowsDownloaded + i;
+                        if (logicalNanos[row] == null) {
+                            assertTrue("Expected null at row " + row, decodedTs.isNull(i));
+                        } else {
+                            assertFalse("Unexpected null at row " + row, decodedTs.isNull(i));
+                            assertEquals("Value mismatch at row " + row, (long) logicalNanos[row], decodedTs.get(i));
+                        }
                     }
                 }
+                numRowsDownloaded += stream.getRoot().getRowCount();
             }
+            assertTrue("Expected at least one payload on download", numPayloads > 0);
+            assertEquals("Row count mismatch on download", numRows, numRowsDownloaded);
         }
     }
 
@@ -4135,9 +4205,15 @@ public class BarrageChunkFactoryTest {
 
         // --- Download: BARRAGE_SCHEMA_ATTRIBUTE is the REE schema → DH re-encodes as REE ---
         // Verify stock Arrow receives a RunEndEncodedVector with correct logical values.
-        try (final FlightStream stream = flightClient.getStream(flightTicketFor(ticket))) {
-            assertTrue("Expected at least one payload", stream.next());
-            final VectorSchemaRoot dest = stream.getRoot();
+        try (final FlightStream stream = flightClient.getStream(flightTicketFor(ticket));
+                final VectorSchemaRoot dest = VectorSchemaRoot.create(stream.getSchema(), allocator)) {
+            // the server may split the download into any number of payloads; gather every payload into dest
+            int numPayloads = 0;
+            while (stream.next()) {
+                VectorSchemaRootAppender.append(dest, stream.getRoot());
+                ++numPayloads;
+            }
+            assertTrue("Expected at least one payload", numPayloads > 0);
 
             assertEquals("Row count mismatch", NUM_ROWS, dest.getRowCount());
 
@@ -4309,43 +4385,52 @@ public class BarrageChunkFactoryTest {
             assertEquals("Expected RunEndEncoded parent on downloaded field " + COLUMN_NAME,
                     ArrowType.ArrowTypeID.RunEndEncoded, downloadField.getType().getTypeID());
 
-            assertTrue("Expected at least one payload on download", stream.next());
-            final VectorSchemaRoot dest = stream.getRoot();
-            assertEquals("Row count mismatch on download", NUM_ROWS, dest.getRowCount());
+            // the server may split the download into any number of payloads; resolve each payload with the dictionary
+            // that the stream holds when the payload arrives
+            int numPayloads = 0;
+            int numRowsDownloaded = 0;
+            while (stream.next()) {
+                ++numPayloads;
+                final VectorSchemaRoot dest = stream.getRoot();
 
-            final FieldVector colVec = dest.getVector(0);
-            assertTrue(
-                    "Expected RunEndEncodedVector on download, got: " + colVec.getClass().getSimpleName(),
-                    colVec instanceof RunEndEncodedVector);
-            final RunEndEncodedVector destRee = (RunEndEncodedVector) colVec;
-            final IntVector runEndsVec = (IntVector) destRee.getRunEndsVector();
-            final FieldVector valuesIdxVec = destRee.getValuesVector();
+                final FieldVector colVec = dest.getVector(0);
+                assertTrue(
+                        "Expected RunEndEncodedVector on download, got: " + colVec.getClass().getSimpleName(),
+                        colVec instanceof RunEndEncodedVector);
+                final RunEndEncodedVector destRee = (RunEndEncodedVector) colVec;
+                final IntVector runEndsVec = (IntVector) destRee.getRunEndsVector();
+                final FieldVector valuesIdxVec = destRee.getValuesVector();
 
-            // The REE values child must itself be dictionary encoded, and the provider must carry its values.
-            final DictionaryEncoding valuesEncoding = valuesIdxVec.getField().getDictionary();
-            assertNotNull("Expected DictionaryEncoding on the REE values child", valuesEncoding);
-            final DictionaryProvider dp = stream.getDictionaryProvider();
-            final Dictionary dict = dp.lookup(valuesEncoding.getId());
-            assertNotNull("Expected dictionary id=" + valuesEncoding.getId() + " in download stream", dict);
-            final VarCharVector dictValues = (VarCharVector) dict.getVector();
+                // The REE values child must itself be dictionary encoded, and the provider must carry its values.
+                final DictionaryEncoding valuesEncoding = valuesIdxVec.getField().getDictionary();
+                assertNotNull("Expected DictionaryEncoding on the REE values child", valuesEncoding);
+                final DictionaryProvider dp = stream.getDictionaryProvider();
+                final Dictionary dict = dp.lookup(valuesEncoding.getId());
+                assertNotNull("Expected dictionary id=" + valuesEncoding.getId() + " in download stream", dict);
+                final VarCharVector dictValues = (VarCharVector) dict.getVector();
 
-            // Reconstruct each logical row: walk the run that covers it, read that run's dictionary index, then resolve
-            // the index against the shipped dictionary values.
-            int run = 0;
-            for (int i = 0; i < NUM_ROWS; ++i) {
-                while (runEndsVec.get(run) <= i) {
-                    run++;
+                // Reconstruct each logical row: walk the run that covers it, read that run's dictionary index, then
+                // resolve the index against the shipped dictionary values.
+                int run = 0;
+                for (int i = 0; i < dest.getRowCount(); ++i) {
+                    while (runEndsVec.get(run) <= i) {
+                        run++;
+                    }
+                    final int row = numRowsDownloaded + i;
+                    if (logicalValues[row] == null) {
+                        assertTrue("Expected null at logical index " + row, valuesIdxVec.isNull(run));
+                    } else {
+                        assertFalse("Unexpected null at logical index " + row, valuesIdxVec.isNull(run));
+                        final int dictIdx = ((Number) valuesIdxVec.getObject(run)).intValue();
+                        final String actual =
+                                new String(dictValues.get(dictIdx), java.nio.charset.StandardCharsets.UTF_8);
+                        assertEquals("Value mismatch at logical index " + row, logicalValues[row], actual);
+                    }
                 }
-                if (logicalValues[i] == null) {
-                    assertTrue("Expected null at logical index " + i, valuesIdxVec.isNull(run));
-                } else {
-                    assertFalse("Unexpected null at logical index " + i, valuesIdxVec.isNull(run));
-                    final int dictIdx = ((Number) valuesIdxVec.getObject(run)).intValue();
-                    final String actual =
-                            new String(dictValues.get(dictIdx), java.nio.charset.StandardCharsets.UTF_8);
-                    assertEquals("Value mismatch at logical index " + i, logicalValues[i], actual);
-                }
+                numRowsDownloaded += dest.getRowCount();
             }
+            assertTrue("Expected at least one payload on download", numPayloads > 0);
+            assertEquals("Row count mismatch on download", NUM_ROWS, numRowsDownloaded);
         }
     }
 }

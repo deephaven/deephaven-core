@@ -962,29 +962,38 @@ public abstract class FlightMessageRoundTripTest {
     public void testLocalDateCol() throws Exception {
         final Table source = TableTools.emptyTable(10).update("LD = java.time.LocalDate.ofEpochDay(ii)");
         final ColumnSource<LocalDate> ld = source.getColumnSource("LD");
+        // the table may arrive in several record batches; each batch's rows start at the batch's offset in the table
+        final MutableInt batchOffset = new MutableInt(0);
         assertRoundTripDataEqual(true, null, source,
                 recordBatch -> {
                     final FieldVector fv = recordBatch.getFieldVectors().get(0);
                     final DateMilliVector dmv = (DateMilliVector) fv;
-                    for (int ii = 0; ii < source.intSize(); ++ii) {
-                        Assert.equals(ld.get(ii), "ld.get(ii)", dmv.getObject(ii).toLocalDate(),
-                                "dmv.getObject(ii).toLocalDate()");
+                    for (int ii = 0; ii < recordBatch.getRowCount(); ++ii) {
+                        Assert.equals(ld.get(batchOffset.get() + ii), "ld.get(batchOffset.get() + ii)",
+                                dmv.getObject(ii).toLocalDate(), "dmv.getObject(ii).toLocalDate()");
                     }
+                    batchOffset.add(recordBatch.getRowCount());
                 });
+        Assert.eq(batchOffset.get(), "batchOffset.get()", source.intSize(), "source.intSize()");
     }
 
     @Test
     public void testLocalTimeCol() throws Exception {
         final Table source = TableTools.emptyTable(10).update("LT = java.time.LocalTime.ofSecondOfDay(ii * 60 * 60)");
         final ColumnSource<LocalTime> lt = source.getColumnSource("LT");
+        // the table may arrive in several record batches; each batch's rows start at the batch's offset in the table
+        final MutableInt batchOffset = new MutableInt(0);
         assertRoundTripDataEqual(true, null, source,
                 recordBatch -> {
                     final FieldVector fv = recordBatch.getFieldVectors().get(0);
                     final TimeNanoVector tnv = (TimeNanoVector) fv;
-                    for (int ii = 0; ii < source.intSize(); ++ii) {
-                        Assert.eq(lt.get(ii).toNanoOfDay(), "lt.get(ii).toNanoOfDay()", tnv.get(ii), "tnv.get(ii)");
+                    for (int ii = 0; ii < recordBatch.getRowCount(); ++ii) {
+                        Assert.eq(lt.get(batchOffset.get() + ii).toNanoOfDay(),
+                                "lt.get(batchOffset.get() + ii).toNanoOfDay()", tnv.get(ii), "tnv.get(ii)");
                     }
+                    batchOffset.add(recordBatch.getRowCount());
                 });
+        Assert.eq(batchOffset.get(), "batchOffset.get()", source.intSize(), "source.intSize()");
     }
 
     @Test

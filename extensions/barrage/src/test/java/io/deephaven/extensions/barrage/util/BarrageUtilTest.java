@@ -366,7 +366,8 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
      */
     @Test
     public void testSnapshotWritesTheSchemaItIsGiven() {
-        final String[] syms = new String[100];
+        // no more cells than the first growth round's budget, so the snapshot is one message
+        final String[] syms = new String[(int) Math.min(100, BarrageUtil.MIN_SNAPSHOT_CELL_COUNT)];
         for (int ii = 0; ii < syms.length; ++ii) {
             syms[ii] = ii % 2 == 0 ? "AAPL" : "MSFT";
         }
