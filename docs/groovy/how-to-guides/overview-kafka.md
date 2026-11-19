@@ -39,7 +39,7 @@ Deephaven provides a suite of tools that makes Kafka integration easy.
 
 Event-based applications have succeeded in providing a path forward for traditional transactional workloads at scale. Many have replaced monolithic database systems, running business operations instead as event processors connected by pub/sub platforms like Kafka. These platforms offer delivery guarantees strong enough to support transactions and recovery, and they scale horizontally across many machines.
 
-This transformation has created an opportunity. In monolithic systems, you typically see only the end state, which is the result of a transaction. Those systems don't usually expose how the transaction got there, including its inputs and the triggers that started it, as data that other applications can read.
+This transformation has created an opportunity. In monolithic systems, you typically see only the end state, which is the result of a transaction. Those systems don't usually expose how the transaction got there — including its inputs and the triggers that started it — as data that other applications can read.
 
 In contrast, pub/sub systems capture the triggers, because the triggers are already modeled as events. Other applications, not only the main production systems, can read those same events, and adding another reader costs little.
 

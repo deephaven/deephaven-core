@@ -555,10 +555,7 @@ The tables update as you add each entry to the Kafka streams. The final results 
 
 [`consumeToPartitionedTable`](../../reference/data-import-export/Kafka/consumeToPartitionedTable.md) consumes a topic into a [partitioned table](../partitioned-tables.md) with one subtable for each Kafka partition. Its key column, `Partition`, holds the Kafka partition number. See the [partitioned tables guide](../partitioned-tables.md) for the operations you can run on it.
 
-Two things to know about [`consumeToPartitionedTable`](../../reference/data-import-export/Kafka/consumeToPartitionedTable.md):
-
-- It takes the same arguments as [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md).
-- To read every partition, pass [`KafkaTools.ALL_PARTITIONS`](/core/javadoc/io/deephaven/kafka/KafkaTools.html#ALL_PARTITIONS) as the partition filter, as in the example below. To read specific partitions, pass a filter such as [`KafkaTools.partitionFilterFromArray(new int[]{1, 3, 5})`](/core/javadoc/io/deephaven/kafka/KafkaTools.html#partitionFilterFromArray(int%5B%5D)).
+[`consumeToPartitionedTable`](../../reference/data-import-export/Kafka/consumeToPartitionedTable.md) takes the same arguments as [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md). To read every partition, pass [`KafkaTools.ALL_PARTITIONS`](/core/javadoc/io/deephaven/kafka/KafkaTools.html#ALL_PARTITIONS) as the partition filter, as in the example below. To read specific partitions, pass a filter such as [`KafkaTools.partitionFilterFromArray(new int[]{1, 3, 5})`](/core/javadoc/io/deephaven/kafka/KafkaTools.html#partitionFilterFromArray(int%5B%5D)).
 
 ```groovy docker-config=kafka test-set=2 order=null
 import io.deephaven.kafka.KafkaTools

@@ -478,10 +478,7 @@ The tables update as you add each entry to the Kafka streams. The final results 
 
 [`consume_to_partitioned_table`](../../reference/data-import-export/Kafka/consume-to-partitioned-table.md) consumes a topic into a [partitioned table](../partitioned-tables.md) with one subtable for each Kafka partition. Its key column, `Partition`, holds the Kafka partition number. See the [partitioned tables guide](../partitioned-tables.md) for the operations you can run on it.
 
-Two things to know about [`consume_to_partitioned_table`](../../reference/data-import-export/Kafka/consume-to-partitioned-table.md):
-
-- It takes the same arguments as [`consume`](../../reference/data-import-export/Kafka/consume.md).
-- It reads all partitions by default. To read specific partitions, pass a list such as `partitions=[1, 3, 5]`.
+[`consume_to_partitioned_table`](../../reference/data-import-export/Kafka/consume-to-partitioned-table.md) takes the same arguments as [`consume`](../../reference/data-import-export/Kafka/consume.md) and reads all partitions by default. To read specific partitions, pass a list such as `partitions=[1, 3, 5]`.
 
 ```python docker-config=kafka test-set=2 order=null
 from deephaven.stream.kafka import consumer as kc
