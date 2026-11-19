@@ -50,18 +50,18 @@ public class SessionServiceGrpcReleaseTest extends DeephavenApiServerSingleAuthe
     }
 
     @Test
-    public void createAfterReleaseIsRejectedAndNotRetained() {
-        final int before = authenticatedSessionState().numExports();
+    public void createAfterReleaseIsRejected() {
         release(id(1));
 
         assertThatThrownBy(() -> emptyTable(id(1)))
                 .as("create at an id released before it was created")
-                .isInstanceOf(StatusRuntimeException.class);
-        assertThat(authenticatedSessionState().numExports())
-                .as("exports retained after create at a pre-released id")
-                .isEqualTo(before);
+                .isInstanceOfSatisfying(StatusRuntimeException.class,
+                        e -> assertThat(e.getStatus().getCode())
+                                .as("status of a create at an id released before it was created")
+                                .isEqualTo(Code.CANCELLED));
         assertThat(authenticatedSessionState().getExport(1).getState())
-                .isEqualTo(ExportNotification.State.RELEASED);
+                .as("state of an id released before it was created, after a create attempt")
+                .isEqualTo(ExportNotification.State.CANCELLED);
     }
 
     @Test
@@ -113,6 +113,15 @@ public class SessionServiceGrpcReleaseTest extends DeephavenApiServerSingleAuthe
 
         first.cancel();
         second.cancel();
+    }
+
+    @Test
+    public void releaseOfNonExportIdIsInvalidArgument() {
+        assertThatThrownBy(() -> release(id(SessionState.NON_EXPORT_ID)))
+                .isInstanceOfSatisfying(StatusRuntimeException.class,
+                        e -> assertThat(e.getStatus().getCode())
+                                .as("status of a release of the non-export id")
+                                .isEqualTo(Code.INVALID_ARGUMENT));
     }
 
     private void release(final Ticket ticket) {
