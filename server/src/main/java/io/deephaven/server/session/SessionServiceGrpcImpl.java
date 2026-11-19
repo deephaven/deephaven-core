@@ -144,9 +144,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     .onError(Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Release ticket not supplied"));
             return;
         }
-        // A client id that has not been created yet gets an UNKNOWN export here, so that the release is not lost if it
-        // overtakes the create; the create then fails as cancelled. If the export is already in a terminal state, the
-        // implementation quietly ignores the request as there are no additional resources to release.
+        // Cancel whatever state the export is in, including one not created yet; a terminal export ignores this.
         session.getExport(request.getId(), "id").cancel();
         responseObserver.onNext(ReleaseResponse.getDefaultInstance());
         responseObserver.onCompleted();
