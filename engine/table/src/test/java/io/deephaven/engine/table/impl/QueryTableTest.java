@@ -3918,6 +3918,52 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    /**
+     * A reverse of a copy that changes the original table's layout hints shares the original table's memoized reverse,
+     * and carries the copy's own layout hints.
+     */
+    @Test
+    public void testMemoizedReverseOfCopyKeepsItsOwnLayoutHints() {
+        final boolean old = QueryTable.setMemoizeResults(true);
+        try {
+            final QueryTable source = testRefreshingTable(i(2, 4, 6, 8).toTracking(), intCol("A", 30, 10, 40, 20));
+            source.setAttribute(Table.LAYOUT_HINTS_ATTRIBUTE, "parentHints");
+            final Table reversed = source.reverse();
+
+            final Table copy = source.withAttributes(Map.of(Table.LAYOUT_HINTS_ATTRIBUTE, "copyHints"));
+            final Table copyReversed = copy.reverse();
+            assertTrue(((QueryTable.CopiedTable) copyReversed).checkParent(reversed));
+            assertEquals("copyHints", copyReversed.getAttribute(Table.LAYOUT_HINTS_ATTRIBUTE));
+            assertEquals("parentHints", reversed.getAttribute(Table.LAYOUT_HINTS_ATTRIBUTE));
+            assertTableEquals(reversed, copyReversed);
+        } finally {
+            QueryTable.setMemoizeResults(old);
+        }
+    }
+
+    /**
+     * Reversing a copy without the parent's layout hints, when the parent's reverse is already memoized, gives a result
+     * without layout hints, as reversing the copy directly would.
+     */
+    @Test
+    public void testMemoizedReverseOfCopyWithoutLayoutHintsHasNone() {
+        final boolean old = QueryTable.setMemoizeResults(true);
+        try {
+            final QueryTable source = testRefreshingTable(i(2, 4, 6, 8).toTracking(), intCol("A", 30, 10, 40, 20));
+            source.setAttribute(Table.LAYOUT_HINTS_ATTRIBUTE, "parentHints");
+            final Table reversed = source.reverse();
+
+            final Table copy = source.withoutAttributes(List.of(Table.LAYOUT_HINTS_ATTRIBUTE));
+            final Table copyReversed = copy.reverse();
+            assertTrue(((QueryTable.CopiedTable) copyReversed).checkParent(reversed));
+            assertNull(copyReversed.getAttribute(Table.LAYOUT_HINTS_ATTRIBUTE));
+            assertEquals("parentHints", reversed.getAttribute(Table.LAYOUT_HINTS_ATTRIBUTE));
+            assertTableEquals(reversed, copyReversed);
+        } finally {
+            QueryTable.setMemoizeResults(old);
+        }
+    }
+
     @Test
     public void testMemoizeConcurrent() {
         final ExecutorService dualPool = Executors.newFixedThreadPool(2, runnable -> {
