@@ -20,7 +20,7 @@ public final class Percentile extends ColumnAggregation {
 
     /**
      * When the percentile splits the group into two equal halves, whether to average the two middle values. When
-     * {@code true}, the two middle values are averaged. When {@code false}, the smaller value is used. Only applies to
+     * {@code true}, the two middle values are averaged. When {@code false}, the larger value is used. Only applies to
      * numeric types. Defaults to {@code false}.
      */
     @JsNullable

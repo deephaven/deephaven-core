@@ -17,7 +17,7 @@ public final class Median extends ColumnAggregation {
 
     /**
      * When the group size is an even number, whether to average the two middle values for the output value. When
-     * {@code true}, the two middle values are averaged. When {@code false}, the smaller value is used. Only applies to
+     * {@code true}, the two middle values are averaged. When {@code false}, the larger value is used. Only applies to
      * numeric types. Defaults to {@code true}.
      */
     @JsNullable

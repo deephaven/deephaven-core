@@ -201,7 +201,7 @@ public abstract sealed class Aggregation
      * Creates a Median aggregation.
      *
      * @param averageEvenlyDivided when the group size is even, whether to average the two middle values. When
-     *        {@code true}, averages the two middle values. When {@code false}, uses the smaller value. Only applies to
+     *        {@code true}, averages the two middle values. When {@code false}, uses the larger value. Only applies to
      *        numeric types. Defaults to {@code true}.
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
      *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
