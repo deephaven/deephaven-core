@@ -440,42 +440,6 @@ public class SessionState {
     }
 
     /**
-     * Release the export for the provided id, cancelling its work if it has not completed. A client-allocated id that
-     * has not been created yet is recorded as released, so that a later attempt to create it fails. Releasing an id
-     * that is already released or otherwise terminal has no effect.
-     *
-     * @param exportId the export handle id
-     * @return false if the id is a server-allocated id that does not exist, true otherwise
-     */
-    public boolean releaseExport(final int exportId) {
-        // lock-free when the export exists, as in getExport
-        throwIfExpired();
-        ExportObject<?> found = exportMap.get(exportId);
-        if (found == null) {
-            synchronized (exportMap) {
-                // Expired check must be guarded by the lock: once onExpired() has closed releasedExports nothing may
-                // be added.
-                throwIfExpired();
-                found = exportMap.get(exportId);
-                if (found == null) {
-                    if (isReleased(exportId)) {
-                        return true;
-                    }
-                    if (exportId <= NON_EXPORT_ID) {
-                        // only the server allocates these, so a client cannot be releasing one ahead of its creation
-                        return false;
-                    }
-                    // createExport checks this under the same monitor, so the create cannot slip in between
-                    releasedExports.insert(exportIdToKey(exportId));
-                    return true;
-                }
-            }
-        }
-        found.cancel();
-        return true;
-    }
-
-    /**
      * Fold an export id into the unsigned key space used by {@link #releasedExports}. Client ids are positive and
      * server ids negative; both map to distinct non-negative keys. {@link #NON_EXPORT_ID} is never stored.
      */
