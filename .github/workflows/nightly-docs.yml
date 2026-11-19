@@ -49,11 +49,12 @@ jobs:
       if: always()
       run: ./docs/validate -e # Validate with external links
 
-    - name: Upload error logs
-      if: failure()
+    - name: Upload validator results
+      # Always upload so warnings.txt (failures on the link ignore list) is available even when the run passes
+      if: always()
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
-        name: validator-error-logs
+        name: validator-results
         path: docs/validator-results/
 
   slack-notify:

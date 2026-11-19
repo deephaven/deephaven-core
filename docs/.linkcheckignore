@@ -1,0 +1,4 @@
+# External links whose failures are reported as warnings instead of errors when checked
+# with `./docs/validate -e`. Use for sites that block automated requests.
+# One absolute URL per line. An origin on its own (https://example.com) covers the whole site.
+# See https://github.com/deephaven/salmon/tree/main/tools/validator#ignoring-external-links
