@@ -566,19 +566,27 @@ public abstract class MemoizedOperationKey {
 
     private static class CrossJoin extends MemoizedOperationKey {
         /**
-         * The left table attributes that determine the attributes of a cross join result. A cross join result carries
-         * only these attributes, and {@link BaseTable.CopyAttributeOperation#CrossJoinCopy} copies each of them.
+         * The left table attributes that determine the attributes of any cross join result. A cross join result carries
+         * only these attributes and {@link #STATIC_RIGHT_RESULT_ATTRIBUTE_SOURCES}, and
+         * {@link BaseTable.CopyAttributeOperation#CrossJoinCopy} copies each of them.
          */
         private static final List<String> RESULT_ATTRIBUTE_SOURCES = List.of(
                 Table.BLINK_TABLE_ATTRIBUTE,
-                Table.ADD_ONLY_TABLE_ATTRIBUTE,
-                Table.APPEND_ONLY_TABLE_ATTRIBUTE,
                 Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+
+        /**
+         * The left table attributes that determine the attributes of a cross join result only when the right table is
+         * static; a refreshing right table can add rows anywhere in the result.
+         */
+        private static final List<String> STATIC_RIGHT_RESULT_ATTRIBUTE_SOURCES = List.of(
+                Table.ADD_ONLY_TABLE_ATTRIBUTE,
+                Table.APPEND_ONLY_TABLE_ATTRIBUTE);
 
         private final WeakReference<Table> rightTableReference;
         private final MatchPair[] columnsToMatch;
         private final MatchPair[] columnsToAdd;
         private final int numRightBitsToReserve;
+        private final boolean rightRefreshing;
         private final int cachedHashCode;
 
         CrossJoin(final Table rightTable, final MatchPair[] columnsToMatch,
@@ -587,6 +595,7 @@ public abstract class MemoizedOperationKey {
             this.columnsToMatch = columnsToMatch;
             this.columnsToAdd = columnsToAdd;
             this.numRightBitsToReserve = numRightBitsToReserve;
+            this.rightRefreshing = rightTable.isRefreshing();
 
             // precompute hash as right table may disappear
             int hash = Integer.hashCode(numRightBitsToReserve);
@@ -619,7 +628,10 @@ public abstract class MemoizedOperationKey {
         @Override
         boolean attributesCompatible(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
             return RESULT_ATTRIBUTE_SOURCES.stream()
-                    .allMatch(attrName -> Objects.equals(oldAttributes.get(attrName), newAttributes.get(attrName)));
+                    .allMatch(attrName -> Objects.equals(oldAttributes.get(attrName), newAttributes.get(attrName)))
+                    && (rightRefreshing || STATIC_RIGHT_RESULT_ATTRIBUTE_SOURCES.stream()
+                            .allMatch(attrName -> Objects.equals(oldAttributes.get(attrName),
+                                    newAttributes.get(attrName))));
         }
 
         @Override

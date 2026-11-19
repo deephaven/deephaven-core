@@ -1652,6 +1652,45 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     /**
+     * With memoization enabled and a refreshing right table, a copy that differs from its parent only in add-only or
+     * append-only shares the parent's join, whichever join is cached first, because neither result carries those
+     * attributes.
+     */
+    @Test
+    public void testMemoizedJoinSharedWithAddOnlyCopyRefreshingRight() {
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            for (final boolean appendOnly : new boolean[] {false, true}) {
+                for (final boolean copyFirst : new boolean[] {true, false}) {
+                    final String description = "appendOnly=" + appendOnly + ", copyFirst=" + copyFirst;
+                    final QueryTable source =
+                            testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10));
+                    final QueryTable rTable =
+                            testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+                    final Table copy = appendOnly ? source.assertAppendOnly() : source.assertAddOnly();
+
+                    final QueryTable copyResult;
+                    final QueryTable plainResult;
+                    if (copyFirst) {
+                        copyResult = (QueryTable) copy.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                        plainResult = (QueryTable) source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    } else {
+                        plainResult = (QueryTable) source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                        copyResult = (QueryTable) copy.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    }
+                    assertTrue(description, copyResult instanceof QueryTable.CopiedTable);
+                    assertTrue(description, ((QueryTable.CopiedTable) copyResult).checkParent(plainResult));
+                    assertFalse(description, plainResult.isAddOnly());
+                    assertFalse(description, copyResult.isAddOnly());
+                    assertFalse(description, copyResult.isAppendOnly());
+                }
+            }
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
      * An inner join of a blink left table with a static empty right table is static, so it is not marked blink.
      */
     @Test
