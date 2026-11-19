@@ -9,6 +9,7 @@ import elemental2.dom.AbortController;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
@@ -878,6 +879,83 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                 resolved.close();
                                 return Promise.reject(err);
                             });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCancelChainBeforeSend() {
+        // mofojed's review: on a resolved table, chain two operations and cancel the last in the same task
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_075);
+                    return session.emptyTable(30).update(arr("Sym = i % 3 == 0 ? `A` : `B`", "X = i")).resolve();
+                })
+                .then(trades -> {
+                    WorkerConnection connection = trades.getConnection();
+                    JsPendingTable<JsResolvedTable> pending = trades.update(arr("Y = 1")).sumBy(arr("Sym"));
+                    pending.cancel();
+                    // Any assertion tripped by the cancel or by the batch it was in surfaces as an uncaught error
+                    return expectCanceled(pending.resolve())
+                            .then(ignore -> delay(500))
+                            .then(ignore -> {
+                                assertEquals(0, batchStates(connection));
+                                trades.close();
+                                return Promise.resolve(trades);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCancelChainInFlight() {
+        // As testCancelChainBeforeSend, but the dependent is canceled after the batch has gone out
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_078);
+                    return session.emptyTable(30).update(arr("Sym = i % 3 == 0 ? `A` : `B`", "X = i")).resolve();
+                })
+                .then(trades -> {
+                    WorkerConnection connection = trades.getConnection();
+                    JsPendingTable<JsResolvedTable> pending = trades.update(arr("Y = 1")).sumBy(arr("Sym"));
+                    return delay(0)
+                            .then(ignore -> {
+                                pending.cancel();
+                                return expectCanceled(pending.resolve());
+                            })
+                            .then(ignore -> delay(500))
+                            .then(ignore -> {
+                                assertEquals(0, batchStates(connection));
+                                trades.close();
+                                return Promise.resolve(trades);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCanceledChainSourceIsReleasedOnTheServer() {
+        // The source of a canceled dependent is wanted by nobody; whatever the client does, the server must not keep
+        // its export. The client's own assertions are testCancelChainBeforeSend's concern, not this test's.
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_079);
+                    return session.emptyTable(30).update(arr("Sym = i % 3 == 0 ? `A` : `B`", "X = i")).resolve();
+                })
+                .then(trades -> {
+                    errorLogsDontFail();
+                    WorkerConnection connection = trades.getConnection();
+                    JsPendingTable<JsResolvedTable> source = trades.update(arr("Y = 1"));
+                    Ticket sourceTicket = source.typedTicket().getTicket();
+                    source.sumBy(arr("Sym")).cancel();
+                    // Long enough for the batch to finish on the server
+                    return delay(1000)
+                            .then(ignore -> Callbacks.<ExportedTableCreationResponse>grpcUnaryPromise(
+                                    c -> connection.tableServiceClient().getExportedTableCreationResponse(sourceTicket,
+                                            c)))
+                            .then(exported -> Promise.<Object>reject(
+                                    "the canceled dependent's source is still exported on the server"),
+                                    released -> {
+                                        trades.close();
+                                        return Promise.<Object>resolve(trades);
+                                    });
                 })
                 .then(this::finish).catch_(this::report);
     }
