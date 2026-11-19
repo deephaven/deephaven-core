@@ -3368,8 +3368,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final R parentResult = parent.memoizeResult(memoKey, operation);
                 if (parentResult instanceof QueryTable) {
                     final QueryTable myResult = ((QueryTable) parentResult).copy(StandardOptions.COPY_NONE);
-                    copyAttributes((QueryTable) parentResult, myResult, memoKey.getParentCopyType());
                     copyAttributes(myResult, memoKey.copyType());
+                    copyAttributes((QueryTable) parentResult, myResult,
+                            attributeName -> shouldCopyAttribute(attributeName, memoKey.getParentCopyType())
+                                    && !shouldCopyAttribute(attributeName, memoKey.copyType()));
                     // noinspection unchecked
                     return (R) myResult;
                 }
