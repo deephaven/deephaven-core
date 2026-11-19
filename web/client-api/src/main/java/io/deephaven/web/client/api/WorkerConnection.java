@@ -406,10 +406,7 @@ public class WorkerConnection {
             // fire deprecated event for now
             info.notifyConnectionError(status);
 
-            // signal that there has been a connection failure of some kind and attempt to reconnect
-            info.fireEvent(CoreClient.EVENT_DISCONNECT);
-
-            // Try again after a backoff, this may happen several times
+            // Try again after a backoff, this may happen several times; connectionLost() reports the disconnect
             connectionLost();
         } // others probably are meaningful to the caller
         return false;
@@ -518,12 +515,23 @@ public class WorkerConnection {
     }
 
     private void subscribeToTerminationNotification() {
-        terminationStream = Context.current().withCancellation();
-        terminationStream.run(
+        // A reconnect within the session can leave the previous stream open; replace it rather than add to it. The
+        // new stream is current before the old one is canceled, so the old one's end is ignored even if it is
+        // delivered synchronously, and it hangs off the root context so it cannot be canceled along with the old one.
+        final Context.CancellableContext previous = terminationStream;
+        final Context.CancellableContext context = Context.ROOT.withCancellation();
+        terminationStream = context;
+        if (previous != null) {
+            previous.cancel(null);
+        }
+        context.run(
                 () -> sessionServiceClient.terminationNotification(TerminationNotificationRequest.getDefaultInstance(),
                         new StreamObserver<TerminationNotificationResponse>() {
                             @Override
                             public void onNext(TerminationNotificationResponse success) {
+                                if (terminationStream != context) {
+                                    return;
+                                }
                                 // welp; the server is gone -- let everyone know
                                 connectionLost();
 
@@ -532,6 +540,10 @@ public class WorkerConnection {
 
                             @Override
                             public void onError(Throwable fail) {
+                                if (terminationStream != context) {
+                                    // Superseded or closed; this stream's end is not news
+                                    return;
+                                }
                                 // Errors are treated like connection issues, won't signal any shutdown
                                 if (checkStatus(fail)) {
                                     // restart the termination notification
@@ -559,6 +571,10 @@ public class WorkerConnection {
     // @Override
 
     public void connectionLost() {
+        if (state == State.Reconnecting) {
+            // Every open stream fails when the connection goes; the first one already did all of this
+            return;
+        }
         // notify all active tables and widgets that the connection is closed
         // TODO(deephaven-core#3604) when a new session is created, refetch all widgets and use that to drive reconnect
         simpleReconnectableInstances.forEach((item, index, array) -> {
