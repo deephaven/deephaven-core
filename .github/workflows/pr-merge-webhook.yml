@@ -8,6 +8,9 @@ on:
     types:
       - closed
 
+permissions:
+  contents: read
+
 jobs:
   jira-webhook-pr-merge:
     # Only on merged PRs

@@ -31,16 +31,6 @@ DQL [query strings](../how-to-guides/query-string-overview.md) are [strings](../
 result = emptyTable(10).update("X = i", 'Y = X * X')
 ```
 
-There is one catch. You need to use double quotes for your [query strings](../how-to-guides/query-string-overview.md) if you are going to use single quotes within the [query strings](../how-to-guides/query-string-overview.md), as the date-time and character literals later in this section do.
-
-For example:
-
-`s1 = "'This' is OK"`
-
-`s2 = ''This' is NOT'`
-
-Double quotes are the safer default for [query strings](../how-to-guides/query-string-overview.md). When in doubt, use double quotes. You can use single quotes with escapes, but they are more difficult to read.
-
 Groovy treats a double-quoted string that contains a `$` expression as a `GString`, and it replaces each `$` expression with its value before the engine sees the [query string](../how-to-guides/query-string-overview.md). To put a literal `$` in a [query string](../how-to-guides/query-string-overview.md), use single quotes or escape it as `\$`.
 
 Backticks surround [strings](../reference/query-language/types/strings.md) _within_ a [query string](../how-to-guides/query-string-overview.md). This is easier to understand with an example.
@@ -62,6 +52,15 @@ result = emptyTable(10).update("X = '2019-01-23T12:15 ET'", "Y = X + 'PT10S'", "
 ```
 
 In this example, the query sets column `X` to a [date-time](../reference/query-language/types/date-time.md). Column `Y` holds the [date-time](../reference/query-language/types/date-time.md) 10 seconds after `X`, and column `Z` holds the [date-time](../reference/query-language/types/date-time.md) one day after `X`. Column `A` holds a character. Single quotes surround the [date-time](../reference/query-language/types/date-time.md), the [duration](../reference/query-language/types/durations.md), the [time period](../reference/query-language/types/periods.md), and the character.
+
+There is one catch. A [query string](../how-to-guides/query-string-overview.md) that contains single quotes, as these date-time and character literals do, is easiest to write in double quotes. In a single-quoted string, the first unescaped single quote inside it ends the string:
+
+```groovy skip-test
+s1 = "'This' is OK"
+s2 = ''This' is NOT'  // Syntax error: the unescaped inner single quote ends the string early
+```
+
+Double quotes are the safer default for [query strings](../how-to-guides/query-string-overview.md). When in doubt, use double quotes. You can use single quotes with escapes, but they are more difficult to read.
 
 > [!TIP]
 > If a date column is stored as a [string](../reference/query-language/types/strings.md) rather than a [date-time](../reference/query-language/types/date-time.md), compare it with a backtick string, such as `` Date = `2021-09-22` ``, not a single-quoted date.
@@ -111,13 +110,7 @@ result = readCsv("https://media.githubusercontent.com/media/deephaven/examples/m
     .maxBy("Date", "coin")
 ```
 
-This piece of code is:
-
-1. much easier to read ✅
-2. faster ✅
-3. updates when the source table ticks ✅
-
-Win, Win, Win.
+This version is easier to read, runs faster, and updates when the source table ticks.
 
 Every time you write a loop or pull values out of a table, as the [`ColumnVectors`](../how-to-guides/iterate-table-vectors.md) calls above do, ask yourself how you can accomplish the same goal without the loop and without directly accessing the contents of the Deephaven table. Most changes involve using key columns in [aggregations](../how-to-guides/dedicated-aggregations.md) and join columns in [joins](../how-to-guides/joins-exact-relational.md). At first, these changes seem foreign, but they soon become natural.
 

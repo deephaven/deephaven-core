@@ -377,7 +377,7 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
     }
 
     private void verifyScalar(ByteSegmentedSortedMultiset ssm, long[] refCounts, SsaTestHelpers.TestDescriptor desc) {
-        int total = 0;
+        long total = 0;
         int distinct = 0;
         for (int offset = 0; offset < refCounts.length; ++offset) {
             total += refCounts[offset];
@@ -385,7 +385,7 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
                 distinct++;
             }
         }
-        final byte[] expanded = new byte[total];
+        final byte[] expanded = new byte[Math.toIntExact(total)];
         int position = 0;
         for (int offset = 0; offset < refCounts.length; ++offset) {
             for (long kk = 0; kk < refCounts[offset]; ++kk) {

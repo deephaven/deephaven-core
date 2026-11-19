@@ -85,5 +85,5 @@ for date in dates:
 
 ## Related documentation
 
-- [Navigating the GUI](../../how-to-guides/user-interface/navigating-the-ui.md)
+- [Navigate the GUI](../../how-to-guides/user-interface/navigating-the-ui.md)
 - [Does chaining operations together improve performance?](./chained-operations.md)

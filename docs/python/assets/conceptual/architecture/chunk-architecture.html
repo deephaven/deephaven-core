@@ -209,12 +209,12 @@
         <div style="width:130px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);font-size:12px;font-weight:600;color:var(--dh-text-primary);">Available</div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
           <svg width="60" height="14" viewBox="0 0 60 14"><defs><marker id="dh-pool-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><polygon points="0 0, 7 3, 0 6" fill="var(--dh-text-muted)"></polygon></marker></defs><path d="M 2 7 L 56 7" stroke="var(--dh-text-muted)" stroke-width="1.5" marker-end="url(#dh-pool-arrow)"></path></svg>
-          <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-secondary);">acquire()</div>
+          <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-secondary);">take()</div>
         </div>
         <div style="width:130px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-logo-yellow);border-radius:var(--dh-radius-md);font-size:12px;font-weight:600;color:var(--dh-text-primary);">In use</div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
           <svg width="60" height="14" viewBox="0 0 60 14"><path d="M 2 7 L 56 7" stroke="var(--dh-text-muted)" stroke-width="1.5" marker-end="url(#dh-pool-arrow)"></path></svg>
-          <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-secondary);">release()</div>
+          <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-secondary);">close()</div>
         </div>
         <div style="width:130px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);font-size:12px;font-weight:600;color:var(--dh-text-primary);">Returned</div>
       </div>
@@ -233,7 +233,7 @@
         </div>
         <div style="margin-top:10px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">One method call for thousands of cells</div>
         <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">vs. thousands of individual calls</div>
-        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-indigo);">~1000x fewer calls</div>
+        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-indigo);">Orders of magnitude fewer calls</div>
       </div>
 
       <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-logo-cyan);border-radius:var(--dh-radius-lg);">
@@ -243,7 +243,7 @@
         </div>
         <div style="margin-top:10px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">Sequential memory allows</div>
         <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">SIMD operations</div>
-        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-cyan-text);">Process 4-8 values per instruction</div>
+        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-cyan-text);">Process several values per instruction</div>
       </div>
 
       <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-logo-cyan);border-radius:var(--dh-radius-lg);">

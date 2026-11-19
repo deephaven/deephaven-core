@@ -533,6 +533,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public Table assertBlink() {
+        if (!isRefreshing()) {
+            throw new IllegalArgumentException(
+                    "assertBlink requires a refreshing table; a static table never removes its rows");
+        }
         return withAttributes(Map.of(BLINK_TABLE_ATTRIBUTE, true));
     }
 

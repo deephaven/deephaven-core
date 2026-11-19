@@ -14,6 +14,14 @@ on:
   pull_request_target:
     types: [opened,closed,synchronize]
 
+permissions:
+  # The scopes the CLA Assistant action documents for signatures stored in a remote repository; the
+  # signature file itself is written with CLA_PERSONAL_ACCESS_TOKEN.
+  actions: write
+  contents: read
+  pull-requests: write
+  statuses: write
+
 jobs:
   CLAssistant:
     runs-on: ubuntu-24.04

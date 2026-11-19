@@ -692,7 +692,7 @@ public abstract class RowSequenceTestBase {
                     continue;
                 }
                 try (final RowSequence.Iterator innerOKI = next.getRowSequenceIterator()) {
-                    int totalConsumed = 0;
+                    long totalConsumed = 0;
                     while (innerOKI.hasMore()) {
                         final long nextKey = innerOKI.peekNextKey();
                         final long target = (nextKey & ~subRegionBitMask) + regionSize;

@@ -16,7 +16,7 @@ public interface BarrageSubscriptionPerformanceLogger {
      * The {@code statType} values recorded by barrage itself.
      * <p>
      * Values are unscaled: durations are nanoseconds and payload sizes are bytes, matching {@code UpdatePerformanceLog}
-     * and the rest of the engine's performance streams.
+     * and {@code QueryPerformanceLog}.
      * <p>
      * These are conventions rather than a closed set; an integrator may log additional statistics under names of its
      * own, and should follow the same {@code <Stem><Unit>} convention.
@@ -34,13 +34,16 @@ public interface BarrageSubscriptionPerformanceLogger {
         public static final String AGGREGATE_NANOS = "AggregateNanos";
         /** Time to deliver an aggregated message to all subscribers. */
         public static final String PROPAGATE_NANOS = "PropagateNanos";
-        /** Time to snapshot data for a new or changed subscription. */
+        /**
+         * Time to snapshot data for a new or changed subscription, or for each update of a hierarchical table
+         * subscription.
+         */
         public static final String SNAPSHOT_NANOS = "SnapshotNanos";
         /** Time to run one full cycle of the off-thread propagation logic. */
         public static final String UPDATE_JOB_NANOS = "UpdateJobNanos";
-        /** Time to write an update to a single subscriber. */
+        /** Time to write an update once, to one subscriber or to every subscriber that shares the write. */
         public static final String WRITE_NANOS = "WriteNanos";
-        /** Payload size of an update written to a single subscriber, in bytes. */
+        /** Payload size of one write of an update, in bytes, recorded once for each subscriber it was sent to. */
         public static final String WRITE_BYTES = "WriteBytes";
         /**
          * Number of pending deltas a producer is holding, un-propagated, at the end of one update graph cycle. Each
