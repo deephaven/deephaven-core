@@ -421,6 +421,14 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             state.setResolution(ClientTableState.ResolutionState.FAILED, message);
         }
 
+        /**
+         * True if the state was released while the server was still creating it, as when the only dependent holding it
+         * was canceled. Its ticket's release is already sent, so whatever the batch reports for it is moot.
+         */
+        boolean released() {
+            return state.getResolution() == ClientTableState.ResolutionState.RELEASED;
+        }
+
         @Override
         protected String describe() {
             return operation.getOpCase().name().toLowerCase();
@@ -1198,6 +1206,11 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                     JsLog.debug("Batch response for a ticket no longer waited on", etcr.getResultId());
                     return;
                 }
+                if (task.released()) {
+                    JsLog.debug("Batch response for a state already released", etcr.getResultId());
+                    batch.settled(task);
+                    return;
+                }
                 if (etcr.getSuccess()) {
                     task.state.applyTableCreationResponse(etcr);
                 } else {
@@ -1210,6 +1223,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             stream.onEnd(status -> {
                 // Operations still waiting here were cut off by a stream failure; a stream the client closed has none
                 for (Operation task : batch.outstanding.values()) {
+                    if (task.released()) {
+                        continue;
+                    }
                     task.fail(String.valueOf(status.getDescription()));
                     connection.scheduleCheck(task.state);
                 }
@@ -1221,7 +1237,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             // The server was not ready, or setting up the stream threw: nothing else observes this, so the states
             // must carry the failure
             for (Operation task : batch.ops) {
-                if (task.cancelled()) {
+                if (task.cancelled() || task.released()) {
                     continue;
                 }
                 task.fail(String.valueOf(err));

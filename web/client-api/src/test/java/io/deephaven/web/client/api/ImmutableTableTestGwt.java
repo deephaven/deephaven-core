@@ -898,7 +898,8 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     return expectCanceled(pending.resolve())
                             .then(ignore -> delay(500))
                             .then(ignore -> {
-                                assertEquals(0, batchStates(connection));
+                                assertEquals("only trades should still hold a batch state", 1,
+                                        batchStates(connection));
                                 trades.close();
                                 return Promise.resolve(trades);
                             });
@@ -923,7 +924,8 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                             })
                             .then(ignore -> delay(500))
                             .then(ignore -> {
-                                assertEquals(0, batchStates(connection));
+                                assertEquals("only trades should still hold a batch state", 1,
+                                        batchStates(connection));
                                 trades.close();
                                 return Promise.resolve(trades);
                             });
