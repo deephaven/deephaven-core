@@ -356,6 +356,10 @@
                 "label": "Hierarchical tables",
                 "items": [
                   {
+                    "label": "Overview",
+                    "path": "conceptual/hierarchical-tables.md"
+                  },
+                  {
                     "label": "Rollup tables",
                     "path": "how-to-guides/rollup-table.md"
                   },
