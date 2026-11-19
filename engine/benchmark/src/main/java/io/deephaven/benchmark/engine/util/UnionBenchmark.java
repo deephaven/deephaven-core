@@ -98,7 +98,7 @@ public class UnionBenchmark {
                                     : previousLast + 1;
                     final RowSetBuilderSequential sb = RowSetFactory.builderSequential();
                     long lastKey = start;
-                    for (int rowCount = 0; rowCount < targetIndexSize;) {
+                    for (long rowCount = 0; rowCount < targetIndexSize;) {
                         boolean insertRange = randy.nextInt(100) < percentRanges;
                         if (insertRange) {
                             final long rs = randy.nextInt(100) + lastKey;

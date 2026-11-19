@@ -186,7 +186,7 @@ public class BarrageMessageWriterImplTest {
             final List<byte[]> messages = drain(writer.getDictionaryBatchView(small, DICT_ID,
                     dictionaryWriter.getValuesWriter(), strings(values), false));
             assertThat(messages.size()).isGreaterThan(1);
-            int total = 0;
+            long total = 0;
             for (int mi = 0; mi < messages.size(); ++mi) {
                 assertThat(messages.get(mi).length).isLessThan(limit);
                 final DictionaryBatch batch = dictionaryBatch(messages.get(mi));
