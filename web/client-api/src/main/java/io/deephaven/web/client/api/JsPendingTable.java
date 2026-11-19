@@ -35,10 +35,10 @@ import jsinterop.annotations.JsOptional;
  * A pending table has no owner. Whoever awaits or resolves it must close the resulting table, so the server can free
  * its resources. {@link JsTableOperations} describes who owns what.
  * <p>
- * A pending table is only valid in the task that created it. Any use after the task is an error, and usually rejects -
- * the one exception is {@link #cancel()}. It cannot be awaited, {@link #resolve(Object) resolved},
- * {@code then()}-invoked or otherwise used as a promise, passed as an argument to another operation, or have operations
- * called on it.
+ * A pending table is only valid in the task that created it. Any use after the task is incorrect and will reject if
+ * detected: it cannot be awaited, {@link #resolve(Object) resolved}, have {@code then()}-invoked or otherwise used as a
+ * promise, passed as an argument to another operation, or have operations called on it. The one exception is
+ * {@link #cancel()}, which can be called at any time, and only serves to stop pending work.
  * <p>
  *
  * When dealing with multiple pending tables, either individually use {@code Promise.resolve} or
