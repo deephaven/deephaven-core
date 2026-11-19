@@ -811,7 +811,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         final long startTm = System.nanoTime();
         try {
             return new DictionaryBatchView(
-                    buildDictionaryBatchStreams(dictId, valuesWriter, values, isDelta, options), writeConsumer,
+                    buildDictionaryBatchStreams(dictId, valuesWriter, values, isDelta, false, options), writeConsumer,
                     startTm);
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("unexpected IOException while building a dictionary batch", e);
@@ -985,7 +985,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                     // a replacement while the subscriber needs the whole dictionary, otherwise an append
                     final boolean isDelta = !state.needsFullBatch();
                     result.addAll(buildDictionaryBatchStreams(state.getDictId(), entry.valuesWriter,
-                            state.buildDeltaChunk(), isDelta, view.options()));
+                            state.buildDeltaChunk(), isDelta, dictManager.replacesEachBatch(), view.options()));
                 }
             }
         }
@@ -1019,7 +1019,8 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
      * too large to fit under the limit is sent in a message of its own. No message carries more values than the batch
      * size {@code options} allow, as no record batch carries more rows. An empty {@code valuesChunk} still makes one
      * message, with no values in it: a first batch that defines the dictionary for a client that has none yet. Takes
-     * ownership of {@code valuesChunk}.
+     * ownership of {@code valuesChunk}. With {@code whole}, the values are never split: they make one message, however
+     * large, and a {@link SizeException} from the values writer propagates, so that the caller sends fewer rows.
      *
      * <p>
      * Each message's body is a single-column inner RecordBatch of the dictionary's value type. Building the messages
@@ -1029,6 +1030,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
      * @param valuesWriter the writer for the dictionary's values
      * @param valuesChunk the values to send
      * @param isDelta whether the values append to the client's dictionary, rather than replace it
+     * @param whole whether the values must make one message; see {@link DictionaryWriterRegistry#replacesEachBatch()}
      * @param options serialization options, passed through to the values writer, and the batch and maximum message
      *        sizes
      * @return the messages, in the order they must be sent
@@ -1038,6 +1040,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             @NotNull final ChunkWriter<Chunk<Values>> valuesWriter,
             @NotNull final WritableChunk<Values> valuesChunk,
             final boolean isDelta,
+            final boolean whole,
             @NotNull final BarrageOptions options) throws IOException {
         final int numValues = valuesChunk.size();
         final int maxBatchSize = maxBatchSize(options);
@@ -1047,7 +1050,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         // the chunk is released once this method and every message are done with it.
         try (final ChunkWriter.Context valuesCtx = valuesWriter.makeContext(valuesChunk, 0)) {
             int offset = 0;
-            int count = Math.min(numValues, maxBatchSize);
+            int count = whole ? numValues : Math.min(numValues, maxBatchSize);
             do {
                 // the first message replaces the client's dictionary or appends to it; the rest append
                 final DefensiveDrainable message;
@@ -1057,6 +1060,9 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                             dictId, valuesWriter, valuesCtx, offset, count, isDelta || offset > 0, options);
                     size = availableOrClose(message);
                 } catch (final SizeException e) {
+                    if (whole) {
+                        throw e;
+                    }
                     // the values writer cannot size this many values at once; try half as many, as for record batches
                     if (count <= 1) {
                         throw new UncheckedDeephavenException("BarrageStreamWriterImpl - value " + offset
@@ -1065,7 +1071,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                     count /= 2;
                     continue;
                 }
-                if (size >= maxMessageSize && count > 1) {
+                if (!whole && size >= maxMessageSize && count > 1) {
                     // too large: drop it, and try as many values as its size suggests will fit
                     message.close();
                     count = Math.min(count - 1, estimateValuesThatFit(maxMessageSize, count, size));
@@ -1333,10 +1339,17 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                     throw new IllegalStateException("No data was written for a batch");
                 }
 
-                // Every registered dictionary sends one DictionaryBatch, unless its values are too large for one
-                // message and are split into a replacement followed by deltas, which a client that loads every
-                // DictionaryBatch as a replacement cannot decode. Send fewer rows, and so fewer values, instead.
-                if (replacesEachBatch && messages.size() - 1 > dictRegistry.entries().size() && batchSize > 1) {
+                // Each dictionary is one replacement message, which must fit under the limit as the RecordBatch
+                // must; a dictionary split into a replacement and deltas is what a client that loads every
+                // DictionaryBatch as a replacement cannot decode. Send fewer rows, and so fewer values, instead; a
+                // single row is sent anyway, as a single row's RecordBatch is.
+                boolean dictionaryTooLarge = false;
+                if (replacesEachBatch && batchSize > 1) {
+                    for (int mi = 0; mi < messages.size() - 1 && !dictionaryTooLarge; ++mi) {
+                        dictionaryTooLarge = messages.get(mi).available() >= maxMessageSize;
+                    }
+                }
+                if (dictionaryTooLarge) {
                     for (final DefensiveDrainable msg : messages) {
                         msg.close();
                     }
