@@ -454,24 +454,29 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Extracts a subset of a table by row position.
      * <p>
-     * If both firstPosition and lastPosition are positive, both count from the beginning of the table. The
-     * firstPosition is inclusive, and the lastPosition is exclusive. The {@link #head}(N) call is equivalent to
-     * slice(0, N). The firstPosition must be less than or equal to the lastPosition.
+     * If both {@code firstPositionInclusive} and {@code lastPositionExclusive} are positive, both count from the
+     * beginning of the table. The {@code firstPositionInclusive} is inclusive, and the {@code lastPositionExclusive} is
+     * exclusive. The {@link #head head(N)} call is equivalent to {@code slice(0, N)}. The
+     * {@code firstPositionInclusive} must be less than or equal to the {@code lastPositionExclusive}.
      * <p>
-     * If firstPosition is positive and lastPosition is negative, the firstPosition counts from the beginning of the
-     * table, inclusively. The lastPosition counts from the end of the table. For example, slice(1, -1) includes all
-     * rows but the first and last. If the lastPosition would be before the firstPosition, the result is an empty table.
+     * If {@code firstPositionInclusive} is positive and {@code lastPositionExclusive} is negative, the
+     * {@code firstPositionInclusive} counts from the beginning of the table, inclusively. The
+     * {@code lastPositionExclusive} counts from the end of the table. For example, {@code slice(1, -1)} includes all
+     * rows but the first and last. If the {@code lastPositionExclusive} would be before the
+     * {@code firstPositionInclusive}, the result is an empty table.
      * <p>
-     * If firstPosition is negative and lastPosition is zero, the firstPosition counts from the end of the table, and
-     * the slice ends at the end of the table. slice(-N, 0) is equivalent to {@link #tail}(N).
+     * If {@code firstPositionInclusive} is negative and {@code lastPositionExclusive} is zero, the
+     * {@code firstPositionInclusive} counts from the end of the table, and the slice ends at the end of the table.
+     * Calling {@code slice(-N, 0)} is equivalent to {@link #tail tail(N)}.
      * <p>
-     * If the firstPosition is negative and the lastPosition is negative, both count from the end of the table. For
-     * example, slice(-2, -1) returns the second to last row of the table.
+     * If the {@code firstPositionInclusive} is negative and the {@code lastPositionExclusive} is negative, both count
+     * from the end of the table. For example, {@code slice(-2, -1)} returns the second to last row of the table.
      * <p>
-     * If firstPosition is negative and lastPosition is positive, the firstPosition counts from the end of the table,
-     * inclusively. The lastPosition counts from the beginning of the table, exclusively. For example, slice(-3, 5)
-     * returns all rows starting from the third-last row to the fifth row of the table. If there are no rows between
-     * these positions, the result is an empty table.
+     * If {@code firstPositionInclusive} is negative and {@code lastPositionExclusive} is positive, the
+     * {@code firstPositionInclusive} counts from the end of the table, inclusively. The {@code lastPositionExclusive}
+     * counts from the beginning of the table, exclusively. For example, {@code slice(-3, 5)} returns all rows starting
+     * from the third-last row to the fifth row of the table. If there are no rows between these positions, the result
+     * is an empty table.
      *
      * @param firstPositionInclusive the first position to include in the result
      * @param lastPositionExclusive the position after the last one to include in the result
