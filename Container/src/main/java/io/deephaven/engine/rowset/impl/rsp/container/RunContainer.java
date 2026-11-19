@@ -2677,7 +2677,7 @@ public final class RunContainer extends Container {
         }
         if (newStart == oldEnd) {
             // we merge
-            valueslength[2 * (nbrruns - 1) + 1] += length + 1;
+            valueslength[2 * (nbrruns - 1) + 1] += (short) (length + 1);
             cardinality += toIntUnsigned((short) (length + 1));
             return;
         }

@@ -1815,7 +1815,7 @@ public class WritableRowSetImplTest {
             if (startPosition > 0) {
                 System.out.print(",");
             }
-            final long size = rangeSize(values, startPosition);
+            final int size = rangeSize(values, startPosition);
             final long startValue = values.getLong(startPosition);
             if (size > 1) {
                 System.out.print(startValue + "-" + (startValue + size - 1));
@@ -1827,7 +1827,7 @@ public class WritableRowSetImplTest {
         System.out.println("}");
     }
 
-    private long rangeSize(LongArrayList values, int start) {
+    private int rangeSize(LongArrayList values, int start) {
         int end = start + 1;
         while (end < values.size() && values.getLong(end) == values.getLong(end - 1) + 1) {
             end++;
@@ -3410,7 +3410,7 @@ public class WritableRowSetImplTest {
 
             final RowSetBuilderSequential rb = RowSetFactory.builderSequential();
 
-            int expectedSize = 0;
+            long expectedSize = 0;
 
             // create ranges of these sizes, skipping 1 value each time
             long idx = 0;
