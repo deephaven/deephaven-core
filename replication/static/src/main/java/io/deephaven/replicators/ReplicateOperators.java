@@ -14,11 +14,15 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 
 public class ReplicateOperators {
     private static final String TASK = "replicateOperators";
 
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         charToAllButBooleanAndFloats(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumCharChunk.java");
         charToAllButBooleanAndFloats(TASK,
@@ -60,7 +64,8 @@ public class ReplicateOperators {
 
     private static void fixupDoubleSum() throws IOException {
         final File doubleSumFile = new File(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/DoubleChunkedSumOperator.java");
+                replicatedOutputPath(TASK,
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/DoubleChunkedSumOperator.java"));
         List<String> lines = FileUtils.readLines(doubleSumFile, Charset.defaultCharset());
         lines = ReplicationUtils.replaceRegion(lines, "runningSum", List.of(
                 "        // an add-only double sum accumulates every non-null value in its result column",
@@ -96,7 +101,8 @@ public class ReplicateOperators {
     private static void fixupFloatAddOnlyMinMax() throws IOException {
         final File floatAddOnlyMinMaxFile =
                 new File(
-                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedAddOnlyMinMaxOperator.java");
+                        replicatedOutputPath(TASK,
+                                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedAddOnlyMinMaxOperator.java"));
         List<String> lines = FileUtils.readLines(floatAddOnlyMinMaxFile, Charset.defaultCharset());
         lines = ReplicationUtils.replaceRegion(lines, "extra chunk value test", Collections.singletonList("" +
                 "            if (Float.isNaN(candidate)) {\n" +
@@ -125,7 +131,8 @@ public class ReplicateOperators {
     private static void fixupDoubleAddOnlyMinMax() throws IOException {
         final File floatAddOnlyMinMaxFile =
                 new File(
-                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/DoubleChunkedAddOnlyMinMaxOperator.java");
+                        replicatedOutputPath(TASK,
+                                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/DoubleChunkedAddOnlyMinMaxOperator.java"));
         List<String> lines = FileUtils.readLines(floatAddOnlyMinMaxFile, Charset.defaultCharset());
         lines = ReplicationUtils.replaceRegion(lines, "extra chunk value test", Collections.singletonList("" +
                 "            if (Double.isNaN(candidate)) {\n" +
@@ -154,7 +161,8 @@ public class ReplicateOperators {
     private static void fixupLongAddOnlyMinMax() throws IOException {
         final File longAddOnlyMinMaxFile =
                 new File(
-                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/LongChunkedAddOnlyMinMaxOperator.java");
+                        replicatedOutputPath(TASK,
+                                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/LongChunkedAddOnlyMinMaxOperator.java"));
         List<String> lines = ReplicationUtils
                 .fixupChunkAttributes(FileUtils.readLines(longAddOnlyMinMaxFile, Charset.defaultCharset()));
         lines = ReplicationUtils.replaceRegion(lines, "actualResult", Collections.singletonList(
