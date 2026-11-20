@@ -307,3 +307,114 @@ async function viewport() {
     t.close();
 }
 // #endregion viewport
+
+// #region selectColumns
+// py: t.view(["Key", "Double = X * 2"]); t.select(["Key", "X"]); t.update_view(["Triple = X * 3"])
+async function selectColumns() {
+    const t = session.emptyTable(5).update(["Key = i % 2", "X = i"]);
+    const [viewed, selected, extended] = await dh.resolveAll([
+        // view and updateView compute their formulas each time a value is read; select and update compute them once
+        t.view(["Key", "Double = X * 2"]),
+        t.select(["Key", "X"]),
+        t.updateView(["Triple = X * 3"]),
+    ]);
+    viewed.close();
+    selected.close();
+    extended.close();
+}
+// #endregion selectColumns
+
+// #region rowRanges
+// py: t.tail(3); t.slice(1, -1); t.reverse()
+async function rowRanges() {
+    const t = session.emptyTable(10).update(["X = i"]);
+    const [lastThree, middle, reversed] = await dh.resolveAll([
+        t.tail(3),
+        // Positions count from the start, or from the end when negative; the end position is excluded
+        t.slice(1, -1),
+        t.reverse(),
+    ]);
+    lastThree.close();
+    middle.close();
+    reversed.close();
+}
+// #endregion rowRanges
+
+// #region groupAndUngroup
+// py: t.group_by(["Key"]); t.group_by(["Key"]).ungroup(); t.where(["X > 2"]).flatten()
+async function groupAndUngroup() {
+    const t = session.emptyTable(6).update(["Key = i % 3", "X = i"]);
+    const [grouped, regrouped, flat] = await dh.resolveAll([
+        // One row per key, with X holding that key's values as an array
+        t.groupBy(["Key"]),
+        // ungroup turns each array back into rows
+        t.groupBy(["Key"]).ungroup(),
+        // flatten renumbers a filtered table's rows so their keys are contiguous again
+        t.where([dh.FilterValue.ofColumn("X").greaterThan(dh.FilterValue.ofNumber(2))]).flatten(),
+    ]);
+    grouped.close();
+    regrouped.close();
+    flat.close();
+}
+// #endregion groupAndUngroup
+
+// #region shorthandAggregations
+// py: t.first_by(["Key"]); t.min_by(["Key"]); t.avg_by(["Key"]); t.count_by("N", ["Key"]); t.weighted_sum_by("W", ["Key"])
+async function shorthandAggregations() {
+    const t = session.emptyTable(12).update(["Key = i % 3", "X = i", "W = i % 4 + 1"]);
+    // Each applies one aggregation to every column but the keys
+    const tables = await dh.resolveAll([
+        t.firstBy(["Key"]),
+        t.lastBy(["Key"]),
+        t.minBy(["Key"]),
+        t.maxBy(["Key"]),
+        t.avgBy(["Key"]),
+        t.medianBy(["Key"]),
+        t.stdBy(["Key"]),
+        t.varBy(["Key"]),
+        t.absSumBy(["Key"]),
+        // countBy adds one column holding each group's row count
+        t.countBy("N", ["Key"]),
+        // Every column but the keys and W, weighted by W
+        t.wsumBy("W", ["Key"]),
+    ]);
+    tables.forEach(table => table.close());
+}
+// #endregion shorthandAggregations
+
+// #region aggregateAll
+// py: t.agg_all_by(agg.max_(), by=["Key"])
+async function aggregateAll() {
+    const t = session.emptyTable(6).update(["Key = i % 3", "X = i", "Y = i * 2"]);
+    // One aggregation over every column but the keys, so it names no columns
+    const maxes = await t.aggAllBy(dh.agg.Aggregation.AggMax(), ["Key"]);
+    maxes.close();
+}
+// #endregion aggregateAll
+
+// #region moreJoins
+// py: left.raj(right, on=["Key", "Ts"]); left.join(right, on=["Key"], joins=["Value"]); left.where_not_in(right, ["Key"])
+async function moreJoins() {
+    const left = session.getObject({ type: "Table", name: "left" }) as dh.PendingTable<dh.Table>;
+    const right = session.getObject({ type: "Table", name: "right" }) as dh.PendingTable<dh.Table>;
+    const [reverseAsOf, cross, notInRight] = await dh.resolveAll([
+        // For each left row, the first right row with the same Key whose Ts is at or after the left row's
+        left.raj(right, ["Key", "Ts"]),
+        // Every matching pair of rows; naturalJoin instead allows at most one right row per key
+        left.join(right, ["Key"], ["Value"]),
+        left.whereNotIn(right, ["Key"]),
+    ]);
+    reverseAsOf.close();
+    cross.close();
+    notInRight.close();
+}
+// #endregion moreJoins
+
+// #region downsampleForChart
+// Keeps only the rows needed to draw each Y column as a line across a chart 800 pixels wide
+async function downsampleForChart() {
+    const t = session.timeTable(1e9).update(["Y = i"]);
+    const small = await t.downsample({ xColumn: "Timestamp", yColumns: ["Y"], width: 800 });
+    small.close();
+}
+// #endregion downsampleForChart

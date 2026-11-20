@@ -11,6 +11,10 @@ example's first comment is the Python equivalent.
 
 {@includeCode ../examples/use-cases.ts#createAndTransform}
 
+## Selecting and computing columns
+
+{@includeCode ../examples/use-cases.ts#selectColumns}
+
 ## Filtering
 
 {@includeCode ../examples/use-cases.ts#filterNamed}
@@ -18,6 +22,14 @@ example's first comment is the Python equivalent.
 ## Sorting
 
 {@includeCode ../examples/use-cases.ts#tickingSorted}
+
+## Tail, slice and reverse
+
+{@includeCode ../examples/use-cases.ts#rowRanges}
+
+## Grouping and ungrouping
+
+{@includeCode ../examples/use-cases.ts#groupAndUngroup}
 
 ## Merging tables
 
@@ -29,6 +41,8 @@ example's first comment is the Python equivalent.
 
 {@includeCode ../examples/use-cases.ts#whereInAndRangeJoin}
 
+{@includeCode ../examples/use-cases.ts#moreJoins}
+
 ## Aggregations
 
 {@includeCode ../examples/use-cases.ts#aggregate}
@@ -36,6 +50,10 @@ example's first comment is the Python equivalent.
 {@includeCode ../examples/use-cases.ts#uniqueWithSentinel}
 
 {@includeCode ../examples/use-cases.ts#weightedAverages}
+
+{@includeCode ../examples/use-cases.ts#shorthandAggregations}
+
+{@includeCode ../examples/use-cases.ts#aggregateAll}
 
 ## Update-by
 
@@ -46,6 +64,10 @@ example's first comment is the Python equivalent.
 ## Head, distinct values and snapshots
 
 {@includeCode ../examples/use-cases.ts#misc}
+
+## Downsampling for charts
+
+{@includeCode ../examples/use-cases.ts#downsampleForChart}
 
 ## Several tables at once
 
