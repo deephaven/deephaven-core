@@ -3,6 +3,8 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -25,6 +27,8 @@ public class ReplicateToPage {
     private static final String TO_BIG_INTEGER_PAGE_PATH = TO_PAGE_DIR + "ToBigIntegerPage.java";
 
     public static void main(String... args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         charToFloat(TASK, TO_CHAR_PAGE_PATH, null, "interface");
 
         // LocalDateTime -> LocalTime
