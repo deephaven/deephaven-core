@@ -33,7 +33,9 @@ done
 pushd "$(dirname "$0")" > /dev/null # Set pwd to this directory
 python3 tools/sidebar-check/check_sidebar.py
 SIDEBAR_EXIT_CODE=$?
-docker run --pull always --tty -e EXTERNAL=${EXTERNAL} -e ABSOLUTE=true -e HEADINGS=true -v ./python:/validate/core/docs -v ./groovy:/validate/core/groovy/docs -v ./validator-results:/results ghcr.io/deephaven/salmon-validator:1
+# .linkcheckignore lists external links whose failures are reported as warnings instead of errors.
+# The validator reads it from the root of /validate, so it covers both the Python and Groovy docs.
+docker run --pull always --tty -e EXTERNAL=${EXTERNAL} -e ABSOLUTE=true -e HEADINGS=true -v ./python:/validate/core/docs -v ./groovy:/validate/core/groovy/docs -v ./.linkcheckignore:/validate/.linkcheckignore:ro -v ./validator-results:/results ghcr.io/deephaven/salmon-validator:1
 EXIT_CODE=$?
 popd > /dev/null # Reset pwd
 
