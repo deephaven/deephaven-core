@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
@@ -92,9 +93,12 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 comparators[ii] = ((ComparatorSortColumn) sortSpecIn[ii]).comparator();
                 comparatorsRespectEquality[ii] = ((ComparatorSortColumn) sortSpecIn[ii]).respectsEquality();
             } else {
-                comparatorsRespectEquality[ii] = true;
-
                 final Comparator<?> defaultComparator = ComparatorRegistry.INSTANCE.getComparator(columnType);
+                // a registered comparator orders a type that is not Comparable, such as an array, whose equals it need
+                // not agree with; a natural order respects equality for a primitive and for a type that the engine
+                // knows to order consistently with equals
+                comparatorsRespectEquality[ii] = defaultComparator == null && (columnType.isPrimitive()
+                        || BinarySearchKernelHelper.compareConsistentWithEquality(columnType));
                 if (defaultComparator == null) {
                     final boolean isSortable =
                             Comparable.class.isAssignableFrom(columnType) || columnType.isPrimitive();
@@ -148,22 +152,23 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     /**
      * Returns the optimal data index for the supplied table, or null if no index is available. The sort drops constant
      * columns, so the index is chosen from the remaining columns: the ideal index contains all of them, but an index on
-     * the first of them is still useful.
+     * the first of them is still useful. An index table is an aggregation keyed by the indexed columns, and an
+     * aggregation cannot key on an array, so the index is chosen from the columns before the first array column.
      */
     @Nullable
     private DataIndex optimalIndex(final Table inputTable) {
-        final String[] effectiveColumnNames =
-                Arrays.stream(SortHelpers.effectiveSortColumns(sortColumns, comparatorsRespectEquality))
-                        .mapToObj(ii -> sortColumnNames[ii])
-                        .toArray(String[]::new);
-        if (effectiveColumnNames.length == 0) {
+        final int[] effectiveColumns = SortHelpers.effectiveSortColumns(sortColumns, comparatorsRespectEquality);
+        if (effectiveColumns.length == 0 || sortColumns[effectiveColumns[0]].getType().isArray()) {
             return null;
         }
-        final DataIndex full = DataIndexer.getDataIndex(inputTable, effectiveColumnNames);
-        if (full != null) {
-            return full;
+        if (Arrays.stream(effectiveColumns).noneMatch(ii -> sortColumns[ii].getType().isArray())) {
+            final DataIndex full = DataIndexer.getDataIndex(inputTable,
+                    Arrays.stream(effectiveColumns).mapToObj(ii -> sortColumnNames[ii]).toArray(String[]::new));
+            if (full != null) {
+                return full;
+            }
         }
-        return DataIndexer.getDataIndex(inputTable, effectiveColumnNames[0]);
+        return DataIndexer.getDataIndex(inputTable, sortColumnNames[effectiveColumns[0]]);
     }
 
     private static boolean alreadySorted(final QueryTable parent, @NotNull final SortHelpers.SortMapping sortedKeys) {

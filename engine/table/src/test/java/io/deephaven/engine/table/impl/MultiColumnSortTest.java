@@ -527,6 +527,30 @@ public class MultiColumnSortTest {
     }
 
     /**
+     * BigDecimal 1.0 and 1.00 are ties in distinct data index groups, and two int arrays with the same contents are
+     * ties whose data index has no table, since an aggregation cannot key on an array. A stable sort of either column
+     * keeps their rows in row key order.
+     */
+    @Test
+    public void testIndexGroupsOfTiedValuesKeepRowKeyOrder() {
+        final int[] first = {1, 2};
+        final int[] second = {1, 2};
+        final BigDecimal[] amounts = new BigDecimal[12];
+        final int[][] paths = new int[12][];
+        for (int ii = 0; ii < 12; ++ii) {
+            amounts[ii] = new BigDecimal(ii % 2 == 0 ? "1.0" : "1.00");
+            paths[ii] = ii % 2 == 0 ? first : second;
+        }
+        final Table table = TableTools.newTable(TableTools.col("BD", amounts), TableTools.col("Path", paths),
+                TableTools.intCol("N", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
+        DataIndexer.getOrCreateDataIndex(table, "BD");
+        DataIndexer.getOrCreateDataIndex(table, "Path");
+        final int[] rowKeyOrder = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+        assertArrayEquals(rowKeyOrder, ColumnVectors.ofInt(table.sort("BD"), "N").toArray());
+        assertArrayEquals(rowKeyOrder, ColumnVectors.ofInt(table.sort("Path"), "N").toArray());
+    }
+
+    /**
      * A case-insensitive comparator makes "a" and "A" ties, so a sort by (S case-insensitively, N) orders those rows by
      * N. A data index on S does not apply to a comparator that does not respect equality, so the sort runs the
      * one-column-at-a-time path, whose runs of the first column are its ties under the comparator.
