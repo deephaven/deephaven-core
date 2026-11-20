@@ -17,12 +17,16 @@ import java.util.stream.Stream;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolean;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToObject;
 import static io.deephaven.replication.ReplicationUtils.globalReplacements;
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 import static io.deephaven.replication.ReplicationUtils.simpleFixup;
 
 public class ReplicateSegmentedSortedArray {
     private static final String TASK = "replicateSegmentedSortedArray";
 
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         final String charSsaPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssa/CharSegmentedSortedArray.java";
         final List<String> ssas = charToAllButBoolean(TASK, charSsaPath);
@@ -33,7 +37,7 @@ public class ReplicateSegmentedSortedArray {
 
         ssas.add(objectSsa);
         for (String ssa : ssas) {
-            final String ssaReverse = descendingPath(ssa);
+            final String ssaReverse = descendingFilePath(ssa);
             invertSense(ssa, ssaReverse);
         }
 
@@ -47,7 +51,7 @@ public class ReplicateSegmentedSortedArray {
         chunkSsaStamps.add(objectSsaStamp);
 
         for (String chunkSsaStamp : chunkSsaStamps) {
-            final String chunkSsaStampReverse = descendingPath(chunkSsaStamp);
+            final String chunkSsaStampReverse = descendingFilePath(chunkSsaStamp);
             invertSense(chunkSsaStamp, chunkSsaStampReverse);
         }
 
@@ -61,7 +65,7 @@ public class ReplicateSegmentedSortedArray {
         ssaSsaStamps.add(objectSsaSsaStamp);
 
         for (String ssaSsaStamp : ssaSsaStamps) {
-            final String ssaSsaStampReverse = descendingPath(ssaSsaStamp);
+            final String ssaSsaStampReverse = descendingFilePath(ssaSsaStamp);
             invertSense(ssaSsaStamp, ssaSsaStampReverse);
         }
 
@@ -76,14 +80,14 @@ public class ReplicateSegmentedSortedArray {
         ssaCheckers.add(objectSsaChecker);
 
         for (String ssaChecker : ssaCheckers) {
-            final String ssaCheckerReverse = descendingPath(ssaChecker);
+            final String ssaCheckerReverse = descendingFilePath(ssaChecker);
             invertSense(ssaChecker, ssaCheckerReverse);
         }
 
         for (final String objectPath : List.of(objectSsa, objectSsaStamp, objectSsaSsaStamp, objectSsaChecker)) {
             final String charClassName = ReplicationUtils.className(objectPath).replaceFirst("^Object", "Char");
             equalsConsistentObjectCopy(TASK, charClassName, objectPath);
-            equalsConsistentObjectCopy(TASK, charClassName, descendingPath(objectPath));
+            equalsConsistentObjectCopy(TASK, charClassName, descendingFilePath(objectPath));
         }
     }
 
@@ -146,11 +150,12 @@ public class ReplicateSegmentedSortedArray {
         List<String> lines = ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
         lines = lines.stream().dropWhile(line -> line.startsWith("//")).collect(Collectors.toList());
 
-        if (path.contains("ChunkSsaStamp") || path.contains("SsaSsaStamp") || path.contains("SsaChecker")) {
+        if (file.getName().contains("ChunkSsaStamp") || file.getName().contains("SsaSsaStamp")
+                || file.getName().contains("SsaChecker")) {
             lines = globalReplacements(lines, "\\BSegmentedSortedArray", "ReverseSegmentedSortedArray");
         }
 
-        if (path.contains("SegmentedSortedArray")) {
+        if (file.getName().contains("SegmentedSortedArray")) {
             lines = globalReplacements(lines, "\\BSsaChecker", "ReverseSsaChecker");
         }
 
@@ -164,7 +169,7 @@ public class ReplicateSegmentedSortedArray {
 
         lines = simpleFixup(lines, "isReversed", "false", "true");
 
-        if (path.contains("Object")) {
+        if (file.getName().contains("Object")) {
             lines = ReplicateSortKernel.fixupObjectComparisons(lines, false, true);
         } else {
             lines = ReplicateSortKernel.invertComparisons(lines);
@@ -185,6 +190,12 @@ public class ReplicateSegmentedSortedArray {
                 lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
 
         return globalReplacements(lines, className, newName);
+    }
+
+    @NotNull
+    private static String descendingFilePath(String path) {
+        final File file = new File(path);
+        return replicatedOutputPath(TASK, new File(file.getParent(), descendingPath(file.getName())).getPath());
     }
 
     @NotNull
