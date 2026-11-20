@@ -2,126 +2,183 @@
 title: Barrier
 ---
 
-A **barrier** is a synchronization primitive for coordinating execution order between column calculations and filters. In Groovy, there is no dedicated barrier type — **any Java object** can serve as a barrier. Deephaven only uses the object's identity (and, for filters, its `equals`/`hashCode`) to match a declaring expression to the expressions that respect it — it never reads or otherwise uses any state the object happens to hold. Pick a unique marker you create once and share between the operations that need to coordinate; a plain `new Object()` works well precisely because it has nothing meaningful for code to accidentally rely on.
+A **Barrier** is a marker object that orders one expression before another. An expression is a column calculation ([`Selectable`](./Selectable.md)) or a [filter](./Filter.md). One expression **declares** the [Barrier](#create-a-barrier) and runs first. Other expressions **respect** the [Barrier](#create-a-barrier) and wait until the declaring expression has finished all of its rows.
 
-## Why use a barrier?
+In Groovy, there is no dedicated [Barrier](#create-a-barrier) type. Any Java object can serve as a [Barrier](#create-a-barrier). Deephaven uses the object only as a marker that matches a declaring expression to the expressions that respect it. It never reads the data the object holds, although [matching](#how-deephaven-matches-a-barrier) can depend on the object's `equals` and `hashCode` methods.
 
-By default, Deephaven is free to parallelize column calculations and filters that are eligible for it — eligibility depends on statelessness, table size, and available threads. A barrier lets you enforce that one operation completes all of its rows before another operation starts — for example, when one column populates a map that another column reads from, or computes a running total that another column depends on.
+## Why use a Barrier?
 
-A barrier alone does not force either operation to run serially. If an operation has shared mutable state that could race across its own rows, you typically need **both** [`withSerial`](./ConcurrencyControl.md#withserial) (for sequential row processing within that operation) **and** a barrier (for ordering between operations).
+Most queries need no Barrier. A column that references another column's result already waits for it as an ordinary data dependency. A Barrier is for expressions that depend on each other's side effects or shared state.
 
-## Creating a barrier
+Deephaven parallelizes column calculations and [filters](./Filter.md) that are eligible for it. Eligibility depends on these factors:
+
+- Whether the expression is stateless. Deephaven assumes [formulas](../../../how-to-guides/formulas.md) and [filters](./Filter.md) are stateless, meaning safe to run in parallel, unless they are marked serial with [`withSerial`](./ConcurrencyControl.md#withserial).
+- How many rows the expression processes.
+- How many threads are available.
+
+As a result, two eligible expressions can run at the same time, with no guaranteed order between them. A [Barrier](#create-a-barrier) makes one expression finish all of its rows before another starts. Typical cases are one column that populates a map that another column reads, or one column that computes a running total that another column depends on. [Example: what a Barrier changes](#example-what-a-barrier-changes) shows the difference.
+
+## Create a Barrier
 
 ```groovy syntax
 barrier = new Object()
 ```
 
-Create one object per ordering constraint you need. Reusing the same instance for unrelated constraints would incorrectly link them together; use a separate instance for each independent constraint.
+A plain `new Object()` works well because it holds nothing that code could accidentally rely on. Its default `equals` is identity-based, which matters for the [matching rules](#how-deephaven-matches-a-barrier).
 
-Barrier identity is not handled the same way for filters and selectables. A **filter**'s barrier bookkeeping uses a `HashSet`, so identity follows `equals`/`hashCode` — two _different_ instances that compare equal are treated as the same barrier. A **selectable**'s barrier bookkeeping uses an `IdentityHashMap`, so only the exact same object instance matches, regardless of `equals` — a value-equal but distinct instance will not match at all, and a respected barrier can come back "not defined." A plain `new Object()` is safe either way, since its default `equals` is identity-based. If you use a value type that overrides `equals` (a `String`, a boxed number, a `List`), you risk a duplicate-declaration error for filters or a false "not defined" for selectables. Stick with `new Object()` unless you have a specific reason to use something else.
+Create one object for each ordering constraint. A [Barrier](#create-a-barrier) has one declaring expression, and every expression that respects it waits for that declarer, so a single object cannot order two independent constraints.
 
-## Using a barrier
+## Use a Barrier
 
-One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until every operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (used by [`where`](../../table-operations/filter/where.md)) both implement:
+Two methods set the roles. Both belong to the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](./Selectable.md) and [`Filter`](./Filter.md) both implement. A `Selectable` is accepted by [`select`](../../table-operations/select/select.md), [`update`](../../table-operations/select/update.md), [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md), but only `select` and `update` order their columns by Barriers. [Table operations that accept a Selectable](./Selectable.md#table-operations-that-accept-a-selectable) describes the others.
 
-- [`withDeclaredBarriers(barriers)`](./ConcurrencyControl.md#withdeclaredbarriers) — this operation declares the given barrier(s); it runs to completion before any operation that respects the same barrier.
-- [`withRespectedBarriers(barriers)`](./ConcurrencyControl.md#withrespectedbarriers) — this operation respects the given barrier(s); it does not start until every operation that declares the barrier has finished.
+A `Filter` is accepted by [`where`](../../table-operations/filter/where.md). The two methods are:
 
-> [!IMPORTANT]
-> A barrier only coordinates expressions passed to the **same** `select`, `update`, or `where` call — it cannot order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it is declared, or never declared at all.
->
-> For a `Selectable`, a constant-valued expression cannot declare or respect a barrier either — the engine never evaluates constants during `select`/`update` processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals combined with arithmetic/comparison operators, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `counter.getAndIncrement()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated once per row, so it can freely use barriers.
+- [`withDeclaredBarriers(barriers)`](./ConcurrencyControl.md#withdeclaredbarriers): this expression declares the given [Barrier](#create-a-barrier) objects. It runs to completion before any expression that respects the same [Barrier](#create-a-barrier).
+- [`withRespectedBarriers(barriers)`](./ConcurrencyControl.md#withrespectedbarriers): this expression respects the given [Barrier](#create-a-barrier) objects. It does not start until the expression that declares each [Barrier](#create-a-barrier) has finished.
 
-### Example: coordinating two columns
+These rules apply to every [Barrier](#create-a-barrier):
 
-Consider two columns that share a counter, where column `A` should assign IDs 0-9 and column `B` should continue from 10-19. Without a barrier, the engine gives no guarantee about the order in which `A` and `B` run relative to each other — `B` could just as easily end up with 0-9 while `A` gets 10-19. A barrier removes that ambiguity: column `A` is guaranteed to run first (0-9), then column `B` starts where `A` left off (10-19):
+- One expression declares a given [Barrier](#create-a-barrier). Declaring the same instance twice is an error.
+- The declaring and respecting expressions are arguments of the same [`select`](../../table-operations/select/select.md), [`update`](../../table-operations/select/update.md), or [`where`](../../table-operations/filter/where.md) call. A [Barrier](#create-a-barrier) cannot order expressions across two separate calls.
+- The declaring expression comes before every respecting expression, in left-to-right order. The engine raises an error if a [Barrier](#create-a-barrier) is respected before it is declared, or never declared at all.
+- A constant-valued [`Selectable`](./Selectable.md) cannot declare or respect a [Barrier](#create-a-barrier). This restriction does not apply to a [`Filter`](./Filter.md).
 
-```groovy order=t
+A constant-valued `Selectable` is one whose expression is a literal, or literals joined by binary operators and optionally parenthesized, such as `A = 1` or `A = 1 + 2`. The engine never evaluates constants per row during [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md), so it raises an error when a constant declares or respects a [Barrier](#create-a-barrier). An expression that calls a method, such as `counter.incrementAndGet()` in the examples below, is not constant and can declare and respect [Barriers](#create-a-barrier).
+
+### How Deephaven matches a Barrier
+
+Deephaven matches a declaring expression to its respecting expressions differently for [filters](./Filter.md) and [selectables](./Selectable.md):
+
+- A [filter](./Filter.md) compares Barriers with `equals` and `hashCode`. Two distinct instances that compare equal are the same [Barrier](#create-a-barrier).
+- A [selectable](./Selectable.md) compares Barriers by identity. Only the exact same instance matches, regardless of `equals`. A distinct but equal instance does not match, so a respected [Barrier](#create-a-barrier) fails with a "not defined" error.
+
+A value type that overrides `equals`, such as a `String`, a boxed number, or a `List`, can therefore cause a duplicate-declaration error for [filters](./Filter.md) and a "not defined" error for [selectables](./Selectable.md). A plain `new Object()` avoids both.
+
+### Barriers and serial execution
+
+A [Barrier](#create-a-barrier) orders expressions relative to each other. It does not change how one expression processes its own rows. [`withSerial`](./ConcurrencyControl.md#withserial) makes one expression process its rows one at a time, in row set order (ascending row key). [`withSerial` versus Barriers](./ConcurrencyControl.md#withserial-versus-barriers) describes when an expression needs one control, the other, or both.
+
+### Example: what a Barrier changes
+
+Column `A` counts the rows it processes in a shared counter, and column `B` reads the counter. `B` is correct only after `A` has processed every row, so `A` declares a [Barrier](#create-a-barrier) and `B` respects it.
+
+The table has 6,000,000 rows, which is large enough that Deephaven can split each column across threads when more than one thread is available. The default [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) is 4,194,304.
+
+```groovy order=result
 import io.deephaven.api.Selectable
 import java.util.concurrent.atomic.AtomicInteger
+import static io.deephaven.api.agg.Aggregation.AggMax
+import static io.deephaven.api.agg.Aggregation.AggMin
 
 counter = new AtomicInteger(0)
-
 barrier = new Object()
 
-// Column A: serial (preserve row-to-value order) + declares barrier (must finish first)
-colA = Selectable.parse("A = counter.getAndIncrement()")
-    .withSerial()
+// Column A counts the rows it processes and declares the Barrier
+colA = Selectable.parse("A = counter.incrementAndGet()")
     .withDeclaredBarriers(barrier)
 
-// Column B: serial (preserve row-to-value order) + respects barrier (waits for A)
-colB = Selectable.parse("B = counter.getAndIncrement()")
-    .withSerial()
+// Column B reads the counter, so it waits until A has processed every row
+colB = Selectable.parse("B = counter.get()")
     .withRespectedBarriers(barrier)
 
-t = emptyTable(10).update([colA, colB])
+result = emptyTable(6_000_000)
+    .update([colA, colB])
+    .aggBy([AggMin("MinB = B"), AggMax("MaxB = B")])
 ```
 
-Column `A` gets values 0-9. Column `B` gets values 10-19. Without the barrier, there is no guarantee `A` runs before `B` — the two columns could just as easily come out reversed. Without `withSerial`, a column's own rows could also be evaluated out of row-set order, breaking the correspondence between row and counter value even within a single column.
+With the [Barrier](#create-a-barrier), every row of `B` holds `6000000`, so `MinB` and `MaxB` are equal.
 
-### Example: coordinating two filters
+Without the two [Barrier](#create-a-barrier) calls, `A` and `B` are independent, so `B` can read the counter while `A` is still counting. `MinB` and `MaxB` can then differ, and the values change with hardware and scheduling. In one run without the [Barrier](#create-a-barrier), `MinB` was 47,922 and `MaxB` was 1,241,553.
 
-Barriers work the same way for [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) objects in `where` operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs `withSerial` — a `ConcurrentHashMap` is already safe for concurrent writes to distinct keys — so the barrier is the only thing enforcing that the cache is fully populated before it is read:
+### Example: coordinate two filters
+
+[`Filter`](./Filter.md) objects use [Barriers](#create-a-barrier) in [`where`](../../table-operations/filter/where.md) the same way as columns do. In this example, `filterA` counts the rows it examines, and `filterB` keeps rows only when the count has reached 10.
+
+This example shows the syntax. The engine can reorder filters, for example to run a cheap one first when a data source can answer it ([predicate pushdown](../../../how-to-guides/predicate-pushdown.md)). A [Barrier](#create-a-barrier) keeps `filterA` ahead of `filterB` either way. For an in-memory table like this one, the output is the same with or without the [Barrier](#create-a-barrier).
 
 ```groovy order=result
 import io.deephaven.api.filter.Filter
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
-cache = new ConcurrentHashMap()
-
-initCache = { key ->
-    cache[key] = "Value_${key}"
-    return true
-}
-
-useCache = { key -> cache.containsKey(key) }
-
+counter = new AtomicInteger(0)
 barrier = new Object()
 
-// Filter A: declares barrier (must finish first)
-filterA = Filter.from("(boolean)initCache(Key)")[0].withDeclaredBarriers(barrier)
+// Filter A: counts the rows it examines and declares the Barrier
+filterA = Filter.from("counter.incrementAndGet() > 0")[0]
+    .withDeclaredBarriers(barrier)
 
-// Filter B: respects barrier (waits for A to finish populating the cache)
-filterB = Filter.from("(boolean)useCache(Key)")[0].withRespectedBarriers(barrier)
+// Filter B: respects the Barrier, so it runs after A has examined every row
+filterB = Filter.from("counter.get() == 10")[0]
+    .withRespectedBarriers(barrier)
 
 source = emptyTable(10).update("Key = i")
 result = source.where(Filter.and(filterA, filterB))
 ```
 
-### Multiple barriers
+Because `filterA` examines all ten rows first, `filterB` sees a count of 10 and `result` keeps all ten rows.
 
-You can create multiple barrier objects when operations have different dependencies. Each barrier is an independent constraint, and one operation can respect more than one:
+### Multiple Barriers
 
-```groovy order=t
+Create one [Barrier](#create-a-barrier) for each independent dependency. One expression can respect more than one [Barrier](#create-a-barrier). In this example, `A` and `B` each count the rows they process in their own counter and declare their own [Barrier](#create-a-barrier):
+
+- `C` respects both [Barriers](#create-a-barrier), so it reads both counters after `A` and `B` finish. Every row of `C` holds `12000000`.
+- `D` respects only `barrierA`, so it reads `counterA` after `A` finishes, without waiting for `B`. Every row of `D` holds `6000000`.
+
+```groovy order=result
 import io.deephaven.api.Selectable
+import java.util.concurrent.atomic.AtomicInteger
+import static io.deephaven.api.agg.Aggregation.AggMax
+import static io.deephaven.api.agg.Aggregation.AggMin
 
+counterA = new AtomicInteger(0)
+counterB = new AtomicInteger(0)
 barrierA = new Object()
 barrierB = new Object()
 
-// Column A declares barrierA
-colA = Selectable.parse("A = i * 2").withDeclaredBarriers(barrierA)
+// Column A counts its rows and declares barrierA
+colA = Selectable.parse("A = counterA.incrementAndGet()")
+    .withDeclaredBarriers(barrierA)
 
-// Column B declares barrierB
-colB = Selectable.parse("B = i * 3").withDeclaredBarriers(barrierB)
+// Column B counts its rows and declares barrierB
+colB = Selectable.parse("B = counterB.incrementAndGet()")
+    .withDeclaredBarriers(barrierB)
 
-// Column C respects BOTH barriers — waits for A and B to finish
-colC = Selectable.parse("C = i * 4").withRespectedBarriers(barrierA, barrierB)
+// Column C respects both Barriers
+colC = Selectable.parse("C = counterA.get() + counterB.get()")
+    .withRespectedBarriers(barrierA, barrierB)
 
-// Column D respects only barrierA — waits for A, but not B
-colD = Selectable.parse("D = i * 5").withRespectedBarriers(barrierA)
+// Column D respects only barrierA
+colD = Selectable.parse("D = counterA.get()")
+    .withRespectedBarriers(barrierA)
 
-t = emptyTable(10).update([colA, colB, colC, colD])
+result = emptyTable(6_000_000)
+    .update([colA, colB, colC, colD])
+    .aggBy([
+        AggMin("MinC = C"),
+        AggMax("MaxC = C"),
+        AggMin("MinD = D"),
+        AggMax("MaxD = D"),
+    ])
 ```
 
-Execution order:
+`MinC` and `MaxC` are both 12000000, and `MinD` and `MaxD` are both 6000000.
 
-- `A` and `B` do not depend on each other, so the engine is free to run them concurrently.
-- `D` starts after `A` finishes (does not wait for `B`).
-- `C` starts after both `A` and `B` finish.
+## Implicit Barriers
+
+An implicit [Barrier](#create-a-barrier) is one that Deephaven adds automatically. When [implicit Barriers](../../../conceptual/query-engine/parallelization.md#implicit-barriers) are on, each serial column in a [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) waits for every earlier serial column in the same call, without any explicit [Barrier](#create-a-barrier) object. A serial column is one that is not stateless. By default, that means a column marked with [`withSerial`](./ConcurrencyControl.md#withserial). When [`QueryTable.statelessSelectByDefault`](../../../conceptual/query-table-configuration.md#stateless-by-default) is `false`, Deephaven can also treat an unmarked column as serial. Implicit Barriers let each serial column see the effect of the earlier serial columns without declaring Barriers by hand.
+
+[Implicit Barriers](../../../conceptual/query-engine/parallelization.md#implicit-barriers) are off by default. The [`QueryTable.serialSelectImplicitBarriers`](../../../conceptual/query-table-configuration.md#stateless-by-default) property turns them on.
 
 ## Related documentation
 
-- [ConcurrencyControl](./ConcurrencyControl.md) — The interface that provides `withDeclaredBarriers` and `withRespectedBarriers`
-- [Selectable Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) — Uses barriers to coordinate column calculations
-- [Filter Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) — Uses barriers to coordinate filters
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Query table configuration](../../../conceptual/query-table-configuration.md)
+- [Predicate pushdown](../../../how-to-guides/predicate-pushdown.md)
+- [ConcurrencyControl](./ConcurrencyControl.md)
+- [Selectable](./Selectable.md)
+- [Filter](./Filter.md)
+- [`select`](../../table-operations/select/select.md)
+- [`update`](../../table-operations/select/update.md)
+- [`where`](../../table-operations/filter/where.md)
 - [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)

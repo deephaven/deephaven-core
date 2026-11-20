@@ -7,7 +7,7 @@ The `lazy_update` method creates a new table containing a new cached formula col
 When using `lazy_update`, cell values are stored in memory in a cache. Column formulas are computed on-demand and defer computation until it is required. Because it caches the results for the set of input values, the same input values will never be computed twice. Existing columns are referenced without additional memory allocation.
 
 > [!NOTE]
-> The syntax for the `lazy_update`, [`update_view`](./update-view.md), and [`update`](./update.md) methods is identical, as is the resulting table.
+> The `lazy_update`, [`update_view`](./update-view.md), and [`update`](./update.md) methods accept the same formula strings and return the same resulting table. Only `update` also accepts [`Selectable`](../../query-language/types/Selectable.md) objects.
 >
 > `lazy_update` is recommended for small sets of unique input values. In this case, `lazy_update` uses less memory than `update` and requires less computation than `update_view`. However, if there are many unique input values, `update` will be more efficient because `lazy_update` stores the formula inputs and result in a map, whereas `update` stores the values more compactly in an array.
 

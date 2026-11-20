@@ -167,7 +167,7 @@ Within one [`where`](../reference/table-operations/filter/where.md), the engine 
 
 When the engine can't reorder filters, it applies them in the order you give them, so put the filter that removes the most rows first. [Predicate pushdown](../how-to-guides/predicate-pushdown.md) lists the order in which the engine prioritizes the filters it can reorder.
 
-To keep every filter in the order you give, even when the engine could reorder them, use [Barriers](../reference/query-language/types/Barrier.md) or [serial filters](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where).
+To keep every filter in the order you give, even when the engine could reorder them, use [Barriers](../reference/query-language/types/Barrier.md) or [serial filters](./query-engine/parallelization.md#controlling-execution-order).
 
 Sometimes the values you filter on live in another table that changes while the query runs. For example, an [input table](../how-to-guides/input-tables.md) can hold the values a user cares about, and the user can add or remove values during the day. A [`where`](../reference/table-operations/filter/where.md) filter's values are fixed when you call it, so it never sees those changes. Use [`where_in`](../reference/table-operations/filter/where-in.md) or [`where_not_in`](../reference/table-operations/filter/where-not-in.md) instead.
 

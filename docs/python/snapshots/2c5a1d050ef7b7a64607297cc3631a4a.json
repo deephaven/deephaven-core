@@ -1,0 +1,1 @@
+{"file":"reference/table-operations/select/select.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"B","type":"int"}],"rows":[[{"value":"1"}],[{"value":"2"}],[{"value":"3"}],[{"value":"4"}]]}},"result":{"type":"Table","data":{"columns":[{"name":"X","type":"int"}],"rows":[[{"value":"2"}],[{"value":"4"}],[{"value":"6"}],[{"value":"8"}]]}}}}
