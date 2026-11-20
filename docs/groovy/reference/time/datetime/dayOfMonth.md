@@ -9,6 +9,8 @@ title: dayOfMonth
 ```
 dayOfMonth(instant, timeZone)
 dayOfMonth(dateTime)
+dayOfMonth(localDateTime)
+dayOfMonth(localDate)
 ```
 
 ## Parameters
@@ -19,7 +21,7 @@ dayOfMonth(dateTime)
 The Instant for which to find the day of the month.
 
 </Param>
-<Param name="timeZone" type="TimeZone">
+<Param name="timeZone" type="ZoneId">
 
 The time zone to use when interpreting the [date-time](../../query-language/types/date-time.md).
 
@@ -29,11 +31,21 @@ The time zone to use when interpreting the [date-time](../../query-language/type
 The zoned date-time for which to find the day of the month.
 
 </Param>
+<Param name="localDateTime" type="LocalDateTime">
+
+The local date-time for which to find the day of the month.
+
+</Param>
+<Param name="localDate" type="LocalDate">
+
+The local date for which to find the day of the month.
+
+</Param>
 </ParamTable>
 
 ## Returns
 
-Returns a 1-based int value of the day of the month for an Instant or a ZonedDateTime.
+Returns a 1-based int value of the day of the month.
 
 ## Examples
 

@@ -9,6 +9,8 @@ title: dayOfYear
 ```
 dayOfYear(instant, timeZone)
 dayOfYear(dateTime)
+dayOfYear(localDateTime)
+dayOfYear(localDate)
 ```
 
 ## Parameters
@@ -16,10 +18,10 @@ dayOfYear(dateTime)
 <ParamTable>
 <Param name="instant" type="Instant">
 
-The instant for which to find the day of the month.
+The instant for which to find the day of the year.
 
 </Param>
-<Param name="timeZone" type="TimeZone">
+<Param name="timeZone" type="ZoneId">
 
 The time zone to use when interpreting the [date-time](../../query-language/types/date-time.md).
 
@@ -27,6 +29,16 @@ The time zone to use when interpreting the [date-time](../../query-language/type
 <Param name="dateTime" type="ZonedDateTime">
 
 The zoned date-time for which to find the day of the year.
+
+</Param>
+<Param name="localDateTime" type="LocalDateTime">
+
+The local date-time for which to find the day of the year.
+
+</Param>
+<Param name="localDate" type="LocalDate">
+
+The local date for which to find the day of the year.
 
 </Param>
 </ParamTable>
