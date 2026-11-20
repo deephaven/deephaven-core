@@ -12,7 +12,7 @@ Run the following Groovy script in the console to measure how efficiently your t
 
 ### What the script measures
 
-The script checks only columns backed by a [`SparseArrayColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/sources/SparseArrayColumnSource.html), which stores data in blocks of 1,024 consecutive row keys. Tables that have computed in-memory columns (created by [`select`](../table-operations/select/select.md) or [`update`](../table-operations/select/update.md)) typically use this column source. The script skips tables that have no `SparseArrayColumnSource` columns and tables with an empty row set.
+The script checks columns backed by a [`SparseArrayColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/sources/SparseArrayColumnSource.html) or its time-type variant `NanosBasedTimeSparseArraySource`, which store data in blocks of 1,024 consecutive row keys. Tables that have computed in-memory columns (created by [`select`](../table-operations/select/select.md) or [`update`](../table-operations/select/update.md)) typically use these column sources. The script skips tables that have no sparse-backed columns and tables with an empty row set.
 
 The script computes three values for each table:
 
@@ -33,9 +33,10 @@ t1 = timeTable("PT1s").update("X = randomDouble(-1, 1)").where("X > -0.75")
 ```groovy skip-test
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource
+import io.deephaven.engine.table.impl.sources.NanosBasedTimeSparseArraySource
 
 checkEfficiency = { varName, table ->
-    def hasSparse = table.getColumnSources().any { it instanceof SparseArrayColumnSource }
+    def hasSparse = table.getColumnSources().any { it instanceof SparseArrayColumnSource || it instanceof NanosBasedTimeSparseArraySource }
     if (!hasSparse) return null
 
     def rowSet = table.getRowSet()
