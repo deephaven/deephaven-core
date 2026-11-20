@@ -122,7 +122,7 @@ required searches, not optional style intuition:
   specific bug). Flag every dot-prefixed method reference in prose (e.g. `.with_serial`, `.where`)
   for correction — see **Method names in prose** above.
 - Search for backticked type names too (`PascalCase` class and interface names) and apply the same every-mention check to them.
-- Search case-insensitively for each name in **Deephaven proper nouns** (`barrier`, `selectable`, `concurrencycontrol`), including inside link labels, and flag every lowercase hit except the generic phrases listed there. Then search for PascalCase words outside backticks and code, and backtick each bare class or context name (`SuperUser`).
+- Search case-insensitively for each name in **Deephaven proper nouns** (`barrier`, `selectable`, `concurrencycontrol`), including inside link labels, and flag every lowercase hit that names the concept or class in prose. Skip the generic phrases listed there and literal identifiers: module and package names (`deephaven.barrage`), paths, URLs, and code. Then search for PascalCase words outside backticks and code, and backtick each bare class or context name (`SuperUser`).
 - Search for backticked method-shaped identifiers (`snake_case` or `camelCase`, especially ones
   matching `with_`, `is_`, `from_`, `agg_`, `update`, `select`, `where`, etc.) and, **only for
   those that have an appropriate reference page or pydoc/javadoc anchor to link to** (per the
