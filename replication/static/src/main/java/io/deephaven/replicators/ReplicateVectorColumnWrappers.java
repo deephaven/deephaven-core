@@ -3,6 +3,8 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -26,6 +28,8 @@ public class ReplicateVectorColumnWrappers {
             "engine/api/src/test/java/io/deephaven/engine/table/vectors/FloatVectorCompareTest.java";
 
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         charToAllButBoolean(TASK, CHAR_IMPL_PATH);
         charToAllButBoolean(TASK, CHAR_TEST_PATH);
         fixupObject(charToObject(TASK, CHAR_TEST_PATH));
