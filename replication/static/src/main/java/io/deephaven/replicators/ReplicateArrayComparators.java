@@ -27,6 +27,8 @@ public class ReplicateArrayComparators {
     private static final String TASK = "replicateArrayComparators";
 
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         final String charFile =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/comparators/CharArrayComparator.java";
         charToFloat(TASK, charFile, null);
