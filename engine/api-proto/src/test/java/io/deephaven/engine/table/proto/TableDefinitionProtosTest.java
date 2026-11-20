@@ -73,6 +73,17 @@ public class TableDefinitionProtosTest {
     }
 
     @Test
+    void writeWithLongFileName(@TempDir final Path dir) throws IOException {
+        // Near the 255-byte limit of common file systems; the temporary file must not need a longer name
+        final Path path = dir.resolve("d".repeat(250));
+        TableDefinitionProtos.write(path, EVERYTHING);
+        assertThat(TableDefinitionProtos.read(path)).isEqualTo(EVERYTHING);
+        TableDefinitionProtos.write(path, EVERYTHING, StandardCopyOption.REPLACE_EXISTING);
+        assertThat(TableDefinitionProtos.read(path)).isEqualTo(EVERYTHING);
+        assertOnlyFile(dir, path);
+    }
+
+    @Test
     void writeDoesNotReplaceByDefault(@TempDir final Path dir) throws IOException {
         final Path path = dir.resolve("definition.bin");
         final TableDefinition original = TableDefinition.of(ColumnDefinition.ofInt("Original"));

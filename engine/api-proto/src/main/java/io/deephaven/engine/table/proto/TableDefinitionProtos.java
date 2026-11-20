@@ -86,7 +86,10 @@ public final class TableDefinitionProtos {
         }
         final byte[] bytes = serialize(definition);
         final Path target = path.toAbsolutePath();
-        final Path temp = target.resolveSibling("." + target.getFileName() + "." + UUID.randomUUID() + ".tmp");
+        // A short, target-independent name, so that the temporary name is valid whenever the target name is, no matter
+        // how close the target name is to the file system's limit. If needed in the future, we could let callers
+        // provide the temporary sibling file name, but we don't complicate this method's signature for that for now.
+        final Path temp = target.resolveSibling("." + UUID.randomUUID() + ".tmp");
         try {
             Files.write(temp, bytes, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
             if (replaceExisting) {
