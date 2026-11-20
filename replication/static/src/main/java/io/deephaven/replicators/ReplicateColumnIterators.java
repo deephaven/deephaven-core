@@ -14,23 +14,28 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 /**
  * Code generation for primitive ColumnIterator implementations.
  */
 public class ReplicateColumnIterators {
+    public static final String TASK = "replicateColumnIterators";
 
     private static final String CHAR_IFACE_PATH =
             "engine/api/src/main/java/io/deephaven/engine/table/iterators/CharacterColumnIterator.java";
+    // generated from the Character iterator, and the source of the Long and Double iterators
     private static final String INT_IFACE_PATH =
-            "engine/api/src/main/java/io/deephaven/engine/table/iterators/IntegerColumnIterator.java";
+            "engine/api/src/replicated/" + TASK
+                    + "/java/io/deephaven/engine/table/iterators/IntegerColumnIterator.java";
     private static final String CHAR_CHUNKED_PATH =
             "engine/api/src/main/java/io/deephaven/engine/table/iterators/ChunkedCharacterColumnIterator.java";
     private static final String CHAR_SERIAL_PATH =
             "engine/api/src/main/java/io/deephaven/engine/table/iterators/SerialCharacterColumnIterator.java";
-    public static final String TASK = "replicateColumnIterators";
 
     public static void main(String... args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         {
             charToByte(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
             charToShort(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
