@@ -42,7 +42,7 @@ The following aggregations are supported:
 - [`weighted_sum`](../group-and-aggregate/AggWSum.md)
 
 </Param>
-<Param name="by" type="list[str]">
+<Param name="by" type="list[str] | None">
 
 Zero or more column names to group on and create a hierarchy from. If `None`, no hierarchy is created.
 

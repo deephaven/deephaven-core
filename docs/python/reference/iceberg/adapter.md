@@ -12,19 +12,19 @@ adapter(
     properties: dict[str, str] | None = None,
     hadoop_config: dict[str, str] | None = None,
     s3_instructions: S3Instructions | None = None,
-    enable_property_injection: bool | None = True,
+    enable_property_injection: bool = True,
 )
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="name" type="str" Optional>
+<Param name="name" type="str | None" Optional>
 
 A descriptive name of the catalog. If omitted, the catalog name is inferred from the catalog URI.
 
 </Param>
-<Param name="properties" type="dict[str, str]" Optional>
+<Param name="properties" type="dict[str, str] | None" Optional>
 
 The properties of the catalog. Two properties _must_ be given when creating a catalog adapter:
 
@@ -53,17 +53,17 @@ Additional optional properties include:
 - `io-impl` - The implementation class for the I/O operations, such as `org.apache.iceberg.aws.s3.S3FileIO` for S3-compatible storage.
 
 </Param>
-<Param name="hadoop_config" type="dict[str, str]" Optional>
+<Param name="hadoop_config" type="dict[str, str] | None" Optional>
 
 Hadoop configuration properties for the catalog.
 
 </Param>
-<Param name="s3_instructions" type="S3Instructions" Optional>
+<Param name="s3_instructions" type="S3Instructions | None" Optional>
 
 The S3 instructions for configuring the Deephaven managed AWS clients. If not provided, the catalog adapter will internally use the Iceberg-managed AWS clients configured using the provided properties.
 
 </Param>
-<Param name="enable_property_injection" type="bool | None" Optional>
+<Param name="enable_property_injection" type="bool" Optional>
 
 Whether to enable Deephaven's automatic injection of additional properties that work around upstream issues and supply defaults needed for Deephaven's Iceberg usage. The injection is strictly additive; any keys already present in the `properties` argument are unchanged. If set to `False`, the property map is forwarded exactly as supplied with no automatic additions. The default is `True`.
 

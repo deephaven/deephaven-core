@@ -23,22 +23,22 @@ IcebergReadInstructions(
 ## Parameters
 
 <ParamTable>
-<Param name="table_definition" type="dict[str, DType] | list[Column]" Optional>
+<Param name="table_definition" type="dict[str, DType] | list[Column] | None" Optional>
 
 Deprecated. This parameter has no effect.
 
 </Param>
-<Param name="data_instructions" type="S3Instructions" Optional>
+<Param name="data_instructions" type="S3Instructions | None" Optional>
 
 Special instructions for reading data files from a non-local file system, such as S3. If not given, the data instructions are derived from the catalog.
 
 </Param>
-<Param name="column_renames" type="dict[str, str]" Optional>
+<Param name="column_renames" type="dict[str, str] | None" Optional>
 
 Deprecated. This parameter has no effect.
 
 </Param>
-<Param name="update_mode" type="IcebergUpdateMode" Optional>
+<Param name="update_mode" type="IcebergUpdateMode | None" Optional>
 
 The update mode for the table. Options include:
 
@@ -47,7 +47,7 @@ The update mode for the table. Options include:
 - `IcebergUpdateMode.auto_refresh()`: Specifies that the Iceberg table should be loaded once and refreshed automatically. The default refresh interval is 60 seconds, but can be changed with the `auto_refresh_ms` input parameter.
 
 </Param>
-<Param name="snapshot_id" type="int" Optional>
+<Param name="snapshot_id" type="int | None" Optional>
 
 The snapshot ID to read. If not given, the most recent snapshot ID is used.
 

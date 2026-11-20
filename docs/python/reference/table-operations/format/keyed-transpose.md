@@ -39,7 +39,7 @@ The columns to use as row keys in the transposed table.
 The columns whose values become the new aggregated columns.
 
 </Param>
-<Param name="initial_groups" type="Table">
+<Param name="initial_groups" type="Table | None">
 
 An optional initial set of groups to ensure all aggregated columns are present in the output.
 

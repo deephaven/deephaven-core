@@ -42,7 +42,7 @@ Any filter is permitted, as long as it is not refreshing and does not use row po
 The look-behind window size. This can be expressed as an integer in nanoseconds or a string [duration](../../query-language/types/durations.md); e.g., `"PT00:00:00.001"` or `"PTnHnMnS"`, where `H` is hour, `M` is minute, and `S` is second.
 
 </Param>
-<Param name="fwd_time" type="int | str">
+<Param name="fwd_time" type="int | str" optional>
 
 The look-forward window size. This can be expressed as an integer in nanoseconds or a string [duration](../../query-language/types/durations.md); e.g., `"PT00:00:00.001"` or `"PTnHnMnS"`, where `H` is hour, `M` is minute, and `S` is second.
 

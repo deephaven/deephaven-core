@@ -15,7 +15,7 @@ iter_chunk_tuple(cols: str | Sequence[str] | None = None, tuple_name: str = "Dee
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="str | Sequence[Str]" Optional>
+<Param name="cols" type="str | Sequence[Str] | None" Optional>
 
 The columns to read. If not given, all columns are read. The default is `None`, which reads all columns.
 

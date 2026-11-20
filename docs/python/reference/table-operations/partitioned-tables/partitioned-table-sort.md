@@ -24,7 +24,7 @@ sort(
 The column(s) to be sorted on. Cannot include the `__CONSTITUENT__` column.
 
 </Param>
-<Param name="order" type="SortDirection | Sequence[SortDirection]">
+<Param name="order" type="SortDirection | Sequence[SortDirection] | None">
 
 The sort order(s). Default is `SortDirection.ASCENDING`.
 

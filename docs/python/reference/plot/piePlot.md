@@ -17,23 +17,25 @@ plot_pie(
 
 ## Parameters
 
+Every call needs `category` and `y`. Pass `t` when they are column names, and leave it out when they hold the values.
+
 <ParamTable>
 <Param name="series_name" type="str">
 
 The name (as a [String](../query-language/types/strings.md)) you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Table | SelectableDataSet" optional>
+<Param name="t" type="Table | SelectableDataSet | None" optional>
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="category" type="str | list[str] | list[int] | list[float]" optional>
+<Param name="category" type="str | list[str] | list[int] | list[float] | None" optional>
 
 The name of the column containing category values.
 
 </Param>
-<Param name="y" type="str | list[int] | list[float] | list[DateTime]" optional>
+<Param name="y" type="str | list[int] | list[float] | list[DateTime] | None" optional>
 
 The name of the column containing discrete values.
 

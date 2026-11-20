@@ -35,7 +35,7 @@ Any filter is permitted, as long as it is not refreshing and does not use row po
 The look-behind window size in rows. If positive, it defines the maximum number of rows _before_ the current row that will be used. If negative, it defines the minimum number of rows _after_ the current row that will be used. Includes the current row.
 
 </Param>
-<Param name="fwd_ticks" type="int">
+<Param name="fwd_ticks" type="int" optional>
 
 The look-forward window size in rows. If positive, it defines the maximum number of rows _after_ the current row that will be used. If negative, it defines the minimum number of rows _before_ the current row that will be used.
 

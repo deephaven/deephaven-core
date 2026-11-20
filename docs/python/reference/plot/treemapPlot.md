@@ -42,22 +42,22 @@ The name of the column containing ID values.
 The name of the column containing parent ID values.
 
 </Param>
-<Param name="label" type="str" optional>
+<Param name="label" type="str | None" optional>
 
 The name of the column containing labels. If not provided, labels default to the ID value.
 
 </Param>
-<Param name="value" type="str" optional>
+<Param name="value" type="str | None" optional>
 
 The name of the column containing values for how large each section in relation to other sections.
 
 </Param>
-<Param name="hover_text" type="str" optional>
+<Param name="hover_text" type="str | None" optional>
 
 The name of the column containing hover text shown when hovering over a section in the treemap.
 
 </Param>
-<Param name="color" type="str" optional>
+<Param name="color" type="str | None" optional>
 
 The name of the column containing hexadecimal color to use for each section.
 

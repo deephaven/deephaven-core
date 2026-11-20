@@ -21,43 +21,45 @@ plot_ohlc(
 
 ## Parameters
 
+Every call needs `x`, `open`, `high`, `low` and `close`. Pass `t` when they are column names, and leave it out when they hold the values. `by` needs `t`.
+
 <ParamTable>
 <Param name="series_name" type="str">
 
 The name you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Table | SelectableDataSet" optional>
+<Param name="t" type="Table | SelectableDataSet | None" optional>
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="x" type="str | list[DateTime]" optional>
+<Param name="x" type="str | list[DateTime] | None" optional>
 
 The name of the column of data to be used for the X value.
 
 </Param>
-<Param name="open" type="str | list[int] | list[float] | list[DateTime]" optional>
+<Param name="open" type="str | list[int] | list[float] | list[DateTime] | None" optional>
 
 The name of the column of data to be used for the open value.
 
 </Param>
-<Param name="high" type="str | list[int] | list[float] | list[DateTime]" optional>
+<Param name="high" type="str | list[int] | list[float] | list[DateTime] | None" optional>
 
 The name of the column of data to be used for the high value.
 
 </Param>
-<Param name="low" type="str | list[int] | list[float] | list[DateTime]" optional>
+<Param name="low" type="str | list[int] | list[float] | list[DateTime] | None" optional>
 
 The name of the column of data to be used for the low value.
 
 </Param>
-<Param name="close" type="str | list[int] | list[float] | list[DateTime]" optional>
+<Param name="close" type="str | list[int] | list[float] | list[DateTime] | None" optional>
 
 The name of the column of data to be used for the close value.
 
 </Param>
-<Param name="by" type="list[str]" optional>
+<Param name="by" type="list[str] | None" optional>
 
 Columns that hold grouping data.
 

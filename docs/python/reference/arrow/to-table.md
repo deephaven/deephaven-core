@@ -18,7 +18,7 @@ to_table(pa_table: pyarrow.Table, cols: list[str] | None = None) -> Table
 A PyArrow table.
 
 </Param>
-<Param name="cols" type="list[str]" optional>
+<Param name="cols" type="list[str] | None" optional>
 
 The columns to convert. Default is `None`, which means all columns.
 

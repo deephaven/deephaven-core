@@ -21,7 +21,7 @@ PartitionedTable.from_constituent_tables(
 The constituent tables.
 
 </Param>
-<Param name="constituent_table_columns" type="list[Column]" optional>
+<Param name="constituent_table_columns" type="list[Column] | None" optional>
 
 A list of column definitions compatible with all the constituent tables. Default is `None`. When `constituent_table_columns` is not provided, it will be set to the column definitions of the first table in the provided constituent tables.
 

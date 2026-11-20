@@ -35,7 +35,7 @@ read_csv(
 The file to load into a table. Note that compressed files _are_ accepted: paths ending in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst", or ".tar" will automatically be decompressed before they are read.
 
 </Param>
-<Param name="header" type="dict" optional>
+<Param name="header" type="dict | None" optional>
 
 Define a dictionary for the header and the data type: `[str, DataType]`. Default is `None`.
 

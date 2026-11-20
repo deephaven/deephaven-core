@@ -13,7 +13,7 @@ where_one_of(filters: str | Filter | Sequence[str] | Sequence[Filter] | None = N
 ## Parameters
 
 <ParamTable>
-<Param name="filters" type="str | Filter | Sequence[str] | Sequence[Filter]" optional>
+<Param name="filters" type="str | Filter | Sequence[str] | Sequence[Filter] | None" optional>
 
 The filter condition expressions.
 

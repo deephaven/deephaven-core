@@ -26,7 +26,7 @@ to_pandas(
 The source table to convert.
 
 </Param>
-<Param name="cols" type="list[str]" optional>
+<Param name="cols" type="list[str] | None" optional>
 
 The source table columns to convert. If not specified, all columns are converted.
 

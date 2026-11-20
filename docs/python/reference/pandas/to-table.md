@@ -22,7 +22,7 @@ to_table(
 The `pandas.DataFrame` instance.
 
 </Param>
-<Param name="cols" type="list[str]" optional>
+<Param name="cols" type="list[str] | None" optional>
 
 The columns to convert. If not specified, all columns are converted.
 

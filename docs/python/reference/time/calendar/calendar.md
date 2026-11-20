@@ -13,7 +13,7 @@ calendar(name: str | None = None) -> BusinessCalendar
 ## Parameters
 
 <ParamTable>
-<Param name="name" type="str" Optional>
+<Param name="name" type="str | None" Optional>
 
 The name of the calendar. If not specified, the default calendar is returned.
 

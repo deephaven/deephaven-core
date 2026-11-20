@@ -26,7 +26,7 @@ partitioned_agg_by(
 The aggregation(s) to apply to the source table.
 
 </Param>
-<Param name="by" type="str | Sequence[str]" optional>
+<Param name="by" type="str | Sequence[str] | None" optional>
 
 The group by column name(s). The default is `None`.
 
@@ -37,7 +37,7 @@ Whether to keep result rows for groups that are initially empty, or become empty
 Each aggregation operator defines its own value for empty groups. The default is `False`.
 
 </Param>
-<Param name="initial_groups" type="Table" optional>
+<Param name="initial_groups" type="Table | None" optional>
 
 A table whose distinct combinations of values for the group by column(s) should be used to create an initial set of aggregation groups.
 All other columns are ignored.

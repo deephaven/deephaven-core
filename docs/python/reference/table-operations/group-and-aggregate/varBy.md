@@ -18,7 +18,7 @@ table.var_by(by: str | list[str] | None = None) -> Table
 ## Parameters
 
 <ParamTable>
-<Param name="by" type="str | list[str]" optional>
+<Param name="by" type="str | list[str] | None" optional>
 
 The column(s) by which to group data.
 

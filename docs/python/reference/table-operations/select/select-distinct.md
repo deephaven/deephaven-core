@@ -15,7 +15,7 @@ select_distinct(formulas: str | Sequence[str] | None = None) -> Table
 ## Parameters
 
 <ParamTable>
-<Param name="formulas" type="str | Sequence[str]" optional>
+<Param name="formulas" type="str | Sequence[str] | None" optional>
 
 Key columns.
 

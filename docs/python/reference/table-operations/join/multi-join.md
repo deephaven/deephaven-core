@@ -21,7 +21,7 @@ multi_join(
 The tables to join, or [`MultiJoinInput`](#multijoininput) objects specifiying tables and columns to join.
 
 </Param>
-<Param name="on" type="str | Sequence[str]" optional>
+<Param name="on" type="str | Sequence[str] | None" optional>
 
 The column(s) to match. This can be a common name or an equality expression that renames columns to match, e.g., `"col_A = col_B"`.
 
@@ -64,12 +64,12 @@ MultiJoinInput(
 The table to join onto.
 
 </Param>
-<Param name="on" type="str | Sequence[str]" optional>
+<Param name="on" type="str | Sequence[str] | None" optional>
 
 The column(s) to match. This can be a name common to both columns or an equality expression that renames columns to match, e.g., `"col_A = col_B"`.
 
 </Param>
-<Param name="joins" type="str | Sequence[str]" optional>
+<Param name="joins" type="str | Sequence[str] | None" optional>
 
 The column(s) to be added from this table to the result table. This can be a common name or an equality expression that renames columns to match, e.g., `"col_A = col_B"`.
 

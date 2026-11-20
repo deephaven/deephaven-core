@@ -18,7 +18,7 @@ one_click(t: Table, by: list[str] | None = None, require_all_filters: bool = Fal
 The source table.
 
 </Param>
-<Param name="by" type="list[str]" optional>
+<Param name="by" type="list[str] | None" optional>
 
 The selected columns.
 

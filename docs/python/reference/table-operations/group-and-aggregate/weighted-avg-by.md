@@ -18,7 +18,7 @@ weighted_avg_by(wcol: str, by: str | list[str] | None = None) -> Table
 The name of the weight column.
 
 </Param>
-<Param name="by" type="str | list[str]" optional>
+<Param name="by" type="str | list[str] | None" optional>
 
 The column(s) by which to group data.
 

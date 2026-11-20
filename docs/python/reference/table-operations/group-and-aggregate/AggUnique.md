@@ -19,9 +19,9 @@ unique(
 ```
 
 <ParamTable>
-<Param name="cols" type="str | list[str]" optional>
+<Param name="cols" type="str | list[str] | None" optional>
 
-The source column(s) to compute uniqueness for.
+The source column(s) to compute uniqueness for. Leave it out only when you pass this aggregation to [`agg_all_by`](./AggAllBy.md), which applies it to every non-key column.
 
 - `"X"` will output the single unique value in the `X` column for each group.
 - `"Y = X"` will output the single unique value in the `X` column for each group and rename it to `Y`.
@@ -33,7 +33,7 @@ The source column(s) to compute uniqueness for.
 Whether nulls are counted as values. The default is `False`.
 
 </Param>
-<Param name="non_unique_sentinel" type="np.number | str | bool">
+<Param name="non_unique_sentinel" type="np.number | str | bool | None">
 
 The non-null sentinel value when no unique value exists. The default is `None`. Must be a non-`None` value when `include_nulls` is `True`.
 

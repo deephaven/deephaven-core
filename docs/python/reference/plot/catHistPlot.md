@@ -16,18 +16,20 @@ plot_cat_hist(
 
 ## Parameters
 
+Every call needs `category`. Pass `t` when it is a column name, and leave it out when it holds the values.
+
 <ParamTable>
 <Param name="series_name" type="str">
 
 The name (as a [String](../query-language/types/strings.md)) you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Table | SelectableDataSet" optional>
+<Param name="t" type="Table | SelectableDataSet | None" optional>
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="category" type="str | list[str] | list[int] | list[float]" optional>
+<Param name="category" type="str | list[str] | list[int] | list[float] | None" optional>
 
 The list containing the discrete values.
 

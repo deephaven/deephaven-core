@@ -47,7 +47,7 @@ The decay rate. This can be expressed as an integer in nanoseconds or a string [
 The string names of columns to be operated on. These can include expressions to rename the output, e.g., `"new_col = col"`. When this parameter is left empty, [`update_by`](./updateBy.md) will perform the operation on all applicable columns.
 
 </Param>
-<Param name="op_control" type="OperationControl">
+<Param name="op_control" type="OperationControl | None">
 
 Defines how special cases should behave. When `None`, default [`OperationControl`](./OperationControl.md) settings will be used. See [`OperationControl`](./OperationControl.md) for information.
 

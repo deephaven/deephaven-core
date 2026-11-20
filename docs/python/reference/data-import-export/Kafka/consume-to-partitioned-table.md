@@ -31,13 +31,13 @@ Configuration for the associated Kafka consumer and the resulting table. Once th
 The Kafka topic name.
 
 </Param>
-<Param name="partitions" type="list[int]" optional>
+<Param name="partitions" type="list[int] | None" optional>
 
 - Subscribe to all partitions by default.
 - Specify partitions as a comma-separated list; e.g.,`partitions=[1, 3, 5 ]` to only listen to partitions 1, 3, and 5.
 
 </Param>
-<Param name="offsets" type="dict[int, int]" optional>
+<Param name="offsets" type="dict[int, int] | None" optional>
 
 - `ALL_PARTITIONS_DONT_SEEK` (default) - Start from the consumer's current position without seeking. This matches the default if `offsets` is not specified.
 - `ALL_PARTITIONS_SEEK_TO_END` - Go to the newest available message for every partition.
@@ -49,7 +49,7 @@ The Kafka topic name.
     - Start with offset 27 in partition 5.
 
 </Param>
-<Param name="key_spec" type="KeyValueSpec" optional>
+<Param name="key_spec" type="KeyValueSpec | None" optional>
 
 Specifies how to map the Key field in Kafka messages to table column(s). Any of the following found in `deephaven.stream.kafka.consumer` can be used:
 
@@ -62,7 +62,7 @@ Specifies how to map the Key field in Kafka messages to table column(s). Any of 
 - `KeyValueSpec.FROM_PROPERTIES` (default) - The `kafka_config` parameter should include values for dictionary keys `deephaven.key.column.name` and `deephaven.key.column.type` for the single resulting column name and type.
 
 </Param>
-<Param name="value_spec" type="KeyValueSpec" optional>
+<Param name="value_spec" type="KeyValueSpec | None" optional>
 
 Specifies how to map the Value field in Kafka messages to table column(s). Any of the following specifications found in [`deephaven.stream.kafka.consumer`](/core/pydoc/code/deephaven.stream.kafka.consumer.html) can be used:
 
@@ -75,7 +75,7 @@ Specifies how to map the Value field in Kafka messages to table column(s). Any o
 - `KeyValueSpec.FROM_PROPERTIES` (default) - The `kafka_config` parameter should include values for dictionary keys `deephaven.key.column.name` and `deephaven.key.column.type` for the single resulting column name and type.
 
 </Param>
-<Param name="table_type" type="TableType" optional>
+<Param name="table_type" type="TableType | None" optional>
 
 One of the following `TableType` enums:
 

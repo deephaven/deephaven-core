@@ -23,27 +23,27 @@ layout_hints(
 ## Parameters
 
 <ParamTable>
-<Param name="front" type="str | list[str]" optional>
+<Param name="front" type="str | list[str] | None" optional>
 
 The columns to show at the front.
 
 </Param>
-<Param name="back" type="str | list[str]" optional>
+<Param name="back" type="str | list[str] | None" optional>
 
 The columns to show at the back.
 
 </Param>
-<Param name="freeze" type="str | list[str]" optional>
+<Param name="freeze" type="str | list[str] | None" optional>
 
 The columns to freeze.
 
 </Param>
-<Param name="hide" type="str | list[str]" optional>
+<Param name="hide" type="str | list[str] | None" optional>
 
 The columns to hide.
 
 </Param>
-<Param name="column_groups" type="list[dict]" optional>
+<Param name="column_groups" type="list[dict] | None" optional>
 
 A list of dicts specifying which columns should be grouped in the UI. The dicts can specify the following:
 
@@ -52,7 +52,7 @@ A list of dicts specifying which columns should be grouped in the UI. The dicts 
 - `color (str | None)`: The hex color string or Deephaven color name.
 
 </Param>
-<Param name="search_display_mode" type="SearchDisplayMode" optional>
+<Param name="search_display_mode" type="SearchDisplayMode | None" optional>
 
 Sets the search bar to either be explicitly accessible or inaccessible, or to use the system default.
 

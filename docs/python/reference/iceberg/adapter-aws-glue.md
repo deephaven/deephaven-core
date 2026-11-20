@@ -27,7 +27,7 @@ The URI of the REST catalog.
 The location of the warehouse.
 
 </Param>
-<Param name="name" type="str" Optional>
+<Param name="name" type="str | None" Optional>
 
 A descriptive name of the catalog. If not given, the catalog name is inferred from the catalog URI.
 

@@ -16,7 +16,7 @@ table.ungroup(cols: str | list[str] | None = None) -> Table
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="str | list[str]" optional>
+<Param name="cols" type="str | list[str] | None" optional>
 
 The column(s) of data to ungroup.
 

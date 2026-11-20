@@ -18,7 +18,7 @@ source.to_string(num_rows: int = 10, cols: str | Sequence[str] | None = None) ->
 The number of rows from the beginning of the table to return. Default is 10.
 
 </Param>
-<Param name="cols" type="str | Sequence[str]" optional>
+<Param name="cols" type="str | Sequence[str] | None" optional>
 
 The columns name(s) to include in the string. Default is `None`, which includes all columns.
 

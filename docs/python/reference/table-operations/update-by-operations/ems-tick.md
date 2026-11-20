@@ -40,7 +40,7 @@ The decay rate in ticks.
 The column(s) to be operated on. These can include expressions to rename the output (e.g., `NewCol = Col`). When left empty, the rolling count is calculated for all applicable columns.
 
 </Param>
-<Param name="op_control" type="OperationControl">
+<Param name="op_control" type="OperationControl | None">
 
 Defines how special cases should behave. When `None`, default [`OperationControl`](./OperationControl.md) settings will be used. See [`OperationControl`](./OperationControl.md) for information.
 

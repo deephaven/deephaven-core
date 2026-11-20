@@ -13,7 +13,7 @@ table.await_update(timeout: int | None = None) -> bool
 ## Parameters
 
 <ParamTable>
-<Param name="timeout" type="int" optional>
+<Param name="timeout" type="int | None" optional>
 
 The maximum time to wait, in milliseconds. The default is `None`, meaning the operation will never time out.
 

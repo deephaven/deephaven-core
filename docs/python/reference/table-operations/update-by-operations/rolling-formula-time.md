@@ -49,22 +49,22 @@ If `formula_param` is not `None`, the formula can only be applied to one column 
 Key column(s) can be used as input to the formula. When this happens, key values are treated as scalars.
 
 </Param>
-<Param name="formula_param" type="str" optional>
+<Param name="formula_param" type="str | None" optional>
 
 The parameter name within the formula. If `formula_param` is `each`, then `formula` must contain `each`. For example, `max(each)`, `min(each)`, etc. Use of this parameter is deprecated.
 
 </Param>
-<Param name="cols" type="str | list[str]" optional>
+<Param name="cols" type="str | list[str] | None" optional>
 
 The column(s) to be operated on. These can include expressions to rename the output (e.g., `NewCol = Col`). When left empty, the rolling formula operation is performed on all columns.
 
 </Param>
-<Param name="rev_time" type="int | str">
+<Param name="rev_time" type="int | str" optional>
 
 The look-behind window size. This can be expressed as an integer representing a number of nanoseconds, or a time interval string, e.g. “PT00:00:00.001” or “PT5M”.
 
 </Param>
-<Param name="fwd_time" type="int | str">
+<Param name="fwd_time" type="int | str" optional>
 
 The look-ahead window size. This can be expressed as an integer representing a number of nanoseconds, or a time interval string, e.g. “PT00:00:00.001” or “PT5M”.
 

@@ -18,7 +18,7 @@ table.count_by(col: str, by: str | list[str] | None = None) -> Table
 The name of the output column containing the count.
 
 </Param>
-<Param name="by" type="str | list[str]" optional>
+<Param name="by" type="str | list[str] | None" optional>
 
 The column(s) by which to group data.
 

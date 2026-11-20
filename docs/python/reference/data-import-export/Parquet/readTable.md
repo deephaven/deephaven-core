@@ -26,7 +26,7 @@ read(
 The Parquet file, metadata file, or directory to read, as a local path or URI (such as `s3://...`).
 
 </Param>
-<Param name="col_instructions" type="list[ColumnInstruction]" optional>
+<Param name="col_instructions" type="list[ColumnInstruction] | None" optional>
 
 One or more optional [`ColumnInstruction`](./ColumnInstruction.md) objects that provide instructions for how to read particular columns in the file. Set `unsigned_long_target` on a `ColumnInstruction` to choose the Deephaven type for an unsigned 64-bit integer (`UINT_64`) column.
 

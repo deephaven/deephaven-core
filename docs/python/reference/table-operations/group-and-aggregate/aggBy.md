@@ -52,7 +52,7 @@ A list of aggregations to compute. The following aggregations are available:
 - [`agg.weighted_sum`](./AggWSum.md)
 
 </Param>
-<Param name="by" type="str | list[str]">
+<Param name="by" type="str | list[str] | None">
 
 The names of column(s) by which to group data. Default is `None`.
 
@@ -62,7 +62,7 @@ The names of column(s) by which to group data. Default is `None`.
 Whether to keep result rows for groups that are initially empty or become empty as a result of updates. Each aggregation operator defines its own value for empty groups. The default is `False`.
 
 </Param>
-<Param name="initial_groups" type="Table" optional>
+<Param name="initial_groups" type="Table | None" optional>
 
 A table whose distinct combinations of values for the grouping column(s) should be used to create an initial set of aggregation groups. All other columns are ignored.
 

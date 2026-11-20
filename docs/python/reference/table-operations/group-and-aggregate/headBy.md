@@ -18,7 +18,7 @@ table.head_by(num_rows: int, by: str | list[str] | None = None) -> Table
 The number of rows to return for each group.
 
 </Param>
-<Param name="by" type="str | list[str]" optional>
+<Param name="by" type="str | list[str] | None" optional>
 
 The column(s) by which to group data.
 

@@ -46,7 +46,7 @@ Columns from the left and right tables used to join on.
 The first `N-1` match columns are exactly matched. The last match column is used to find the key values from the right table that are closest to the values in the left table without going over.
 
 </Param>
-<Param name="joins" type="str | Sequence[str]" optional>
+<Param name="joins" type="str | Sequence[str] | None" optional>
 
 Columns from the right table to be added to the left table based on key may be specified in this list:
 

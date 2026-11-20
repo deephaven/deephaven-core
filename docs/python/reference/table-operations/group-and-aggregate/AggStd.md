@@ -15,9 +15,9 @@ std(cols: str | list[str] | None = None) -> Aggregation
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="str | list[str]" optional>
+<Param name="cols" type="str | list[str] | None" optional>
 
-The source column(s) for the calculations.
+The source column(s) for the calculations. Leave it out only when you pass this aggregation to [`agg_all_by`](./AggAllBy.md), which applies it to every non-key column.
 
 - `["X"]` will output the sample standard deviation of values in the `X` column for each group.
 - `["Y = X"]` will output the sample standard deviation of values in the `X` column for each group and rename it to `Y`.

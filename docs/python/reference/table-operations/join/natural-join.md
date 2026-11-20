@@ -34,7 +34,7 @@ Columns from the left and right tables used to join on.
 - `["X, A = B"]` will join when column `X` matches from both the left and right tables, and when column `A` from the left table matches column `B` from the right table.
 
 </Param>
-<Param name="joins" type="str | Sequence[str]" optional>
+<Param name="joins" type="str | Sequence[str] | None" optional>
 
 Columns from the right table to be added to the left table based on key may be specified in this list:
 

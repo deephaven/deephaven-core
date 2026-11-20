@@ -19,33 +19,35 @@ plot_xy_hist(
 
 ## Parameters
 
+To bin data, pass `x` and `nbins` together, and add `t` when `x` is a column name. `xmin` and `xmax` are optional, but go together. To plot a table that already holds the bins, pass only `t`. That table must have the columns `BinMin`, `BinMid`, `BinMax` and `Count`.
+
 <ParamTable>
 <Param name="series_name" type="str">
 
 The name (as a [String](../query-language/types/strings.md)) you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Table | SelectableDataSet" optional>
+<Param name="t" type="Table | SelectableDataSet | None" optional>
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="x" type="str | list[int] | list[float] | list[DateTime]" optional>
+<Param name="x" type="str | list[int] | list[float] | list[DateTime] | None" optional>
 
 The name of the column containing the discrete values. This parameter is a list only when data is not sourced from a table; otherwise, it will be an array.
 
 </Param>
-<Param name="nbins" type="int" optional>
+<Param name="nbins" type="int | None" optional>
 
 The number of intervals (bins) to use in the chart.
 
 </Param>
-<Param name="xmin" type="float" optional>
+<Param name="xmin" type="float | None" optional>
 
 The minimum value in the X column to plot.
 
 </Param>
-<Param name="xmax" type="float" optional>
+<Param name="xmax" type="float | None" optional>
 
 The maximum value in the X column to plot.
 

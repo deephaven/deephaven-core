@@ -24,7 +24,7 @@ to_numpy(table: Table, cols: list[str] | None = None) -> numpy.ndarray
 The source table to convert to a `numpy.ndarray`.
 
 </Param>
-<Param name="cols" type="list[str]" optional>
+<Param name="cols" type="list[str] | None" optional>
 
 The names of columns in the source table to be included in the result. The default is `None`, which includes all columns.
 

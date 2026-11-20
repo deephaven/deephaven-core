@@ -15,7 +15,7 @@ iter_chunk_dict(cols: str | Sequence[str] | None = None, chunk_size: int = 2048)
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="str | Sequence[Str]" Optional>
+<Param name="cols" type="str | Sequence[Str] | None" Optional>
 
 The columns to read. If not given, all columns are read. The default is `None`, which means all columns.
 

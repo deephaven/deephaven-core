@@ -24,7 +24,7 @@ sort(
 The column(s) to sort in ascending order.
 
 </Param>
-<Param name="order" type="SortDirection | Sequence[SortDirection]" optional>
+<Param name="order" type="SortDirection | Sequence[SortDirection] | None" optional>
 
 A columns and directions to sort by. Options are `ASCENDING` and `DESCENDING`.
 
