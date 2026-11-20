@@ -30,6 +30,28 @@ import jsinterop.annotations.JsType;
  */
 @JsType(namespace = "dh")
 public final class TableSubscription extends AbstractTableSubscription {
+    /**
+     * The connection to the server was lost. No {@code updated} events fire until it is back; the subscription is
+     * re-sent automatically, and {@link #EVENT_RECONNECT} fires when that has happened, or
+     * {@link #EVENT_RECONNECTFAILED} if it cannot be.
+     */
+    public static final String EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT;
+    /**
+     * The connection is back and the subscription has been re-sent to the server; data follows in {@code updated}
+     * events.
+     */
+    public static final String EVENT_RECONNECT = JsTable.EVENT_RECONNECT;
+    /**
+     * The server-side table this subscription reads could not be re-established after a reconnect. The subscription is
+     * closed; create a new one from a live table. {@code event.detail} describes the failure. This says nothing about
+     * the connection as a whole.
+     */
+    public static final String EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
+    /**
+     * The server ended this subscription with an error; {@code event.detail} is the server's message. The subscription
+     * is closed and no more data will come; such failures are not recoverable, create a new subscription.
+     */
+    public static final String EVENT_REQUEST_FAILED = JsTable.EVENT_REQUEST_FAILED;
 
     private final JsArray<Column> columns;
     private final Double updateIntervalMs;
@@ -55,41 +77,33 @@ public final class TableSubscription extends AbstractTableSubscription {
 
     @Override
     protected void sendFirstSubscriptionRequest() {
-        changeSubscription(columns, updateIntervalMs);
-    }
-
-    /**
-     * Updates the subscription to use the given columns and update interval.
-     * 
-     * @param columns the new columns to subscribe to.
-     * @param updateIntervalMs the new update interval, or {@code null}/omit to use the default of one second.
-     */
-    public void changeSubscription(JsArray<Column> columns, @JsOptional @JsNullable Double updateIntervalMs) {
-        if (updateIntervalMs != null && !updateIntervalMs.equals(this.updateIntervalMs)) {
-            throw new IllegalArgumentException(
-                    "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
-        }
         sendBarrageSubscriptionRequest(null, columns, updateIntervalMs, false, previewListLengthLimit);
     }
 
     /**
-     * Update the options for this viewport subscription. This cannot alter the update interval or preview options.
+     * Always throws: the server does not allow a full subscription to change. Close this subscription and create a new
+     * one with the columns you want.
      *
-     * @param options the subscription options
+     * @param columns ignored
+     * @param updateIntervalMs ignored
+     * @deprecated a full subscription cannot be changed; close it and create a new one.
      */
+    @Deprecated
+    public void changeSubscription(JsArray<Column> columns, @JsOptional @JsNullable Double updateIntervalMs) {
+        throw new IllegalStateException("A full subscription cannot be changed; close it and create a new one");
+    }
+
+    /**
+     * Always throws: the server does not allow a full subscription to change. Close this subscription and create a new
+     * one with the options you want.
+     *
+     * @param options ignored
+     * @deprecated a full subscription cannot be changed; close it and create a new one.
+     */
+    @Deprecated
     @JsMethod
     public void update(@TsTypeRef(DataOptions.SubscriptionOptions.class) Object options) {
-        DataOptions.SubscriptionOptions subscriptionOptions = DataOptions.SubscriptionOptions.of(options);
-        if (subscriptionOptions.updateIntervalMs != null
-                && !subscriptionOptions.updateIntervalMs.equals(this.updateIntervalMs)) {
-            throw new IllegalArgumentException(
-                    "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
-        }
-        if (subscriptionOptions.previewOptions != null) {
-            throw new IllegalArgumentException("Can't change preview options on an existing subscription");
-        }
-        sendBarrageSubscriptionRequest(null, subscriptionOptions.columns, updateIntervalMs, false,
-                previewListLengthLimit);
+        throw new IllegalStateException("A full subscription cannot be changed; close it and create a new one");
     }
 
     @JsProperty

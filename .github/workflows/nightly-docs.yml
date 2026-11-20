@@ -6,6 +6,9 @@ on:
     #2AM EST == 6AM UTC weekdays (Mon-Fri)
     - cron: '0 6 * * 1-5'
 
+permissions:
+  contents: read
+
 jobs:
   snapshots:
     runs-on: ubuntu-24.04

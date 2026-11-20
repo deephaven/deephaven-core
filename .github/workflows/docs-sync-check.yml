@@ -10,6 +10,10 @@ on:
       - '!docs/python/snapshots/**'
       - '!docs/groovy/snapshots/**'
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   docs-sync:
     runs-on: ubuntu-24.04

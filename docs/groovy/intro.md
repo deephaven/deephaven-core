@@ -82,7 +82,7 @@ Important concepts
 - [Deephaven's design](./conceptual/deephaven-design.md)
 - [Designing the Core API](./conceptual/deephaven-core-api.md)
 - [Incremental update model](./conceptual/table-update-model.md)
-- [Docker data volumes](./conceptual/docker-data-volumes.md)
+- [Docker bind mounts](./conceptual/docker-data-volumes.md)
 
 </div>
 </div>

@@ -672,6 +672,13 @@ public class TestFormulaArrayEvaluation {
                 "(Y_[ i + 2]) * B", "(Y_[ ii + 2 ]) * B"};
         singleResultColumnTest(expressions, 2L, "Y");
 
+        // hexadecimal, binary and underscored offsets
+        expressions = new String[] {"Y_[i-0x2]", "Y_[ii-0X2]", "Y_[i-0b10]", "Y_[ii-0B10]", "Y_[i-0x0_2]"};
+        singleResultColumnTest(expressions, -2L, "Y");
+
+        expressions = new String[] {"Y_[i+1_0]", "Y_[ii+0xA]", "Y_[i+0b1010]"};
+        singleResultColumnTest(expressions, 10L, "Y");
+
         // singleShiftMultiColumnTest
         String[] sourceColumns = new String[] {"Y", "B"};
         expressions = new String[] {"(Y_[i-1]) * (B_[i-1])", "(Y_[ii-1]) * (B_[ii-1])", "(Y_[i - 1]) * (B_[i - 1])",
@@ -966,6 +973,25 @@ public class TestFormulaArrayEvaluation {
                     shifted.getSecond(), expectedShifts.toArray(new ShiftedColumnDefinition[0]));
         } else {
             Assert.assertNull(shifted);
+        }
+    }
+
+    @Test
+    public void shiftedColumnLiteralOffsetsTest() {
+        final Table source = emptyTable(20).update("X = ii");
+        for (final String formula : new String[] {"Y = X_[i-10]", "Y = X_[i-1_0]", "Y = X_[ii-0xA]",
+                "Y = X_[i-0b1010]"}) {
+            final Table result = source.update(formula);
+            Assert.assertEquals(formula, 2L, result.getColumnSource("Y").getLong(result.getRowSet().get(12)));
+        }
+        for (final String formula : new String[] {"Y = X_[i-07]", "Y = X_[i-0_7]", "Y = X_[ii+010]",
+                "Y = X_[i-099999999999999999999]"}) {
+            final RuntimeException ex = Assert.assertThrows(formula, RuntimeException.class,
+                    () -> source.update(formula));
+            final String trace = org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(ex);
+            if (!trace.contains("would be interpreted as octal, which the query language does not support")) {
+                Assert.fail("Unexpected exception for " + formula + ":\n" + trace);
+            }
         }
     }
 

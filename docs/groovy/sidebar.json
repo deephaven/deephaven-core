@@ -576,7 +576,7 @@
                     "path": "how-to-guides/user-interface/markdown-widget.md"
                   },
                   {
-                    "label": "Format tables in the UI",
+                    "label": "Use table tools in the UI",
                     "path": "how-to-guides/user-interface/formatting-tables.md"
                   },
                   {
@@ -1285,6 +1285,10 @@
                     "path": "reference/data-import-export/CSV/writeCsv.md"
                   }
                 ]
+              },
+              {
+                "label": "html",
+                "path": "reference/data-import-export/HTML/html.md"
               },
               {
                 "label": "Iceberg",

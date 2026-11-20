@@ -60,13 +60,18 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             .getIntegerForClassWithDefault(ParquetColumnLocation.class, "maxPageCacheSize", 8192);
 
     private final String columnName;
-    private final String parquetColumnName;
 
     private volatile boolean readersInitialized;
     private final Object readersLock;
 
     // Access to following variables must be guarded by initializeReaders()
     // -----------------------------------------------------------------------
+    /**
+     * The name of the top-level parquet column this column reads, from the path the location's column resolver finds,
+     * or {@code null} if this column reads no parquet column.
+     */
+    private String parquetColumnName;
+
     /**
      * Factory object needed for deferred initialization of the remaining fields. We delay initializing this field
      * itself till we need to read the column data. The number of entries in this array will match the number of row
@@ -95,15 +100,13 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * Construct a new {@link ParquetColumnLocation} for the specified {@link ParquetTableLocation} and column name.
      *
      * @param tableLocation The table location enclosing this column location
-     * @param parquetColumnName The Parquet file column name
+     * @param columnName The Deephaven column name
      */
     ParquetColumnLocation(
             @NotNull final ParquetTableLocation tableLocation,
-            @NotNull final String columnName,
-            @NotNull final String parquetColumnName) {
+            @NotNull final String columnName) {
         super(tableLocation, columnName);
         this.columnName = columnName;
-        this.parquetColumnName = parquetColumnName;
         this.readersInitialized = false;
         this.readersLock = new Object();
         this.pagesInitialized = false;
@@ -118,7 +121,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             if (readersInitialized) {
                 return;
             }
-            final List<String> columnPath = tl().getColumnPath(columnName, parquetColumnName);
+            final List<String> columnPath = tl().getColumnPath(columnName);
             if (columnPath.isEmpty()) {
                 // Short circuit when we know the column won't be found, saves us from needing to prematurely initialize
                 // row group readers.
@@ -127,6 +130,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 readersInitialized = true;
                 return;
             }
+            // The footer's type information, such as a codec, is recorded under this name
+            parquetColumnName = columnPath.get(0);
             final ColumnChunkReader[] columnChunkReaders = Arrays.stream(tl().getRowGroupReaders())
                     .map(rgr -> rgr.getColumnChunk(columnName, columnPath))
                     .toArray(ColumnChunkReader[]::new);
@@ -308,6 +313,25 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         initializePages(columnDefinition);
         return dictionaryChunkSuppliers;
+    }
+
+    /**
+     * Whether any row group of this column might have a dictionary that this column's type can use. This is judged from
+     * metadata alone, so that estimating a dictionary pushdown does not read dictionaries, and it considers every row
+     * group, since a writer can fall back from dictionary encoding in some row groups but not others. {@code false}
+     * means none has one; {@code true} means reading the dictionaries is needed to know.
+     *
+     * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
+     * @return Whether any row group might have a usable dictionary
+     */
+    boolean mayHaveDictionaryPages(@NotNull final ColumnDefinition<?> columnDefinition) {
+        if (!exists()) {
+            return false;
+        }
+        initializePages(columnDefinition);
+        // The dictionary keys page store is absent for types that cannot use a dictionary
+        return Arrays.stream(dictionaryKeysPageStores)
+                .anyMatch(pageStore -> pageStore != null && pageStore.mayHaveDictionaryPage());
     }
 
     /**

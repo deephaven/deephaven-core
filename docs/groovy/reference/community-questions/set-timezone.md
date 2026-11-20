@@ -6,7 +6,7 @@ Deephaven has two separate time zone settings: the time zone the UI uses to disp
 
 ## Change the displayed time zone in the UI
 
-Setting the time zone in the UI changes how date-time data gets displayed, but not how it's handled by the engine. Open the **Settings** menu (the gear icon) at the top right of the UI, and choose a time zone from the **Time Zone** dropdown. For more information, see [How to set date-time format](../../how-to-guides/set-date-time-format.md).
+Setting the time zone in the UI changes how date-time data gets displayed, but not how it's handled by the engine. Select the gear icon (**User Settings**) at the top right of the UI, and choose a **Time zone** from the dropdown. For more information, see [Set date-time format](../../how-to-guides/set-date-time-format.md#time-zone).
 
 ## Change the default time zone used by the engine
 
