@@ -1,9 +1,8 @@
-// Use cases modeled on py-server documentation examples. Type-checked against the generated definitions; not run.
+// Examples of the table operations, embedded in the guides. The build type-checks them and runs each against a server.
 import { dh } from "@deephaven/jsapi-types";
 declare const session: dh.IdeSession;
 
 // #region createAndTransform
-// py: empty_table(5).update(["X = i", "Y = X * 2"])
 async function createAndTransform() {
     const t = await session.emptyTable(5).update(["X = i", "Y = X * 2"]);
     const data = await t.createSnapshot({ rows: { first: 0, last: 4 }, columns: t.columns });
@@ -14,7 +13,6 @@ async function createAndTransform() {
 // #endregion createAndTransform
 
 // #region tickingSorted
-// py: time_table("PT1s").update(["X = i"]).sort_descending(["X"])
 async function tickingSorted() {
     const t = await session.timeTable(1e9).update(["X = i"]).sort([{ column: "X", direction: "DESC" }]);
     const t2 = await session.timeTable(1e9).update(["X = i"]).sort(["X"]);
@@ -24,7 +22,6 @@ async function tickingSorted() {
 // #endregion tickingSorted
 
 // #region filterNamed
-// py: source = ...; source.where(["X > 2"])
 async function filterNamed() {
     const source = session.getObject({ type: "Table", name: "source" }) as dh.PendingTable<dh.Table>;
     // Filters name their columns, so the fetch need not be awaited first
@@ -34,7 +31,6 @@ async function filterNamed() {
 // #endregion filterNamed
 
 // #region joins
-// py: left.natural_join(right, on=["Key"], joins=["Value"]); left.aj(right, on=["Key", "Ts"])
 async function joins() {
     const left = session.getObject({ type: "Table", name: "left" }) as dh.PendingTable<dh.Table>;
     const right = session.getObject({ type: "Table", name: "right" }) as dh.PendingTable<dh.Table>;
@@ -52,7 +48,6 @@ async function joins() {
 // #endregion joins
 
 // #region uniqueWithSentinel
-// py: t.agg_by([agg.unique(["X"], non_unique_sentinel=-1)], by=["Key"])
 async function uniqueWithSentinel() {
     const t = session.emptyTable(6).update(["Key = i % 3", "X = i", "L = (long) i"]);
     const unique = await t.aggBy({
@@ -67,10 +62,9 @@ async function uniqueWithSentinel() {
 // #endregion uniqueWithSentinel
 
 // #region aggregate
-// py: t.agg_by([agg.sum_(["SumX = X"]), agg.count_("N")], by=["Key"])
 async function aggregate() {
     const t = session.timeTable(1e9).update(["Key = i % 3", "X = i"]);
-    const [viaFactories, viaLiterals, sumBy] = await dh.resolveAll([
+    const [viaFactories, viaLiterals, counted] = await dh.resolveAll([
         t.aggBy({
             aggregations: [dh.agg.Aggregation.AggSum(["SumX = X"]), dh.agg.Aggregation.AggCount("N")],
             groupByColumns: ["Key"],
@@ -79,17 +73,16 @@ async function aggregate() {
             aggregations: [{ type: "Sum", columns: ["SumX = X"] }, { type: "Count", col: "N" }],
             groupByColumns: ["Key"],
         }),
-        // sumBy sums every column but the keys, and a time table's Timestamp cannot be summed
-        t.dropColumns(["Timestamp"]).sumBy(["Key"]),
+        // Shorthand for aggBy with AggCount("N")
+        t.countBy("N", ["Key"]),
     ]);
     viaFactories.close();
     viaLiterals.close();
-    sumBy.close();
+    counted.close();
 }
 // #endregion aggregate
 
 // #region updateBy
-// py: t.update_by(ops=[cum_sum(["CumX = X"])], by=["Key"])
 async function updateBy() {
     const t = await session.timeTable(1e9).update(["Key = i % 3", "X = i"]).updateBy({
         operations: [{ spec: { type: "UpdateByCumulativeSum" }, matchPairs: ["CumX = X"] }],
@@ -100,7 +93,6 @@ async function updateBy() {
 // #endregion updateBy
 
 // #region rollingUpdateBy
-// py: t.update_by(ops=[rolling_sum_tick(["SumX = X"], rev_ticks=5)], by=["Key"])
 async function rollingUpdateBy() {
     const t = await session.timeTable(1e9).update(["Key = i % 3", "X = i"]).updateBy({
         operations: [{
@@ -114,41 +106,37 @@ async function rollingUpdateBy() {
 // #endregion rollingUpdateBy
 
 // #region weightedAverages
-// py: t.weighted_avg_by("W", by=["Key"])
-//     t.agg_by([agg.weighted_avg("W", ["WAvgX = X"]), agg.avg(["AvgX = X"]), agg.count_("N")], by=["Key"])
-//     t.update_by(ops=[rolling_wavg_tick("W", ["RollWAvgX = X"], rev_ticks=3)], by=["Key"])
 async function weightedAverages() {
     const t = session.emptyTable(12).update(["Key = i % 3", "X = i", "W = i % 4 + 1"]);
-    // t is never awaited, so all three use it in this task: one batch, one await
-    const [byKey, withOthers, rolling] = await dh.resolveAll([
-        // Every non-key column except W, weighted by W
-        t.wavgBy("W", ["Key"]),
-        // Chosen columns, renamed, beside other aggregations
-        t.aggBy({
-            aggregations: [
-                dh.agg.Aggregation.AggWAvg("W", ["WAvgX = X"]),
-                dh.agg.Aggregation.AggAvg(["AvgX = X"]),
-                dh.agg.Aggregation.AggCount("N"),
-            ],
-            groupByColumns: ["Key"],
-        }),
-        // Over each row and the two before it in its group
-        t.updateBy({
-            operations: [{
-                spec: { type: "UpdateByRollingWAvg", weightColumn: "W", reverseWindowScale: { type: "ticks", ticks: 3 } },
-                matchPairs: ["RollWAvgX = X"],
-            }],
-            groupByColumns: ["Key"],
-        }),
-    ]);
-    byKey.close();
-    withOthers.close();
-    rolling.close();
+    // Chosen columns, renamed, beside other aggregations
+    const averages = await t.aggBy({
+        aggregations: [
+            dh.agg.Aggregation.AggWAvg("W", ["WAvgX = X"]),
+            dh.agg.Aggregation.AggAvg(["AvgX = X"]),
+            dh.agg.Aggregation.AggCount("N"),
+        ],
+        groupByColumns: ["Key"],
+    });
+    averages.close();
 }
 // #endregion weightedAverages
 
+// #region rollingWeightedAverage
+async function rollingWeightedAverage() {
+    const t = session.emptyTable(12).update(["Key = i % 3", "X = i", "W = i % 4 + 1"]);
+    // Over each row and the two before it in its group
+    const rolling = await t.updateBy({
+        operations: [{
+            spec: { type: "UpdateByRollingWAvg", weightColumn: "W", reverseWindowScale: { type: "ticks", ticks: 3 } },
+            matchPairs: ["RollWAvgX = X"],
+        }],
+        groupByColumns: ["Key"],
+    });
+    rolling.close();
+}
+// #endregion rollingWeightedAverage
+
 // #region whereInAndRangeJoin
-// py: t.where_in(keys, ["Key"]); windows.range_join(t, on=["Key", "LStart <= Ts <= LEnd"], aggs=[agg.group(["Ts"])])
 async function whereInAndRangeJoin() {
     // rangeJoin only supports static inputs, so t is not a time table
     const t = session.emptyTable(30).update(["Key = i % 3", "Ts = i"]);
@@ -241,7 +229,6 @@ async function readEither() {
 // #endregion readEither
 
 // #region misc
-// py: t.head(5); t.select_distinct(["Key"]); t.snapshot(); t.snapshot_when(trigger, initial=True)
 async function misc() {
     const t = session.timeTable(1e9).update(["Key = i % 3"]);
     const [head, distinct, snap, when] = await dh.resolveAll([
@@ -259,7 +246,6 @@ async function misc() {
 // #endregion misc
 
 // #region mergeTwo
-// py: merge([t1, t2])
 async function mergeTwo() {
     const a = await session.emptyTable(2).update(["X = i"]);
     const b = await session.emptyTable(2).update(["X = i + 2"]);
@@ -309,7 +295,6 @@ async function viewport() {
 // #endregion viewport
 
 // #region selectColumns
-// py: t.view(["Key", "Double = X * 2"]); t.select(["Key", "X"]); t.update_view(["Triple = X * 3"])
 async function selectColumns() {
     const t = session.emptyTable(5).update(["Key = i % 2", "X = i"]);
     const [viewed, selected, extended] = await dh.resolveAll([
@@ -325,7 +310,6 @@ async function selectColumns() {
 // #endregion selectColumns
 
 // #region rowRanges
-// py: t.tail(3); t.slice(1, -1); t.reverse()
 async function rowRanges() {
     const t = session.emptyTable(10).update(["X = i"]);
     const [lastThree, middle, reversed] = await dh.resolveAll([
@@ -341,7 +325,6 @@ async function rowRanges() {
 // #endregion rowRanges
 
 // #region groupAndUngroup
-// py: t.group_by(["Key"]); t.group_by(["Key"]).ungroup(); t.where(["X > 2"]).flatten()
 async function groupAndUngroup() {
     const t = session.emptyTable(6).update(["Key = i % 3", "X = i"]);
     const [grouped, regrouped, flat] = await dh.resolveAll([
@@ -359,11 +342,11 @@ async function groupAndUngroup() {
 // #endregion groupAndUngroup
 
 // #region shorthandAggregations
-// py: t.first_by(["Key"]); t.min_by(["Key"]); t.avg_by(["Key"]); t.count_by("N", ["Key"]); t.weighted_sum_by("W", ["Key"])
 async function shorthandAggregations() {
     const t = session.emptyTable(12).update(["Key = i % 3", "X = i", "W = i % 4 + 1"]);
-    // Each applies one aggregation to every column but the keys
+    // Each is shorthand for aggAllBy with one aggregation, applied to every column but the keys
     const tables = await dh.resolveAll([
+        t.sumBy(["Key"]),
         t.firstBy(["Key"]),
         t.lastBy(["Key"]),
         t.minBy(["Key"]),
@@ -373,9 +356,8 @@ async function shorthandAggregations() {
         t.stdBy(["Key"]),
         t.varBy(["Key"]),
         t.absSumBy(["Key"]),
-        // countBy adds one column holding each group's row count
-        t.countBy("N", ["Key"]),
         // Every column but the keys and W, weighted by W
+        t.wavgBy("W", ["Key"]),
         t.wsumBy("W", ["Key"]),
     ]);
     tables.forEach(table => table.close());
@@ -383,7 +365,6 @@ async function shorthandAggregations() {
 // #endregion shorthandAggregations
 
 // #region aggregateAll
-// py: t.agg_all_by(agg.max_(), by=["Key"])
 async function aggregateAll() {
     const t = session.emptyTable(6).update(["Key = i % 3", "X = i", "Y = i * 2"]);
     // One aggregation over every column but the keys, so it names no columns
@@ -393,7 +374,6 @@ async function aggregateAll() {
 // #endregion aggregateAll
 
 // #region moreJoins
-// py: left.raj(right, on=["Key", "Ts"]); left.join(right, on=["Key"], joins=["Value"]); left.where_not_in(right, ["Key"])
 async function moreJoins() {
     const left = session.getObject({ type: "Table", name: "left" }) as dh.PendingTable<dh.Table>;
     const right = session.getObject({ type: "Table", name: "right" }) as dh.PendingTable<dh.Table>;
