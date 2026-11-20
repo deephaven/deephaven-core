@@ -25,7 +25,9 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    not in the diff, but a reader takes the sentence as one claim, and the unchanged clause is often
    the wrong one. Checking that a neighbor still agrees with your edit is not enough. List each
    claim the neighboring sentences make and verify it against source on its own, the same way you
-   verify the changed claim, and report any that source does not support.
+   verify the changed claim, and report any that source does not support. If the changed line is a
+   nested list item (Markdown, Javadoc, or docstring), confirm it names its own subject, so it
+   reads true to someone who skims it without the parent item.
 
    **Placement gate:** a verified-true fix can still be the wrong fix. This applies only to
    narrative pages: Concept guides (`conceptual/`) and Tutorials (`getting-started/crash-course/`).

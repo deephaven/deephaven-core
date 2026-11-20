@@ -289,6 +289,12 @@ up front, rather than re-deriving them per check.
   that check is about a list whose items span more than the heading; this one is about a whole
   block that belongs under a different heading.
 
+- **Nested items name their own subject:** Readers skim list items without their parent. For
+  each nested list item, Javadoc `<li>`, or docstring sentence that narrows an earlier one,
+  check that it reads true on its own. If it names a capability that only the parent restricts,
+  restate the subject and the contrast in the item ("`aggBy` supports these on blink tables, but
+  rollup does not"). Apply this to source docstrings and Javadoc in docs PRs too.
+
 - **Heading with a different common meaning:** For each heading, ask what an engineer who has
   not read the page would expect under it. A term whose dominant meaning in the wider industry
   differs from its meaning here misleads at the one place readers scan fastest: "Replication"
