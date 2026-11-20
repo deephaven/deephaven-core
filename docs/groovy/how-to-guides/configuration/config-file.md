@@ -21,6 +21,8 @@ If the file doesn't include `dh-defaults.prop`, the server doesn't load the valu
 
 Save the file as `deephaven.prop` in `<configDir>`, the configuration directory. For where `<configDir>` is and how to change it, see [Deephaven server bootstrap configuration](./configure-production-application.md#deephaven-server-bootstrap-configuration).
 
+If your file replaces the `deephaven.prop` in the `server-slim` Docker image, also set `deephaven.console.type=groovy`. `dh-defaults.prop` sets the console type to `python`, and the image sets Groovy only in the file yours replaces. See [Use a configuration file](./docker-application.md#use-a-configuration-file).
+
 ## Where the server looks for the file
 
 The server uses the first of these that applies:
@@ -46,3 +48,4 @@ For example, `final PeriodicUpdateGraph.targetCycleDurationMillis=250` fixes the
 
 - [Configure the production application](./configure-production-application.md)
 - [Configuration properties](./configuration-properties.md)
+- [Configure the Deephaven Docker application](./docker-application.md)
