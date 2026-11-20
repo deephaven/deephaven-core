@@ -31,7 +31,11 @@ This approach works by:
 4. Using [`String.format`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html#format(java.lang.String,java.lang.Object...)) to create a properly formatted ISO date string (`YYYY-MM-DD`).
 5. Using [`parseLocalDate`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseLocalDate(java.lang.String)) to convert the string to a [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalDate.html) object.
 
-`DateString` is the formatted string. `Date` is a `LocalDate` value that works with Deephaven's other date and time functions. A month or day that is fully out of range (such as 13 or 32) raises an error, but a day past the end of its month (such as Feb 30) is adjusted to the last valid day rather than rejected.
+This is the recommended approach because:
+
+- It produces both a human-readable string (`DateString`) and a typed `LocalDate` (`Date`) that works with Deephaven's other date and time functions.
+- `String.format` gives you full control over the output format — change the format string to produce any date layout you need.
+- `parseLocalDate` catches fully out-of-range values (such as month 13 or day 32) with an error, and adjusts a day past the end of its month (such as Feb 30) to the last valid day rather than silently producing a wrong date.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
