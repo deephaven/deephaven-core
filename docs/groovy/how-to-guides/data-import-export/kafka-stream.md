@@ -383,7 +383,7 @@ The example builds a [`DescriptorSchemaRegistry`](/core/javadoc/io/deephaven/kaf
 
 [`Protocol.serdes()`](/core/javadoc/io/deephaven/kafka/protobuf/Protocol.html#serdes()) is the Kafka Protobuf serializer/deserializer (serdes) format, which puts a magic byte, a 4-byte schema ID, and message indexes before the Protobuf data. [`Protocol.raw()`](/core/javadoc/io/deephaven/kafka/protobuf/Protocol.html#raw()) is the Protobuf binary encoding with no header.
 
-Each resulting column is named with the field path joined by `_`, such as `foo_bar` for the field `bar` inside `foo`. Set [`pathToColumnName`](/core/javadoc/io/deephaven/kafka/protobuf/ProtobufConsumeOptions.Builder.html#pathToColumnName(io.deephaven.kafka.protobuf.ProtobufConsumeOptions.FieldPathToColumnName)) on the builder to change it.
+Each resulting column is named with the field path joined by `_`, such as `foo_bar` for the field `bar` inside `foo`. If the parser produces more than one column for a field path, the second and later columns get the suffixes `_2`, `_3`, and so on, such as `foo_bar_2`. Set [`pathToColumnName`](/core/javadoc/io/deephaven/kafka/protobuf/ProtobufConsumeOptions.Builder.html#pathToColumnName(io.deephaven.kafka.protobuf.ProtobufConsumeOptions.FieldPathToColumnName)) on the builder to change this naming.
 
 ### Name key and value columns with properties
 

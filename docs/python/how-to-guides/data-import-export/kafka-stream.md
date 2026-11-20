@@ -329,7 +329,7 @@ The `value_spec` argument uses [`protobuf_spec`](/core/pydoc/code/deephaven.stre
   - [`kc.ProtobufProtocol.serdes()`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.ProtobufProtocol.serdes) is the Kafka Protobuf serializer/deserializer (serdes) format, which puts a magic byte, a 4-byte schema ID, and message indexes before the Protobuf data.
   - [`kc.ProtobufProtocol.raw()`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.ProtobufProtocol.raw) is the Protobuf binary encoding with no header.
 
-Each resulting column is named with the field path joined by `_`, such as `foo_bar` for the field `bar` inside `foo`.
+Each resulting column is named with the field path joined by `_`, such as `foo_bar` for the field `bar` inside `foo`. If the parser produces more than one column for a field path, the second and later columns get the suffixes `_2`, `_3`, and so on, such as `foo_bar_2`.
 
 ### Name key and value columns with properties
 
