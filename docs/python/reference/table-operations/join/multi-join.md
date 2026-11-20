@@ -64,7 +64,7 @@ MultiJoinInput(
 The table to join onto.
 
 </Param>
-<Param name="on" type="str | Sequence[str] | None" optional>
+<Param name="on" type="str | Sequence[str]">
 
 The column(s) to match. This can be a name common to both columns or an equality expression that renames columns to match, e.g., `"col_A = col_B"`.
 

@@ -7,7 +7,7 @@ title: formula
 ## Syntax
 
 ```syntax
-formula(formula: str, formula_param: str | None = None, cols: list[str]) -> Aggregation
+formula(formula: str, formula_param: str | None = None, cols: str | list[str] | None = None) -> Aggregation
 ```
 
 ## Parameters
@@ -26,12 +26,12 @@ If `formula_param` is not `None`, the formula can only be applied to one column 
 Key column(s) can be used as input to the formula. When this happens, key values are treated as scalars.
 
 </Param>
-<Param name="formula_param" type="str">
+<Param name="formula_param" type="str | None" optional>
 
 The parameter name within the formula. If `formula_param` is `each`, then `formula` must contain `each`. For example, `max(each)`, `min(each)`, etc. Use of this parameter is deprecated.
 
 </Param>
-<Param name="cols" type="list[str]">
+<Param name="cols" type="str | list[str] | None" optional>
 
 The source column(s) for the calculations.
 

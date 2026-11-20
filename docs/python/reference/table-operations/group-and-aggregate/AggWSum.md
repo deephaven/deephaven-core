@@ -20,7 +20,7 @@ The weight column for the calculation.
 </Param>
 <Param name="cols" type="str | list[str] | None" optional>
 
-The source column(s) for the calculations. Leave it out only when you pass this aggregation to [`agg_all_by`](./AggAllBy.md), which applies it to every non-key column.
+The source column(s) for the calculations. Leave it out only when you pass this aggregation to [`agg_all_by`](./AggAllBy.md), which applies it to every column except the key columns and the weight column `wcol`.
 
 - `["X"]` will output the weighted sum of values in the `X` column for each group.
 - `["Y = X"]` will output the weighted sum of values in the `X` column for each group and rename it to `Y`.

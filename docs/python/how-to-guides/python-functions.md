@@ -181,8 +181,8 @@ source_meta = source.meta_table
 
 A parameter hint also decides how a [null value](./null-inf-nan.md) reaches the function:
 
-- Without `| None`, Deephaven passes the [null value](./null-inf-nan.md) of a primitive column as is, so a null `long` arrives in Python as the integer `-9223372036854775808`.
-- With a `| None` parameter hint, such as `value: int | None`, Deephaven passes each [null value](./null-inf-nan.md) as `None`.
+- With a plain numeric hint such as `value: int`, or with `object | None`, Deephaven passes the [null value](./null-inf-nan.md) of a primitive column as is, so a null `long` arrives in Python as the integer `-9223372036854775808`.
+- With a numeric hint that allows `None`, such as `value: int | None`, Deephaven passes each [null value](./null-inf-nan.md) as `None`.
 
 In the following example, `X` uses the built-in constant [`NULL_LONG`](./built-in-constants.md#null-constants) to hold a [null value](./null-inf-nan.md) in every row where [`ii`](../reference/query-language/variables/special-variables.md) is even. `is_none` never receives `None`, so `IsNone` is `false` in every row. `is_none_optional` receives `None` for each null, so `IsNoneOptional` is `true` in the rows where `X` is null:
 
