@@ -15,8 +15,10 @@ import java.io.IOException;
  * generated when first needed.
  */
 public class ReplicateTupleSetKernels {
+    private static final String TASK = "replicateTupleSetKernels";
+
     public static void main(String[] args) throws IOException {
-        final File sourceRoot = new File("engine/table/src/main/java/");
+        final File sourceRoot = new File("engine/table/src/replicated/" + TASK + "/java/");
         final ChunkType[] chunkTypes = new ChunkType[2];
         for (final ChunkType first : ChunkType.values()) {
             if (first == ChunkType.Boolean) {
