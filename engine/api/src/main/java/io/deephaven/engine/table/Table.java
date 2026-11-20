@@ -162,7 +162,11 @@ public interface Table extends
      * <li>{@link #aggBy aggBy} is unsupported if either {@link io.deephaven.api.agg.spec.AggSpecGroup group} or
      * {@link io.deephaven.api.agg.Partition partition} is used</li>
      * <li>{@link #rollup(Collection, boolean, Collection) rollup} is unsupported if
-     * {@code includeConstituents == true}</li>
+     * {@code includeConstituents == true}, or if it uses a {@link io.deephaven.api.agg.spec.AggSpecFirst first},
+     * {@link io.deephaven.api.agg.spec.AggSpecLast last}, {@link io.deephaven.api.agg.spec.AggSpecSortedFirst sorted
+     * first}, {@link io.deephaven.api.agg.spec.AggSpecSortedLast sorted last},
+     * {@link io.deephaven.api.agg.spec.AggSpecGroup group}, or {@link io.deephaven.api.agg.Formula formula}
+     * aggregation</li>
      * <li>{@link #tree(String, String) tree} is unsupported</li>
      * </ol>
      * <p>
