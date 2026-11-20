@@ -3,6 +3,8 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -15,11 +17,15 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.charToObject;
 import static io.deephaven.replication.ReplicationUtils.globalReplacements;
 
 public class ReplicateCopyKernelTests {
+    private static final String TASK = "replicateCopyKernelTests";
+
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         ReplicateCopyKernel.main(args);
-        charToAll("replicateCopyKernelTests",
+        charToAll(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/util/copy/TestCharCopyKernel.java");
-        fixupObjectCopyKernelTest(charToObject("replicateCopyKernelTests",
+        fixupObjectCopyKernelTest(charToObject(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/util/copy/TestCharCopyKernel.java"));
     }
 
