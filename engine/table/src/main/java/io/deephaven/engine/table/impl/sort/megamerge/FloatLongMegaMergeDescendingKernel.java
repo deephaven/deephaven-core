@@ -118,7 +118,7 @@ public class FloatLongMegaMergeDescendingKernel {
             // no_data_left
             while (ii >= mergeStartPosition) {
                 // if we had a lot of things from run2, we take the next thing from run1 then find it in run2
-                final int copyUntil2 = lowerBound(valuesChunk, 0, chunkCursor, val1);
+                final int copyUntil2 = gallopBackward(valuesChunk, 0, chunkCursor, val1, true);
 
                 final int gallopLength2 = chunkCursor - copyUntil2 + 1;
                 if (gallopLength2 > 1) {
@@ -137,7 +137,7 @@ public class FloatLongMegaMergeDescendingKernel {
                 }
 
                 // if we had a lot of things from run1, we take the next thing from run2 and then find it in run1
-                final long copyUntil1 = upperBound(destinationValues, mergeStartPosition, destCursor, val2);
+                final long copyUntil1 = gallopBackward(destinationValues, mergeStartPosition, destCursor, val2, false);
 
                 final long gallopLength1 = destCursor - copyUntil1 + 1;
                 if (gallopLength1 > 1) {
@@ -219,11 +219,48 @@ public class FloatLongMegaMergeDescendingKernel {
         return lo;
     }
 
-    // when we binary search in 2, we must identify a position for search value that is *before* our test values;
-    // because the values from run 1 may never be inserted after an equal value from run 2
-    private static int lowerBound(FloatChunk<?> valuesToSort, @SuppressWarnings("SameParameterValue") int lo, int hi,
-            float searchValue) {
-        return bound(valuesToSort, lo, hi, searchValue, true);
+    // returns bound(valuesToSort, lo, hi, searchValue, lower), probing hi - 1, hi - 2, hi - 4, hi - 8, ... before the
+    // binary search, so the number of comparisons is logarithmic in the distance from the result to hi
+    //
+    // the search in run 1 passes lower = false, as values from run 2 may never be inserted before an equal value from
+    // run 1
+    private static long gallopBackward(FloatArraySource valuesToSort, long lo, long hi, float searchValue,
+            @SuppressWarnings("SameParameterValue") final boolean lower) {
+        final int compareLimit = lower ? -1 : 0; // lt or leq
+        final long maxDistance = hi - lo;
+
+        // every element at or after searchHi is after the result
+        long searchHi = hi;
+        long distance = 0;
+        while (distance < maxDistance
+                && doComparison(valuesToSort.getUnsafe(hi - 1 - distance), searchValue) > compareLimit) {
+            searchHi = hi - 1 - distance;
+            distance = distance < (maxDistance >> 1) ? (distance << 1) + 1 : maxDistance;
+        }
+
+        return bound(valuesToSort, hi - distance, searchHi, searchValue, lower);
+    }
+
+    // returns bound(valuesToSort, lo, hi, searchValue, lower), probing hi - 1, hi - 2, hi - 4, hi - 8, ... before the
+    // binary search, so the number of comparisons is logarithmic in the distance from the result to hi
+    //
+    // the search in run 2 passes lower = true, as values from run 1 may never be inserted after an equal value from
+    // run 2
+    private static int gallopBackward(FloatChunk<?> valuesToSort, @SuppressWarnings("SameParameterValue") int lo,
+            int hi, float searchValue, @SuppressWarnings("SameParameterValue") final boolean lower) {
+        final int compareLimit = lower ? -1 : 0; // lt or leq
+        final int maxDistance = hi - lo;
+
+        // every element at or after searchHi is after the result
+        int searchHi = hi;
+        int distance = 0;
+        while (distance < maxDistance
+                && doComparison(valuesToSort.get(hi - 1 - distance), searchValue) > compareLimit) {
+            searchHi = hi - 1 - distance;
+            distance = distance < (maxDistance >> 1) ? (distance << 1) + 1 : maxDistance;
+        }
+
+        return bound(valuesToSort, hi - distance, searchHi, searchValue, lower);
     }
 
     private static int bound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue,

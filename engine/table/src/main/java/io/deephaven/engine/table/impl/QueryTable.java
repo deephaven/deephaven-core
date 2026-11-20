@@ -3365,11 +3365,18 @@ public class QueryTable extends BaseTable<QueryTable> {
 
             final boolean attributesCompatible = memoKey.attributesCompatible(parent.getAttributes(), getAttributes());
             final Supplier<R> computeCachedOperation = attributesCompatible ? () -> {
-                final R parentResult = parent.memoizeResult(memoKey, operation);
+                final Supplier<R> parentOperation = memoKey.parentCopyTypeIsResultAttributes()
+                        ? withParentAttributes(operation, memoKey)
+                        : operation;
+                final R parentResult = parent.memoizeResult(memoKey, parentOperation);
                 if (parentResult instanceof QueryTable) {
                     final QueryTable myResult = ((QueryTable) parentResult).copy(StandardOptions.COPY_NONE);
-                    copyAttributes((QueryTable) parentResult, myResult, memoKey.getParentCopyType());
                     copyAttributes(myResult, memoKey.copyType());
+                    final boolean parentResultAttributesPrevail = memoKey.parentCopyTypeIsResultAttributes();
+                    copyAttributes((QueryTable) parentResult, myResult,
+                            attributeName -> shouldCopyAttribute(attributeName, memoKey.getParentCopyType())
+                                    && (parentResultAttributesPrevail
+                                            || !shouldCopyAttribute(attributeName, memoKey.copyType())));
                     // noinspection unchecked
                     return (R) myResult;
                 }
@@ -3377,6 +3384,34 @@ public class QueryTable extends BaseTable<QueryTable> {
             } : operation;
 
             return super.memoizeResult(memoKey, computeCachedOperation);
+        }
+
+        /**
+         * Wrap {@code operation}, which computes a result on this table, so that the result has the parent's attributes
+         * and can be memoized as the parent's result.
+         *
+         * @param operation the operation on this table
+         * @param memoKey the key of the operation
+         * @return a supplier of the operation's result with the parent's attributes
+         */
+        private <R> Supplier<R> withParentAttributes(final Supplier<R> operation, final MemoizedOperationKey memoKey) {
+            return () -> {
+                final R result = operation.get();
+                if (!(result instanceof QueryTable)) {
+                    return result;
+                }
+                final QueryTable resultTable = (QueryTable) result;
+                final Predicate<String> copiedFromSource = attributeName -> shouldCopyAttribute(attributeName,
+                        memoKey.copyType()) && !shouldCopyAttribute(attributeName, memoKey.getParentCopyType());
+                final Map<String, Object> parentResultAttributes =
+                        new HashMap<>(resultTable.getAttributes(copiedFromSource.negate()));
+                parentResultAttributes.putAll(parent.getAttributes(copiedFromSource));
+                if (parentResultAttributes.equals(resultTable.getAttributes())) {
+                    return result;
+                }
+                // noinspection unchecked
+                return (R) resultTable.copy(parentResultAttributes);
+            };
         }
     }
 

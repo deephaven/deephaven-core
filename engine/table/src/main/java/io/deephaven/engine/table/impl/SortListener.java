@@ -265,28 +265,29 @@ public class SortListener extends BaseTable.ListenerImpl {
             final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified().intSize()]
                     : ArrayTypeUtils.EMPTY_LONG_ARRAY;
 
-            final RowSet.SearchIterator ait = resultRowSet.searchIterator();
-            for (int ii = 0; ii < addedInputKeys.length; ++ii) {
-                targetComparator.setTarget(addedInputKeys[ii]);
-                final long after = ait.binarySearchValue(targetComparator, SortingOrder.Ascending.direction);
-                final long outputKey = after == -1 ? indexKeyForLeftmostInsert : after;
-                final long curr =
-                        modifiedNeedsSorting ? currentOutputKeys.get(ii) : REVERSE_LOOKUP_NO_ENTRY_VALUE;
+            try (final RowSet.SearchIterator ait = resultRowSet.searchIterator()) {
+                for (int ii = 0; ii < addedInputKeys.length; ++ii) {
+                    targetComparator.setTarget(addedInputKeys[ii]);
+                    final long after = ait.binarySearchValue(targetComparator, SortingOrder.Ascending.direction);
+                    final long outputKey = after == -1 ? indexKeyForLeftmostInsert : after;
+                    final long curr =
+                            modifiedNeedsSorting ? currentOutputKeys.get(ii) : REVERSE_LOOKUP_NO_ENTRY_VALUE;
 
-                // check if new location differs from current location or if the previous row needs to slot here
-                if (curr != outputKey || (numAddedKeys > 0 && addedOutputKeys[numAddedKeys - 1] == curr)) {
-                    // true for all adds and reordered mods
-                    addedInputKeys[numAddedKeys] = addedInputKeys[ii];
-                    addedOutputKeys[numAddedKeys] = outputKey;
-                    ++numAddedKeys;
+                    // check if new location differs from current location or if the previous row needs to slot here
+                    if (curr != outputKey || (numAddedKeys > 0 && addedOutputKeys[numAddedKeys - 1] == curr)) {
+                        // true for all adds and reordered mods
+                        addedInputKeys[numAddedKeys] = addedInputKeys[ii];
+                        addedOutputKeys[numAddedKeys] = outputKey;
+                        ++numAddedKeys;
 
-                    // check if we need to remove an existing mapping
-                    if (curr != REVERSE_LOOKUP_NO_ENTRY_VALUE) {
-                        removedOutputKeys.set(numRemovedKeys++, curr);
+                        // check if we need to remove an existing mapping
+                        if (curr != REVERSE_LOOKUP_NO_ENTRY_VALUE) {
+                            removedOutputKeys.set(numRemovedKeys++, curr);
+                        }
+                    } else {
+                        // thus this is a non-reordering mod
+                        propagatedModOutputKeys[numPropagatedModdedKeys++] = outputKey;
                     }
-                } else {
-                    // thus this is a non-reordering mod
-                    propagatedModOutputKeys[numPropagatedModdedKeys++] = outputKey;
                 }
             }
 
@@ -435,127 +436,131 @@ public class SortListener extends BaseTable.ListenerImpl {
         final int minimumRunLength = REBALANCE_RANGE_SIZE + REBALANCE_GAP_SIZE;
         final int maximumRunLength = Math.max(minimumRunLength, (int) Math.sqrt(resultRowSet.size()));
 
-        final RowSet.SearchIterator gapEvictionIter =
+        try (final RowSet.SearchIterator gapEvictionIter =
                 (qs.direction == -1) ? resultRowSet.reverseIterator() : resultRowSet.searchIterator();
-        final RowSet.SearchIterator backlogIter =
-                (qs.direction == -1) ? resultRowSet.reverseIterator() : resultRowSet.searchIterator();
+                final RowSet.SearchIterator backlogIter =
+                        (qs.direction == -1) ? resultRowSet.reverseIterator() : resultRowSet.searchIterator()) {
 
-        long destKey = qs.addedOutputKeys[qs.addedCurrent];
-        while (qs.hasMoreToAdd()) {
-            // precondition: backlog starts empty
-            long desiredOutputKey = qs.addedOutputKeys[qs.addedCurrent];
-            boolean tableEmpty = !backlogIter.advance(desiredOutputKey);
+            long destKey = qs.addedOutputKeys[qs.addedCurrent];
+            while (qs.hasMoreToAdd()) {
+                // precondition: backlog starts empty
+                long desiredOutputKey = qs.addedOutputKeys[qs.addedCurrent];
+                boolean tableEmpty = !backlogIter.advance(desiredOutputKey);
 
-            if (qs.isBefore(destKey, desiredOutputKey)) {
-                destKey = desiredOutputKey;
-            }
-
-            if (tableEmpty) {
-                // finish this update; backlog will forever be empty
-                long writesUntilGap = Math.max(1, REBALANCE_RANGE_SIZE / 2);
-
-                do {
-                    // insert extra space at the end of the table; because it's the right thing to do
-                    if (--writesUntilGap == 0) {
-                        destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, null);
-                        writesUntilGap = REBALANCE_RANGE_SIZE;
-                    }
-
-                    resultAdded.appendKey(destKey);
-                    mappingChanges.append(destKey, qs.addedInputKeys[qs.addedCurrent]);
-                    destKey += qs.direction;
-                    qs.addedCurrent += qs.direction;
-                } while (qs.hasMoreToAdd());
-
-                break;
-            }
-
-            // determine if we must be in spreading mode
-            final long maxRunKey = desiredOutputKey + maximumRunLength * (long) qs.direction;
-
-            // note: this is an (over) approximation of cardinality since binarySearch will give any index if exists
-            long addedMaxIdx;
-            if (qs.direction == -1) {
-                addedMaxIdx = qs.twiddleIfNegative(
-                        Arrays.binarySearch(qs.addedOutputKeys, 0, qs.addedCurrent, maxRunKey));
-            } else {
-                addedMaxIdx = qs.twiddleIfNegative(
-                        Arrays.binarySearch(qs.addedOutputKeys, qs.addedCurrent, qs.addedEnd, maxRunKey));
-            }
-
-            // note: if RowSet.SearchIterator had an O(1) method to get pos we should prefer that over RowSet#find, turn
-            // maxRunKey into an advancing iterator (similar to gapEvictionIter), and also use that method to compute
-            // sizeToShift
-            final long backMaxIdx = qs.twiddleIfNegative(resultRowSet.find(maxRunKey));
-
-            long sizeToAdd = qs.direction * (addedMaxIdx - qs.addedCurrent);
-            long sizeToShift = qs.direction * (backMaxIdx - resultRowSet.find(backlogIter.currentValue()));
-
-            final boolean spreadMode = sizeToAdd + sizeToShift >= maximumRunLength;
-
-            long writesUntilGap = REBALANCE_RANGE_SIZE;
-            boolean backlogged = false;
-
-            // stay in this loop until we might need to enable spreading; don't leave this loop while backlog is
-            // non-empty
-            while (!tableEmpty && (backlogged || sizeToAdd > 0
-                    && (spreadMode || (sizeToAdd + sizeToShift) <= qs.direction * (maxRunKey - destKey)))) {
-                // Add anything prior to the next possible backlog item.
-                while (qs.hasMoreToAdd() && qs.isBefore(desiredOutputKey, backlogIter.currentValue() + qs.direction)) {
-                    if (spreadMode && --writesUntilGap == 0) {
-                        destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
-                        writesUntilGap = REBALANCE_RANGE_SIZE;
-                    }
-
-                    checkDestinationSlotOk(destKey);
-                    mappingChanges.append(destKey, qs.addedInputKeys[qs.addedCurrent]);
-                    resultAdded.appendKey(destKey);
-
-                    ++numWrites;
-                    --sizeToAdd;
-                    destKey += qs.direction;
-                    qs.addedCurrent += qs.direction;
-
-                    if (qs.hasMoreToAdd()) {
-                        desiredOutputKey = qs.addedOutputKeys[qs.addedCurrent];
-                    }
+                if (qs.isBefore(destKey, desiredOutputKey)) {
+                    destKey = desiredOutputKey;
                 }
 
-                // Either, all items have been added, or next item comes after the backlog item(s) is(are) processed.
-                long backlogKey = backlogIter.currentValue();
-                final boolean writesPending = qs.hasMoreToAdd();
-                while (((!writesPending || qs.isBefore(backlogKey, desiredOutputKey))
-                        && qs.isBefore(backlogKey, destKey))) {
-                    if (spreadMode && --writesUntilGap == 0) {
-                        destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
-                        writesUntilGap = REBALANCE_RANGE_SIZE;
-                    }
+                if (tableEmpty) {
+                    // finish this update; backlog will forever be empty
+                    long writesUntilGap = Math.max(1, REBALANCE_RANGE_SIZE / 2);
 
-                    // insert this item
-                    checkDestinationSlotOk(destKey);
-                    modAdded.appendKey(destKey);
-                    mappingChanges.append(destKey, sortMapping.get(backlogKey));
-                    resultShifted.noteRequiredShift(backlogKey, destKey - backlogKey);
+                    do {
+                        // insert extra space at the end of the table; because it's the right thing to do
+                        if (--writesUntilGap == 0) {
+                            destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, null);
+                            writesUntilGap = REBALANCE_RANGE_SIZE;
+                        }
 
-                    ++numWrites;
-                    --sizeToShift;
-                    destKey += qs.direction;
+                        checkDestinationSlotOk(destKey);
+                        resultAdded.appendKey(destKey);
+                        mappingChanges.append(destKey, qs.addedInputKeys[qs.addedCurrent]);
+                        destKey += qs.direction;
+                        qs.addedCurrent += qs.direction;
+                    } while (qs.hasMoreToAdd());
 
-                    if (tableEmpty = !backlogIter.hasNext()) {
-                        break; // done inserting from backlog
-                    }
-                    backlogKey = backlogIter.nextLong();
+                    break;
                 }
 
-                // must disable shift coalescing if any keys between last shift and next shift are not shifted
-                backlogged = (writesPending && qs.isBefore(desiredOutputKey, destKey)) ||
-                        (!tableEmpty && qs.isBefore(backlogIter.currentValue(), destKey));
-                if (!backlogged) {
-                    // note that we don't bother counting the number of shifted rows we're skipping
-                    resultShifted.noteBacklogNowEmpty();
-                    tableEmpty = !writesPending || !backlogIter.advance(desiredOutputKey);
-                    if (qs.isBefore(destKey, desiredOutputKey)) {
-                        destKey = desiredOutputKey;
+                // determine if we must be in spreading mode
+                final long maxRunKey = desiredOutputKey + maximumRunLength * (long) qs.direction;
+
+                // note: this is an (over) approximation of cardinality since binarySearch will give any index if exists
+                long addedMaxIdx;
+                if (qs.direction == -1) {
+                    addedMaxIdx = qs.twiddleIfNegative(
+                            Arrays.binarySearch(qs.addedOutputKeys, 0, qs.addedCurrent, maxRunKey));
+                } else {
+                    addedMaxIdx = qs.twiddleIfNegative(
+                            Arrays.binarySearch(qs.addedOutputKeys, qs.addedCurrent, qs.addedEnd, maxRunKey));
+                }
+
+                // note: if RowSet.SearchIterator had an O(1) method to get pos we should prefer that over RowSet#find,
+                // turn maxRunKey into an advancing iterator (similar to gapEvictionIter), and also use that method to
+                // compute sizeToShift
+                final long backMaxIdx = qs.twiddleIfNegative(resultRowSet.find(maxRunKey));
+
+                long sizeToAdd = qs.direction * (addedMaxIdx - qs.addedCurrent);
+                long sizeToShift = qs.direction * (backMaxIdx - resultRowSet.find(backlogIter.currentValue()));
+
+                final boolean spreadMode = sizeToAdd + sizeToShift >= maximumRunLength;
+
+                long writesUntilGap = REBALANCE_RANGE_SIZE;
+                boolean backlogged = false;
+
+                // stay in this loop until we might need to enable spreading; don't leave this loop while backlog is
+                // non-empty
+                while (!tableEmpty && (backlogged || sizeToAdd > 0
+                        && (spreadMode || (sizeToAdd + sizeToShift) <= qs.direction * (maxRunKey - destKey)))) {
+                    // Add anything prior to the next possible backlog item.
+                    while (qs.hasMoreToAdd()
+                            && qs.isBefore(desiredOutputKey, backlogIter.currentValue() + qs.direction)) {
+                        if (spreadMode && --writesUntilGap == 0) {
+                            destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
+                            writesUntilGap = REBALANCE_RANGE_SIZE;
+                        }
+
+                        checkDestinationSlotOk(destKey);
+                        mappingChanges.append(destKey, qs.addedInputKeys[qs.addedCurrent]);
+                        resultAdded.appendKey(destKey);
+
+                        ++numWrites;
+                        --sizeToAdd;
+                        destKey += qs.direction;
+                        qs.addedCurrent += qs.direction;
+
+                        if (qs.hasMoreToAdd()) {
+                            desiredOutputKey = qs.addedOutputKeys[qs.addedCurrent];
+                        }
+                    }
+
+                    // Either, all items have been added, or next item comes after the backlog item(s) is(are)
+                    // processed.
+                    long backlogKey = backlogIter.currentValue();
+                    final boolean writesPending = qs.hasMoreToAdd();
+                    while (((!writesPending || qs.isBefore(backlogKey, desiredOutputKey))
+                            && qs.isBefore(backlogKey, destKey))) {
+                        if (spreadMode && --writesUntilGap == 0) {
+                            destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
+                            writesUntilGap = REBALANCE_RANGE_SIZE;
+                        }
+
+                        // insert this item
+                        checkDestinationSlotOk(destKey);
+                        modAdded.appendKey(destKey);
+                        mappingChanges.append(destKey, sortMapping.get(backlogKey));
+                        resultShifted.noteRequiredShift(backlogKey, destKey - backlogKey);
+
+                        ++numWrites;
+                        --sizeToShift;
+                        destKey += qs.direction;
+
+                        if (tableEmpty = !backlogIter.hasNext()) {
+                            break; // done inserting from backlog
+                        }
+                        backlogKey = backlogIter.nextLong();
+                    }
+
+                    // must disable shift coalescing if any keys between last shift and next shift are not shifted
+                    backlogged = (writesPending && qs.isBefore(desiredOutputKey, destKey)) ||
+                            (!tableEmpty && qs.isBefore(backlogIter.currentValue(), destKey));
+                    if (!backlogged) {
+                        // note that we don't bother counting the number of shifted rows we're skipping
+                        resultShifted.noteBacklogNowEmpty();
+                        tableEmpty = !writesPending || !backlogIter.advance(desiredOutputKey);
+                        if (qs.isBefore(destKey, desiredOutputKey)) {
+                            destKey = desiredOutputKey;
+                        }
                     }
                 }
             }
@@ -601,17 +606,20 @@ public class SortListener extends BaseTable.ListenerImpl {
     /**
      * The following may clarify what we are doing: lKey (the "target") is in input coordinates rKey (the "probe") is in
      * output coordinates. Each probe looks up the previous input key of rKey once, and then compares the previous
-     * values of the input columns at that key, which are the previous values of the sorted columns at rKey.
+     * values of the input columns at that key, which are the previous values of the sorted columns at rKey. Each
+     * column's comparator holds the target's current value, read by the first probe that compares that column, so one
+     * placement reads each of the target's values at most once.
      */
     private class TargetComparator implements RowSet.TargetComparator {
         private long lKey;
-        private final ColumnComparatorFactory.IComparator[] comparators;
+        // The comparators of columns [0, numTargetColumnsHeld) hold lKey's current values.
+        private int numTargetColumnsHeld;
+        private final ColumnComparatorFactory.HeldTargetComparator[] comparators;
 
         TargetComparator() {
-            this.comparators = new ColumnComparatorFactory.IComparator[columnsToSortBy.length];
+            this.comparators = new ColumnComparatorFactory.HeldTargetComparator[columnsToSortBy.length];
             for (int ii = 0; ii < columnsToSortBy.length; ii++) {
-                comparators[ii] = ColumnComparatorFactory.createComparatorLeftCurrRightPrev(columnsToSortBy[ii],
-                        columnsToSortBy[ii],
+                comparators[ii] = ColumnComparatorFactory.createHeldTargetComparatorCurrToPrev(columnsToSortBy[ii],
                         SortListener.this.comparators[ii]);
             }
             setTarget(-1);
@@ -619,13 +627,18 @@ public class SortListener extends BaseTable.ListenerImpl {
 
         public void setTarget(final long lKey) {
             this.lKey = lKey;
+            numTargetColumnsHeld = 0;
         }
 
         @Override
         public int compareTargetTo(final long rKey, final int dir) {
             final long rInputKey = sortMapping.getPrev(rKey);
-            for (int ii = 0; ii < columnsToSortBy.length; ++ii) {
-                final int difference = comparators[ii].compare(lKey, rInputKey);
+            for (int ii = 0; ii < comparators.length; ++ii) {
+                if (ii == numTargetColumnsHeld) {
+                    comparators[ii].setTarget(lKey);
+                    ++numTargetColumnsHeld;
+                }
+                final int difference = comparators[ii].compareTargetToPrev(rInputKey);
                 if (difference != 0) {
                     return difference * order[ii].direction * dir;
                 }
@@ -959,19 +972,22 @@ public class SortListener extends BaseTable.ListenerImpl {
 
     private static void showGaps(RowSet rowSet) {
         long freeStart = 0;
-        for (RowSet.RangeIterator i = rowSet.rangeIterator(); i.hasNext();) {
-            i.next();
-            long freeEnd = i.currentRangeStart() - 1;
-            long freeSize = freeEnd - freeStart + 1;
+        try (final RowSet.RangeIterator rit = rowSet.rangeIterator()) {
+            while (rit.hasNext()) {
+                rit.next();
+                long freeEnd = rit.currentRangeStart() - 1;
+                long freeSize = freeEnd - freeStart + 1;
 
-            long usedStart = i.currentRangeStart();
-            long usedEnd = i.currentRangeEnd();
+                long usedStart = rit.currentRangeStart();
+                long usedEnd = rit.currentRangeEnd();
 
-            long usedSize = usedEnd - usedStart + 1;
-            System.out.printf("free %14d [%14d..%14d] [0x%10x..0x%10x]  used %14d [%14d..%14d] [0x%10x..0x%10x]%n",
-                    freeSize, freeStart, freeEnd, freeStart, freeEnd,
-                    usedSize, usedStart, usedEnd, usedStart, usedEnd);
-            freeStart = usedEnd + 1;
+                long usedSize = usedEnd - usedStart + 1;
+                System.out.printf(
+                        "free %14d [%14d..%14d] [0x%10x..0x%10x]  used %14d [%14d..%14d] [0x%10x..0x%10x]%n",
+                        freeSize, freeStart, freeEnd, freeStart, freeEnd,
+                        usedSize, usedStart, usedEnd, usedStart, usedEnd);
+                freeStart = usedEnd + 1;
+            }
         }
     }
 }
