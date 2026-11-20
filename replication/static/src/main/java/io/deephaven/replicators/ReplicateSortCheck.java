@@ -18,22 +18,30 @@ import java.util.stream.Stream;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolean;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToObject;
 import static io.deephaven.replication.ReplicationUtils.globalReplacements;
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 import static io.deephaven.replication.ReplicationUtils.simpleFixup;
 
 public class ReplicateSortCheck {
+    private static final String TASK = "replicateSortCheck";
+
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         final List<String> invertList = new ArrayList<>();
 
         final String charSortCheckPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sortcheck/CharSortCheck.java";
         invertList.add(charSortCheckPath);
-        invertList.addAll(charToAllButBoolean("replicateSortCheck", charSortCheckPath));
-        final String objectPath = charToObject("replicateSortCheck", charSortCheckPath);
+        invertList.addAll(charToAllButBoolean(TASK, charSortCheckPath));
+        final String objectPath = charToObject(TASK, charSortCheckPath);
         invertList.add(objectPath);
         ReplicationUtils.fixupChunkAttributes(objectPath);
 
         for (final String kernel : invertList) {
-            invertSense(kernel, ascendingNameToDescendingName(kernel));
+            final File kernelFile = new File(kernel);
+            invertSense(kernel, replicatedOutputPath(TASK,
+                    new File(kernelFile.getParent(), ascendingNameToDescendingName(kernelFile.getName())).getPath()));
         }
     }
 
@@ -61,7 +69,7 @@ public class ReplicateSortCheck {
         // the header names the Char class that every variant is replicated from, and follows the class name
         // replacements because their patterns also match the source class name
         final String charClassName = className.replaceFirst("^(Byte|Short|Int|Long|Float|Double|Object)", "Char");
-        return Stream.concat(ReplicationUtils.fileHeaderStream("replicateSortCheck", charClassName),
+        return Stream.concat(ReplicationUtils.fileHeaderStream(TASK, charClassName),
                 lines.stream()).collect(Collectors.toList());
     }
 
