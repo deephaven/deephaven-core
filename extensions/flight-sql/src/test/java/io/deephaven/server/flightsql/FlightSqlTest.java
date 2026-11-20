@@ -16,7 +16,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.Type;
@@ -304,7 +303,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.getCatalogs();
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(info, 0, true);
+            consume(info, 0, 0, true);
         }
         unpackable(CommandGetCatalogs.getDescriptor(), CommandGetCatalogs.class);
     }
@@ -324,7 +323,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 flightSqlClient.getSchemas(null, "SomeSchema"),
         }) {
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(info, 0, true);
+            consume(info, 0, 0, true);
         }
         unpackable(CommandGetDbSchemas.getDescriptor(), CommandGetDbSchemas.class);
     }
@@ -352,7 +351,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables(null, null, "%able", null, includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(info, 3, true);
+                consume(info, 1, 3, true);
             }
 
             // Any of these queries will fetch foo_table and foodtable; there is no way to uniquely filter based on the
@@ -364,7 +363,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables(null, null, "%table", null, includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(info, 2, true);
+                consume(info, 1, 2, true);
             }
 
             // Any of these queries will fetch foodtable
@@ -372,7 +371,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables(null, null, "foodtable", null, includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(info, 1, true);
+                consume(info, 1, 1, true);
             }
 
             // Any of these queries will fetch barTable
@@ -383,7 +382,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables(null, null, "%Table", null, includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(info, 1, true);
+                consume(info, 1, 1, true);
             }
 
             // Any of these queries will fetch an empty table
@@ -397,7 +396,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables(null, null, "%_table2", null, includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(info, 0, true);
+                consume(info, 0, 0, true);
             }
         }
         unpackable(CommandGetTables.getDescriptor(), CommandGetTables.class);
@@ -413,7 +412,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.getTableTypes();
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(info, 1, true);
+            consume(info, 1, 1, true);
         }
         unpackable(CommandGetTableTypes.getDescriptor(), CommandGetTableTypes.class);
     }
@@ -429,7 +428,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.execute("SELECT 1 as Foo");
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(info, 1, false);
+            consume(info, 1, 1, false);
         }
         unpackable(CommandStatementQuery.getDescriptor(), CommandStatementQuery.class);
     }
@@ -447,7 +446,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             {
                 final FlightInfo info = prepared.execute();
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(info, 1, false);
+                consume(info, 1, 1, false);
             }
             unpackable(CommandPreparedStatementQuery.getDescriptor(), CommandPreparedStatementQuery.class);
         }
@@ -466,7 +465,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.execute("SELECT * FROM foo_table");
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(info, 3, false);
+            consume(info, 1, 3, false);
         }
         // The Flight SQL resolver will maintain state to ensure results are resolvable, even if the underlying table
         // goes away between flightInfo and doGet.
@@ -474,7 +473,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             final FlightInfo info = flightSqlClient.execute("SELECT * FROM foo_table");
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
             removeFooTable();
-            consume(info, 3, false);
+            consume(info, 1, 3, false);
         }
         unpackable(CommandStatementQuery.getDescriptor(), CommandStatementQuery.class);
 
@@ -495,7 +494,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 {
                     final FlightInfo info = prepared.execute();
                     assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                    consume(info, 3, false);
+                    consume(info, 1, 3, false);
                 }
                 // The Flight SQL resolver will maintain state to ensure results are resolvable, even if the underlying
                 // table goes away between flightInfo and doGet.
@@ -503,7 +502,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     final FlightInfo info = prepared.execute();
                     assertThat(info.getSchema()).isEqualTo(expectedSchema);
                     removeFooTable();
-                    consume(info, 3, false);
+                    consume(info, 1, 3, false);
                 }
                 // The states in _not_ maintained by the PreparedStatement state though, and will not be available for
                 // the next execute
@@ -537,7 +536,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             {
                 final FlightInfo info = prepared.execute();
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(info, 3, false);
+                consume(info, 1, 3, false);
             }
         }
     }
@@ -599,7 +598,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.execute("SELECT * FROM MyTable");
             assertThat(info.getSchema().getFields()).hasSize(8);
-            consume(info, 0, false);
+            consume(info, 0, 0, false);
         }
     }
 
@@ -684,7 +683,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 }
             }
             assertThat(found).isTrue();
-            assertThat(flightCount).isEqualTo(expectedRecordBatches(8));
+            assertThat(flightCount).isEqualTo(1);
             assertThat(numRows).isEqualTo(8);
         }
     }
@@ -721,7 +720,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.getPrimaryKeys(FOO_TABLE_REF);
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(info, 0, true);
+            consume(info, 0, 0, true);
         }
         // Note: the info must remain valid even if the server state goes away.
         {
@@ -729,7 +728,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
             removeFooTable();
             // resolve should still be OK
-            consume(info, 0, true);
+            consume(info, 0, 0, true);
         }
         expectException(() -> flightSqlClient.getPrimaryKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
                 "Flight SQL: table not found");
@@ -744,7 +743,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             final Ticket ticket =
                     ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketCreator().visit(command));
             try (final FlightStream stream = flightSqlClient.getStream(ticket)) {
-                consume(stream, 0);
+                consume(stream, 0, 0);
             }
         }
         unpackable(CommandGetPrimaryKeys.getDescriptor(), CommandGetPrimaryKeys.class);
@@ -763,7 +762,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.getExportedKeys(FOO_TABLE_REF);
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(info, 0, true);
+            consume(info, 0, 0, true);
         }
         // Note: the info must remain valid even if the server state goes away.
         {
@@ -771,7 +770,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
             removeFooTable();
             // resolve should still be OK
-            consume(info, 0, true);
+            consume(info, 0, 0, true);
         }
         expectException(() -> flightSqlClient.getExportedKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
                 "Flight SQL: table not found");
@@ -786,7 +785,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             final Ticket ticket =
                     ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketCreator().visit(command));
             try (final FlightStream stream = flightSqlClient.getStream(ticket)) {
-                consume(stream, 0);
+                consume(stream, 0, 0);
             }
         }
         unpackable(CommandGetExportedKeys.getDescriptor(), CommandGetExportedKeys.class);
@@ -805,7 +804,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.getImportedKeys(FOO_TABLE_REF);
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(info, 0, true);
+            consume(info, 0, 0, true);
         }
         // Note: the info must remain valid even if the server state goes away.
         {
@@ -813,7 +812,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
             removeFooTable();
             // resolve should still be OK
-            consume(info, 0, true);
+            consume(info, 0, 0, true);
         }
 
         expectException(() -> flightSqlClient.getImportedKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
@@ -829,7 +828,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             final Ticket ticket =
                     ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketCreator().visit(command));
             try (final FlightStream stream = flightSqlClient.getStream(ticket)) {
-                consume(stream, 0);
+                consume(stream, 0, 0);
             }
         }
         unpackable(CommandGetImportedKeys.getDescriptor(), CommandGetImportedKeys.class);
@@ -963,17 +962,17 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     "  INNER JOIN my_table_2 ON my_table_1.Id = my_table_2.Id";
             {
                 final FlightInfo info = flightSqlClient.execute(query);
-                consume(info, 11, false);
+                consume(info, 1, 11, false);
             }
             {
                 final PreparedStatement prepared = flightSqlClient.prepare(query);
                 {
                     final FlightInfo info = prepared.execute();
-                    consume(info, 11, false);
+                    consume(info, 1, 11, false);
                 }
                 {
                     final FlightInfo info = prepared.execute();
-                    consume(info, 11, false);
+                    consume(info, 1, 11, false);
                 }
             }
         } finally {
@@ -1133,7 +1132,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         ExecutionContext.getContext().getQueryScope().putParam(tableName, null);
     }
 
-    private void consume(FlightInfo info, int expectedNumRows, boolean expectReusable)
+    private void consume(FlightInfo info, int expectedFlightCount, int expectedNumRows, boolean expectReusable)
             throws Exception {
         final FlightEndpoint endpoint = endpoint(info);
         if (expectReusable) {
@@ -1142,11 +1141,11 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             assertThat(endpoint.getExpirationTime()).isEmpty();
         }
         try (final FlightStream stream = flightSqlClient.getStream(endpoint.getTicket())) {
-            consume(stream, expectedNumRows);
+            consume(stream, expectedFlightCount, expectedNumRows);
         }
         if (expectReusable) {
             try (final FlightStream stream = flightSqlClient.getStream(endpoint.getTicket())) {
-                consume(stream, expectedNumRows);
+                consume(stream, expectedFlightCount, expectedNumRows);
             }
         } else {
             try (final FlightStream stream = flightSqlClient.getStream(endpoint.getTicket())) {
@@ -1155,24 +1154,15 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         }
     }
 
-    private static void consume(FlightStream stream, int expectedNumRows) {
+    private static void consume(FlightStream stream, int expectedFlightCount, int expectedNumRows) {
         int numRows = 0;
         int flightCount = 0;
         while (stream.next()) {
             ++flightCount;
             numRows += stream.getRoot().getRowCount();
         }
-        assertThat(flightCount).isEqualTo(expectedRecordBatches(expectedNumRows));
+        assertThat(flightCount).isEqualTo(expectedFlightCount);
         assertThat(numRows).isEqualTo(expectedNumRows);
-    }
-
-    /**
-     * The number of record batches a small result of {@code numRows} rows arrives in: each batch holds at most the
-     * configured {@link BarrageMessageWriterImpl#DEFAULT_BATCH_SIZE} rows.
-     */
-    private static int expectedRecordBatches(final int numRows) {
-        final long batchSize = BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE;
-        return (int) ((numRows + batchSize - 1) / batchSize);
     }
 
     private static void consumeNotFound(FlightStream stream) {

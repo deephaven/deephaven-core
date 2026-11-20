@@ -434,9 +434,7 @@ public class BarrageSubscriberEncodingDedupTest extends BarrageMessageRoundTripT
         source.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE, dictionaryEncodedSchema(source.getDefinition(), "Str"));
         final BarrageMessageProducer producer = newProducer(source, new RecordingWriterFactory());
 
-        // no batch size limit, so the message size alone decides how the rows and their dictionary values are split
-        final BarrageSubscriptionOptions small =
-                optionsBuilder().maxMessageSize(2048).batchSize(Integer.MAX_VALUE).build();
+        final BarrageSubscriptionOptions small = optionsBuilder().maxMessageSize(2048).build();
         final List<RemoteClient> clients = new ArrayList<>();
         for (int ci = 0; ci < 3; ++ci) {
             clients.add(new RemoteClient(null, allColumns(source), producer, source, "full-" + ci, false, false,

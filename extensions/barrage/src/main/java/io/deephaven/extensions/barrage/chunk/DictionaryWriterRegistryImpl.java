@@ -37,25 +37,11 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
     @Nullable
     private final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries;
 
-    /** Whether each record batch's dictionaries replace the client's; see {@link #replacesEachBatch()}. */
-    private final boolean replacesEachBatch;
-
     private final Long2ObjectOpenHashMap<Entry> entries = new Long2ObjectOpenHashMap<>();
 
     /** Creates a local registry for viewport subscriptions and snapshots. */
     public DictionaryWriterRegistryImpl() {
-        this(false);
-    }
-
-    /**
-     * Creates a local registry for viewport subscriptions and snapshots.
-     *
-     * @param replacesEachBatch whether each record batch's dictionaries replace the client's, holding only the values
-     *        that record batch refers to; see {@link DictionaryWriterRegistry#replacesEachBatch()}
-     */
-    public DictionaryWriterRegistryImpl(final boolean replacesEachBatch) {
         this.sharedDictionaries = null;
-        this.replacesEachBatch = replacesEachBatch;
     }
 
     /**
@@ -68,7 +54,6 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
     public DictionaryWriterRegistryImpl(
             @NotNull final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries) {
         this.sharedDictionaries = sharedDictionaries;
-        this.replacesEachBatch = false;
     }
 
     @Override
@@ -133,11 +118,6 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
     @NotNull
     public Collection<Entry> entries() {
         return entries.values();
-    }
-
-    @Override
-    public boolean replacesEachBatch() {
-        return replacesEachBatch;
     }
 
     @Override

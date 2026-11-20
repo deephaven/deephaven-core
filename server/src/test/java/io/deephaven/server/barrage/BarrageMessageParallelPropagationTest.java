@@ -65,9 +65,7 @@ public class BarrageMessageParallelPropagationTest extends BarrageMessageRoundTr
         final Random random = new Random(0);
         final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(new String[] {"Sym", "intCol"},
                 new SetGenerator<>("a", "b", "c"), new IntGenerator(0, 100));
-        // small enough that the snapshot fits in the first growth round, which sends each subscriber one message
-        final QueryTable sourceTable =
-                getTable((int) (BarrageUtil.MIN_SNAPSHOT_CELL_COUNT / columnInfo.length), random, columnInfo);
+        final QueryTable sourceTable = getTable(100, random, columnInfo);
         final BarrageMessageProducer producer = sourceTable.getResult(new BarrageMessageProducer.Operation(scheduler,
                 new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
                 sourceTable, UPDATE_INTERVAL, null, propagationJobSchedulerFactory));

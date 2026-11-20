@@ -15,11 +15,8 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
 import io.deephaven.extensions.barrage.chunk.DictionaryChunkWriter;
-import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry;
 import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistryImpl;
-import io.deephaven.extensions.barrage.chunk.DictionaryWriterState;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
-import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import org.apache.arrow.flatbuf.DictionaryBatch;
 import org.apache.arrow.flatbuf.Message;
@@ -30,18 +27,14 @@ import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collection;
 import java.util.List;
 
 import io.deephaven.chunk.ChunkType;
@@ -54,8 +47,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.LongUnaryOperator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -115,10 +106,8 @@ public class BarrageMessageWriterImplTest {
         final DictionaryChunkWriter dictionaryWriter = (DictionaryChunkWriter) (ChunkWriter<?>) writers[2];
         try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
                 delta(columns(0, 1, 2)), writers, BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
-            // a fresh registry sends every value its first batch refers to as a replacement, before that batch; one
-            // record batch, so that batch refers to every value
-            final List<byte[]> streams = drain(writer.getSubView(OPTIONS.withBatchSize(Integer.MAX_VALUE), false, true,
-                    null, false, null, null,
+            // a fresh registry sends every value its first batch refers to as a replacement, before that batch
+            final List<byte[]> streams = drain(writer.getSubView(OPTIONS, false, true, null, false, null, null,
                     columns(0, 1, 2), new DictionaryWriterRegistryImpl()));
             assertThat(flightMessage(streams.get(0)).headerType()).isEqualTo(MessageHeader.DictionaryBatch);
 
@@ -207,115 +196,6 @@ public class BarrageMessageWriterImplTest {
             }
             assertThat(total).isEqualTo(values.length);
         }
-    }
-
-    /**
-     * A registry that replaces each record batch's dictionaries sends one DictionaryBatch before every RecordBatch,
-     * each a replacement, so that a client that loads every DictionaryBatch as a replacement decodes the stream. The
-     * default registry sends deltas for the same message.
-     */
-    @Test
-    public void testRegistryReplacingEachBatchSendsNoDeltas() throws IOException {
-        final BarrageSubscriptionOptions twoRows = OPTIONS.withBatchSize(2);
-        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
-                delta(columns(0, 1, 2)), chunkWriters(), BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
-            final List<byte[]> withDeltas = drain(writer.getSubView(twoRows, false, true, null, false, null, null,
-                    columns(0, 1, 2), new DictionaryWriterRegistryImpl()));
-            assertThat(dictionaryBatches(withDeltas)).anyMatch(DictionaryBatch::isDelta);
-
-            final List<byte[]> replacing = drain(writer.getSubView(twoRows, false, true, null, false, null, null,
-                    columns(0, 1, 2), new DictionaryWriterRegistryImpl(true)));
-            assertThat(dictionaryBatches(replacing)).noneMatch(DictionaryBatch::isDelta);
-            assertThat(dictionaryBatches(replacing)).hasSize(recordBatchCount(replacing));
-        }
-    }
-
-    /**
-     * A registry that replaces each record batch's dictionaries never splits a dictionary into a replacement followed
-     * by deltas: when a record batch's dictionary would reach the maximum message size, the record batch is sent with
-     * fewer rows instead. Every value still arrives exactly once, as each row's value is distinct.
-     */
-    @Test
-    public void testRegistryReplacingEachBatchShrinksBatchesRatherThanSplitDictionaries() throws IOException {
-        final int limit = 2048;
-        // no batch size limit, so the message size alone decides how many rows each record batch holds
-        final BarrageSubscriptionOptions small =
-                BarrageSubscriptionOptions.builder().maxMessageSize(limit).batchSize(Integer.MAX_VALUE).build();
-        final String[] values = new String[200];
-        for (int ii = 0; ii < values.length; ++ii) {
-            values[ii] = String.format("value-%05d-padded-to-be-too-large-for-one-message", ii);
-        }
-        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
-                dictionaryRows(values), chunkWriters(), BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
-            final List<byte[]> messages = drain(writer.getSubView(small, false, true, null, false, null, null,
-                    columns(0, 1, 2), new DictionaryWriterRegistryImpl(true)));
-            final List<DictionaryBatch> batches = dictionaryBatches(messages);
-            assertThat(batches).noneMatch(DictionaryBatch::isDelta);
-            assertThat(batches).hasSize(recordBatchCount(messages));
-            assertThat(batches.size()).isGreaterThan(1);
-            assertThat(batches.stream().mapToLong(batch -> batch.data().length()).sum()).isEqualTo(values.length);
-            for (final byte[] message : messages) {
-                assertThat(message.length).isLessThan(limit);
-            }
-        }
-    }
-
-    /**
-     * A dictionary too large to size whole sends its record batch back to be retried with fewer rows, and the attempt
-     * releases every stream it built: once the sent messages are drained, every column stream opened has been closed.
-     */
-    @Test
-    public void testARecordBatchRetriedForItsDictionaryReleasesItsStreams() throws IOException {
-        final ChunkWriter<Chunk<Values>>[] writers = chunkWriters();
-        final AtomicInteger opened = new AtomicInteger();
-        final AtomicInteger closed = new AtomicInteger();
-        writers[0] = countingStreams(writers[0], opened, closed);
-        final AtomicBoolean refused = new AtomicBoolean();
-        final DictionaryWriterRegistryImpl replacing = new DictionaryWriterRegistryImpl(true);
-        // the dictionary values writer refuses its first dictionary, as one too large for it to size would be
-        final DictionaryWriterRegistry registry = new DictionaryWriterRegistry() {
-            @Override
-            @NotNull
-            public DictionaryWriterState getOrCreate(final long dictId,
-                    @NotNull final ChunkWriter<Chunk<Values>> valuesWriter,
-                    @NotNull final ChunkType valuesChunkType) {
-                return replacing.getOrCreate(dictId, refusingOnce(valuesWriter, refused), valuesChunkType);
-            }
-
-            @Override
-            @NotNull
-            public Collection<Entry> entries() {
-                return replacing.entries();
-            }
-
-            @Override
-            public boolean replacesEachBatch() {
-                return true;
-            }
-
-            @Override
-            public boolean hasAnyDelta() {
-                return replacing.hasAnyDelta();
-            }
-
-            @Override
-            public void resetDeltas() {
-                replacing.resetDeltas();
-            }
-
-            @Override
-            public void maybeResetEntries(@NotNull final LongUnaryOperator maxSizeForDictId) {
-                replacing.maybeResetEntries(maxSizeForDictId);
-            }
-        };
-        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
-                delta(columns(0, 1, 2)), writers, BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
-            drain(writer.getSubView(OPTIONS.withBatchSize(Integer.MAX_VALUE), false, true, null, false, null, null,
-                    columns(0, 1, 2), registry));
-        }
-        assertThat(refused).isTrue();
-        assertThat(opened.get()).isPositive();
-        assertThat(closed.get()).isEqualTo(opened.get());
     }
 
     /**
@@ -550,146 +430,6 @@ public class BarrageMessageWriterImplTest {
             message.modColumnData[ci] = modColumn;
         }
         return message;
-    }
-
-    /** Wraps {@code writer}, counting the column streams it opens and those closed. */
-    private static ChunkWriter<Chunk<Values>> countingStreams(final ChunkWriter<Chunk<Values>> writer,
-            final AtomicInteger opened, final AtomicInteger closed) {
-        return new ChunkWriter<>() {
-            @Override
-            public Context makeContext(@NotNull final Chunk<Values> chunk, final long rowOffset) {
-                return writer.makeContext(chunk, rowOffset);
-            }
-
-            @Override
-            public DrainableColumn getInputStream(@NotNull final Context context, @Nullable final RowSet subset,
-                    @NotNull final BarrageOptions options) throws IOException {
-                final DrainableColumn column = writer.getInputStream(context, subset, options);
-                opened.incrementAndGet();
-                return new DrainableColumn() {
-                    @Override
-                    public void visitFieldNodes(final FieldNodeListener listener) {
-                        column.visitFieldNodes(listener);
-                    }
-
-                    @Override
-                    public void visitBuffers(final BufferListener listener) {
-                        column.visitBuffers(listener);
-                    }
-
-                    @Override
-                    public int nullCount() {
-                        return column.nullCount();
-                    }
-
-                    @Override
-                    public int drainTo(final OutputStream target) throws IOException {
-                        return column.drainTo(target);
-                    }
-
-                    @Override
-                    public int available() throws IOException {
-                        return column.available();
-                    }
-
-                    @Override
-                    public void close() throws IOException {
-                        closed.incrementAndGet();
-                        column.close();
-                    }
-                };
-            }
-
-            @Override
-            public DrainableColumn getEmptyInputStream(@NotNull final BarrageOptions options) throws IOException {
-                return writer.getEmptyInputStream(options);
-            }
-
-            @Override
-            public boolean isFieldNullable() {
-                return writer.isFieldNullable();
-            }
-        };
-    }
-
-    /** Wraps {@code writer} to throw a {@link SizeException} the first time it is asked for a column stream. */
-    private static ChunkWriter<Chunk<Values>> refusingOnce(final ChunkWriter<Chunk<Values>> writer,
-            final AtomicBoolean refused) {
-        return new ChunkWriter<>() {
-            @Override
-            public Context makeContext(@NotNull final Chunk<Values> chunk, final long rowOffset) {
-                return writer.makeContext(chunk, rowOffset);
-            }
-
-            @Override
-            public DrainableColumn getInputStream(@NotNull final Context context, @Nullable final RowSet subset,
-                    @NotNull final BarrageOptions options) throws IOException {
-                if (!refused.getAndSet(true)) {
-                    throw new SizeException("refused once", context.size(), 1);
-                }
-                return writer.getInputStream(context, subset, options);
-            }
-
-            @Override
-            public DrainableColumn getEmptyInputStream(@NotNull final BarrageOptions options) throws IOException {
-                return writer.getEmptyInputStream(options);
-            }
-
-            @Override
-            public boolean isFieldNullable() {
-                return writer.isFieldNullable();
-            }
-        };
-    }
-
-    /** A delta that adds one row for each of {@code values}, with data only in the dictionary encoded column. */
-    private static BarrageMessage dictionaryRows(final String... values) {
-        final BarrageMessage message = new BarrageMessage();
-        message.firstSeq = message.lastSeq = 3;
-        message.isSnapshot = false;
-        message.tableSize = values.length;
-        message.rowsAdded = RowSetFactory.flat(values.length);
-        message.rowsIncluded = RowSetFactory.flat(values.length);
-        message.rowsRemoved = RowSetFactory.empty();
-        message.shifted = RowSetShiftData.EMPTY;
-        final List<WritableChunk<Values>> added = List.of(ints(), strings(), strings(values));
-        message.addColumnData = new BarrageMessage.AddColumnData[TYPES.length];
-        message.modColumnData = new BarrageMessage.ModColumnData[TYPES.length];
-        for (int ci = 0; ci < TYPES.length; ++ci) {
-            final BarrageMessage.AddColumnData addColumn = new BarrageMessage.AddColumnData();
-            addColumn.type = TYPES[ci];
-            addColumn.chunkType = added.get(ci).getChunkType();
-            addColumn.data = new ArrayList<>();
-            if (ci == 2) {
-                addColumn.data.add(added.get(ci));
-            } else {
-                added.get(ci).close();
-            }
-            final BarrageMessage.ModColumnData modColumn = new BarrageMessage.ModColumnData();
-            modColumn.type = TYPES[ci];
-            modColumn.chunkType = addColumn.chunkType;
-            modColumn.rowsModified = RowSetFactory.empty();
-            modColumn.data = new ArrayList<>();
-            message.addColumnData[ci] = addColumn;
-            message.modColumnData[ci] = modColumn;
-        }
-        return message;
-    }
-
-    /** The DictionaryBatch headers among {@code messages}, in order. */
-    private static List<DictionaryBatch> dictionaryBatches(final List<byte[]> messages) throws IOException {
-        final List<DictionaryBatch> batches = new ArrayList<>();
-        for (final byte[] message : messages) {
-            if (headerType(message) == MessageHeader.DictionaryBatch) {
-                batches.add(dictionaryBatch(message));
-            }
-        }
-        return batches;
-    }
-
-    /** The number of RecordBatch messages among {@code messages}. */
-    private static int recordBatchCount(final List<byte[]> messages) {
-        return (int) messages.stream().filter(message -> headerType(message) == MessageHeader.RecordBatch).count();
     }
 
     private static WritableChunk<Values> ints(final int... values) {

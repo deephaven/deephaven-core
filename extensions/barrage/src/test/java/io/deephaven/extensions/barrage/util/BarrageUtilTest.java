@@ -21,7 +21,6 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
-import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.ColumnEncoding;
@@ -367,8 +366,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
      */
     @Test
     public void testSnapshotWritesTheSchemaItIsGiven() {
-        // no more cells than the first growth round's budget, so the snapshot is one message
-        final String[] syms = new String[(int) Math.min(100, BarrageUtil.MIN_SNAPSHOT_CELL_COUNT)];
+        final String[] syms = new String[100];
         for (int ii = 0; ii < syms.length; ++ii) {
             syms[ii] = ii % 2 == 0 ? "AAPL" : "MSFT";
         }
@@ -388,59 +386,11 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         }
     }
 
-    /**
-     * A snapshot that replaces each record batch's dictionaries, as a DoGet's does, sends each dictionary whole, as one
-     * replacement before every RecordBatch. That holds even when list rows hold more dictionary values than a record
-     * batch holds rows, and when two columns share a dictionary; a default snapshot splits such a dictionary into a
-     * replacement followed by a delta, which a Flight client that loads every DictionaryBatch as a replacement cannot
-     * decode.
-     */
-    @Test
-    public void testSnapshotReplacingEachBatchSendsListElementDictionariesWhole() {
-        final QueryTable table = (QueryTable) newTable(
-                col("Syms", new String[] {"a", "b", "c", "d", "e"}, new String[] {"f"}, new String[] {"a", "g"}),
-                col("Tags", new String[] {"h"}, new String[] {"i", "j"}, new String[] {"a"}));
-        final Schema schema = withElementDictionary(BarrageUtil.makeSchema(
-                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), Map.of(), table.isFlat()),
-                "Syms", "Tags");
-        // more dictionary values than rows in a record batch
-        final BarrageSnapshotOptions fourRows = BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS.withBatchSize(4);
-
-        assertThat(snapshotHeaders(table, schema, fourRows, false)).anyMatch(BarrageUtilTest::isDeltaDictionaryBatch);
-
-        final List<org.apache.arrow.flatbuf.Message> replacing = snapshotHeaders(table, schema, fourRows, true);
-        assertThat(replacing).noneMatch(BarrageUtilTest::isDeltaDictionaryBatch);
-        assertThat(replacing.stream()
-                .filter(header -> header.headerType() == org.apache.arrow.flatbuf.MessageHeader.DictionaryBatch)
-                .count())
-                .isEqualTo(replacing.stream()
-                        .filter(header -> header.headerType() == org.apache.arrow.flatbuf.MessageHeader.RecordBatch)
-                        .count());
-    }
-
-    /** Whether {@code header} is a DictionaryBatch that appends to the client's dictionary. */
-    private static boolean isDeltaDictionaryBatch(final org.apache.arrow.flatbuf.Message header) {
-        return header.headerType() == org.apache.arrow.flatbuf.MessageHeader.DictionaryBatch
-                && ((org.apache.arrow.flatbuf.DictionaryBatch) header.header(
-                        new org.apache.arrow.flatbuf.DictionaryBatch())).isDelta();
-    }
-
     /** Writes a snapshot of {@code table} with {@code schema} and counts the DictionaryBatch messages it sent. */
     private static int countSnapshotDictionaryBatches(final QueryTable table, final Schema schema) {
-        return (int) snapshotHeaders(table, schema, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, false).stream()
-                .filter(header -> header.headerType() == org.apache.arrow.flatbuf.MessageHeader.DictionaryBatch)
-                .count();
-    }
-
-    /** Writes a snapshot of {@code table} with {@code schema} and returns the header of every message it sent. */
-    private static List<org.apache.arrow.flatbuf.Message> snapshotHeaders(
-            final QueryTable table,
-            final Schema schema,
-            final BarrageSnapshotOptions options,
-            final boolean replaceDictionariesEachBatch) {
         final List<byte[]> messages = new ArrayList<>();
         BarrageUtil.createAndSendSnapshot(new BarrageMessageWriterImpl.ArrowFactory(), table, null, null, false,
-                options, schema, replaceDictionariesEachBatch, new StreamObserver<>() {
+                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, schema, new StreamObserver<>() {
                     @Override
                     public void onNext(final BarrageMessageWriter.MessageView view) {
                         try {
@@ -467,36 +417,18 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                     public void onCompleted() {}
                 }, new BarragePerformanceLog.SnapshotMetricsHelper());
 
-        final List<org.apache.arrow.flatbuf.Message> headers = new ArrayList<>();
+        int numDictionaryBatches = 0;
         for (final byte[] message : messages) {
             // an encapsulated IPC message: a continuation marker, the metadata length, then the flatbuffer Message
             final ByteBuffer bb = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN);
             final int metadataOffset = bb.getInt(0) == -1 ? 8 : 4;
-            headers.add(org.apache.arrow.flatbuf.Message.getRootAsMessage(
-                    bb.position(metadataOffset).slice().order(ByteOrder.LITTLE_ENDIAN)));
+            final org.apache.arrow.flatbuf.Message header = org.apache.arrow.flatbuf.Message.getRootAsMessage(
+                    bb.position(metadataOffset).slice().order(ByteOrder.LITTLE_ENDIAN));
+            if (header.headerType() == org.apache.arrow.flatbuf.MessageHeader.DictionaryBatch) {
+                ++numDictionaryBatches;
+            }
         }
-        return headers;
-    }
-
-    /**
-     * Returns {@code schema} with the elements of the list fields {@code columns} dictionary encoded (Int32 index,
-     * dictionary id 0, shared by every one of {@code columns}).
-     */
-    private static Schema withElementDictionary(final Schema schema, final String... columns) {
-        final List<String> encoded = List.of(columns);
-        return new Schema(schema.getFields().stream()
-                .map(f -> {
-                    if (!encoded.contains(f.getName())) {
-                        return f;
-                    }
-                    final Field element = f.getChildren().get(0);
-                    return new Field(f.getName(), f.getFieldType(), List.of(new Field(element.getName(),
-                            new FieldType(element.isNullable(), element.getType(),
-                                    new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)),
-                                    element.getMetadata()),
-                            element.getChildren())));
-                })
-                .collect(Collectors.toList()), schema.getCustomMetadata());
+        return numDictionaryBatches;
     }
 
     /** Returns {@code schema} with the field {@code column} dictionary encoded (Int32 index, dictionary id 0). */

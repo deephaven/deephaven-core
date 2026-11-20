@@ -147,12 +147,9 @@ public class ArrowFlightUtil {
                                 BarrageUtil.schemaFromTable(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table);
                         listener.onNext(streamGeneratorFactory.getSchemaView(schema::getSchema));
 
-                        // Shared code between `DoGet` and `BarrageSnapshotRequest`. A DoGet serves plain Flight
-                        // clients, and some of them (Arrow Java's FlightStream among them) load every DictionaryBatch
-                        // as a replacement, against the Arrow IPC streaming format, which allows deltas. So each record
-                        // batch's dictionaries replace the client's, holding only that batch's values.
+                        // shared code between `DoGet` and `BarrageSnapshotRequest`
                         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
-                                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, schema, true, listener, metrics);
+                                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, schema, listener, metrics);
                     });
         }
     }

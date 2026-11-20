@@ -811,7 +811,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         final long startTm = System.nanoTime();
         try {
             return new DictionaryBatchView(
-                    buildDictionaryBatchStreams(dictId, valuesWriter, values, isDelta, false, options), writeConsumer,
+                    buildDictionaryBatchStreams(dictId, valuesWriter, values, isDelta, options), writeConsumer,
                     startTm);
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("unexpected IOException while building a dictionary batch", e);
@@ -926,80 +926,68 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         };
 
         final FlatBufferBuilder header = new FlatBufferBuilder();
-        final List<DefensiveDrainable> result = new ArrayList<>();
 
         final int numRows;
         final int nodesOffset;
         final int buffersOffset;
-        try {
-            try (final SizedChunk<Values> nodeOffsets = new SizedChunk<>(ChunkType.Object);
-                    final SizedLongChunk<Values> bufferInfos = new SizedLongChunk<>()) {
-                nodeOffsets.ensureCapacity(addColumnData.length);
-                nodeOffsets.get().setSize(0);
-                bufferInfos.ensureCapacity(addColumnData.length * 3);
-                // noinspection DataFlowIssue
-                bufferInfos.get().setSize(0);
+        try (final SizedChunk<Values> nodeOffsets = new SizedChunk<>(ChunkType.Object);
+                final SizedLongChunk<Values> bufferInfos = new SizedLongChunk<>()) {
+            nodeOffsets.ensureCapacity(addColumnData.length);
+            nodeOffsets.get().setSize(0);
+            bufferInfos.ensureCapacity(addColumnData.length * 3);
+            // noinspection DataFlowIssue
+            bufferInfos.get().setSize(0);
 
-                final MutableLong totalBufferLength = new MutableLong();
-                final ChunkWriter.FieldNodeListener fieldNodeListener =
-                        (numElements, nullCount) -> {
-                            nodeOffsets.ensureCapacityPreserve(nodeOffsets.get().size() + 1);
-                            // noinspection resource
-                            nodeOffsets.get().asWritableObjectChunk()
-                                    .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount));
-                        };
+            final MutableLong totalBufferLength = new MutableLong();
+            final ChunkWriter.FieldNodeListener fieldNodeListener =
+                    (numElements, nullCount) -> {
+                        nodeOffsets.ensureCapacityPreserve(nodeOffsets.get().size() + 1);
+                        // noinspection resource
+                        nodeOffsets.get().asWritableObjectChunk()
+                                .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount));
+                    };
 
-                final ChunkWriter.BufferListener bufferListener = (length) -> {
-                    totalBufferLength.add(length);
-                    bufferInfos.ensureCapacityPreserve(bufferInfos.get().size() + 1);
-                    bufferInfos.get().add(length);
-                };
+            final ChunkWriter.BufferListener bufferListener = (length) -> {
+                totalBufferLength.add(length);
+                bufferInfos.ensureCapacityPreserve(bufferInfos.get().size() + 1);
+                bufferInfos.get().add(length);
+            };
 
-                numRows = columnVisitor.visit(view, offset, targetBatchSize, addStream, fieldNodeListener,
-                        bufferListener);
-                actualBatchSize.set(numRows);
+            numRows = columnVisitor.visit(view, offset, targetBatchSize, addStream, fieldNodeListener, bufferListener);
+            actualBatchSize.set(numRows);
 
-                final WritableChunk<Values> noChunk = nodeOffsets.get();
-                RecordBatch.startNodesVector(header, noChunk.size());
-                for (int i = noChunk.size() - 1; i >= 0; --i) {
-                    final ChunkWriter.FieldNodeInfo node =
-                            (ChunkWriter.FieldNodeInfo) noChunk.asObjectChunk().get(i);
-                    FieldNode.createFieldNode(header, node.numElements, node.nullCount);
-                }
-                nodesOffset = header.endVector();
-
-                final WritableLongChunk<Values> biChunk = bufferInfos.get();
-                RecordBatch.startBuffersVector(header, biChunk.size());
-                for (int i = biChunk.size() - 1; i >= 0; --i) {
-                    totalBufferLength.subtract(biChunk.get(i));
-                    Buffer.createBuffer(header, totalBufferLength.get(), biChunk.get(i));
-                }
-                buffersOffset = header.endVector();
+            final WritableChunk<Values> noChunk = nodeOffsets.get();
+            RecordBatch.startNodesVector(header, noChunk.size());
+            for (int i = noChunk.size() - 1; i >= 0; --i) {
+                final ChunkWriter.FieldNodeInfo node =
+                        (ChunkWriter.FieldNodeInfo) noChunk.asObjectChunk().get(i);
+                FieldNode.createFieldNode(header, node.numElements, node.nullCount);
             }
+            nodesOffset = header.endVector();
 
-            // Build DictionaryBatch messages for any dict columns with pending deltas.
-            // These must precede the RecordBatch in the stream; callers call resetDelta() on success.
-            final DictionaryWriterRegistry dictManager = view.dictionaryRegistry();
-            if (dictManager != null) {
-                for (final DictionaryWriterRegistry.Entry entry : dictManager.entries()) {
-                    final DictionaryWriterState state = entry.state;
-                    if (state.hasDelta()) {
-                        // a replacement while the subscriber needs the whole dictionary, otherwise an append
-                        final boolean isDelta = !state.needsFullBatch();
-                        result.addAll(buildDictionaryBatchStreams(state.getDictId(), entry.valuesWriter,
-                                state.buildDeltaChunk(), isDelta, dictManager.replacesEachBatch(), view.options()));
-                    }
+            final WritableLongChunk<Values> biChunk = bufferInfos.get();
+            RecordBatch.startBuffersVector(header, biChunk.size());
+            for (int i = biChunk.size() - 1; i >= 0; --i) {
+                totalBufferLength.subtract(biChunk.get(i));
+                Buffer.createBuffer(header, totalBufferLength.get(), biChunk.get(i));
+            }
+            buffersOffset = header.endVector();
+        }
+
+        // Build DictionaryBatch messages for any dict columns with pending deltas.
+        // These must precede the RecordBatch in the stream; callers call resetDelta() on success.
+        final List<DefensiveDrainable> result = new ArrayList<>();
+        final DictionaryWriterRegistry dictManager = view.dictionaryRegistry();
+        if (dictManager != null) {
+            for (final DictionaryWriterRegistry.Entry entry : dictManager.entries()) {
+                final DictionaryWriterState state = entry.state;
+                if (state.hasDelta()) {
+                    // a replacement while the subscriber needs the whole dictionary, otherwise an append
+                    final boolean isDelta = !state.needsFullBatch();
+                    result.addAll(buildDictionaryBatchStreams(state.getDictId(), entry.valuesWriter,
+                            state.buildDeltaChunk(), isDelta, view.options()));
                 }
             }
-        } catch (final Throwable t) {
-            // the caller retries a SizeException with fewer rows; release what this attempt built
-            for (final DefensiveDrainable stream : streams) {
-                closeQuietly(stream);
-            }
-            for (final DefensiveDrainable message : result) {
-                closeQuietly(message);
-            }
-            throw t;
         }
 
         RecordBatch.startRecordBatch(header);
@@ -1031,8 +1019,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
      * too large to fit under the limit is sent in a message of its own. No message carries more values than the batch
      * size {@code options} allow, as no record batch carries more rows. An empty {@code valuesChunk} still makes one
      * message, with no values in it: a first batch that defines the dictionary for a client that has none yet. Takes
-     * ownership of {@code valuesChunk}. With {@code whole}, the values are never split: they make one message, however
-     * large, and a {@link SizeException} from the values writer propagates, so that the caller sends fewer rows.
+     * ownership of {@code valuesChunk}.
      *
      * <p>
      * Each message's body is a single-column inner RecordBatch of the dictionary's value type. Building the messages
@@ -1042,7 +1029,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
      * @param valuesWriter the writer for the dictionary's values
      * @param valuesChunk the values to send
      * @param isDelta whether the values append to the client's dictionary, rather than replace it
-     * @param whole whether the values must make one message; see {@link DictionaryWriterRegistry#replacesEachBatch()}
      * @param options serialization options, passed through to the values writer, and the batch and maximum message
      *        sizes
      * @return the messages, in the order they must be sent
@@ -1052,7 +1038,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             @NotNull final ChunkWriter<Chunk<Values>> valuesWriter,
             @NotNull final WritableChunk<Values> valuesChunk,
             final boolean isDelta,
-            final boolean whole,
             @NotNull final BarrageOptions options) throws IOException {
         final int numValues = valuesChunk.size();
         final int maxBatchSize = maxBatchSize(options);
@@ -1062,7 +1047,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         // the chunk is released once this method and every message are done with it.
         try (final ChunkWriter.Context valuesCtx = valuesWriter.makeContext(valuesChunk, 0)) {
             int offset = 0;
-            int count = whole ? numValues : Math.min(numValues, maxBatchSize);
+            int count = Math.min(numValues, maxBatchSize);
             do {
                 // the first message replaces the client's dictionary or appends to it; the rest append
                 final DefensiveDrainable message;
@@ -1072,9 +1057,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                             dictId, valuesWriter, valuesCtx, offset, count, isDelta || offset > 0, options);
                     size = availableOrClose(message);
                 } catch (final SizeException e) {
-                    if (whole) {
-                        throw e;
-                    }
                     // the values writer cannot size this many values at once; try half as many, as for record batches
                     if (count <= 1) {
                         throw new UncheckedDeephavenException("BarrageStreamWriterImpl - value " + offset
@@ -1083,7 +1065,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                     count /= 2;
                     continue;
                 }
-                if (!whole && size >= maxMessageSize && count > 1) {
+                if (size >= maxMessageSize && count > 1) {
                     // too large: drop it, and try as many values as its size suggests will fit
                     message.close();
                     count = Math.min(count - 1, estimateValuesThatFit(maxMessageSize, count, size));
@@ -1329,17 +1311,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         // allow the client to override the default message size
         final int maxMessageSize = maxMessageSize(view.options());
 
-        final DictionaryWriterRegistry dictRegistry = view.dictionaryRegistry();
-        final boolean replacesEachBatch = dictRegistry != null && dictRegistry.replacesEachBatch();
-
         while (offset < numRows) {
-            if (replacesEachBatch) {
-                // each record batch's dictionaries hold only the values that record batch refers to; this also
-                // discards the values of an attempt that was too large to send
-                for (final DictionaryWriterRegistry.Entry entry : dictRegistry.entries()) {
-                    entry.state.reset();
-                }
-            }
             try {
                 final List<DefensiveDrainable> messages =
                         getInputStream(view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
@@ -1351,30 +1323,13 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                     throw new IllegalStateException("No data was written for a batch");
                 }
 
-                // Each dictionary is one replacement message, which must fit under the limit as the RecordBatch
-                // must; a dictionary split into a replacement and deltas is what a client that loads every
-                // DictionaryBatch as a replacement cannot decode. Send fewer rows, and so fewer values, instead; a
-                // single row is sent anyway, as a single row's RecordBatch is.
-                boolean dictionaryTooLarge = false;
-                if (replacesEachBatch && batchSize > 1) {
-                    for (int mi = 0; mi < messages.size() - 1 && !dictionaryTooLarge; ++mi) {
-                        dictionaryTooLarge = messages.get(mi).available() >= maxMessageSize;
-                    }
-                }
-                if (dictionaryTooLarge) {
-                    for (final DefensiveDrainable msg : messages) {
-                        msg.close();
-                    }
-                    batchSize = Math.max(1, actualBatchSize.get() / 2);
-                    continue;
-                }
-
                 // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
                 // row then we must send and let it potentially fail)
                 if (bytesToWrite < maxMessageSize || batchSize == 1) {
                     // let's write the data — DictionaryBatch messages must precede the RecordBatch
                     visitMessages(messages, visitor, bytesWritten);
                     // accepted without error, so reset the dictionary deltas
+                    final DictionaryWriterRegistry dictRegistry = view.dictionaryRegistry();
                     if (dictRegistry != null) {
                         dictRegistry.resetDeltas();
                     }
