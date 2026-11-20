@@ -3273,9 +3273,10 @@ class Table(_TableOperations["Table"]):
         Note that some aggregations can not be used in creating a rollup table: partition, median, pct, and
         formula when formula_param is provided.
 
-        If this table is a blink table, rollup also does not support include_constituents=True or the first, last,
-        sorted_first, sorted_last, group, and formula aggregations. Convert the blink table with
-        :func:`~deephaven.stream.blink_to_append_only` to use them.
+        If this table is a blink table, rollup also does not support include_constituents=True, the first, last,
+        sorted_first, and sorted_last aggregations (which agg_by supports on blink tables, but rollup does not), or the
+        group and formula aggregations. Convert the blink table with :func:`~deephaven.stream.blink_to_append_only` to
+        use them.
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)

@@ -161,12 +161,18 @@ public interface Table extends
      * <li>{@link #partitionedAggBy(Collection, boolean, Table, String...) partitionedAggBy} is unsupported</li>
      * <li>{@link #aggBy aggBy} is unsupported if either {@link io.deephaven.api.agg.spec.AggSpecGroup group} or
      * {@link io.deephaven.api.agg.Partition partition} is used</li>
-     * <li>{@link #rollup(Collection, boolean, Collection) rollup} is unsupported if
-     * {@code includeConstituents == true}, or if it uses a {@link io.deephaven.api.agg.spec.AggSpecFirst first},
-     * {@link io.deephaven.api.agg.spec.AggSpecLast last}, {@link io.deephaven.api.agg.spec.AggSpecSortedFirst sorted
-     * first}, {@link io.deephaven.api.agg.spec.AggSpecSortedLast sorted last},
-     * {@link io.deephaven.api.agg.spec.AggSpecGroup group}, or {@link io.deephaven.api.agg.Formula formula}
-     * aggregation</li>
+     * <li>{@link #rollup(Collection, boolean, Collection) rollup} is unsupported if:
+     * <ul>
+     * <li>{@code includeConstituents == true}</li>
+     * <li>it uses a {@link io.deephaven.api.agg.spec.AggSpecFirst first}, {@link io.deephaven.api.agg.spec.AggSpecLast
+     * last}, {@link io.deephaven.api.agg.spec.AggSpecSortedFirst sorted first}, or
+     * {@link io.deephaven.api.agg.spec.AggSpecSortedLast sorted last} aggregation. {@link #aggBy aggBy} supports these
+     * on blink tables, but rollup does not, because its levels need row redirections that a blink table cannot
+     * provide.</li>
+     * <li>it uses a {@link io.deephaven.api.agg.spec.AggSpecGroup group} or {@link io.deephaven.api.agg.Formula
+     * formula} aggregation, which {@link #aggBy aggBy} does not support on blink tables either</li>
+     * </ul>
+     * </li>
      * <li>{@link #tree(String, String) tree} is unsupported</li>
      * </ol>
      * <p>
