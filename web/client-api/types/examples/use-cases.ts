@@ -79,7 +79,8 @@ async function aggregate() {
             aggregations: [{ type: "Sum", columns: ["SumX = X"] }, { type: "Count", col: "N" }],
             groupByColumns: ["Key"],
         }),
-        t.sumBy(["Key"]),
+        // sumBy sums every column but the keys, and a time table's Timestamp cannot be summed
+        t.dropColumns(["Timestamp"]).sumBy(["Key"]),
     ]);
     viaFactories.close();
     viaLiterals.close();
@@ -247,7 +248,8 @@ async function misc() {
         t.head(5),
         t.selectDistinct(["Key"]),
         t.snapshot(),
-        t.snapshotWhen(session.timeTable(5e9), { initial: true }),
+        // The trigger's columns are added to the result, so rename its Timestamp to avoid t's
+        t.snapshotWhen(session.timeTable(5e9), { initial: true, stampColumns: ["TriggerTs = Timestamp"] }),
     ]);
     head.close();
     distinct.close();
