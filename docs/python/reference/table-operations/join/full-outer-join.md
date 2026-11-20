@@ -15,9 +15,9 @@ The resultant table contains all rows from both tables that exist in the key ide
 full_outer_join(
     l_table: Table,
     r_table: Table,
-    on: Union[str, Sequence[str]] = None,
-    joins: Union[str, Sequence[str]] = None,
-    reserve_bits: int = None,
+    on: str | Sequence[str] | None = None,
+    joins: str | Sequence[str] | None = None,
+    reserve_bits: int | None = None,
 ) -> Table
 ```
 
@@ -34,7 +34,7 @@ The left table from which data is joined.
 The right table from which data is joined.
 
 </Param>
-<Param name="on" type="Union[str, Sequence[str]]" optional>
+<Param name="on" type="str | Sequence[str] | None" optional>
 
 Columns from the left and right tables used to join on.
 
@@ -43,7 +43,7 @@ Columns from the left and right tables used to join on.
 - `"X, A = B"` will join when column `X` matches from both the left and right tables, and when column `A` from the left table matches column `B` from the right table.
 
 </Param>
-<Param name="joins" type="Union[str, Sequence[str]]" optional>
+<Param name="joins" type="str | Sequence[str] | None" optional>
 
 The columns from the right table to add to the left table based on key. The default value is `None`.
 
@@ -52,7 +52,7 @@ The columns from the right table to add to the left table based on key. The defa
 - `Y = X` will add column `X` from right table to left table and rename it to be `Y`.
 
 </Param>
-<Param name="reserve_bits" type="int" optional>
+<Param name="reserve_bits" type="int | None" optional>
 
 The number of bits of each result row key to reserve for the right table rows that match a left table row, between 1 and 62 (inclusive). The default value is `None`, which uses the configured value (10 bits unless configured otherwise). A join whose result can never change, such as a join of two static tables, ignores `reserve_bits` and uses just enough bits for its right rows.
 

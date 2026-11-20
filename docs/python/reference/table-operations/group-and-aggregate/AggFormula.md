@@ -7,7 +7,7 @@ title: formula
 ## Syntax
 
 ```syntax
-formula(formula: str, formula_param: Optional[str] = None, cols: List[str]) -> Aggregation
+formula(formula: str, formula_param: str | None = None, cols: list[str]) -> Aggregation
 ```
 
 ## Parameters

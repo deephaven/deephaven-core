@@ -9,13 +9,15 @@ The `plot_pie` method creates pie charts using data from Deephaven tables.
 ```python syntax
 plot_pie(
     series_name: str,
-    t: Union[Table, SelectableDataSet],
-    category: Union[str, list[int], list[float]],
-    y: Union[str, list[int], list[float], list[DateTime]],
+    t: Table | SelectableDataSet | None = None,
+    category: str | list[int] | list[float] | None = None,
+    y: str | list[int] | list[float] | list[DateTime] | None = None,
 ) -> Figure
 ```
 
 ## Parameters
+
+Every call needs `category` and `y`. Pass `t` when they are column names, and leave it out when they hold the values.
 
 <ParamTable>
 <Param name="series_name" type="str">
@@ -23,17 +25,17 @@ plot_pie(
 The name (as a [String](../query-language/types/strings.md)) you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Union[Table, SelectableDataSet]">
+<Param name="t" type="Table | SelectableDataSet | None" optional>
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="category" type="Union[str, list[str], list[int], list[float]]">
+<Param name="category" type="str | list[str] | list[int] | list[float] | None" optional>
 
 The name of the column containing category values.
 
 </Param>
-<Param name="y" type="Union[str, list[int], list[float], list[DateTime]]">
+<Param name="y" type="str | list[int] | list[float] | list[DateTime] | None" optional>
 
 The name of the column containing discrete values.
 

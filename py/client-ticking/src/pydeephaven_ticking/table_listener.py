@@ -41,7 +41,7 @@ def _make_generator(
     Args:
         table (dhc.ClientTable) : the client table
         rows (dhc.RowSequence) : the desired rows to return
-        col_names (Optional[Union[str, Sequence[str]]]) : the desired columns
+        col_names (str | Sequence[str] | None) : the desired columns
         chunk_size (int) : how many rows to return at a time
 
     Returns:
@@ -99,7 +99,7 @@ class TableUpdate:
         """Gets all the data that was removed in this TableUpdate.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): the specified columns. None means "all columns in the table".
+            cols (str | Sequence[str] | None): the specified columns. None means "all columns in the table".
 
         Returns:
             A dictionary mapping column name to an Arrow Array of the removed data, or an empty dictionary if no data was removed.
@@ -116,7 +116,7 @@ class TableUpdate:
 
         Args:
             chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
-            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
+            cols (str | Sequence[str] | None): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
             A Generator yielding dictionaries mapping column name to an Arrow Array of the removed data. The
@@ -131,7 +131,7 @@ class TableUpdate:
         """Gets all the data that was added in this TableUpdate.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
+            cols (str | Sequence[str] | None): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
             A dictionary mapping column name to an Arrow Array of the added data, or an empty dictionary if no data was added.
@@ -146,7 +146,7 @@ class TableUpdate:
 
         Args:
             chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
-            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
+            cols (str | Sequence[str] | None): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
             A Generator yielding dictionaries mapping column name to an Arrow Array of the added data. The
@@ -161,7 +161,7 @@ class TableUpdate:
         """Gets all the data as it existed *before* the modify operation in this TableUpdate.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
+            cols (str | Sequence[str] | None): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
             A dictionary mapping column name to an Arrow Array of the data before the modify operation, or an empty dictionary if no data was modified.
@@ -179,7 +179,7 @@ class TableUpdate:
 
         Args:
             chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
-            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
+            cols (str | Sequence[str] | None): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
             A Generator yielding dictionaries mapping column name to an Arrow Array of the data before
@@ -194,7 +194,7 @@ class TableUpdate:
         """Gets all the modified data *after* the modify operation in this TableUpdate.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
+            cols (str | Sequence[str] | None): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
             A dictionary mapping column name to an Arrow Array of the data after the modify operation, or an empty dictionary if no data was modified.
@@ -211,7 +211,7 @@ class TableUpdate:
 
         Args:
             chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
-            cols (Optional[Union[str, Sequence[str]]]): the specified columns. None means "all columns in the table".
+            cols (str | Sequence[str] | None): the specified columns. None means "all columns in the table".
 
         Returns:
             A Generator yielding dictionaries mapping column name to an Arrow Array of the data after
@@ -352,9 +352,9 @@ def listen(
 
     Args:
         table (Table) : the Table that is being listened to.
-        listener (Union[Callable, TableListener]) : the TableListener callback that will receive TableUpdate messages
+        listener (Callable | TableListener) : the TableListener callback that will receive TableUpdate messages
             as the table changes.
-        on_error (Optional[Callable[[Exception], None]]) : the callback that will be invoked when an error occurs,
+        on_error (Callable[[Exception], None] | None) : the callback that will be invoked when an error occurs,
             defaults to None
 
      Raises:

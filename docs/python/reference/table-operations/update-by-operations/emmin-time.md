@@ -23,9 +23,9 @@ Where:
 ```
 emmin_time(
     ts_col: str,
-    decay_time: Union[int, str],
+    decay_time: int | str,
     cols: list[str],
-    op_control: OperationControl = None,
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation
 ```
 
@@ -37,17 +37,17 @@ emmin_time(
 The name of the column in the source table containing timestamps.
 
 </Param>
-<Param name="decay_time" type="Union[int, str]">
+<Param name="decay_time" type="int | str">
 
 The decay rate. This can be expressed as an integer in nanoseconds or a string [duration](../../query-language/types/durations.md), e.g., `"PT00:00:00.001"` or `"PTnHnMnS"`, where `H` is hour, `M` is minute, and `S` is second.
 
 </Param>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The string names of columns to be operated on. These can include expressions to rename the output, e.g., `"new_col = col"`. When this parameter is left empty, [`update_by`](./updateBy.md) will perform the operation on all applicable columns.
 
 </Param>
-<Param name="op_control" type="OperationControl">
+<Param name="op_control" type="OperationControl | None">
 
 Defines how special cases should behave. When `None`, default [`OperationControl`](./OperationControl.md) settings will be used. See [`OperationControl`](./OperationControl.md) for information.
 

@@ -9,13 +9,13 @@ The `plot_treemap` method creates treemap charts using data from Deephaven table
 ```python syntax
 plot_treemap(
     series_name: str,
-    t: Union[Table, SelectableDataSet],
+    t: Table | SelectableDataSet,
     id: str,
     parent: str,
-    label: str = None,
-    value: str = None,
-    hover_text: str = None,
-    color: str = None,
+    label: str | None = None,
+    value: str | None = None,
+    hover_text: str | None = None,
+    color: str | None = None,
 ) -> tree map
 ```
 
@@ -27,7 +27,7 @@ plot_treemap(
 The name (as a [String](../query-language/types/strings.md)) to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Union[Table, SelectableDataSet]">
+<Param name="t" type="Table | SelectableDataSet">
 
 The table (or other selectable data set) that holds the data to be plotted.
 
@@ -42,22 +42,22 @@ The name of the column containing ID values.
 The name of the column containing parent ID values.
 
 </Param>
-<Param name="label" type="str" optional>
+<Param name="label" type="str | None" optional>
 
 The name of the column containing labels. If not provided, labels default to the ID value.
 
 </Param>
-<Param name="value" type="str" optional>
+<Param name="value" type="str | None" optional>
 
 The name of the column containing values for how large each section in relation to other sections.
 
 </Param>
-<Param name="hover_text" type="str" optional>
+<Param name="hover_text" type="str | None" optional>
 
 The name of the column containing hover text shown when hovering over a section in the treemap.
 
 </Param>
-<Param name="color" type="str" optional>
+<Param name="color" type="str | None" optional>
 
 The name of the column containing hexadecimal color to use for each section.
 

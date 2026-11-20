@@ -8,20 +8,20 @@ The `IcebergWriteInstructions` class provides instructions intended for writing 
 
 ```python syntax
 IcebergWriteInstructions(
-    tables: Union[Table, Sequence[Table]],
-    partition_paths: Optional[Union[str, Sequence[str]]] = None,
+    tables: Table | Sequence[Table],
+    partition_paths: str | Sequence[str] | None = None,
 )
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="tables" type="Union[Table, Sequence[Table]]">
+<Param name="tables" type="Table | Sequence[Table]">
 
 The Deephaven table(s) to write.
 
 </Param>
-<Param name="partition_paths" type="Optional[Union[str, Sequence[str]]]" Optional>
+<Param name="partition_paths" type="str | Sequence[str] | None" Optional>
 
 The partition paths where each table will be written. As an example, if the Iceberg table is partitioned by `year` and `month`, a partition path could be `year=2021/month=01`. If writing to a partitioned Iceberg table, users must provide partition paths for each table in the `tables` argument in the same order. When writing to a non-partitioned table, users should not provide partition paths. This defaults to `None`, which means the Deephaven tables will be written to the root data directory of the Iceberg table.
 

@@ -15,41 +15,41 @@ Every refresh in which the `table_generator` produces a table replaces the resul
 
 ```python syntax
 function_generated_table(
-  table_generator: Callable[..., Optional[Table]],
-  source_tables: Union[Table, List[Table]] = None,
-  refresh_interval_ms: int = None,
-  exec_ctx: ExecutionContext = None,
+  table_generator: Callable[..., Table | None],
+  source_tables: Table | list[Table] | None = None,
+  refresh_interval_ms: int | None = None,
+  exec_ctx: ExecutionContext | None = None,
   args: tuple = (),
   kwargs: dict = {},
   copy_data: bool = True,
   blink_table: bool = False,
-  table_definition: TableDefinitionLike = None,
+  table_definition: TableDefinitionLike | None = None,
 ) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="table_generator" type="Callable[..., Optional[Table]]">
+<Param name="table_generator" type="Callable[..., Table | None]">
 
 The table generator function. This function must return a table, or `None` to decline producing a new table, in which case the previous cycle's result is retained (or, for a blink table, cleared). If the first invocation returns `None`, `table_definition` must be provided so that the result's columns are known.
 
 </Param>
-<Param name="source_tables" type="Union[Table, List[Table]]" optional>
+<Param name="source_tables" type="Table | list[Table] | None" optional>
 
 The source tables to be used by the generator function. Every source table must be a refreshing table.
 
 This parameter and `refresh_interval_ms` are mutually exclusive. When neither is specified, the result is static.
 
 </Param>
-<Param name="refresh_interval_ms" type="int" optional>
+<Param name="refresh_interval_ms" type="int | None" optional>
 
 The interval (in milliseconds) at which the `table_generator` function is re-run. A non-positive interval is treated the same as no trigger at all, producing a static result.
 
 This parameter and `source_tables` are mutually exclusive. When neither is specified, the result is static.
 
 </Param>
-<Param name="exec_ctx" type="ExecutionContext" optional>
+<Param name="exec_ctx" type="ExecutionContext | None" optional>
 
 A custom [execution context](../../../conceptual/execution-context.md) to use for this operation. If not specified, the current execution context is used.
 
@@ -74,7 +74,7 @@ When `True` (the default), the generated data is copied into the result's own co
 When `True`, the result is presented as a [blink table](../../../conceptual/table-types.md#specialization-3-blink), retaining only the rows generated during the current cycle. Each update is still a full replacement; the blink attribute changes how downstream operations interpret it and is independent of `copy_data`. Rows generated in one update cycle are removed on the next cycle whether or not the `table_generator` runs again. On a cycle where the `table_generator` returns `None`, the blink result is cleared. Requires a refresh trigger (`refresh_interval_ms` or `source_tables`). Defaults to `False`.
 
 </Param>
-<Param name="table_definition" type="TableDefinitionLike" optional>
+<Param name="table_definition" type="TableDefinitionLike | None" optional>
 
 When provided, it is authoritative: it defines the result's columns and their order, and every table the `table_generator` produces must be compatible with it. Defaults to `None`, in which case the generated table's definition is used.
 

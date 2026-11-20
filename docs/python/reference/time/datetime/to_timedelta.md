@@ -13,13 +13,13 @@ title: to_timedelta
 ## Syntax
 
 ```python syntax
-to_timedelta(dt: Union[None, Duration]) -> datetime.timedelta
+to_timedelta(dt: Duration | None) -> datetime.timedelta
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="dt" type="Union[None, Duration]">
+<Param name="dt" type="Duration | None">
 
 A Java Duration to convert to a `datetime.timedelta`. If `None` is provided, `None` is returned.
 

@@ -208,8 +208,8 @@ class Session:
         """Initializes a Session object that connects to the Deephaven server
 
         Args:
-            host (Optional[str]): the host name or IP address of the remote machine, if None, 'localhost' is used.
-            port (Optional[int]): the port number that Deephaven server is listening on, if None, 10000 is used.
+            host (str | None): the host name or IP address of the remote machine, if None, 'localhost' is used.
+            port (int | None): the port number that Deephaven server is listening on, if None, 10000 is used.
             auth_type (str): the authentication type string, can be "Anonymous', 'Basic", or any custom-built
                 authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler",
                 default is 'Anonymous'.
@@ -219,21 +219,21 @@ class Session:
             never_timeout (bool): never allow the session to timeout, default is True
             session_type (str): the Deephaven session type. Defaults to 'python'
             use_tls (bool): if True, use a TLS connection.  Defaults to False
-            tls_root_certs (Optional[bytes]): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
+            tls_root_certs (bytes | None): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
                  If not None implies use a TLS connection and the use_tls argument should have been passed
                  as True. Defaults to None
-            client_cert_chain (Optional[bytes]): PEM encoded client certificate if using mutual TLS.  Defaults to None,
+            client_cert_chain (bytes | None): PEM encoded client certificate if using mutual TLS.  Defaults to None,
                  which implies not using mutual TLS.
-            client_private_key (Optional[bytes]): PEM encoded client private key for client_cert_chain if using mutual TLS.
+            client_private_key (bytes | None): PEM encoded client private key for client_cert_chain if using mutual TLS.
                  Defaults to None, which implies not using mutual TLS.
-            client_opts (Optional[list[Tuple[str,Union[int,str]]]): list of tuples for name and value of options to
+            client_opts (list[tuple[str, int | str]] | None): list of tuples for name and value of options to
                 the underlying grpc channel creation.  Defaults to None, which implies not using any channel
                 options.
                 See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of valid options.
                 Example options:
                   [ ('grpc.target_name_override', 'idonthaveadnsforthishost'),
                     ('grpc.min_reconnect_backoff_ms', 2000) ]
-            extra_headers (Optional[dict[bytes, bytes]]): additional headers (and values) to add to server requests.
+            extra_headers (dict[bytes, bytes] | None): additional headers (and values) to add to server requests.
                 Defaults to None, which implies not using any extra headers.
 
         Raises:
@@ -674,7 +674,7 @@ class Session:
 
         Args:
             script (str): the Python script code
-            systemic (Optional[bool]): Whether to treat the code as systemically important. Defaults to None which uses the
+            systemic (bool | None): Whether to treat the code as systemically important. Defaults to None which uses the
                     default system behavior
 
         Raises:
@@ -809,9 +809,9 @@ class Session:
         """Creates a time table on the server.
 
         Args:
-            period (Union[int, str]): the interval at which the time table ticks (adds a row); units are nanoseconds
+            period (int | str): the interval at which the time table ticks (adds a row); units are nanoseconds
                 or a time interval string, e.g. "PT00:00:.001" or "PT1S"
-            start_time (Optional[Union[int, str]]): the start time for the time table in nanoseconds or as a date time
+            start_time (int | str | None): the start time for the time table in nanoseconds or as a date time
                 formatted string; default is None (meaning now)
             blink_table (bool): if the time table should be a blink table, defaults to False
 
@@ -902,9 +902,9 @@ class Session:
         keyed if key columns are provided, otherwise it will be append-only.
 
         Args:
-            schema (Optional[pa.Schema]): the schema for the InputTable
-            init_table (Optional[Table]): the initial table
-            key_cols (Optional[Union[str, list[str]]]): the name(s) of the key column(s)
+            schema (pa.Schema | None): the schema for the InputTable
+            init_table (Table | None): the initial table
+            key_cols (str | list[str] | None): the name(s) of the key column(s)
             blink_table (bool): whether the InputTable should be a blink table, default is False
 
         Returns:

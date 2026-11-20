@@ -10,7 +10,7 @@ The `adapter_aws_glue` method creates a catalog adapter using an [AWS Glue](http
 adapter_aws_glue(
     catalog_uri: str,
     warehouse_location: str,
-    name: str = None
+    name: str | None = None
 )
 ```
 
@@ -27,7 +27,7 @@ The URI of the REST catalog.
 The location of the warehouse.
 
 </Param>
-<Param name="name" type="str" Optional>
+<Param name="name" type="str | None" Optional>
 
 A descriptive name of the catalog. If not given, the catalog name is inferred from the catalog URI.
 

@@ -7,7 +7,7 @@ title: weighted_sum
 ## Syntax
 
 ```
-weighted_sum(wcol: str, cols: Union[str, list[str]]) -> Aggregation
+weighted_sum(wcol: str, cols: str | list[str] | None = None) -> Aggregation
 ```
 
 ## Parameters
@@ -18,9 +18,9 @@ weighted_sum(wcol: str, cols: Union[str, list[str]]) -> Aggregation
 The weight column for the calculation.
 
 </Param>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str] | None" optional>
 
-The source column(s) for the calculations.
+The source column(s) for the calculations. Leave it out only when you pass this aggregation to [`agg_all_by`](./AggAllBy.md), which applies it to every non-key column.
 
 - `["X"]` will output the weighted sum of values in the `X` column for each group.
 - `["Y = X"]` will output the weighted sum of values in the `X` column for each group and rename it to `Y`.

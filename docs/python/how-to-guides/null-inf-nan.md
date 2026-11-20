@@ -228,8 +228,8 @@ result_finite = source.where(
 
 To check for special values in a [Python function](./python-functions.md), test each input as follows:
 
-- **Nulls, no `Optional` [type hint](./python-functions.md#parameter-type-hints):** compare the input against the null constants in [`deephaven.constants`](/core/pydoc/code/deephaven.constants.html), such as [`NULL_DOUBLE`](/core/pydoc/code/deephaven.constants.html).
-- **Nulls, `Optional` [type hint](./python-functions.md#parameter-type-hints):** Deephaven passes a null input as `None`, so check `input_value is None`.
+- **Nulls, no `| None` [type hint](./python-functions.md#parameter-type-hints):** compare the input against the null constants in [`deephaven.constants`](/core/pydoc/code/deephaven.constants.html), such as [`NULL_DOUBLE`](/core/pydoc/code/deephaven.constants.html).
+- **Nulls, `| None` [type hint](./python-functions.md#parameter-type-hints):** Deephaven passes a null input as `None`, so check `input_value is None`.
 - **NaN, any [type hint](./python-functions.md#parameter-type-hints):** check with `math.isnan` instead of comparing against [`NAN_DOUBLE`](/core/pydoc/code/deephaven.constants.html), because NaN never equals itself.
 - **Infinity:** compare against [`POS_INFINITY_DOUBLE`](/core/pydoc/code/deephaven.constants.html) and [`NEG_INFINITY_DOUBLE`](/core/pydoc/code/deephaven.constants.html), or use `math.isinf`.
 

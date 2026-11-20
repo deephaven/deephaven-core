@@ -39,7 +39,7 @@ def read(
     """Read the CSV data specified by the path parameter as a table.
 
     Args:
-        header (Optional[dict[str, DType]]): a dict to define the table columns with key being the name, value being the data type.
+        header (dict[str, DType] | None): a dict to define the table columns with key being the name, value being the data type.
             The keys are applied by position: the first key names and types the first column of the file, the second
             key the second column, and so on. When the file has a header row, these names replace the names in it;
             they are not matched against it. The dict must therefore list the columns in the file's order. A dict in a

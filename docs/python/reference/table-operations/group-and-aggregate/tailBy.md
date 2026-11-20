@@ -7,7 +7,7 @@ title: tail_by
 ## Syntax
 
 ```
-table.tail_by(num_rows: int, by: Union[str, list[str]]) -> Table
+table.tail_by(num_rows: int, by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ table.tail_by(num_rows: int, by: Union[str, list[str]]) -> Table
 The number of rows to return for each group.
 
 </Param>
-<Param name="by" type="Union[str, list[str]]" optional>
+<Param name="by" type="str | list[str] | None" optional>
 
 The column(s) by which to group data.
 

@@ -399,7 +399,7 @@ def in_(
 
     Args:
         col (str): the column name
-        values (Sequence[Union[bool, int, float, str]]): the values to check against
+        values (Sequence[bool | int | float | str]): the values to check against
         case_sensitive (bool): whether the comparison is case-sensitive (default is True)
 
     Returns:
@@ -419,8 +419,8 @@ def eq(
     """Creates a new filter that evaluates to true when the left operand is equal to the right operand.
 
     Args:
-        left (Union[bool, int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        left (bool | int | float | str | DatetimeLike | ColumnName): the left operand, either a literal value or a column name
+        right (bool | int | float | str | DatetimeLike | ColumnName): the right operand, either a literal value or a column name
         case_sensitive (bool): whether the comparison is case-sensitive (default is True)
 
     Returns:
@@ -442,8 +442,8 @@ def ne(
     """Creates a new filter that evaluates to true when the left operand is not equal to the right operand.
 
     Args:
-        left (Union[bool, int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        left (bool | int | float | str | DatetimeLike | ColumnName): the left operand, either a literal value or a column name
+        right (bool | int | float | str | DatetimeLike | ColumnName): the right operand, either a literal value or a column name
         case_sensitive (bool): whether the comparison is case-sensitive (default is True)
 
     Returns:
@@ -464,8 +464,8 @@ def lt(
     """Creates a new filter that evaluates to true when the left operand is less than the right operand.
 
     Args:
-        left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        left (int | float | str | DatetimeLike | ColumnName): the left operand, either a literal value or a column name
+        right (int | float | str | DatetimeLike | ColumnName): the right operand, either a literal value or a column name
 
     Returns:
         Filter: a new less-than filter
@@ -484,8 +484,8 @@ def gt(
     """Creates a new filter that evaluates to true when the left operand is greater than the right operand.
 
     Args:
-        left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        left (int | float | str | DatetimeLike | ColumnName): the left operand, either a literal value or a column name
+        right (int | float | str | DatetimeLike | ColumnName): the right operand, either a literal value or a column name
 
     Returns:
         Filter: a new greater-than filter
@@ -504,8 +504,8 @@ def le(
     """Creates a new filter that evaluates to true when the left operand is less than or equal to the right operand.
 
     Args:
-        left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        left (int | float | str | DatetimeLike | ColumnName): the left operand, either a literal value or a column name
+        right (int | float | str | DatetimeLike | ColumnName): the right operand, either a literal value or a column name
 
     Returns:
         Filter: a new less-than-or-equal filter
@@ -524,8 +524,8 @@ def ge(
     """Creates a new filter that evaluates to true when the left operand is greater than or equal to the right operand.
 
     Args:
-        left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        left (int | float | str | DatetimeLike | ColumnName): the left operand, either a literal value or a column name
+        right (int | float | str | DatetimeLike | ColumnName): the right operand, either a literal value or a column name
 
     Returns:
         Filter: a new greater-than-or-equal filter

@@ -16,7 +16,7 @@ def provider(
 
     Args:
         json_value_type (JsonValueType): the JSON value
-        factory (Optional[jpy.JType]): the factory (java type "com.fasterxml.jackson.core.JsonFactory"), by default is
+        factory (jpy.JType | None): the factory (java type "com.fasterxml.jackson.core.JsonFactory"), by default is
             None which will use a default factory
 
     Returns:

@@ -10,9 +10,9 @@ The `table_publisher` method creates a `TablePublisher`. A `TablePublisher` prod
 table_publisher(
     name: str,
     col_defs: TableDefinitionLike,
-    on_flush_callback: Callable[[TablePublisher], None] = None,
-    on_shutdown_callback: Callable[[], None] = None,
-    update_graph: UpdateGraph = None,
+    on_flush_callback: Callable[[TablePublisher], None] | None = None,
+    on_shutdown_callback: Callable[[], None] | None = None,
+    update_graph: UpdateGraph | None = None,
     chunk_size: int = 2048
 ) -> tuple[Table, TablePublisher]
 ```
@@ -30,17 +30,17 @@ The name of the blink table.
 The blink table's column definitions. See [`TableDefinitionLike`](./TableDefinitionLike.md) for the accepted forms.
 
 </Param>
-<Param name="on_flush_callback" type="Callable" optional>
+<Param name="on_flush_callback" type="Callable | None" optional>
 
 The on-flush callback, if present, is called once at the beginning of each update graph cycle. It allows publishers to add any data they may have been batching. This blocks the update cycle from proceeding, so implementations should take care not to do extraneous work. The default is `None`.
 
 </Param>
-<Param name="on_shutdown_callback" type="Callable" optional>
+<Param name="on_shutdown_callback" type="Callable | None" optional>
 
 An on-shutdown callback method. It is called once when the caller should stop adding new data and release any related resources. The default is `None`.
 
 </Param>
-<Param name="update_graph" type="UpdateGraph" optional>
+<Param name="update_graph" type="UpdateGraph | None" optional>
 
 The [update graph](../../../conceptual/dag.md) that the resulting table belongs to. The default is `None`, which uses the update graph of the current [execution context](../../../conceptual/execution-context.md).
 

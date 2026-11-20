@@ -44,7 +44,7 @@ class ConsoleService:
         """Runs a Python script in the console.
         Args:
             server_script (str): The script code to run
-            systemic (Optional[bool]): Whether to treat the code as systemically important. Defaults to None which uses the
+            systemic (bool | None): Whether to treat the code as systemically important. Defaults to None which uses the
                 default system behavior
         """
         self.start_console()
