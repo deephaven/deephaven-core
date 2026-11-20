@@ -201,8 +201,8 @@ public abstract sealed class Aggregation
      * Creates a Median aggregation.
      *
      * @param averageEvenlyDivided when the group size is even, whether to average the two middle values. When
-     *        {@code true}, averages the two middle values. When {@code false}, uses the larger value. Only applies to
-     *        numeric types. Defaults to {@code true}.
+     *        {@code true}, averages the two middle values. When {@code false}, uses the larger value. Only {@code int},
+     *        {@code long}, {@code float} and {@code double} columns are averaged. Defaults to {@code true}.
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
      *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
      *        aggAllBy} where it will be ignored.
@@ -222,7 +222,8 @@ public abstract sealed class Aggregation
      *
      * @param percentile the percentile to calculate, must be in the range [0.0, 1.0]
      * @param averageEvenlyDivided whether to average the two boundary values when the percentile falls evenly between
-     *        them. Only applies to numeric types. Defaults to {@code false} if not specified
+     *        them. Only {@code int}, {@code long}, {@code float} and {@code double} columns are averaged. Defaults to
+     *        {@code false} if not specified
      * @param columns the columns to aggregate, which can be renaming expressions such as {@code "Out = In"}. Defaults
      *        to {@code null}, which is valid only in {@link io.deephaven.web.client.api.JsTableOperations#aggAllBy
      *        aggAllBy} where it will be ignored.

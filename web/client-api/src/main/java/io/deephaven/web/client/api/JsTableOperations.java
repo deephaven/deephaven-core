@@ -1373,7 +1373,8 @@ public interface JsTableOperations extends ServerObject {
 
     /**
      * Computes the median of each column within each group. When the group size is even, averages the two middle values
-     * for numeric types.
+     * of {@code int}, {@code long}, {@code float} and {@code double} columns, and uses the larger value for other
+     * types.
      *
      * @param groupByColumns columns to group by. If omitted, computes the median across all rows
      * @return a new table with the medians
