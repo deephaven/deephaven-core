@@ -928,6 +928,10 @@ public interface JsTableOperations extends ServerObject {
      * Joins each row of this table to the rows of {@code rightTable} that match it exactly on {@code exactMatches} and
      * fall in its range, and aggregates those right rows into columns of the result. The result has one row per row of
      * this table.
+     * <p>
+     * At this time, the server supports only static (not refreshing) tables and
+     * {@link io.deephaven.web.client.api.agg.Group Group} aggregations. This operation remains under active
+     * development.
      *
      * @param rightTable the table to join to
      * @param exactMatches columns that must be equal in both tables, as {@code "Col"} or {@code "LeftCol=RightCol"}
