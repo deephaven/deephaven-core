@@ -8,7 +8,7 @@ endif()
 
 project(deephaven)
 
-set(deephaven_VERSION 43.0)
+set(deephaven_VERSION 44.0)
 set(CMAKE_CXX_STANDARD 20)
 
 if(WIN32)
