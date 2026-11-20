@@ -159,7 +159,7 @@ new_result_binned = new_source.update(
 )
 ```
 
-Since these integer bin labels repeat every day, include the date columns (`Year`, `Month`, `Day`) as grouping keys when aggregating to keep each day's bins separate. You can also [convert the data back to an `Instant`](./convert-year-day-minute-instant.md).
+Since these integer bin labels repeat every day, include the date columns (`Year`, `Month`, `Day`) as grouping keys when aggregating to keep each day's bins separate. You can also [convert the data back to an `Instant`](./convert-year-day-minute-instant.md), but note that during a spring-forward transition, bin labels in the skipped hour (e.g., 2:51 AM on March 10, 2024) do not correspond to a valid local time and will be shifted forward by Java's `atZone` (to 3:51 AM EDT in that example). Keep the date-plus-integer grouping keys for bins that fall in the gap.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
