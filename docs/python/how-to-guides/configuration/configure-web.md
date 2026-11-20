@@ -64,6 +64,8 @@ These properties set the defaults for the **Editor** options in the [**Settings*
 
 The `web.user.notebookSettings.python.linter.config` value replaces the UI's built-in Ruff settings rather than merging with them, so include every setting you want. If the value isn't valid JSON, the UI ignores it and uses its built-in settings.
 
+Changing any one **Editor** option in the **Settings** menu saves the current value of every **Editor** option in the user's browser. After that, a change to one of these server defaults no longer reaches that user, even for options they never changed.
+
 ## Advanced properties
 
 These properties control the **Enable WebGL** option in the **Advanced** section of the [**Settings** menu](../user-interface/navigating-the-ui.md). The default `client.configuration.list` already includes both, so you only need to set their values. Setting `web.webgl.editable` to `false` stops users from changing the **Enable WebGL** option, but it doesn't override a WebGL setting that a user saved in their browser before you set it.
