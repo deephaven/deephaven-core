@@ -152,7 +152,7 @@ The number of servers also matters:
 Common security aspects that require careful thought when designing application architecture include:
 
 - **Authentication**: How users identify themselves to the system. Deephaven supports [anonymous](../how-to-guides/authentication/auth-anon.md), [pre-shared key](../how-to-guides/authentication/auth-psk.md), [username and password](../how-to-guides/authentication/auth-uname-pw.md), [mTLS](../how-to-guides/authentication/auth-mtls.md), and [Keycloak](../how-to-guides/authentication/auth-keycloak.md) authentication.
-- **Authorization**: What data and operations each user can access. By default, Deephaven Community lets every authenticated user perform all operations. Finer-grained access control requires binding a custom [`AuthorizationProvider`](/core/javadoc/io/deephaven/server/auth/AuthorizationProvider.html) when you [run Deephaven from your own Java application](/core/groovy/docs/how-to-guides/configuration/custom-java-application/).
+- **Authorization**: What data and operations each user can access. By default, Deephaven Community lets every authenticated user perform all operations. Finer-grained access control requires binding a custom [`AuthorizationProvider`](/core/javadoc/io/deephaven/server/auth/AuthorizationProvider.html) when you [run Deephaven from your own Java application](../how-to-guides/configuration/custom-java-application.md).
 - **Data encryption**: Whether to encrypt data at rest, [in transit](../how-to-guides/authentication/auth-mtls.md), or both.
 - **Network isolation**: Whether servers should be isolated on separate networks.
 - **Audit logging**: How you track and monitor user actions.
@@ -262,7 +262,7 @@ The examples and considerations throughout this document provide a framework for
 - [Username and password authentication](../how-to-guides/authentication/auth-uname-pw.md)
 - [mTLS authentication](../how-to-guides/authentication/auth-mtls.md)
 - [Keycloak authentication](../how-to-guides/authentication/auth-keycloak.md)
-- [Run Deephaven from your own Java application](/core/groovy/docs/how-to-guides/configuration/custom-java-application/)
+- [Run Deephaven from your own Java application](../how-to-guides/configuration/custom-java-application.md)
 - [URIs in Deephaven](../how-to-guides/use-uris.md)
 - [Capture Python client tables with Barrage](../how-to-guides/capture-tables.md)
 - [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md)
