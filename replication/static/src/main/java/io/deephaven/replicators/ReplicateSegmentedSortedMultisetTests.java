@@ -15,14 +15,18 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateSegmentedSortedMultisetTests {
+    private static final String TASK = "replicateSegmentedSortedMultisetTests";
+
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         ReplicateSegmentedSortedMultiset.main(args);
 
         // Replicate TestFloatSegmentedSortedMultisetSpecialValues -> TestDoubleSegmentedSortedMultisetSpecialValues
-        floatToAllFloatingPoints("replicateSegmentedSortedMultisetTests",
+        floatToAllFloatingPoints(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestFloatSegmentedSortedMultisetSpecialValues.java");
-        final File doubleSpecialValuesTest = new File(
-                "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestDoubleSegmentedSortedMultisetSpecialValues.java");
+        final File doubleSpecialValuesTest = new File(replicatedOutputPath(TASK,
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestDoubleSegmentedSortedMultisetSpecialValues.java"));
         List<String> doubleSpecialValuesLines = FileUtils.readLines(doubleSpecialValuesTest, Charset.defaultCharset());
         doubleSpecialValuesLines = globalReplacements(doubleSpecialValuesLines,
                 "Double\\.intBitsToDouble\\(0x7fc12345\\)", "Double.longBitsToDouble(0x7ff8000000000001L)",
@@ -31,29 +35,29 @@ public class ReplicateSegmentedSortedMultisetTests {
                 "canonical 0x7fc00000", "canonical 0x7ff8000000000000L");
         FileUtils.writeLines(doubleSpecialValuesTest, doubleSpecialValuesLines);
 
-        charToAllButBooleanAndFloats("replicateSegmentedSortedMultisetTests",
+        charToAllButBooleanAndFloats(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
         fixupFloatTests(
-                charToFloat("replicateSegmentedSortedMultisetTests",
+                charToFloat(TASK,
                         "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java",
                         null));
-        fixupFloatTests(charToDouble("replicateSegmentedSortedMultisetTests",
+        fixupFloatTests(charToDouble(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java",
                 null));
         final String objectSsmTest =
-                charToObject("replicateSegmentedSortedMultisetTests",
+                charToObject(TASK,
                         "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
         fixupObjectSsmTest(objectSsmTest);
-        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy("replicateSegmentedSortedMultisetTests",
+        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy(TASK,
                 "TestCharSegmentedSortedMultiset", objectSsmTest);
 
         final String compactModificationsTest =
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/compactmodifications/TestCharCompactModifications.java";
-        charToAllButBooleanAndFloats("replicateSegmentedSortedMultisetTests", compactModificationsTest);
-        fixupFloatTests(charToFloat("replicateSegmentedSortedMultisetTests", compactModificationsTest, null));
-        fixupFloatTests(charToDouble("replicateSegmentedSortedMultisetTests", compactModificationsTest, null));
+        charToAllButBooleanAndFloats(TASK, compactModificationsTest);
+        fixupFloatTests(charToFloat(TASK, compactModificationsTest, null));
+        fixupFloatTests(charToDouble(TASK, compactModificationsTest, null));
         fixupObjectCompactModificationsTest(
-                charToObject("replicateSegmentedSortedMultisetTests", compactModificationsTest));
+                charToObject(TASK, compactModificationsTest));
     }
 
     private static void fixupObjectCompactModificationsTest(String objectPath) throws IOException {
