@@ -25,7 +25,7 @@ Formula validation happens when any Deephaven client API sends a gRPC request to
 - Create [rollup tables](../how-to-guides/rollup-table.md) with formula-based [aggregations](./aggregations.md).
 - Filter [rollup tables](../how-to-guides/rollup-table.md) or [tree tables](../how-to-guides/tree-table.md).
 - Add or format columns in [rollup tables](../how-to-guides/rollup-table.md).
-- Group by column expressions in [`headBy`](../reference/table-operations/group-and-aggregate/headBy.md) or [`tailBy`](../reference/table-operations/group-and-aggregate/tailBy.md).
+- Specify grouping columns in [`headBy`](../reference/table-operations/group-and-aggregate/headBy.md) or [`tailBy`](../reference/table-operations/group-and-aggregate/tailBy.md). The server validates these strings, but both methods accept only existing column names, not calculated grouping expressions.
 
 Validation does **not** apply to code you run in the console or script editor. To prevent that code from running, disable the [console service](../how-to-guides/configuration/console-service.md#configuration).
 
