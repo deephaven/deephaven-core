@@ -9,9 +9,9 @@ The `read_csv` method will read a CSV file into an in-memory table.
 ```python syntax
 read_csv(
     path: str,
-    header: dict[str, dht.DType] = None,
+    header: Sequence[str] | dict[str, dht.DType] = None,
     headless: bool = False,
-    header_row: int = 0
+    header_row: int = 0,
     skip_rows: int = 0,
     num_rows: int = MAX_LONG,
     ignore_empty_lines: bool = False,
@@ -21,6 +21,7 @@ read_csv(
     quote: str = '"',
     ignore_surrounding_spaces: bool = True,
     trim: bool = False,
+    col_types: dict[str, dht.DType] = None,
 ) -> Table:
 ```
 
@@ -29,15 +30,22 @@ read_csv(
 
 ## Parameters
 
+The column names come from the file's header row, from `header`, or are `Column1`, `Column2`, and so on for a headless file. Deephaven turns names that aren't legal column names into legal ones; for example, `my venue` becomes `my_venue`. The column types are inferred from the data, unless a `header` dict or `col_types` sets them.
+
+`header` applies names by position. The first name goes to the first column, the second to the second, and so on. The names replace the file's header names and are not matched against them. `col_types` matches by name, in any order, and uses the names before Deephaven makes them legal.
+
 <ParamTable>
 <Param name="path" type="str">
 
 The file to load into a table. Note that compressed files _are_ accepted: paths ending in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst", or ".tar" will automatically be decompressed before they are read.
 
 </Param>
-<Param name="header" type="dict" optional>
+<Param name="header" type="Sequence[str] | dict" optional>
 
-Define a dictionary for the header and the data type: `[str, DataType]`. Default is `None`.
+The column names, applied by position. The number of names sets the number of columns. A row with more cells is an error, unless `ignore_excess_columns` is `True`. Default is `None`, which takes the names from the file.
+
+- A sequence of names only renames the columns.
+- A dict also sets each column's type, so its keys must be in the file's column order, or the names and types go to the wrong columns. To set types by name, use `col_types`. A dict can't be combined with `col_types`.
 
 </Param>
 <Param name="headless" type="bool" optional>
@@ -57,7 +65,7 @@ The header row number:
 </Param>
 <Param name="skip_rows" type="int" optional>
 
-The number of rows to skip before processing data. Default is none.
+The number of rows to skip before processing data. Default is 0.
 
 </Param>
 <Param name="num_rows" type="int" optional>
@@ -106,20 +114,12 @@ Trim leading and trailing blanks from non-quoted values. Default is `True`.
 Trim leading and trailing blanks from inside quoted values. Default is `False`.
 
 </Param>
-<Param name="charset" type="str" optional>
+<Param name="col_types" type="dict" optional>
 
-The character set. Default is `utf-8`.
-
-</Param>
-<Param name="csvSpecs" type="CsvSpecs" optional>
-
-Specifications for how to load the CSV file.
+The data types of some or all columns, matched by name: `dict[str, DType]`. A name that matches no column raises an error. Default is `None`, which infers the types, except those a `header` dict sets.
 
 </Param>
 </ParamTable>
-
-> [!NOTE]
-> Only one format parameter can be used at a time.
 
 ## Returns
 
@@ -161,6 +161,18 @@ from deephaven import read_csv
 
 result = read_csv(
     "https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro.csv"
+)
+```
+
+In the following example, `col_types` sets the types of two columns by name. The keys can be in any order, and the `Year` column, which is left out, keeps its inferred type.
+
+```python
+from deephaven import read_csv
+import deephaven.dtypes as dht
+
+result = read_csv(
+    "https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro.csv",
+    col_types={"Title": dht.string, "Score": dht.double},
 )
 ```
 
