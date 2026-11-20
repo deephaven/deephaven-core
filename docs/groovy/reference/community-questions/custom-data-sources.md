@@ -228,7 +228,7 @@ Deephaven tables can be "coalesced" or "uncoalesced":
 - **Uncoalesced tables** — Reference data but defer the work of assembling a full `QueryTable`. Most query operations coalesce the table automatically before executing.
 - **Coalesced tables** — Fully formed `QueryTable` instances ready for query operations.
 
-When reading partitioned on-disk data, the table starts uncoalesced. A `where` filter on a partition column (like `"Date=today()"`) can select matching partitions and coalesce only those, avoiding the need to assemble rows for excluded partitions. Other operations coalesce all partitions before executing.
+When reading partitioned on-disk data, the table starts uncoalesced. A `where` filter on a partition column (like `"Date=today()"`) can select matching partitions and coalesce only those, avoiding the need to assemble rows for excluded partitions. Some operations on partition columns, such as `selectDistinct`, can also work directly on partition metadata without coalescing the data at all. Operations that need the full row set coalesce the remaining partitions before executing.
 
 ### Data indexes for performance
 
