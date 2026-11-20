@@ -21,6 +21,8 @@ public class ReplicateHashing {
     private static final String TASK = "replicateHashing";
 
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         charToAll(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
         final String objectHasher =
                 charToObject(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
