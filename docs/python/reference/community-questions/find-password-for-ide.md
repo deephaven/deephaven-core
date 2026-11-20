@@ -6,7 +6,7 @@ title: Where can I find the password for the Deephaven IDE?
 
 <p></p>
 
-The password the IDE asks for is Deephaven's pre-shared key (PSK). If you didn't set one, Deephaven generated a random key at startup and printed it in the server log in a line that starts `Superuser access through pre-shared key is enabled`. The log also includes a URL that ends in `/?psk=<key>`, which logs you in directly.
+The password the IDE asks for is Deephaven's pre-shared key (PSK). If you didn't set one, Deephaven generates a random key at startup and prints it in the server log in a line that starts with `Superuser access through pre-shared key is enabled`. The log also includes a URL that ends in `/?psk=<key>`, which logs you in directly.
 
 With Docker Compose, view the log with `docker compose logs`. If you started Deephaven with `docker run`, use `docker logs deephaven` instead. With the Python embedded server, get the login URL from the server object:
 
