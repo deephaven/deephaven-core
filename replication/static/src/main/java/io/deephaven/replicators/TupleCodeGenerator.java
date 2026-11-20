@@ -21,6 +21,8 @@ import java.util.stream.Stream;
  * Generator for a library of semi-opaque classes for tuple (ordered, multi-element) keys.
  */
 public class TupleCodeGenerator {
+    private static final String TASK = "replicateTuples";
+
 
     /*
      * TODO: Support getters for tuple elements? No use case currently, and might encourage mutations. TODO: Generify
@@ -30,7 +32,7 @@ public class TupleCodeGenerator {
 
     private static final String OUTPUT_PACKAGE = "io.deephaven.tuple.generated";
     private static final File OUTPUT_RELATIVE_PATH =
-            new File("engine/tuple/src/main/java/io/deephaven/tuple/generated");
+            new File("engine/tuple/src/replicated/" + TASK + "/java/io/deephaven/tuple/generated");
 
     private static final String VAL = "$val$";
     private static final String OUT = "$out$";
