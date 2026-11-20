@@ -7,6 +7,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -15,6 +16,7 @@ import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.server.session.SessionService;
 import io.grpc.stub.StreamObserver;
 import org.junit.Test;
@@ -24,9 +26,11 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;
@@ -39,8 +43,9 @@ import static org.junit.Assert.assertTrue;
 /**
  * Round trips through producers that write each propagation phase to their subscribers on several threads at once: that
  * the writes really do run at the same time, that subscribers sharing a producer's dictionaries each still receive
- * every value they are sent, that a failing subscriber is removed without disturbing the others, and that many
- * subscriptions growing together all receive their snapshots.
+ * every value they are sent, that a failing subscriber is removed without disturbing the others, that many
+ * subscriptions growing together all receive their snapshots, and that viewport subscribers are written before full
+ * subscribers.
  */
 public class BarrageMessageParallelPropagationTest extends BarrageMessageRoundTripTestBase {
 
@@ -211,6 +216,78 @@ public class BarrageMessageParallelPropagationTest extends BarrageMessageRoundTr
         }
     }
 
+    /**
+     * Every viewport subscriber's write finishes before any full subscriber's write begins, in the snapshot phase and
+     * in a delta phase, although the full subscriptions are added first and the pool is too busy to take any write,
+     * which leaves every write to the propagation job's own thread.
+     */
+    @Test
+    public void testViewportSubscribersAreWrittenFirst() {
+        final Random random = new Random(4);
+        final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(new String[] {"Sym", "intCol"},
+                new SetGenerator<>("a", "b", "c"), new IntGenerator(0, 100));
+        // small enough that the snapshot fits in the first growth round, which sends each subscriber one message
+        final int size = (int) (BarrageUtil.MIN_SNAPSHOT_CELL_COUNT / columnInfo.length);
+        final QueryTable sourceTable = getTable(size, random, columnInfo);
+        // queues every job and never starts one, as a pool whose threads are all busy does; the propagation job's
+        // thread then runs every queued write itself
+        final Executor busyPool = runnable -> {
+        };
+        final BarrageMessageProducer producer = sourceTable.getResult(new BarrageMessageProducer.Operation(scheduler,
+                new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
+                sourceTable, UPDATE_INTERVAL, null, () -> new ExecutorJobScheduler(busyPool, PROPAGATION_THREADS)));
+
+        final List<String> writes = Collections.synchronizedList(new ArrayList<>());
+        final List<RecordingObserver> observers = new ArrayList<>();
+        final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder().build();
+        for (int si = 0; si < 3; ++si) {
+            final RecordingObserver observer = new RecordingObserver("full-" + si, writes);
+            observers.add(observer);
+            producer.addSubscription(observer, options, null, null, false);
+        }
+        for (int si = 0; si < 3; ++si) {
+            final RecordingObserver observer = new RecordingObserver("viewport-" + si, writes);
+            observers.add(observer);
+            producer.addSubscription(observer, options, null, RowSetFactory.fromRange(si * 10L, si * 10L + 9), false);
+        }
+        flushProducerTable();
+        // a schema, then the snapshot, to each subscriber
+        assertEquals("snapshot writes " + writes, 2 * observers.size(), writes.size());
+        assertViewportsWrittenFirst("snapshot", writes);
+
+        writes.clear();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+        flushProducerTable();
+        // the delta, to each subscriber; the identical full subscribers share one write, which sends each record batch
+        // as its own message
+        for (final RecordingObserver observer : observers) {
+            assertTrue("delta writes " + writes, writes.contains(observer.name));
+        }
+        assertViewportsWrittenFirst("delta", writes);
+
+        for (final RecordingObserver observer : observers) {
+            assertNull(observer.name + " failed", observer.failure);
+            producer.removeSubscription(observer);
+        }
+        flushProducerTable();
+    }
+
+    /** Asserts that every viewport subscriber's message in {@code writes} comes before every full subscriber's. */
+    private static void assertViewportsWrittenFirst(final String phase, final List<String> writes) {
+        int lastViewportWrite = -1;
+        int firstFullWrite = writes.size();
+        for (int wi = 0; wi < writes.size(); ++wi) {
+            if (writes.get(wi).startsWith("viewport-")) {
+                lastViewportWrite = wi;
+            } else {
+                firstFullWrite = Math.min(firstFullWrite, wi);
+            }
+        }
+        assertTrue(phase + " writes " + writes, lastViewportWrite < firstFullWrite);
+    }
+
     /** Runs {@code steps} random update cycles, propagating each and validating every client afterwards. */
     private void runSteps(final RemoteNugget nugget, final QueryTable sourceTable, final ColumnInfo<?, ?>[] columnInfo,
             final int size, final Random random, final int steps) {
@@ -247,18 +324,7 @@ public class BarrageMessageParallelPropagationTest extends BarrageMessageRoundTr
                     throw new IllegalStateException("the subscribers' writes did not run at the same time", e);
                 }
             }
-            try {
-                view.forEachStream(stream -> {
-                    try {
-                        stream.drainTo(OutputStream.nullOutputStream());
-                        stream.close();
-                    } catch (final IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
-            } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            drain(view);
         }
 
         @Override
@@ -268,5 +334,47 @@ public class BarrageMessageParallelPropagationTest extends BarrageMessageRoundTr
 
         @Override
         public void onCompleted() {}
+    }
+
+    /** Drains what it is sent, adding its name to {@code writes} for each message. */
+    private static final class RecordingObserver implements StreamObserver<BarrageMessageWriter.MessageView> {
+        private final String name;
+        private final List<String> writes;
+        private volatile Throwable failure;
+
+        private RecordingObserver(final String name, final List<String> writes) {
+            this.name = name;
+            this.writes = writes;
+        }
+
+        @Override
+        public void onNext(final BarrageMessageWriter.MessageView view) {
+            writes.add(name);
+            drain(view);
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            failure = t;
+        }
+
+        @Override
+        public void onCompleted() {}
+    }
+
+    /** Reads every stream of {@code view} to its end and closes each one. */
+    private static void drain(final BarrageMessageWriter.MessageView view) {
+        try {
+            view.forEachStream(stream -> {
+                try {
+                    stream.drainTo(OutputStream.nullOutputStream());
+                    stream.close();
+                } catch (final IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

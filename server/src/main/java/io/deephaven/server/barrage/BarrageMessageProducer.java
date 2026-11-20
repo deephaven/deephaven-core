@@ -173,9 +173,10 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     /**
      * The name under which the server binds the {@code Supplier<JobScheduler>} that producers write to their
-     * subscribers through. Each propagation phase takes a {@link JobScheduler} from it and runs its writes as one
-     * {@link JobScheduler#invokeParallel invokeParallel} on it, so the schedulers it supplies must be usable from any
-     * thread. The server's are backed by a pool sized by {@link #PROPAGATION_THREADS}.
+     * subscribers through. Each propagation phase takes a {@link JobScheduler} from it and runs its writes on it as up
+     * to two {@link JobScheduler#invokeParallel invokeParallel} calls, the viewport subscribers' writes and then the
+     * full subscribers', so the schedulers it supplies must be usable from any thread. The server's are backed by a
+     * pool sized by {@link #PROPAGATION_THREADS}.
      */
     public static final String PROPAGATION_JOB_SCHEDULER = "BarrageMessageProducer.propagationJobScheduler";
 
@@ -1610,19 +1611,23 @@ public class BarrageMessageProducer extends LivenessArtifact
      * rows may not need to be requested. This can only happen on the first snapshot after the change, so the
      * `isFirstSnapshot` flag is used to add these rows to the viewport on the first snapshot.</li>
      * <li>To generate the full rowset for the snapshot, a maximum number of rows to snapshot is computed and the
-     * subscriptions are processed in a prioritized order, placing viewport above full subscriptions. For each
-     * subscription (while not exceeding the snapshot maximum number of rows), rows are extracted from the
-     * `growingRemainingViewport` into `growingIncrementalViewport`. Each subscription can also leverage rows already
-     * selected for this cycle by previous subscriptions (where the direction of the viewport matches). Additionally,
-     * the `snapshotViewport` is expanded by the additional rows this client will receive this cycle. When a snapshot is
-     * successfully created, this `snapshotViewport` will be promoted to the `activeViewport` for this
-     * subscription.</li>
+     * subscriptions are processed in a prioritized order, placing viewport above full subscriptions and full
+     * subscriptions nearest completion first. Rows are extracted from each subscription's `growingRemainingViewport`
+     * into `growingIncrementalViewport`. Each viewport subscription completes in this snapshot, even if the snapshot
+     * exceeds the maximum. Full subscriptions share what remains of the maximum, taking only positions that hold rows.
+     * Each subscription can also leverage rows already selected for this cycle by other subscriptions (where the
+     * direction of the viewport matches). Additionally, the `snapshotViewport` is expanded by the additional rows this
+     * client will receive this cycle. When a snapshot is successfully created, this `snapshotViewport` will be promoted
+     * to the `activeViewport` for this subscription.</li>
      * <li>When the parent table is smaller than the viewport, it is possible to snapshot all rows in the table before
      * exhausting `growingRemainingViewport`. During the snapshot call and while the lock is held,
      * `finalizeSnapshotForSubscriptions()` is called which will detect when the subscription is complete and will
      * perform some clean up as well as updating the subscription `activeViewport` to match the initially set
-     * `targetViewport`. When the final snapshot message is sent, the client will see that the `activeViewport` matches
-     * the requested `targetViewport` and the subscription snapshotting process is complete.</li>
+     * `targetViewport`. A full subscription's remaining positions past the end of the table join the subscription's
+     * viewport there, so rows added at those positions later arrive as updates, and the subscription completes once the
+     * subscription holds every row of the table as of a snapshot. When the final snapshot message is sent, the client
+     * will see that the `activeViewport` matches the requested `targetViewport` and the subscription snapshotting
+     * process is complete.</li>
      * </ol>
      */
 
@@ -1638,8 +1643,12 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         List<Subscription> deletedSubscriptions = null;
 
+        final long tableSize;
+
         // check for pending changes (under the lock)
         synchronized (this) {
+            tableSize = parentTableSize;
+
             List<Subscription> updatedSubscriptions = null;
 
             if (!pendingSubscriptions.isEmpty()) {
@@ -1796,18 +1805,25 @@ public class BarrageMessageProducer extends LivenessArtifact
 
             snapshotColumns = new BitSet();
 
+            final List<Subscription> growingFullSubscriptions = new ArrayList<>();
             for (final Subscription subscription : activeSubscriptions) {
                 if (subscription.isGrowingViewport) {
                     // build the column set from all columns needed by the growing subscriptions
                     snapshotColumns.or(subscription.targetColumns);
 
                     if (subscription.targetViewport == null) {
-                        growingSubscriptions.addLast(subscription); // full sub gets low priority
+                        growingFullSubscriptions.add(subscription); // full sub gets low priority
                     } else {
                         growingSubscriptions.addFirst(subscription); // viewport sub gets higher priority
                     }
                 }
             }
+
+            // Full subscriptions nearest completion come first. A full subscription that started later still needs
+            // every position an earlier full subscription needs, so the rows reserved for the subscription nearest
+            // completion serve every full subscription.
+            growingFullSubscriptions.sort(Comparator.comparingLong(sub -> sub.growingRemainingViewport.size()));
+            growingSubscriptions.addAll(growingFullSubscriptions);
 
             // we want to limit the size of the snapshot to keep the UGP responsive
             final long columnCount = Math.max(1, snapshotColumns.cardinality());
@@ -1816,11 +1832,14 @@ public class BarrageMessageProducer extends LivenessArtifact
             if (SUBSCRIPTION_GROWTH_ENABLED) {
                 final long cellCount =
                         Math.max(MIN_SNAPSHOT_CELL_COUNT, Math.min(snapshotTargetCellCount, MAX_SNAPSHOT_CELL_COUNT));
-                rowsRemaining = cellCount / columnCount;
+                // At least one row: with more columns than cells, a budget of zero rows would snapshot nothing, and
+                // the cell count is only tuned after a snapshot that includes rows, so no subscription would grow.
+                rowsRemaining = Math.max(1, cellCount / columnCount);
             } else {
                 // growth is disabled, allow unlimited snapshot size
                 rowsRemaining = Long.MAX_VALUE;
             }
+            final long rowBudget = rowsRemaining;
 
             // some builders to help generate the rowsets we need
             RowSetBuilderRandom viewportBuilder = RowSetFactory.builderRandom();
@@ -1868,47 +1887,46 @@ public class BarrageMessageProducer extends LivenessArtifact
 
                     // get the rows that we need that are already in the snapshot
                     subscription.growingIncrementalViewport = subscription.growingRemainingViewport.extract(currentSet);
-                    if (rowsRemaining > 0) {
-                        try (final WritableRowSet additional = subscription.growingRemainingViewport.copy()) {
 
-                            // shrink the set of new rows to <= `rowsRemaining` size
-                            if (additional.size() > rowsRemaining) {
-                                final long key = additional.get(rowsRemaining);
-                                additional.removeRange(key, Long.MAX_VALUE - 1);
-
-                                // update the rows remaining
-                                subscription.growingRemainingViewport.removeRange(0, key - 1);
-                            } else {
-                                // all rows are satisfied
-                                subscription.growingRemainingViewport.clear();
-                            }
-
-                            // store the rowset that applies for this exact snapshot
-                            subscription.growingIncrementalViewport.insert(additional);
-
-                            // add the new rows to the upcoming snapshot
-                            currentSet.insert(additional);
-
-                            if (subscription.targetReverseViewport) {
-                                // add this set to the global reverse viewport (for scoping)
-                                reverseViewportBuilder.addRowSet(additional);
-                            } else {
-                                // add this set to the global forward viewport (for scoping)
-                                viewportBuilder.addRowSet(additional);
-                            }
-
-                            // decrement the remaining row count
-                            rowsRemaining -= additional.size();
-                        }
+                    final RowSetBuilderRandom directionViewportBuilder =
+                            subscription.targetReverseViewport ? reverseViewportBuilder : viewportBuilder;
+                    if (subscription.targetViewport != null) {
+                        // A viewport feeds a GUI that someone is watching, so this round takes every remaining
+                        // position of the viewport, even past the budget. The positions that hold rows are charged,
+                        // which leaves the growing subscriptions only what remains of the budget; the viewport's
+                        // positions past the table's end cost nothing.
+                        rowsRemaining -= reserveSnapshotPositions(subscription, currentSet, directionViewportBuilder,
+                                tableSize - 1, Long.MAX_VALUE);
+                        reserveSnapshotPositions(subscription, currentSet, directionViewportBuilder,
+                                Long.MAX_VALUE - 1, Long.MAX_VALUE);
+                    } else if (rowsRemaining > 0) {
+                        // positions past the table's end join the viewport when the snapshot is taken, at no cost
+                        rowsRemaining -= reserveSnapshotPositions(subscription, currentSet, directionViewportBuilder,
+                                tableSize - 1, rowsRemaining);
                     }
-
-                    subscription.snapshotViewport.insert(subscription.growingIncrementalViewport);
 
                     // save the column set
                     subscription.snapshotColumns = (BitSet) subscription.targetColumns.clone();
 
                     // save the forward/reverse viewport setting
                     subscription.snapshotReverseViewport = subscription.targetReverseViewport;
+                }
+
+                if (rowsRemaining < 0 && log.isDebugEnabled()) {
+                    log.debug().append(logPrefix).append("viewport subscriptions exceeded the growth budget of ")
+                            .append(rowBudget).append(" rows by ").append(-rowsRemaining).append(" rows").endl();
+                }
+
+                for (final Subscription subscription : growingSubscriptions) {
+                    final WritableRowSet currentSet =
+                            subscription.targetReverseViewport ? reverseSnapshotRowSet : snapshotRowSet;
+
+                    // pick up the positions that subscriptions later in the round reserved
+                    try (final RowSet reservedByOthers = subscription.growingRemainingViewport.extract(currentSet)) {
+                        subscription.growingIncrementalViewport.insert(reservedByOthers);
+                    }
+
+                    subscription.snapshotViewport.insert(subscription.growingIncrementalViewport);
                 }
 
                 // update the postSnapshot viewports/columns to include the new viewports (excluding `full`)
@@ -2059,7 +2077,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
                 // Each subscription's snapshot is written independently of the others', so they are written in
                 // parallel; the writer is closed only once every one of them has finished.
-                forEachInParallel(snapshotTargets,
+                forEachInParallel(snapshotTargets, Subscription::isFullSubscription,
                         subscription -> propagateSnapshotForSubscription(subscription, snapshotGenerator));
             }
             recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
@@ -2096,6 +2114,43 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
     }
 
+    /**
+     * Moves a growing subscription's next remaining positions into the upcoming snapshot.
+     *
+     * @param subscription the growing subscription to reserve positions for
+     * @param currentSet the snapshot positions of the subscription's viewport direction
+     * @param viewportBuilder the builder of the global viewport of the subscription's viewport direction (for scoping)
+     * @param lastPosition the last position, inclusive, that may be reserved
+     * @param maxPositions the most positions that may be reserved
+     * @return the number of positions reserved
+     */
+    private static long reserveSnapshotPositions(
+            final Subscription subscription,
+            final WritableRowSet currentSet,
+            final RowSetBuilderRandom viewportBuilder,
+            final long lastPosition,
+            final long maxPositions) {
+        try (final WritableRowSet additional =
+                subscription.growingRemainingViewport.subSetByKeyRange(0, lastPosition)) {
+            // shrink the set of new rows to <= `maxPositions` size
+            if (additional.size() > maxPositions) {
+                additional.removeRange(additional.get(maxPositions), Long.MAX_VALUE - 1);
+            }
+
+            // update the rows remaining
+            subscription.growingRemainingViewport.remove(additional);
+
+            // store the rowset that applies for this exact snapshot
+            subscription.growingIncrementalViewport.insert(additional);
+
+            // add the new rows to the upcoming snapshot
+            currentSet.insert(additional);
+            viewportBuilder.addRowSet(additional);
+
+            return additional.size();
+        }
+    }
+
     private void propagateToSubscribers(
             final BarrageMessage message,
             final RowSet propRowSetForMessagePrev,
@@ -2109,7 +2164,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 message, chunkWriters, this::recordWriteMetrics)) {
             // Each unit's view is written independently of the others', so they are written in parallel; the writer is
             // closed only once every one of them has finished.
-            forEachInParallel(units, unit -> {
+            forEachInParallel(units, unit -> unit.get(0).isFullSubscription(), unit -> {
                 if (unit.size() == 1) {
                     propagateSingle(bmw, unit.get(0), propRowSetForMessagePrev, propRowSetForMessage);
                 } else {
@@ -2306,18 +2361,38 @@ public class BarrageMessageProducer extends LivenessArtifact
     /**
      * Runs {@code action} once for each of {@code targets}, in parallel on as many threads as the propagation job
      * scheduler supplies, and returns only once every run has finished, so that the caller may then release what they
-     * were reading. Runs for different targets happen at the same time, so {@code action} may change only the state of
-     * its own target's subscriptions and shared state that is thread-safe, such as the {@link SharedWriterDictionary}s
-     * that full subscriptions add to. Each run handles its own subscribers' failures; what this throws is a failure
-     * none of them handled, once the runs already started have finished.
+     * were reading. Every viewport target's run finishes before any full target's run begins: a viewport subscription's
+     * write is small and usually has a person waiting on the result, while a full subscription's write grows with the
+     * table. Runs for different targets happen at the same time, so {@code action} may change only the state of its own
+     * target's subscriptions and shared state that is thread-safe, such as the {@link SharedWriterDictionary}s that
+     * full subscriptions add to. Each run handles its own subscribers' failures; what this throws is a failure none of
+     * them handled, once the runs already started have finished, and no full target's run begins after a viewport
+     * target's run throws.
      */
-    private <T> void forEachInParallel(final List<T> targets, final Consumer<T> action) {
-        propagationJobSchedulerFactory.get().invokeParallel(
+    private <T> void forEachInParallel(
+            final List<T> targets,
+            final Predicate<T> isFull,
+            final Consumer<T> action) {
+        final Map<Boolean, List<T>> targetsByFull = targets.stream().collect(Collectors.partitioningBy(isFull));
+        final List<T> viewportTargets = targetsByFull.get(false);
+        final List<T> fullTargets = targetsByFull.get(true);
+
+        // Run the viewport subscriptions first.
+        final JobScheduler jobScheduler = propagationJobSchedulerFactory.get();
+        jobScheduler.invokeParallel(
                 ExecutionContext.getContext(),
-                logOutput -> logOutput.append(logPrefix).append("propagation"),
+                logOutput -> logOutput.append(logPrefix).append("viewport propagation"),
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                0, targets.size(),
-                (context, targetIndex, nestedErrorConsumer) -> action.accept(targets.get(targetIndex)));
+                0, viewportTargets.size(),
+                (context, targetIndex, nestedErrorConsumer) -> action.accept(viewportTargets.get(targetIndex)));
+
+        // Now all the full subs.
+        jobScheduler.invokeParallel(
+                ExecutionContext.getContext(),
+                logOutput -> logOutput.append(logPrefix).append("full propagation"),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0, fullTargets.size(),
+                (context, targetIndex, nestedErrorConsumer) -> action.accept(fullTargets.get(targetIndex)));
     }
 
     /**
@@ -2787,6 +2862,19 @@ public class BarrageMessageProducer extends LivenessArtifact
         boolean rebuildViewport = false;
 
         for (final Subscription subscription : subscriptions) {
+            if (subscription.targetViewport == null && !isBlinkTable) {
+                // No row of the snapshot lies past the table's end, so a full subscription's positions there join the
+                // viewport: rows added at those positions later arrive as updates instead of in later snapshots.
+                try (final RowSet pastEnd =
+                        subscription.growingRemainingViewport.subSetByKeyRange(parentTableSize, Long.MAX_VALUE - 1)) {
+                    if (!pastEnd.isEmpty()) {
+                        subscription.growingRemainingViewport.remove(pastEnd);
+                        subscription.viewport.writableCast().insert(pastEnd);
+                        rebuildViewport = true;
+                    }
+                }
+            }
+
             // note: blink tables send empty snapshots - so we are always complete
             boolean isComplete = subscription.growingRemainingViewport.isEmpty()
                     || subscription.growingRemainingViewport.firstRowKey() >= parentTableSize
