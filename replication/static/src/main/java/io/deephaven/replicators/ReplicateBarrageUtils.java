@@ -15,38 +15,43 @@ import java.util.List;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateBarrageUtils {
+    private static final String TASK = "replicateBarrageUtils";
     private static final String CHUNK_PACKAGE =
             "extensions/barrage/src/main/java/io/deephaven/extensions/barrage/chunk";
 
     public static void main(final String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+        redirectOutputToReplicated(TASK);
+
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 CHUNK_PACKAGE + "/CharChunkWriter.java");
 
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 CHUNK_PACKAGE + "/CharChunkReader.java");
-        fixupByteChunkReader(CHUNK_PACKAGE + "/ByteChunkReader.java");
+        fixupByteChunkReader(replicatedOutputPath(TASK, CHUNK_PACKAGE + "/ByteChunkReader.java"));
 
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 CHUNK_PACKAGE + "/array/CharArrayExpansionKernel.java");
 
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 CHUNK_PACKAGE + "/vector/CharVectorExpansionKernel.java");
 
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 CHUNK_PACKAGE + "/CharBarrageCopyKernel.java");
-        fixupObjectBarrageCopyKernel(ReplicatePrimitiveCode.charToObject("replicateBarrageUtils",
+        fixupObjectBarrageCopyKernel(ReplicatePrimitiveCode.charToObject(TASK,
                 CHUNK_PACKAGE + "/CharBarrageCopyKernel.java"));
 
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 CHUNK_PACKAGE + "/CharBarrageRunKernel.java");
 
         // The Object variant is hand-written because null handling and generics differ; the Float and Double
         // variants need NaN canonicalization in getOrAdd, handled by the region fixup below.
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 CHUNK_PACKAGE + "/writermap/CharDictionaryWriterValueMap.java");
-        fixupDictionaryWriterValueMap(CHUNK_PACKAGE + "/writermap/FloatDictionaryWriterValueMap.java", "float",
+        fixupDictionaryWriterValueMap(
+                replicatedOutputPath(TASK, CHUNK_PACKAGE + "/writermap/FloatDictionaryWriterValueMap.java"), "float",
                 "Float");
-        fixupDictionaryWriterValueMap(CHUNK_PACKAGE + "/writermap/DoubleDictionaryWriterValueMap.java", "double",
+        fixupDictionaryWriterValueMap(
+                replicatedOutputPath(TASK, CHUNK_PACKAGE + "/writermap/DoubleDictionaryWriterValueMap.java"), "double",
                 "Double");
     }
 
