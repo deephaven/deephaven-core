@@ -1,0 +1,18 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["dist/index.d.ts"],
+  "out": "/out/documentation",
+  "hideGenerator": true,
+  "disableSources": true,
+  "customCss": "theme.css",
+  "projectDocuments": ["guides/**/*.md"],
+  "alwaysCreateEntryPointModule": false,
+  "searchInDocuments": true,
+  "externalSymbolLinkMappings": {
+    "typescript": {
+      "Date": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
+      "Uint8Array": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array",
+      "NumberConstructor.NaN": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/NaN"
+    }
+  }
+}

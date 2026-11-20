@@ -8,7 +8,7 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@deephaven/jsapi-types": ["../../build/ts-types/types.d.ts"]
+      "@deephaven/jsapi-types": ["../../build/ts-types/types.d.ts", "../dist/index.d.ts"]
     }
   },
   "include": ["*.ts"]

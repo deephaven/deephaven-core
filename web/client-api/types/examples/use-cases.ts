@@ -2,6 +2,7 @@
 import { dh } from "@deephaven/jsapi-types";
 declare const session: dh.IdeSession;
 
+// #region createAndTransform
 // py: empty_table(5).update(["X = i", "Y = X * 2"])
 async function createAndTransform() {
     const t = await session.emptyTable(5).update(["X = i", "Y = X * 2"]);
@@ -10,7 +11,9 @@ async function createAndTransform() {
     const firstY: unknown = data.getData(0, y);
     t.close();
 }
+// #endregion createAndTransform
 
+// #region tickingSorted
 // py: time_table("PT1s").update(["X = i"]).sort_descending(["X"])
 async function tickingSorted() {
     const t = await session.timeTable(1e9).update(["X = i"]).sort([{ column: "X", direction: "DESC" }]);
@@ -18,7 +21,9 @@ async function tickingSorted() {
     t.close();
     t2.close();
 }
+// #endregion tickingSorted
 
+// #region filterNamed
 // py: source = ...; source.where(["X > 2"])
 async function filterNamed() {
     const source = session.getObject({ type: "Table", name: "source" }) as dh.PendingTable<dh.Table>;
@@ -26,7 +31,9 @@ async function filterNamed() {
     const filtered = await source.where([dh.FilterValue.ofColumn("X").greaterThan(dh.FilterValue.ofNumber(2))]);
     filtered.close();
 }
+// #endregion filterNamed
 
+// #region joins
 // py: left.natural_join(right, on=["Key"], joins=["Value"]); left.aj(right, on=["Key", "Ts"])
 async function joins() {
     const left = session.getObject({ type: "Table", name: "left" }) as dh.PendingTable<dh.Table>;
@@ -42,7 +49,9 @@ async function joins() {
     asOf.close();
     exact.close();
 }
+// #endregion joins
 
+// #region uniqueWithSentinel
 // py: t.agg_by([agg.unique(["X"], non_unique_sentinel=-1)], by=["Key"])
 async function uniqueWithSentinel() {
     const t = session.emptyTable(6).update(["Key = i % 3", "X = i", "L = (long) i"]);
@@ -55,7 +64,9 @@ async function uniqueWithSentinel() {
     });
     unique.close();
 }
+// #endregion uniqueWithSentinel
 
+// #region aggregate
 // py: t.agg_by([agg.sum_(["SumX = X"]), agg.count_("N")], by=["Key"])
 async function aggregate() {
     const t = session.timeTable(1e9).update(["Key = i % 3", "X = i"]);
@@ -74,7 +85,9 @@ async function aggregate() {
     viaLiterals.close();
     sumBy.close();
 }
+// #endregion aggregate
 
+// #region updateBy
 // py: t.update_by(ops=[cum_sum(["CumX = X"])], by=["Key"])
 async function updateBy() {
     const t = await session.timeTable(1e9).update(["Key = i % 3", "X = i"]).updateBy({
@@ -83,7 +96,9 @@ async function updateBy() {
     });
     t.close();
 }
+// #endregion updateBy
 
+// #region rollingUpdateBy
 // py: t.update_by(ops=[rolling_sum_tick(["SumX = X"], rev_ticks=5)], by=["Key"])
 async function rollingUpdateBy() {
     const t = await session.timeTable(1e9).update(["Key = i % 3", "X = i"]).updateBy({
@@ -95,7 +110,9 @@ async function rollingUpdateBy() {
     });
     t.close();
 }
+// #endregion rollingUpdateBy
 
+// #region weightedAverages
 // py: t.weighted_avg_by("W", by=["Key"])
 //     t.agg_by([agg.weighted_avg("W", ["WAvgX = X"]), agg.avg(["AvgX = X"]), agg.count_("N")], by=["Key"])
 //     t.update_by(ops=[rolling_wavg_tick("W", ["RollWAvgX = X"], rev_ticks=3)], by=["Key"])
@@ -127,7 +144,9 @@ async function weightedAverages() {
     withOthers.close();
     rolling.close();
 }
+// #endregion weightedAverages
 
+// #region whereInAndRangeJoin
 // py: t.where_in(keys, ["Key"]); windows.range_join(t, on=["Key", "LStart <= Ts <= LEnd"], aggs=[agg.group(["Ts"])])
 async function whereInAndRangeJoin() {
     // rangeJoin only supports static inputs, so t is not a time table
@@ -148,7 +167,9 @@ async function whereInAndRangeJoin() {
     inKeys.close();
     ranged.close();
 }
+// #endregion whereInAndRangeJoin
 
+// #region cancelAndAbort
 // Abandoning work that is no longer wanted: cancel() a pending table, or abort the signal given to resolve()
 async function cancelAndAbort(signal: AbortSignal) {
     const unwanted = session.timeTable(1e9).update(["X = i"]).sumBy([]);
@@ -158,7 +179,9 @@ async function cancelAndAbort(signal: AbortSignal) {
     const t = await session.timeTable(1e9).update(["X = i"]).resolve({ signal });
     t.close();
 }
+// #endregion cancelAndAbort
 
+// #region handleFailure
 // A pending table has no catch(): use try/await, or wrap it with Promise.resolve in the task that made it
 async function handleFailure() {
     try {
@@ -171,7 +194,9 @@ async function handleFailure() {
         .catch(() => null);
     orNull?.close();
 }
+// #endregion handleFailure
 
+// #region severalThatMayFail
 // Several tables at once when any can fail: Promise.all would reject and leave the ones that arrived open.
 // dh.resolveAll closes them instead, so a failure leaves nothing to clean up; one signal aborts them all.
 async function severalThatMayFail(signal: AbortSignal) {
@@ -186,7 +211,9 @@ async function severalThatMayFail(signal: AbortSignal) {
     // ... use the tables ...
     tables.forEach(table => table.close());
 }
+// #endregion severalThatMayFail
 
+// #region keepWhatSucceeded
 // Some results wanted even when others fail: Promise.allSettled keeps each outcome, and each table that arrived is
 // the caller's to close
 async function keepWhatSucceeded() {
@@ -196,7 +223,9 @@ async function keepWhatSucceeded() {
     // ... use the tables that arrived ...
     tables.forEach(table => table.close());
 }
+// #endregion keepWhatSucceeded
 
+// #region readEither
 // Reading any table, legacy or new: Table, TotalsTable and ResolvedTable share these members
 function describe(t: dh.Table | dh.TotalsTable | dh.ResolvedTable): string {
     return `${t.size} rows: ${t.columns.map(c => c.name).join(", ")}`;
@@ -208,7 +237,9 @@ async function readEither() {
     resolved.close();
     table.close();
 }
+// #endregion readEither
 
+// #region misc
 // py: t.head(5); t.select_distinct(["Key"]); t.snapshot(); t.snapshot_when(trigger, initial=True)
 async function misc() {
     const t = session.timeTable(1e9).update(["Key = i % 3"]);
@@ -223,7 +254,9 @@ async function misc() {
     snap.close();
     when.close();
 }
+// #endregion misc
 
+// #region mergeTwo
 // py: merge([t1, t2])
 async function mergeTwo() {
     const a = await session.emptyTable(2).update(["X = i"]);
@@ -234,7 +267,9 @@ async function mergeTwo() {
     a.close();
     b.close();
 }
+// #endregion mergeTwo
 
+// #region readTable
 // A function that reads a table it is lent and chains on it. It takes a ResolvedTable, which the caller resolved and
 // still closes; it closes only what its own chain produced.
 async function readTable(t: dh.ResolvedTable) {
@@ -242,7 +277,9 @@ async function readTable(t: dh.ResolvedTable) {
     const top = await t.head(10);
     top.close();
 }
+// #endregion readTable
 
+// #region legacy
 // Mixing the legacy mutable Table with the new API
 async function legacy() {
     const table = (await session.getObject({ type: "Table", name: "source" })) as dh.Table;
@@ -257,7 +294,9 @@ async function legacy() {
     derived.close();
     joined.close();
 }
+// #endregion legacy
 
+// #region viewport
 // Data access on a resolved chain result, viewport style
 async function viewport() {
     const t = await session.timeTable(1e9).update(["X = i"]);
@@ -265,3 +304,4 @@ async function viewport() {
     sub.close();
     t.close();
 }
+// #endregion viewport
