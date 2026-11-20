@@ -60,7 +60,8 @@ public interface JsPendingTable<@TsDefault(JsResolvedTable.class) T> extends JsT
      * <li>Already delivered: the table it produced is closed, as {@code close()} on it would. Copies made of the
      * delivered table will stay open (e.g. {@link JsResolvedTable#copy()} and
      * {@link JsResolvedTable#createMutableTable()}).</li>
-     * <li>Tables chained on it fail too, those still being made and those chained afterward, which are never sent.</li>
+     * <li>Tables chained on this pending table also fail - those still being made, and those chained afterward, which
+     * are never sent.</li>
      * </ul>
      * A call outside the batch that already named this table, such as
      * {@link io.deephaven.web.client.api.input.JsInputTable#addTable InputTable.addTable},
