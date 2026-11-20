@@ -65,12 +65,13 @@ Error occurred during initialization of VM
 Multiple garbage collectors selected
 ```
 
-To use the Z Garbage Collector, set `JAVA_OPTS` instead. Setting `JAVA_OPTS` replaces the image's VM options file, `/opt/deephaven/server-jetty/etc/dh-default.vmoptions`. That file sets these defaults:
+To use the Z Garbage Collector, set `JAVA_OPTS` instead. Setting `JAVA_OPTS` replaces the image's default VM options file. When `JAVA_OPTS` is unset, the server's `start` script uses the file in `/opt/deephaven/server-jetty/etc/` for the image's Java major version, such as `dh-default-25.vmoptions` for Java 25. If there is no file for that version, the script uses `dh-default.vmoptions`. These files set the following defaults:
 
 - The G1 garbage collector
 - The pause-time target
 - String deduplication
-- `-XX:GCLockerRetryAllocationCount=128`
+- `--enable-native-access=ALL-UNNAMED`, which stops Java 24 and later from warning when dependencies load native libraries
+- `-XX:GCLockerRetryAllocationCount=128`, in the Java 17 and Java 21 files only
 
 Include any of those settings you still want:
 
@@ -79,7 +80,7 @@ docker run --rm -p 10000:10000 --env "JAVA_OPTS=-XX:+UseZGC" ghcr.io/deephaven/s
 ```
 
 > [!CAUTION]
-> `JAVA_OPTS` replaces the image's VM options file, so any default option you leave out is lost. `START_OPTS` keeps the defaults, so use it unless you need to change them. Take care when overriding default VM options.
+> `JAVA_OPTS` replaces the image's default VM options file, so any default option you leave out is lost. `START_OPTS` keeps the defaults, so use it unless you need to change them. Take care when overriding default VM options.
 
 `START_OPTS` takes JVM arguments, including system properties, which are JVM `-D` settings. If you set many Deephaven configuration values this way, use a [configuration file](./config-file.md) instead.
 
