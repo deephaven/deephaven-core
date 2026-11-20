@@ -32,7 +32,7 @@ last_trades_with_price_times_size = _last_trades.update_view(
 )
 ```
 
-`_last_trades` does not open automatically in the UI, but there are still references to that table itself, as it is still feeding the `last_trades_with_price_times_size` table. `_last_trades` falls between `crypto_trades` and `last_trades_with_price_times_size` in your [query graph](../../conceptual/dag.md), the chain of tables that Deephaven updates in order as data changes. However, generally speaking, this does not improve memory usage or performance, since you will still have a reference to the table.
+`_last_trades` does not open automatically in the UI, but there are still references to that table itself, as it is still feeding the `last_trades_with_price_times_size` table. `_last_trades` falls between `crypto_trades` and `last_trades_with_price_times_size` in your [query graph](../../conceptual/dag.md), the chain of tables that Deephaven updates in order as data changes. However, generally speaking, this does not improve memory usage or performance, since you will still have a reference to the table. With ticking tables, the query graph keeps upstream tables alive as long as a downstream table needs them. With static tables, intermediate results may be eligible for cleanup sooner.
 
 You can display only the final table in the query by chaining the operations together:
 

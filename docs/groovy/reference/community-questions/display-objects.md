@@ -44,7 +44,7 @@ Table lastTrades = cryptoTrades.lastBy("Instrument")
 lastTradesWithPriceTimesSize = lastTrades.updateView("PriceTimesSize = Price * Size")
 ```
 
-In both versions, `lastTrades` is no longer in the binding, but there are still references to that table itself, as it is still feeding the `lastTradesWithPriceTimesSize` table. `lastTrades` falls between `cryptoTrades` and `lastTradesWithPriceTimesSize` in your [query graph](../../conceptual/dag.md), the chain of tables that Deephaven updates in order as data changes. However, generally speaking, this does not improve memory usage or performance, since you will still have a reference to the table.
+In both versions, `lastTrades` is no longer in the binding, but there are still references to that table itself, as it is still feeding the `lastTradesWithPriceTimesSize` table. `lastTrades` falls between `cryptoTrades` and `lastTradesWithPriceTimesSize` in your [query graph](../../conceptual/dag.md), the chain of tables that Deephaven updates in order as data changes. However, generally speaking, this does not improve memory usage or performance, since you will still have a reference to the table. With ticking tables, the query graph keeps upstream tables alive as long as a downstream table needs them. With static tables, intermediate results may be eligible for cleanup sooner.
 
 You can display only the final table in the query by chaining the operations together:
 
