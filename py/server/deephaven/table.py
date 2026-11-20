@@ -574,8 +574,9 @@ class RollupTable(JObjectWrapper):
         """Returns a new RollupTable by applying the given set of filters to this RollupTable. The rollup is
         re-aggregated, so the aggregated rows reflect only the rows that pass the filters. Filters that use only
         group-by columns are applied at the lowest aggregated level. Other filters are applied to the source table, and
-        the rollup is rebuilt. Filters cannot use columns that are inputs to an aggregation, and cannot refer to other
-        rows, for example with virtual row variables such as i or column arrays.
+        the rollup is rebuilt. Filters cannot use a column that an aggregation summarizes (the input column of an
+        aggregation's input/output pair, such as Salary in sum_("Salary")), and cannot refer to other rows, for example
+        with virtual row variables such as i or column arrays.
 
         Args:
             filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
