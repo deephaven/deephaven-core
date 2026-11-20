@@ -24,7 +24,8 @@ public class UpdateByOperation {
      * Each produces one output column, replacing any existing column of that name. Output names must be unique across
      * all operations in the call. If unset or empty, the operation replaces every column of a type it supports, except
      * the {@link UpdateByOptions#groupByColumns} and, for a time-based operation other than
-     * {@link UpdateByRollingGroup}, the timestamp column. {@link UpdateByCumulativeCountWhere},
+     * {@link UpdateByRollingGroup}, the timestamp column. That time-based operation also skips, without an error, any
+     * column given here whose input is the timestamp column. {@link UpdateByCumulativeCountWhere},
      * {@link UpdateByRollingCountWhere} and {@link UpdateByRollingFormula} ignore this, since they name their own
      * output column.
      */
