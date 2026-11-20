@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
-import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
@@ -107,10 +106,6 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    private static Promise<Object> delay(int millis) {
-        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
-    }
-
     /**
      * A chart cache fed by a full subscription must hold each row once after the subscription has been re-established
      * following a lost connection: the snapshot that re-establishes it replaces what the cache held, not adds to it.
@@ -201,8 +196,8 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
         connect(tickingData)
                 .then(ideSession -> {
                     delayTestFinish(9870);
-                    Promise<JsTable> inputPromise = ideSession.getTable("input1", false);
-                    Promise<JsTable> resultPromise = ideSession.getTable("result1", false);
+                    Promise<JsTable> inputPromise = ideSession.getTable("input1", false).asPromise();
+                    Promise<JsTable> resultPromise = ideSession.getTable("result1", false).asPromise();
                     return inputPromise.then(JsTable::inputTable).then(delayFinish(9871)).then(input -> {
                         delayTestFinish(9872);
                         return resultPromise.then(result -> {
@@ -281,8 +276,8 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
         connect(tickingData)
                 .then(ideSession -> {
                     delayTestFinish(9870);
-                    Promise<JsTable> inputPromise = ideSession.getTable("input2", false);
-                    Promise<JsTable> resultPromise = ideSession.getTable("result2", false);
+                    Promise<JsTable> inputPromise = ideSession.getTable("input2", false).asPromise();
+                    Promise<JsTable> resultPromise = ideSession.getTable("result2", false).asPromise();
                     return inputPromise.then(JsTable::inputTable).then(delayFinish(9871)).then(input -> {
                         delayTestFinish(9872);
                         return resultPromise.then(result -> {
@@ -386,7 +381,7 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
      */
     private SubscriptionValidator subscriptionValidator(JsTable table, JsArray<Column> subscriptionColumns) {
         DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
-        options.columns = subscriptionColumns;
+        options.columns = Js.cast(subscriptionColumns);
         TableSubscription subscription = table.createSubscription(options);
 
         return new SubscriptionValidator() {
@@ -415,7 +410,7 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
                                 // Now that this update has happened, we make a new subscription to get a single
                                 // snapshot of the table
                                 DataOptions.SubscriptionOptions options1 = new DataOptions.SubscriptionOptions();
-                                options1.columns = subscriptionColumns;
+                                options1.columns = Js.cast(subscriptionColumns);
                                 TableSubscription checkSub = table.createSubscription(options1);
                                 checkSub.addEventListenerOneShot(TableSubscription.EVENT_UPDATED, e2 -> {
                                     try {

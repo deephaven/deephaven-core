@@ -5,6 +5,7 @@ package io.deephaven.web.client.api.subscription;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
+import elemental2.core.ReadonlyArray;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.WorkerConnection;
@@ -15,6 +16,7 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 
 /**
  * Represents a non-viewport subscription to a table, and all data currently known to be present in the subscribed
@@ -31,9 +33,9 @@ import jsinterop.annotations.JsType;
 @JsType(namespace = "dh")
 public final class TableSubscription extends AbstractTableSubscription {
     /**
-     * The connection to the server was lost. No {@code updated} events fire until it is back; the subscription is
-     * re-sent automatically, and {@link #EVENT_RECONNECT} fires when that has happened, or
-     * {@link #EVENT_RECONNECTFAILED} if it cannot be.
+     * The connection to the server was lost. No {@code updated} events fire until it is back. The subscription is
+     * re-sent automatically; {@link #EVENT_RECONNECT} fires when the server reconnects, or
+     * {@link #EVENT_RECONNECTFAILED} fires if it cannot.
      */
     public static final String EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT;
     /**
@@ -53,7 +55,8 @@ public final class TableSubscription extends AbstractTableSubscription {
      */
     public static final String EVENT_REQUEST_FAILED = JsTable.EVENT_REQUEST_FAILED;
 
-    private final JsArray<Column> columns;
+    /** A copy of the caller's columns, names or Column instances; names are resolved when the first request is sent. */
+    private final ReadonlyArray<Column.ColumnOrName> requestedColumns;
     private final Double updateIntervalMs;
     private final int previewListLengthLimit;
 
@@ -61,15 +64,22 @@ public final class TableSubscription extends AbstractTableSubscription {
     private TableSubscription(ClientTableState state, WorkerConnection connection,
             DataOptions.SubscriptionOptions options) {
         super(SubscriptionType.FULL_SUBSCRIPTION, state, connection);
-        this.columns = options.columns;
+        this.requestedColumns = options.columns.slice();
         this.updateIntervalMs = options.updateIntervalMs;
         this.previewListLengthLimit = getPreviewListLengthLimit(options);
     }
 
     public static TableSubscription createTableSubscription(DataOptions.SubscriptionOptions options,
             JsTable existingTable) {
-        WorkerConnection connection = existingTable.getConnection();
-        ClientTableState tableState = existingTable.state();
+        return createTableSubscription(options, existingTable.getConnection(), existingTable.state());
+    }
+
+    /**
+     * Creates a full subscription on a state; nothing about the owning table is needed.
+     */
+    @JsIgnore
+    public static TableSubscription createTableSubscription(DataOptions.SubscriptionOptions options,
+            WorkerConnection connection, ClientTableState tableState) {
         ClientTableState previewedState = createPreview(connection, tableState, options.previewOptions);
 
         return new TableSubscription(previewedState, connection, options);
@@ -77,7 +87,7 @@ public final class TableSubscription extends AbstractTableSubscription {
 
     @Override
     protected void sendFirstSubscriptionRequest() {
-        sendBarrageSubscriptionRequest(null, columns, updateIntervalMs, false, previewListLengthLimit);
+        sendBarrageSubscriptionRequest(null, requestedColumns, updateIntervalMs, false, previewListLengthLimit);
     }
 
     /**
@@ -89,7 +99,8 @@ public final class TableSubscription extends AbstractTableSubscription {
      * @deprecated a full subscription cannot be changed; close it and create a new one.
      */
     @Deprecated
-    public void changeSubscription(JsArray<Column> columns, @JsOptional @JsNullable Double updateIntervalMs) {
+    public void changeSubscription(ReadonlyArray<Column.ColumnOrName> columns,
+            @JsOptional @JsNullable Double updateIntervalMs) {
         throw new IllegalStateException("A full subscription cannot be changed; close it and create a new one");
     }
 

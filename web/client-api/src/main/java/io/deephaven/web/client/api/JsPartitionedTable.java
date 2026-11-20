@@ -109,9 +109,10 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                 throw new RuntimeException(e);
             }
 
-            return w.getExportedObjects()[0].fetch();
+            // The partitioned table's one exported object is its base table
+            return Js.<Promise<JsTable>>uncheckedCast(w.getExportedObjects()[0].fetch());
         }).then(result -> {
-            baseTable = (JsTable) result;
+            baseTable = result;
             keyColumnTypes = new ArrayList<>();
             InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
                     WebBarrageUtils
@@ -252,16 +253,14 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      *
      * @return A merged representation of the constituent tables.
      */
-    public Promise<JsTable> getMergedTable() {
-        return connection.newState((c, cts) -> {
+    public JsPendingTable<JsTable> getMergedTable() {
+        return connection.pendingTable((c, cts) -> {
             MergeRequest requestMessage = MergeRequest.newBuilder()
                     .setPartitionedTable(widget.getTicket())
                     .setResultId(cts.getHandle().makeTicket())
                     .build();
             connection.partitionedTableServiceClient().merge(requestMessage, c);
-        }, "partitioned table merged table")
-                .refetch()
-                .then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
+        }, "partitioned table merged table");
     }
 
     /**
