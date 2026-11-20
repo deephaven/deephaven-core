@@ -339,16 +339,16 @@ def _j_array_to_sequence(j_array: jpy.JType) -> Sequence[Any]:
 
 
 def _j_array_to_numpy_array(
-    dtype: DType, j_array: jpy.JType, conv_null: bool, type_promotion: bool = False
+    dtype: DType, j_array: jpy.JType, bool_str_null_as_none: bool = False
 ) -> np.ndarray:
     """Produces a numpy array from the DType and given Java array.
 
     Args:
         dtype (DType): The dtype of the Java array
         j_array (jpy.JType): The Java array to convert
-        conv_null (bool): If True, convert nulls to the null value for the dtype
-        type_promotion (bool): Ignored when conv_null is False. When conv_null is True, see the description for the same
-            named parameter in dh_nulls_to_nan().
+        bool_str_null_as_none (bool): whether Boolean and String arrays become object arrays that hold None for a
+            null. Default is False, meaning a null Boolean reads as True and a null String reads as 'None'. Other
+            arrays aren't affected.
 
     Returns:
         np.ndarray: The numpy array or None if the Java array is None
@@ -356,6 +356,9 @@ def _j_array_to_numpy_array(
     Raises:
         DHError
     """
+
+    if bool_str_null_as_none and dtype in (dtypes.bool_, dtypes.string):
+        return np.array(j_array, dtype=np.object_)
 
     if dtype.is_primitive:
         np_array = np.frombuffer(j_array, dtype.np_type)
@@ -376,9 +379,6 @@ def _j_array_to_numpy_array(
             np_array = np.array(j_array, np.object_)
     else:
         np_array = np.array(j_array, np.object_)
-
-    if conv_null:
-        return dh_null_to_nan(np_array, type_promotion)
 
     return np_array
 
@@ -450,7 +450,11 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
         s.mask(s == _NULL_BOOLEAN_AS_BYTE, inplace=True)
         return s.astype(pd.BooleanDtype())
 
-    np_array = _j_array_to_numpy_array(dtype, j_array, conv_null=False)
+    np_array = _j_array_to_numpy_array(dtype, j_array, bool_str_null_as_none=conv_null)
+    if conv_null and dtype == dtypes.string:
+        # The object array holds None for a null, and the string dtype turns it into pd.NA.
+        return pd.Series(data=np_array, dtype=pd.StringDtype())
+
     if (
         conv_null
         and (nv := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)) is not None

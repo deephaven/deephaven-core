@@ -342,6 +342,12 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(j_array[0], j_array2[0])
         self.assertEqual(j_array[1], j_array2[1])
 
+    def test_bool_array_from_object_array_with_none(self) -> None:
+        np_array = np.array([True, None, False], dtype=np.object_)
+        j_array = dtypes.array(dtypes.bool_, np_array)
+        self.assertEqual("[Ljava.lang.Boolean;", j_array.getClass().getName())
+        self.assertEqual([True, None, False], [j_array[i] for i in range(len(j_array))])
+
     def test_np_ndim_array(self):
         np_array = np.ndarray([1, 2, 3], np.int32)
         with self.assertRaises(ValueError):

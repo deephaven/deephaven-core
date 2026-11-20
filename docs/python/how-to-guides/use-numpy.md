@@ -43,7 +43,7 @@ result = dhnp.to_table(np_source, cols=["X", "Y"])
 >
 > - [`to_numpy`](../reference/numpy/to-numpy.md) produces a single 2D array, so all columns it converts must have the same data type. Otherwise, it raises an error. Use the `cols` argument to choose same-typed columns.
 > - [`to_numpy`](../reference/numpy/to-numpy.md) copies the selected data into memory, every column by default. To copy less, pass `cols` and [filter](./use-filters.md) the table first.
-> - [`to_numpy`](../reference/numpy/to-numpy.md) does not convert null values. See [Handle nulls](#handle-nulls) below.
+> - [`to_numpy`](../reference/numpy/to-numpy.md) does not convert null values by default. See [Handle nulls](#handle-nulls) below.
 > - If the table is [refreshing](../conceptual/table-update-model.md) (its data changes over time), [`to_numpy`](../reference/numpy/to-numpy.md) converts a snapshot of its current data. The array does not update when the table ticks.
 
 #### Handle nulls
@@ -54,6 +54,10 @@ When [`to_numpy`](../reference/numpy/to-numpy.md) converts a table, it does not 
 - Nulls in Boolean columns appear as `True`.
 - Nulls in `Instant` columns appear as `NaT`.
 - Nulls in `String` columns appear as the string `'None'`, and nulls in other object columns appear as `None`.
+
+A null `Boolean` that reads as `True` and a null `String` that reads as `'None'` both look like real values. To tell a null from a real `True` or `'None'`, pass `bool_str_null_as_none=True` to [`to_numpy`](../reference/numpy/to-numpy.md). `Boolean` and `String` columns then become `object` arrays that hold `None` for a null.
+
+To keep a `bool` or `str` array and pick what a null becomes, convert the table with [`to_pandas`](../reference/pandas/to-pandas.md) first. With either the default `"numpy_nullable"` backend or `"pyarrow"`, nulls in `Boolean` and `String` columns become `pd.NA`. Then call `to_numpy` on the column with a `dtype` and an `na_value`. For example, `df["B"].to_numpy(dtype=bool, na_value=False)` returns a `bool` array, and `df["B"].isna().to_numpy()` returns a null mask. Without `dtype` and `na_value`, `to_numpy` returns an `object` array that holds `pd.NA`.
 
 Use [`dh_null_to_nan`](../reference/numpy/dh-null-to-nan.md) from [`deephaven.jcompat`](/core/pydoc/code/deephaven.jcompat.html) to convert null constants to `numpy.nan`. For integer, Boolean, or character arrays, pass `type_promotion=True`, which returns a new `float64` array. Without it, [`dh_null_to_nan`](../reference/numpy/dh-null-to-nan.md) raises an error for those arrays.
 

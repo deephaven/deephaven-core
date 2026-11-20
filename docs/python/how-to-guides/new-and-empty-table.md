@@ -91,7 +91,7 @@ source = new_table([int_array_col])
 
 ### Create a table from a dictionary
 
-When you pass a dictionary, [`new_table`](../reference/table-operations/create/newTable.md) first converts it to a pandas DataFrame, so pandas infers each column's type from its data. In the following example, the `Name` column is a `String` column, `Math` is a `long` column, and `Gpa` is a `double` column:
+When you pass a dictionary, [`new_table`](../reference/table-operations/create/newTable.md) infers each column's type from its data. In a float column, `None` becomes a [null](../reference/query-language/types/nulls.md) and `NaN` stays `NaN`. In the following example, the `Name` column is a `String` column, `Math` is a `long` column, and `Gpa` is a `double` column. Lauren's `Gpa` is `NaN`, and Zoey's is null:
 
 ```python order=result
 from deephaven import new_table
@@ -100,7 +100,7 @@ result = new_table(
     {
         "Name": ["James", "Lauren", "Zoey"],
         "Math": [95, 72, 100],
-        "Gpa": [3.5, 3.1, 4.0],
+        "Gpa": [3.5, float("nan"), None],
     }
 )
 ```

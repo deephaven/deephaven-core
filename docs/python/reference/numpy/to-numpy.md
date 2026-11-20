@@ -13,7 +13,7 @@ The `to_numpy` method produces a NumPy array from a table.
 ## Syntax
 
 ```python syntax
-to_numpy(table: Table, cols: List[str]) -> numpy.ndarray
+to_numpy(table: Table, cols: Optional[List[str]] = None, bool_str_null_as_none: bool = False) -> numpy.ndarray
 ```
 
 ## Parameters
@@ -27,6 +27,11 @@ The source table to convert to a `numpy.ndarray`.
 <Param name="cols" type="List[str]">
 
 The names of columns in the source table to be included in the result. The default is `None`, which includes all columns.
+
+</Param>
+<Param name="bool_str_null_as_none" type="bool" Optional>
+
+Whether `Boolean` and `String` columns become `object` arrays that hold `None` for a [null](../query-language/types/nulls.md). The default is `False`, which means a null `Boolean` reads as `True` and a null `String` reads as the string `"None"`. Other columns aren't affected.
 
 </Param>
 </ParamTable>
