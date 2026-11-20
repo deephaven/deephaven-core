@@ -4,30 +4,25 @@
 package io.deephaven.web.client.api;
 
 import com.google.gwt.junit.client.GWTTestCase;
-import io.deephaven.web.client.fu.JsIterator;
+import elemental2.core.JsIIterableResult;
+import elemental2.core.JsIterator;
 import io.deephaven.web.shared.data.RangeSet;
-import jsinterop.base.Js;
 
 public class JsRangeSetTestGwt extends GWTTestCase {
 
     public void testIteratorDone() {
-        JsIterator<LongWrapper> itr = JsRangeSet.ofItems(new double[] {1, 2, 3}).iterator();
+        JsIterator<LongWrapper, Void, Void> itr = JsRangeSet.ofItems(new double[] {1, 2, 3}).iterator();
         for (int i = 1; i <= 3; i++) {
-            JsIterator.JsIIterableResult<LongWrapper> result = next(itr);
+            JsIIterableResult<LongWrapper> result = itr.next();
             assertFalse("done must be false when value " + i + " is returned", result.isDone());
             assertEquals(i, result.getValue().getWrapped());
         }
-        assertTrue("done must be true after the last value", next(itr).isDone());
+        assertTrue("done must be true after the last value", itr.next().isDone());
     }
 
     public void testEmptyIteratorDone() {
-        JsIterator<LongWrapper> itr = new JsRangeSet(new RangeSet()).iterator();
-        assertTrue("done must be true for an empty range set", next(itr).isDone());
-    }
-
-    /** The result is a plain JS object, so read it through the native interface. */
-    private static <T> JsIterator.JsIIterableResult<T> next(JsIterator<T> itr) {
-        return Js.uncheckedCast(itr.next());
+        JsIterator<LongWrapper, Void, Void> itr = new JsRangeSet(new RangeSet()).iterator();
+        assertTrue("done must be true for an empty range set", itr.next().isDone());
     }
 
     @Override
