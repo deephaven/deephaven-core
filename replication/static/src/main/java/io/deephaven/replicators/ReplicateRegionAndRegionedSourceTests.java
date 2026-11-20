@@ -3,6 +3,8 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+
 import java.io.IOException;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
@@ -12,19 +14,23 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
  * interfaces for some primitive types.
  */
 public class ReplicateRegionAndRegionedSourceTests {
+    private static final String TASK = "replicateRegionAndRegionedSourceTests";
+
 
     public static void main(String... args) throws IOException {
-        charToAllButBoolean("replicateRegionAndRegionedSourceTests",
+        redirectOutputToReplicated(TASK);
+
+        charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TestRegionedColumnSourceChar.java");
-        charToAllButBooleanAndByte("replicateRegionAndRegionedSourceTests",
+        charToAllButBooleanAndByte(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TstColumnRegionChar.java");
-        charToAllButBooleanAndFloats("replicateRegionAndRegionedSourceTests",
+        charToAllButBooleanAndFloats(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/kernel/CharRegionBinarySearchKernelTest.java");
-        charToAllButBooleanAndFloats("replicateRegionAndRegionedSourceTests",
+        charToAllButBooleanAndFloats(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/kernel/CharColumnBinarySearchKernelTest.java");
-        floatToAllFloatingPoints("replicateRegionAndRegionedSourceTests",
+        floatToAllFloatingPoints(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/kernel/FloatColumnBinarySearchKernelTest.java");
-        floatToAllFloatingPoints("replicateRegionAndRegionedSourceTests",
+        floatToAllFloatingPoints(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/kernel/FloatRegionBinarySearchKernelTest.java");
     }
 }
