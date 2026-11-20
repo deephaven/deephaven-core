@@ -16,16 +16,20 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateRangeSearchKernels {
+    private static final String TASK = "replicateRangeSearchKernels";
+
 
     private static final String CHAR_PATH =
             "engine/table/src/main/java/io/deephaven/engine/table/impl/rangejoin/RangeSearchKernelChar.java";
 
     public static void main(@NotNull final String... args) throws IOException {
-        charToAllButBooleanAndFloats("replicateRangeSearchKernels", CHAR_PATH);
+        redirectOutputToReplicated(TASK);
 
-        fixupDouble(charToDouble("replicateRangeSearchKernels", CHAR_PATH, Collections.emptyMap()));
-        fixupFloat(charToFloat("replicateRangeSearchKernels", CHAR_PATH, Collections.emptyMap()));
-        fixupObject(charToObject("replicateRangeSearchKernels", CHAR_PATH));
+        charToAllButBooleanAndFloats(TASK, CHAR_PATH);
+
+        fixupDouble(charToDouble(TASK, CHAR_PATH, Collections.emptyMap()));
+        fixupFloat(charToFloat(TASK, CHAR_PATH, Collections.emptyMap()));
+        fixupObject(charToObject(TASK, CHAR_PATH));
     }
 
     private static void fixupDouble(@NotNull final String doublePath) throws IOException {
