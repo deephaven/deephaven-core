@@ -17,7 +17,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-
 /**
  * {@link ObjectVectorTest} implementation for {@link io.deephaven.engine.table.vectors.ObjectVectorColumnWrapper}.
  */
