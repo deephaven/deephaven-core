@@ -30,7 +30,9 @@ explicitly asks — replying is outward-facing.
   resolved threads, page through GraphQL `reviewThreads` (`pageInfo`/`endCursor`). Bot reviews can also
   list findings only in the review body ("previously missed"), with no inline thread. Split a
   review body that lists several findings into one triage item per finding, each with its own
-  location and decision, and keep a note of which review it came from for the reply. Note which comments are
+  location and decision, and keep a note of which review it came from for the reply. Before
+  ending a loop, list every body-only finding with its disposition (applied, or declined with a
+  reason): these have no thread to stay open, so they are the ones that get dropped. Note which comments are
   from bots and which review round each belongs to — how many rounds this page has already had
   matters for triage.
 - Read `ref-deephaven-doc-categories` and identify the page's category. Placement rules differ:
