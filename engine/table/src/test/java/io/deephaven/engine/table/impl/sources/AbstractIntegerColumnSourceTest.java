@@ -247,7 +247,7 @@ public abstract class AbstractIntegerColumnSourceTest {
                 source.fillChunk(fillContext, dest, nextOk);
             }
             checkRangeResults(expectations, offset, nextOk, dest);
-            offset += nextOk.size();
+            offset += nextOk.intSize();
         }
     }
 
@@ -273,7 +273,7 @@ public abstract class AbstractIntegerColumnSourceTest {
                 assertTrue(DefaultGetContext.isMyResettableChunk(getContext, result));
             }
             // endregion samecheck
-            offset += nextOk.size();
+            offset += nextOk.intSize();
         }
     }
 

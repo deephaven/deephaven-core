@@ -9,8 +9,11 @@ import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
+import io.deephaven.web.client.api.ConnectOptions;
+import io.deephaven.web.client.api.CoreClient;
 import io.deephaven.web.client.api.CustomColumn;
 import io.deephaven.web.client.api.CustomColumnOptions;
+import io.deephaven.web.client.api.CuttingTransportFactory;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.Format;
 import io.deephaven.web.client.api.JsRangeSet;
@@ -21,6 +24,7 @@ import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
+import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.base.Any;
@@ -59,7 +63,391 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
             .script("more_arrays",
                     "empty_table(1).update([\"doublevector_int=i\", \"doublevector_string=``\"]).group_by()" +
                             ".update([\"vector_int=i\", \"vector_string=``\"]).group_by()" +
-                            ".update([\"array_int=new int[]{i}\", \"doublearray_int=new int[][] {{i}}\",\"array_string=new String[]{``}\",\"doublearray_string=new String[][]{{``}}\"])");
+                            ".update([\"array_int=new int[]{i}\", \"doublearray_int=new int[][] {{i}}\",\"array_string=new String[]{``}\",\"doublearray_string=new String[][]{{``}}\"])")
+            // One row from the start, replaced twice a second, so updates carry data continuously
+            .script("ticking", "time_table(\"PT0.5S\", start_time=datetime.now() - timedelta(seconds=10))"
+                    + ".update([\"X = i\", \"Y = 0\"]).last_by(by=\"Y\")");
+
+    private static Promise<Object> delay(int millis) {
+        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
+    }
+
+    public void testViewportResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_001);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    table.setViewport(0, 0, null);
+                    IdeConnection ide = lastIdeConnection;
+                    // An unhandled disconnect event is logged as an error, which the harness treats as a failure
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    return assertUpdateReceived(table, 1, 5002)
+                            .then(ignore -> {
+                                // Every open stream dies, the viewport's Barrage stream included; the connection
+                                // sees a transport error and reconnects within the same session
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5003).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(table, 1, 8004),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "viewport did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testViewportSubscriptionResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_005);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    // A standalone viewport subscription, as opposed to the table's own viewport
+                    DataOptions.ViewportSubscriptionOptions subOptions = new DataOptions.ViewportSubscriptionOptions();
+                    subOptions.columns = Js.cast(table.getColumns());
+                    subOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 0));
+                    TableViewportSubscription sub = table.createViewportSubscription(subOptions);
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    return assertUpdateReceived(sub, viewport -> assertEquals(1, viewport.getRows().length), 5006)
+                            .then(ignore -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5007).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(sub,
+                                            viewport -> assertEquals(1, viewport.getRows().length), 8008),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "viewport subscription did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                sub.close();
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A table, its own viewport subscription and a standalone full subscription each report the transport loss and the
+     * recovery, in that order, before data resumes.
+     */
+    public void testLifecycleEventsAcrossTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_033);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    // The connection itself reports the loss once, however many streams it had open
+                    int[] connectionDisconnects = {0};
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> connectionDisconnects[0]++);
+                    TableViewportSubscription viewport = table.setViewport(0, 0, null);
+                    DataOptions.SubscriptionOptions subOptions = new DataOptions.SubscriptionOptions();
+                    subOptions.columns = Js.cast(table.getColumns());
+                    TableSubscription full = table.createSubscription(subOptions);
+
+                    List<String> lifecycle = new ArrayList<>();
+                    recordLifecycle(table, "table", lifecycle);
+                    recordLifecycle(viewport, "viewport", lifecycle);
+                    recordLifecycle(full, "full", lifecycle);
+
+                    return assertUpdateReceived(table, 1, 5034)
+                            .then(ignore -> assertUpdateReceived(full, data -> assertEquals(1, data.getRows().length),
+                                    5035))
+                            .then(ignore -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5036).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(table, 1, 8037)
+                                            .then(t -> assertUpdateReceived(full,
+                                                    data -> assertEquals(1, data.getRows().length), 8038)),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "data did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                for (String name : Arrays.asList("table", "viewport", "full")) {
+                                    assertEquals(name + " lifecycle, all events: " + lifecycle,
+                                            Arrays.asList(name + ":disconnect", name + ":reconnect"),
+                                            lifecycle.stream().filter(e -> e.startsWith(name + ":"))
+                                                    .collect(Collectors.toList()));
+                                }
+                                assertEquals("connection reports one disconnect per cut", 1, connectionDisconnects[0]);
+                                full.close();
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * When a state cannot be re-established on reconnect, the table and the subscription over it report reconnectfailed
+     * instead of reconnect, and the subscription is closed.
+     */
+    public void testReconnectFailedWhenRevivalFails() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_039);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    TableViewportSubscription viewport = table.setViewport(0, 0, null);
+                    List<String> lifecycle = new ArrayList<>();
+                    recordLifecycle(table, "table", lifecycle);
+                    recordLifecycle(viewport, "viewport", lifecycle);
+                    // A failed state also reports requestfailed to its tables, which is logged if unhandled
+                    table.addEventListener(JsTable.EVENT_REQUEST_FAILED, e -> lifecycle.add("table:requestfailed"));
+                    viewport.addEventListener(JsTable.EVENT_REQUEST_FAILED,
+                            e -> lifecycle.add("viewport:requestfailed"));
+
+                    return assertUpdateReceived(table, 1, 5040)
+                            .then(ignore -> {
+                                // Within one session a running state is not re-fetched on reconnect; mark both states
+                                // as needing one, as a new session would. The re-fetch then fails, because the server
+                                // refuses a second export to the same id.
+                                table.state().getHandle().setConnected(false);
+                                viewport.state().getHandle().setConnected(false);
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5041).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    waitFor(() -> lifecycle.contains("table:reconnectfailed")
+                                            && lifecycle.contains("viewport:reconnectfailed"), 100, 8042, table),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "reconnectfailed did not fire on both, events: " + lifecycle))))
+                            .then(ignore -> {
+                                assertFalse("no reconnect after a failed revival: " + lifecycle,
+                                        lifecycle.contains("table:reconnect")
+                                                || lifecycle.contains("viewport:reconnect"));
+                                assertTrue("subscription is closed after reconnectfailed", viewport.isClosed());
+                                viewport.close();
+                                assertFalse("closing a failed subscription releases its state",
+                                        viewport.state().hasRetainer(viewport));
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A viewport created with an update interval and later moved without repeating it keeps that interval when it is
+     * re-sent after a reconnect.
+     */
+    public void testMovedViewportKeepsItsUpdateInterval() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_076);
+                    return Promise.resolve(session);
+                })
+                .then(table("growingForward"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    TableViewportSubscription viewport = table.setViewport(0, 4, null, 2500.0, null);
+                    return assertUpdateReceived(table, 5, 5077)
+                            .then(t -> {
+                                assertEquals(2500, viewport.sentOptions().minUpdateIntervalMs());
+                                // Move without repeating the interval, which the docs allow
+                                table.setViewport(10, 14, null);
+                                return this.<JsTable, ViewportData>waitForEventWhere(table, JsTable.EVENT_UPDATED,
+                                        e -> e.getDetail().getOffset() == 10, 5078);
+                            })
+                            .then(t -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5079).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(table, 5, 8080),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "viewport did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                assertEquals("interval re-sent after the reconnect", 2500,
+                                        viewport.sentOptions().minUpdateIntervalMs());
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A viewport moved while the connection is down, without repeating its update interval, comes back at the new rows
+     * with the interval it was created with.
+     */
+    public void testViewportMovedWhileDisconnectedKeepsItsUpdateInterval() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_081);
+                    return Promise.resolve(session);
+                })
+                .then(table("growingForward"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    TableViewportSubscription viewport = table.setViewport(0, 4, null, 2500.0, null);
+                    return assertUpdateReceived(table, 5, 5082)
+                            .then(t -> {
+                                // The viewport reports the lost stream; from then until the reconnect it is waiting
+                                Promise<TableViewportSubscription> down =
+                                        this.<TableViewportSubscription, Object>waitForEvent(
+                                                viewport, TableViewportSubscription.EVENT_DISCONNECT, e -> {
+                                                }, 5083);
+                                transport.cutAll();
+                                return down;
+                            })
+                            .then(t -> {
+                                // Move while down, without repeating the interval
+                                table.setViewport(10, 14, null);
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5084).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    this.<JsTable, ViewportData>waitForEventWhere(table, JsTable.EVENT_UPDATED,
+                                            e -> e.getDetail().getOffset() == 10, 8085),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "viewport did not resume at the moved rows after the transport was cut"))))
+                            .then(ignore -> {
+                                assertEquals("interval re-sent after the reconnect", 2500,
+                                        viewport.sentOptions().minUpdateIntervalMs());
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A viewport moved after it was created comes back at the rows it had when the connection was lost.
+     */
+    public void testMovedViewportResumesWhereItWas() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_049);
+                    return Promise.resolve(session);
+                })
+                .then(table("growingForward"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    table.setViewport(0, 4, null);
+                    return assertUpdateReceived(table, 5, 5050)
+                            .then(t -> {
+                                table.setViewport(10, 14, null);
+                                return this.<JsTable, ViewportData>waitForEventWhere(table, JsTable.EVENT_UPDATED,
+                                        e -> e.getDetail().getOffset() == 10, 5051);
+                            })
+                            .then(t -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5052).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    this.<JsTable, ViewportData>waitForEvent(table, JsTable.EVENT_UPDATED,
+                                            e -> assertEquals("viewport resumed at a different offset", 10d,
+                                                    e.getDetail().getOffset()),
+                                            8053),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "viewport did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A subscription whose own stream ends with a transport status while the connection is otherwise fine must be
+     * re-established, not left waiting for a reconnect that never comes.
+     */
+    public void testViewportResumesAfterItsStreamEndsUnavailable() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_054);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    table.setViewport(0, 0, null);
+                    int[] streamsBefore = {0};
+                    return assertUpdateReceived(table, 1, 5055)
+                            .then(t -> {
+                                streamsBefore[0] = transport.openStreams();
+                                // Only the viewport's stream ends, with UNAVAILABLE; every other stream stays up.
+                                // The connection treats it as a lost connection and reconnects within the session
+                                transport.failStreams("DoExchange", 14, "stream lost by test");
+                                return Promise.race(
+                                        waitForEvent(ide, CoreClient.EVENT_RECONNECT, 8056).onInvoke(ide)
+                                                .then(reconnected -> assertUpdateReceived(table, 1, 8057)),
+                                        delay(8000).then(late -> Promise.reject(
+                                                "viewport did not resume after its stream ended with UNAVAILABLE")));
+                            })
+                            // Every long-lived stream was replaced, none added: the count settles back to what it was
+                            .then(t -> Promise.race(
+                                    waitFor(() -> transport.openStreams() == streamsBefore[0], 50, 3058, table),
+                                    delay(3000).then(late -> Promise.reject(
+                                            "streams leaked across an isolated reconnect: " + streamsBefore[0]
+                                                    + " before, " + transport.openStreams() + " after"))))
+                            .then(ignore -> {
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    private static void recordLifecycle(HasEventHandling target, String name, List<String> into) {
+        target.addEventListener(JsTable.EVENT_DISCONNECT, e -> into.add(name + ":disconnect"));
+        target.addEventListener(JsTable.EVENT_RECONNECT, e -> into.add(name + ":reconnect"));
+        target.addEventListener(JsTable.EVENT_RECONNECTFAILED, e -> into.add(name + ":reconnectfailed"));
+    }
 
     public void testViewportOnStaticTable() {
         connect(tables)

@@ -128,7 +128,7 @@ The [`learn.gather`](/core/pydoc/code/deephaven.learn.gather.html#module-deephav
 - `order`: A [`gather.MemoryLayout`](/core/pydoc/code/deephaven.learn.gather.html#deephaven.learn.gather.MemoryLayout) value, either `ROW_MAJOR` (the default) or `COLUMN_MAJOR`.
   - `C` and `FORTRAN` are aliases for `ROW_MAJOR` and `COLUMN_MAJOR`, respectively.
   - The returned array has one row per table row and one column per gathered column for either value, so most models can leave the default.
-  - `order` does not set the memory layout you would expect. `ROW_MAJOR` returns a column-major array, and `COLUMN_MAJOR` returns a row-major one. If your library needs a specific layout, convert the result with [`np.ascontiguousarray`](https://numpy.org/doc/stable/reference/generated/numpy.ascontiguousarray.html) for row-major or [`np.asfortranarray`](https://numpy.org/doc/stable/reference/generated/numpy.asfortranarray.html) for column-major.
+  - `order` sets the memory layout of the returned array. `ROW_MAJOR` returns a C-contiguous array, and `COLUMN_MAJOR` returns a Fortran-contiguous one.
 - `np_type`: The NumPy `dtype` of all values in the output `ndarray`.
   - Supported types are `np.byte`, `np.short`, `np.intc`, `np.int_`, `np.single`, and `np.double`.
   - The Python types `int` and `float` convert to `np.intc` and `np.double`, respectively.

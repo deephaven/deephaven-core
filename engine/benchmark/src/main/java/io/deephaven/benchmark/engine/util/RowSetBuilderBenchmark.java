@@ -36,7 +36,7 @@ public class RowSetBuilderBenchmark {
     public void setupTrial() {
         final Random randy = new Random(keysToInsert);
         long lastKey = 0;
-        for (int rowCount = 0; rowCount < keysToInsert;) {
+        for (long rowCount = 0; rowCount < keysToInsert;) {
             boolean insertRange = randy.nextInt(100) < percentRanges;
             if (insertRange) {
                 final long rs = randy.nextInt(100) + lastKey;

@@ -361,7 +361,7 @@ public class MetricsManager {
     }
 
     // This is part of the fast path. We should avoid as much as possible holding up the calling thread.
-    void sampleIntCounter(final int id, final long n) {
+    void sampleIntCounter(final int id, final int n) {
         if (!enabled) {
             return;
         }

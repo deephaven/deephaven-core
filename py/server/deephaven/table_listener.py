@@ -191,13 +191,14 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a dict
         """
-        if not (modified := self.j_table_update.modified()):
+        if not self.j_table_update.modified():
             return {}
 
+        # Previous values live at the pre-shift row keys. modified() holds post-shift keys.
         return _table_reader_all_dict(
             table=self.table,
             cols=cols,
-            row_set=modified.asRowSet(),
+            row_set=self.j_table_update.getModifiedPreShift(),
             prev=True,
             to_numpy=True,
         )
@@ -215,13 +216,14 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a generator
         """
-        if not (modified := self.j_table_update.modified()):
+        if not self.j_table_update.modified():
             return (_ for _ in ())
 
+        # Previous values live at the pre-shift row keys. modified() holds post-shift keys.
         return _table_reader_chunk_dict(
             self.table,
             cols=cols,
-            row_set=modified.asRowSet(),
+            row_set=self.j_table_update.getModifiedPreShift(),
             chunk_size=chunk_size,
             prev=True,
         )

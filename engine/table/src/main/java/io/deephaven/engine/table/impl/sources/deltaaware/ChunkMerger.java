@@ -64,7 +64,7 @@ class ChunkMerger<ATTR extends Any> {
                 // Get out because both (myself and my other) have keys but next smallest key is not mine
                 break;
             }
-            contiguousSize += rangeLast - rangeFirst + 1;
+            contiguousSize += (int) (rangeLast - rangeFirst + 1);
             keyOffset += 2;
         }
 

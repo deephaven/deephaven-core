@@ -687,7 +687,7 @@
                     "path": "how-to-guides/user-interface/markdown-widget.md"
                   },
                   {
-                    "label": "Format tables in the UI",
+                    "label": "Use table tools in the UI",
                     "path": "how-to-guides/user-interface/formatting-tables.md"
                   },
                   {
@@ -842,6 +842,10 @@
                   {
                     "label": "Stream data with Input Tables",
                     "path": "how-to-guides/client-input-tables.md"
+                  },
+                  {
+                    "label": "Subscribe to ticking tables from a Python client",
+                    "path": "how-to-guides/pydeephaven-ticking.md"
                   }
                 ]
               },
