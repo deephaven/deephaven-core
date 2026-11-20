@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api;
 
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
 
 import javax.annotation.Nonnull;
@@ -41,7 +40,7 @@ public class BigDecimalWrapper {
     /**
      * Returns the wrapped value as a number.
      *
-     * @return The {@link BigDecimal} value converted to a JS Number.
+     * @return The {@code BigDecimal} value converted to a JS Number.
      */
     public double asNumber() {
         return getWrapped().doubleValue();
@@ -60,7 +59,7 @@ public class BigDecimalWrapper {
     }
 
     /**
-     * Returns the string representation of the wrapped {@link BigDecimal}.
+     * Returns the string representation of the wrapped {@code BigDecimal}.
      */
     @Override
     public String toString() {

@@ -160,7 +160,7 @@ public class IdeSession extends HasEventHandling {
      * size is presently not available until the viewport is first set.
      * 
      * @param name
-     * @return {@link Promise} of {@link JsTreeTable}
+     * @return a promise of the {@link JsTreeTable}
      */
     public Promise<JsTreeTable> getTreeTable(String name) {
         return connection.getVariableDefinition(name, JsVariableType.HIERARCHICALTABLE)
