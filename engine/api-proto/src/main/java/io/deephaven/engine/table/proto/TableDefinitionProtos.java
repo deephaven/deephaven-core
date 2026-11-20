@@ -49,6 +49,12 @@ public final class TableDefinitionProtos {
      * pass {@link StandardCopyOption#REPLACE_EXISTING} to replace it.
      *
      * <p>
+     * This is a convenience helper that does the file IO around {@link #serialize(TableDefinition)}. Callers that need
+     * to be more explicit about how they handle IO (for example, to use a specific temporary file name, a different
+     * publishing strategy, or a file system with other guarantees) can write the bytes from {@code serialize}
+     * themselves.
+     *
+     * <p>
      * The file is written to a temporary sibling first and then published at {@code path} in a single atomic step, so
      * concurrent readers see either no file (or the previous one, when replacing) or the complete new definition, never
      * a partial write. Publishing always creates a new file: when replacing, the previous file is not modified in
@@ -58,8 +64,11 @@ public final class TableDefinitionProtos {
      * <p>
      * Like {@link Files#copy(java.io.InputStream, Path, CopyOption...)}, the supported options are:
      * <ul>
-     * <li>{@link StandardCopyOption#REPLACE_EXISTING}: replace {@code path} if it exists. The replacement is
-     * atomic.</li>
+     * <li>{@link StandardCopyOption#REPLACE_EXISTING}: replace {@code path} if it exists. The replacement is atomic.
+     * This is not portable: replacing is implemented as an atomic move onto an existing file, and
+     * {@link StandardCopyOption#ATOMIC_MOVE} leaves it up to the file system provider whether an existing target is
+     * replaced or the move fails. It works with the default providers on common local file systems, but may fail with
+     * an {@link IOException} on others, in which case use {@code serialize} and handle the IO directly.</li>
      * <li>{@link StandardCopyOption#ATOMIC_MOVE}: accepted, but has no effect, as publishing is always atomic.</li>
      * </ul>
      *
@@ -70,7 +79,8 @@ public final class TableDefinitionProtos {
      *         specified
      * @throws UnsupportedOperationException if {@code options} contains an unsupported option, or, when not replacing,
      *         if the file system does not support hard links, which are used to publish without replacing
-     * @throws IOException if the file cannot be written, or the file system cannot atomically publish {@code path}
+     * @throws IOException if the file cannot be written, or the file system cannot atomically publish {@code path},
+     *         including when replacing is not supported by the file system provider
      */
     public static void write(
             @NotNull final Path path,
