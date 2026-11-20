@@ -3,22 +3,24 @@ id: custom-data-sources
 title: Can I integrate custom data sources with Deephaven?
 ---
 
-Yes, you can integrate custom data sources with Deephaven. While Deephaven includes a proprietary columnar store for persistent historical and intraday data, you can integrate your own data stores to leverage Deephaven's efficient engine, analytics, and data visualization capabilities.
+Yes, you can integrate custom data sources with Deephaven. Deephaven reads common formats such as Parquet, CSV, and Kafka out of the box, and you can also integrate your own data stores to use Deephaven's engine, analytics, and visualization capabilities.
 
 There are three main integration approaches:
 
-- **Static in-memory tables** - Similar to CSV and JDBC imports.
-- **Dynamic in-memory tables** - For real-time data feeds like multicast distribution systems.
-- **Lazily-loaded on-disk tables** - For large datasets like Apache Parquet files.
+- **Static in-memory tables** — Similar to CSV and JDBC imports.
+- **Dynamic in-memory tables** — For real-time data feeds like multicast distribution systems.
+- **Java interop** — For advanced use cases requiring custom data loading logic via Deephaven's Java classes.
+
+For lazily-loaded on-disk tables such as Apache Parquet files, see [Import Parquet files](../../how-to-guides/data-import-export/parquet-import.md) and [Iceberg](../../how-to-guides/data-import-export/iceberg.md).
 
 ## Understanding Deephaven table structure
 
 Each Deephaven table consists of:
 
-- A [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) - An ordered set of long keys representing valid row addresses.
-- Named [`ColumnSources`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) - A map from column name to `ColumnSource`, which acts as a dictionary from row key to cell value.
+- A [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) — An ordered set of long keys representing valid row addresses.
+- Named [`ColumnSources`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) — A map from column name to `ColumnSource`, which acts as a dictionary from row key to cell value.
 
-In Python, you typically use higher-level APIs like `new_table`, [`table_publisher`](../table-operations/create/TablePublisher.md), or pandas integration rather than working directly with `RowSet`s and `ColumnSource`s.
+In Python, you typically use higher-level APIs like [`new_table`](../table-operations/create/newTable.md), [`table_publisher`](../table-operations/create/TablePublisher.md), or pandas integration rather than working directly with `RowSet`s and `ColumnSource`s.
 
 ## Static in-memory tables
 
@@ -70,7 +72,7 @@ custom_table = dhpd.to_table(df)
 
 ## Dynamic in-memory tables
 
-Dynamic tables allow you to integrate real-time data feeds. These tables update on each Deephaven update cycle and notify downstream operations of changes.
+Dynamic tables allow you to integrate real-time data feeds. These tables are processed during each Deephaven [update cycle](../../conceptual/table-update-model.md), a periodic pass (targeting once per second by default) in which the engine processes any pending changes and notifies downstream operations.
 
 For most use cases, [`table_publisher`](../table-operations/create/TablePublisher.md) is the recommended way to create dynamic tables in Python. It produces a [blink table](../../conceptual/table-types.md#specialization-3-blink) and exposes an `add` method for publishing data. See the [how-to guide](../../how-to-guides/table-publisher.md) for full details.
 
@@ -91,11 +93,11 @@ publisher.add(
 )
 ```
 
-[`DynamicTableWriter`](../table-operations/create/DynamicTableWriter.md) remains available for append-only use cases where you want a persistent table rather than a blink table.
+[`DynamicTableWriter`](../table-operations/create/DynamicTableWriter.md) remains available for append-only use cases. Its table keeps every row it receives, while a blink table keeps only the rows added in the current update cycle.
 
 ### Using table replayer for time-based data
 
-For replaying historical data or simulating real-time feeds:
+For replaying historical data or simulating real-time feeds, use [`TableReplayer`](../table-operations/create/Replayer.md):
 
 ```python order=replayed_table
 from deephaven import new_table
@@ -129,13 +131,12 @@ replayer.start()
 
 ## Advanced: Java interop for custom ColumnSources
 
-For advanced use cases requiring custom data loading logic, you can use Java interop to create custom ColumnSources. This approach is similar to the Groovy examples but uses Python's Java integration.
+For advanced use cases requiring custom data loading logic, you can use jpy to call Deephaven's Java classes directly to create custom [`ColumnSource`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html)s.
 
 > [!WARNING]
-> This is an advanced technique requiring knowledge of Deephaven's Java internals. For most use cases, `new_table`, [`table_publisher`](../table-operations/create/TablePublisher.md), or pandas integration are recommended.
+> This is an advanced technique requiring knowledge of Deephaven's Java internals. For most use cases, [`new_table`](../table-operations/create/newTable.md), [`table_publisher`](../table-operations/create/TablePublisher.md), or pandas integration are recommended.
 
 ```python order=custom_table
-from deephaven.jcompat import j_hashmap
 import jpy
 
 # Import Java classes
@@ -144,6 +145,7 @@ ArrayBackedColumnSource = jpy.get_type(
     "io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource"
 )
 QueryTable = jpy.get_type("io.deephaven.engine.table.impl.QueryTable")
+LinkedHashMap = jpy.get_type("java.util.LinkedHashMap")
 String = jpy.get_type("java.lang.String")
 
 # Your custom data as Java arrays
@@ -154,28 +156,26 @@ volumes = jpy.array("int", [1000000, 500000, 750000, 600000])
 # Create a TrackingRowSet
 row_set = RowSetFactory.flat(len(symbols)).toTracking()
 
-# Create column sources
-# Note: Primitive arrays (int, double) infer type automatically,
-# but object arrays (String) require explicit type specification
-column_sources = j_hashmap(
-    {
-        "Symbol": ArrayBackedColumnSource.getMemoryColumnSource(
-            symbols, String.jclass, None
-        ),
-        "Price": ArrayBackedColumnSource.getMemoryColumnSource(prices),
-        "Volume": ArrayBackedColumnSource.getMemoryColumnSource(volumes),
-    }
+# Create column sources using LinkedHashMap to preserve column order
+column_sources = LinkedHashMap()
+column_sources.put(
+    "Symbol",
+    ArrayBackedColumnSource.getMemoryColumnSource(symbols, String.jclass, None),
 )
+column_sources.put("Price", ArrayBackedColumnSource.getMemoryColumnSource(prices))
+column_sources.put("Volume", ArrayBackedColumnSource.getMemoryColumnSource(volumes))
 
-# Create the QueryTable
-custom_table = QueryTable(row_set, column_sources)
+# Create the QueryTable and wrap it as a Python Table
+from deephaven.table import Table
+
+custom_table = Table(j_table=QueryTable(row_set, column_sources))
 ```
 
 ## Working with external data sources
 
 ### Reading from custom file formats
 
-For custom file formats, read the data into Python structures and use `new_table`:
+For custom file formats, read the data into Python structures and use [`new_table`](../table-operations/create/newTable.md):
 
 ```python skip-test
 import struct
@@ -202,7 +202,7 @@ custom_table = new_table([double_col("Value", data)])
 
 ### Streaming data from APIs
 
-For streaming data from external APIs, use `table_publisher` with a background thread:
+For streaming data from external APIs, use [`table_publisher`](../table-operations/create/TablePublisher.md) with a background thread:
 
 ```python skip-test
 import threading
