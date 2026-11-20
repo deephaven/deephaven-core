@@ -209,7 +209,7 @@ The server fulfills [Barrage](./what-is-barrage.md) subscription requests by sna
 
 Parallel snapshotting reads the columns of a snapshot in parallel. It reduces latency when the columns are slow to access, but it can open many file handles to the same data source.
 
-Parallel snapshotting applies to a snapshot of more than one column when either of these is true:
+Parallel snapshotting applies to a snapshot of more than one column when the [operation initialization thread pool](./periodic-update-graph-configuration.md#operation-initialization-thread-pool) has more than one thread and either of these is true:
 
 - The snapshot has at least `QueryTable.minimumParallelSnapshotRows` rows.
 - The snapshot includes a column that is not held in memory.
