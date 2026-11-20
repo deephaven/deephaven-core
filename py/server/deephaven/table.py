@@ -412,7 +412,7 @@ class RollupNodeOperationsRecorder(
     _UpdateViewOperationsRecorder,
 ):
     """Recorder for node-level operations to be applied when gathering snapshots of RollupTable. Supported operations
-    include column formatting and sorting.
+    include column formatting, sorting, and adding columns with update_view.
 
     Note: It should not be instantiated directly. User code must call :meth:`~RollupTable.node_operation_recorder` to
     create an instance of the recorder.
@@ -571,7 +571,12 @@ class RollupTable(JObjectWrapper):
     def with_filters(
         self, filters: str | Filter | Sequence[str] | Sequence[Filter]
     ) -> RollupTable:
-        """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
+        """Returns a new RollupTable by applying the given set of filters to this RollupTable. The rollup is
+        re-aggregated, so the aggregated rows reflect only the rows that pass the filters. Filters that use only
+        group-by columns are applied at the lowest aggregated level. Other filters are applied to the source table, and
+        the rollup is rebuilt. Filters cannot use a column that an aggregation summarizes (the input column of an
+        aggregation's input/output pair, such as Salary in sum_("Salary")), and cannot refer to other rows, for example
+        with virtual row variables such as i or column arrays.
 
         Args:
             filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
@@ -3266,7 +3271,12 @@ class Table(_TableOperations["Table"]):
         replaced with null on each level.
 
         Note that some aggregations can not be used in creating a rollup table: partition, median, pct, and
-        formula when formula_param is provided
+        formula when formula_param is provided.
+
+        If this table is a blink table, rollup also does not support include_constituents=True, the first, last,
+        sorted_first, and sorted_last aggregations (which agg_by supports on blink tables, but rollup does not), or the
+        group and formula aggregations. Convert the blink table with :func:`~deephaven.stream.blink_to_append_only` to
+        use them.
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
