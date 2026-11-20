@@ -11,7 +11,10 @@ import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
@@ -25,6 +28,7 @@ import io.deephaven.test.types.SerialTest;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -524,6 +528,110 @@ public class MultiColumnSortTest {
         DataIndexer.getOrCreateDataIndex(table, "Group");
         assertArrayEquals(new int[] {1, 2, 3, 4},
                 ColumnVectors.ofInt(table.sort("Group", "Amount", "Tie"), "Tie").toArray());
+    }
+
+    /**
+     * BigDecimal 1.0 and 1.00 are ties in distinct data index groups, and two int arrays with the same contents are
+     * ties whose data index has no table, since an aggregation cannot key on an array. A stable sort of either column
+     * keeps their rows in row key order.
+     */
+    @Test
+    public void testIndexGroupsOfTiedValuesKeepRowKeyOrder() {
+        final int[] first = {1, 2};
+        final int[] second = {1, 2};
+        final BigDecimal[] amounts = new BigDecimal[12];
+        final int[][] paths = new int[12][];
+        for (int ii = 0; ii < 12; ++ii) {
+            amounts[ii] = new BigDecimal(ii % 2 == 0 ? "1.0" : "1.00");
+            paths[ii] = ii % 2 == 0 ? first : second;
+        }
+        final Table table = TableTools.newTable(TableTools.col("BD", amounts), TableTools.col("Path", paths),
+                TableTools.intCol("N", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
+        DataIndexer.getOrCreateDataIndex(table, "BD");
+        DataIndexer.getOrCreateDataIndex(table, "Path");
+        final int[] rowKeyOrder = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+        assertArrayEquals(rowKeyOrder, ColumnVectors.ofInt(table.sort("BD"), "N").toArray());
+        assertArrayEquals(rowKeyOrder, ColumnVectors.ofInt(table.sort("Path"), "N").toArray());
+    }
+
+    /**
+     * A sort by an int column and then a BigDecimal column uses the data index on the int column. An index on both
+     * columns does not apply, since BigDecimal ordering does not respect equality.
+     */
+    @Test
+    public void testFirstColumnIndexUsedWhenFullIndexHasColumnWithoutConsistentOrder() {
+        final int[] keys = new int[12];
+        final BigDecimal[] amounts = new BigDecimal[12];
+        final int[] rowNumbers = new int[12];
+        for (int ii = 0; ii < 12; ++ii) {
+            keys[ii] = ii % 3;
+            amounts[ii] = new BigDecimal(ii % 2 == 0 ? "1.0" : "1.00");
+            rowNumbers[ii] = ii;
+        }
+        final Table table = TableTools.newTable(TableTools.intCol("A", keys), TableTools.col("BD", amounts),
+                TableTools.intCol("N", rowNumbers));
+        // an index on an identical table supplies the groups, whose row keys are the same in both tables
+        final Table twin = TableTools.newTable(TableTools.intCol("A", keys));
+        final CountingDataIndex firstColumnIndex = new CountingDataIndex(table.getColumnSource("A"), "A",
+                DataIndexer.getOrCreateDataIndex(twin, "A"));
+        DataIndexer.of(table.getRowSet()).addDataIndex(firstColumnIndex);
+        DataIndexer.getOrCreateDataIndex(table, "A", "BD");
+
+        assertArrayEquals(new int[] {0, 3, 6, 9, 1, 4, 7, 10, 2, 5, 8, 11},
+                ColumnVectors.ofInt(table.sort("A", "BD"), "N").toArray());
+        assertTrue(firstColumnIndex.tableRequests.get() > 0);
+    }
+
+    /** A data index on one column that delegates to another index and counts the requests for its table. */
+    private static final class CountingDataIndex extends AbstractDataIndex {
+        private final ColumnSource<?> indexedColumn;
+        private final String keyColumnName;
+        private final DataIndex delegate;
+        final AtomicInteger tableRequests = new AtomicInteger();
+
+        CountingDataIndex(@NotNull final ColumnSource<?> indexedColumn, @NotNull final String keyColumnName,
+                @NotNull final DataIndex delegate) {
+            this.indexedColumn = indexedColumn;
+            this.keyColumnName = keyColumnName;
+            this.delegate = delegate;
+            manage(delegate);
+        }
+
+        @Override
+        public boolean isValid() {
+            return true;
+        }
+
+        @Override
+        public @NotNull List<String> keyColumnNames() {
+            return List.of(keyColumnName);
+        }
+
+        @Override
+        public @NotNull Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn() {
+            return Map.of(indexedColumn, keyColumnName);
+        }
+
+        @Override
+        public boolean tableIsCached() {
+            return delegate.tableIsCached();
+        }
+
+        @Override
+        public @NotNull Table table(final DataIndexOptions options) {
+            tableRequests.incrementAndGet();
+            return delegate.table(options);
+        }
+
+        @Override
+        public @NotNull RowKeyLookup rowKeyLookup(final DataIndexOptions options) {
+            return delegate.rowKeyLookup(options);
+        }
+
+        @Override
+        public boolean isRefreshing() {
+            return delegate.isRefreshing();
+        }
     }
 
     /**
