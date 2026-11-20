@@ -3066,7 +3066,7 @@
                 "label": "Performance and memory",
                 "items": [
                   {
-                    "label": "Why do queries run faster the second time they are run?",
+                    "label": "Why do some queries run faster the second time they are run?",
                     "path": "reference/community-questions/query-memoization.md"
                   },
                   {
