@@ -21,7 +21,8 @@ public class GenerateQueryLanguageFunctions {
     private static final String TASK = "generateQueryLanguageFunctions";
 
     private static final String OUTPUT_FILE =
-            "./engine/table/src/main/java/io/deephaven/engine/table/impl/lang/QueryLanguageFunctionUtils.java";
+            "./engine/table/src/replicated/" + TASK
+                    + "/java/io/deephaven/engine/table/impl/lang/QueryLanguageFunctionUtils.java";
 
     public static void main(String[] args) throws IOException {
         final long start = System.currentTimeMillis();
