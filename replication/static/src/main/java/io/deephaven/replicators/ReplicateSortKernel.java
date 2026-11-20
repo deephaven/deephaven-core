@@ -25,6 +25,8 @@ public class ReplicateSortKernel {
     private static final String TASK = "replicateSortKernel";
 
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         replicateLongToInt();
         replicateLongToByte();
 
@@ -58,7 +60,8 @@ public class ReplicateSortKernel {
 
         // now replicate each type to a descending kernel, and swap the sense of gt, lt, geq, and leq
         for (final String path : megaMergePaths) {
-            final String descendingPath = path.replace("LongMegaMergeKernel", "LongMegaMergeDescendingKernel");
+            final String descendingPath = replicatedOutputPath(TASK,
+                    path.replace("LongMegaMergeKernel", "LongMegaMergeDescendingKernel"));
             if (path.contains("Object")) {
                 FileUtils.copyFile(new File(path), new File(descendingPath));
                 fixupObjectMegaMerge(objectSortPath, true);
