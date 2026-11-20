@@ -30,22 +30,68 @@ async function filterNamed() {
 }
 // #endregion filterNamed
 
-// #region joins
-async function joins() {
+// #region naturalJoin
+async function naturalJoin() {
     const left = session.getObject({ type: "Table", name: "left" }) as dh.PendingTable<dh.Table>;
     const right = session.getObject({ type: "Table", name: "right" }) as dh.PendingTable<dh.Table>;
-    // left and right are never awaited, so every use of them belongs in this task: one batch, one await.
-    // resolveAll, unlike Promise.all, closes the tables that arrived if another fails
-    const [joined, asOf, exact] = await dh.resolveAll([
-        left.naturalJoin(right, ["Key"], ["Value"]),
-        left.aj(right, ["Key", "Ts"]),
-        left.exactJoin(right, ["Key"], ["Value"]),
-    ]);
+    // For each left row, Value from the right row with the same Key, or null if there is none
+    const joined = await left.naturalJoin(right, ["Key"], ["Value"]);
     joined.close();
-    asOf.close();
-    exact.close();
 }
-// #endregion joins
+// #endregion naturalJoin
+
+// #region exactJoin
+async function exactJoin() {
+    const left = session.getObject({ type: "Table", name: "left" }) as dh.PendingTable<dh.Table>;
+    const right = session.getObject({ type: "Table", name: "right" }) as dh.PendingTable<dh.Table>;
+    // As naturalJoin, but every left row must have exactly one matching right row
+    const joined = await left.exactJoin(right, ["Key"], ["Value"]);
+    joined.close();
+}
+// #endregion exactJoin
+
+// #region crossJoin
+async function crossJoin() {
+    const left = session.getObject({ type: "Table", name: "left" }) as dh.PendingTable<dh.Table>;
+    const right = session.getObject({ type: "Table", name: "right" }) as dh.PendingTable<dh.Table>;
+    // One row for every pair of left and right rows with the same Key; naturalJoin allows at most one right row
+    const joined = await left.join(right, ["Key"], ["Value"]);
+    joined.close();
+}
+// #endregion crossJoin
+
+// #region asOfJoins
+async function asOfJoins() {
+    const left = session.getObject({ type: "Table", name: "left" }) as dh.PendingTable<dh.Table>;
+    const right = session.getObject({ type: "Table", name: "right" }) as dh.PendingTable<dh.Table>;
+    // left and right are never awaited, so both joins use them in this task: one batch, one await
+    const [asOf, reverseAsOf] = await dh.resolveAll([
+        // For each left row, the last right row with the same Key whose Ts is at or before the left row's
+        left.aj(right, ["Key", "Ts"]),
+        // For each left row, the first right row with the same Key whose Ts is at or after the left row's
+        left.raj(right, ["Key", "Ts"]),
+    ]);
+    asOf.close();
+    reverseAsOf.close();
+}
+// #endregion asOfJoins
+
+// #region rangeJoin
+async function rangeJoin() {
+    // rangeJoin only supports static inputs, so neither table is a time table
+    const t = session.emptyTable(30).update(["Key = i % 3", "Ts = i"]);
+    const windows = session.emptyTable(3).update(["Key = i % 3", "LStart = i * 10", "LEnd = LStart + 5"]);
+    // For each window, the Ts values of t's rows with the same Key from LStart through LEnd
+    const ranged = await windows.rangeJoin(t, ["Key"], {
+        leftStartColumn: "LStart",
+        rangeStartRule: "LESS_THAN_OR_EQUAL",
+        rightRangeColumn: "Ts",
+        rangeEndRule: "GREATER_THAN_OR_EQUAL",
+        leftEndColumn: "LEnd",
+    }, [dh.agg.Aggregation.AggGroup(["Ts"])]);
+    ranged.close();
+}
+// #endregion rangeJoin
 
 // #region uniqueWithSentinel
 async function uniqueWithSentinel() {
@@ -136,27 +182,19 @@ async function rollingWeightedAverage() {
 }
 // #endregion rollingWeightedAverage
 
-// #region whereInAndRangeJoin
-async function whereInAndRangeJoin() {
-    // rangeJoin only supports static inputs, so t is not a time table
+// #region filterByTable
+async function filterByTable() {
     const t = session.emptyTable(30).update(["Key = i % 3", "Ts = i"]);
     const keys = session.emptyTable(2).update(["Key = i"]);
-    const windows = session.emptyTable(3).update(["Key = i % 3", "LStart = i * 10", "LEnd = LStart + 5"]);
-    const [inKeys, ranged] = await dh.resolveAll([
+    // t's rows whose Key appears in keys, and t's rows whose Key does not
+    const [inKeys, notInKeys] = await dh.resolveAll([
         t.whereIn(keys, ["Key"]),
-        windows.rangeJoin(t, ["Key"], {
-            leftStartColumn: "LStart",
-            rangeStartRule: "LESS_THAN_OR_EQUAL",
-            rightRangeColumn: "Ts",
-            rangeEndRule: "GREATER_THAN_OR_EQUAL",
-            leftEndColumn: "LEnd",
-        }, [dh.agg.Aggregation.AggGroup(["Ts"])]),
+        t.whereNotIn(keys, ["Key"]),
     ]);
-    // ... use inKeys and ranged ...
     inKeys.close();
-    ranged.close();
+    notInKeys.close();
 }
-// #endregion whereInAndRangeJoin
+// #endregion filterByTable
 
 // #region cancelAndAbort
 // Abandoning work that is no longer wanted: cancel() a pending table, or abort the signal given to resolve()
@@ -215,7 +253,7 @@ async function keepWhatSucceeded() {
 // #endregion keepWhatSucceeded
 
 // #region readEither
-// Reading any table, legacy or new: Table, TotalsTable and ResolvedTable share these members
+// Reading any table, mutable or not: Table, TotalsTable and ResolvedTable share these members
 function describe(t: dh.Table | dh.TotalsTable | dh.ResolvedTable): string {
     return `${t.size} rows: ${t.columns.map(c => c.name).join(", ")}`;
 }
@@ -228,22 +266,27 @@ async function readEither() {
 }
 // #endregion readEither
 
-// #region misc
-async function misc() {
-    const t = session.timeTable(1e9).update(["Key = i % 3"]);
-    const [head, distinct, snap, when] = await dh.resolveAll([
-        t.head(5),
-        t.selectDistinct(["Key"]),
-        t.snapshot(),
-        // The trigger's columns are added to the result, so rename its Timestamp to avoid t's
-        t.snapshotWhen(session.timeTable(5e9), { initial: true, stampColumns: ["TriggerTs = Timestamp"] }),
-    ]);
-    head.close();
-    distinct.close();
-    snap.close();
-    when.close();
+// #region snapshot
+async function snapshot() {
+    const t = session.timeTable(1e9).update(["X = i"]);
+    // A static copy of t as it is now, which does not tick
+    const copy = await t.snapshot();
+    copy.close();
 }
-// #endregion misc
+// #endregion snapshot
+
+// #region snapshotWhen
+async function snapshotWhen() {
+    const t = session.timeTable(1e9).update(["Key = i % 3"]);
+    // A copy of t taken each time the trigger ticks. The trigger's columns are added to the result, so its Timestamp is
+    // renamed to avoid t's
+    const sampled = await t.snapshotWhen(session.timeTable(5e9), {
+        initial: true,
+        stampColumns: ["TriggerTs = Timestamp"],
+    });
+    sampled.close();
+}
+// #endregion snapshotWhen
 
 // #region mergeTwo
 async function mergeTwo() {
@@ -267,9 +310,9 @@ async function readTable(t: dh.ResolvedTable) {
 }
 // #endregion readTable
 
-// #region legacy
-// Mixing the legacy mutable Table with the new API
-async function legacy() {
+// #region mutableTable
+// Mixing a mutable dh.Table with table operations
+async function mutableTable() {
     const table = (await session.getObject({ type: "Table", name: "source" })) as dh.Table;
     table.applyFilter([]);
     const derived = await table.operations().update(["Z = X + 1"]);
@@ -282,7 +325,7 @@ async function legacy() {
     derived.close();
     joined.close();
 }
-// #endregion legacy
+// #endregion mutableTable
 
 // #region viewport
 // Data access on a resolved chain result, viewport style
@@ -309,20 +352,36 @@ async function selectColumns() {
 }
 // #endregion selectColumns
 
-// #region rowRanges
-async function rowRanges() {
+// #region headAndTail
+async function headAndTail() {
     const t = session.emptyTable(10).update(["X = i"]);
-    const [lastThree, middle, reversed] = await dh.resolveAll([
-        t.tail(3),
+    const [firstThree, lastThree] = await dh.resolveAll([t.head(3), t.tail(3)]);
+    firstThree.close();
+    lastThree.close();
+}
+// #endregion headAndTail
+
+// #region sliceAndReverse
+async function sliceAndReverse() {
+    const t = session.emptyTable(10).update(["X = i"]);
+    const [middle, reversed] = await dh.resolveAll([
         // Positions count from the start, or from the end when negative; the end position is excluded
         t.slice(1, -1),
         t.reverse(),
     ]);
-    lastThree.close();
     middle.close();
     reversed.close();
 }
-// #endregion rowRanges
+// #endregion sliceAndReverse
+
+// #region selectDistinct
+async function selectDistinct() {
+    const t = session.emptyTable(10).update(["Key = i % 3", "X = i"]);
+    // One row for each distinct Key
+    const keys = await t.selectDistinct(["Key"]);
+    keys.close();
+}
+// #endregion selectDistinct
 
 // #region groupAndUngroup
 async function groupAndUngroup() {
@@ -373,22 +432,6 @@ async function aggregateAll() {
 }
 // #endregion aggregateAll
 
-// #region moreJoins
-async function moreJoins() {
-    const left = session.getObject({ type: "Table", name: "left" }) as dh.PendingTable<dh.Table>;
-    const right = session.getObject({ type: "Table", name: "right" }) as dh.PendingTable<dh.Table>;
-    const [reverseAsOf, cross, notInRight] = await dh.resolveAll([
-        // For each left row, the first right row with the same Key whose Ts is at or after the left row's
-        left.raj(right, ["Key", "Ts"]),
-        // Every matching pair of rows; naturalJoin instead allows at most one right row per key
-        left.join(right, ["Key"], ["Value"]),
-        left.whereNotIn(right, ["Key"]),
-    ]);
-    reverseAsOf.close();
-    cross.close();
-    notInRight.close();
-}
-// #endregion moreJoins
 
 // #region downsampleForChart
 // Keeps only the rows needed to draw each Y column as a line across a chart 800 pixels wide

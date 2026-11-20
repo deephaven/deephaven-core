@@ -5,7 +5,19 @@
   "hideGenerator": true,
   "disableSources": true,
   "customCss": "theme.css",
-  "projectDocuments": ["guides/**/*.md"],
+  // Listed in sidebar order; a guide not listed here is not published. The commented-out ones are stubs.
+  "projectDocuments": [
+    // "guides/start-here.md",
+    // "guides/connect.md",
+    "guides/read-data.md",
+    // "guides/values-and-filters.md",
+    // "guides/errors.md",
+    // "guides/typescript.md",
+    // "guides/mutable-table.md",
+    "guides/table-operations.md"
+    // "guides/pending-tables.md",
+    // "guides/ownership.md"
+  ],
   "alwaysCreateEntryPointModule": false,
   "searchInDocuments": true,
   "externalSymbolLinkMappings": {
