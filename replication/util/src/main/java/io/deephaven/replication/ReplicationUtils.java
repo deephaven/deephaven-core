@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 public class ReplicationUtils {
     private static final Pattern REPLICATED_REDIRECT = Pattern.compile("^(.*)/src/(main|test)/java/(.*)$");
 
-    private static String redirectedTask;
+    private static final Set<String> redirectedTasks = new HashSet<>();
 
     /**
      * Send the output of the replication task {@code task} to its own directory instead of next to its inputs. Call
@@ -30,11 +30,14 @@ public class ReplicationUtils {
      * includes in the main and test source sets respectively.
      * <p>
      * The output directory is not created; whoever adds or migrates a replicator creates it (and checks it in).
+     * <p>
+     * Redirection is tracked per task, so a replicator that invokes another replicator's {@code main} in the same JVM
+     * does not disturb the redirection of either task.
      *
      * @param task the name of the Gradle task that runs the replicator
      */
     public static void redirectOutputToReplicated(@NotNull final String task) {
-        redirectedTask = task;
+        redirectedTasks.add(task);
     }
 
     /**
@@ -45,7 +48,7 @@ public class ReplicationUtils {
      * @return the path to write to
      */
     public static String replicatedOutputPath(@NotNull final String task, @NotNull final String resultJavaPath) {
-        if (!task.equals(redirectedTask)) {
+        if (!redirectedTasks.contains(task)) {
             return resultJavaPath;
         }
         final Matcher matcher = REPLICATED_REDIRECT.matcher(resultJavaPath);
