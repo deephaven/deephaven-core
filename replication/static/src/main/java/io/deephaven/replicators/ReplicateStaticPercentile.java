@@ -3,6 +3,8 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -28,6 +30,8 @@ public class ReplicateStaticPercentile {
             "engine/table/src/main/java/io/deephaven/engine/table/impl/by/staticpercentile/";
 
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         for (final String path : charToAllButBoolean(TASK, DIRECTORY + "CharStaticPercentileOperator.java")) {
             if (path.endsWith("IntStaticPercentileOperator.java")) {
                 fixupIntegral(path, "Int", "IntegerArraySource");
