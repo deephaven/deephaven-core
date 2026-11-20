@@ -69,15 +69,18 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * other change makes a new level, which replaces the old one in its parent, so that a concurrent reader finds each
  * child where the level it read says.
  * <p>
- * When tracking previous values, the first write to a row in a cycle records the row's value in a second page table of
- * previous values. Each leaf of that table holds the recorded offsets of its leaf as a sorted or bitmap leaf, following
- * the same thresholds, or, once more offsets are recorded than a compact leaf holds, a full block that snapshots the
- * whole leaf. A row without a recorded value has not changed this cycle, so its previous value is its current value.
- * The previous values are discarded when the cycle completes. The snapshot blocks and the arrays of the previous value
- * page table come from recyclers shared by the sources of this type; completing the cycle walks that page table,
- * returning each snapshot block, and each array indexed by child index with every entry null. A ranked level holds only
- * its children and a window has at most 64 entries or eight for each child, so the walk costs at most 64 entries for
- * each level and eight for each child the cycle recorded.
+ * When tracking previous values, the first write to a leaf in a cycle records its previous values in a second page
+ * table of previous values. A write that adds or removes offsets of a compact or absent leaf puts a new leaf in place
+ * of the old one, which is never written again, so the first such write records the old leaf itself, or the empty
+ * sorted leaf for an absent leaf, as the previous values of the whole leaf, with a marker in place of a full block that
+ * tells them from recorded offsets. Otherwise the first write to each row records the row's value: the recorded offsets
+ * are a sorted or bitmap leaf, following the same thresholds, or, once more offsets are recorded than a compact leaf
+ * holds, a full block that is a complete copy of the whole leaf. A row without a recorded value has not changed this
+ * cycle, so its previous value is its current value. The previous values are discarded when the cycle completes. The
+ * complete copies and the arrays of the previous value page table come from recyclers shared by the sources of this
+ * type; completing the cycle walks that page table, returning each complete copy, and each array indexed by child index
+ * with every entry null. A ranked level holds only its children and a window has at most 64 entries or eight for each
+ * child, so the walk costs at most 64 entries for each level and eight for each child the cycle recorded.
  * <p>
  * For parallel population, {@link #prepareForParallelPopulation(RowSequence, boolean)} allocates the page table above
  * each leaf to be written and reserves the leaf's position, for current and previous values, so that writers of
@@ -102,12 +105,17 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
     private static final long PREPARE_PIECE_MASK = (64L << LOG_BLOCK_SIZE) - 1;
 
     // region recycler
-    /** Blocks for previous value snapshots, which are not null-filled when borrowed. */
-    private static final SoftRecycler<double[]> snapshotRecycler =
+    /** Blocks for complete copies of previous values, which are not null-filled when borrowed. */
+    private static final SoftRecycler<double[]> completeCopyRecycler =
             SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY,
                     SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_MAXIMUM_CAPACITY,
                     () -> new double[BLOCK_SIZE], null));
     // endregion recycler
+    /**
+     * Stands in the previous value page table for the full block of a leaf whose compact leaf there holds the previous
+     * values of the whole leaf, rather than the recorded offsets of the leaf.
+     */
+    private static final double[] WHOLE_LEAF = new double[0];
     // The arrays of the previous value page table, which are returned with every entry null.
     private static final SoftRecycler<double[][]> blocksArrayRecycler =
             SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY2,
@@ -541,7 +549,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         }
 
         /**
-         * Release this previous value level and its children when the cycle completes: return their snapshot blocks,
+         * Release this previous value level and its children when the cycle completes: return their complete copies,
          * and their arrays covering every child index, with every entry null, to the recyclers. The level is discarded
          * with any other array.
          */
@@ -1018,18 +1026,18 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         }
 
         /**
-         * Release this previous value level when the cycle completes: return its snapshot blocks, and its arrays
+         * Release this previous value level when the cycle completes: return its complete copies, and its arrays
          * covering every leaf index, with every entry null, to their recyclers. The level is discarded with any other
          * arrays.
          */
         private void recyclePrevious() {
-            if (onlyBlock != null) {
-                snapshotRecycler.returnItem(onlyBlock);
+            if (onlyBlock != null && onlyBlock != WHOLE_LEAF) {
+                completeCopyRecycler.returnItem(onlyBlock);
             }
             if (blocks != null) {
-                for (final double[] snapshot : blocks) {
-                    if (snapshot != null) {
-                        snapshotRecycler.returnItem(snapshot);
+                for (final double[] completeCopy : blocks) {
+                    if (completeCopy != null && completeCopy != WHOLE_LEAF) {
+                        completeCopyRecycler.returnItem(completeCopy);
                     }
                 }
             }
@@ -1496,7 +1504,8 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
      * than a compact leaf holds needs room only for a full block; its writer then makes it a full block from its first
      * chunk, unless its bottom level has room for compact leaves anyway (see {@link #writesAlignedDivisions()}). Any
      * other leaf needs room only for a compact leaf. The previous values always get room for a compact leaf, and room
-     * for a snapshot when a leaf may be recorded past {@code recordThreshold}.
+     * for a full block when a leaf with nothing recorded is not a full block, for the marker of a whole leaf, or when a
+     * leaf may be recorded past {@code recordThreshold}, for a complete copy.
      */
     private void prepareLeafIndices(final RowSequence rows) {
         final boolean trackPrevious = prevFlusher != null;
@@ -1507,7 +1516,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         Level2 prevLevel2 = null;
         boolean mayHoldBlocks = false;
         boolean mayHoldCompacts = false;
-        boolean mayHoldSnapshots = false;
+        boolean mayRecordBlocks = false;
         try (final RowSequence.Iterator it = rows.getRowSequenceIterator()) {
             while (it.hasMore()) {
                 final long firstKey = it.peekNextKey();
@@ -1515,7 +1524,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
                 if (firstKey >> BLOCK1_SHIFT != level2Key) {
                     if (level2 != null) {
                         prepareLevel2(level2Key << BLOCK1_SHIFT, level2, prevLevel2, indices, count, mayHoldBlocks,
-                                mayHoldCompacts, mayHoldSnapshots);
+                                mayHoldCompacts, mayRecordBlocks);
                     }
                     level2Key = firstKey >> BLOCK1_SHIFT;
                     level2 = ensureLevel2(firstKey);
@@ -1523,7 +1532,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
                     count = 0;
                     mayHoldBlocks = false;
                     mayHoldCompacts = false;
-                    mayHoldSnapshots = false;
+                    mayRecordBlocks = false;
                 }
                 final int block2 = block2(firstKey);
                 final DoubleCompactLeaf compact = level2.getCompact(block2);
@@ -1533,9 +1542,11 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
                 mayHoldBlocks |= mayBeBlock;
                 mayHoldCompacts |= !isBlock && !mayBeBlock;
                 if (trackPrevious) {
+                    // the previous values of a leaf get a block for the marker of a whole leaf, when nothing is
+                    // recorded for a leaf that is not a full block, or for a complete copy
                     final DoubleCompactLeaf recorded = prevLevel2.getCompact(block2);
-                    mayHoldSnapshots |= prevLevel2.getBlock(block2) == null
-                            && (recorded == null ? 0 : recorded.size()) + keyCount > recordThreshold;
+                    mayRecordBlocks |= prevLevel2.getBlock(block2) == null && ((recorded == null && !isBlock)
+                            || (recorded == null ? 0 : recorded.size()) + keyCount > recordThreshold);
                 }
                 if (count == indices.length) {
                     indices = Arrays.copyOf(indices, count * 2);
@@ -1545,7 +1556,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         }
         if (level2 != null) {
             prepareLevel2(level2Key << BLOCK1_SHIFT, level2, prevLevel2, indices, count, mayHoldBlocks,
-                    mayHoldCompacts, mayHoldSnapshots);
+                    mayHoldCompacts, mayRecordBlocks);
         }
     }
 
@@ -1561,14 +1572,13 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
             final int count,
             final boolean mayHoldBlocks,
             final boolean mayHoldCompacts,
-            final boolean mayHoldSnapshots) {
+            final boolean mayRecordBlocks) {
         final Level2 prepared = level2.reserve(indices, count).withArrays(mayHoldBlocks, mayHoldCompacts);
         if (prepared != level2) {
             publishLevel2(false, key, prepared);
         }
         if (prevLevel2 != null) {
-            // a snapshot may still be a compact leaf in between, when the rows are written in pieces
-            final Level2 preparedPrev = prevLevel2.reserve(indices, count).withArrays(mayHoldSnapshots, true);
+            final Level2 preparedPrev = prevLevel2.reserve(indices, count).withArrays(mayRecordBlocks, true);
             if (preparedPrev != prevLevel2) {
                 publishLevel2(true, key, preparedPrev);
             }
@@ -1632,40 +1642,61 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         final int block2 = block2(firstKey);
         final Level2 level2 = ensureLevel2(firstKey);
         leaves.offsets(offsets);
-        if (trackPrevious) {
-            recordPrevious(firstKey, level2, block2, offsets, count, scratch);
+        final double[] block = level2.getBlock(block2);
+        if (block != null) {
+            if (trackPrevious) {
+                recordPrevious(firstKey, block2, block, null, offsets, count, false, scratch);
+            }
+            return;
         }
-        if (level2.getBlock(block2) == null) {
-            final DoubleCompactLeaf compact = level2.getCompact(block2);
-            final int absent = compact == null ? count : compact.countAbsent(offsets, count);
-            final DoubleCompactLeaf target = makeRoomInLeaf(firstKey, level2, compact, absent);
-            if (target != null) {
-                final DoubleCompactLeaf prepared = target.insertAbsent(offsets, count, sortedThreshold);
-                if (prepared != compact) {
-                    setCompact(false, firstKey, level2, prepared);
-                }
+        final DoubleCompactLeaf compact = level2.getCompact(block2);
+        final int absent = compact == null ? count : compact.countAbsent(offsets, count);
+        if (trackPrevious) {
+            recordPrevious(firstKey, block2, null, compact, offsets, count, absent > 0, scratch);
+        }
+        final DoubleCompactLeaf target = makeRoomInLeaf(firstKey, level2, compact, absent);
+        if (target != null) {
+            final DoubleCompactLeaf prepared = target.insertAbsent(offsets, count, sortedThreshold);
+            if (prepared != compact) {
+                setCompact(false, firstKey, level2, prepared);
             }
         }
     }
 
     /**
-     * Record the current value at {@code offset} of the leaf at {@code block2} of {@code level2} (null if not
-     * allocated), which covers {@code key}, as its previous value, unless this cycle has already recorded it. A record
-     * is visible to other threads before the caller writes the new value, so that a reader of previous values that sees
-     * the new value finds the record (see {@link #getPrevValue(long)}).
+     * Record the previous value at {@code offset} of the leaf at {@code block2} covering {@code key}, which is the full
+     * block {@code block}, or else the compact leaf {@code compact}, or absent if both are null, unless this cycle has
+     * already recorded it. When nothing is recorded for the leaf and the write replaces a compact or absent leaf, the
+     * record is the old leaf itself, the previous values of the whole leaf. The record is visible to other threads
+     * before the caller writes the new value, so that a reader of previous values that sees the new value finds the
+     * record (see {@link #getPrevValue(long)}).
+     *
+     * @param replacesLeaf whether the write puts a new leaf in place of {@code compact}, which is then never written
+     *        again, rather than writing a value into it in place
      */
-    private void recordPrevious(final long key, final Level2 level2, final int block2, final int offset) {
+    private void recordPrevious(
+            final long key,
+            final int block2,
+            final double[] block,
+            final DoubleCompactLeaf compact,
+            final int offset,
+            final boolean replacesLeaf) {
         final Level2 prevLevel2 = ensurePrevLevel2(key);
         final int slot = prevLevel2.slot(block2);
         if (prevLevel2.blockAt(slot) != null) {
+            // the previous values of the whole leaf are recorded
             return;
         }
-        DoubleCompactLeaf recorded = prevLevel2.compactAt(slot);
+        final DoubleCompactLeaf recorded = prevLevel2.compactAt(slot);
+        if (recorded == null && block == null && replacesLeaf) {
+            recordWholeLeaf(key, prevLevel2, compact);
+            return;
+        }
         if (recorded != null && recorded.contains(offset)) {
             return;
         }
-        final double value = getValue(level2, block2, offset);
-        final DoubleCompactLeaf target = makeRoomInPrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
+        final double value = block != null ? block[offset] : compact == null ? NULL_DOUBLE : compact.get(offset);
+        final DoubleCompactLeaf target = makeRoomInPrevLeaf(key, prevLevel2, recorded, 1, block, compact);
         if (target != null) {
             setCompact(true, key, prevLevel2, target.put(offset, value, sortedThreshold));
         }
@@ -1673,38 +1704,47 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
     }
 
     /**
-     * Record the current values at {@code offsets[0, count)}, ascending and distinct, of the leaf at {@code block2} of
-     * {@code level2} (null if not allocated), which covers {@code key}, as their previous values, except those this
-     * cycle has already recorded. The records are visible to other threads before the caller writes the new values.
+     * Record the previous values at {@code offsets[0, count)}, ascending and distinct, of the leaf at {@code block2}
+     * covering {@code key}, which is the full block {@code block}, or else the compact leaf {@code compact}, or absent
+     * if both are null, except those this cycle has already recorded. When nothing is recorded for the leaf and the
+     * write replaces a compact or absent leaf, the record is the old leaf itself, the previous values of the whole leaf.
+     * The records are visible to other threads before the caller writes the new values.
      *
+     * @param replacesLeaf whether the write puts a new leaf in place of {@code compact}, which is then never written
+     *        again, rather than writing values into it in place
      * @param scratch holds the offsets to record and their values, when they fit in a compact leaf
      */
     private void recordPrevious(
             final long key,
-            final Level2 level2,
             final int block2,
+            final double[] block,
+            final DoubleCompactLeaf compact,
             final int[] offsets,
             final int count,
+            final boolean replacesLeaf,
             final PrevScratch scratch) {
         final Level2 prevLevel2 = ensurePrevLevel2(key);
         final int slot = prevLevel2.slot(block2);
         if (prevLevel2.blockAt(slot) != null) {
+            // the previous values of the whole leaf are recorded
             return;
         }
         final DoubleCompactLeaf alreadyRecorded = prevLevel2.compactAt(slot);
+        if (alreadyRecorded == null && block == null && replacesLeaf) {
+            recordWholeLeaf(key, prevLevel2, compact);
+            return;
+        }
         final int absent = alreadyRecorded == null ? count : alreadyRecorded.countAbsent(offsets, count);
         if (absent == 0) {
             return;
         }
-        final DoubleCompactLeaf recorded = makeRoomInPrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
+        final DoubleCompactLeaf recorded =
+                makeRoomInPrevLeaf(key, prevLevel2, alreadyRecorded, absent, block, compact);
         if (recorded == null) {
-            // the leaf's previous values are now a snapshot
+            // the leaf's previous values are now a complete copy
             VarHandle.releaseFence();
             return;
         }
-        final int leafSlot = level2 == null ? -1 : level2.slot(block2);
-        final double[] block = level2 == null ? null : level2.blockAt(leafSlot);
-        final DoubleCompactLeaf compact = level2 == null || block != null ? null : level2.compactAt(leafSlot);
         int next = 0;
         for (int ii = 0; ii < count; ++ii) {
             final int offset = offsets[ii];
@@ -1724,38 +1764,49 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
     }
 
     /**
-     * Make the previous value leaf at {@code block2} of {@code prevLevel2}, whose recorded offsets are {@code recorded}
-     * (or null if none), ready to record {@code count} more offsets of the leaf at {@code block2} of {@code level2}
-     * (null if not allocated), both covering {@code key}.
+     * Record {@code compact}, or the empty sorted leaf if null, as the previous values of the whole leaf covering
+     * {@code key} in {@code prevLevel2}, for a write that puts a new leaf in its place.
+     */
+    private void recordWholeLeaf(final long key, final Level2 prevLevel2, final DoubleCompactLeaf compact) {
+        // a reader that finds the leaf without the offset it reads must find the marker that distinguishes the leaf
+        // from recorded offsets, so the marker is stored first
+        final Level2 marked = setBlock(true, key, prevLevel2, WHOLE_LEAF);
+        VarHandle.storeStoreFence();
+        setCompact(true, key, marked, compact == null ? DoubleSortedLeaf.EMPTY : compact);
+        VarHandle.releaseFence();
+    }
+
+    /**
+     * Make the previous value leaf at the position of {@code key} in {@code prevLevel2}, whose recorded offsets are
+     * {@code recorded} (or null if none), ready to record {@code count} more offsets of the current leaf, which is the
+     * full block {@code block}, or else the compact leaf {@code compact}, or absent if both are null.
      *
      * @return the leaf to record into, which the caller puts in place of {@code recorded} once written, or null if the
-     *         previous value leaf is now a snapshot of the whole leaf
+     *         previous value leaf is now a complete copy of the whole leaf
      */
     private DoubleCompactLeaf makeRoomInPrevLeaf(
             final long key,
             final Level2 prevLevel2,
-            final int block2,
             final DoubleCompactLeaf recorded,
             final int count,
-            final Level2 level2) {
+            final double[] block,
+            final DoubleCompactLeaf compact) {
         final int newSize = (recorded == null ? 0 : recorded.size()) + count;
         if (newSize > recordThreshold) {
             // the offsets not yet recorded have not changed this cycle, so their current values are previous values
-            final double[] snapshot = snapshotRecycler.borrowItem();
-            final double[] block = level2 == null ? null : level2.getBlock(block2);
+            final double[] completeCopy = completeCopyRecycler.borrowItem();
             if (block != null) {
-                System.arraycopy(block, 0, snapshot, 0, BLOCK_SIZE);
+                System.arraycopy(block, 0, completeCopy, 0, BLOCK_SIZE);
             } else {
-                Arrays.fill(snapshot, NULL_DOUBLE);
-                final DoubleCompactLeaf compact = level2 == null ? null : level2.getCompact(block2);
+                Arrays.fill(completeCopy, NULL_DOUBLE);
                 if (compact != null) {
-                    compact.copyTo(snapshot);
+                    compact.copyTo(completeCopy);
                 }
             }
             if (recorded != null) {
-                recorded.copyTo(snapshot);
+                recorded.copyTo(completeCopy);
             }
-            setBlock(true, key, prevLevel2, snapshot);
+            setBlock(true, key, prevLevel2, completeCopy);
             return null;
         }
         return recorded == null ? DoubleSortedLeaf.EMPTY : recorded;
@@ -1795,18 +1846,27 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
             final Level2 prevLevel2 = localPrevRoot == null ? null : getLevel2(localPrevRoot, rowKey);
             if (prevLevel2 != null) {
                 final int slot = prevLevel2.slot(block2);
-                // when the recorded leaf becomes a snapshot, the snapshot is stored before the recorded leaf is
-                // cleared, so reading the recorded leaf first finds either the recorded leaf or, once that is
-                // cleared, the snapshot, and never neither
+                // the marker of a whole leaf is stored before the leaf, and a complete copy is stored before the
+                // recorded offsets it replaces are cleared, so reading the compact leaf first, then the block, finds
+                // the marker with a whole leaf, and finds the complete copy once the recorded offsets are cleared
                 final DoubleCompactLeaf recorded = prevLevel2.compactAt(slot);
                 if (recorded != null) {
                     if (recorded.contains(offset)) {
                         return recorded.get(offset);
                     }
+                    VarHandle.loadLoadFence();
+                    final double[] prevBlock = prevLevel2.blockAt(slot);
+                    if (prevBlock == WHOLE_LEAF) {
+                        // the previous values of the whole leaf, which held no value at the offset
+                        return NULL_DOUBLE;
+                    }
+                    if (prevBlock != null) {
+                        return prevBlock[offset];
+                    }
                 } else {
-                    final double[] snapshot = prevLevel2.blockAt(slot);
-                    if (snapshot != null) {
-                        return snapshot[offset];
+                    final double[] completeCopy = prevLevel2.blockAt(slot);
+                    if (completeCopy != null && completeCopy != WHOLE_LEAF) {
+                        return completeCopy[offset];
                     }
                 }
             }
@@ -2008,7 +2068,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
     }
 
     /**
-     * Release {@code prev}, the previous value page table, returning its snapshot blocks and its arrays indexed by
+     * Release {@code prev}, the previous value page table, returning its complete copies and its arrays indexed by
      * child index, with every entry null, to their recyclers.
      */
     private static void recyclePrevious(final Level0 prev) {
@@ -2046,13 +2106,18 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         final Level2 level2 = ensureLevel2(key);
         final int block2 = block2(key);
         final int offset = (int) (key & INDEX_MASK);
-        if (shouldTrackPrevious()) {
-            recordPrevious(key, level2, block2, offset);
-        }
+        final boolean trackPrevious = shouldTrackPrevious();
         final double[] block = level2.getBlock(block2);
         if (block != null) {
+            if (trackPrevious) {
+                recordPrevious(key, block2, block, null, offset, false);
+            }
             block[offset] = value;
             return;
+        }
+        if (trackPrevious) {
+            final DoubleCompactLeaf compact = level2.getCompact(block2);
+            recordPrevious(key, block2, null, compact, offset, compact == null || !compact.contains(offset));
         }
         setInCompactLeaf(key, level2, offset, value);
     }
@@ -2092,7 +2157,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         if (block != null) {
             if (block[offset] != NULL_DOUBLE) {
                 if (shouldTrackPrevious()) {
-                    recordPrevious(key, level2, block2, offset);
+                    recordPrevious(key, block2, block, null, offset, false);
                 }
                 block[offset] = NULL_DOUBLE;
             }
@@ -2101,7 +2166,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         final DoubleCompactLeaf compact = level2.getCompact(block2);
         if (compact != null && compact.contains(offset)) {
             if (shouldTrackPrevious()) {
-                recordPrevious(key, level2, block2, offset);
+                recordPrevious(key, block2, null, compact, offset, true);
             }
             setCompact(false, key, level2, compact.remove(offset, sortedThreshold));
         }
@@ -2132,7 +2197,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
                                 }
                             }
                             if (count > 0) {
-                                recordPrevious(key, level2, block2, offsets, count, scratch);
+                                recordPrevious(key, block2, block, null, offsets, count, false, scratch);
                             }
                         }
                         Arrays.fill(block, firstOffset, lastOffset + 1, NULL_DOUBLE);
@@ -2142,7 +2207,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
                             if (trackPrevious) {
                                 final int count = compact.copyOffsets(firstOffset, lastOffset, offsets);
                                 if (count > 0) {
-                                    recordPrevious(key, level2, block2, offsets, count, scratch);
+                                    recordPrevious(key, block2, null, compact, offsets, count, true, scratch);
                                 }
                             }
                             final DoubleCompactLeaf remaining =
@@ -2196,9 +2261,13 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
 
     /**
      * The leaf being read by a chunked fill, and the position in the destination chunk. A fill of previous values also
-     * reads the leaf's previous values: a snapshot of the whole leaf, or the recorded offsets.
+     * reads the leaf's previous values: those of the whole leaf, or the recorded offsets.
      */
     private static final class FillState {
+        private static final byte KIND_UNKNOWN = 0;
+        private static final byte KIND_WHOLE = 1;
+        private static final byte KIND_OFFSETS = 2;
+
         private final DoubleAdaptiveSparseArraySource source;
         /**
          * Whether the fill reads previous values, which it may read from current leaves that this cycle is changing.
@@ -2207,8 +2276,18 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
         private long maxKeyInCurrentLeaf = -1;
         private double[] block;
         private DoubleCompactLeaf compact;
-        private double[] prevSnapshot;
+        /** The previous values of the whole leaf, when the leaf was a full block with many changes. */
+        private double[] prevCompleteCopy;
+        /**
+         * The previous values of the whole leaf, when it was compact or absent and a write replaced it, or else the
+         * recorded offsets of the leaf, whose other offsets are unchanged; {@link #recordedWhole()} tells which.
+         */
         private DoubleCompactLeaf prevRecorded;
+        /** The bottom level of previous values and the position in it where {@link #prevRecorded} was found. */
+        private Level2 prevLevel2;
+        private int prevSlot;
+        /** Whether {@link #prevRecorded} holds the whole leaf, once {@link #recordedWhole()} has looked. */
+        private byte recordedKind;
         /**
          * Whether {@link #getPrev(int)} has read a value from a current leaf, which may be a value written since the
          * fill read the leaf's previous values.
@@ -2257,21 +2336,40 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
          */
         private boolean readPrevious() {
             final Level0 prevRoot = source.prevRoot;
-            final Level2 prevLevel2 = prevRoot == null ? null : getLevel2(prevRoot, maxKeyInCurrentLeaf);
+            final Level2 level2 = prevRoot == null ? null : getLevel2(prevRoot, maxKeyInCurrentLeaf);
             DoubleCompactLeaf recorded = null;
-            double[] snapshot = null;
-            if (prevLevel2 != null) {
-                // when the recorded leaf becomes a snapshot, the snapshot is stored before the recorded leaf is
-                // cleared, so reading the recorded leaf first finds either the recorded leaf or, once that is
-                // cleared, the snapshot, and never neither
-                final int slot = prevLevel2.slot(block2(maxKeyInCurrentLeaf));
-                recorded = prevLevel2.compactAt(slot);
-                snapshot = recorded == null ? prevLevel2.blockAt(slot) : null;
+            double[] completeCopy = null;
+            int slot = -1;
+            if (level2 != null) {
+                // as in getPrevValue, the compact leaf is read before the block
+                slot = level2.slot(block2(maxKeyInCurrentLeaf));
+                recorded = level2.compactAt(slot);
+                if (recorded == null) {
+                    final double[] prevBlock = level2.blockAt(slot);
+                    completeCopy = prevBlock == WHOLE_LEAF ? null : prevBlock;
+                }
             }
-            final boolean changed = recorded != prevRecorded || snapshot != prevSnapshot;
+            if (recorded == prevRecorded && completeCopy == prevCompleteCopy) {
+                return false;
+            }
             prevRecorded = recorded;
-            prevSnapshot = snapshot;
-            return changed;
+            prevCompleteCopy = completeCopy;
+            prevLevel2 = level2;
+            prevSlot = slot;
+            recordedKind = KIND_UNKNOWN;
+            return true;
+        }
+
+        /**
+         * @return whether {@link #prevRecorded}, which is not null, holds the previous values of the whole leaf, rather
+         *         than recorded offsets; the marker that tells is stored before the leaf, so it is read after
+         */
+        private boolean recordedWhole() {
+            if (recordedKind == KIND_UNKNOWN) {
+                VarHandle.loadLoadFence();
+                recordedKind = prevLevel2.blockAt(prevSlot) == WHOLE_LEAF ? KIND_WHOLE : KIND_OFFSETS;
+            }
+            return recordedKind == KIND_WHOLE;
         }
 
         /**
@@ -2282,8 +2380,7 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
          * @return whether the recorded values are not those read before, and so must be laid over the values read
          */
         private boolean changedDuringRead() {
-            if (prevSnapshot != null) {
-                // a snapshot holds every row's previous value for the rest of the cycle
+            if (holdsWholeLeaf()) {
                 return false;
             }
             VarHandle.acquireFence();
@@ -2302,11 +2399,17 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
          *         the caller then checks for rows recorded while it was read
          */
         private double getPrev(final int offset) {
-            if (prevSnapshot != null) {
-                return prevSnapshot[offset];
+            if (prevCompleteCopy != null) {
+                return prevCompleteCopy[offset];
             }
-            if (prevRecorded != null && prevRecorded.contains(offset)) {
-                return prevRecorded.get(offset);
+            if (prevRecorded != null) {
+                if (prevRecorded.contains(offset)) {
+                    return prevRecorded.get(offset);
+                }
+                if (recordedWhole()) {
+                    // the previous values of the whole leaf, which held no value at the offset
+                    return NULL_DOUBLE;
+                }
             }
             readCurrentForPrevious = true;
             return get(offset);
@@ -2321,13 +2424,13 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
                 final LongChunk<OrderedRowKeys> keys,
                 final int start,
                 final int end) {
-            final double[] values = prevSnapshot != null ? prevSnapshot : block;
-            if (values != null) {
+            if (holdsWholeLeaf()) {
+                fillWholeLeafKeys(chunk, keys, start, end);
+                return;
+            }
+            if (block != null) {
                 for (int ii = start; ii < end; ++ii) {
-                    chunk.set(ii, values[(int) (keys.get(ii) & INDEX_MASK)]);
-                }
-                if (prevSnapshot != null) {
-                    return;
+                    chunk.set(ii, block[(int) (keys.get(ii) & INDEX_MASK)]);
                 }
             } else if (compact != null) {
                 compact.fillKeys(keys, start, end, chunk, start);
@@ -2338,13 +2441,37 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
                 prevRecorded.overlayKeys(keys, start, end, chunk, start);
             }
             if (previous && changedDuringRead()) {
-                if (prevSnapshot != null) {
-                    for (int ii = start; ii < end; ++ii) {
-                        chunk.set(ii, prevSnapshot[(int) (keys.get(ii) & INDEX_MASK)]);
-                    }
+                if (holdsWholeLeaf()) {
+                    fillWholeLeafKeys(chunk, keys, start, end);
                 } else if (prevRecorded != null) {
                     prevRecorded.overlayKeys(keys, start, end, chunk, start);
                 }
+            }
+        }
+
+        /**
+         * @return whether the previous values read for the current leaf are those of the whole leaf, which hold every
+         *         row's previous value for the rest of the cycle
+         */
+        private boolean holdsWholeLeaf() {
+            return prevCompleteCopy != null || (prevRecorded != null && recordedWhole());
+        }
+
+        /**
+         * Fill {@code chunk} at the positions of {@code keys[start, end)}, row keys within the current leaf in
+         * ascending order, with the previous values of the whole leaf.
+         */
+        private void fillWholeLeafKeys(
+                final WritableDoubleChunk<? super Values> chunk,
+                final LongChunk<OrderedRowKeys> keys,
+                final int start,
+                final int end) {
+            if (prevCompleteCopy == null) {
+                prevRecorded.fillKeys(keys, start, end, chunk, start);
+                return;
+            }
+            for (int ii = start; ii < end; ++ii) {
+                chunk.set(ii, prevCompleteCopy[(int) (keys.get(ii) & INDEX_MASK)]);
             }
         }
 
@@ -2353,8 +2480,8 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
          * {@code firstOffset + length - 1}.
          */
         private void fillRange(final WritableDoubleChunk<? super Values> chunk, final int firstOffset, final int length) {
-            if (prevSnapshot != null) {
-                chunk.copyFromTypedArray(prevSnapshot, firstOffset, destOffset, length);
+            if (holdsWholeLeaf()) {
+                fillWholeLeafRange(chunk, firstOffset, length);
                 return;
             }
             if (block != null) {
@@ -2368,12 +2495,27 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
                 prevRecorded.overlayRange(firstOffset, firstOffset + length - 1, chunk, destOffset);
             }
             if (previous && changedDuringRead()) {
-                if (prevSnapshot != null) {
-                    chunk.copyFromTypedArray(prevSnapshot, firstOffset, destOffset, length);
+                if (holdsWholeLeaf()) {
+                    fillWholeLeafRange(chunk, firstOffset, length);
                 } else if (prevRecorded != null) {
                     prevRecorded.overlayRange(firstOffset, firstOffset + length - 1, chunk, destOffset);
                 }
             }
+        }
+
+        /**
+         * Fill {@code chunk} at {@link #destOffset} with the previous values of the whole leaf at offsets
+         * {@code firstOffset} through {@code firstOffset + length - 1}.
+         */
+        private void fillWholeLeafRange(
+                final WritableDoubleChunk<? super Values> chunk,
+                final int firstOffset,
+                final int length) {
+            if (prevCompleteCopy == null) {
+                prevRecorded.fillRange(firstOffset, firstOffset + length - 1, chunk, destOffset);
+                return;
+            }
+            chunk.copyFromTypedArray(prevCompleteCopy, firstOffset, destOffset, length);
         }
     }
 
@@ -2531,8 +2673,8 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
             final int offset = (int) (key & INDEX_MASK);
             chunk.set(ki, previous ? state.getPrev(offset) : state.get(offset));
         }
-        // a recorded value or snapshot holds its row's previous value for the rest of the cycle, so only values read
-        // from current leaves may need the recorded values laid over them
+        // the previous values of a whole leaf, or a recorded value, hold a row's previous value for the rest of the
+        // cycle, so only values read from current leaves may need the recorded values laid over them
         if (previous && state.readCurrentForPrevious) {
             overlayChangedDuringRead(chunk, keys);
         }
@@ -2555,8 +2697,9 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
             return;
         }
         long currentLeafKey = -1;
+        DoubleCompactLeaf leaf = null;
         DoubleCompactLeaf recorded = null;
-        double[] snapshot = null;
+        double[] completeCopy = null;
         final int size = keys.size();
         for (int ki = 0; ki < size; ++ki) {
             final long key = keys.get(ki);
@@ -2566,20 +2709,30 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
             final long leafKey = key & ~INDEX_MASK;
             if (leafKey != currentLeafKey) {
                 currentLeafKey = leafKey;
+                leaf = null;
+                recorded = null;
+                completeCopy = null;
                 final Level2 prevLevel2 = getLevel2(localPrevRoot, key);
-                if (prevLevel2 == null) {
-                    recorded = null;
-                    snapshot = null;
-                } else {
-                    // as in FillState.readPrevious, the recorded leaf is read before the snapshot that may replace it
+                if (prevLevel2 != null) {
+                    // as in getPrevValue, the compact leaf is read before the block
                     final int slot = prevLevel2.slot(block2(key));
-                    recorded = prevLevel2.compactAt(slot);
-                    snapshot = recorded == null ? prevLevel2.blockAt(slot) : null;
+                    final DoubleCompactLeaf compactLeaf = prevLevel2.compactAt(slot);
+                    VarHandle.loadLoadFence();
+                    final double[] prevBlock = prevLevel2.blockAt(slot);
+                    if (prevBlock == WHOLE_LEAF) {
+                        leaf = compactLeaf;
+                    } else if (prevBlock != null) {
+                        completeCopy = prevBlock;
+                    } else {
+                        recorded = compactLeaf;
+                    }
                 }
             }
             final int offset = (int) (key & INDEX_MASK);
-            if (snapshot != null) {
-                chunk.set(ki, snapshot[offset]);
+            if (leaf != null) {
+                chunk.set(ki, leaf.get(offset));
+            } else if (completeCopy != null) {
+                chunk.set(ki, completeCopy[offset]);
             } else if (recorded != null && recorded.contains(offset)) {
                 chunk.set(ki, recorded.get(offset));
             }
@@ -2642,13 +2795,18 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
             double[] block = level2.blockAt(slot);
             final DoubleCompactLeaf existing = block == null ? level2.compactAt(slot) : null;
             // a new leaf of more values than a compact leaf holds becomes a full block, which needs no offsets, and
-            // previous values need them only when they may be recorded in a compact leaf
-            if (trackPrevious
-                    || (block == null && (existing != null || count <= compactThreshold))) {
+            // previous values need them only to record offsets of a leaf
+            if (trackPrevious || (block == null && (existing != null || count <= compactThreshold))) {
                 leaves.offsets(offsets);
             }
+            final int absent = block != null || existing == null ? count : existing.countAbsent(offsets, count);
             if (trackPrevious) {
-                recordPrevious(firstKey, level2, block2, offsets, count, fillFromContext.scratch);
+                if (block != null) {
+                    recordPrevious(firstKey, block2, block, null, offsets, count, false, fillFromContext.scratch);
+                } else {
+                    recordPrevious(firstKey, block2, null, existing, offsets, count, absent > 0,
+                            fillFromContext.scratch);
+                }
             }
             if (block == null && existing == null && alignedDivisions && !level2.hasRoomForCompact()) {
                 // the preparation left room only for a full block, because the leaf will hold more values than a
@@ -2657,7 +2815,6 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
                 setBlock(false, firstKey, level2, block);
             }
             if (block == null) {
-                final int absent = existing == null ? count : existing.countAbsent(offsets, count);
                 final DoubleCompactLeaf target = makeRoomInLeaf(firstKey, level2, existing, absent);
                 if (target != null) {
                     final DoubleCompactLeaf written =
@@ -2742,13 +2899,17 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
                 }
             }
             final int offset = (int) (key & INDEX_MASK);
-            if (trackPrevious) {
-                recordPrevious(key, level2, block2, offset);
-            }
             final double[] block = level2.getBlock(block2);
             if (block != null) {
+                if (trackPrevious) {
+                    recordPrevious(key, block2, block, null, offset, false);
+                }
                 block[offset] = values.get(ki);
             } else {
+                if (trackPrevious) {
+                    final DoubleCompactLeaf compact = level2.getCompact(block2);
+                    recordPrevious(key, block2, null, compact, offset, compact == null || !compact.contains(offset));
+                }
                 level2 = setInCompactLeaf(key, level2, offset, values.get(ki));
             }
         }

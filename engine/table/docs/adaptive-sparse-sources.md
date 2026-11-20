@@ -99,11 +99,11 @@ level appends child indices past its last one, since an append moves no position
 lanes, clear bits or unused entries of arrays allocated once. A ranked level grows its arrays before appending, and a
 read checks a position against the length of the array it reads. Any other change, such as widening a window, merging
 indices among those held, switching between a window and ranks, or adding a second leaf to a `Level2` of one, makes a
-new level, which the writer publishes in place of the old one in its parent or in `root`. A
-concurrent reader, such as a snapshot reading a row that this cycle has not changed, loads each level once and reads its
-window or positions and its arrays together, so it never pairs new positions with old arrays. A writer, in turn, uses
-the level that its last change returned (`setBlock`, `setCompact`), or reads the page table again after
-`makeRoomInLeaf`, which may have changed it.
+new level, which the writer publishes in place of the old one in its parent or in `root`. A concurrent reader, such as a
+`ConstructSnapshot` reading a row that this cycle has not changed, loads each level once and reads its window or
+positions and its arrays together, so it never pairs new positions with old arrays. A writer, in turn, uses the level
+that its last change returned (`setBlock`, `setCompact`), or reads the page table again after `makeRoomInLeaf`, which
+may have changed it.
 
 A serial `fillFromChunk` reserves the positions of every leaf of the chunk before writing, the leaves of each `Level2`
 together (`reserveLeaves`, `Level2.reserve`). A level then grows once per chunk rather than once per new leaf: indices
@@ -116,10 +116,10 @@ Each source has two thresholds:
 - `compactThreshold` (default 128): the most values a compact leaf holds. 0 makes every leaf a full block, which is what
   `fullBlocks()` does; the no-argument constructor uses the defaults.
 
-The representations, from smallest to largest, are absent, sorted, bitmap and full block. A new leaf starts in the
-smallest one that holds the values of its first write, and a write that takes a leaf past its representation's
-threshold moves it to the smallest one that holds the result. A leaf never returns to a smaller representation: removing
-values leaves it as it is, and releasing a leaf with no live rows is `clearBlocks`'s job (below).
+The representations, from smallest to largest, are absent, sorted, bitmap and full block. A leaf other than a full block
+is always the smallest representation that holds its values, and a write that would take it past `compactThreshold`
+values makes it a full block. A full block is written in place, and remains one until `clearBlocks` releases it once it
+holds no live rows (below).
 
 ## Compact leaves
 
@@ -134,14 +134,12 @@ returns, and held in final fields, so a reader on another thread that finds the 
 loaded the old leaf finds every value at the correct offset, however the leaf is concurrently written (see
 [Reading previous values during a cycle](#reading-previous-values-during-a-cycle)).
 
-A leaf's tier follows from its size: a leaf holding at most `sortedThreshold` values is a sorted leaf, and a larger one
-is a bitmap leaf. A write that takes a sorted leaf past the threshold builds a bitmap leaf, and a removal that leaves a
-bitmap leaf at or below it builds a sorted leaf. Every change to a leaf's offsets builds a new leaf, so changing tiers
-costs no more than staying in one, and a leaf whose size moves back and forth across the threshold needs no hysteresis.
-The page table never holds an empty leaf: a removal that takes a leaf's last values returns null, and the writer clears
-the leaf's slot, which reads as null at every offset, as an absent leaf does. A write to an absent leaf starts from the
-sorted tier's shared empty leaf (`CharSortedLeaf.EMPTY`), which no write changes, since it holds no offset to write in
-place.
+A compact leaf holding at most `sortedThreshold` values is a sorted leaf, and a larger one is a bitmap leaf. Every write
+that adds or removes offsets builds a new leaf of the tier its new size calls for, so a leaf whose size moves back and
+forth across `sortedThreshold` costs no more than one that stays on one side, and needs no hysteresis. The page table
+never holds an empty leaf: a removal that takes a leaf's last values returns null, and the writer clears the leaf's
+slot, which reads as null at every offset, as an absent leaf does. A write to an absent leaf starts from the sorted
+tier's shared empty leaf (`CharSortedLeaf.EMPTY`), which no write changes, since it holds no offset to write in place.
 
 ### Sorted leaf
 
@@ -197,72 +195,113 @@ before.
 
 ## Previous values
 
-A source that tracks previous values records the value of each row the first time a cycle changes it, in a second page
-table (`prevRoot`) with the same levels. A row without a recorded value has not changed this cycle, so its previous
-value is its current value. Each leaf of the previous table is either:
+A source that tracks previous values records them, the first time a cycle changes a leaf, in a second page table
+(`prevRoot`) with the same levels. Each leaf of the previous table is one of:
 
-- a compact leaf holding the offsets recorded this cycle and their values, or
-- once more offsets are recorded than `recordThreshold` allows, a full snapshot of the whole leaf, taken from the
+- the old leaf itself, holding the previous values of the whole leaf, when the leaf's first write in the cycle adds or
+  removes offsets of a compact leaf, or writes an absent leaf, whose old leaf is `CharSortedLeaf.EMPTY`. Such a write
+  puts a new leaf in place of the old one, which is never written again, so the record allocates nothing. The
+  `WHOLE_LEAF` marker, in place of a full block, tells it from recorded offsets.
+- otherwise, the offsets recorded this cycle and their values, in a compact leaf: the first write to each row of a full
+  block, or of a compact leaf that a write of only offsets it holds changes in place, records the row's value. A row
+  without a recorded value has not changed this cycle, so its previous value is its current value.
+- once more offsets are recorded than `recordThreshold` allows, a complete copy of the whole leaf, taken from the
   current leaf with the recorded values laid over it.
 
-`recordThreshold` is `compactThreshold`, or 128 when `compactThreshold` is 0. So a source with only full blocks still
-records a few changed rows per leaf in a compact leaf, and snapshots only leaves with many changes.
+Each write decides whether it replaces a compact leaf with the test it already makes to write the leaf: `contains` for
+one row, `countAbsent` for a chunk or a parallel preparation, and any removal replaces the leaf (`recordPrevious`,
+`recordWholeLeaf`). Once a leaf's offsets are recorded, later writes in the cycle record into them, whether or not they
+replace the leaf. `recordThreshold` is `compactThreshold`, or 128 when `compactThreshold` is 0. So a source with only
+full blocks still records a few changed rows per leaf in a compact leaf, and copies completely only leaves with many
+changes.
 
-There is no in-use bitmap. A compact leaf is its own record of which rows it holds, and a snapshot holds every row. The
-first write to a leaf in a cycle looks up the previous leaf, and later writes find it there; a bulk write records all of
-a leaf's offsets with one `putSorted` (`recordPrevious` with `PrevScratch`).
+There is no in-use bitmap. The previous values of a whole leaf hold every row, a compact leaf of recorded offsets is its
+own record of which rows it holds, and a complete copy holds every row. The first write to a leaf in a cycle looks up
+the previous leaf, and later writes find it there; a bulk write records all of a leaf's offsets with one `putSorted`
+(`PrevScratch`).
 
 ### Reading previous values during a cycle
 
-Another thread, such as a snapshot, may read previous values while the update thread writes. A row that the cycle has
-not changed has no recorded value, so the reader reads its current leaf, which the writer may be changing:
+Another thread, such as a `ConstructSnapshot`, may read previous values while the update thread writes. A row that the
+cycle has not changed has no recorded value, so the reader reads its current leaf, which the writer may be changing:
 
 - A compact leaf's offsets never change (see [Compact leaves](#compact-leaves)), so the leaf the reader loaded still
   holds the row's value at its offset.
 - When a compact leaf becomes a full block, the writer stores the block before clearing the compact leaf, and a read of
   previous values looks for the compact leaf first, so it finds either the compact leaf or, once that is cleared, the
-  block, and never neither. Likewise, when a recorded leaf of previous values becomes a snapshot, the writer stores the
-  snapshot before clearing the recorded leaf, and a read looks for the recorded leaf first.
+  block, and never neither. Likewise, when the recorded offsets of a full block become a complete copy, the writer
+  stores the complete copy before clearing the recorded offsets, and a read looks for the recorded offsets first.
+- The writer stores the `WHOLE_LEAF` marker before the leaf it marks, with a store-store fence between, and a read loads
+  the previous compact leaf, then, after a load-load fence, the slot for a full block, so a reader that finds the
+  previous values of a whole leaf finds the marker with them. A read loads the slot only when the compact leaf does not
+  hold the offset it reads, since a leaf that holds the offset holds its previous value either way; a chunked fill loads
+  it once for each leaf.
 - `Level2.withBlocks`, which gives a level its first array of full blocks, copies the compact leaves into the new level
   rather than sharing their array, so clearing a compact leaf from the new level leaves it in place for a reader of the
   old one.
 
-A row that the cycle changes is recorded before it is written, and a release fence makes the record visible to other
-threads before the write. A reader that finds no recorded value reads the current value, issues an acquire fence, and
-looks for a record again, using it if one has appeared: if the current value it read is the new one, the writer's record
-is visible by then. A chunked fill looks again once for each leaf it reads, and an unordered fill once for the whole
-chunk, skipping the look when nothing is recorded. A recorded value holds its row's previous value for the rest of the
-cycle, so an unordered fill whose values all came from recorded values or snapshots, as a downstream read of the rows an
+A leaf or row that the cycle changes is recorded before it is written, and a release fence makes the record visible to
+other threads before the write. A reader that finds no recorded value reads the current value, issues an acquire fence,
+and looks for a record again, using it if one has appeared: if the current value it read is the new one, the writer's
+record is visible by then. A chunked fill looks again once for each leaf it reads, and an unordered fill once for the
+whole chunk, skipping the look when nothing is recorded. The previous values of a whole leaf, and a recorded value, hold
+a row's previous value for the rest of the cycle, so a read of a leaf whose whole previous values are recorded never
+reads the current leaf, and an unordered fill whose values all came from records, as a downstream read of the rows an
 upstream listener modified does, needs no second look. A point read (`getPrevChar`) looks again on every call. The
 fences emit no instruction on x86, but stop C2 from moving loads across them or keeping loaded fields in registers
 across them, so a point read pays for the second look in a longer loop body: random `getPrev` over a Dense source with
 nothing recorded takes about twice as long as a single look, because fewer of its cache misses overlap.
 
-Snapshot blocks and the arrays of the previous page table that cover every child index come from per-type
+Complete copies and the arrays of the previous page table that cover every child index come from per-type
 `SoftRecycler`s. Any smaller window and the arrays of a ranked level are the level's own, and are discarded with it when
 the cycle completes, as is the previous value `Level0`. `commitUpdates` walks the previous page table
-(`recyclePrevious`), returning each snapshot block, and each recycled array with every entry null. A ranked level holds
+(`recyclePrevious`), returning each complete copy, and each recycled array with every entry null. A ranked level holds
 only its children, and a window has at most 64 entries or eight for each child, so the walk reads at most 64 entries
-for each level and eight for each child the cycle recorded; no list of the recorded leaves is needed. A snapshot block
-is not null-filled when borrowed, because taking a snapshot overwrites all of it.
+for each level and eight for each child the cycle recorded; no list of the recorded leaves is needed. A complete copy
+is not null-filled when borrowed, because making it overwrites all of it.
 
-### Why per-row recording, not per-leaf snapshots
+### Why per-row recording, not per-leaf complete copies
 
-A snapshot of a leaf reads 1024 values and writes 1024 values, however few of its rows changed. Recording the changed
-rows instead reads and writes one value per changed row, so a leaf with few changes costs little. With a double column,
-a cycle that changes 2^16 rows, in the patterns of [Row key patterns](#row-key-patterns), touches 32,768 leaves of
-Stride512, 4,096 of Stride64, 512 of Stride8 and 64 of Dense:
+A complete copy of a leaf reads 1024 values and writes 1024 values, however few of its rows changed. Recording the
+changed rows instead reads and writes one value per changed row, so a leaf with few changes costs little. With a double
+column, a cycle that changes 2^16 rows, in the patterns of [Row key patterns](#row-key-patterns), touches 32,768 leaves
+of Stride512, 4,096 of Stride64, 512 of Stride8 and 64 of Dense:
 
-| Pattern | Rows changed per leaf | Snapshot, cache lines per leaf | Recorded rows, cache lines per leaf |
+| Pattern | Rows changed per leaf | Complete copy, cache lines per leaf | Recorded rows, cache lines per leaf |
 |---|---|---|---|
 | Stride512 | 2 | 256 | about 4 |
 | Stride64 | 16 | 256 | about 32 |
 | Stride8 | 128 | 256 | 256, one row per line |
-| Dense | 1024 | 256, one `arraycopy` | snapshot |
+| Dense | 1024 | 256, one `arraycopy` | complete copy |
 
-Snapshotting every touched leaf made modify cycles on Stride512 take 1.5x as long as recording rows, and Stride64
-1.15x; the two meet at Stride8. Past `recordThreshold` rows a leaf is snapshotted, which is the cheaper choice
+Copying every touched leaf completely made modify cycles on Stride512 take 1.5x as long as recording rows, and Stride64
+1.15x; the two meet at Stride8. Past `recordThreshold` rows a leaf is copied completely, which is the cheaper choice
 there.
+
+### Why a write that replaces a leaf records the old leaf
+
+A write that adds or removes offsets of a compact leaf builds a new leaf anyway, so keeping the old one as the previous
+values of the whole leaf costs nothing, where recording rows costs a record of each added or removed row, and a complete
+copy once more than `recordThreshold` are recorded. A write of only offsets the leaf holds changes it in place, so the
+whole leaf could be kept only by copying its values, which for a leaf of many values with few modified rows costs more
+than recording them: an `update()` column whose 2,000,000 rows sit in leaves of 128 values took 1.27 to 1.52x as long as
+recording rows for cycles modifying 20,000 rows when it copied the values, and 0.69 to 1.06x when modifying 400,000.
+
+Against recording rows, recording the old leaf, with per-row recording for writes in place, took as long as this with
+the same column and an `AggSum` of it, optionally behind a sort, in cycles that each add rows between existing ones and
+remove the rows the cycle before added:
+
+| Leaves | Rows added and removed per cycle | `update()` | `update()` then `AggSum` | `update()`, sort, `AggSum` |
+|---|---|---|---|---|
+| 64-value bitmap | 20,000 | 0.95x | 0.97x | 0.97x |
+| 64-value bitmap | 400,000 | 0.79x | 0.78x | 0.94x |
+| 16-value sorted | 20,000 | 1.00x | 1.02x | 1.01x |
+| 16-value sorted | 400,000 | 0.89x | 0.85x | 0.97x |
+| Full block | 400,000 | 1.01x | 0.99x | 1.02x |
+
+Cycles that only modify rows took 1.00 to 1.04x as long. The marker is on the previous values of a whole leaf rather
+than on recorded offsets so that per-row recording, and a read that finds its row recorded, pay nothing for it: with the
+marker on recorded offsets instead, modify cycles took 0.98 to 1.08x as long.
 
 ## Parallel population
 
@@ -279,7 +318,8 @@ the row keys in each leaf to decide which arrays of the `Level2` the leaf may ne
 than a compact leaf holds needs room for a full block, and any other leaf room for a compact leaf. A writer may write a
 leaf in several chunks, so the first chunk of a leaf that will be a full block may hold few values; when its `Level2`
 has no array of compact leaves, the writer makes the leaf a full block at once (`writesAlignedDivisions`). The previous
-values always get room for a compact leaf, and room for a snapshot when a leaf may be recorded past `recordThreshold`.
+values always get room for a compact leaf, and room for a full block when a leaf with nothing recorded is not a full
+block, for the `WHOLE_LEAF` marker, or when a leaf may be recorded past `recordThreshold`, for a complete copy.
 
 When divisions are not aligned (a caller that uses `prepareForParallelPopulation(rows)`), several writers may share a
 leaf, so the preparation does all structural work up front: after reserving the leaves, it builds each leaf with every
@@ -308,8 +348,9 @@ arrays of the remaining children once, rather than moving them under a reader, a
 entries. Clearing a child a level never had changes nothing.
 
 `setNull(RowSequence)` nulls a range of a block with `Arrays.fill` and removes a range of a compact leaf with
-`removeRange`. A compact leaf is not shrunk when values are removed, and a full block is not demoted; only releasing a
-leaf with no live rows returns its memory.
+`removeRange`, which builds a leaf of the values that remain, or clears the leaf's slot when none remain (see [Compact
+leaves](#compact-leaves)), so a compact leaf's memory follows its values. A full block is not demoted; only releasing a
+block with no live rows returns its memory.
 
 ## Boolean and time sources
 
@@ -374,8 +415,8 @@ The sources that `select` and `update` create, in the patterns of [Row key patte
 | Random1 | 1,047,586 | 803 | 17.5 | 0.16x | 0.12x |
 | Clustered | 1,033,388 | 66.0 | 8.5 | 0.61x | 0.28x |
 
-An initial update allocates 1 to 18% as much, except for Dense, which allocates the same. March cycles take 0.13 to
-0.88x as long and allocate 4 to 43% as much, except for Dense, which allocates 1 to 3% more. Modify cycles take 0.33 to
+An initial update allocates 1 to 18% as much, except for Dense, which allocates the same. March cycles take 0.12 to
+0.77x as long and allocate 3 to 30% as much, except for Dense, which allocates 1 to 3% more. Modify cycles take 0.33 to
 1.00x as long and allocate 0.84 to 1.18x as much, except for Stride8 and Dense. Stride8 modify cycles allocate 1,068 KB
 against 466 KB, for the compact leaves that record previous values, and Dense modify cycles allocate 14 KB against 9 KB
 serially and 36 KB against 17 KB in parallel.

@@ -239,6 +239,171 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
         }
     }
 
+    /** The ways {@link #applyLeafChange} changes leaf 0 of a source. */
+    private static final int MODIFY = 0;
+    private static final int MODIFY_CHUNK = 1;
+    private static final int ADD = 2;
+    private static final int ADD_CHUNK = 3;
+    private static final int REMOVE = 4;
+    private static final int REMOVE_RANGE = 5;
+    private static final int PROMOTE = 6;
+    private static final int CHANGES = 7;
+
+    /**
+     * Change one leaf twice in a cycle, by each pair of ways of changing it, from leaves of each representation,
+     * checking its previous values after each change: the first change records the leaf's previous values, and the
+     * second must leave them unchanged, whether it writes the leaf in place or replaces it.
+     */
+    @Test
+    public void testPreviousValuesOfLeafChangedTwice() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        // absent, sorted, bitmap and full block leaves
+        for (final int initialSize : new int[] {0, 4, 40, 400}) {
+            for (int first = 0; first < CHANGES; ++first) {
+                for (int second = 0; second < CHANGES; ++second) {
+                    final ShortAdaptiveSparseArraySource source = makeTestSource();
+                    source.startTrackingPrevValues();
+                    final Long2ShortOpenHashMap expected = new Long2ShortOpenHashMap();
+                    expected.defaultReturnValue(NULL_SHORT);
+                    final MutableInt nextValue = new MutableInt(1);
+                    updateGraph.runWithinUnitTestCycle(() -> {
+                        for (int ii = 0; ii < initialSize; ++ii) {
+                            final short value = (short) nextValue.getAndIncrement();
+                            source.set(ii * 3L, value);
+                            expected.put(ii * 3L, value);
+                        }
+                    });
+                    final Long2ShortOpenHashMap expectedPrev = new Long2ShortOpenHashMap(expected);
+                    expectedPrev.defaultReturnValue(NULL_SHORT);
+                    final String message = "initialSize " + initialSize + ", changes " + first + ", " + second;
+                    updateGraph.startCycleForUnitTests();
+                    applyLeafChange(source, expected, first, nextValue);
+                    assertLeafMatches(message + " after the first", source, expected, expectedPrev);
+                    applyLeafChange(source, expected, second, nextValue);
+                    assertLeafMatches(message + " after the second", source, expected, expectedPrev);
+                    updateGraph.completeCycleForUnitTests();
+                    assertLeafMatches(message + " after the cycle", source, expected, expected);
+                }
+            }
+        }
+    }
+
+    /**
+     * Change leaf 0 of {@code source}, whose rows hold values at multiples of 3, as {@code change} says, writing each
+     * new value from {@code nextValue}.
+     */
+    private static void applyLeafChange(
+            final ShortAdaptiveSparseArraySource source,
+            final Long2ShortOpenHashMap expected,
+            final int change,
+            final MutableInt nextValue) {
+        switch (change) {
+            case MODIFY:
+                setRows(source, expected, nextValue, 0, 9);
+                break;
+            case MODIFY_CHUNK:
+                fillRows(source, expected, nextValue, 0, 3, 6, 9);
+                break;
+            case ADD:
+                setRows(source, expected, nextValue, 1, 10);
+                break;
+            case ADD_CHUNK:
+                fillRows(source, expected, nextValue, 2, 3, 5, 8);
+                break;
+            case REMOVE:
+                source.setNull(3);
+                expected.remove(3);
+                break;
+            case REMOVE_RANGE:
+                try (final RowSet range = RowSetFactory.fromRange(4, 12)) {
+                    source.setNull(range);
+                    range.forAllRowKeys(expected::remove);
+                }
+                break;
+            case PROMOTE: {
+                final long[] keys = new long[COMPACT_THRESHOLD + 1];
+                for (int ii = 0; ii < keys.length; ++ii) {
+                    keys[ii] = 500 + ii;
+                }
+                fillRows(source, expected, nextValue, keys);
+                break;
+            }
+            default:
+                throw new IllegalArgumentException("change " + change);
+        }
+    }
+
+    private static void setRows(
+            final ShortAdaptiveSparseArraySource source,
+            final Long2ShortOpenHashMap expected,
+            final MutableInt nextValue,
+            final long... keys) {
+        for (final long key : keys) {
+            final short value = (short) nextValue.getAndIncrement();
+            source.set(key, value);
+            expected.put(key, value);
+        }
+    }
+
+    private static void fillRows(
+            final ShortAdaptiveSparseArraySource source,
+            final Long2ShortOpenHashMap expected,
+            final MutableInt nextValue,
+            final long... keys) {
+        try (final RowSet rows = RowSetFactory.fromKeys(keys);
+                final WritableShortChunk<Values> values = WritableShortChunk.makeWritableChunk(keys.length);
+                final ChunkSink.FillFromContext context = source.makeFillFromContext(keys.length)) {
+            final MutableInt position = new MutableInt(0);
+            rows.forAllRowKeys(key -> {
+                final short value = (short) nextValue.getAndIncrement();
+                values.set(position.getAndIncrement(), value);
+                expected.put(key, value);
+            });
+            source.fillFromChunk(context, values, rows);
+        }
+    }
+
+    /**
+     * Check the current and previous values of every row of leaf 0, read one at a time, by ranges, by keys and
+     * unordered.
+     */
+    private static void assertLeafMatches(
+            final String message,
+            final ShortAdaptiveSparseArraySource source,
+            final Long2ShortOpenHashMap expected,
+            final Long2ShortOpenHashMap expectedPrev) {
+        for (long key = 0; key < BLOCK_SIZE; ++key) {
+            checkValue(message + ", key " + key, expected.get(key), source.getShort(key));
+            checkValue(message + ", previous key " + key, expectedPrev.get(key), source.getPrevShort(key));
+        }
+        final RowSetBuilderSequential everyOther = RowSetFactory.builderSequential();
+        for (long key = 0; key < BLOCK_SIZE; key += 2) {
+            everyOther.appendKey(key);
+        }
+        try (final RowSet all = RowSetFactory.fromRange(0, BLOCK_SIZE - 1);
+                final RowSet sparse = everyOther.build();
+                final WritableShortChunk<Values> values = WritableShortChunk.makeWritableChunk(BLOCK_SIZE);
+                final WritableLongChunk<RowKeys> unorderedKeys = WritableLongChunk.makeWritableChunk(BLOCK_SIZE);
+                final ChunkSource.FillContext context = source.makeFillContext(BLOCK_SIZE)) {
+            for (final RowSet rows : new RowSet[] {all, sparse}) {
+                source.fillPrevChunk(context, values, rows);
+                final MutableInt position = new MutableInt(0);
+                rows.forAllRowKeys(key -> checkValue(message + ", previous fill of key " + key,
+                        expectedPrev.get(key), values.get(position.getAndIncrement())));
+            }
+            // descending, so that the keys are not ordered
+            for (int ii = 0; ii < BLOCK_SIZE; ++ii) {
+                unorderedKeys.set(ii, BLOCK_SIZE - 1 - ii);
+            }
+            unorderedKeys.setSize(BLOCK_SIZE);
+            source.fillPrevChunkUnordered(context, values, unorderedKeys);
+            for (int ii = 0; ii < BLOCK_SIZE; ++ii) {
+                checkValue(message + ", previous unordered fill of key " + unorderedKeys.get(ii),
+                        expectedPrev.get(unorderedKeys.get(ii)), values.get(ii));
+            }
+        }
+    }
+
     @Test
     public void testParallelPopulation() throws Exception {
         for (final Preparation preparation : Preparation.values()) {
@@ -534,9 +699,9 @@ public class TestShortAdaptiveSparseArraySource extends AbstractShortColumnSourc
     /**
      * Read previous values on other threads, a row at a time and in chunks, while each cycle adds and removes values of
      * compact leaves in several rounds, makes a compact leaf a full block every other cycle, and changes enough rows of
-     * some full blocks that their previous values become snapshots partway through the cycle. Cycles run serially and
-     * after preparing for parallel population in turn. The readers check every row that held a value at the start of
-     * the cycle or that the cycle adds, including the rows being written while they are read.
+     * some full blocks that their previous values become complete copies partway through the cycle. Cycles run serially
+     * and after preparing for parallel population in turn. The readers check every row that held a value at the start
+     * of the cycle or that the cycle adds, including the rows being written while they are read.
      */
     @Test
     public void testConcurrentPreviousReadsOfChangingLeaves() throws Exception {
