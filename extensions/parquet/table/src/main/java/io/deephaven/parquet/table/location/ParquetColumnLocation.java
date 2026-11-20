@@ -666,10 +666,13 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                     case 32:
                         return Optional.of(ToLongPage.createFromUnsignedInt(pageType));
                     case 64:
-                        // Promoted to BigInteger by default, since no Java primitive fits. A long may be requested
-                        // instead, in which case values exceeding Long.MAX_VALUE are rejected while reading.
+                        // Promoted to BigInteger by default, since no Java primitive fits. A BigDecimal or a long may
+                        // be
+                        // requested instead; for a long, values exceeding Long.MAX_VALUE are rejected while reading.
                         if (pageType == BigInteger.class) {
                             return Optional.of(ToBigIntegerPage.createFromUnsignedLong(pageType));
+                        } else if (pageType == BigDecimal.class) {
+                            return Optional.of(ToBigDecimalPage.createFromUnsignedLong(pageType));
                         } else if (pageType == long.class) {
                             // LONG and SIGNED_LONG share long.class, so pageType alone cannot distinguish them.
                             return Optional.of(

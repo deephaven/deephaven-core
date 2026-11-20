@@ -45,6 +45,9 @@ class UnsignedLongTarget(Enum):
     BIG_INTEGER = _JUnsignedLongTarget.BIG_INTEGER
     """ Read as a Java BigInteger, representing every value exactly. The default. """
 
+    BIG_DECIMAL = _JUnsignedLongTarget.BIG_DECIMAL
+    """ Read as a Java BigDecimal with a scale of zero, representing every value exactly. """
+
     LONG = _JUnsignedLongTarget.LONG
     """ Read as a  Java long; values exceeding 2**63 - 1 raise an error when the page containing them is read. """
 
