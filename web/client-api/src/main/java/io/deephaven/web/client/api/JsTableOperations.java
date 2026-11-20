@@ -298,6 +298,8 @@ public interface JsTableOperations extends ServerObject {
          * Whether the resulting table should keep history. A history table appends a full snapshot of the starting
          * table and the "stamp key" as opposed to updating existing rows. When this flag is set, the trigger table must
          * be append-only.
+         * <p>
+         * This flag currently cannot be combined with {@code initial} or {@code incremental}.
          */
         @JsProperty
         @JsNullable
