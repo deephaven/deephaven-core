@@ -10,13 +10,13 @@ title: ungroup
 ## Syntax
 
 ```
-table.ungroup(cols: Union[str, list[str]]) -> Table
+table.ungroup(cols: str | list[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]" optional>
+<Param name="cols" type="str | list[str]" optional>
 
 The column(s) of data to ungroup.
 

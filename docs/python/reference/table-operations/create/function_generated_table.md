@@ -15,8 +15,8 @@ Every refresh in which the `table_generator` produces a table replaces the resul
 
 ```python syntax
 function_generated_table(
-  table_generator: Callable[..., Optional[Table]],
-  source_tables: Union[Table, List[Table]] = None,
+  table_generator: Callable[..., Table | None],
+  source_tables: Table | list[Table] | None = None,
   refresh_interval_ms: int = None,
   exec_ctx: ExecutionContext = None,
   args: tuple = (),
@@ -30,12 +30,12 @@ function_generated_table(
 ## Parameters
 
 <ParamTable>
-<Param name="table_generator" type="Callable[..., Optional[Table]]">
+<Param name="table_generator" type="Callable[..., Table | None]">
 
 The table generator function. This function must return a table, or `None` to decline producing a new table, in which case the previous cycle's result is retained (or, for a blink table, cleared). If the first invocation returns `None`, `table_definition` must be provided so that the result's columns are known.
 
 </Param>
-<Param name="source_tables" type="Union[Table, List[Table]]" optional>
+<Param name="source_tables" type="Table | list[Table]" optional>
 
 The source tables to be used by the generator function. Every source table must be a refreshing table.
 

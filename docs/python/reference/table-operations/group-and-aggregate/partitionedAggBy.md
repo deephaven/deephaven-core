@@ -21,12 +21,12 @@ partitioned_agg_by(
 ## Parameters
 
 <ParamTable>
-<Param name="aggs" type="Union[Aggregation, Sequence[Aggregagation]]">
+<Param name="aggs" type="Aggregation | Sequence[Aggregagation]">
 
 The aggregation(s) to apply to the source table.
 
 </Param>
-<Param name="by" type="Union[str, Sequence[str]]" optional>
+<Param name="by" type="str | Sequence[str]" optional>
 
 The group by column name(s). The default is `None`.
 

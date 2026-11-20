@@ -7,13 +7,13 @@ title: count_distinct
 ## Syntax
 
 ```python syntax
-count_distinct(cols: Union[str, list[str]] = None, count_nulls: bool = False) -> Aggregation
+count_distinct(cols: str | list[str] | None = None, count_nulls: bool = False) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The source column(s) for the calculations.
 

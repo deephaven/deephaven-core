@@ -8,7 +8,7 @@ The `write_partitioned` method writes a table to disk in Parquet format with par
 
 ```python syntax
 write_partitioned(
-    table: Union[Table, PartitionedTable],
+    table: Table | PartitionedTable,
     destination_dir: str,
     table_definition: TableDefinitionLike = None,
     col_instructions: list[ColumnInstruction] = None,
@@ -27,7 +27,7 @@ write_partitioned(
 ## Parameters
 
 <ParamTable>
-<Param name="table" type="Union[Table, PartitionedTable]">
+<Param name="table" type="Table | PartitionedTable">
 
 The source table or [partitioned table](../../table-operations/group-and-aggregate/partitionBy.md) to write.
 

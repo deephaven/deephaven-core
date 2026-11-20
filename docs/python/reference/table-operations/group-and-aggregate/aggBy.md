@@ -11,8 +11,8 @@ title: agg_by
 
 ```python syntax
 agg_by(
-    aggs: Union[Aggregation, Sequence[Aggregation]],
-    by: Union[str, list[str]] = None,
+    aggs: Aggregation | Sequence[Aggregation],
+    by: str | list[str] | None = None,
     preserve_empty: bool = False,
     initial_groups: Table = None,
     ) -> Table
@@ -21,7 +21,7 @@ agg_by(
 ## Parameters
 
 <ParamTable>
-<Param name="aggs" type="Union[Aggregation, Sequence[Aggregation]]">
+<Param name="aggs" type="Aggregation | Sequence[Aggregation]">
 
 A list of aggregations to compute. The following aggregations are available:
 
@@ -52,7 +52,7 @@ A list of aggregations to compute. The following aggregations are available:
 - [`agg.weighted_sum`](./AggWSum.md)
 
 </Param>
-<Param name="by" type="Union[str, list[str]]">
+<Param name="by" type="str | list[str]">
 
 The names of column(s) by which to group data. Default is `None`.
 

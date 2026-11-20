@@ -7,13 +7,13 @@ title: distinct
 ## Syntax
 
 ```
-distinct(cols: Union[str, list[str]], include_nulls = False) -> Aggregation
+distinct(cols: str | list[str], include_nulls = False) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The source column(s) for the calculations.
 

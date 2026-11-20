@@ -9,13 +9,13 @@ Sample standard deviation is calculated as the square root of the [Bessel-correc
 ## Syntax
 
 ```
-std(cols: Union[str, list[str]]) -> Aggregation
+std(cols: str | list[str]) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The source column(s) for the calculations.
 

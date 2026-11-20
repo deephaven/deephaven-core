@@ -9,12 +9,12 @@ The `plot_ohlc` method creates open, high, low, close (OHLC) plots using data fr
 ```python skip-test
 plot_ohlc(
     series_name: str,
-    t: Union[Table, SelectableDataSet],
-    x: Union[str, List[DateTime]],
-    open: Union[str, list[int], list[float], list[DateTime]],
-    high: Union[str, list[int], list[float], list[DateTime]],
-    low: Union[str, list[int], list[float], list[DateTime]],
-    close: Union[str, list[int], list[float], list[DateTime]],
+    t: Table | SelectableDataSet,
+    x: str | list[DateTime],
+    open: str | list[int] | list[float] | list[DateTime],
+    high: str | list[int] | list[float] | list[DateTime],
+    low: str | list[int] | list[float] | list[DateTime],
+    close: str | list[int] | list[float] | list[DateTime],
     by: list[str] = None,
 ) -> Figure
 ```
@@ -27,32 +27,32 @@ plot_ohlc(
 The name you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Union[Table, SelectableDataSet]">
+<Param name="t" type="Table | SelectableDataSet">
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="x" type="Union[str, List[DateTime]]">
+<Param name="x" type="str | list[DateTime]">
 
 The name of the column of data to be used for the X value.
 
 </Param>
-<Param name="open" type="Union[str, List[int], List[float], List[DateTime]]">
+<Param name="open" type="str | list[int] | list[float] | list[DateTime]">
 
 The name of the column of data to be used for the open value.
 
 </Param>
-<Param name="high" type="Union[str, list[int], list[float], list[DateTime]]">
+<Param name="high" type="str | list[int] | list[float] | list[DateTime]">
 
 The name of the column of data to be used for the high value.
 
 </Param>
-<Param name="low" type="Union[str, list[int], list[float], list[DateTime]]">
+<Param name="low" type="str | list[int] | list[float] | list[DateTime]">
 
 The name of the column of data to be used for the low value.
 
 </Param>
-<Param name="close" type="Union[str, list[int], list[float], list[DateTime]]">
+<Param name="close" type="str | list[int] | list[float] | list[DateTime]">
 
 The name of the column of data to be used for the close value.
 

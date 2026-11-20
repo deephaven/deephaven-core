@@ -15,8 +15,8 @@ The resultant table contains all rows from both tables that exist in the key ide
 full_outer_join(
     l_table: Table,
     r_table: Table,
-    on: Union[str, Sequence[str]] = None,
-    joins: Union[str, Sequence[str]] = None,
+    on: str | Sequence[str] | None = None,
+    joins: str | Sequence[str] | None = None,
     reserve_bits: int = None,
 ) -> Table
 ```
@@ -34,7 +34,7 @@ The left table from which data is joined.
 The right table from which data is joined.
 
 </Param>
-<Param name="on" type="Union[str, Sequence[str]]" optional>
+<Param name="on" type="str | Sequence[str]" optional>
 
 Columns from the left and right tables used to join on.
 
@@ -43,7 +43,7 @@ Columns from the left and right tables used to join on.
 - `"X, A = B"` will join when column `X` matches from both the left and right tables, and when column `A` from the left table matches column `B` from the right table.
 
 </Param>
-<Param name="joins" type="Union[str, Sequence[str]]" optional>
+<Param name="joins" type="str | Sequence[str]" optional>
 
 The columns from the right table to add to the left table based on key. The default value is `None`.
 

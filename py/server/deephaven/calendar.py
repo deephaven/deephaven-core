@@ -31,7 +31,7 @@ def add_calendar(cal: BusinessCalendar | str) -> None:
     """Adds a new business calendar to the set of available options.
 
     Args:
-        cal (Union[BusinessCalendar, str]): business calendar or a path to a business calendar file
+        cal (BusinessCalendar | str): business calendar or a path to a business calendar file
 
     Raises:
         DHError
@@ -107,7 +107,7 @@ def calendar(name: str | None = None) -> BusinessCalendar:
     objects to Java date-time objects, use the conversion functions in the 'deephaven.time' module.
 
     Args:
-        name (Optional[str]): the name of the calendar.  If not specified, the default calendar is returned.
+        name (str | None): the name of the calendar.  If not specified, the default calendar is returned.
 
     Returns:
         the calendar with the given name or the defalt calendar if name is not specified.

@@ -12,10 +12,10 @@ The `from_partitioned_table` method creates a new `PartitionedTable` from an und
 ```python syntax
 PartitionedTable.from_partitioned_table(
   table: Table,
-  key_cols: Union[str, List[str]] = None,
+  key_cols: str | list[str] | None = None,
   unique_keys: bool = None,
   constituent_column: str = None,
-  constituent_table_columns: List[Column] = None,
+  constituent_table_columns: list[Column] = None,
   constituent_changes_permitted: bool = None,
 ) -> PartitionedTable
 ```
@@ -28,7 +28,7 @@ PartitionedTable.from_partitioned_table(
 The underlying `PartitionedTable`.
 
 </Param>
-<Param name="key_cols" type="Union[str, List[str]]" optional>
+<Param name="key_cols" type="str | list[str]" optional>
 
 The key column(s) of `table`.
 
@@ -49,7 +49,7 @@ The constituent column name in `table`.
 If `None`, the value defaults to the name of the first column with a Table data type (usually `__CONSTITUENT__`).
 
 </Param>
-<Param name="constituent_table_columns" type="List[Column]" optional>
+<Param name="constituent_table_columns" type="list[Column]" optional>
 
 The column definitions of the constituent table.
 

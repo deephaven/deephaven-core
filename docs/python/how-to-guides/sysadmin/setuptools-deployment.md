@@ -293,7 +293,6 @@ The command below does the same work as the embedded-server command, but on a se
 import keyword
 import os
 from pathlib import Path
-from typing import Optional
 
 import click
 import pyarrow.csv as pacsv
@@ -313,7 +312,7 @@ from pydeephaven import Session
     "--name", default=None, help="Name to bind the result under [default: file stem]"
 )
 def main(
-    input_file: str, host: str, port: int, auth_type: str, name: Optional[str]
+    input_file: str, host: str, port: int, auth_type: str, name: str | None
 ) -> None:
     """Upload a CSV file to a running Deephaven server and process it there."""
     name = name or Path(input_file).stem

@@ -46,7 +46,7 @@ print(partitioned_table.constituent_column)
 The `constituent_tables` property returns a `PartitionedTable`'s current constituent tables as a list of `Table` objects.
 
 ```python syntax
-PartitionedTable.constituent_tables -> List[Table]
+PartitionedTable.constituent_tables -> list[Table]
 ```
 
 Here is an example:
@@ -63,7 +63,7 @@ The `constituent_table_columns` method returns the column definitions of the con
 > All constituent tables in a `PartitionedTable` have the same column definitions.
 
 ```python syntax
-PartitionedTable.constituent_table_columns -> List[Column]
+PartitionedTable.constituent_table_columns -> list[Column]
 ```
 
 Here is an example:
@@ -108,7 +108,7 @@ print(partitioned_table.is_refreshing)
 The `key_columns` method returns the `PartitionedTable`'s key column names.
 
 ```python syntax
-PartitionedTable.key_columns -> List[str]
+PartitionedTable.key_columns -> list[str]
 ```
 
 Here is an example:

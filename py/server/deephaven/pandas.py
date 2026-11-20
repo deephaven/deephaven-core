@@ -166,7 +166,7 @@ def to_pandas(
 
     Args:
         table (Table): the source table
-        cols (Optional[list[str]]): the source column names, default is None which means include all columns
+        cols (list[str] | None): the source column names, default is None which means include all columns
         dtype_backend (Literal[None, "pyarrow", "numpy_nullable"]): which dtype backend to use. "numpy_nullable" and
             "pyarrow" convert the table through pyarrow. "numpy_nullable" uses pandas nullable dtypes for the numeric,
             boolean, and string types that have one. "pyarrow" uses pd.ArrowDtype for numeric, boolean, string, and
@@ -303,7 +303,7 @@ def to_table(
 
     Args:
         df (DataFrame): the pandas DataFrame instance
-        cols (Optional[list[str]]): the dataframe column names, default is None which means including all columns in the DataFrame
+        cols (list[str] | None): the dataframe column names, default is None which means including all columns in the DataFrame
         infer_objects (bool): whether to infer the best possible types for columns of the generic 'object' type in the
             DataFrame before creating the table, default is True. When True, pandas convert_dtypes() method is called to
             perform the conversion. Note that any conversion will make a copy of the data.

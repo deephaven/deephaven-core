@@ -12,13 +12,13 @@ Since `format_columns` is implemented using `update_view`, the new columns are n
 ## Syntax
 
 ```python syntax
-table.format_columns(column_formats: Union[str, list[str]]) -> Table
+table.format_columns(column_formats: str | list[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="column_formats" type="Union[str, list[str]]">
+<Param name="column_formats" type="str | list[str]">
 
 Formulas to compute formats for columns or rows in the table; e.g., `"X = Y > 5 ? RED : NO_FORMATTING"`.
 

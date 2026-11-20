@@ -20,7 +20,7 @@ Ticks are row counts, and you may specify the reverse and forward window in numb
 rolling_formula_tick(
   formula: str,
   formula_param: str,
-  cols: Union[str, list[str]],
+  cols: str | list[str],
   rev_ticks: int,
   fwd_ticks: int = 0
 ) -> UpdateByOperation
@@ -47,7 +47,7 @@ Key column(s) can be used as input to the formula. When this happens, key values
 The parameter name within the formula. If `formula_param` is `each`, then `formula` must contain `each`. For example, `max(each)`, `min(each)`, etc. Use of this parameter is deprecated.
 
 </Param>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The column(s) to be operated on. These can include expressions to rename the output (e.g., `NewCol = Col`). When left empty, the rolling formula operation is performed on all columns.
 

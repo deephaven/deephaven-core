@@ -12,14 +12,14 @@ title: unique
 
 ```python syntax
 unique(
-    cols: Union[str, list[str]],
+    cols: str | list[str],
     include_nulls: bool = False,
-    non_unique_sentinel: Union[np.number, str, bool] = None
+    non_unique_sentinel: np.number | str | bool | None = None
 ) -> Aggregation
 ```
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The source column(s) to compute uniqueness for.
 
@@ -33,7 +33,7 @@ The source column(s) to compute uniqueness for.
 Whether nulls are counted as values. The default is `False`.
 
 </Param>
-<Param name="non_unique_sentinel" type="Union[np.number, str, bool]">
+<Param name="non_unique_sentinel" type="np.number | str | bool">
 
 The non-null sentinel value when no unique value exists. The default is `None`. Must be a non-`None` value when `include_nulls` is `True`.
 

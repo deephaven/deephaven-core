@@ -7,7 +7,7 @@ title: pct
 ## Syntax
 
 ```
-pct(percentile: float, cols: Union[str, list[str]], average_evenly_divided = False) -> Aggregation
+pct(percentile: float, cols: str | list[str], average_evenly_divided = False) -> Aggregation
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ pct(percentile: float, cols: Union[str, list[str]], average_evenly_divided = Fal
 The percentile to calculate.
 
 </Param>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The source column(s) for the calculations.
 

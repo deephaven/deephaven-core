@@ -13,7 +13,7 @@ table.abs_sum_by(by: Sequence[str] = None) -> Table
 ## Parameters
 
 <ParamTable>
-<Param name="by" type="Union[str, Sequence[str]]" optional>
+<Param name="by" type="str | Sequence[str]" optional>
 
 The column(s) by which to group data. Default is `None`.
 

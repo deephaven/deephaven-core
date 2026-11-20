@@ -9,13 +9,13 @@ Sample variance is calculated using the [Bessel correction](https://en.wikipedia
 ## Syntax
 
 ```
-var(cols: Union[str, list[str]]) -> Aggregation
+var(cols: str | list[str]) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The source column(s) for the calculations.
 

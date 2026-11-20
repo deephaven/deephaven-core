@@ -8,20 +8,20 @@ title: from_constituent_tables
 
 ```python syntax
 PartitionedTable.from_constituent_tables(
-  tables: List[Table],
-  constituent_table_columns: List[Column]
+  tables: list[Table],
+  constituent_table_columns: list[Column]
 ) -> PartitionedTable
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="tables" type="List[Table]">
+<Param name="tables" type="list[Table]">
 
 The constituent tables.
 
 </Param>
-<Param name="constituent_table_columns" type="List[Column]">
+<Param name="constituent_table_columns" type="list[Column]">
 
 A list of column definitions compatible with all the constituent tables. Default is `None`. When `constituent_table_columns` is not provided, it will be set to the column definitions of the first table in the provided constituent tables.
 

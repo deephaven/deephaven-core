@@ -132,7 +132,7 @@ class Table(TableInterface["Table"], ServerObject):
         order based on the order_by column(s).
 
         Args:
-            order_by (Union[str, list[str]]): the column name(s)
+            order_by (str | list[str]): the column name(s)
 
         Returns:
             a Table object
@@ -242,9 +242,9 @@ class MultiJoinInput:
 
         Args:
             table (Table): the right table to include in the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equality expression that
+            on (str | Sequence[str]): the column(s) to match, can be a common name or an equality expression that
                 matches every input table, i.e. "col_a = col_b" to rename output column names.
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the table to the result
+            joins (str | Sequence[str] | None): the column(s) to be added from the table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         """
         self.table = table
@@ -261,9 +261,9 @@ def multi_join(
     tables need not have a matching row for each key, but they may not have multiple matching rows for a given key.
 
     Args:
-        input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
+        input (Table | Sequence[Table] | MultiJoinInput | Sequence[MultiJoinInput]): the input objects specifying the
             tables and columns to include in the join.
-        on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equality expression
+        on (str | Sequence[str]): the column(s) to match, can be a common name or an equality expression
             that matches every input table, i.e. "col_a = col_b" to rename output column names. Note: When
             MultiJoinInput objects are supplied, this parameter must be omitted.
 

@@ -394,10 +394,10 @@ def ancestor_svg(
     to help understand the structure of a query.
 
     Args:
-        ids (Union[list[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
+        ids (list[int] | int): the Performance entry identifier or identifiers (EntryId) to generate the graph for
         update_perf_log (Table): the UpdatePerformanceLog Table
         ancestors_log (Table): the UpdatePerformanceAncestorsLog Table
-        filename (Optional[str]): the name of the output SVG file or None to not write the file, default is None
+        filename (str | None): the name of the output SVG file or None to not write the file, default is None
 
     Returns
         the contents of an SVG image
@@ -427,7 +427,7 @@ def ancestor_image(
     Note that the deephaven-plugin-ui package must be installed to use this function.
 
     Args:
-        ids (Union[list[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
+        ids (list[int] | int): the Performance entry identifier or identifiers (EntryId) to generate the graph for
         update_perf_log (Table): the UpdatePerformanceLog Table
         ancestors_log (Table): the UpdatePerformanceAncestorsLog Table
 
@@ -461,7 +461,7 @@ def ancestor_dot(
     """Returns a graphviz DOT representing Deephaven update performance ancestor data.
 
     Args:
-        ids (Union[list[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
+        ids (list[int] | int): the Performance entry identifier or identifiers (EntryId) to generate the graph for
         update_perf_log (Table): the UpdatePerformanceLog Table
         ancestors_log (Table): the UpdatePerformanceAncestorsLog Table
 

@@ -7,7 +7,7 @@ title: rolling_wavg_tick
 ## Syntax
 
 ```
-rolling_wavg_tick(wcol: str, cols: Union[str, list[str]], rev_ticks: int, fwd_ticks: int) -> UpdateByOperation
+rolling_wavg_tick(wcol: str, cols: str | list[str], rev_ticks: int, fwd_ticks: int) -> UpdateByOperation
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ rolling_wavg_tick(wcol: str, cols: Union[str, list[str]], rev_ticks: int, fwd_ti
 The column containing the weight values.
 
 </Param>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The column(s) to be operated on. These can include expressions to rename the output (e.g., `NewCol = Col`). When left empty, the rolling count is calculated for all applicable columns.
 

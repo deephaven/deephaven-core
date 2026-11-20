@@ -7,13 +7,13 @@ title: first_by
 ## Syntax
 
 ```
-table.first_by(by: Union[str, list[str]]) -> Table
+table.first_by(by: str | list[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="by" type="Union[str, list[str]]" optional>
+<Param name="by" type="str | list[str]" optional>
 
 The column(s) by which to group data.
 

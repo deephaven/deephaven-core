@@ -13,7 +13,7 @@ rolling_sum_tick(cols: list[str], rev_ticks: int, fwd_ticks: int) -> UpdateByOpe
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The column(s) to be operated on. These can include expressions to rename the output (e.g., `NewCol = Col`). If `None`, the rolling sum is calculated for all applicable columns.
 

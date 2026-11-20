@@ -9,13 +9,13 @@ The `plot_xy` method creates XY series plots using data from tables.
 ```python syntax
 plot_xy(
     series_name: str,
-    t: Union[Table, SelectableDataSet],
-    x: Union[str, list[int], list[float], list[DateTime]],
-    y: Union[str, list[int], list[float], list[DateTime]],
-    x_low: Union[str, list[int], list[float], list[DateTime]] = None,
-    x_high: Union[str, list[int], list[float], list[DateTime]] = None,
-    y_low: Union[str, list[int], list[float], list[DateTime]] = None,
-    y_high: Union[str, list[int], list[float], list[DateTime]] = None,
+    t: Table | SelectableDataSet,
+    x: str | list[int] | list[float] | list[DateTime],
+    y: str | list[int] | list[float] | list[DateTime],
+    x_low: str | list[int] | list[float] | list[DateTime] | None = None,
+    x_high: str | list[int] | list[float] | list[DateTime] | None = None,
+    y_low: str | list[int] | list[float] | list[DateTime] | None = None,
+    y_high: str | list[int] | list[float] | list[DateTime] | None = None,
     function: Callable = None,
     by: list[str] = None,
     x_time_axis: bool = None,
@@ -31,37 +31,37 @@ plot_xy(
 The name you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Union[Table, SelectableDataSet]">
+<Param name="t" type="Table | SelectableDataSet">
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="x" type="Union[str, list[int], list[float], list[DateTime]]">
+<Param name="x" type="str | list[int] | list[float] | list[DateTime]">
 
 The name of the column of data to be used for the X value.
 
 </Param>
-<Param name="y" type="Union[str, list[int], list[float], list[DateTime]]">
+<Param name="y" type="str | list[int] | list[float] | list[DateTime]">
 
 The name of the column of data to be used for the Y value.
 
 </Param>
-<Param name="x_low" type="Union[str, list[int], list[float], list[DateTime]]" optional>
+<Param name="x_low" type="str | list[int] | list[float] | list[DateTime]" optional>
 
 Lower X error bar.
 
 </Param>
-<Param name="x_high" type="Union[str, list[int], list[float], list[DateTime]]" optional>
+<Param name="x_high" type="str | list[int] | list[float] | list[DateTime]" optional>
 
 Upper X error bar.
 
 </Param>
-<Param name="y_low" type="Union[str, list[int], list[float], list[DateTime]]" optional>
+<Param name="y_low" type="str | list[int] | list[float] | list[DateTime]" optional>
 
 Lower Y error bar.
 
 </Param>
-<Param name="y_high" type="Union[str, list[int], list[float], list[DateTime]]" optional>
+<Param name="y_high" type="str | list[int] | list[float] | list[DateTime]" optional>
 
 Upper Y error bar.
 

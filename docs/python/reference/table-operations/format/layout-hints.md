@@ -11,11 +11,11 @@ The `layout_hints` method creates a new table with information about how the UI 
 
 ```
 layout_hints(
-    front: Union[str, list[str]],
-    back: Union[str, list[str]],
-    freeze: Union[str, list[str]],
-    hide: Union[str, list[str]],
-    column_groups: List[Dict],
+    front: str | list[str],
+    back: str | list[str],
+    freeze: str | list[str],
+    hide: str | list[str],
+    column_groups: list[Dict],
     search_display_mode: SearchDisplayMode
 )
 ```
@@ -23,33 +23,33 @@ layout_hints(
 ## Parameters
 
 <ParamTable>
-<Param name="front" type="Union[str, list[str]]">
+<Param name="front" type="str | list[str]">
 
 The columns to show at the front.
 
 </Param>
-<Param name="back" type="Union[str, list[str]]">
+<Param name="back" type="str | list[str]">
 
 The columns to show at the back.
 
 </Param>
-<Param name="freeze" type="Union[str, list[str]]">
+<Param name="freeze" type="str | list[str]">
 
 The columns to freeze.
 
 </Param>
-<Param name="hide" type="Union[str, list[str]]">
+<Param name="hide" type="str | list[str]">
 
 The columns to hide.
 
 </Param>
-<Param name="column_groups" type="List[Dict]">
+<Param name="column_groups" type="list[Dict]">
 
 A list of dicts specifying which columns should be grouped in the UI. The dicts can specify the following:
 
 - `name (str)`: The group name.
-- `children (List[str])`: The column names in the group.
-- `color (Optional[str])`: The hex color string or Deephaven color name.
+- `children (list[str])`: The column names in the group.
+- `color (str | None)`: The hex color string or Deephaven color name.
 
 </Param>
 <Param name="search_display_mode" type="SearchDisplayMode">

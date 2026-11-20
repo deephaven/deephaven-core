@@ -9,13 +9,13 @@ If locking is not explicitly specified, this method will automatically lock to e
 ## Syntax
 
 ```python syntax
-iter_chunk_tuple(cols: Optional[Union[str, Sequence[str]]] = None, tuple_name: str = "Deephaven", chunk_size: int = 2048) -> Generator[Tuple[np.ndarray, ...], None, None]
+iter_chunk_tuple(cols: str | Sequence[str] | None = None, tuple_name: str = "Deephaven", chunk_size: int = 2048) -> Generator[tuple[np.ndarray, ...], None, None]
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, Sequence[Str]]" Optional>
+<Param name="cols" type="str | Sequence[Str]" Optional>
 
 The columns to read. If not given, all columns are read. The default is `None`, which reads all columns.
 

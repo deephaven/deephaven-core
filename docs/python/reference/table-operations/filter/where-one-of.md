@@ -7,13 +7,13 @@ The `where_one_of` method returns a new table containing rows from the source ta
 ## Syntax
 
 ```python syntax
-where_one_of(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Table
+where_one_of(filters: str | Filter | Sequence[str] | Sequence[Filter]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="filters" type="Union[str, Filter, Sequence[str], Sequence[Filter]]">
+<Param name="filters" type="str | Filter | Sequence[str] | Sequence[Filter]">
 
 The filter condition expressions.
 

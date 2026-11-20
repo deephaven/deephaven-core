@@ -10,7 +10,7 @@ title: sorted_last
 ## Syntax
 
 ```
-sorted_last(order_by: str, cols: Union[str, list[str]]) -> Aggregation
+sorted_last(order_by: str, cols: str | list[str]) -> Aggregation
 ```
 
 ## Parameters
@@ -21,7 +21,7 @@ sorted_last(order_by: str, cols: Union[str, list[str]]) -> Aggregation
 The column to sort by.
 
 </Param>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The source column(s) for the calculations.
 

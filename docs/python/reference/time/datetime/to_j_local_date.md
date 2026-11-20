@@ -15,14 +15,14 @@ title: to_j_local_date
 
 ```python syntax
 to_j_local_date(
-  dt: Union[None, LocalDate, str, datetime.date, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+  dt: LocalDate | str | datetime.date | datetime.time | datetime.datetime | numpy.datetime64 | pandas.Timestamp | None
   ) -> LocalDate
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="dt" type="Union[None, LocalDate, str, datetime.date, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]">
+<Param name="dt" type="LocalDate | str | datetime.date | datetime.time | datetime.datetime | numpy.datetime64 | pandas.Timestamp | None">
 
 The date-time value to convert to a Java LocalDate.
 

@@ -10,13 +10,13 @@ title: "max_"
 ## Syntax
 
 ```
-max_(cols: Union[str, list[str]]) -> Aggregation
+max_(cols: str | list[str]) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The source column(s) for the calculations.
 

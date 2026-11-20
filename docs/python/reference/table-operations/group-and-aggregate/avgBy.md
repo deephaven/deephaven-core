@@ -10,13 +10,13 @@ title: avg_by
 ## Syntax
 
 ```
-table.avg_by(by: Union[str, list[str]]) -> Table
+table.avg_by(by: str | list[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="by" type="Union[str, list[str]]">
+<Param name="by" type="str | list[str]">
 
 The column(s) by which to group data.
 

@@ -10,16 +10,16 @@ The `write` method will write a table to a standard Parquet file.
 write(
     table: Table,
     path: str,
-    table_definition: Optional[TableDefinitionLike] = None,
-    col_instructions: Optional[list[ColumnInstruction]] = None,
-    compression_codec_name: Optional[str] = None,
-    max_dictionary_keys: Optional[int] = None,
-    max_dictionary_size: Optional[int] = None,
-    target_page_size: Optional[int] = None,
-    generate_metadata_files: Optional[bool] = None,
-    index_columns: Optional[Sequence[Sequence[str]]] = None,
-    row_group_info: Optional[RowGroupInfo] = None,
-    special_instructions: Optional[s3.S3Instructions] = None,
+    table_definition: TableDefinitionLike | None = None,
+    col_instructions: list[ColumnInstruction] | None = None,
+    compression_codec_name: str | None = None,
+    max_dictionary_keys: int | None = None,
+    max_dictionary_size: int | None = None,
+    target_page_size: int | None = None,
+    generate_metadata_files: bool | None = None,
+    index_columns: Sequence[Sequence[str]] | None = None,
+    row_group_info: RowGroupInfo | None = None,
+    special_instructions: s3.S3Instructions | None = None,
 )
 ```
 

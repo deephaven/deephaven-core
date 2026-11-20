@@ -9,7 +9,7 @@ The `plot_treemap` method creates treemap charts using data from Deephaven table
 ```python syntax
 plot_treemap(
     series_name: str,
-    t: Union[Table, SelectableDataSet],
+    t: Table | SelectableDataSet,
     id: str,
     parent: str,
     label: str = None,
@@ -27,7 +27,7 @@ plot_treemap(
 The name (as a [String](../query-language/types/strings.md)) to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Union[Table, SelectableDataSet]">
+<Param name="t" type="Table | SelectableDataSet">
 
 The table (or other selectable data set) that holds the data to be plotted.
 

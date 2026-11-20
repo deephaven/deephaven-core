@@ -7,13 +7,13 @@ The `drop_columns` method creates a table with the same number of rows as the so
 ## Syntax
 
 ```
-drop_columns(cols: Union[str, Sequence[str]]) -> Table
+drop_columns(cols: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, Sequence[str]]">
+<Param name="cols" type="str | Sequence[str]">
 
 Columns that will be omitted in the new table.
 

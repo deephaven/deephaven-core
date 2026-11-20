@@ -7,7 +7,7 @@ title: count_by
 ## Syntax
 
 ```
-table.count_by(col: str, by: Union[str, list[str]]) -> Table
+table.count_by(col: str, by: str | list[str]) -> Table
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ table.count_by(col: str, by: Union[str, list[str]]) -> Table
 The name of the output column containing the count.
 
 </Param>
-<Param name="by" type="Union[str, list[str]]" optional>
+<Param name="by" type="str | list[str]" optional>
 
 The column(s) by which to group data.
 

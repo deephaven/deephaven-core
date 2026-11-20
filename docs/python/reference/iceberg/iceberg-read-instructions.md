@@ -11,9 +11,9 @@ The `IcebergReadInstructions` class specifies the instructions for reading Icebe
 
 ```python syntax
 IcebergReadInstructions(
-    table_definition: Union[Dict[str, DType], List[Column]] = None,
+    table_definition: dict[str, DType] | list[Column] | None = None,
     data_instructions: S3Instructions = None,
-    column_renames: Dict[str, str] = None,
+    column_renames: dict[str, str] = None,
     update_mode: IcebergUpdateMode = None,
     snapshot_id: int = None,
     ignore_resolving_errors: bool = False,
@@ -23,7 +23,7 @@ IcebergReadInstructions(
 ## Parameters
 
 <ParamTable>
-<Param name="table_definition" type="Union[Dict[str, DType], List[Column]]" Optional>
+<Param name="table_definition" type="dict[str, DType] | list[Column]" Optional>
 
 Deprecated. This parameter has no effect.
 
@@ -33,7 +33,7 @@ Deprecated. This parameter has no effect.
 Special instructions for reading data files from a non-local file system, such as S3. If not given, the data instructions are derived from the catalog.
 
 </Param>
-<Param name="column_renames" type="Dict[str, str]" Optional>
+<Param name="column_renames" type="dict[str, str]" Optional>
 
 Deprecated. This parameter has no effect.
 

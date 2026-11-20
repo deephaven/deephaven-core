@@ -9,8 +9,8 @@ The `plot_xy_hist` method creates XY histograms using data from Deephaven tables
 ```python syntax
 plot_xy_hist(
     series_name: str,
-    t: Union[Table, SelectableDataSet],
-    x: Union[str, List[int], List[float], List[DateTime]],
+    t: Table | SelectableDataSet,
+    x: str | list[int] | list[float] | list[DateTime],
     nbins: int,
     xmin: float = None,
     xmax: float = None,
@@ -25,12 +25,12 @@ plot_xy_hist(
 The name (as a [String](../query-language/types/strings.md)) you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Union[Table, SelectableDataSet]">
+<Param name="t" type="Table | SelectableDataSet">
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="x" type="Union[str, list[int], list[float], list[DateTime]]">
+<Param name="x" type="str | list[int] | list[float] | list[DateTime]">
 
 The name of the column containing the discrete values. This parameter is a list only when data is not sourced from a table; otherwise, it will be an array.
 

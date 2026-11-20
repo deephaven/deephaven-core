@@ -11,20 +11,20 @@ The `sort` method returns a new `PartitionedTable` in which the rows are ordered
 
 ```python syntax
 sort(
-  order_by: Union[str, Sequence[str]],
-  order: Union[SortDirection, Sequence[SortDirection]] = None
+  order_by: str | Sequence[str],
+  order: SortDirection | Sequence[SortDirection] | None = None
 ) -> PartitionedTable
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="order_by" type="Union[str, Sequence[str]]">
+<Param name="order_by" type="str | Sequence[str]">
 
 The column(s) to be sorted on. Cannot include the `__CONSTITUENT__` column.
 
 </Param>
-<Param name="order" type="Union[SortDirection, Sequence[SortDirection]]">
+<Param name="order" type="SortDirection | Sequence[SortDirection]">
 
 The sort order(s). Default is `SortDirection.ASCENDING`.
 

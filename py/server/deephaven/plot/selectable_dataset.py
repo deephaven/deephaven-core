@@ -36,7 +36,7 @@ def one_click(
 
     Args:
         t (Table): the source table
-        by (Optional[list[str]]): the selected columns, defaults to None
+        by (list[str] | None): the selected columns, defaults to None
         require_all_filters (bool): false to display data when not all oneclicks are selected; true to only
             display data when appropriate oneclicks are selected
 

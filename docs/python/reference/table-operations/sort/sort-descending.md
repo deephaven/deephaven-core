@@ -7,13 +7,13 @@ title: sort_descending
 ## Syntax
 
 ```
-sort_descending(order_by: Union[str, Sequence[str]]) -> Table
+sort_descending(order_by: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="order_by" type="Union[str, Sequence[str]]">
+<Param name="order_by" type="str | Sequence[str]">
 
 The column(s) used for sorting.
 

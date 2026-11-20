@@ -7,7 +7,7 @@ title: weighted_avg
 ## Syntax
 
 ```
-weighted_avg(wcol: str, cols: Union[str, list[str]]) -> Aggregation
+weighted_avg(wcol: str, cols: str | list[str]) -> Aggregation
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ weighted_avg(wcol: str, cols: Union[str, list[str]]) -> Aggregation
 The weight column for the calculation.
 
 </Param>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The source column(s) for the calculations.
 

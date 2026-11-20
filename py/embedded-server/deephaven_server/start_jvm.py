@@ -113,19 +113,19 @@ def start_jvm(
     Script session.
 
     Args:
-        jvm_args (Optional[List[str]]): The common, user specific JVM arguments, such as JVM heap size, and other
+        jvm_args (list[str] | None): The common, user specific JVM arguments, such as JVM heap size, and other
             related JVM options. Defaults to None.
-        default_jvm_args (Optional[List[str]]): The advanced JVM arguments to use instead of the default ones that
+        default_jvm_args (list[str] | None): The advanced JVM arguments to use instead of the default ones that
             Deephaven recommends, such as a specific garbage collector and related tuning parameters, or whether to
             let Python or Java handle signals. Defaults to None, the Deephaven defaults as defined in DEFAULT_JVM_ARGS,
             using the VM options file for the major version of the JVM being started when there is one.
-        jvm_properties (Optional[Dict[str, str]]): The JVM properties to use. Defaults to None, meaning to use the
+        jvm_properties (dict[str, str] | None): The JVM properties to use. Defaults to None, meaning to use the
             predefined DEFAULT_JVM_PROPERTIES .
-        java_home (Optional[str]): The JAVA_HOME path to use. Defaults to None, meaning using the JAVA_HOME environment
+        java_home (str | None): The JAVA_HOME path to use. Defaults to None, meaning using the JAVA_HOME environment
             variable.
-        extra_classpath (Optional[List[str]]): The extra classpath to use.
+        extra_classpath (list[str] | None): The extra classpath to use.
         prop_file (str): The property file to use. Defaults to None, meaning not loading any JVM properties from a file.
-        config (Optional[types.ModuleType]): The JPY configuration module to use. Defaults to None, meaning not providing
+        config (types.ModuleType | None): The JPY configuration module to use. Defaults to None, meaning not providing
             a JPY configuration module for the jpyutil module to load and config the JVM.
     """
     java_home = java_home or os.environ.get("JAVA_HOME", None)

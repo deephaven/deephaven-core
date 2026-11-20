@@ -14,13 +14,13 @@ When using `lazy_update`, cell values are stored in memory in a cache. Column fo
 ## Syntax
 
 ```
-lazy_update(formulas: Union[str, Sequence[str]]) -> Table
+lazy_update(formulas: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="formulas" type="Union[str, Sequence[str]]">
+<Param name="formulas" type="str | Sequence[str]">
 
 Formulas to compute columns in the new table; e.g., `"X = A * sqrt(B)"`.
 

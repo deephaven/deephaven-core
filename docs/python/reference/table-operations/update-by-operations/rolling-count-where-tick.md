@@ -10,7 +10,7 @@ windowing unit. Ticks are row counts. The rolling count can be calculated using 
 ```
 rolling_count_where_tick(
     col: str,
-    filters: Union[str, Filter, List[str], List[Filter]],
+    filters: str | Filter | list[str] | list[Filter],
     rev_ticks: int = 0,
     fwd_ticks: int = 0) -> UpdateByOperation:
 ```
@@ -23,7 +23,7 @@ rolling_count_where_tick(
 The name of the column that will contain the count of values that pass the filters.
 
 </Param>
-<Param name="filters" type="Union[str, Filter, Sequence[str], Sequence[Filter]]">
+<Param name="filters" type="str | Filter | Sequence[str] | Sequence[Filter]">
 
 Formulas for filtering as a list of [Strings](../../query-language/types/strings.md).
 

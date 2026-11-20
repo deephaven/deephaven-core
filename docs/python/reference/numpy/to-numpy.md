@@ -13,7 +13,7 @@ The `to_numpy` method produces a NumPy array from a table.
 ## Syntax
 
 ```python syntax
-to_numpy(table: Table, cols: List[str]) -> numpy.ndarray
+to_numpy(table: Table, cols: list[str]) -> numpy.ndarray
 ```
 
 ## Parameters
@@ -24,7 +24,7 @@ to_numpy(table: Table, cols: List[str]) -> numpy.ndarray
 The source table to convert to a `numpy.ndarray`.
 
 </Param>
-<Param name="cols" type="List[str]">
+<Param name="cols" type="list[str]">
 
 The names of columns in the source table to be included in the result. The default is `None`, which includes all columns.
 

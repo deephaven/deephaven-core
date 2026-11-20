@@ -11,20 +11,20 @@ The `sort` method can also accept `sort_column` pairs, which allow some columns 
 
 ```
 sort(
-    order_by: Union[str, Sequence[str]],
-    order: Union[SortDirection, Sequence[SortDirection]] = None,
+    order_by: str | Sequence[str],
+    order: SortDirection | Sequence[SortDirection] | None = None,
 ) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="order_by" type="Union[str, Sequence[str]]">
+<Param name="order_by" type="str | Sequence[str]">
 
 The column(s) to sort in ascending order.
 
 </Param>
-<Param name="order" type="Union[SortDirection, Sequence[SortDirection]]" optional>
+<Param name="order" type="SortDirection | Sequence[SortDirection]" optional>
 
 A columns and directions to sort by. Options are `ASCENDING` and `DESCENDING`.
 

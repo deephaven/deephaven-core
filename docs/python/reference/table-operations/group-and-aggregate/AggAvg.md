@@ -7,13 +7,13 @@ title: avg
 ## Syntax
 
 ```python syntax
-avg(cols: Union[str, list[str]]) -> Aggregation
+avg(cols: str | list[str]) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The source column(s) for the calculations.
 

@@ -9,9 +9,9 @@ The `adapter` method creates an Iceberg catalog adapter from configuration prope
 ```python syntax
 adapter(
     name: str = None,
-    properties: Dict[str, str] = None,
-    hadoop_config: Dict[str, str] = None,
-    s3_instructions: Optional[S3Instructions] = None,
+    properties: dict[str, str] = None,
+    hadoop_config: dict[str, str] = None,
+    s3_instructions: S3Instructions | None = None,
     enable_property_injection: bool = True,
 )
 ```
@@ -24,7 +24,7 @@ adapter(
 A descriptive name of the catalog. If omitted, the catalog name is inferred from the catalog URI.
 
 </Param>
-<Param name="properties" type="Dict[str, str]" Optional>
+<Param name="properties" type="dict[str, str]" Optional>
 
 The properties of the catalog. Two properties _must_ be given when creating a catalog adapter:
 
@@ -53,7 +53,7 @@ Additional optional properties include:
 - `io-impl` - The implementation class for the I/O operations, such as `org.apache.iceberg.aws.s3.S3FileIO` for S3-compatible storage.
 
 </Param>
-<Param name="hadoop_config" type="Dict[str, str]" Optional>
+<Param name="hadoop_config" type="dict[str, str]" Optional>
 
 Hadoop configuration properties for the catalog.
 

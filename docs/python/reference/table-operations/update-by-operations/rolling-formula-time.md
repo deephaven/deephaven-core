@@ -22,9 +22,9 @@ rolling_formula_time(
   ts_col: str,
   formula: str,
   formula_param: str,
-  cols: Union[str, list[str]],
-  rev_time: Union[int, str],
-  fwd_time: Union[int, str] = 0
+  cols: str | list[str],
+  rev_time: int | str,
+  fwd_time: int | str = 0
 ) -> UpdateByOperation
 ```
 
@@ -54,17 +54,17 @@ Key column(s) can be used as input to the formula. When this happens, key values
 The parameter name within the formula. If `formula_param` is `each`, then `formula` must contain `each`. For example, `max(each)`, `min(each)`, etc. Use of this parameter is deprecated.
 
 </Param>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 The column(s) to be operated on. These can include expressions to rename the output (e.g., `NewCol = Col`). When left empty, the rolling formula operation is performed on all columns.
 
 </Param>
-<Param name="rev_time" type="Union[int, str]">
+<Param name="rev_time" type="int | str">
 
 The look-behind window size. This can be expressed as an integer representing a number of nanoseconds, or a time interval string, e.g. “PT00:00:00.001” or “PT5M”.
 
 </Param>
-<Param name="fwd_time" type="Union[int,str">
+<Param name="fwd_time" type="int | str">
 
 The look-ahead window size. This can be expressed as an integer representing a number of nanoseconds, or a time interval string, e.g. “PT00:00:00.001” or “PT5M”.
 

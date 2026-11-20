@@ -22,13 +22,13 @@ When using `view`, the data being requested is not stored in memory. Rather, a f
 ## Syntax
 
 ```
-view(formulas: Union[str, Sequence[str]]) -> Table
+view(formulas: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="formulas" type="Union[str, Sequence[str]]">
+<Param name="formulas" type="str | Sequence[str]">
 
 Formulas to compute columns in the new table:
 

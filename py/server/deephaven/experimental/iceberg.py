@@ -97,7 +97,7 @@ class IcebergUpdateMode(JObjectWrapper):
         Creates an IcebergUpdateMode with auto-refreshing enabled.
 
         Args:
-            auto_refresh_ms (Optional[int]): the refresh interval in milliseconds; if omitted, the default of 60 seconds
+            auto_refresh_ms (int | None): the refresh interval in milliseconds; if omitted, the default of 60 seconds
                 is used.
         """
         if auto_refresh_ms is None:
@@ -132,14 +132,14 @@ class IcebergReadInstructions(JObjectWrapper):
         Initializes the instructions using the provided parameters.
 
         Args:
-            table_definition (Optional[TableDefinitionLike]): this parameter is deprecated and has no effect
-            data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
+            table_definition (TableDefinitionLike | None): this parameter is deprecated and has no effect
+            data_instructions (s3.S3Instructions | None): Special instructions for reading data files, useful when
                 reading files from a non-local file system, like S3. If omitted, the data instructions will be derived
                 from the catalog.
-            column_renames (Optional[dict[str, str]]): this parameter is deprecated and has no effect
-            update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
+            column_renames (dict[str, str] | None): this parameter is deprecated and has no effect
+            update_mode (IcebergUpdateMode | None): The update mode for the table. If omitted, the default update
                 mode of :py:func:`IcebergUpdateMode.static() <IcebergUpdateMode.static>` is used.
-            snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
+            snapshot_id (int | None): the snapshot id to read; if omitted the most recent snapshot will be selected.
             ignore_resolving_errors (bool): Controls whether to ignore unexpected resolving errors by silently returning
                 null data for columns that can't be resolved in DataFiles where they should be present. These errors may
                 be a sign of an incorrect resolver or name mapping; or an Iceberg metadata / data issue. By default, is
@@ -202,8 +202,8 @@ class IcebergWriteInstructions(JObjectWrapper):
         Initializes the instructions using the provided parameters.
 
         Args:
-            tables (Union[Table, Sequence[Table]]): The deephaven tables to write.
-            partition_paths (Optional[Union[str, Sequence[str]]]): The partition paths where each table will be written.
+            tables (Table | Sequence[Table]): The deephaven tables to write.
+            partition_paths (str | Sequence[str] | None): The partition paths where each table will be written.
                 For example, if the Iceberg table is partitioned by "year" and "month", a partition path could be
                 "year=2021/month=01".
                 If writing to a partitioned Iceberg table, users must provide partition path for each table in tables
@@ -432,7 +432,7 @@ class InferenceResolver(JObjectWrapper):
                 PartitionSpec contains identity transforms that are not expected to ever change.
             fail_on_unsupported_types (bool): If inference should fail if any of the Iceberg fields fail to map to
                 Deephaven columns. By default, is `False`.
-            schema_provider (Optional[SchemaProvider]): The Iceberg Schema to be used for inference. Defaults to
+            schema_provider (SchemaProvider | None): The Iceberg Schema to be used for inference. Defaults to
                 `None`, which means use the current schema from the Iceberg Table.
         """
         builder = _JInferenceResolver.builder()
@@ -467,12 +467,12 @@ class UnboundResolver(JObjectWrapper):
 
         Args:
             table_definition (TableDefinitionLike): the table definition
-            column_instructions (Optional[Mapping[str, Union[int, str]]]): The map from Deephaven column names to
+            column_instructions (Mapping[str, int | str] | None): The map from Deephaven column names to
                 instructions for mapping to Iceberg columns. An int value will be treated as a schema field id, and a
                 str value will be treated as a schema field name. Any columns from table_definition not in this map will
                 be assumed as exact name matches for the fields in the Schema. Callers are encouraged to use schema
                 field ids as they will remain valid across Iceberg Schema evolution.
-            schema_provider (Optional[SchemaProvider]): The Iceberg Schema to be used for inference. Defaults to
+            schema_provider (SchemaProvider | None): The Iceberg Schema to be used for inference. Defaults to
                 `None`, which means use the current schema from the Iceberg Table.
         """
         builder = _JUnboundResolver.builder()
@@ -522,30 +522,30 @@ class TableParquetWriterOptions(JObjectWrapper):
             table_definition: TableDefinitionLike: The table definition to use when writing Iceberg data files using
                 this writer instance. This definition can be used to skip some columns or add additional columns with
                 null values. The provided definition should have at least one column.
-            schema_provider: Optional[SchemaProvider]: Used to extract a Schema from an Iceberg table. This schema will
+            schema_provider: SchemaProvider | None: Used to extract a Schema from an Iceberg table. This schema will
                 be used in conjunction with the field_id_to_column_name to map Deephaven columns from table_definition
                 to Iceberg columns.
                 Defaults to `None`, which means use the current schema from the table.
-            field_id_to_column_name: Optional[dict[int, str]]: A one-to-one map from Iceberg field IDs from the
+            field_id_to_column_name: dict[int, str] | None: A one-to-one map from Iceberg field IDs from the
                 schema_spec to Deephaven column names from the table_definition.
                 Defaults to `None`, which means map Iceberg columns to Deephaven columns using column names.
-            compression_codec_name (Optional[str]): The compression codec to use for writing the parquet file. Allowed
+            compression_codec_name (str | None): The compression codec to use for writing the parquet file. Allowed
                 values include "UNCOMPRESSED", "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. Defaults to
                 `None`, which means use "SNAPPY".
-            maximum_dictionary_keys (Optional[int]): the maximum number of unique keys the Parquet writer should add to
+            maximum_dictionary_keys (int | None): the maximum number of unique keys the Parquet writer should add to
                 a dictionary page before switching to non-dictionary encoding, never used for non-String columns.
                 Defaults to `None`, which means use 2^20 (1,048,576)
-            maximum_dictionary_size (Optional[int]): the maximum number of bytes the Parquet writer should add to the
+            maximum_dictionary_size (int | None): the maximum number of bytes the Parquet writer should add to the
                 dictionary before switching to non-dictionary encoding, never used for non-String columns. Defaults to
                 `None`, which means use 2^20 (1,048,576)
-            target_page_size (Optional[int]): the target Parquet file page size in bytes, if not specified. Defaults to
+            target_page_size (int | None): the target Parquet file page size in bytes, if not specified. Defaults to
                 `None`, which means use 2^20 bytes (1 MiB)
-            sort_order_provider (Optional[SortOrderProvider]): Specifies the sort order to use for sorting new data
+            sort_order_provider (SortOrderProvider | None): Specifies the sort order to use for sorting new data
                 when writing to an Iceberg table with this writer. The sort order is determined at the time the writer
                 is created and does not change if the table's sort order changes later. Defaults to `None`, which means
                 the table's default sort order is used. More details about sort order can be found in the
                 `Iceberg spec <https://iceberg.apache.org/spec/#sorting>`_
-            data_instructions (Optional[s3.S3Instructions]): Special instructions for writing data files, useful when
+            data_instructions (s3.S3Instructions | None): Special instructions for writing data files, useful when
                 writing files to a non-local file system, like S3. If omitted, the data instructions will be derived
                 from the catalog.
 
@@ -616,7 +616,7 @@ class IcebergTable(Table):
         `auto_refresh()` mode cannot be updated manually and will throw an exception if this method is called.
 
         Args:
-            snapshot_id (Optional[int]): the snapshot id to update to; if omitted the most recent snapshot will be used.
+            snapshot_id (int | None): the snapshot id to update to; if omitted the most recent snapshot will be used.
 
         Raises:
             DHError: If unable to update the Iceberg table.
@@ -697,7 +697,7 @@ class IcebergTableAdapter(JObjectWrapper):
         Returns the Deephaven table definition as a Deephaven table.
 
         Args:
-            instructions (Optional[IcebergReadInstructions]): has no effect, deprecated
+            instructions (IcebergReadInstructions | None): has no effect, deprecated
 
         Returns:
             a table containing the table definition.
@@ -724,11 +724,11 @@ class IcebergTableAdapter(JObjectWrapper):
         Reads the table using the provided instructions.
 
         Args:
-            instructions (Optional[IcebergReadInstructions]): deprecated, use other parameters directly
-            snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
-            update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
+            instructions (IcebergReadInstructions | None): deprecated, use other parameters directly
+            snapshot_id (int | None): the snapshot id to read; if omitted the most recent snapshot will be selected.
+            update_mode (IcebergUpdateMode | None): The update mode for the table. If omitted, the default update
                 mode of :py:func:`IcebergUpdateMode.static() <IcebergUpdateMode.static>` is used.
-            data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
+            data_instructions (s3.S3Instructions | None): Special instructions for reading data files, useful when
                 reading files from a non-local file system, like S3. If omitted, the data instructions will be derived
                 from the catalog.
             ignore_resolving_errors (bool): Controls whether to ignore unexpected resolving errors by silently returning
@@ -806,7 +806,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
         tables in that namespace are listed; otherwise the top-level namespaces are listed.
 
         Args:
-            namespace (Optional[str]): the higher-level namespace from which to list namespaces; if omitted, the
+            namespace (str | None): the higher-level namespace from which to list namespaces; if omitted, the
                 top-level namespaces are listed.
 
         Returns:
@@ -840,7 +840,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         Args:
             table_identifier (str): the table to read.
-            resolver (Optional[Union[InferenceResolver, UnboundResolver]]): the resolver, defaults to None, meaning to use a
+            resolver (InferenceResolver | UnboundResolver | None): the resolver, defaults to None, meaning to use a
                 InferenceResolver with all the default options.
 
         Returns:
@@ -897,17 +897,17 @@ def adapter_s3_rest(
     Args:
         catalog_uri (str): the URI of the REST catalog.
         warehouse_location (str): the location of the warehouse.
-        name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
+        name (str | None): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI.
-        region_name (Optional[str]): the S3 region name to use; If not provided, the default region will be
+        region_name (str | None): the S3 region name to use; If not provided, the default region will be
             picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the
             {user.home}/.aws/credentials or {user.home}/.aws/config files, or from EC2 metadata service, if running in
             EC2.
-        access_key_id (Optional[str]): the access key for reading files. Both access key and secret access key must be
+        access_key_id (str | None): the access key for reading files. Both access key and secret access key must be
             provided to use static credentials, else default credentials will be used.
-        secret_access_key (Optional[str]): the secret access key for reading files. Both access key and secret key
+        secret_access_key (str | None): the secret access key for reading files. Both access key and secret key
             must be provided to use static credentials, else default credentials will be used.
-        end_point_override (Optional[str]): the S3 endpoint to connect to. Callers connecting to AWS do not typically
+        end_point_override (str | None): the S3 endpoint to connect to. Callers connecting to AWS do not typically
             need to set this; it is most useful when connecting to non-AWS, S3-compatible APIs.
 
     Returns:
@@ -949,7 +949,7 @@ def adapter_aws_glue(
     Args:
         catalog_uri (str): the URI of the REST catalog.
         warehouse_location (str): the location of the warehouse.
-        name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
+        name (str | None): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI.
 
     Returns:
@@ -1044,15 +1044,15 @@ def adapter(
     ```
 
     Args:
-        name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
+        name (str | None): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI property.
-        properties (Optional[dict[str, str]]): the properties of the catalog to load. By default, no properties are set.
-        hadoop_config (Optional[dict[str, str]]): hadoop configuration properties for the catalog to load. By default,
+        properties (dict[str, str] | None): the properties of the catalog to load. By default, no properties are set.
+        hadoop_config (dict[str, str] | None): hadoop configuration properties for the catalog to load. By default,
             no properties are set.
-        s3_instructions (Optional[s3.S3Instructions]): the S3 instructions to use for configuring the Deephaven managed
+        s3_instructions (s3.S3Instructions | None): the S3 instructions to use for configuring the Deephaven managed
             AWS clients. If not provided, the catalog will internally use the Iceberg-managed AWS clients configured
             using the provided `properties`.
-        enable_property_injection (Optional[bool]): whether to enable Deephaven’s automatic injection of additional properties
+        enable_property_injection (bool | None): whether to enable Deephaven’s automatic injection of additional properties
             that work around upstream issues and supply defaults needed for Deephaven’s Iceberg usage. The injection is
             strictly additive—any keys already present in `properties` are left unchanged. When set to `False` (not
             recommended), the property map is forwarded exactly as supplied, with no automatic additions. Defaults to
