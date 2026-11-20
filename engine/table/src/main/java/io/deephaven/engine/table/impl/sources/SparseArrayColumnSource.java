@@ -9,73 +9,35 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.rowset.RowSetShiftCallback;
-import io.deephaven.util.SoftRecyclerWindow;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.engine.table.impl.sources.SparseMemoryColumnSourceFactory.USE_ADAPTIVE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * A column source backed by arrays that may not be filled in all blocks.
- *
+ * A column source that holds its values in blocks of consecutive row keys, which it reaches through a page table
+ * indexed by the high bits of the row key.
  * <p>
- * To store the blocks, we use a multi-level page table like structure. Each entry that exists is complete, i.e. we
- * never reallocate partial blocks, we always allocate the complete block. The row key is divided as follows:
+ * The page table and its blocks take one of two forms. {@link OneOrNSparseArrayColumnSource} allocates every block it
+ * reaches in full. The adaptive sources, such as {@link DoubleAdaptiveSparseArraySource}, adapt each page table level
+ * and leaf to the row keys it holds. {@link SparseMemoryColumnSourceFactory#USE_ADAPTIVE} chooses which form the static
+ * factory methods of this class make.
  * </p>
- * <table>
- * <tr>
- * <th>Description</td>
- * <th>Size</th>
- * <th>Bits</th>
- * </tr>
- * <tr>
- * <td>Block 0</td>
- * <td>19</td>
- * <td>62-44</td>
- * </tr>
- * <tr>
- * <td>Block 1</td>
- * <td>18</td>
- * <td>43-26</td>
- * </tr>
- * <tr>
- * <td>Block 2</td>
- * <td>18</td>
- * <td>25-8</td>
- * </tr>
- * <tr>
- * <td>Index Within Block</td>
- * <td>8</td>
- * <td>7-0</td>
- * </tr>
- * </table>
  * <p>
  * Bit 63, the sign bit, is used to indicate null (that is, all negative numbers are defined to be null)
- * </p>
- * <p>
- * Parallel structures are used for previous values and prevInUse. We recycle all levels of the previous blocks, so that
- * the previous structure takes up memory only while it is in use.
- * </p>
  * </p>
  */
 public abstract class SparseArrayColumnSource<T>
@@ -84,97 +46,11 @@ public abstract class SparseArrayColumnSource<T>
         WritableSourceWithPrepareForParallelPopulation, RowSetShiftCallback {
 
 
-    // Usage:
-    //
-    // To access a "current" data element:
-    // final int block0 = (int) (key >> (LOG_BLOCK_SIZE + LOG_BLOCK1_SIZE + LOG_BLOCK2_SIZE))
-    // final int block1 = (int) (key >> (LOG_BLOCK_SIZE + LOG_BLOCK1_SIZE))
-    // final int block2 = (int) (key >> (LOG_BLOCK_SIZE))
-    // final int indexWithinBlock = (int) (key & INDEX_MASK);
-    // data = blocks[block0][block1][block2][indexWithinBlock];
-    //
-    // To access a "previous" data element: the structure is identical, except you refer to the prev structure:
-    // prevData = prevBlocks[block0][block1][block2][indexWithinBlock];
-    //
-    // To access a true/false entry from the "prevInUse" data structure: the structure is similar, except that the
-    // innermost array is logically is a two-level structure: it is an array of "bitsets", where each "bitset" is a
-    // 64-element "array" of bits, in reality a 64-bit long. If we were able to access the bitset as an array, the code
-    // would be:
-    // bool inUse = prevInUse[block0][block1][block2][indexWithinInUse][inUseBitIndex]
-    // The actual code is:
-    // bool inUse = (prevInUse[block0][block1][block2][indexWithinInUse] & maskWithinInUse) != 0
-    //
-    // Where:
-    // indexWithinInUse = indexWithinBlock / 64
-    // inUseBitIndex = indexWithinBlock % 64
-    // maskWithinInUse = 1L << inUseBitIndex
-    //
-    // and, if an inUse block is null (at any level), then the inUse result is defined as false.
-    //
-    // In the code below we do all the calculations in the "log" space so, in actuality it's more like
-    // indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
-    // maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
-    //
-    // Finally, this bitset manipulation logic only really makes sense if the innermost data block size is larger than
-    // the bitset size (64), so we have the additional constraint that LOG_BLOCK_SIZE >= LOG_INUSE_BITSET_SIZE.
-
     static {
         // we must completely use the 63-bit address space of row keys (negative numbers are defined to be null)
         Assert.eq(LOG_BLOCK_SIZE + LOG_BLOCK0_SIZE + LOG_BLOCK1_SIZE + LOG_BLOCK2_SIZE,
                 "LOG_BLOCK_SIZE + LOG_BLOCK0_SIZE + LOG_BLOCK1_SIZE + LOG_BLOCK2_SIZE", 63);
-        Assert.geq(LOG_BLOCK_SIZE, "LOG_BLOCK_SIZE", LOG_INUSE_BITSET_SIZE);
     }
-
-    // the lowest level inUse bitmap recycle
-    static final SoftRecycler<long[]> inUseRecycler =
-            SoftRecyclerWindow
-                    .register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY,
-                            SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_MAXIMUM_CAPACITY,
-                            () -> new long[IN_USE_BLOCK_SIZE],
-                            block -> Arrays.fill(block, 0)));
-
-    // the recycler for blocks of bitmaps
-    static final SoftRecycler<long[][]> inUse2Recycler =
-            SoftRecyclerWindow
-                    .register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY2,
-                            SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_MAXIMUM_CAPACITY2,
-                            () -> new long[BLOCK2_SIZE][],
-                            null));
-
-    // the recycler for blocks of blocks of bitmaps
-    static final SoftRecycler<LongOneOrN.Block2[]> inUse1Recycler =
-            SoftRecyclerWindow
-                    .register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY1,
-                            SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_MAXIMUM_CAPACITY1,
-                            () -> new LongOneOrN.Block2[BLOCK1_SIZE],
-                            null));
-
-    // the highest level block of blocks of blocks of inUse bitmaps
-    static final SoftRecycler<LongOneOrN.Block1[]> inUse0Recycler =
-            SoftRecyclerWindow
-                    .register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY0,
-                            SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_MAXIMUM_CAPACITY0,
-                            () -> new LongOneOrN.Block1[BLOCK0_SIZE],
-                            null));
-
-    transient LongOneOrN.Block0 prevInUse;
-
-    /*
-     * Normally the SparseArrayColumnSource can be changed, but if we are looking a static select, for example, we know
-     * that the values are never going to actually change.
-     */
-    boolean immutable = false;
-
-    /**
-     * The blocks to clear on the next terminal notification
-     */
-    RowSet blocksToClear;
-    RowSet blocks2ToClear;
-    RowSet blocks1ToClear;
-    /**
-     * If the overall result is empty, we can clear block0 in addition to the intermediate blocks.
-     */
-    Boolean emptyResult;
 
     SparseArrayColumnSource(Class<T> type, Class<?> componentType) {
         super(type, componentType);
@@ -231,22 +107,7 @@ public abstract class SparseArrayColumnSource<T>
      * @param removeBlocks1 Block1 structures to clear from the Block0 structure
      * @param empty if the resulting table is empty
      */
-    public void clearBlocks(final RowSet blocksToClear,
-            final RowSet removeBlocks2,
-            final RowSet removeBlocks1,
-            final boolean empty) {
-        if (this.blocksToClear != null) {
-            throw new IllegalStateException("Cannot call blocksToClear multiple times on the same cycle!");
-        }
-        Assert.eqNull(blocks2ToClear, "blocks2ToClear");
-        Assert.eqNull(blocks1ToClear, "blocks1ToClear");
-        Assert.eqNull(emptyResult, "emptyResult");
-
-        this.blocksToClear = blocksToClear.copy();
-        this.blocks2ToClear = removeBlocks2.copy();
-        this.blocks1ToClear = removeBlocks1.copy();
-        this.emptyResult = empty;
-    }
+    public abstract void clearBlocks(RowSet blocksToClear, RowSet removeBlocks2, RowSet removeBlocks1, boolean empty);
 
     /**
      * At the end of this cycle, release each block, block2 and block1 structure of {@code sources} that holds a row key
@@ -371,7 +232,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Byte> getSparseMemoryColumnSource(byte[] data) {
-        final SparseArrayColumnSource<Byte> result = new ByteSparseArraySource();
+        final SparseArrayColumnSource<Byte> result = USE_ADAPTIVE
+                ? ByteAdaptiveSparseArraySource.fullBlocks()
+                : new ByteSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (byte o : data) {
@@ -381,7 +244,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Character> getSparseMemoryColumnSource(char[] data) {
-        final SparseArrayColumnSource<Character> result = new CharacterSparseArraySource();
+        final SparseArrayColumnSource<Character> result = USE_ADAPTIVE
+                ? CharacterAdaptiveSparseArraySource.fullBlocks()
+                : new CharacterSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (char o : data) {
@@ -391,7 +256,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Double> getSparseMemoryColumnSource(double[] data) {
-        final SparseArrayColumnSource<Double> result = new DoubleSparseArraySource();
+        final SparseArrayColumnSource<Double> result = USE_ADAPTIVE
+                ? DoubleAdaptiveSparseArraySource.fullBlocks()
+                : new DoubleSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (double o : data) {
@@ -401,7 +268,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Float> getSparseMemoryColumnSource(float[] data) {
-        final SparseArrayColumnSource<Float> result = new FloatSparseArraySource();
+        final SparseArrayColumnSource<Float> result = USE_ADAPTIVE
+                ? FloatAdaptiveSparseArraySource.fullBlocks()
+                : new FloatSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (float o : data) {
@@ -411,7 +280,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Integer> getSparseMemoryColumnSource(int[] data) {
-        final SparseArrayColumnSource<Integer> result = new IntegerSparseArraySource();
+        final SparseArrayColumnSource<Integer> result = USE_ADAPTIVE
+                ? IntegerAdaptiveSparseArraySource.fullBlocks()
+                : new IntegerSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (int o : data) {
@@ -421,7 +292,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Long> getSparseMemoryColumnSource(long[] data) {
-        final SparseArrayColumnSource<Long> result = new LongSparseArraySource();
+        final SparseArrayColumnSource<Long> result = USE_ADAPTIVE
+                ? LongAdaptiveSparseArraySource.fullBlocks()
+                : new LongSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (long o : data) {
@@ -431,7 +304,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static WritableColumnSource<Instant> getInstantMemoryColumnSource(long[] data) {
-        final WritableColumnSource<Instant> result = new InstantSparseArraySource();
+        final WritableColumnSource<Instant> result = USE_ADAPTIVE
+                ? new InstantAdaptiveSparseArraySource(LongAdaptiveSparseArraySource.fullBlocks())
+                : new InstantSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (long o : data) {
@@ -441,7 +316,9 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public static SparseArrayColumnSource<Short> getSparseMemoryColumnSource(short[] data) {
-        final SparseArrayColumnSource<Short> result = new ShortSparseArraySource();
+        final SparseArrayColumnSource<Short> result = USE_ADAPTIVE
+                ? ShortAdaptiveSparseArraySource.fullBlocks()
+                : new ShortSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (short o : data) {
@@ -466,29 +343,31 @@ public abstract class SparseArrayColumnSource<T>
             @Nullable Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (type == byte.class || type == Byte.class) {
-            result = new ByteSparseArraySource();
+            result = USE_ADAPTIVE ? ByteAdaptiveSparseArraySource.fullBlocks() : new ByteSparseArraySource();
         } else if (type == char.class || type == Character.class) {
-            result = new CharacterSparseArraySource();
+            result = USE_ADAPTIVE ? CharacterAdaptiveSparseArraySource.fullBlocks() : new CharacterSparseArraySource();
         } else if (type == double.class || type == Double.class) {
-            result = new DoubleSparseArraySource();
+            result = USE_ADAPTIVE ? DoubleAdaptiveSparseArraySource.fullBlocks() : new DoubleSparseArraySource();
         } else if (type == float.class || type == Float.class) {
-            result = new FloatSparseArraySource();
+            result = USE_ADAPTIVE ? FloatAdaptiveSparseArraySource.fullBlocks() : new FloatSparseArraySource();
         } else if (type == int.class || type == Integer.class) {
-            result = new IntegerSparseArraySource();
+            result = USE_ADAPTIVE ? IntegerAdaptiveSparseArraySource.fullBlocks() : new IntegerSparseArraySource();
         } else if (type == long.class || type == Long.class) {
-            result = new LongSparseArraySource();
+            result = USE_ADAPTIVE ? LongAdaptiveSparseArraySource.fullBlocks() : new LongSparseArraySource();
         } else if (type == short.class || type == Short.class) {
-            result = new ShortSparseArraySource();
+            result = USE_ADAPTIVE ? ShortAdaptiveSparseArraySource.fullBlocks() : new ShortSparseArraySource();
         } else if (type == boolean.class || type == Boolean.class) {
-            result = new BooleanSparseArraySource();
+            result = USE_ADAPTIVE ? new BooleanAdaptiveSparseArraySource(ByteAdaptiveSparseArraySource.fullBlocks())
+                    : new BooleanSparseArraySource();
         } else if (type == Instant.class) {
-            result = new InstantSparseArraySource();
+            result = USE_ADAPTIVE ? new InstantAdaptiveSparseArraySource(LongAdaptiveSparseArraySource.fullBlocks())
+                    : new InstantSparseArraySource();
+        } else if (USE_ADAPTIVE) {
+            result = ObjectAdaptiveSparseArraySource.fullBlocks(type, componentType);
+        } else if (componentType != null) {
+            result = new ObjectSparseArraySource<>(type, componentType);
         } else {
-            if (componentType != null) {
-                result = new ObjectSparseArraySource<>(type, componentType);
-            } else {
-                result = new ObjectSparseArraySource<>(type);
-            }
+            result = new ObjectSparseArraySource<>(type);
         }
         if (size != 0) {
             result.ensureCapacity(size);
@@ -543,92 +422,6 @@ public abstract class SparseArrayColumnSource<T>
      */
     public int getPreferredChunkSize() {
         return BLOCK_SIZE;
-    }
-
-    // region fillChunk
-    @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
-            @NotNull RowSequence rowSequence) {
-        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            fillByKeys(dest, rowSequence);
-        } else {
-            fillByRanges(dest, rowSequence);
-        }
-    }
-    // endregion fillChunk
-
-    @Override
-    public void setNull(RowSequence rowSequence) {
-        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            nullByKeys(rowSequence);
-        } else {
-            nullByRanges(rowSequence);
-        }
-    }
-
-    @Override
-    public void fillChunkUnordered(
-            @NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends RowKeys> keys) {
-        fillByUnRowSequence(dest, keys);
-    }
-
-    @Override
-    public void fillPrevChunkUnordered(
-            @NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends RowKeys> keys) {
-        fillPrevByUnRowSequence(dest, keys);
-    }
-
-    abstract void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence);
-
-    abstract void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence);
-
-    abstract void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends RowKeys> keyIndices);
-
-    abstract void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends RowKeys> keyIndices);
-
-    @Override
-    public FillFromContext makeFillFromContext(int chunkCapacity) {
-        return DEFAULT_FILL_FROM_INSTANCE;
-    }
-
-    @Override
-    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull RowSequence rowSequence) {
-        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            fillFromChunkByKeys(rowSequence, src);
-        } else {
-            fillFromChunkByRanges(rowSequence, src);
-        }
-    }
-
-    abstract void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
-
-    abstract void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
-
-    abstract void nullByRanges(@NotNull RowSequence rowSequence);
-
-    abstract void nullByKeys(@NotNull RowSequence rowSequence);
-
-    @Override
-    public boolean isImmutable() {
-        return immutable;
-    }
-
-    @Override
-    public void setImmutable() {
-        immutable = true;
-    }
-
-    protected static class FillByContext<UArray> {
-        long maxKeyInCurrentBlock = -1;
-        UArray block;
-        int offset;
     }
 
     @Override

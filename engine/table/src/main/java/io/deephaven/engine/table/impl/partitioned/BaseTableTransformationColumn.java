@@ -8,7 +8,7 @@ import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseMemoryColumnSourceFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -51,7 +51,7 @@ abstract class BaseTableTransformationColumn implements SelectColumn {
 
     @Override
     public final WritableColumnSource<?> newDestInstance(final long size) {
-        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, Table.class);
+        return SparseMemoryColumnSourceFactory.getMemoryColumnSource(size, Table.class);
     }
 
     @Override

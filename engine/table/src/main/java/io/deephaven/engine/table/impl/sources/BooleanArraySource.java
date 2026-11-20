@@ -758,6 +758,26 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
         }
 
         @Override
+        public int parallelPopulationAlignment() {
+            return BooleanArraySource.this.parallelPopulationAlignment();
+        }
+
+        @Override
+        public void prepareForParallelPopulation(final RowSequence rowSequence, final boolean alignedDivisions) {
+            BooleanArraySource.this.prepareForParallelPopulation(rowSequence, alignedDivisions);
+        }
+
+        @Override
+        public void prepareForParallelPopulationInDivisions(final RowSequence rowSequence) {
+            BooleanArraySource.this.prepareForParallelPopulationInDivisions(rowSequence);
+        }
+
+        @Override
+        public void prepareDivisionForParallelPopulation(final RowSequence division) {
+            BooleanArraySource.this.prepareDivisionForParallelPopulation(division);
+        }
+
+        @Override
         public FillFromContext makeFillFromContext(int chunkCapacity) {
             return BooleanArraySource.this.makeFillFromContext(chunkCapacity);
         }

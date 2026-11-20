@@ -11,6 +11,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
@@ -59,8 +60,13 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         }
         final Set<SparseArrayColumnSource<?>> columnsToFree = Collections.newSetFromMap(new IdentityHashMap<>());
         for (final ColumnSource<?> resultSource : dependent.getColumnSources()) {
-            if (resultSource instanceof SparseArrayColumnSource && !parent.getColumnSources().contains(resultSource)) {
-                columnsToFree.add((SparseArrayColumnSource<?>) resultSource);
+            // a reinterpretable result, such as a Boolean or Instant source, may hold its values in a sparse primitive
+            // source
+            final ColumnSource<?> storage = resultSource instanceof SparseArrayColumnSource
+                    ? resultSource
+                    : ReinterpretUtils.maybeConvertToPrimitive(resultSource);
+            if (storage instanceof SparseArrayColumnSource && !parent.getColumnSources().contains(resultSource)) {
+                columnsToFree.add((SparseArrayColumnSource<?>) storage);
             }
         }
         sparseArraysToFree = columnsToFree.toArray(SparseArrayColumnSource<?>[]::new);

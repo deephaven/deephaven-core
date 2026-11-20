@@ -26,18 +26,18 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.table.impl.sources.BooleanSparseArraySource;
+import io.deephaven.engine.table.impl.sources.BooleanAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
-import io.deephaven.engine.table.impl.sources.InstantSparseArraySource;
+import io.deephaven.engine.table.impl.sources.InstantAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
-import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
-import io.deephaven.engine.table.impl.sources.ObjectSparseArraySource;
+import io.deephaven.engine.table.impl.sources.LongAdaptiveSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.table.impl.sources.ZonedDateTimeSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ZonedDateTimeAdaptiveSparseArraySource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -1513,11 +1513,12 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testReverseReinterpret() {
         final ZoneId newYork = ZoneId.of("America/New_York");
         final long day = DateTimeUtils.SECOND * 86_400;
-        final LongSparseArraySource nanos = new LongSparseArraySource();
-        final InstantSparseArraySource instants = new InstantSparseArraySource();
-        final ZonedDateTimeSparseArraySource zoned = new ZonedDateTimeSparseArraySource(newYork);
-        final ObjectSparseArraySource<ZonedDateTime> objectZoned = new ObjectSparseArraySource<>(ZonedDateTime.class);
-        final BooleanSparseArraySource booleans = new BooleanSparseArraySource();
+        final LongAdaptiveSparseArraySource nanos = new LongAdaptiveSparseArraySource();
+        final InstantAdaptiveSparseArraySource instants = new InstantAdaptiveSparseArraySource();
+        final ZonedDateTimeAdaptiveSparseArraySource zoned = new ZonedDateTimeAdaptiveSparseArraySource(newYork);
+        final ObjectAdaptiveSparseArraySource<ZonedDateTime> objectZoned =
+                new ObjectAdaptiveSparseArraySource<>(ZonedDateTime.class, null);
+        final BooleanAdaptiveSparseArraySource booleans = new BooleanAdaptiveSparseArraySource();
         final WritableColumnSource<?>[] writableSources = {nanos, instants, zoned, objectZoned, booleans};
         final LongConsumer setRow = rowKey -> {
             final long epochNanos = (rowKey % 1000) * day + (rowKey % 24) * DateTimeUtils.HOUR;

@@ -37,6 +37,48 @@ public interface WritableSourceWithPrepareForParallelPopulation {
     void prepareForParallelPopulation(RowSequence rowSequence);
 
     /**
+     * The number of consecutive row keys, a power of two, that a caller of
+     * {@link #prepareForParallelPopulation(RowSequence, boolean)} keeps together: when its divisions are aligned, every
+     * row key from {@code k * alignment} through {@code (k + 1) * alignment - 1} that is written in a cycle is written
+     * by the same thread.
+     *
+     * @return the alignment of the divisions this source can prepare for more cheaply, or 1 if any division is as cheap
+     */
+    int parallelPopulationAlignment();
+
+    /**
+     * Prepare this column source as {@link #prepareForParallelPopulation(RowSequence)} does, for a caller whose
+     * divisions of the rows between threads may be aligned to {@link #parallelPopulationAlignment()}.
+     *
+     * @param rowSequence the row sequence of values that will change on this cycle
+     * @param alignedDivisions whether every row key from {@code k * alignment} through {@code (k + 1) * alignment - 1}
+     *        that is written in this cycle is written by the same thread
+     */
+    void prepareForParallelPopulation(RowSequence rowSequence, boolean alignedDivisions);
+
+    /**
+     * Prepare this column source as {@link #prepareForParallelPopulation(RowSequence)} does, for writers whose
+     * divisions need not be aligned, but leave the work for each row to
+     * {@link #prepareDivisionForParallelPopulation(RowSequence)}. The caller then calls that method, possibly
+     * concurrently, once for each of a set of divisions of {@code rowSequence} that are aligned to
+     * {@link #parallelPopulationAlignment()} and together cover it, before any writer starts.
+     * <p>
+     * A source may prepare every row here and leave nothing to the divisions.
+     *
+     * @param rowSequence the row sequence of values that will change on this cycle
+     */
+    void prepareForParallelPopulationInDivisions(RowSequence rowSequence);
+
+    /**
+     * Do the preparation that {@link #prepareForParallelPopulationInDivisions(RowSequence)} left for the rows of
+     * {@code division}: every row key from {@code k * alignment} through {@code (k + 1) * alignment - 1} of the
+     * prepared rows, for each {@code k} that {@code division} touches. Divisions may be prepared concurrently.
+     *
+     * @param division the rows of whole aligned blocks of the prepared row sequence
+     */
+    void prepareDivisionForParallelPopulation(RowSequence division);
+
+    /**
      * Test if all {@code sources} support parallel parallel population.
      *
      * @param sources The {@link WritableColumnSource sources} to test
