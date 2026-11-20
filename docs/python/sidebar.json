@@ -631,7 +631,7 @@
             "label": "Plot",
             "items": [
               {
-                "label": "How to plot real-time data",
+                "label": "Plotting overview",
                 "path": "how-to-guides/plotting/overview.md"
               },
               {
