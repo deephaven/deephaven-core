@@ -10,7 +10,7 @@ title: agg_all_by
 ## Syntax
 
 ```python syntax
-agg_all_by(agg: Aggregation, by: Sequence[str] = None) -> Table
+agg_all_by(agg: Aggregation, by: Sequence[str] | None = None) -> Table
 ```
 
 ## Parameters

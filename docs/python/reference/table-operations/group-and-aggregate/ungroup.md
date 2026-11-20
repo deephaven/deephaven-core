@@ -10,7 +10,7 @@ title: ungroup
 ## Syntax
 
 ```
-table.ungroup(cols: str | list[str]) -> Table
+table.ungroup(cols: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters

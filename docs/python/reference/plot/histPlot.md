@@ -9,11 +9,11 @@ The `plot_xy_hist` method creates XY histograms using data from Deephaven tables
 ```python syntax
 plot_xy_hist(
     series_name: str,
-    t: Table | SelectableDataSet,
-    x: str | list[int] | list[float] | list[DateTime],
-    nbins: int,
-    xmin: float = None,
-    xmax: float = None,
+    t: Table | SelectableDataSet | None = None,
+    x: str | list[int] | list[float] | list[DateTime] | None = None,
+    nbins: int | None = None,
+    xmin: float | None = None,
+    xmax: float | None = None,
 ) -> Figure
 ```
 
@@ -25,17 +25,17 @@ plot_xy_hist(
 The name (as a [String](../query-language/types/strings.md)) you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Table | SelectableDataSet">
+<Param name="t" type="Table | SelectableDataSet" optional>
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="x" type="str | list[int] | list[float] | list[DateTime]">
+<Param name="x" type="str | list[int] | list[float] | list[DateTime]" optional>
 
 The name of the column containing the discrete values. This parameter is a list only when data is not sourced from a table; otherwise, it will be an array.
 
 </Param>
-<Param name="nbins" type="int">
+<Param name="nbins" type="int" optional>
 
 The number of intervals (bins) to use in the chart.
 

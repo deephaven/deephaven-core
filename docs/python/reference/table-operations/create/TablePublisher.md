@@ -10,9 +10,9 @@ The `table_publisher` method creates a `TablePublisher`. A `TablePublisher` prod
 table_publisher(
     name: str,
     col_defs: TableDefinitionLike,
-    on_flush_callback: Callable[[TablePublisher], None] = None,
-    on_shutdown_callback: Callable[[], None] = None,
-    update_graph: UpdateGraph = None,
+    on_flush_callback: Callable[[TablePublisher], None] | None = None,
+    on_shutdown_callback: Callable[[], None] | None = None,
+    update_graph: UpdateGraph | None = None,
     chunk_size: int = 2048
 ) -> tuple[Table, TablePublisher]
 ```

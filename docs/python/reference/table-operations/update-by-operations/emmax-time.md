@@ -25,7 +25,7 @@ emmax_time(
     ts_col: str,
     decay_time: int | str,
     cols: list[str],
-    op_control: OperationControl = None,
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation
 ```
 

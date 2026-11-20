@@ -7,7 +7,7 @@ title: abs_sum_by
 ## Syntax
 
 ```python syntax
-table.abs_sum_by(by: Sequence[str] = None) -> Table
+table.abs_sum_by(by: Sequence[str] | None = None) -> Table
 ```
 
 ## Parameters

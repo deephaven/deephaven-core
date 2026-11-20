@@ -124,7 +124,7 @@ def start_jvm(
         java_home (str | None): The JAVA_HOME path to use. Defaults to None, meaning using the JAVA_HOME environment
             variable.
         extra_classpath (list[str] | None): The extra classpath to use.
-        prop_file (str): The property file to use. Defaults to None, meaning not loading any JVM properties from a file.
+        prop_file (str | None): The property file to use. Defaults to None, meaning not loading any JVM properties from a file.
         config (types.ModuleType | None): The JPY configuration module to use. Defaults to None, meaning not providing
             a JPY configuration module for the jpyutil module to load and config the JVM.
     """

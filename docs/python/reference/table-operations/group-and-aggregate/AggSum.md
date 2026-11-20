@@ -10,13 +10,13 @@ title: "sum_"
 ## Syntax
 
 ```
-sum_(cols: str | list[str]) -> Aggregation
+sum_(cols: str | list[str] | None = None) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="str | list[str]">
+<Param name="cols" type="str | list[str]" optional>
 
 The source column(s) for the calculations.
 

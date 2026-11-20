@@ -2,18 +2,18 @@
 title: head_by
 ---
 
-`head_by` returns the first `n` rows for each group.
+`head_by` returns the first `num_rows` rows for each group.
 
 ## Syntax
 
 ```
-table.head_by(n: int, by: str | list[str]) -> Table
+table.head_by(num_rows: int, by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="n" type="int">
+<Param name="num_rows" type="int">
 
 The number of rows to return for each group.
 
@@ -22,15 +22,15 @@ The number of rows to return for each group.
 
 The column(s) by which to group data.
 
-- `["X"]` will output the entire first `n` row(s) of each group in column `X`.
-- `["X", "Y"]` will output the entire first `n` row(s) of each group designated from the `X` and `Y` columns.
+- `["X"]` will output the entire first `num_rows` row(s) of each group in column `X`.
+- `["X", "Y"]` will output the entire first `num_rows` row(s) of each group designated from the `X` and `Y` columns.
 
 </Param>
 </ParamTable>
 
 ## Returns
 
-A new table containing the first `n` rows for each group.
+A new table containing the first `num_rows` rows for each group.
 
 ## Examples
 

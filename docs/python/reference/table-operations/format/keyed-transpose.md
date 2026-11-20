@@ -12,7 +12,7 @@ keyed_transpose(
     aggs: Aggregation | Sequence[Aggregation],
     row_by_cols: str | Sequence[str],
     col_by_cols: str | Sequence[str],
-    initial_groups: Table = None,
+    initial_groups: Table | None = None,
     new_column_behavior: NewColumnBehaviorType = NewColumnBehaviorType.FAIL) -> Table:
 ```
 

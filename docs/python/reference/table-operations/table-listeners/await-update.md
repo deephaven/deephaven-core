@@ -7,7 +7,7 @@ The `await_update` method instructs Deephaven to wait for updates to the Table s
 ## Syntax
 
 ```
-table.await_update(timeout: int = None) -> bool
+table.await_update(timeout: int | None = None) -> bool
 ```
 
 ## Parameters

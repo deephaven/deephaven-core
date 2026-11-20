@@ -12,9 +12,9 @@ title: partitioned_agg_by
 ```python syntax
 partitioned_agg_by(
     aggs: Sequence[Aggregation],
-    by: Sequence[str] = None,
+    by: Sequence[str] | None = None,
     preserve_empty: bool = False,
-    initial_groups: Table = None,
+    initial_groups: Table | None = None,
 ) -> PartitionedTable
 ```
 

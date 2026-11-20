@@ -12,7 +12,7 @@ def rolling_count_where_time(
     ts_col: str,
     col: str,
     filters: str | Filter | list[str] | list[Filter],
-    rev_time: int | str = 0,
+    rev_time: int | str,
     fwd_time: int | str = 0) -> UpdateByOperation:
 ```
 

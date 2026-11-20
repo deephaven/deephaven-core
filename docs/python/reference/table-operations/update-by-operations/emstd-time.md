@@ -31,7 +31,7 @@ emstd_time(
     ts_col: str,
     decay_time: str | int,
     cols: list[str],
-    op_control: OperationControl = None,
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation
 ```
 

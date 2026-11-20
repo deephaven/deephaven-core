@@ -10,17 +10,17 @@ The `write_partitioned` method writes a table to disk in Parquet format with par
 write_partitioned(
     table: Table | PartitionedTable,
     destination_dir: str,
-    table_definition: TableDefinitionLike = None,
-    col_instructions: list[ColumnInstruction] = None,
-    compression_codec_name: str = None,
-    max_dictionary_keys: int = None,
-    max_dictionary_size: int = None,
-    target_page_size: int = None,
-    base_name: str = None,
-    generate_metadata_files: bool = None,
-    index_columns: Sequence[Sequence[str]] = None,
-    row_group_info: RowGroupInfo = None,
-    special_instructions: s3.S3Instructions = None,
+    table_definition: TableDefinitionLike | None = None,
+    col_instructions: list[ColumnInstruction] | None = None,
+    compression_codec_name: str | None = None,
+    max_dictionary_keys: int | None = None,
+    max_dictionary_size: int | None = None,
+    target_page_size: int | None = None,
+    base_name: str | None = None,
+    generate_metadata_files: bool | None = None,
+    index_columns: Sequence[Sequence[str]] | None = None,
+    row_group_info: RowGroupInfo | None = None,
+    special_instructions: s3.S3Instructions | None = None,
 )
 ```
 

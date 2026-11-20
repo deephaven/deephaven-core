@@ -10,7 +10,7 @@ The output table contains all of the rows and columns of the left table plus add
 
 ```python syntax
 left.natural_join(
-    right: Table,
+    table: Table,
     on: str | Sequence[str],
     joins: str | Sequence[str] | None = None,
     type: NaturalJoinType = NaturalJoinType.ERROR_ON_DUPLICATE

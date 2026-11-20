@@ -7,7 +7,7 @@ title: to_table
 ## Syntax
 
 ```python syntax
-to_table(pa_table: pyarrow.Table, cols: list[str] = None) -> Table
+to_table(pa_table: pyarrow.Table, cols: list[str] | None = None) -> Table
 ```
 
 ## Parameters

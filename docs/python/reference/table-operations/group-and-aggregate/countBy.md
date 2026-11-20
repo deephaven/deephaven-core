@@ -7,7 +7,7 @@ title: count_by
 ## Syntax
 
 ```
-table.count_by(col: str, by: str | list[str]) -> Table
+table.count_by(col: str, by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters

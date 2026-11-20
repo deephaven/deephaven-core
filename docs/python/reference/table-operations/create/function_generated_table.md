@@ -17,13 +17,13 @@ Every refresh in which the `table_generator` produces a table replaces the resul
 function_generated_table(
   table_generator: Callable[..., Table | None],
   source_tables: Table | list[Table] | None = None,
-  refresh_interval_ms: int = None,
-  exec_ctx: ExecutionContext = None,
+  refresh_interval_ms: int | None = None,
+  exec_ctx: ExecutionContext | None = None,
   args: tuple = (),
   kwargs: dict = {},
   copy_data: bool = True,
   blink_table: bool = False,
-  table_definition: TableDefinitionLike = None,
+  table_definition: TableDefinitionLike | None = None,
 ) -> Table
 ```
 

@@ -9,7 +9,7 @@ The `read_csv` method will read a CSV file into an in-memory table.
 ```python syntax
 read_csv(
     path: str,
-    header: dict[str, dht.DType] = None,
+    header: dict[str, dht.DType] | None = None,
     headless: bool = False,
     header_row: int = 0
     skip_rows: int = 0,

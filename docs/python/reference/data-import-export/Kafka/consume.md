@@ -10,11 +10,11 @@ title: consume
 consume(
   kafka_config: dict,
   topic: str,
-  partitions: Sequence[int],
-  offsets: dict[int, int],
-  key_spec: KeyValueSpec,
-  value_spec: KeyValueSpec,
-  table_type: TableType,
+  partitions: Sequence[int] | None = None,
+  offsets: dict[int, int] | None = None,
+  key_spec: KeyValueSpec | None = None,
+  value_spec: KeyValueSpec | None = None,
+  table_type: TableType | None = None,
 ) -> Table
 ```
 

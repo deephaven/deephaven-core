@@ -12,7 +12,7 @@ Sample variance is calculated using the [Bessel correction](https://en.wikipedia
 ## Syntax
 
 ```
-table.var_by(by: str | list[str]) -> Table
+table.var_by(by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters

@@ -7,7 +7,7 @@ title: delta
 ## Syntax
 
 ```
-delta(cols: list[str], delta_control: DeltaControl = None) -> UpdateByOperation
+delta(cols: str | list[str], delta_control: DeltaControl = DeltaControl.NULL_DOMINATES) -> UpdateByOperation
 ```
 
 ## Parameters
@@ -18,9 +18,9 @@ delta(cols: list[str], delta_control: DeltaControl = None) -> UpdateByOperation
 The string names of columns to be operated on. These can include expressions to rename the output, e.g., `"new_col = col"`. When this parameter is left empty, [`update_by`](./updateBy.md) will perform the operation on all applicable columns.
 
 </Param>
-<Param name="delta_control" type="DeltaControl">
+<Param name="delta_control" type="DeltaControl" optional>
 
-Defines how special cases should behave. See [`DeltaControl`](./DeltaControl.md).
+Defines how special cases should behave. See [`DeltaControl`](./DeltaControl.md). Defaults to `DeltaControl.NULL_DOMINATES`.
 
 </Param>
 </ParamTable>

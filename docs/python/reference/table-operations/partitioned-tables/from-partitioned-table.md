@@ -13,10 +13,10 @@ The `from_partitioned_table` method creates a new `PartitionedTable` from an und
 PartitionedTable.from_partitioned_table(
   table: Table,
   key_cols: str | list[str] | None = None,
-  unique_keys: bool = None,
-  constituent_column: str = None,
-  constituent_table_columns: list[Column] = None,
-  constituent_changes_permitted: bool = None,
+  unique_keys: bool | None = None,
+  constituent_column: str | None = None,
+  constituent_table_columns: list[Column] | None = None,
+  constituent_changes_permitted: bool | None = None,
 ) -> PartitionedTable
 ```
 

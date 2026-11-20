@@ -10,11 +10,11 @@ The `consume_to_partitioned_table` method reads a Kafka stream into an in-memory
 consume_to_partitioned_table(
   kafka_config: dict,
   topic: str,
-  partitions: list[int],
-  offsets: dict[int, int],
-  key_spec: KeyValueSpec,
-  value_spec: KeyValueSpec,
-  table_type: TableType,
+  partitions: list[int] | None = None,
+  offsets: dict[int, int] | None = None,
+  key_spec: KeyValueSpec | None = None,
+  value_spec: KeyValueSpec | None = None,
+  table_type: TableType | None = None,
 ) -> Table
 ```
 

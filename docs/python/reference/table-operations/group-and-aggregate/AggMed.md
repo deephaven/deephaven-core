@@ -7,13 +7,13 @@ title: median
 ## Syntax
 
 ```
-median(cols: str | list[str], average_evenly_divided = True) -> Aggregation
+median(cols: str | list[str] | None = None, average_evenly_divided = True) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="str | list[str]">
+<Param name="cols" type="str | list[str]" optional>
 
 The source column(s) for the calculations.
 

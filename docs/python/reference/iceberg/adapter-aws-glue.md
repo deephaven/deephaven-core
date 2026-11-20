@@ -10,7 +10,7 @@ The `adapter_aws_glue` method creates a catalog adapter using an [AWS Glue](http
 adapter_aws_glue(
     catalog_uri: str,
     warehouse_location: str,
-    name: str = None
+    name: str | None = None
 )
 ```
 

@@ -9,9 +9,9 @@ The `plot_pie` method creates pie charts using data from Deephaven tables.
 ```python syntax
 plot_pie(
     series_name: str,
-    t: Table | SelectableDataSet,
-    category: str | list[int] | list[float],
-    y: str | list[int] | list[float] | list[DateTime],
+    t: Table | SelectableDataSet | None = None,
+    category: str | list[int] | list[float] | None = None,
+    y: str | list[int] | list[float] | list[DateTime] | None = None,
 ) -> Figure
 ```
 
@@ -23,17 +23,17 @@ plot_pie(
 The name (as a [String](../query-language/types/strings.md)) you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Table | SelectableDataSet">
+<Param name="t" type="Table | SelectableDataSet" optional>
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="category" type="str | list[str] | list[int] | list[float]">
+<Param name="category" type="str | list[str] | list[int] | list[float]" optional>
 
 The name of the column containing category values.
 
 </Param>
-<Param name="y" type="str | list[int] | list[float] | list[DateTime]">
+<Param name="y" type="str | list[int] | list[float] | list[DateTime]" optional>
 
 The name of the column containing discrete values.
 

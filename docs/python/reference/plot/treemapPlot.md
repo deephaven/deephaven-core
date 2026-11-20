@@ -12,10 +12,10 @@ plot_treemap(
     t: Table | SelectableDataSet,
     id: str,
     parent: str,
-    label: str = None,
-    value: str = None,
-    hover_text: str = None,
-    color: str = None,
+    label: str | None = None,
+    value: str | None = None,
+    hover_text: str | None = None,
+    color: str | None = None,
 ) -> tree map
 ```
 

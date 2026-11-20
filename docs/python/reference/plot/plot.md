@@ -9,17 +9,17 @@ The `plot_xy` method creates XY series plots using data from tables.
 ```python syntax
 plot_xy(
     series_name: str,
-    t: Table | SelectableDataSet,
-    x: str | list[int] | list[float] | list[DateTime],
-    y: str | list[int] | list[float] | list[DateTime],
+    t: Table | SelectableDataSet | None = None,
+    x: str | list[int] | list[float] | list[DateTime] | None = None,
+    y: str | list[int] | list[float] | list[DateTime] | None = None,
     x_low: str | list[int] | list[float] | list[DateTime] | None = None,
     x_high: str | list[int] | list[float] | list[DateTime] | None = None,
     y_low: str | list[int] | list[float] | list[DateTime] | None = None,
     y_high: str | list[int] | list[float] | list[DateTime] | None = None,
-    function: Callable = None,
-    by: list[str] = None,
-    x_time_axis: bool = None,
-    y_time_axis: bool = None,
+    function: Callable | None = None,
+    by: list[str] | None = None,
+    x_time_axis: bool | None = None,
+    y_time_axis: bool | None = None,
 ) -> Figure
 ```
 
@@ -31,17 +31,17 @@ plot_xy(
 The name you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Table | SelectableDataSet">
+<Param name="t" type="Table | SelectableDataSet" optional>
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="x" type="str | list[int] | list[float] | list[DateTime]">
+<Param name="x" type="str | list[int] | list[float] | list[DateTime]" optional>
 
 The name of the column of data to be used for the X value.
 
 </Param>
-<Param name="y" type="str | list[int] | list[float] | list[DateTime]">
+<Param name="y" type="str | list[int] | list[float] | list[DateTime]" optional>
 
 The name of the column of data to be used for the Y value.
 

@@ -7,7 +7,7 @@ title: last_by
 ## Syntax
 
 ```
-table.last_by(by: str | list[str]) -> Table
+table.last_by(by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters

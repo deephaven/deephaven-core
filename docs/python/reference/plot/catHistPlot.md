@@ -9,8 +9,8 @@ The `plot_cat_hist` method creates category histograms using data from Deephaven
 ```python syntax
 plot_cat_hist(
     series_name: str,
-    t: Table | SelectableDataSet,
-    category: str | list[str] | list[int] | list[float]
+    t: Table | SelectableDataSet | None = None,
+    category: str | list[str] | list[int] | list[float] | None = None
 ) -> Figure
 ```
 
@@ -22,12 +22,12 @@ plot_cat_hist(
 The name (as a [String](../query-language/types/strings.md)) you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Table | SelectableDataSet">
+<Param name="t" type="Table | SelectableDataSet" optional>
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="category" type="str | list[str] | list[int] | list[float]">
+<Param name="category" type="str | list[str] | list[int] | list[float]" optional>
 
 The list containing the discrete values.
 

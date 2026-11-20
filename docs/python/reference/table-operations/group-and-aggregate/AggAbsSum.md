@@ -7,13 +7,13 @@ title: abs_sum
 ## Syntax
 
 ```
-abs_sum(cols: list[str]) -> Aggregation
+abs_sum(cols: list[str] | None = None) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="list[str]">
+<Param name="cols" type="list[str]" optional>
 
 The source column(s) for the calculations.
 

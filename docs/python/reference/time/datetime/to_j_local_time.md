@@ -14,7 +14,7 @@ title: to_j_local_time
 ## Syntax
 
 ```python syntax
-to_j_local_time(dt: LocalTime | int | str | datetime.time.datetime.datetime | numpy.datetime64 | pandas.Timestamp | None) -> LocalTime
+to_j_local_time(dt: LocalTime | int | str | datetime.time | datetime.datetime | numpy.datetime64 | pandas.Timestamp | None) -> LocalTime
 ```
 
 ## Parameters

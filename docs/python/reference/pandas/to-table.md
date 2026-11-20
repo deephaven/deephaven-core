@@ -9,7 +9,7 @@ The `to_table` method creates a new table from a `pandas.DataFrame`.
 ```python syntax
 to_table(
     df: pandas.DataFrame,
-    cols: list[str] = None,
+    cols: list[str] | None = None,
     infer_objects: bool = True
 ) -> Table
 ```

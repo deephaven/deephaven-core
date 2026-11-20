@@ -7,7 +7,7 @@ title: median_by
 ## Syntax
 
 ```
-table.median_by(by: str | list[str]) -> Table
+table.median_by(by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters

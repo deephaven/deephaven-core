@@ -11,7 +11,7 @@ windowing unit. Ticks are row counts. The rolling count can be calculated using 
 rolling_count_where_tick(
     col: str,
     filters: str | Filter | list[str] | list[Filter],
-    rev_ticks: int = 0,
+    rev_ticks: int,
     fwd_ticks: int = 0) -> UpdateByOperation:
 ```
 

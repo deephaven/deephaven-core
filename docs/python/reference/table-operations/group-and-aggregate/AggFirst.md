@@ -7,13 +7,13 @@ title: first
 ## Syntax
 
 ```
-first(cols: str | list[str]) -> Aggregation
+first(cols: str | list[str] | None = None) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="str | list[str]">
+<Param name="cols" type="str | list[str]" optional>
 
 The source column(s) for the calculations.
 

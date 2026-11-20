@@ -7,7 +7,7 @@ title: tail_by
 ## Syntax
 
 ```
-table.tail_by(num_rows: int, by: str | list[str]) -> Table
+table.tail_by(num_rows: int, by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters

@@ -10,7 +10,7 @@ title: sum_by
 ## Syntax
 
 ```
-table.sum_by(by: str | list[str]) -> Table
+table.sum_by(by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters

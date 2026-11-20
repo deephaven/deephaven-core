@@ -8,11 +8,11 @@ The `adapter` method creates an Iceberg catalog adapter from configuration prope
 
 ```python syntax
 adapter(
-    name: str = None,
-    properties: dict[str, str] = None,
-    hadoop_config: dict[str, str] = None,
+    name: str | None = None,
+    properties: dict[str, str] | None = None,
+    hadoop_config: dict[str, str] | None = None,
     s3_instructions: S3Instructions | None = None,
-    enable_property_injection: bool = True,
+    enable_property_injection: bool | None = True,
 )
 ```
 
@@ -63,7 +63,7 @@ Hadoop configuration properties for the catalog.
 The S3 instructions for configuring the Deephaven managed AWS clients. If not provided, the catalog adapter will internally use the Iceberg-managed AWS clients configured using the provided properties.
 
 </Param>
-<Param name="enable_property_injection" type="bool" Optional>
+<Param name="enable_property_injection" type="bool | None" Optional>
 
 Whether to enable Deephaven's automatic injection of additional properties that work around upstream issues and supply defaults needed for Deephaven's Iceberg usage. The injection is strictly additive; any keys already present in the `properties` argument are unchanged. If set to `False`, the property map is forwarded exactly as supplied with no automatic additions. The default is `True`.
 

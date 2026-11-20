@@ -12,14 +12,14 @@ title: unique
 
 ```python syntax
 unique(
-    cols: str | list[str],
+    cols: str | list[str] | None = None,
     include_nulls: bool = False,
     non_unique_sentinel: np.number | str | bool | None = None
 ) -> Aggregation
 ```
 
 <ParamTable>
-<Param name="cols" type="str | list[str]">
+<Param name="cols" type="str | list[str]" optional>
 
 The source column(s) to compute uniqueness for.
 

@@ -9,12 +9,12 @@ The `plot_cat` method uses data from Deephaven tables to create a plot with disc
 ```python syntax
 plot_cat(
     series_name: str,
-    t: Table | SelectableDataSet,
-    category: str | list[str] | list[int] | list[float],
-    y: str | list[int] | list[float] | list[DateTime],
+    t: Table | SelectableDataSet | None = None,
+    category: str | list[str] | list[int] | list[float] | None = None,
+    y: str | list[int] | list[float] | list[DateTime] | None = None,
     y_low: str | list[int] | list[float] | list[DateTime] | None = None,
     y_high: str | list[int] | list[float] | list[DateTime] | None = None,
-    by: list[str] = None,
+    by: list[str] | None = None,
 ) -> Figure
 ```
 
@@ -26,18 +26,18 @@ plot_cat(
 The name (as a [String](../query-language/types/strings.md)) you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Table | SelectableDataSet">
+<Param name="t" type="Table | SelectableDataSet" optional>
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="category" type="str | list[str] | list[int] | list[float]">
+<Param name="category" type="str | list[str] | list[int] | list[float]" optional>
 
 The names of the columns to be used for the categories.
 
 </Param>
 
-<Param name="y" type="str | list[int] | list[float] | list[DateTime]">
+<Param name="y" type="str | list[int] | list[float] | list[DateTime]" optional>
 
 The name of the column containing the discrete values.
 

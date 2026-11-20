@@ -11,39 +11,39 @@ The `layout_hints` method creates a new table with information about how the UI 
 
 ```
 layout_hints(
-    front: str | list[str],
-    back: str | list[str],
-    freeze: str | list[str],
-    hide: str | list[str],
-    column_groups: list[Dict],
-    search_display_mode: SearchDisplayMode
+    front: str | list[str] | None = None,
+    back: str | list[str] | None = None,
+    freeze: str | list[str] | None = None,
+    hide: str | list[str] | None = None,
+    column_groups: list[dict] | None = None,
+    search_display_mode: SearchDisplayMode | None = None
 )
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="front" type="str | list[str]">
+<Param name="front" type="str | list[str]" optional>
 
 The columns to show at the front.
 
 </Param>
-<Param name="back" type="str | list[str]">
+<Param name="back" type="str | list[str]" optional>
 
 The columns to show at the back.
 
 </Param>
-<Param name="freeze" type="str | list[str]">
+<Param name="freeze" type="str | list[str]" optional>
 
 The columns to freeze.
 
 </Param>
-<Param name="hide" type="str | list[str]">
+<Param name="hide" type="str | list[str]" optional>
 
 The columns to hide.
 
 </Param>
-<Param name="column_groups" type="list[Dict]">
+<Param name="column_groups" type="list[dict]" optional>
 
 A list of dicts specifying which columns should be grouped in the UI. The dicts can specify the following:
 
@@ -52,7 +52,7 @@ A list of dicts specifying which columns should be grouped in the UI. The dicts 
 - `color (str | None)`: The hex color string or Deephaven color name.
 
 </Param>
-<Param name="search_display_mode" type="SearchDisplayMode">
+<Param name="search_display_mode" type="SearchDisplayMode" optional>
 
 Sets the search bar to either be explicitly accessible or inaccessible, or to use the system default.
 

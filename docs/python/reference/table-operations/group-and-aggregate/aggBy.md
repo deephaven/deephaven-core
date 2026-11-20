@@ -14,7 +14,7 @@ agg_by(
     aggs: Aggregation | Sequence[Aggregation],
     by: str | list[str] | None = None,
     preserve_empty: bool = False,
-    initial_groups: Table = None,
+    initial_groups: Table | None = None,
     ) -> Table
 ```
 

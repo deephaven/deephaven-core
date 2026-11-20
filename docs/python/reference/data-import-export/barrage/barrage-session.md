@@ -15,8 +15,8 @@ barrage_session(
   auth_type: str = 'Anonymous',
   auth_token: str = '',
   use_tls: bool = False,
-  tls_root_certs: bytes = None,
-  extra_headers: dict[str, str] = None,
+  tls_root_certs: bytes | None = None,
+  extra_headers: dict[str, str] | None = None,
   accept_compression: str | Sequence[str] | None = None
 ) -> BarrageSession
 ```

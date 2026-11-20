@@ -263,7 +263,7 @@ def multi_join(
     Args:
         input (Table | Sequence[Table] | MultiJoinInput | Sequence[MultiJoinInput]): the input objects specifying the
             tables and columns to include in the join.
-        on (str | Sequence[str]): the column(s) to match, can be a common name or an equality expression
+        on (str | Sequence[str] | None): the column(s) to match, can be a common name or an equality expression
             that matches every input table, i.e. "col_a = col_b" to rename output column names. Note: When
             MultiJoinInput objects are supplied, this parameter must be omitted.
 

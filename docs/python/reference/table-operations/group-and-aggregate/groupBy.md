@@ -7,7 +7,7 @@ title: group_by
 ## Syntax
 
 ```
-table.group_by(by: str | list[str]) -> Table
+table.group_by(by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters

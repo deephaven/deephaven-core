@@ -10,11 +10,11 @@ The `adapter_s3_rest` method creates a catalog adapter using an [S3](https://aws
 adapter_s3_rest(
     catalog_uri: str,
     warehouse_location: str,
-    name: str = None,
-    region_name: str = None,
-    access_key_id: str = None,
-    secret_access_key: str = None,
-    end_point_override: str = None
+    name: str | None = None,
+    region_name: str | None = None,
+    access_key_id: str | None = None,
+    secret_access_key: str | None = None,
+    end_point_override: str | None = None
 ) -> IcebergCatalogAdapter
 ```
 

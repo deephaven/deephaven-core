@@ -7,7 +7,7 @@ title: first_by
 ## Syntax
 
 ```
-table.first_by(by: str | list[str]) -> Table
+table.first_by(by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters

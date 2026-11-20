@@ -17,7 +17,7 @@ full_outer_join(
     r_table: Table,
     on: str | Sequence[str] | None = None,
     joins: str | Sequence[str] | None = None,
-    reserve_bits: int = None,
+    reserve_bits: int | None = None,
 ) -> Table
 ```
 

@@ -7,7 +7,7 @@ title: max_by
 ## Syntax
 
 ```
-table.max_by(by: str | list[str]) -> Table
+table.max_by(by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters

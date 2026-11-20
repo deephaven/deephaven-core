@@ -12,7 +12,7 @@ Sample standard deviation is calculated as the square root of the [Bessel-correc
 ## Syntax
 
 ```
-table.std_by(by: str | list[str]) -> Table
+table.std_by(by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters

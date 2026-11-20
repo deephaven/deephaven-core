@@ -12,10 +12,10 @@ The `IcebergReadInstructions` class specifies the instructions for reading Icebe
 ```python syntax
 IcebergReadInstructions(
     table_definition: dict[str, DType] | list[Column] | None = None,
-    data_instructions: S3Instructions = None,
-    column_renames: dict[str, str] = None,
-    update_mode: IcebergUpdateMode = None,
-    snapshot_id: int = None,
+    data_instructions: S3Instructions | None = None,
+    column_renames: dict[str, str] | None = None,
+    update_mode: IcebergUpdateMode | None = None,
+    snapshot_id: int | None = None,
     ignore_resolving_errors: bool = False,
 )
 ```
