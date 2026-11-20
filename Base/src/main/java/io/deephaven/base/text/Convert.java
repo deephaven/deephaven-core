@@ -210,7 +210,7 @@ public class Convert {
         int millis = (int) (t % 86400000L);
         if (millis < 0) {
             days--;
-            millis += 86400000L;
+            millis += 86400000;
         }
         // put day 0 at 0000-01-01 (ignoring calendar reform)
         days += 719527L;

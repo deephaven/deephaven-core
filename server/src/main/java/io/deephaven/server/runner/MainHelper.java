@@ -135,7 +135,7 @@ public class MainHelper {
 
         // Since our dagger injection happens later, we need to provider a static way to get the LogBuffer (for example,
         // logback configuration may reference LogBufferAppender).
-        LogBufferGlobal.setInstance(new LogBufferInterceptor(Integer.getInteger("logBuffer.history", 1024)));
+        LogBufferGlobal.setInstance(new LogBufferInterceptor(Integer.getInteger("logBuffer.history", 2047)));
 
         final Logger log = LoggerFactory.getLogger(mainClass);
 

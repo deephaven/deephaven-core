@@ -15,14 +15,14 @@ public class ColumnStatisticsTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(table("staticTable"))
                 .then(table -> Promise.all(
-                        table.getColumnStatistics(table.findColumn("A"))
+                        table.getColumnStatistics(Column.ColumnOrName.of(table.findColumn("A")))
                                 .then(stats -> {
                                     JsMap<String, Double> uniqueValues = stats.getUniqueValues();
                                     assertEquals(0, uniqueValues.size);
 
                                     return null;
                                 }),
-                        table.getColumnStatistics(table.findColumn("B"))
+                        table.getColumnStatistics(Column.ColumnOrName.of(table.findColumn("B")))
                                 .then(stats -> {
                                     JsMap<String, Double> uniqueValues = stats.getUniqueValues();
                                     assertEquals(2, uniqueValues.size);
@@ -38,7 +38,7 @@ public class ColumnStatisticsTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(table("staticTable"))
                 .then(table -> Promise.all(
-                        table.getColumnStatistics(table.findColumn("A"))
+                        table.getColumnStatistics(Column.ColumnOrName.of(table.findColumn("A")))
                                 .then(stats -> {
                                     JsMap<String, Object> values = stats.getStatisticsMap();
                                     assertEquals(LongWrapper.of(3),
@@ -66,7 +66,7 @@ public class ColumnStatisticsTestGwt extends AbstractAsyncGwtTestCase {
 
                                     return null;
                                 }),
-                        table.getColumnStatistics(table.findColumn("B"))
+                        table.getColumnStatistics(Column.ColumnOrName.of(table.findColumn("B")))
                                 .then(stats -> {
                                     JsMap<String, Object> values = stats.getStatisticsMap();
                                     assertEquals(LongWrapper.of(3),
@@ -88,6 +88,38 @@ public class ColumnStatisticsTestGwt extends AbstractAsyncGwtTestCase {
                                     assertEquals(null, values.get(JsColumnStatistics.StatType.SUM_SQRD.name()));
                                     return null;
                                 })))
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testStatsOnResolvedTable() {
+        connect(tables)
+                .then(table("staticTable"))
+                .then(table -> {
+                    WorkerConnection connection = table.getConnection();
+                    return table.operations().view(arr("A", "B")).resolve()
+                            // By name: a resolved table has columns, but callers need not look one up
+                            .then(resolved -> resolved.getColumnStatistics(Column.ColumnOrName.of("A"))
+                                    .then(stats -> {
+                                        JsMap<String, Object> values = stats.getStatisticsMap();
+                                        assertEquals(LongWrapper.of(3),
+                                                values.get(JsColumnStatistics.StatType.COUNT.getDisplayName()));
+                                        assertEquals(LongWrapper.of(1),
+                                                values.get(JsColumnStatistics.StatType.SUM.getDisplayName()));
+                                        return resolved.getColumnStatistics(Column.ColumnOrName.of("B"));
+                                    })
+                                    .then(stats -> {
+                                        assertEquals(2, stats.getUniqueValues().size);
+                                        return delay(200);
+                                    })
+                                    .then(ignore -> {
+                                        // The statistics tables were closed once read; only the view is held
+                                        assertEquals("batch states held after reading statistics, the view included", 1,
+                                                batchStates(connection));
+                                        resolved.close();
+                                        table.close();
+                                        return Promise.resolve((Object) null);
+                                    }));
+                })
                 .then(this::finish).catch_(this::report);
     }
 

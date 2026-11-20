@@ -1730,8 +1730,8 @@ public final class EqualsConsistentObjectSegmentedSortedMultiset extends Abstrac
         return expectedSize;
     }
 
-    private int computeTotalSize() {
-        int expectedSize = 0;
+    private long computeTotalSize() {
+        long expectedSize = 0;
         for (int ii = 0; ii < leafCount; ++ii) {
             for (int jj = 0; jj < leafSizes[ii]; ++jj) {
                 expectedSize += leafCounts[ii][jj];

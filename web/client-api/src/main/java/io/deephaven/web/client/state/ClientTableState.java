@@ -3,9 +3,11 @@
 //
 package io.deephaven.web.client.state;
 
+import elemental2.core.JsArray;
 import elemental2.core.JsMap;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
@@ -23,6 +25,7 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.*;
+import io.grpc.Context;
 import jsinterop.base.Js;
 
 import java.nio.ByteBuffer;
@@ -96,6 +99,8 @@ public final class ClientTableState extends TableConfig {
     private final WorkerConnection connection;
     private final JsTableFetch fetch;
     private final String fetchSummary;
+    /** The context of the latest {@link #refetch()}; canceling it ends that fetch's call. */
+    private Context.CancellableContext fetchContext;
 
     // ===================================================================================
     // These fields describe mutable value state of a ClientTableState
@@ -266,6 +271,11 @@ public final class ClientTableState extends TableConfig {
     public void setResolution(ResolutionState resolution) {
         assert resolution != ResolutionState.FAILED : "Failures must provide a reason!";
         setResolution(resolution, null);
+    }
+
+    /** Why this state failed, or {@code null} if it has not. */
+    public String getFailure() {
+        return resolution == ResolutionState.FAILED ? failMsg : null;
     }
 
     public void setResolution(ResolutionState resolution, String failMsg) {
@@ -500,6 +510,30 @@ public final class ClientTableState extends TableConfig {
         onReleased.add(release);
     }
 
+    /**
+     * As {@link #onRunning(JsConsumer, JsConsumer, JsRunnable)} for a caller that only needs to know if this state
+     * fails or is released before it is running: once running, neither is called.
+     */
+    public void onFailedOrReleased(JsConsumer<String> failed, JsRunnable release) {
+        if (resolution == ResolutionState.RELEASED) {
+            release.run();
+            return;
+        } else if (resolution == ResolutionState.FAILED) {
+            failed.apply(failMsg);
+            return;
+        } else if (resolution == ResolutionState.RUNNING) {
+            return;
+        }
+        if (onFailed == null) {
+            onFailed = new ArrayList<>();
+        }
+        onFailed.add(failed);
+        if (onReleased == null) {
+            onReleased = new ArrayList<>();
+        }
+        onReleased.add(release);
+    }
+
     public void onFailed(JsConsumer<String> callback, JsRunnable other) {
         if (resolution == ResolutionState.RELEASED || resolution == ResolutionState.RUNNING) {
             other.run();
@@ -634,6 +668,15 @@ public final class ClientTableState extends TableConfig {
         return c;
     }
 
+    public JsArray<Column> mapToColumns(ReadonlyArray<Column.ColumnOrName> columns) {
+        return columns.map((c, i) -> {
+            if (c.isString()) {
+                return findColumn(c.asString());
+            }
+            return c.asColumn();
+        });
+    }
+
     /**
      * @return true if there are no tables bound to this state. If a table that had a subscription for this state was
      *         orphaned by a pending request, we want to clear the subscription immediately so it becomes inert
@@ -746,6 +789,25 @@ public final class ClientTableState extends TableConfig {
             }
         }
         for (HasLifecycle item : JsItr.iterate(items.values())) {
+            callback.apply(item);
+        }
+    }
+
+    /**
+     * Visits each bound table and each retainer that re-establishes its own server-side resources once this state has
+     * been revived, such as a subscription that is not owned by a {@link JsTable}.
+     */
+    public void forRevivables(JsConsumer<Revivable> callback) {
+        JsSet<Revivable> items = new JsSet<>();
+        for (JsTable o : JsItr.iterate(active.keys())) {
+            items.add(o);
+        }
+        for (Object o : JsItr.iterate(retainers.values())) {
+            if (o instanceof Revivable) {
+                items.add((Revivable) o);
+            }
+        }
+        for (Revivable item : JsItr.iterate(items.values())) {
             callback.apply(item);
         }
     }
@@ -890,8 +952,17 @@ public final class ClientTableState extends TableConfig {
             }
             return Promise.resolve(this);
         }
-        final Promise<ExportedTableCreationResponse> promise =
-                Callbacks.grpcUnaryPromise(c -> fetch.fetch(c, this));
+        // Rooted, not the current context: a fetch started inside another fetcher is not canceled with it
+        Context.CancellableContext context = Context.ROOT.withCancellation();
+        fetchContext = context;
+        final Promise<ExportedTableCreationResponse> promise = Callbacks.grpcUnaryPromise(c -> {
+            Context previous = context.attach();
+            try {
+                fetch.fetch(c, this);
+            } finally {
+                context.detach(previous);
+            }
+        });
         // noinspection unchecked
         return promise.then(def -> {
             if (resolution == ResolutionState.RELEASED) {
@@ -903,6 +974,13 @@ public final class ClientTableState extends TableConfig {
             applyTableCreationResponse(def);
             return Promise.resolve(this);
         });
+    }
+
+    /** Ends the calls of the latest {@link #refetch()}, or keeps them from being made. */
+    public void cancelFetch() {
+        if (fetchContext != null) {
+            fetchContext.cancel(null);
+        }
     }
 
     public void applyTableCreationResponse(ExportedTableCreationResponse def) {

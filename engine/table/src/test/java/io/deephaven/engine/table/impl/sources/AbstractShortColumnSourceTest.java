@@ -247,7 +247,7 @@ public abstract class AbstractShortColumnSourceTest {
                 source.fillChunk(fillContext, dest, nextOk);
             }
             checkRangeResults(expectations, offset, nextOk, dest);
-            offset += nextOk.size();
+            offset += nextOk.intSize();
         }
     }
 
@@ -273,7 +273,7 @@ public abstract class AbstractShortColumnSourceTest {
                 assertTrue(DefaultGetContext.isMyResettableChunk(getContext, result));
             }
             // endregion samecheck
-            offset += nextOk.size();
+            offset += nextOk.intSize();
         }
     }
 

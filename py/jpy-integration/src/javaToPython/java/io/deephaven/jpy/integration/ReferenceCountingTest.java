@@ -250,10 +250,12 @@ public class ReferenceCountingTest extends PythonTest {
     }
 
     @Test
-    public void smallStringIsImmportal() {
-        // https://peps.python.org/pep-0683/ introduced immortal objects. "small" strings may become immortal.
-        final PyObject pyObject = PyObject.executeCode("'small'", PyInputMode.EXPRESSION);
-        ref.check(-1, pyObject);
+    public void singleCharacterStringIsImmortal() {
+        // https://peps.python.org/pep-0683/ introduced immortal objects. Single-character strings are statically
+        // allocated and immortal on every Python version with PEP 683 (3.12+). Longer "small" strings are not: they
+        // were immortal on 3.12 (all interned strings were), but are ordinary reference-counted objects on 3.14.
+        final PyObject pyObject = PyObject.executeCode("'a'", PyInputMode.EXPRESSION);
+        ref.checkImmortal(pyObject);
     }
 
     @Test

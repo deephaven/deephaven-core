@@ -28,13 +28,7 @@ The file or directory to examine.
 </Param>
 <Param name="readInstructions" type="ParquetInstructions">
 
-Optional instructions for customizations while reading. Valid values are:
-
-- `ParquetTools.LZ4_RAW`: Compression codec loosely based on the [LZ4 compression algorithm](https://github.com/lz4/lz4), but with an additional undocumented framing scheme. The framing is part of the original Hadoop compression library and was historically copied first in parquet-mr, then emulated with mixed results by parquet-cpp.
-- `ParquetTools.LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
-- `ParquetTools.GZIP`: Compression codec based on the GZIP format (not the closely-related "zlib" or "deflate" formats) defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
-- `ParquetTools.ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
-- `ParquetTools.LEGACY`: Load any binary fields as strings. Helpful to load files written in older versions of Parquet that lacked a distinction between binary and string.
+Optional instructions for customizations while reading. For example, [`ParquetTools.LEGACY`](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#LEGACY) loads any binary fields as strings, which helps with files written by older versions of Parquet that lacked a distinction between binary and string. You do not need to pass a compression codec: `readTable` detects the codec from the file. For other options, see [Parquet instructions](../../../how-to-guides/data-import-export/parquet-instructions.md).
 
 </Param>
 </ParamTable>
@@ -79,7 +73,7 @@ source = newTable(
 
 ParquetTools.writeTable(source, "/data/output_GZIP.parquet", ParquetTools.GZIP)
 
-source = ParquetTools.readTable("/data/output_GZIP.parquet", ParquetTools.GZIP)
+source = ParquetTools.readTable("/data/output_GZIP.parquet")
 ```
 
 ### Partitioned datasets
@@ -90,7 +84,7 @@ source = ParquetTools.readTable("/data/output_GZIP.parquet", ParquetTools.GZIP)
 - `_metadata`: File containing (1) complete relative pathnames to individual data files, and (2) column statistics, such as min, max, etc., for the individual data files.
 
 > [!WARNING]
-> For a directory of Parquet files, all sub-directories are also searched. Only files with a `.parquet` extension or `_common_metadata` and `_metadata` files should be located in these directories. All files ending with `.parquet` need the same schema.
+> For a directory of Parquet files, all subdirectories are also searched. Files whose names do not end in `.parquet` are ignored, except for the `_metadata` and `_common_metadata` files described above. All files ending with `.parquet` need the same schema.
 
 > [!NOTE]
 > The following examples use data in [Deephaven's example repository](https://github.com/deephaven/examples). Follow the instructions in [`Launch Deephaven from pre-built images`](../../../getting-started/docker-install.md) to download and manage the example data.

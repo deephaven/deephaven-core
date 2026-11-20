@@ -374,7 +374,7 @@ public class TestEqualsConsistentObjectSegmentedSortedMultiset extends Refreshin
     }
 
     private void verifyScalar(EqualsConsistentObjectSegmentedSortedMultiset ssm, long[] refCounts, SsaTestHelpers.TestDescriptor desc) {
-        int total = 0;
+        long total = 0;
         int distinct = 0;
         for (int offset = 0; offset < refCounts.length; ++offset) {
             total += refCounts[offset];
@@ -382,7 +382,7 @@ public class TestEqualsConsistentObjectSegmentedSortedMultiset extends Refreshin
                 distinct++;
             }
         }
-        final Object[] expanded = new Object[total];
+        final Object[] expanded = new Object[Math.toIntExact(total)];
         int position = 0;
         for (int offset = 0; offset < refCounts.length; ++offset) {
             for (long kk = 0; kk < refCounts[offset]; ++kk) {

@@ -208,7 +208,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl implements
                 throw new IllegalArgumentException("Formula '" + formula + "' uses i, ii, k, or column array " +
                         "variables, and is not safe to refresh. Note that some usages, such as on an append-only " +
                         "table are safe. To allow unsafe refreshing formulas, set the system property " +
-                        "io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas.");
+                        "AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true.");
             }
         }
     }

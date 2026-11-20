@@ -140,14 +140,7 @@ public class CrossJoinHelper {
         final QueryTable result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits,
                 control, false);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
-        // A static right table fixes every left row's group and the number of right bits, so a left add only adds
-        // result rows within the added left row's own key range; an append to the left appends to the result.
-        if (leftTable.isAddOnly() && !rightTable.isRefreshing()) {
-            result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-        }
-        if (leftTable.isAppendOnly() && !rightTable.isRefreshing()) {
-            result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-        }
+        setResultAttributes(leftTable, rightTable, result);
         return result;
     }
 
@@ -173,17 +166,32 @@ public class CrossJoinHelper {
                     final QueryTable result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd,
                             numReserveRightBits, control, true);
                     leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
-                    // A static right table fixes every left row's group, or its null row, and the number of right
-                    // bits, so a left add only adds result rows within the added left row's own key range; an append
-                    // to the left appends to the result.
-                    if (leftTable.isAddOnly() && !rightTable.isRefreshing()) {
-                        result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-                    }
-                    if (leftTable.isAppendOnly() && !rightTable.isRefreshing()) {
-                        result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-                    }
+                    setResultAttributes(leftTable, rightTable, result);
                     return result;
                 });
+    }
+
+    /**
+     * Mark a join or left outer join result blink when the left table is blink, and add-only or append-only where the
+     * left table and a static right table guarantee it.
+     */
+    private static void setResultAttributes(
+            final QueryTable leftTable,
+            final QueryTable rightTable,
+            final QueryTable result) {
+        // every result row comes from a left row, so the result removes all of its rows when a blink left table does
+        if (leftTable.isBlink() && result.isRefreshing()) {
+            result.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        }
+        // A static right table fixes every left row's group, or its null row, and the number of right bits, so a left
+        // add only adds result rows within the added left row's own key range; an append to the left appends to the
+        // result.
+        if (leftTable.isAddOnly() && !rightTable.isRefreshing()) {
+            result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        }
+        if (leftTable.isAppendOnly() && !rightTable.isRefreshing()) {
+            result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        }
     }
 
     private static QueryTable internalJoin(
@@ -1205,7 +1213,7 @@ public class CrossJoinHelper {
                     long existingRightShift = 0; // how far existingRight has been shifted
                     final WritableRowSet existingRight = closer.add(currRight.minus(rightUpdate.added()));
                     boolean modifyNullKeys = leftOuterJoin && prevRight.isEmpty() && currRight.isEmpty();
-                    boolean removeNullKeys = leftOuterJoin && prevRight.isEmpty() && currRight.isNonempty();
+                    boolean removeNullKeys = leftOuterJoin && prevRight.isEmpty();
 
                     final boolean rightHasAdds = addRight.isNonempty();
                     final boolean rightHasRemoves = rmRight.isNonempty();
