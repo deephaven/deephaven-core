@@ -314,7 +314,7 @@ AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 # Set the console language to Python
 deephaven.console.type=python
 
-# Run update cycles every 100 ms instead of every second
+# Target 100 ms update cycles instead of the default 1 second
 PeriodicUpdateGraph.targetCycleDurationMillis=100
 ```
 
