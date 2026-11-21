@@ -964,7 +964,7 @@
                     "path": "how-to-guides/performance/garbage-collection.md"
                   },
                   {
-                    "label": "Barrage metrics",
+                    "label": "Monitor and tune Barrage performance",
                     "path": "how-to-guides/performance/barrage-performance.md"
                   },
                   {

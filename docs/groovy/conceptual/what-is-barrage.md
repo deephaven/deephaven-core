@@ -207,7 +207,7 @@ Barrage builds on [Arrow Flight](../how-to-guides/data-import-export/arrow-fligh
 - [Aggregations in Deephaven](./aggregations.md)
 - [Designing the Deephaven Core API](./deephaven-core-api.md)
 - [Capture Python client tables with Barrage](../how-to-guides/capture-tables.md)
-- [Barrage metrics for performance monitoring](../how-to-guides/performance/barrage-performance.md)
+- [Monitor and tune Barrage performance](../how-to-guides/performance/barrage-performance.md)
 - [Barrage schema annotation](../how-to-guides/data-import-export/barrage-schema.md)
 - [Arrow Flight and Deephaven](../how-to-guides/data-import-export/arrow-flight.md)
 - [Use URIs to share tables](../how-to-guides/use-uris.md)

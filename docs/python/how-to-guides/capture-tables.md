@@ -202,7 +202,7 @@ local_filtered = my_barrage_session.subscribe(filtered_ticket.bytes)
 
 - [Python client Quickstart](../getting-started/pyclient-quickstart.md)
 - [What is Barrage?](../conceptual/what-is-barrage.md)
-- [Barrage metrics](./performance/barrage-performance.md)
+- [Monitor and tune Barrage performance](./performance/barrage-performance.md)
 - [Share tables with URIs](./use-uris.md)
 - [Anonymous authentication](./authentication/auth-anon.md)
 - [Pre-shared key authentication](./authentication/auth-psk.md)
