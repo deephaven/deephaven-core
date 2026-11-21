@@ -164,8 +164,16 @@ git clone https://github.com/deephaven/deephaven-core.git
 cd deephaven-core
 python3 -m venv ~/my-dh-venv
 source ~/my-dh-venv/bin/activate
+```
+
+Build the wheel, install it, and start the server. Note that this has to be re-run after any change to `py/server`.
+
+```sh
 ./gradlew py-server:assemble
-pip install 'py/server/build/wheel/deephaven_core-<version>-py3-non-any.whl[autocomplete]'
+
+# --force-reinstall because snapshot builds reuse the same version string, so a plain
+# install would treat the new wheel as already satisfied and silently do nothing
+pip install --force-reinstall 'py/server/build/wheel/deephaven_core-<version>-py3-none-any.whl[autocomplete]'
 ./gradlew server-jetty-app:run
 ```
 

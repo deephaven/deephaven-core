@@ -28,8 +28,14 @@ The build is driven by `./gradlew` from the repo root. Subprojects are addressed
 # Attach a debugger on port 5005 (combine with other flags)
 ./gradlew server-jetty-app:run -Pgroovy -Pdebug
 
-# Build the Python wheel
+# Build and install the Python wheel — `assemble` only builds it, and the install is what makes
+# `server-jetty-app:run` (Python flavor) reflect anything in py/server. Run both after each
+# py/server edit, then restart the server — the embedded interpreter caches modules for the life
+# of the JVM, so a reinstall never reaches a running process.
 ./gradlew py-server:assemble
+# --force-reinstall on a rebuild: snapshot builds reuse the version string, so a plain install
+# would treat the new wheel as already satisfied and silently no-op. Safe on a first install too.
+pip install --force-reinstall 'py/server/build/wheel/deephaven_core-<version>-py3-none-any.whl[autocomplete]'
 ```
 
 The PSK auth key is printed to the server log on startup; override with `-Dauthentication.psk=<key>`.
