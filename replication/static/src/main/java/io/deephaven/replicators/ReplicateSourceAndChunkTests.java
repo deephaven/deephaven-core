@@ -20,6 +20,8 @@ public class ReplicateSourceAndChunkTests {
     private static final String TASK = "replicateSourceAndChunkTests";
 
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         ReplicateSourcesAndChunks.main(args);
 
         charToAllButBoolean(TASK,

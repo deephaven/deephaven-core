@@ -20,6 +20,8 @@ public class ReplicateRingBuffers {
     private static final String TASK = "replicateRingBuffers";
 
     public static void main(String... args) throws IOException {
+        ReplicationUtils.redirectOutputToReplicated(TASK);
+
         // replicate ring buffers to all but Object (since RingBuffer<> already exisits)
         charToAllButBoolean(TASK, "Base/src/main/java/io/deephaven/base/ringbuffer/CharRingBuffer.java");
         String objectResult = ReplicatePrimitiveCode.charToObject(TASK,

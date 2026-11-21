@@ -22,6 +22,8 @@ public class ReplicateUpdateBy {
     private static final String TASK = "replicateUpdateBy";
 
     public static void main(String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         final String[] exemptions = new String[] {
                 "long singletonGroup = QueryConstants.NULL_LONG",
                 "long smallestModifiedKey",

@@ -73,9 +73,11 @@ import java.util.List;
  * kernels that simultaneously sort multiple key columns of any type.
  */
 public class GenerateTimsortKernels {
+    private static final String TASK = "generateTimsortKernels";
+
     private static final String PACKAGE = "io.deephaven.engine.table.impl.sort.timsort";
     private static final String INDIRECT_PACKAGE = PACKAGE + ".indirect";
-    private static final File SOURCE_ROOT = new File("engine/table/src/main/java/");
+    private static final File SOURCE_ROOT = new File("engine/table/src/replicated/" + TASK + "/java/");
 
     private static final ClassName MULTI_COLUMN_SORT_KERNEL = ClassName.get(MultiColumnSortKernel.class);
     private static final ClassName CHUNK_TYPE = ClassName.get(ChunkType.class);
@@ -463,7 +465,7 @@ public class GenerateTimsortKernels {
         fileBuilder.addFileComment("\n");
         fileBuilder.addFileComment("****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY\n");
         fileBuilder.addFileComment(
-                "****** Run GenerateTimsortKernels or ./gradlew generateTimsortKernels to regenerate\n");
+                "****** Run GenerateTimsortKernels or ./gradlew " + TASK + " to regenerate\n");
         fileBuilder.addFileComment("\n");
         fileBuilder.addFileComment("@formatter:off");
         System.out.println("Generating " + className + " to " + SOURCE_ROOT);

@@ -34,6 +34,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ReplicateTypedHashers {
+    private static final String TASK = "replicateTypedHashers";
+
     public static void main(String[] args) throws IOException {
         generatePackage(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
         generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
@@ -52,7 +54,7 @@ public class ReplicateTypedHashers {
     private static void generatePackage(Class<?> baseClass, boolean doDouble) throws IOException {
         final HasherConfig<?> hasherConfig = TypedHasherFactory.hasherConfigForBase(baseClass);
         final String packageName = TypedHasherFactory.packageName(hasherConfig);
-        final File sourceRoot = new File("engine/table/src/main/java/");
+        final File sourceRoot = new File("engine/table/src/replicated/" + TASK + "/java/");
 
         final MethodSpec singleDispatch = generateSingleDispatch(baseClass, hasherConfig, packageName, sourceRoot);
         final MethodSpec doubleDispatch;
@@ -104,7 +106,7 @@ public class ReplicateTypedHashers {
         fileBuilder.addFileComment("\n");
         fileBuilder.addFileComment("****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY\n");
         fileBuilder.addFileComment("****** Run " + ReplicateTypedHashers.class.getSimpleName()
-                + " or ./gradlew replicateTypedHashers to regenerate\n");
+                + " or ./gradlew " + TASK + " to regenerate\n");
         fileBuilder.addFileComment("\n");
         fileBuilder.addFileComment("@formatter:off");
 

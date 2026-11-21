@@ -9,6 +9,7 @@ import java.io.IOException;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToByte;
 import static io.deephaven.replication.ReplicatePrimitiveCode.replaceAll;
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 /**
  * Code generation for basic ToPage implementations.
@@ -20,9 +21,13 @@ public class ReplicatePageMaterializers {
     private static final String MATERIALIZER_DIR =
             "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/";
 
+    // the directory that holds the output of this replicator, for the generated materializers that are also inputs
+    private static final String REPLICATED_DIR =
+            "extensions/parquet/base/src/replicated/" + TASK + "/java/io/deephaven/parquet/base/materializers/";
+
     private static final String CHAR_MATERIALIZER_PATH = MATERIALIZER_DIR + "CharMaterializer.java";
-    private static final String SHORT_MATERIALIZER_PATH = MATERIALIZER_DIR + "ShortMaterializer.java";
-    private static final String INT_MATERIALIZER_PATH = MATERIALIZER_DIR + "IntMaterializer.java";
+    private static final String SHORT_MATERIALIZER_PATH = REPLICATED_DIR + "ShortMaterializer.java";
+    private static final String INT_MATERIALIZER_PATH = REPLICATED_DIR + "IntMaterializer.java";
     private static final String LONG_MATERIALIZER_BASE_PATH = MATERIALIZER_DIR + "LongMaterializerBase.java";
     private static final String LONG_MATERIALIZER_PATH = MATERIALIZER_DIR + "LongMaterializer.java";
     // the Int, Short and Double materializers are themselves generated from the Long materializer
@@ -30,7 +35,7 @@ public class ReplicatePageMaterializers {
     private static final String LONG_FROM_INT_MATERIALIZER_PATH = MATERIALIZER_DIR + "LongFromIntMaterializer.java";
     private static final String LONG_FROM_UNSIGNED_SHORT_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "LongFromUnsignedShortMaterializer.java";
-    private static final String DOUBLE_MATERIALIZER_PATH = MATERIALIZER_DIR + "DoubleMaterializer.java";
+    private static final String DOUBLE_MATERIALIZER_PATH = REPLICATED_DIR + "DoubleMaterializer.java";
     private static final String LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "LocalTimeFromMicrosMaterializer.java";
     private static final String LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH =
@@ -41,9 +46,11 @@ public class ReplicatePageMaterializers {
             MATERIALIZER_DIR + "BigDecimalFromLongMaterializer.java";
     private static final String BIG_DECIMAL_FROM_BYTES_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "BigDecimalFromBytesMaterializer.java";
-    private static final String BIG_INTEGER_MATERIALIZER_PATH = MATERIALIZER_DIR + "BigIntegerMaterializer.java";
+    private static final String BIG_INTEGER_MATERIALIZER_PATH = REPLICATED_DIR + "BigIntegerMaterializer.java";
 
     public static void main(String... args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         charToByte(TASK, CHAR_MATERIALIZER_PATH, NO_EXCEPTIONS);
 
         // LongBase -> IntBase

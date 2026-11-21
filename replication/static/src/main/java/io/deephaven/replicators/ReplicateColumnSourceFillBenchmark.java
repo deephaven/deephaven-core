@@ -3,13 +3,19 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+
 import io.deephaven.replication.ReplicatePrimitiveCode;
 
 import java.io.IOException;
 
 public class ReplicateColumnSourceFillBenchmark {
+    private static final String TASK = "replicateColumnSourceFillBenchmark";
+
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateColumnSourceFillBenchmark",
-                "engine/benchmark/src/benchmark/java/io/deephaven/benchmark/engine/sources/CharHelper.java");
+        redirectOutputToReplicated(TASK);
+
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
+                "engine/benchmark/src/main/java/io/deephaven/benchmark/engine/sources/CharHelper.java");
     }
 }

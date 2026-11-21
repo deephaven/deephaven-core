@@ -18,6 +18,47 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ReplicationUtils {
+    private static final Pattern REPLICATED_REDIRECT = Pattern.compile("^(.*)/src/(main|test)/java/(.*)$");
+
+    private static final Set<String> redirectedTasks = new HashSet<>();
+
+    /**
+     * Send the output of the replication task {@code task} to its own directory instead of next to its inputs. Call
+     * this once at the start of the replicator's {@code main}. Outputs written through
+     * {@link ReplicatePrimitiveCode#replaceAll} for this task then land in {@code <module>/src/replicated/<task>/java/}
+     * (for main sources) or {@code <module>/src/replicatedTest/<task>/java/} (for test sources), which the Gradle build
+     * includes in the main and test source sets respectively.
+     * <p>
+     * The output directory is not created; whoever adds or migrates a replicator creates it (and checks it in).
+     * <p>
+     * Redirection is tracked per task, so a replicator that invokes another replicator's {@code main} in the same JVM
+     * does not disturb the redirection of either task.
+     *
+     * @param task the name of the Gradle task that runs the replicator
+     */
+    public static void redirectOutputToReplicated(@NotNull final String task) {
+        redirectedTasks.add(task);
+    }
+
+    /**
+     * Apply the redirection requested by {@link #redirectOutputToReplicated(String)}, if any.
+     *
+     * @param task the task generating the file
+     * @param resultJavaPath the path the file would be written to without redirection
+     * @return the path to write to
+     */
+    public static String replicatedOutputPath(@NotNull final String task, @NotNull final String resultJavaPath) {
+        if (!redirectedTasks.contains(task)) {
+            return resultJavaPath;
+        }
+        final Matcher matcher = REPLICATED_REDIRECT.matcher(resultJavaPath);
+        if (!matcher.matches()) {
+            return resultJavaPath;
+        }
+        final String dir = matcher.group(2).equals("main") ? "replicated" : "replicatedTest";
+        return matcher.group(1) + "/src/" + dir + "/" + task + "/java/" + matcher.group(3);
+    }
+
     /**
      * Take a list of lines; and apply a given fixup expressed as a code region, regular expression, then function from
      * the matcher to the replacement line.

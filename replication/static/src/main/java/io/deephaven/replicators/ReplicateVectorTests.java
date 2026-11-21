@@ -3,6 +3,9 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
+
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
@@ -15,19 +18,23 @@ import java.util.List;
 
 public class ReplicateVectorTests {
 
+    private static final String TASK = "replicateVectorTests";
+
     private static final String BASE_PATH = "engine/vector/src/test/java/io/deephaven/vector/";
     private static final String CHAR_BASE_PATH = BASE_PATH + "CharVectorTest.java";
     private static final String CHAR_DIRECT_PATH = BASE_PATH + "CharVectorDirectTest.java";
 
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateVectorTests", CHAR_BASE_PATH);
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateVectorTests", CHAR_DIRECT_PATH);
-        removeStreamAsIntTest(BASE_PATH + "IntVectorTest.java");
-        removeStreamAsIntTest(BASE_PATH + "LongVectorTest.java");
-        removeStreamAsIntTest(BASE_PATH + "DoubleVectorTest.java");
-        fixupFloatStreamAsTest(BASE_PATH + "FloatVectorTest.java");
-        fixupObject(ReplicatePrimitiveCode.charToObject("replicateVectorTests", CHAR_BASE_PATH));
-        fixupObject(ReplicatePrimitiveCode.charToObject("replicateVectorTests", CHAR_DIRECT_PATH));
+        redirectOutputToReplicated(TASK);
+
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK, CHAR_BASE_PATH);
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK, CHAR_DIRECT_PATH);
+        removeStreamAsIntTest(replicatedOutputPath(TASK, BASE_PATH + "IntVectorTest.java"));
+        removeStreamAsIntTest(replicatedOutputPath(TASK, BASE_PATH + "LongVectorTest.java"));
+        removeStreamAsIntTest(replicatedOutputPath(TASK, BASE_PATH + "DoubleVectorTest.java"));
+        fixupFloatStreamAsTest(replicatedOutputPath(TASK, BASE_PATH + "FloatVectorTest.java"));
+        fixupObject(ReplicatePrimitiveCode.charToObject(TASK, CHAR_BASE_PATH));
+        fixupObject(ReplicatePrimitiveCode.charToObject(TASK, CHAR_DIRECT_PATH));
     }
 
     private static void fixupObject(@NotNull final String path) throws IOException {

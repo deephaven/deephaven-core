@@ -3,6 +3,8 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
@@ -15,15 +17,19 @@ import java.util.List;
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 public class ReplicateFreezeBy {
+    private static final String TASK = "replicateFreezeBy";
+
     public static void main(String[] args) throws IOException {
-        charToAllButBoolean("replicateFreezeBy",
+        redirectOutputToReplicated(TASK);
+
+        charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/freezeby/CharFreezeByHelper.java");
 
-        final String objectResult = charToObject("replicateFreezeBy",
+        final String objectResult = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/freezeby/CharFreezeByHelper.java");
         fixupObject(objectResult);
 
-        final String booleanResult = charToBoolean("replicateFreezeBy",
+        final String booleanResult = charToBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/freezeby/CharFreezeByHelper.java");
         fixupBoolean(booleanResult);
     }

@@ -31,6 +31,8 @@ public class ReplicateSourcesAndChunks {
     public static final String TASK = "replicateSourcesAndChunks";
 
     public static void main(String... args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         replicateArraySources();
         replicateSparseArraySources();
         replicateSingleValues();
@@ -54,24 +56,24 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
         fixupImmutableLongArraySource(charToLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java"));
-        fixupByteReinterpret(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableByteArraySource.java");
+        fixupByteReinterpret(replicatedOutputPath(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableByteArraySource.java"));
         replicateObjectImmutableArraySource();
 
         charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DCharArraySource.java");
         fixupImmutable2DLongArraySource(charToLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DCharArraySource.java"));
-        fixupByteReinterpret(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DByteArraySource.java");
+        fixupByteReinterpret(replicatedOutputPath(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DByteArraySource.java"));
         replicateObjectImmutable2DArraySource();
 
         charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableConstantCharSource.java");
         fixupImmutableConstantLongSource(charToLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableConstantCharSource.java"));
-        fixupByteReinterpret(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableConstantByteSource.java");
+        fixupByteReinterpret(replicatedOutputPath(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableConstantByteSource.java"));
         replicateImmutableConstantObjectSource();
 
         charToAll(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
