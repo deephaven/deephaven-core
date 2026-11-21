@@ -16,7 +16,7 @@ public interface BarrageSubscriptionPerformanceLogger {
      * The {@code statType} values recorded by barrage itself.
      * <p>
      * Values are unscaled: durations are nanoseconds and payload sizes are bytes, matching {@code UpdatePerformanceLog}
-     * and the rest of the engine's performance streams.
+     * and {@code QueryPerformanceLog}.
      * <p>
      * These are conventions rather than a closed set; an integrator may log additional statistics under names of its
      * own, and should follow the same {@code <Stem><Unit>} convention.

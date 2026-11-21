@@ -1,0 +1,100 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.web.client.api;
+
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.promise.Promise;
+import io.deephaven.web.client.api.tree.JsRollupConfig;
+import io.deephaven.web.client.api.tree.JsTreeTable;
+import io.deephaven.web.client.api.tree.JsTreeTableConfig;
+import jsinterop.annotations.JsMethod;
+
+/**
+ * The table an awaited {@link JsPendingTable} resolves to: a retained table whose data can be read, plus the chainable
+ * {@link JsTableOperations}, each of which again yields a {@link JsPendingTable}. Each instance points at a single
+ * server-side table, unlike a {@link JsTable} which can have its filters, sorts, and custom columns changed and
+ * releases every server-side table it made when closed.
+ * <p>
+ * Each instance has one owner which closes it when done so the server can free its resources. For multiple owners with
+ * independent lifetimes, {@link #copy()} produces a distinct {@code ResolvedTable} instance referencing the same
+ * server-side table.
+ * <p>
+ * To instead use a {@link JsTable}, invoke {@link #createMutableTable()}, which will return a new {@link JsTable} based
+ * on this table, which can then have its filters, sorts, and custom columns changed without affecting this table.
+ */
+@TsName(namespace = "dh", name = "ResolvedTable")
+@TsInterface
+public interface JsResolvedTable extends JsITable, JsTableOperations {
+    /**
+     * A new instance over the same server-side table with its own lifetime, available immediately. The caller owns it,
+     * and either instance can be closed without affecting the other.
+     *
+     * @return a new instance of this table, sharing resources on the server
+     * @throws IllegalStateException if this table is closed
+     */
+    @JsMethod
+    JsResolvedTable copy();
+
+    /**
+     * A new {@link JsTable} over the same server-side table, the inverse of {@link JsTable#operations()}. The
+     * {@link JsTable} can be changed with {@link JsTable#applyFilter applyFilter}, {@link JsTable#applySort applySort}
+     * and its other mutating methods without affecting this table, and the two are closed independently. Like other
+     * tables made by operations, it is not revived if a reconnect needs a new session.
+     *
+     * @return a new mutable table, which the caller must close
+     */
+    @JsMethod
+    JsTable createMutableTable();
+
+    /**
+     * Finds the next row, after {@code startingRow} and wrapping around, whose value in {@code column} matches
+     * {@code seekValue}.
+     *
+     * @param options the value to find, and where and how to search for it
+     * @return a promise of the position of the matching row, or -1 if no row matches
+     */
+    @JsMethod
+    Promise<Double> seekRow(SeekRowOptions options);
+
+    /**
+     * A promise of a new {@link JsTreeTable dh.TreeTable} of this table. Each call to this method produces a new
+     * {@link JsTreeTable dh.TreeTable}, which must have {@link JsTreeTable#close() close()} called on it when not in
+     * use.
+     *
+     * @param configObject specifies which column to use as the row ID, and which for parent ID, and how to handle rows
+     *        with no parent
+     * @return a promise of {@link JsTreeTable dh.TreeTable}
+     */
+    @JsMethod
+    default Promise<JsTreeTable> createTreeTable(@TsTypeRef(JsTreeTableConfig.class) Object configObject) {
+        JsTable t = createMutableTable();
+        try {
+            return t.treeTable(configObject).finally_(t::close);
+        } catch (RuntimeException e) {
+            t.close();
+            throw e;
+        }
+    }
+
+    /**
+     * A promise of a new roll-up {@link JsTreeTable dh.TreeTable} of this table. Each call to this method produces a
+     * new {@link JsTreeTable dh.TreeTable}, which must have {@link JsTreeTable#close() close()} called on it when not
+     * in use.
+     *
+     * @param configObject specifies which columns to aggregate and which to group by, and other rollup behavior
+     * @return a promise of {@link JsTreeTable dh.TreeTable}
+     */
+    @JsMethod
+    default Promise<JsTreeTable> createRollup(@TsTypeRef(JsRollupConfig.class) Object configObject) {
+        JsTable t = createMutableTable();
+        try {
+            return t.rollup(configObject).finally_(t::close);
+        } catch (RuntimeException e) {
+            t.close();
+            throw e;
+        }
+    }
+}

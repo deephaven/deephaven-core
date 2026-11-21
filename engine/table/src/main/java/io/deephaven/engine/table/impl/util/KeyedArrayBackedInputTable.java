@@ -43,12 +43,12 @@ public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
     }
 
     /**
-     * Create an empty KeyedArrayBackedMutableTable.
+     * Create an empty KeyedArrayBackedInputTable.
      *
      * @param definition the definition of the table to create
      * @param keyColumnNames the name of the key columns
      *
-     * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
+     * @return an empty KeyedArrayBackedInputTable with the given definition and key columns
      */
     public static KeyedArrayBackedInputTable make(@NotNull TableDefinition definition,
             final String... keyColumnNames) {
@@ -58,15 +58,16 @@ public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
     }
 
     /**
-     * Create an empty KeyedArrayBackedMutableTable.
+     * Create a KeyedArrayBackedInputTable with the given initial data.
      * <p>
      * The initialTable is processed in order, so if there are duplicate keys only the last row is reflected in the
      * output.
      *
-     * @param initialTable the initial values to copy into the KeyedArrayBackedMutableTable
+     * @param initialTable the initial values to copy into the KeyedArrayBackedInputTable
      * @param keyColumnNames the name of the key columns
      *
-     * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
+     * @return a KeyedArrayBackedInputTable with the definition of {@code initialTable} and the given key columns,
+     *         containing a copy of its rows
      */
     public static KeyedArrayBackedInputTable make(final Table initialTable, final String... keyColumnNames) {
         final KeyedArrayBackedInputTable result = new KeyedArrayBackedInputTable(initialTable.getDefinition(),

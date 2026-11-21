@@ -2,13 +2,15 @@
 title: dayOfWeek
 ---
 
-`dayOfWeek` returns the integer value of the day of the week for an input date-time in the specified time zone, with 1 being Monday and 7 being Sunday.
+`dayOfWeek` returns the day of the week, as a `java.time.DayOfWeek` value, for an input date-time in the specified time zone. To get the day of the week as an integer, with 1 being Monday and 7 being Sunday, use `dayOfWeekValue` instead.
 
 ## Syntax
 
 ```
 dayOfWeek(instant, timeZone)
 dayOfWeek(dateTime)
+dayOfWeek(localDateTime)
+dayOfWeek(localDate)
 ```
 
 ## Parameters
@@ -16,10 +18,10 @@ dayOfWeek(dateTime)
 <ParamTable>
 <Param name="instant" type="Instant">
 
-The instant for which to find the day of the month.
+The instant for which to find the day of the week.
 
 </Param>
-<Param name="timeZone" type="TimeZone">
+<Param name="timeZone" type="ZoneId">
 
 The time zone to use when interpreting the [date-time](../../query-language/types/date-time.md).
 
@@ -29,11 +31,21 @@ The time zone to use when interpreting the [date-time](../../query-language/type
 The zoned date-time for which to find the day of the week.
 
 </Param>
+<Param name="localDateTime" type="LocalDateTime">
+
+The local date-time for which to find the day of the week.
+
+</Param>
+<Param name="localDate" type="LocalDate">
+
+The local date for which to find the day of the week.
+
+</Param>
 </ParamTable>
 
 ## Returns
 
-Returns a 1-based int value of the day of the week.
+Returns the day of the week as a `java.time.DayOfWeek` value, such as `THURSDAY`.
 
 ## Examples
 

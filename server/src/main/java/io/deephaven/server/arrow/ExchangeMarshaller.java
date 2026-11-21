@@ -121,14 +121,24 @@ public interface ExchangeMarshaller {
 
         /**
          * Release the resources associated with this subscription.
+         *
+         * <p>
+         * This may complete the listener. The caller may hold the request handler's monitor, which is safe because the
+         * stream is closed only once: a failed write's cancel that arrives afterwards does not close the handler again.
          */
         void close();
 
         /**
          * Update the subscription with the new request.
-         * 
+         *
+         * <p>
+         * The caller holds the request handler's monitor, which closing the stream needs. A write to the listener can
+         * fail and close the stream on the writing thread while that thread holds the listener's lock, so this method
+         * must not call the listener, not even to report an invalid request.
+         *
          * @param subscriptionRequest the request to update the subscription
-         * @return true if the subscription was found and updated, false otherwise
+         * @return true if the subscription was found, whether it was updated or the request was ignored because the
+         *         subscription is already ending; false otherwise
          */
         boolean update(BarrageSubscriptionRequest subscriptionRequest);
     }

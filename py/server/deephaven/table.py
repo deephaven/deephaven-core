@@ -322,7 +322,8 @@ class _FormatOperationsRecorder(Protocol):
         j_format_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFormatOperationsRecorder
         )
-        return self.__class__(j_format_ops_recorder.formatColumns(formulas))
+        with query_scope_ctx():
+            return self.__class__(j_format_ops_recorder.formatColumns(formulas))
 
     def format_row_where(self, cond: str, formula: str):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.format_row_where` operation applied to
@@ -330,7 +331,8 @@ class _FormatOperationsRecorder(Protocol):
         j_format_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFormatOperationsRecorder
         )
-        return self.__class__(j_format_ops_recorder.formatRowWhere(cond, formula))
+        with query_scope_ctx():
+            return self.__class__(j_format_ops_recorder.formatRowWhere(cond, formula))
 
     def format_column_where(self, col: str, cond: str, formula: str):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.format_column_where` operation applied to
@@ -338,9 +340,10 @@ class _FormatOperationsRecorder(Protocol):
         j_format_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFormatOperationsRecorder
         )
-        return self.__class__(
-            j_format_ops_recorder.formatColumnWhere(col, cond, formula)
-        )
+        with query_scope_ctx():
+            return self.__class__(
+                j_format_ops_recorder.formatColumnWhere(col, cond, formula)
+            )
 
 
 class _SortOperationsRecorder(Protocol):
@@ -381,7 +384,8 @@ class _FilterOperationsRecorder(Protocol):
         j_filter_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFilterOperationsRecorder
         )
-        return self.__class__(j_filter_ops_recorder.where(and_(filters).j_filter))
+        with query_scope_ctx():
+            return self.__class__(j_filter_ops_recorder.where(and_(filters).j_filter))
 
 
 class _UpdateViewOperationsRecorder(Protocol):
@@ -397,7 +401,8 @@ class _UpdateViewOperationsRecorder(Protocol):
         j_update_view_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JUpdateViewOperationsRecorder
         )
-        return self.__class__(j_update_view_ops_recorder.updateView(*formulas))
+        with query_scope_ctx():
+            return self.__class__(j_update_view_ops_recorder.updateView(*formulas))
 
 
 class RollupNodeOperationsRecorder(
@@ -407,7 +412,7 @@ class RollupNodeOperationsRecorder(
     _UpdateViewOperationsRecorder,
 ):
     """Recorder for node-level operations to be applied when gathering snapshots of RollupTable. Supported operations
-    include column formatting and sorting.
+    include column formatting, sorting, and adding columns with update_view.
 
     Note: It should not be instantiated directly. User code must call :meth:`~RollupTable.node_operation_recorder` to
     create an instance of the recorder.
@@ -566,7 +571,12 @@ class RollupTable(JObjectWrapper):
     def with_filters(
         self, filters: str | Filter | Sequence[str] | Sequence[Filter]
     ) -> RollupTable:
-        """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
+        """Returns a new RollupTable by applying the given set of filters to this RollupTable. The rollup is
+        re-aggregated, so the aggregated rows reflect only the rows that pass the filters. Filters that use only
+        group-by columns are applied at the lowest aggregated level. Other filters are applied to the source table, and
+        the rollup is rebuilt. Filters cannot use a column that an aggregation summarizes (the input column of an
+        aggregation's input/output pair, such as Salary in sum_("Salary")), and cannot refer to other rows, for example
+        with virtual row variables such as i or column arrays.
 
         Args:
             filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
@@ -591,7 +601,8 @@ class RollupTable(JObjectWrapper):
             raise DHError(e, "with_filters operation on RollupTable failed.") from e
 
     def with_update_view(self, formulas: str | Sequence[str]) -> RollupTable:
-        """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
+        """Returns a new RollupTable by applying the given formulas as a view, which adds columns at the aggregated
+        node level of this RollupTable.
 
         Args:
             formulas (Union[str, Sequence[str]]): the column formula(s)
@@ -604,8 +615,10 @@ class RollupTable(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
+            with query_scope_ctx():
+                j_rollup_table = self.j_rollup_table.withUpdateView(*formulas)
             return RollupTable(
-                j_rollup_table=self.j_rollup_table.withUpdateView(*formulas),
+                j_rollup_table=j_rollup_table,
                 include_constituents=self.include_constituents,
                 aggs=self.aggs,
                 by=self.by,
@@ -2490,7 +2503,7 @@ class Table(_TableOperations["Table"]):
             chunk_size (int): The number of rows to read at a time. Default is 2048.
 
         Returns:
-            A generator that yields a named tuple for each row in the table.
+            A generator that yields a named tuple for each chunk of rows in the table.
 
         Raises:
             ValueError
@@ -3258,7 +3271,12 @@ class Table(_TableOperations["Table"]):
         replaced with null on each level.
 
         Note that some aggregations can not be used in creating a rollup table: partition, median, pct, and
-        formula when formula_param is provided
+        formula when formula_param is provided.
+
+        If this table is a blink table, rollup also does not support include_constituents=True, the first, last,
+        sorted_first, and sorted_last aggregations (which agg_by supports on blink tables, but rollup does not), or the
+        group and formula aggregations. Convert the blink table with :func:`~deephaven.stream.blink_to_append_only` to
+        use them.
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
@@ -3314,7 +3332,7 @@ class Table(_TableOperations["Table"]):
 
         Args:
             id_col (str): the name of a column containing a unique identifier for a particular row in the table
-            parent_col (str): the name of a column containing the parent's identifier, {@code null} for rows that are
+            parent_col (str): the name of a column containing the parent's identifier, None for rows that are
                 part of the root table
             promote_orphans (bool): whether to promote node tables whose parents don't exist to be children of the
                 root node, default is False

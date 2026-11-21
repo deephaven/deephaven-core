@@ -39,7 +39,7 @@ The Kafka topic name.
 </Param>
 <Param name="offsets" type="dict[int, int]" optional>
 
-- `ALL_PARTITIONS_DONT_SEEK` (default) - Start from the consumer's current position without seeking. This matches the default if `offsets` is not specified.
+- `ALL_PARTITIONS_DONT_SEEK` (default) - Start each partition without seeking, so Kafka picks the starting offset: the consumer group's committed offset if `group.id` is set and the group has one, otherwise Kafka's `auto.offset.reset` setting (default `latest`, the end of the partition).
 - `ALL_PARTITIONS_SEEK_TO_END` - Go to the newest available message for every partition.
 - `ALL_PARTITIONS_SEEK_TO_BEGINNING` - Go to the oldest available message for every partition.
 - `{ _number_ : _offset_, ... }` - Map partition numbers to numeric offsets or one of the constants `DONT_SEEK`, `SEEK_TO_END`, `SEEK_TO_BEGINNING`.
@@ -59,7 +59,7 @@ Specifies how to map the Key field in Kafka messages to table column(s). Any of 
 - [`protobuf_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec) - Creates a spec for parsing a Kafka protobuf stream. Uses the `schema`, `schema_version`, and `schema_message_name` to fetch the schema from the schema registry, or uses `message_class` to get the schema from the classpath.
 - [`object_processor_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.object_processor_spec) - Creates a Kafka key-value spec implementation from a named object processor provider.
 - `KeyValueSpec.IGNORE` - Ignore the field in the Kafka event.
-- `KeyValueSpec.FROM_PROPERTIES` (default) - The `kafka_config` parameter should include values for dictionary keys `deephaven.key.column.name` and `deephaven.key.column.type` for the single resulting column name and type.
+- `KeyValueSpec.FROM_PROPERTIES` (default) - Creates a single key column. The column name comes from the `deephaven.key.column.name` entry in `kafka_config` and defaults to `KafkaKey` if that entry is not set. The column type comes from the `deephaven.key.column.type` entry or, if that entry is not set, from a recognized `key.deserializer` entry. If neither entry is set, `consume_to_partitioned_table` raises an error.
 
 </Param>
 <Param name="value_spec" type="KeyValueSpec" optional>
@@ -72,7 +72,7 @@ Specifies how to map the Value field in Kafka messages to table column(s). Any o
 - [`protobuf_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec) - Creates a spec for parsing a Kafka protobuf stream. Uses the `schema`, `schema_version`, and `schema_message_name` to fetch the schema from the schema registry, or uses `message_class` to get the schema from the classpath.
 - [`object_processor_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.object_processor_spec) - Creates a Kafka key-value spec implementation from a named object processor provider.
 - `KeyValueSpec.IGNORE` - Ignore the field in the Kafka event.
-- `KeyValueSpec.FROM_PROPERTIES` (default) - The `kafka_config` parameter should include values for dictionary keys `deephaven.key.column.name` and `deephaven.key.column.type` for the single resulting column name and type.
+- `KeyValueSpec.FROM_PROPERTIES` (default) - Creates a single value column. The column name comes from the `deephaven.value.column.name` entry in `kafka_config` and defaults to `KafkaValue` if that entry is not set. The column type comes from the `deephaven.value.column.type` entry or, if that entry is not set, from a recognized `value.deserializer` entry. If neither entry is set, `consume_to_partitioned_table` raises an error.
 
 </Param>
 <Param name="table_type" type="TableType" optional>

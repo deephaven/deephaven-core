@@ -33,11 +33,6 @@ Deephaven does not search the enclosing (nonlocal) scope directly. A [query stri
 
 Deephaven also doesn't search Python's built-in namespace. To use a Python built-in such as `sorted` in a [query string](./query-string-overview.md), assign it to a variable in the local or global scope.
 
-Some [query strings](./query-string-overview.md) can't use a function's local variables at all. They see only the global scope of the main script. The following query strings work this way:
-
-- [Formulas](./formulas.md) passed to the [`with_update_view`](../reference/table-operations/create/rollup.md#methods) method of a [rollup table](./rollup-table.md).
-- [Filters](./filters.md) and [formulas](./formulas.md) in node operations. You record these with the recorder that [`node_operation_recorder`](../reference/table-operations/create/rollup.md#methods) returns, then apply them with [`with_node_operations`](../reference/table-operations/create/rollup.md#methods).
-
 Deephaven's own [built-in functions, constants, and variables](#built-in-functions-constants-and-variables) are always available and don't come from the query scope.
 
 ## Examples
