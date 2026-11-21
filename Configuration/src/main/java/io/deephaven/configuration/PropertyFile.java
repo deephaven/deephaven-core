@@ -15,9 +15,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.BitSet;
 import java.util.*;
-import java.util.regex.Matcher;
-
-import java.util.regex.Pattern;
 
 public class PropertyFile {
     protected final Logger log;
@@ -580,28 +577,6 @@ public class PropertyFile {
         public <T> T[] toArray(T[] a) {
             throw new UnsupportedOperationException();
         }
-    }
-
-    public Map<String, String> getNameStringMapFromProperty(final String propertyName) {
-        final String propertyValue = getProperty(propertyName).trim();
-        if (propertyValue.equals("")) {
-            return Collections.emptyMap();
-        }
-        final Matcher propertyMapMatcher =
-                Pattern.compile("\\A\\(\\s*((?:[a-zA-Z0-9\\-\\. ]+=>[a-zA-Z0-9\\-\\. ]+,?)*)\\s*\\)\\Z")
-                        .matcher(propertyValue);
-        Require.requirement(propertyMapMatcher.matches(), "propertyMapMatcher.matches())");
-        Map<String, String> result = new HashMap<>();
-        for (String pair : propertyMapMatcher.group(1).split(",")) {
-            if (pair.equals("")) {
-                continue;
-            }
-            String[] values = pair.split("=>");
-            Require.eq(values.length, "values.length", 2);
-            Require.eqNull(result.put(values[0].trim(), values[1].trim()),
-                    "result.put(values[0].trim(), values[1].trim())");
-        }
-        return result;
     }
 
     public int[] getIntegerArray(final String propertyName) {
