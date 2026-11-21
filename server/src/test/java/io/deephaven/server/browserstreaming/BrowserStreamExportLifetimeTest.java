@@ -61,8 +61,8 @@ public class BrowserStreamExportLifetimeTest {
     public void setup() {
         livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
-        sessionService = new SessionService(scheduler,
-                authContext -> new SessionState(scheduler, new SessionService.ObfuscatingErrorTransformer(),
+        sessionService = new SessionService(scheduler, scheduler,
+                authContext -> new SessionState(scheduler, scheduler, new SessionService.ObfuscatingErrorTransformer(),
                         TestExecutionContext::createForUnitTests, authContext),
                 TOKEN_EXPIRE_MS, Collections.emptyMap(), Collections.emptySet());
         session = sessionService.newSession(AUTH_CONTEXT);
@@ -344,8 +344,9 @@ public class BrowserStreamExportLifetimeTest {
                 command.run();
             }
         };
-        final SessionService inlineSessionService = new SessionService(inlineScheduler,
-                authContext -> new SessionState(inlineScheduler, new SessionService.ObfuscatingErrorTransformer(),
+        final SessionService inlineSessionService = new SessionService(inlineScheduler, inlineScheduler,
+                authContext -> new SessionState(inlineScheduler, inlineScheduler,
+                        new SessionService.ObfuscatingErrorTransformer(),
                         TestExecutionContext::createForUnitTests, authContext),
                 TOKEN_EXPIRE_MS, Collections.emptyMap(), Collections.emptySet());
         final SessionState inlineSession = inlineSessionService.newSession(AUTH_CONTEXT);

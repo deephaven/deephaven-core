@@ -118,8 +118,8 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
     }
 
     @Override
-    public void runAtTime(long epochMillis, @NotNull Runnable command) {
-        workQueue.add(new Pair<>(DateTimeUtils.epochMillisToInstant(epochMillis), command));
+    public long monotonicTimeMillis() {
+        return currentTimeMillis();
     }
 
     @Override

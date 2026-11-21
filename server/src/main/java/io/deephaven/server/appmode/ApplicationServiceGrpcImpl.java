@@ -167,7 +167,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         private static final long UPDATE_INTERVAL_MS = 250;
 
         // guarded by parent sync
-        private long lastScheduledMillis = 0;
+        private long lastScheduledMillis = -UPDATE_INTERVAL_MS;
         private boolean isScheduled = false;
 
         @Override
@@ -192,7 +192,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 return false;
             }
             isScheduled = true;
-            final long now = scheduler.currentTimeMillis();
+            final long now = scheduler.monotonicTimeMillis();
             final long nextMin = lastScheduledMillis + UPDATE_INTERVAL_MS;
             if (now >= nextMin) {
                 lastScheduledMillis = now;
