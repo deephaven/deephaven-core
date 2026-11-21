@@ -60,6 +60,22 @@ public interface TableDataService extends NamedImplementation {
     }
 
     /**
+     * Stop any processes, release resources, and clear all cached state held by this {@link TableDataService}.
+     * <p>
+     * {@code shutdown()} is used to retire a service that may be replaced by one with different configuration or
+     * underlying sources, so existing subscribers must not silently continue against stale state: any
+     * {@link TableLocationProvider.Listener}s and {@link TableLocation.Listener}s obtained from this service are
+     * delivered a terminal {@link TableDataException} error before their subscriptions are dropped. This subsumes the
+     * effect of {@link #reset()} (cached state is cleared).
+     *
+     * @implNote Implementations must be idempotent: repeated calls after the first are effectively no-ops. Shutdown may
+     *           be invoked concurrently with discovery and subscription activity; once it has completed, the behavior
+     *           of all other methods on this instance is undefined and callers should not use the service further. The
+     *           default implementation is a no-op, appropriate for services that hold no resources or subscribers.
+     */
+    default void shutdown() {}
+
+    /**
      * Get a detailed description string.
      *
      * @return A description string

@@ -24,6 +24,14 @@ public abstract class SubscriptionAggregator<LISTENER_TYPE extends BasicTableDat
 
     private ActivationState activationState = ActivationState.EMPTY;
 
+    /**
+     * Sentinel token that {@link #activationFailed(Object, TableDataException)} accepts unconditionally (bypassing
+     * {@link #matchSubscriptionToken(Object)}), so a deliberate, non-request-driven invalidation — e.g.
+     * {@link io.deephaven.engine.table.impl.locations.TableDataService#shutdown()} — can deliver a terminal error to
+     * every current subscriber. Used only via {@link #invalidateAllSubscribers(TableDataException)}.
+     */
+    private static final Object INVALIDATE_ALL_TOKEN = new Object();
+
     SubscriptionAggregator(final boolean supportsSubscriptions) {
         subscriptions = supportsSubscriptions ? new SubscriptionSet<>() : null;
     }
@@ -172,7 +180,7 @@ public abstract class SubscriptionAggregator<LISTENER_TYPE extends BasicTableDat
                     this + ": asynchronous exceptions are unexpected when subscriptions aren't supported", exception);
         }
         synchronized (subscriptions) {
-            if (!matchSubscriptionToken(token)) {
+            if (token != INVALIDATE_ALL_TOKEN && !matchSubscriptionToken(token)) {
                 return;
             }
             if (activationState == ActivationState.PENDING) {
@@ -183,6 +191,21 @@ public abstract class SubscriptionAggregator<LISTENER_TYPE extends BasicTableDat
             if (!subscriptions.isEmpty()) {
                 subscriptions.clear();
             }
+        }
+    }
+
+    /**
+     * Deliver a terminal {@link BasicTableDataListener#handleException(TableDataException) exception} to every current
+     * subscriber and clear them, independent of any activation token. Intended for deliberate invalidation such as
+     * {@link io.deephaven.engine.table.impl.locations.TableDataService#shutdown()}, where subscribers must be told the
+     * source is going away rather than left to silently stall. A no-op when subscriptions are unsupported or none are
+     * present, and idempotent (a subsequent call finds no subscribers).
+     *
+     * @param exception The exception to deliver
+     */
+    public final void invalidateAllSubscribers(@NotNull final TableDataException exception) {
+        if (supportsSubscriptions()) {
+            activationFailed(INVALIDATE_ALL_TOKEN, exception);
         }
     }
 
