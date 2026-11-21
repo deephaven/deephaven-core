@@ -313,17 +313,10 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
 
     @Override
     public Void visit(AggregateTable aggregateTable) {
-        if (aggregateTable.groupByColumns().isEmpty()) {
-            addOp(aggregateTable, ops(aggregateTable.parent()).aggBy(
-                    aggregateTable.aggregations(),
-                    aggregateTable.preserveEmpty()));
-        } else {
-            addOp(aggregateTable, ops(aggregateTable.parent()).aggBy(
-                    aggregateTable.aggregations(),
-                    aggregateTable.preserveEmpty(),
-                    aggregateTable.initialGroups().map(this::table).orElse(null),
-                    aggregateTable.groupByColumns()));
-        }
+        addOp(aggregateTable, ops(aggregateTable.parent()).aggBy(
+                aggregateTable.aggregations(),
+                aggregateTable.groupByColumns(),
+                aggregateTable.options().mapInitialGroups(this::table)));
         return null;
     }
 

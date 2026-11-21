@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.partitioned;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -1097,13 +1098,16 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
-            TableOperations<?, ?> initialGroups, Collection<? extends ColumnName> groupByColumns) {
+    public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends ColumnName> groupByColumns, AggregationOptions<TableOperations<?, ?>> options) {
         // Note: we assume the key columns are transformed
+        final TableOperations<?, ?> initialGroups = options.initialGroups().orElse(null);
         if (initialGroups == null) {
+            // there are no initial groups to convert
+            final AggregationOptions<Table> tableOptions = options.mapInitialGroups(Table.class::cast);
             return basicTransform(
                     true,
-                    ct -> ct.aggBy(aggregations, preserveEmpty, null, groupByColumns), Collections.emptySet());
+                    ct -> ct.aggBy(aggregations, groupByColumns, tableOptions), Collections.emptySet());
         }
         if (initialGroups instanceof Table) {
             // Force a consistent view of initial groups table to be used for all current and future constituents
@@ -1111,16 +1115,17 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                     () -> ((Table) initialGroups).selectDistinct(groupByColumns).snapshot(),
                     ((Table) initialGroups).isRefreshing(),
                     Table::isRefreshing);
+            final AggregationOptions<Table> tableOptions = options.mapInitialGroups(ig -> initialGroupsTable);
             return basicTransform(
                     true,
-                    ct -> ct.aggBy(aggregations, preserveEmpty, initialGroupsTable, groupByColumns),
+                    ct -> ct.aggBy(aggregations, groupByColumns, tableOptions),
                     Collections.emptySet());
         }
         if (initialGroups instanceof PartitionedTable.Proxy) {
             return complexTransform(
                     true,
                     initialGroups,
-                    (ct, ot) -> ct.aggBy(aggregations, preserveEmpty, ot, groupByColumns),
+                    (ct, ot) -> ct.aggBy(aggregations, groupByColumns, options.mapInitialGroups(ig -> ot)),
                     null,
                     groupByColumns.stream().map(ColumnName::name).collect(Collectors.toList()));
         }

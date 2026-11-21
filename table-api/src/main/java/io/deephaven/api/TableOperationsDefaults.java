@@ -4,6 +4,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -359,6 +360,18 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     default TOPS aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends ColumnName> groupByColumns) {
         return aggBy(aggregations, AGG_BY_PRESERVE_EMPTY_DEFAULT, null, groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default TOPS aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, TABLE initialGroups,
+            Collection<? extends ColumnName> groupByColumns) {
+        final AggregationOptions.Builder<TABLE> options =
+                AggregationOptions.<TABLE>builder().preserveEmpty(preserveEmpty);
+        if (initialGroups != null) {
+            options.initialGroups(initialGroups);
+        }
+        return aggBy(aggregations, groupByColumns, options.build());
     }
 
     // -------------------------------------------------------------------------------------------

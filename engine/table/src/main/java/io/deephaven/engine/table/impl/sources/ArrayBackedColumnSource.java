@@ -53,7 +53,7 @@ import java.util.Collection;
  */
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractColumnSource<T>
-        implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource,
+        implements FillUnordered<Values>, ShiftableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 
     /**

@@ -4,6 +4,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -813,8 +814,11 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     /**
      * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
      * {@code aggregation} to each resulting group of rows. The result table will have one row per group, ordered by the
-     * <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never changes.
-     * Groups that become empty will be removed from the result.
+     * <em>encounter order</em> within {@code this}. Groups that become empty will be removed from the result. When the
+     * engine reclaims the states of removed groups, as it does by default for aggregations whose operators all support
+     * it, a group that later receives rows again is newly encountered, and its row is added after every existing group;
+     * otherwise the group returns to its original row key. The relative order of groups that have not been removed
+     * stays the same.
      *
      * @param aggregation The {@link Aggregation aggregation} to apply
      * @param groupByColumns The columns to group by
@@ -826,8 +830,11 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     /**
      * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
      * {@code aggregation} to each resulting group of rows. The result table will have one row per group, ordered by the
-     * <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never changes.
-     * Groups that become empty will be removed from the result.
+     * <em>encounter order</em> within {@code this}. Groups that become empty will be removed from the result. When the
+     * engine reclaims the states of removed groups, as it does by default for aggregations whose operators all support
+     * it, a group that later receives rows again is newly encountered, and its row is added after every existing group;
+     * otherwise the group returns to its original row key. The relative order of groups that have not been removed
+     * stays the same.
      *
      * @param aggregation The {@link Aggregation aggregation} to apply
      * @param groupByColumns The {@link ColumnName columns} to group by
@@ -839,8 +846,11 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     /**
      * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
      * {@code aggregations} to each resulting group of rows. The result table will have one row per group, ordered by
-     * the <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never
-     * changes. Groups that become empty will be removed from the result.
+     * the <em>encounter order</em> within {@code this}. Groups that become empty will be removed from the result. When
+     * the engine reclaims the states of removed groups, as it does by default for aggregations whose operators all
+     * support it, a group that later receives rows again is newly encountered, and its row is added after every
+     * existing group; otherwise the group returns to its original row key. The relative order of groups that have not
+     * been removed stays the same.
      *
      * @param aggregations The {@link Aggregation aggregations} to apply
      * @param groupByColumns The columns to group by
@@ -852,8 +862,11 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     /**
      * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
      * {@code aggregations} to each resulting group of rows. The result table will have one row per group, ordered by
-     * the <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never
-     * changes. Groups that become empty will be removed from the result.
+     * the <em>encounter order</em> within {@code this}. Groups that become empty will be removed from the result. When
+     * the engine reclaims the states of removed groups, as it does by default for aggregations whose operators all
+     * support it, a group that later receives rows again is newly encountered, and its row is added after every
+     * existing group; otherwise the group returns to its original row key. The relative order of groups that have not
+     * been removed stays the same.
      *
      * @param aggregations The {@link Aggregation aggregations} to apply
      * @param groupByColumns The {@link ColumnName columns} to group by
@@ -865,8 +878,12 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     /**
      * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
      * {@code aggregations} to each resulting group of rows. The result table will have one row per group, ordered by
-     * the <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never
-     * changes.
+     * the <em>encounter order</em> within {@code this}. If {@code preserveEmpty == true} or
+     * {@code initialGroups != null}, the row key for a given group never changes. Otherwise, groups that become empty
+     * will be removed from the result. When the engine reclaims the states of removed groups, as it does by default for
+     * aggregations whose operators all support it, a group that later receives rows again is newly encountered, and its
+     * row is added after every existing group; otherwise the group returns to its original row key. The relative order
+     * of groups that have not been removed stays the same.
      *
      * @param aggregations The {@link Aggregation aggregations} to apply
      * @param preserveEmpty Whether to keep result rows for groups that are initially empty or become empty as a result
@@ -884,6 +901,21 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     @ConcurrentMethod
     TOPS aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, TABLE initialGroups,
             Collection<? extends ColumnName> groupByColumns);
+
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregations} to each resulting group of rows, as {@link #aggBy(Collection, boolean, Object, Collection)}
+     * does, with the {@link AggregationOptions#preserveEmpty() empty groups}, {@link AggregationOptions#initialGroups()
+     * initial groups}, and {@link AggregationOptions#stateReclamation() state reclamation} given by {@code options}.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @param groupByColumns The {@link ColumnName columns} to group by
+     * @param options The options for the aggregation
+     * @return A new table aggregating the rows of {@code this}
+     */
+    @ConcurrentMethod
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns,
+            AggregationOptions<TABLE> options);
 
     // -------------------------------------------------------------------------------------------
 

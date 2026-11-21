@@ -13,6 +13,7 @@ import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -518,8 +519,8 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups,
-            Collection<? extends ColumnName> groupByColumns) {
+    default Table aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends ColumnName> groupByColumns, AggregationOptions<Table> options) {
         return throwUnsupported();
     }
 

@@ -38,12 +38,13 @@ import java.util.function.LongConsumer;
  * value, at a cost independent of the result's size.
  *
  * <p>
- * The aggregation never moves or removes a key's state, so a key's row key is fixed once assigned, and a probe answers
- * for previous values as well as current ones. A refreshing aggregation changes its hash table only in its update
- * cycle, which it {@link IncrementalOperatorAggregationStateManager#lastStateChangeStep() marks} before the first
- * change. A probe on another thread reads the clock's step first, and is abandoned, so that the filter scans the
- * column, when a cycle at that step or later began changing the hash table, filtering previous values, or a later cycle
- * did, filtering current ones.
+ * A key's row key changes only when the aggregation inserts, removes or moves its state, each of which changes the hash
+ * table, so a probe of a hash table that has not changed since a step answers for previous values as well as current
+ * ones at that step. A refreshing aggregation changes its hash table only in its update cycle, which it
+ * {@link IncrementalOperatorAggregationStateManager#lastStateChangeStep() marks} before the first change, including
+ * before it moves the key column's values with its states. A probe on another thread reads the clock's step first, and
+ * is abandoned, so that the filter scans the column, when a cycle at that step or later began changing the hash table,
+ * filtering previous values, or a later cycle did, filtering current ones.
  *
  * <p>
  * The key source's time conversions are delegated as well, so that a key column reinterprets as the column it was
