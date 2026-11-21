@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.deephaven.extensions.s3.SharedS3AsyncExecutors;
 import org.apache.iceberg.aws.AwsClientFactories;
 import org.apache.iceberg.aws.AwsClientFactory;
 import org.apache.iceberg.aws.AwsClientProperties;
@@ -77,6 +78,8 @@ public class DeephavenAwsClientFactory implements AwsClientFactory {
                 .applyMutation(
                         b -> s3FileIOProperties.applyCredentialConfigurations(awsClientProperties, b))
                 .applyMutation(s3FileIOProperties::applyEndpointConfigurations)
+                // A REST catalog can give each table its own FileIO, and so its own client; share the threads.
+                .applyMutation(SharedS3AsyncExecutors::apply)
                 .build();
     }
 }
