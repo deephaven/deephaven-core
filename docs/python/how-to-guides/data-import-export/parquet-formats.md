@@ -67,9 +67,11 @@ Reading a metadata-partitioned directory with `is_refreshing=True` fails.
 Deephaven maps Parquet [logical types](https://github.com/apache/parquet-format/blob/master/LogicalTypes.md) to Deephaven column types on read. Some of these mappings are ones you might not expect:
 
 - **`ENUM`**: Read as `String`. Some Parquet writers use `ENUM` to mark columns that hold a finite set of string values. Physically, an `ENUM` column is stored the same way as a `STRING` column, as UTF-8 bytes in a `BINARY` column.
+- **`FLOAT16`**: Read as `float`, because Java has no 16-bit floating-point type. A `float` holds every `FLOAT16` value exactly.
 - **`UINT_8` and `UINT_16`**: Read as `char`, Java's unsigned 16-bit type.
 - **`UINT_32`**: Read as `long`.
 - **`UINT_64`**: Read as `java.math.BigInteger` by default, because no Java primitive holds the full `UINT_64` range. To read it as a `long` instead, see [Reading `UINT_64` as a `long`](#reading-uint_64-as-a-long).
+- **`UUID`**: Read as `java.util.UUID`. To read the column as a `String` in canonical form, or as its raw 16 bytes, pass [`read`](../../reference/data-import-export/Parquet/readTable.md) a `table_definition` that declares the column as `dtypes.string` or `dtypes.byte_array`.
 
 ### Reading `UINT_64` as a `long`
 
@@ -105,7 +107,7 @@ Deephaven never writes `UINT_64`, so these options apply only to reads, and only
 
 Deephaven can't infer a column type for the following Parquet columns:
 
-- `JSON`, `BSON`, `UUID`, `INTERVAL`, `FLOAT16`, `GEOMETRY`, `GEOGRAPHY`, `VARIANT`, and `MAP` columns
+- `JSON`, `BSON`, `INTERVAL`, `GEOMETRY`, `GEOGRAPHY`, `VARIANT`, and `MAP` columns
 - Group columns, also called structs, that have more than one field
 - Nested repeated columns, such as lists of lists
 
