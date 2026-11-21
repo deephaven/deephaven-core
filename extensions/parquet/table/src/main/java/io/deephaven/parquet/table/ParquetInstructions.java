@@ -22,6 +22,7 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -105,6 +106,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * Read as {@link BigInteger}, representing every value exactly. The default.
          */
         BIG_INTEGER(BigInteger.class),
+
+        /**
+         * Read as {@link BigDecimal} with a scale of zero, representing every value exactly.
+         */
+        BIG_DECIMAL(BigDecimal.class),
 
         /**
          * Read as a primitive {@code long}; values exceeding {@link Long#MAX_VALUE} throw when read.

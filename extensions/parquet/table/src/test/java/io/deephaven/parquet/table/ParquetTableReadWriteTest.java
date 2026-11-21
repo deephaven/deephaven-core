@@ -3247,6 +3247,102 @@ public final class ParquetTableReadWriteTest {
     }
 
     /**
+     * The values as Deephaven reads them into a {@link BigDecimal} column: scale zero, nulls preserved.
+     */
+    private static BigDecimal[] toBigDecimals(final UnsignedLong... values) {
+        return Arrays.stream(values)
+                .map(value -> value == null ? null : new BigDecimal(value.bigIntegerValue()))
+                .toArray(BigDecimal[]::new);
+    }
+
+    /**
+     * Requesting {@link ParquetInstructions.UnsignedLongTarget#BIG_DECIMAL} reads every value exactly.
+     */
+    @Test
+    public void testReadUnsignedLongAsBigDecimalViaInstructionsHint() throws IOException {
+        final ParquetInstructions asBigDecimal = ParquetInstructions.builder()
+                .setUnsignedLongTarget(UINT64_COL, ParquetInstructions.UnsignedLongTarget.BIG_DECIMAL)
+                .build();
+        final UnsignedLong[] values =
+                {UnsignedLong.ZERO, UnsignedLong.ONE, LONG_MAX, TWO_TO_THE_63, UnsignedLong.MAX_VALUE, null};
+        final File dest = writeUint64File("uint64_hint_big_decimal.parquet", values);
+        final Table fromDisk = readTable(dest.getPath(), asBigDecimal);
+        assertEquals(BigDecimal.class, fromDisk.getDefinition().getColumn(UINT64_COL).getDataType());
+        assertTableEquals(newTable(col(UINT64_COL, toBigDecimals(values))), fromDisk);
+
+        // A required column takes the reader's non-null materializer path.
+        final UnsignedLong[] requiredValues = {UnsignedLong.ZERO, TWO_TO_THE_63, UnsignedLong.MAX_VALUE};
+        final File required = writeRequiredUint64File("uint64_big_decimal_required.parquet", requiredValues);
+        assertTableEquals(newTable(col(UINT64_COL, toBigDecimals(requiredValues))),
+                readTable(required.getPath(), asBigDecimal));
+    }
+
+    /**
+     * A supplied {@link TableDefinition} can request {@link BigDecimal} too.
+     */
+    @Test
+    public void testReadUnsignedLongAsBigDecimalViaTableDefinition() throws IOException {
+        final ParquetInstructions asBigDecimal = EMPTY.withTableDefinitionAndLayout(
+                TableDefinition.of(ColumnDefinition.fromGenericType(UINT64_COL, BigDecimal.class)),
+                ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
+        final UnsignedLong[] values = {UnsignedLong.ZERO, TWO_TO_THE_63, UnsignedLong.MAX_VALUE, null};
+        final File dest = writeUint64File("uint64_definition_big_decimal.parquet", values);
+        final Table fromDisk = readTable(dest.getPath(), asBigDecimal);
+        assertEquals(BigDecimal.class, fromDisk.getDefinition().getColumn(UINT64_COL).getDataType());
+        assertTableEquals(newTable(col(UINT64_COL, toBigDecimals(values))), fromDisk);
+    }
+
+    /**
+     * A hint applies to the elements of a repeated column, yielding {@code BigDecimal[]}.
+     */
+    @Test
+    public void testReadRepeatedUnsignedLongAsBigDecimalViaInstructionsHint() throws IOException {
+        final UnsignedLong[] firstRow = {UnsignedLong.ZERO, UnsignedLong.MAX_VALUE};
+        final UnsignedLong[] secondRow = {TWO_TO_THE_63, LONG_MAX, UnsignedLong.ONE};
+        final File dest = writeRepeatedUint64File("uint64_repeated_big_decimal.parquet", firstRow, secondRow);
+        final ParquetInstructions asBigDecimal = ParquetInstructions.builder()
+                .setUnsignedLongTarget(UINT64_COL, ParquetInstructions.UnsignedLongTarget.BIG_DECIMAL)
+                .setFileLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)
+                .build();
+
+        final Table fromDisk = readTable(dest.getPath(), asBigDecimal);
+        final ColumnDefinition<?> columnDefinition = fromDisk.getDefinition().getColumn(UINT64_COL);
+        assertEquals(BigDecimal[].class, columnDefinition.getDataType());
+        assertEquals(BigDecimal.class, columnDefinition.getComponentType());
+        try (final CloseableIterator<BigDecimal[]> it = fromDisk.objectColumnIterator(UINT64_COL)) {
+            assertArrayEquals(toBigDecimals(firstRow), it.next());
+            assertArrayEquals(toBigDecimals(secondRow), it.next());
+            assertFalse(it.hasNext());
+        }
+    }
+
+    /**
+     * The {@link ParquetInstructions.UnsignedLongTarget#BIG_DECIMAL} hint conflicts with a definition of another type.
+     */
+    @Test
+    public void testBigDecimalUnsignedLongTargetConflictingWithTableDefinition() {
+        final TableDefinition asBigInteger =
+                TableDefinition.of(ColumnDefinition.fromGenericType(UINT64_COL, BigInteger.class));
+        final TableDefinition asBigDecimal =
+                TableDefinition.of(ColumnDefinition.fromGenericType(UINT64_COL, BigDecimal.class));
+        assertThrowsWithMessage(() -> ParquetInstructions.builder()
+                .setUnsignedLongTarget(UINT64_COL, ParquetInstructions.UnsignedLongTarget.BIG_DECIMAL)
+                .setTableDefinition(asBigInteger)
+                .build(),
+                "Conflicting types requested for column uint64Col");
+        assertThrowsWithMessage(() -> ParquetInstructions.builder()
+                .setUnsignedLongTarget(UINT64_COL, ParquetInstructions.UnsignedLongTarget.BIG_INTEGER)
+                .setTableDefinition(asBigDecimal)
+                .build(),
+                "Conflicting types requested for column uint64Col");
+        // An agreeing definition is accepted.
+        ParquetInstructions.builder()
+                .setUnsignedLongTarget(UINT64_COL, ParquetInstructions.UnsignedLongTarget.BIG_DECIMAL)
+                .setTableDefinition(asBigDecimal)
+                .build();
+    }
+
+    /**
      * A supplied {@link TableDefinition} takes precedence over an {@code unsignedLongTarget} hint, so a disagreement is
      * rejected at construction rather than silently discarding the hint.
      */
@@ -3313,7 +3409,8 @@ public final class ParquetTableReadWriteTest {
     }
 
     /**
-     * Types other than {@code long} and {@link BigInteger} remain unsupported for {@code UINT_64} columns.
+     * Types other than {@code long}, {@link BigInteger} and {@link BigDecimal} remain unsupported for {@code UINT_64}
+     * columns.
      */
     @Test
     public void testReadUnsignedLongAsUnsupportedTypeFails() throws IOException {
