@@ -8,6 +8,7 @@ import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.client.grpc.Calls;
 import io.deephaven.engine.exceptions.RequestCancelledException;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
@@ -22,13 +23,12 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.Exceptions;
 import io.grpc.CallOptions;
-import io.grpc.ClientCall;
+import io.grpc.Channel;
 import io.grpc.Context;
 import io.grpc.MethodDescriptor;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.ProtoUtils;
 import io.grpc.stub.ClientCallStreamObserver;
-import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
 import org.apache.arrow.flight.impl.Flight.FlightData;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
@@ -93,24 +93,24 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         future = new SnapshotCompletableFuture();
 
         barrageMessageReader = new BarrageMessageReaderImpl();
-        final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
-                getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
-                        schema.computeWireComponentTypes(), barrageMessageReader);
-
-        // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
-        // from a Deephaven server RPC thread. If we need to generalize this in the future, we may wrap this logic in a
-        // Channel or interceptor; inject the appropriate Context to use; or have the server RPC set a more appropriate
-        // Context along the stack.
-        final ClientCall<FlightData, BarrageMessage> call;
-        final Context previous = Context.ROOT.attach();
-        try {
-            call = session.channel().channel().newCall(snapshotDescriptor, CallOptions.DEFAULT);
-        } finally {
-            Context.ROOT.detach(previous);
+        {
+            final Channel channel = session.channel().channel2();
+            final CallOptions callOptions = session.channel().callOptions();
+            final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
+                    getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
+                            schema.computeWireComponentTypes(), barrageMessageReader);
+            // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being
+            // called from a Deephaven server RPC thread. If we need to generalize this in the future, we may wrap this
+            // logic in a Channel or interceptor; inject the appropriate Context to use; or have the server RPC set a
+            // more appropriate Context along the stack.
+            final Context previous = Context.ROOT.attach();
+            try {
+                observer = Calls.asyncBidiStreamingCall(channel, snapshotDescriptor, callOptions,
+                        new DoExchangeObserver());
+            } finally {
+                Context.ROOT.detach(previous);
+            }
         }
-        observer = (ClientCallStreamObserver<FlightData>) ClientCalls
-                .asyncBidiStreamingCall(call, new DoExchangeObserver());
-
         // Allow the server to send us all messages when there is sufficient bandwidth. gRPC tracks the number of
         // requested messages in an int counter within the transport's message deframer. ClientCalls.startCall() always
         // issues an initial request(1), so we use MAX_VALUE - 1 to avoid overflowing that counter to MIN_VALUE, which

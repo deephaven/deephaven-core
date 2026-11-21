@@ -3,10 +3,12 @@
 //
 package io.deephaven.client.impl;
 
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -41,9 +43,9 @@ public class UnaryGrpcFuture<ReqT, RespT, V> implements ClientResponseObserver<R
     }
 
     /**
-     * Factory method to take a request instance and a method reference to a unary call. Returns a void
-     * completablefuture, as many gRPC calls in Deephaven have no meaningful result, except for the fact that they
-     * succeeded and server-side state has been modified.
+     * Factory method to take a request instance and a method reference to a unary call. Returns a void completable
+     * future, as many gRPC calls in Deephaven have no meaningful result, except for the fact that they succeeded and
+     * server-side state has been modified.
      *
      * @param request the gRPC request value
      * @param call the unary gRPC call reference/lambda
@@ -59,8 +61,9 @@ public class UnaryGrpcFuture<ReqT, RespT, V> implements ClientResponseObserver<R
     private final CompletableFuture<V> future = new CompletableFuture<>();
     private final Function<RespT, V> mapping;
 
-    private UnaryGrpcFuture(Function<RespT, V> mapping) {
-        this.mapping = mapping;
+    @InternalUseOnly
+    public UnaryGrpcFuture(Function<RespT, V> mapping) {
+        this.mapping = Objects.requireNonNull(mapping);
     }
 
     public CompletableFuture<V> future() {
