@@ -97,10 +97,11 @@ public class JsItr {
         @JsMethod
         public JsIIterableResult<T> next() {
             JsIIterableResult<T> result = JsIIterableResult.create();
-            if (hasNext()) {
+            boolean done = !hasNext();
+            if (!done) {
                 result.setValue(wrapped.next());
             }
-            result.setDone(hasNext());
+            result.setDone(done);
 
             return Js.uncheckedCast(result);
         }
