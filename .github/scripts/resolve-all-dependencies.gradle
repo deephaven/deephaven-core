@@ -2,10 +2,14 @@
 // artifacts of all of that project's resolvable configurations.
 allprojects {
     def configs = configurations
+    // The groovy plugin infers each compile task's Groovy classpath in a detached configuration when the task runs; a
+    // task with no sources never runs, and inferring its classpath can fail.
+    def groovyCompiles = tasks.withType(GroovyCompile)
     tasks.register('resolveAllDependencies') {
         description = 'Resolves the artifacts of every resolvable configuration in this project.'
         doLast {
             configs.findAll { it.canBeResolved }.each { it.incoming.files.files }
+            groovyCompiles.findAll { !it.source.empty }.each { it.groovyClasspath.files }
         }
     }
 }
