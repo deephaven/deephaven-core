@@ -6,12 +6,15 @@ on:
   schedule:
     # Early in the ISO week, which is part of the cache key.
     - cron: '30 0 * * 1'
+  # The files hashed into the cache key in .github/actions/gradle-setup.
   push:
     branches: [ 'main' ]
     paths:
       - 'gradle/libs.versions.toml'
       - 'buildSrc/build.gradle'
       - 'gradle/wrapper/gradle-wrapper.properties'
+      - '.github/scripts/resolve-all-dependencies.gradle'
+      - '.github/workflows/gradle-deps-cache.yml'
   workflow_dispatch:
 
 concurrency:

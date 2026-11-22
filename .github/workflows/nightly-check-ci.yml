@@ -55,7 +55,6 @@ jobs:
             21
 
       - name: Setup Gradle
-        id: gradle
         uses: ./.github/actions/gradle-setup
 
       - name: Setup gradle properties
@@ -70,9 +69,8 @@ jobs:
             > "$GITHUB_WORKSPACE/build/test-results/watchdog/watchdog.log" 2>&1 &
           echo "watchdog started, pid $!"
 
-      # With this week's seeded dependency cache, --offline fails on any dependency the seed missed.
       - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }} with coverage=${{ env.COVER }}
-        run: ./gradlew --scan --continue --rerun-tasks ${{ steps.gradle.outputs.cache-hit == 'true' && '--offline' || '' }} ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER
+        run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER
 
       - name: Report downloaded dependencies
         if: always()

@@ -24,12 +24,14 @@ outputs:
 runs:
   using: composite
   steps:
-    # The ISO week in the key lets the weekly seed start from an empty cache, since entries can't be overwritten.
+    # The ISO week in the key lets the weekly seed start from an empty cache, since entries can't be overwritten. The
+    # seed's own files are hashed too, so changing how it seeds produces a new entry. Keep in sync with the push paths
+    # in gradle-deps-cache.yml.
     - name: Compute Gradle dependency cache key
       id: key
       shell: bash
       run: |
-        prefix="gradle-deps-${{ hashFiles('gradle/libs.versions.toml', 'buildSrc/build.gradle', 'gradle/wrapper/gradle-wrapper.properties') }}-"
+        prefix="gradle-deps-${{ hashFiles('gradle/libs.versions.toml', 'buildSrc/build.gradle', 'gradle/wrapper/gradle-wrapper.properties', '.github/scripts/resolve-all-dependencies.gradle', '.github/workflows/gradle-deps-cache.yml') }}-"
         echo "prefix=${prefix}" >> "$GITHUB_OUTPUT"
         echo "key=${prefix}$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
@@ -49,7 +51,9 @@ runs:
 
     - name: Count cached dependency files
       shell: bash
-      run: echo "GRADLE_DEPS_FILES_BEFORE=$(.github/scripts/gradle-deps-count.sh)" >> "$GITHUB_ENV"
+      run: |
+        echo "GRADLE_DEPS_FILES_BEFORE=$(.github/scripts/gradle-deps-count.sh)" >> "$GITHUB_ENV"
+        echo "GRADLE_DEPS_CACHE_HIT=${{ steps.restore.outputs.cache-hit }}" >> "$GITHUB_ENV"
 
     - name: Setup Gradle
       if: ${{ inputs.setup-gradle == 'true' }}
