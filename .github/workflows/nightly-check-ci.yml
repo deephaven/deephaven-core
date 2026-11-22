@@ -55,7 +55,8 @@ jobs:
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        id: gradle
+        uses: ./.github/actions/gradle-setup
 
       - name: Setup gradle properties
         run: |
@@ -69,9 +70,14 @@ jobs:
             > "$GITHUB_WORKSPACE/build/test-results/watchdog/watchdog.log" 2>&1 &
           echo "watchdog started, pid $!"
 
+      # With this week's seeded dependency cache, --offline fails on any dependency the seed missed.
       - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }} with coverage=${{ env.COVER }}
-        run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER
-        
+        run: ./gradlew --scan --continue --rerun-tasks ${{ steps.gradle.outputs.cache-hit == 'true' && '--offline' || '' }} ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER
+
+      - name: Report downloaded dependencies
+        if: always()
+        run: .github/scripts/gradle-deps-report.sh
+
       - name: Run df -h after build
         run: |
           df -h
@@ -166,7 +172,7 @@ jobs:
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        uses: ./.github/actions/gradle-setup
 
       - name: Setup gradle properties
         run: |

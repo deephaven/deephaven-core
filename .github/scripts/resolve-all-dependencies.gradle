@@ -1,0 +1,11 @@
+// Init script for gradle-deps-cache.yml: adds a resolveAllDependencies task to every project, which downloads the
+// artifacts of all of that project's resolvable configurations.
+allprojects {
+    def configs = configurations
+    tasks.register('resolveAllDependencies') {
+        description = 'Resolves the artifacts of every resolvable configuration in this project.'
+        doLast {
+            configs.findAll { it.canBeResolved }.each { it.incoming.files.files }
+        }
+    }
+}
