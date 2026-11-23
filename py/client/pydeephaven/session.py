@@ -101,9 +101,18 @@ def _run_release_worker(
         try:
             job.run(session)
         except Exception:
-            logger.exception(
-                f"{session._logpfx}: background job {type(job).__name__} failed"
-            )
+            if not session.is_connected:
+                # The session disconnected while this job was in flight, usually because close() ran. The job then
+                # fails because the channel or the server session is gone. The server frees the session's tickets
+                # anyway, so logging it as an error shows users a traceback for a harmless failure.
+                logger.debug(
+                    f"{session._logpfx}: background job {type(job).__name__} failed after the session disconnected",
+                    exc_info=True,
+                )
+            else:
+                logger.exception(
+                    f"{session._logpfx}: background job {type(job).__name__} failed"
+                )
         del session  # hold the session only weakly while waiting
 
 
@@ -589,6 +598,11 @@ class Session:
         if self._refresh_token():
             self._refresh_failures = 0
             wakeup = 0.5 * self._timeout_seconds
+        elif not self.is_connected:
+            # The session disconnected during the refresh, usually because close() ran, so the refresh failed. Stop
+            # refreshing without a retry warning.
+            self._next_refresh = None
+            return
         else:
             self._refresh_failures += 1
             if self._refresh_failures >= len(self._refresh_backoff):
@@ -611,9 +625,16 @@ class Session:
             self.config_service.get_configuration_constants()
             return True
         except Exception as ex:
-            logger.warning(
-                f"{self._logpfx}: caught exception while refreshing auth token: {ex}."
-            )
+            if not self.is_connected:
+                # The session disconnected during the refresh, usually because close() ran. The failure is expected,
+                # so don't warn about it.
+                logger.debug(
+                    f"{self._logpfx}: auth token refresh failed after the session disconnected: {ex}."
+                )
+            else:
+                logger.warning(
+                    f"{self._logpfx}: caught exception while refreshing auth token: {ex}."
+                )
             return False
 
     @property
@@ -644,13 +665,15 @@ class Session:
             self._release_queue.put(_STOP)
             if not self.is_connected:
                 return
+            # Disconnect before CloseSession. The background threads then stop, and an RPC of theirs that fails while
+            # CloseSession runs is not logged.
+            self.is_connected = False
             try:
                 self.session_service.close()
             finally:
                 # Disconnect locally even if CloseSession fails.
                 if self.grpc_channel:
                     self.grpc_channel.close()
-                self.is_connected = False
                 self._last_export_ticket_number = 0
                 if self._flight_client:
                     self._flight_client.close()
