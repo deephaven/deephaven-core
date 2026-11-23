@@ -2381,15 +2381,13 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
         /**
          * After reading values of the current leaf for previous values, read the previous values recorded for it again.
          * A writer records a row before writing it, so if a value read from the current leaf is the new one, the row's
-         * recorded value is found now.
+         * recorded value is found now. Called only when the previous values read for the current leaf are not those of
+         * the whole leaf, which no later record changes.
          *
          * @return whether the recorded values differ from those read when this state moved to the current leaf, and so
          *         must be laid over the values read
          */
         private boolean changedDuringRead() {
-            if (holdsWholeLeaf()) {
-                return false;
-            }
             VarHandle.acquireFence();
             return readPrevious();
         }
