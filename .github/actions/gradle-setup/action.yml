@@ -30,7 +30,7 @@ runs:
       id: key
       shell: bash
       run: |
-        echo "key=gradle-deps-${{ hashFiles('gradle/libs.versions.toml', 'buildSrc/build.gradle', 'gradle/wrapper/gradle-wrapper.properties', '.github/scripts/resolve-all-dependencies.gradle', '.github/workflows/gradle-deps-cache.yml') }}" >> "$GITHUB_OUTPUT"
+        echo "key=gradle-deps-${{ hashFiles('gradle/libs.versions.toml', 'buildSrc/build.gradle', 'gradle/wrapper/gradle-wrapper.properties', 'buildSrc/src/main/groovy/io.deephaven.resolve-all-dependencies.gradle', '.github/workflows/gradle-deps-cache.yml') }}" >> "$GITHUB_OUTPUT"
 
     - name: Restore Gradle dependency cache
       id: restore

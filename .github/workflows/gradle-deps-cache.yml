@@ -10,7 +10,7 @@ on:
   push:
     branches: [ 'main' ]
     paths:
-      - '.github/scripts/resolve-all-dependencies.gradle'
+      - 'buildSrc/src/main/groovy/io.deephaven.resolve-all-dependencies.gradle'
       - '.github/workflows/gradle-deps-cache.yml'
   workflow_dispatch:
   workflow_call:
@@ -47,10 +47,11 @@ jobs:
           .github/scripts/gradle-properties.sh 21 >> gradle.properties
           cat gradle.properties
 
-      # spotlessCheck resolves its formatter artifacts at task time, in detached configurations the init script can't see.
+      # spotlessCheck resolves its formatter artifacts at task time, in detached configurations resolveAllDependencies
+      # can't see.
       - name: Resolve dependencies
         if: ${{ steps.gradle.outputs.cache-hit != 'true' }}
-        run: ./gradlew --init-script .github/scripts/resolve-all-dependencies.gradle resolveAllDependencies spotlessCheck
+        run: ./gradlew resolveAllDependencies spotlessCheck
 
       - name: Save Gradle dependency cache
         if: ${{ steps.gradle.outputs.cache-hit != 'true' }}

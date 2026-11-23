@@ -1,0 +1,14 @@
+// Downloads every dependency this project can resolve. CI's gradle-deps-cache.yml runs it to seed the shared dependency
+// cache; locally it prefetches dependencies, e.g. before working offline.
+def configs = configurations
+// The groovy plugin infers each compile task's Groovy classpath in a detached configuration when the task runs; a task
+// with no sources never runs, and inferring its classpath can fail.
+def groovyCompiles = tasks.withType(GroovyCompile)
+
+tasks.register('resolveAllDependencies') {
+    description = 'Resolves the artifacts of every resolvable configuration in this project.'
+    doLast {
+        configs.findAll { it.canBeResolved }.each { it.incoming.files.files }
+        groovyCompiles.findAll { !it.source.empty }.each { it.groovyClasspath.files }
+    }
+}
