@@ -38,11 +38,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * Measures a cycle of a {@code naturalJoin} whose refreshing left table inserts a row before its last
- * {@code 2^logShiftRows} rows, shifting them, so that the join moves the row redirections of the shifted rows. The left
- * table holds {@code 2^20} rows, every {@code stride}-th row key from 0, dense enough that the join chooses a sparse
- * row redirection. The join key is a constant, so that the join's own state changes little and the measured work is the
- * redirection's.
+ * Measures a cycle of a {@code naturalJoin} whose refreshing left table shifts its last {@code 2^logShiftRows} rows, so
+ * that the join moves the row redirections of the shifted rows. Cycles alternate between inserting a row before those
+ * rows, shifting them up, and removing it again, shifting them back, so that every cycle starts from a table of
+ * {@code 2^20} or {@code 2^20 + 1} rows. The rows are every {@code stride}-th row key from 0, dense enough that the
+ * join chooses a sparse row redirection. The join key is a constant, so that the join's own state changes little and
+ * the measured work is the redirection's.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -66,6 +67,8 @@ public class NaturalJoinShiftBenchmark {
     private ControlledUpdateGraph updateGraph;
     private QueryTable left;
     private Table result;
+    /** The row key of the inserted row, which the next cycle removes, or -1 when no row is inserted. */
+    private long insertedKey;
 
     @Setup(Level.Trial)
     public void setupTrial() {
@@ -82,6 +85,7 @@ public class NaturalJoinShiftBenchmark {
         left.setRefreshing(true);
         final Table right = TableTools.newTable(TableTools.longCol("K", 0), TableTools.doubleCol("R", 1.0));
         result = locked(() -> left.naturalJoin(right, "K", "R"));
+        insertedKey = -1;
 
         final RowRedirection redirection =
                 ((RedirectedColumnSource<?>) result.getColumnSource("R")).getRowRedirection();
@@ -94,15 +98,25 @@ public class NaturalJoinShiftBenchmark {
         updateGraph.runWithinUnitTestCycle(() -> {
             final TrackingWritableRowSet rowSet = left.getRowSet().writableCast();
             final long last = rowSet.lastRowKey();
-            final long firstShifted = rowSet.get(rowSet.size() - (1L << logShiftRows));
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
-            shiftBuilder.shiftRange(firstShifted, last, stride);
-            final RowSetShiftData shifted = shiftBuilder.build();
-            RowSetShiftData.applyShift(rowSet, firstShifted, last, stride);
-            final RowSet added = RowSetFactory.fromKeys(firstShifted);
-            rowSet.insert(added);
-            left.notifyListeners(new TableUpdateImpl(added, RowSetFactory.empty(), RowSetFactory.empty(), shifted,
-                    ModifiedColumnSet.EMPTY));
+            if (insertedKey < 0) {
+                final long firstShifted = rowSet.get(rowSet.size() - (1L << logShiftRows));
+                shiftBuilder.shiftRange(firstShifted, last, stride);
+                RowSetShiftData.applyShift(rowSet, firstShifted, last, stride);
+                final RowSet added = RowSetFactory.fromKeys(firstShifted);
+                rowSet.insert(added);
+                insertedKey = firstShifted;
+                left.notifyListeners(new TableUpdateImpl(added, RowSetFactory.empty(), RowSetFactory.empty(),
+                        shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+            } else {
+                final RowSet removed = RowSetFactory.fromKeys(insertedKey);
+                rowSet.remove(removed);
+                shiftBuilder.shiftRange(insertedKey + stride, last, -stride);
+                RowSetShiftData.applyShift(rowSet, insertedKey + stride, last, -stride);
+                insertedKey = -1;
+                left.notifyListeners(new TableUpdateImpl(RowSetFactory.empty(), removed, RowSetFactory.empty(),
+                        shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+            }
         });
         return result;
     }
