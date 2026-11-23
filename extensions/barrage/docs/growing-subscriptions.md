@@ -95,8 +95,9 @@ round right after.
    sorted by remaining positions, fewest first. Full subscriptions in one direction grow from
    position 0 upward, so a full subscription that started later still needs every position an
    earlier full subscription needs, and the rows reserved for the full subscription nearest
-   completion serve every full subscription. Sorting each round makes the order independent of the
-   order the producer holds the subscriptions in, which changes when a subscription is removed.
+   completion serve every full subscription in that direction. Sorting each round makes the order
+   independent of the order the producer holds the subscriptions in, which changes when a
+   subscription is removed.
 2. **Viewport requests.** Each viewport request first takes the positions earlier requests already
    reserved this round, then reserves every remaining position of the requested viewport, however
    large the viewport and however little budget is left: a viewport request is never cut short to
@@ -174,19 +175,21 @@ planning and the snapshot.
 snapshots rows and the cell budget keeps being tuned. The snapshot itself falls back to a locked
 snapshot after `ConstructSnapshot`'s concurrent attempts run out, so every round ends.
 
-**A full subscription completes in bounded rounds, whatever the growth rate.** After a full
-subscription's first snapshot, the subscription's remaining set holds only positions below the table
-size at that snapshot, and the set only shrinks. Each round reserves up to `L` positions that the
-full subscription nearest completion still needs, and every full subscription that needs a reserved
-position receives the position that round. Every later round plans with a table size at least the
-first snapshot's, so every remaining position can be reserved. A full subscription with `R`
-positions left after the first snapshot therefore completes within `⌈R / L⌉` more rounds,
-`⌈R / L⌉ + 1` counting the round of the first snapshot, where `L` is the smallest budget the
-viewport requests leave over those rounds.
+**A full subscription completes in bounded rounds, whatever the growth rate.** The bound below holds
+while every growing full subscription grows in the same direction and the viewport requests leave a
+budget `L > 0`. After a full subscription's first snapshot, the subscription's remaining set holds
+only positions below the table size at that snapshot, and the set only shrinks. Each round reserves
+up to `L` positions that the full subscription nearest completion still needs, and every full
+subscription in that direction that needs a reserved position receives the position that round.
+Every later round plans with a table size at least the first snapshot's, so every remaining position
+can be reserved. A full subscription with `R` positions left after the first snapshot therefore
+completes within `⌈R / L⌉` more rounds, `⌈R / L⌉ + 1` counting the round of the first snapshot,
+where `L` is the smallest budget the viewport requests leave over those rounds.
 
-**A full subscription never waits for a later full subscription.** A full subscription that started
-later needs every position the earlier subscription needs and sorts after the earlier subscription,
-so the earlier subscription completes on the earlier subscription's own remaining positions.
+**A full subscription never waits for a later full subscription in the same direction.** A full
+subscription that started later in the same direction needs every position the earlier subscription
+needs and sorts after the earlier subscription, so the earlier subscription completes on the earlier
+subscription's own remaining positions.
 
 **Viewport writes come first.** No full subscriber's write in a phase starts before every viewport
 subscriber's write in the phase has finished.
@@ -197,6 +200,11 @@ subscriber's write in the phase has finished.
   the job's full-subscriber writes, before the next round serves the request.
 - Growing full subscriptions gain no rows in a round where the viewport requests take the whole
   budget. Viewport requests in every round stall full growth for as long as the requests continue.
+- Forward and reverse full subscriptions do not share reservations. A reservation serves only the
+  subscriptions in the reserving subscription's direction, and the budget goes to the subscription
+  nearest completion in either direction. A full subscription can therefore wait for
+  opposite-direction full subscriptions nearer completion, including ones that started later, and
+  the bound above does not apply.
 
 ## Trade-offs
 
@@ -258,6 +266,7 @@ can have, so the tests span several rounds under any snapshot budget.
 | Completion whatever the growth rate | `testFullSubscriptionCompletesWhenGrowthExceedsBudget` |
 | Nearest completion grows first, after a removal | `testNearestCompleteFullSubscriptionGrowsFirst` |
 | No waiting for a later full subscription | `testFullSubscriptionCompletesWithoutWaitingForLaterOnes` |
+| A reverse full subscription completes as appended, inserted and removed rows cross the boundary | `testReverseFullSubscriptionCompletesAsRowsCrossTheBoundary` |
 | Viewport writes come first | `BarrageMessageParallelPropagationTest.testViewportSubscribersAreWrittenFirst` |
 
 The C++ client's `growing_subscription_test.cc` checks that rows appended while a full

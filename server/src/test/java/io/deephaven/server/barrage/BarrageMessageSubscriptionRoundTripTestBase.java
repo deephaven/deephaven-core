@@ -1080,6 +1080,101 @@ public abstract class BarrageMessageSubscriptionRoundTripTestBase extends Barrag
     }
 
     /**
+     * A reverse full subscription completes however the table changes, and holds the table's values when complete. A
+     * reverse subscription counts positions from the end of the table, so every appended row shifts every row the
+     * subscription holds to a higher position, and rows the subscription holds cross into the remaining positions while
+     * rows the subscription lacks cross into the subscription's viewport. Rows inserted and removed in the middle of
+     * the table move rows across the same boundary.
+     *
+     * <p>
+     * The one-column table starts with twice the first round's budget of {@link BarrageUtil#MIN_SNAPSHOT_CELL_COUNT}
+     * rows, keyed ten apart so that rows can be inserted between them. After each round is planned and before the
+     * round's snapshot, the table gains twice that budget of rows at the end, gains a sixteenth of the budget in the
+     * middle, and loses a sixteenth of the budget in the middle. The first round snapshots at most half the table, so
+     * the table changes between the subscription's first and last snapshots. Only the positions the table held at the
+     * first snapshot remain to be snapshotted, at least one budget per round, and a hook fails the test on a snapshot
+     * past that bound.
+     */
+    @Test
+    public void testReverseFullSubscriptionCompletesAsRowsCrossTheBoundary() {
+        final int budgetRows = (int) BarrageUtil.MIN_SNAPSHOT_CELL_COUNT;
+        final int appendRows = budgetRows * 2;
+        final int middleRows = budgetRows / 16;
+        final int initialSize = budgetRows * 2;
+        final int maxRounds = 1 + (initialSize + appendRows + middleRows + budgetRows - 1) / budgetRows;
+        final long keySpacing = 10;
+
+        final RowSetBuilderSequential initialKeys = RowSetFactory.builderSequential();
+        final int[] initialValues = new int[initialSize];
+        for (int ii = 0; ii < initialSize; ++ii) {
+            initialKeys.appendKey(ii * keySpacing);
+            initialValues[ii] = (int) (ii * keySpacing);
+        }
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                initialKeys.build().toTracking(), TableTools.intCol("intCol", initialValues));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final MutableInt rounds = new MutableInt(0);
+        final MutableInt nextAppendIndex = new MutableInt(initialSize);
+        nugget.barrageMessageProducer.setOnGetSnapshot(() -> {
+            if (rounds.incrementAndGet() > maxRounds) {
+                // an Error, so that the propagation job's catch of Exception cannot turn it into a subscription failure
+                throw new AssertionError(
+                        "expected the reverse full subscription to complete within " + maxRounds + " rounds");
+            }
+            // change the table after the round is planned and before the round's snapshot
+            final int round = rounds.get() - 1;
+            // remove rows from the first half and insert rows between rows of the second half
+            final int firstRemoved = initialSize / 4 + round * middleRows;
+            final int firstInserted = initialSize / 2 + round * middleRows;
+            final int firstAppended = nextAppendIndex.get();
+            nextAppendIndex.add(appendRows);
+
+            final RowSetBuilderSequential removedKeys = RowSetFactory.builderSequential();
+            for (int ii = 0; ii < middleRows; ++ii) {
+                removedKeys.appendKey((firstRemoved + ii) * keySpacing);
+            }
+            // the inserted keys all precede the appended keys, so the keys and values are in key order
+            final RowSetBuilderSequential addedKeys = RowSetFactory.builderSequential();
+            final int[] addedValues = new int[middleRows + appendRows];
+            for (int ii = 0; ii < middleRows; ++ii) {
+                final long key = (firstInserted + ii) * keySpacing + keySpacing / 2;
+                addedKeys.appendKey(key);
+                addedValues[ii] = (int) key;
+            }
+            for (int ii = 0; ii < appendRows; ++ii) {
+                final long key = (firstAppended + ii) * keySpacing;
+                addedKeys.appendKey(key);
+                addedValues[middleRows + ii] = (int) key;
+            }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet removed = removedKeys.build();
+                final RowSet added = addedKeys.build();
+                TstUtils.removeRows(sourceTable, removed);
+                TstUtils.addToTable(sourceTable, added, TableTools.intCol("intCol", addedValues));
+                sourceTable.notifyListeners(new TableUpdateImpl(added, removed, RowSetFactory.empty(),
+                        RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+            });
+        }, true);
+        final RemoteClient client = nugget.newClient(null, allCols, true, "reverse-full");
+
+        flushProducerTable();
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+
+        // The first round's budget covers half the table, so the subscription takes a second round, and the table
+        // changes between the two snapshots. Later rounds may have larger budgets, so no more rounds are certain.
+        assertTrue("expected the subscription to take more than one round, took " + rounds.get(), rounds.get() >= 2);
+        // a null server viewport is how the server acknowledges that a full subscription is satisfied
+        assertNull(client.barrageTable.getServerViewport());
+        nugget.validate("reverse full subscription as rows cross the boundary");
+    }
+
+    /**
      * The full subscription nearest completion grows first, whatever the order the producer holds the subscriptions in.
      * A full subscription that started later needs every row an earlier full subscription still needs, so growing the
      * earlier subscription first serves both. Growing the later subscription first spends the budget on rows the
