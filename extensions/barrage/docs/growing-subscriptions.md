@@ -176,15 +176,16 @@ snapshots rows and the cell budget keeps being tuned. The snapshot itself falls 
 snapshot after `ConstructSnapshot`'s concurrent attempts run out, so every round ends.
 
 **A full subscription completes in bounded rounds, whatever the growth rate.** The bound below holds
-while every growing full subscription grows in the same direction and the viewport requests leave a
-budget `L > 0`. After a full subscription's first snapshot, the subscription's remaining set holds
-only positions below the table size at that snapshot, and the set only shrinks. Each round reserves
-up to `L` positions that the full subscription nearest completion still needs, and every full
-subscription in that direction that needs a reserved position receives the position that round.
-Every later round plans with a table size at least the first snapshot's, so every remaining position
-can be reserved. A full subscription with `R` positions left after the first snapshot therefore
-completes within `⌈R / L⌉` more rounds, `⌈R / L⌉ + 1` counting the round of the first snapshot,
-where `L` is the smallest budget the viewport requests leave over those rounds.
+while every growing full subscription grows in the same direction, the viewport requests leave a
+budget `L > 0`, and the table does not shrink below the size of the subscription's first snapshot.
+After a full subscription's first snapshot, the subscription's remaining set holds only positions
+below the table size at that snapshot, and the set only shrinks. Each round reserves up to `L`
+positions that the full subscription nearest completion still needs, and every full subscription in
+that direction that needs a reserved position receives the position that round. Every later round
+then plans with a table size at least the first snapshot's, so every remaining position can be
+reserved. A full subscription with `R` positions left after the first snapshot therefore completes
+within `⌈R / L⌉` more rounds, `⌈R / L⌉ + 1` counting the round of the first snapshot, where `L` is
+the smallest budget the viewport requests leave over those rounds.
 
 **A full subscription never waits for a later full subscription in the same direction.** A full
 subscription that started later in the same direction needs every position the earlier subscription
@@ -205,6 +206,15 @@ subscriber's write in the phase has finished.
   nearest completion in either direction. A full subscription can therefore wait for
   opposite-direction full subscriptions nearer completion, including ones that started later, and
   the bound above does not apply.
+- A table that shrinks can delay a full subscription. A round reserves only remaining positions
+  below the table size when the round is planned, and the snapshot moves into the viewport only
+  remaining positions at or past the table size when the snapshot is taken. A round planned while
+  the table is smaller than the subscription's first remaining position, with the table grown back
+  by the snapshot, therefore gives the subscription nothing. A shrink below that position that lasts
+  through a snapshot completes the subscription instead, because every remaining position then lies
+  past the end of the table. Only a table that is below that position at every planning and grown
+  back at every snapshot stalls the subscription indefinitely, which would require adversarial
+  execution.
 
 ## Trade-offs
 
