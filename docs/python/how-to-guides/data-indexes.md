@@ -439,7 +439,7 @@ Data indexes improve performance when used in the right context. If used in the 
 
 - A data index is more likely to help performance if the rows that share a key value are stored near each other in memory. This avoids index fragmentation and poor data access patterns.
 - Reusing a data index multiple times is necessary to overcome the cost of initially computing the index.
-- An index helps most when each key value covers many rows, which means the column has few distinct key values (low key cardinality). Filters and sorts skip an index whose keys are too spread out, as described below.
+- An index helps most when each key value covers many rows, which means the column has few distinct key values (low key cardinality). [Filters](#filter) and [sorts](#sort) skip an index whose keys are too spread out, as described below.
 
 Even when a usable index exists, the engine skips it in these cases:
 
