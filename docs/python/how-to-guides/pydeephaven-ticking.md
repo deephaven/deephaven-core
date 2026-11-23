@@ -240,7 +240,7 @@ To recover, create a new handle and call `start` again. If you'd rather keep the
 
 Call `stop` when you're done. Called from outside the listener thread, it cancels the subscription and waits for the background thread to exit, so no further callbacks run after it returns. Called from inside `on_update` (as described above), it only marks the subscription cancelled and returns immediately without waiting — the current callback keeps running, and the background thread exits on its own once that callback finishes.
 
-A handle runs once. Calling `start` a second time, or after `stop`, raises a `RuntimeError`. Calling `stop` before `start` does nothing.
+A handle runs once. Calling `start` a second time, or after `stop`, raises a `RuntimeError`. Calling `stop` before `start` doesn't raise, but the handle can't be started after that.
 
 The listener thread is a daemon thread, so a program that skips `stop` still exits. The subscription then ends without a clean cancel, and any update in progress is lost. Close the session after stopping its handles. Use `try`/`finally` so that cleanup happens even when your program fails or is interrupted:
 

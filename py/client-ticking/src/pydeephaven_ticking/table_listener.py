@@ -325,7 +325,8 @@ class TableListenerHandle:
         """Cancels the subscription to the table and stops the service thread. By the time this method returns, the
         thread servicing the subscription will be destroyed, and the callback will no longer be invoked.
         This method joins the subscription servicing thread, unless stop() was called from that very thread.
-        This can happen if the user's callback calls stop(). Calling stop() before start() does nothing."""
+        This can happen if the user's callback calls stop(). Calling stop() before start() doesn't raise, but the
+        handle can't be started after that."""
 
         self._cancelled = True
         if self._thread is None:
