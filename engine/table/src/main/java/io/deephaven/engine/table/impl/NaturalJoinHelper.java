@@ -542,6 +542,62 @@ class NaturalJoinHelper {
         return new QueryTable(leftTable.getRowSet(), columnSourceMap);
     }
 
+    private static final int SHIFT_CHUNK_SIZE = 4096;
+
+    /**
+     * Move the redirections of the rows of {@code prevRowSet} that {@code shifted} moves, a chunk of rows at a time, so
+     * that a redirection backed by a column source records the previous values of a chunk at once rather than row by
+     * row.
+     */
+    private static void shiftRowRedirection(
+            final WritableRowRedirection rowRedirection,
+            final RowSet prevRowSet,
+            final RowSetShiftData shifted) {
+        if (shifted.empty()) {
+            return;
+        }
+        try (final ChunkSource.FillContext fillContext = rowRedirection.makeFillContext(SHIFT_CHUNK_SIZE, null);
+                final ChunkSink.FillFromContext fillFromContext =
+                        rowRedirection.makeFillFromContext(SHIFT_CHUNK_SIZE);
+                final WritableLongChunk<RowKeys> innerRowKeys = WritableLongChunk.makeWritableChunk(SHIFT_CHUNK_SIZE);
+                final WritableLongChunk<OrderedRowKeys> movedRowKeys =
+                        WritableLongChunk.makeWritableChunk(SHIFT_CHUNK_SIZE)) {
+            shifted.apply((beginRange, endRange, shiftDelta) -> {
+                try (final RowSet toShift = prevRowSet.subSetByKeyRange(beginRange, endRange)) {
+                    final long size = toShift.size();
+                    // like a memmove, rows moving up are moved from the last, and rows moving down from the first, so
+                    // that no chunk overwrites rows not yet moved
+                    for (long done = 0; done < size; done += SHIFT_CHUNK_SIZE) {
+                        final long length = Math.min(SHIFT_CHUNK_SIZE, size - done);
+                        final long firstPosition = shiftDelta > 0 ? size - done - length : done;
+                        try (final RowSequence rows = toShift.getRowSequenceByPosition(firstPosition, length)) {
+                            rowRedirection.fillChunk(fillContext, innerRowKeys, rows);
+                            rowRedirection.removeAll(rows);
+                            // rows without a redirection stay without one
+                            final LongChunk<OrderedRowKeys> outerRowKeys = rows.asRowKeyChunk();
+                            movedRowKeys.setSize(0);
+                            int kept = 0;
+                            for (int ii = 0; ii < outerRowKeys.size(); ++ii) {
+                                final long innerRowKey = innerRowKeys.get(ii);
+                                if (innerRowKey != RowSequence.NULL_ROW_KEY) {
+                                    innerRowKeys.set(kept++, innerRowKey);
+                                    movedRowKeys.add(outerRowKeys.get(ii) + shiftDelta);
+                                }
+                            }
+                            innerRowKeys.setSize(kept);
+                            if (kept > 0) {
+                                try (final RowSequence moved =
+                                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(movedRowKeys)) {
+                                    rowRedirection.fillFromChunk(fillFromContext, innerRowKeys, moved);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
     private static class LeftTickingListener extends BaseTable.ListenerImpl {
         final LongArraySource newLeftRedirections;
         private final QueryTable result;
@@ -579,7 +635,7 @@ class NaturalJoinHelper {
             rowRedirection.removeAll(upstream.removed());
 
             try (final RowSet prevRowSet = leftTable.getRowSet().copyPrev()) {
-                rowRedirection.applyShift(prevRowSet, upstream.shifted());
+                shiftRowRedirection(rowRedirection, prevRowSet, upstream.shifted());
             }
             rowRedirection.releaseVacatedStorage(upstream.removed(), upstream.shifted(), leftTable.getRowSet());
 
@@ -1129,7 +1185,7 @@ class NaturalJoinHelper {
                     if (leftShifted.nonempty()) {
                         try (final WritableRowSet prevRowSet = leftRecorder.getParent().getRowSet().copyPrev()) {
                             prevRowSet.remove(leftRemoved);
-                            rowRedirection.applyShift(prevRowSet, leftShifted);
+                            shiftRowRedirection(rowRedirection, prevRowSet, leftShifted);
 
                             if (leftKeyChanges) {
                                 prevRowSet.remove(changedKeysPreShift);
