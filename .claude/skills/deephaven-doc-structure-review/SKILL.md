@@ -187,6 +187,14 @@ up front, rather than re-deriving them per check.
   separately in full much later. Fix: add a brief compare/contrast at first joint mention; a
   fuller comparison later is fine as reinforcement, not as the reader's only orientation.
 
+- **Offered alternatives with no reason to choose them:** When a page shows two or more ways to do
+  the same thing (two code paths, two settings, two tools), check that it says what makes the
+  second one worth choosing: a capability the first lacks, a cost it avoids, or a case it handles.
+  A reader who asks "why would I use this one?" and can't answer from the page has found a gap.
+  Fix: add a one-sentence reason where the alternative is introduced, or cut the alternative if
+  there isn't one. Branching is expected in a How-to guide, but each branch still needs its reason;
+  in a Reference guide the reason belongs in the page's "When to use" section.
+
 - **Orphaned asides:** A subsection covering an advanced or niche topic with no clear transition
   from what precedes it, and no connection to a nearby reference/summary table that would
   naturally include it. If deleting the sentence before it wouldn't be missed, the section is
@@ -280,6 +288,12 @@ up front, rather than re-deriving them per check.
   depth as its siblings. This is narrower than **List contents match the enclosing section**:
   that check is about a list whose items span more than the heading; this one is about a whole
   block that belongs under a different heading.
+
+- **Nested items name their own subject:** Readers skim list items without their parent. For
+  each nested list item, Javadoc `<li>`, or docstring sentence that narrows an earlier one,
+  check that it reads true on its own. If it names a capability that only the parent restricts,
+  restate the subject and the contrast in the item ("`aggBy` supports these on blink tables, but
+  rollup does not"). Apply this to source docstrings and Javadoc in docs PRs too.
 
 - **Heading with a different common meaning:** For each heading, ask what an engineer who has
   not read the page would expect under it. A term whose dominant meaning in the wider industry

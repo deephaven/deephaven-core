@@ -253,7 +253,7 @@ public abstract class AbstractBooleanColumnSourceTest {
                 source.fillChunk(fillContext, dest, nextOk);
             }
             checkRangeResults(expectations, offset, nextOk, dest);
-            offset += nextOk.size();
+            offset += nextOk.intSize();
         }
     }
 
@@ -274,7 +274,7 @@ public abstract class AbstractBooleanColumnSourceTest {
             checkRangeResults(expectations, offset, nextOk, result);
             // region samecheck
             // endregion samecheck
-            offset += nextOk.size();
+            offset += nextOk.intSize();
         }
     }
 

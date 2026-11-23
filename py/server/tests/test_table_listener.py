@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
+import threading
 import time
 import unittest
 
@@ -9,7 +10,7 @@ import jpy
 import numpy
 
 from deephaven import DHError, empty_table, input_table, new_table, time_table
-from deephaven.column import bool_col, string_col
+from deephaven.column import bool_col, int_col, string_col
 from deephaven.execution_context import get_exec_ctx
 from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
@@ -256,6 +257,54 @@ class TableListenerTestCase(BaseTestCase):
             has_added=True,
             has_removed=False,
             has_modified=True,
+        )
+
+    def test_modified_prev_with_shifts(self) -> None:
+        # Adding keys between the old ones shifts the old rows of the sorted table, so the pre-shift and post-shift
+        # keys of the modified rows differ.
+        source = input_table(
+            init_table=new_table(
+                [int_col("K", [10, 30, 50, 70]), int_col("V", [1, 3, 5, 7])]
+            ),
+            key_cols="K",
+        )
+        sorted_t = source.sort("K")
+        modified_prevs: list[dict[str, numpy.ndarray]] = []
+        modified_prev_chunks: list[dict[str, numpy.ndarray]] = []
+        modifieds: list[dict[str, numpy.ndarray]] = []
+        update_received = threading.Event()
+
+        had_shifts: list[bool] = []
+
+        def on_update(update: TableUpdate, is_replay: bool) -> None:
+            had_shifts.append(not update.j_table_update.shifted().empty())
+            modifieds.append(update.modified())
+            modified_prevs.append(update.modified_prev())
+            modified_prev_chunks.extend(update.modified_prev_chunks(chunk_size=2))
+            update_received.set()
+
+        handle = listen(sorted_t, on_update)
+        try:
+            source.add(
+                new_table(
+                    [
+                        int_col("K", [20, 40, 60, 10, 30, 50, 70]),
+                        int_col("V", [2, 4, 6, 100, 300, 500, 700]),
+                    ]
+                )
+            )
+            self.assertTrue(update_received.wait(10))
+        finally:
+            handle.stop()
+
+        self.assertEqual([True], had_shifts)
+        self.assertEqual([10, 30, 50, 70], list(modifieds[0]["K"]))
+        self.assertEqual([100, 300, 500, 700], list(modifieds[0]["V"]))
+        self.assertEqual([10, 30, 50, 70], list(modified_prevs[0]["K"]))
+        self.assertEqual([1, 3, 5, 7], list(modified_prevs[0]["V"]))
+        self.assertEqual(
+            [1, 3, 5, 7],
+            [v for chunk in modified_prev_chunks for v in chunk["V"]],
         )
 
     def test_listener_obj_with_deps(self):

@@ -4,7 +4,7 @@ title: Filters
 
 This guide shows how to write filters in [query strings](./query-string-overview.md) and pass them to the [`where`](../reference/table-operations/filter/where.md) table operation. The [`wouldMatch`](../reference/table-operations/filter/would-match.md) operation also evaluates filters, but instead of removing rows, it adds a boolean column showing which rows match.
 
-[Partitioned table](./partitioned-tables.md) operations also accept filters. The [`withFilter`](../reference/table-operations/create/rollup.md#methods) method of [rollup](./rollup-table.md) and [tree](./tree-table.md) tables takes a [`Filter`](/core/javadoc/io/deephaven/api/filter/Filter.html) object, such as ``Filter.and(Filter.from("Sym == `AAPL`"))``.
+[Partitioned table](./partitioned-tables.md) operations also accept filters. The [`withFilter`](../reference/table-operations/create/rollup.md#methods) method of [rollup tables](./rollup-table.md) and the [`withFilter`](../reference/table-operations/create/tree.md#methods) method of [tree tables](./tree-table.md) each take a [`Filter`](/core/javadoc/io/deephaven/api/filter/Filter.html) object, such as ``Filter.and(Filter.from("Sym == `AAPL`"))``.
 
 The related [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) operations do not take filter expressions. Instead, they keep rows based on whether their values match values in another table. For an overview of every filtering operation, including filtering on another table and by row position, see [Filter table data](./use-filters.md).
 
@@ -335,7 +335,8 @@ See the [`TailInitializationFilter`](../reference/table-operations/filter/TailIn
 - [`where`](../reference/table-operations/filter/where.md)
 - [`whereIn`](../reference/table-operations/filter/where-in.md)
 - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
-- [`withFilter`](../reference/table-operations/create/rollup.md#methods)
+- [`RollupTable.withFilter`](../reference/table-operations/create/rollup.md#methods)
+- [`TreeTable.withFilter`](../reference/table-operations/create/tree.md#methods)
 - [`wouldMatch`](../reference/table-operations/filter/would-match.md)
 - [`Filter` Javadoc](/core/javadoc/io/deephaven/api/filter/Filter.html)
 - [`SyncTableFilter` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/SyncTableFilter.html)

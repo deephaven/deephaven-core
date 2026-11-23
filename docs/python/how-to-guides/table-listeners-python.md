@@ -8,6 +8,8 @@ As an example, consider using a Deephaven query to create a dynamic table that m
 
 This guide shows you how to create your own table listeners in Python.
 
+This guide covers listeners that run on the Deephaven server. To receive updates in an external Python application, see [Subscribe to ticking tables from a Python client](./pydeephaven-ticking.md).
+
 ## What is a table listener?
 
 A table listener is an object that listens to one or more tables for updates. When connected to a ticking table, a listener receives one or more [`TableUpdate`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate) objects, which you use to access the added, modified, or removed data.
@@ -197,9 +199,6 @@ table = time_table("PT0.1S").update("X = i").last_by()
 
 handle = listen(table, listener_function)
 ```
-
-> [!WARNING]
-> `modified_prev` reads previous values at the modified rows' current row keys. If the same update also shifts those rows, as a sorted table can, `modified_prev` returns values from other rows. See [Removed or modified values](../conceptual/table-update-model.md#removed-or-modified-values).
 
 ![`table` updates while the listener prints modified rows](../assets/how-to/listen-modified-prev.gif)
 
@@ -535,5 +534,6 @@ handle = listen(orders, listener_function)
 - [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table)
 - [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen)
 - [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen)
+- [Subscribe to ticking tables from a Python client](./pydeephaven-ticking.md)
 - [Synchronization and locking](../conceptual/query-engine/engine-locking.md)
 - [`update_graph`](/core/pydoc/code/deephaven.update_graph.html)

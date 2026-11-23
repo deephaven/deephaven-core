@@ -53,7 +53,7 @@ A [Barrier](#create-a-barrier) orders expressions relative to each other. It doe
 
 Column `A` counts the rows it processes in a shared counter, and column `B` reads the counter. `B` is correct only after `A` has processed every row, so `A` declares a [Barrier](#create-a-barrier) and `B` respects it.
 
-The table has 6,000,000 rows, which is large enough that Deephaven can split each column across threads when more than one thread is available. The default [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) is 4,194,304. The counter is a Java `AtomicInteger` instead of a Python object, so the example behaves the same on every Python build, including builds that are not free-threaded.
+The table has 6,000,000 rows, which is large enough that Deephaven can split each column across threads when more than one thread is available. The default [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select-and-update) is 4,194,304. The counter is a Java `AtomicInteger` instead of a Python object, so the example behaves the same on every Python build, including builds that are not free-threaded.
 
 ```python order=result
 import jpy

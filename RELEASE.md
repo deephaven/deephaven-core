@@ -92,49 +92,38 @@ git@github.com:deephaven/deephaven-core.git
 
 ### 2. Create a local release branch
 
-Ensure you are up-to-date with `upstream/main`, or at the commit that you want to start a new release from.
+Replace `X.Y` below with the version being released (for example, `42.7`).
+Major releases (`X.0`) are cut from `upstream/main`; minor releases (`X.Y`, Y > 0) are cut from the tip of `upstream/rc/vX.x`.
 If you are unsure what commit to start from, please ask.
-Please double-check you are on the version you expect to be releasing.
-The releases have so far proceeded with `release/vX.Y`, where `X.Y` is the version number (this isn't a technical requirement), please replace `X.Y` with the appropriate version.
-We also separate out the release branch from `upstream/main` with an empty commit (this isn't a technical requirement).
+
+In both cases, `printVersion` must print exactly the version being released.
+If it does not, stop: the version bump from the previous release (see step 15) is missing.
+
+#### Major release (X.0)
 
 ```shell
 $ git fetch upstream
 $ git checkout upstream/main
-$ ./gradlew printVersion -PdeephavenBaseQualifier= -q
-$ git checkout -b release/vX.Y
-$ git commit --allow-empty -m "chore: Cut for X.Y"
+$ ./gradlew printVersion -PdeephavenBaseQualifier= -q   # expect X.0
+$ git checkout -b release/vX.0
+$ ./gradlew quick
+$ git commit --allow-empty -m "chore: Cut for X.0"
 ```
 
-#### Procedure for minor releases
+The empty commit marks the cut point on the release branch (not a technical requirement).
 
-For minor releases, typically the branch will be based off of the previous release tag, and not `upstream/main`, and the necessary minor fixes can be cherry-picked from the `upstream/main` branch.
-The minor release manager is also responsible for bumping the minor version numbers as appropriate (note comment block on the list of commands
-below).
-
-Here is an example going from `X.0` to `X.1`:
+#### Minor release (X.Y)
 
 ```shell
 $ git fetch upstream
-$ git checkout vX.0
-$ git checkout -b release/vX.1
-$ git cherry-pick <...>
-#
-# Edit files, updating from X.0 to X.1, and git add them.
-#
-# Look in the last section "Version bump in preparation of next release" for a list of
-# files to update to the right version you are producing.
-#
-# See https://github.com/deephaven/deephaven-core/issues/3466 for future improvements to this process.
-$ ...
-$ git commit -m "chore: Bump to X.1"
-$ git --no-pager log --oneline vX.0..release/vX.1
-#
-# Compare output to expected PR list for missing or extraneous PRs
+$ git checkout upstream/rc/vX.x
+$ ./gradlew printVersion -PdeephavenBaseQualifier= -q   # expect X.Y
+$ git checkout -b release/vX.Y
+$ ./gradlew quick
+$ git --no-pager log --oneline vX.(Y-1)..release/vX.Y
 ```
 
-It's also best practice to ensure that the cherry-picks compile, as there can sometimes be changes that cherry-pick cleanly, but don't compile.
-`./gradlew quick` is recommended as a quick validation that things look ok.
+Compare the log against the expected PR list for missing or extraneous PRs.
 
 ### 3. Push to upstream
 
@@ -233,12 +222,10 @@ $ git push upstream vX.Y
 
 Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releases/new) and use the `vX.Y` tag as reference.
 
-The convention is to have the Release title of the form `vX.Y` and to autogenerate the release notes in comparison to the previous release tag.
-
-Do not use Github's "Generate release notes" button. Use Cocogitto to generate the release notes and copy the result into the text box.
+The convention is to have the Release title of the form `vX.Y`, autogenerate the release notes with Cocogitto, and copy the result into the text box.
 
 ```shell
-cog changelog vX.0..vX.1
+cog changelog vX.(Y-1)..vX.Y
 ```
 
 Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, pydeephaven-ticking wheels, @deephaven/jsapi-types tarball, and SBOM artifacts. Also, upload the C++, Java, Python, R and TypeScript docs artifacts.
@@ -277,18 +264,22 @@ Ping team, ping community, ping friends - the latest Deephaven has been released
 
 ### 14. Clean-up
 
-The release branches serve a purpose for kicking off CI jobs, but aren't special in other ways.
-Sometime after a release, old release branches can be safely deleted.
+The release branches serve a purpose for kicking off CI jobs, but aren't special in other ways. Sometime after a release, old release branches can be safely deleted. The `rc/vX.x` branches must be preserved.
 
 ### 15. Version bump in preparation of the next release.
 
-Say we just did release `31.0`. The next expected release is `32.0`  We update the repository with a bump to all files that
-mention the version explicitly. These files are listed below:
+We update the repository with a bump to all files that mention the version explicitly.
 
+- After a minor release
+  - Bump `rc/vX.x` to `X.(Y+1)` by PR
+  - For example, you just released `42.1`. Bump the version on `rc/v42.x` to `42.2`
+- After a major release
+  - Bump `main` to `(X+1).0` by PR
+  - Create branch `rc/vX.x` from the `vX.0` tag, and bump version to `X.1`. (Ask a maintainer if you lack permission)
+  - For example, you just released `43.0`. Bump `main` version to `44.0`, create `rc/v43.x` with version `43.1`.
+
+The files to change version in are below:
 ```
-#
-# Edit files for version change
-#
 gradle.properties
 R/rdeephaven/DESCRIPTION
 cpp-client/deephaven/CMakeLists.txt
@@ -296,8 +287,6 @@ cpp-client/deephaven/CMakeLists.txt
 
 This leaves the files "ready" for the next regular release, and also ensures any build done from
 a developer for testing of latest is not confused with the code just released.
-
-In the case of a minor release these would need to be updated to a different version, like from `31.0` to `31.1`.
 
 ## External dependencies
 

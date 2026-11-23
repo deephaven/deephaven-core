@@ -1,7 +1,7 @@
 ---
 name: deephaven-docs-review-full
 description: >
-  Run a complete deephaven-core (Community) documentation review the way a technical-book editor would: a developmental pass (purpose, audience, scope), then accuracy, structure, examples, and style, in an order that keeps one from undoing another, ending in a prioritized editorial report with author queries. **Use this skill when:** someone asks for a "full review," "comprehensive review," or "editorial review" of a doc, asks to "edit this like an O'Reilly editor," asks if a doc "is ready for production," or wants accuracy, structure, and style checked together, for a new doc, a substantially rewritten doc, or a doc PR that touches more than a small, isolated edit. **Do NOT use for:** a single small edit such as a one-line fix or one snippet (use deephaven-core-accuracy-spot-check), working through existing PR or Copilot review comments (use deephaven-docs-address-review-comments), non-documentation code review, Enterprise/deephaven-ent docs, or when only one dimension is requested.
+  Run a complete deephaven-core (Community) documentation review the way a technical-book editor would: a developmental pass (purpose, audience, scope), then accuracy, structure, examples, and style, in an order that keeps one from undoing another, ending in a prioritized editorial report with author queries. **Use this skill when:** someone asks for a "full review," "comprehensive review," or "editorial review" of a doc, asks to "edit this like an O'Reilly editor," asks if a doc "is ready for production," or wants accuracy, structure, and style checked together, for a new doc, a substantially rewritten doc, or a doc PR that touches more than a small, isolated edit. **If the request just says "review" or "check" without saying how deep, use deephaven-docs-help first.** **Do NOT use for:** a single small edit such as a one-line fix or one snippet (use deephaven-core-accuracy-spot-check), working through existing PR or Copilot review comments (use deephaven-docs-address-review-comments), non-documentation code review, Enterprise/deephaven-ent docs, or when only one dimension is requested.
 allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *), Bash(awk *)
 ---
 
@@ -249,6 +249,22 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
   isn't validated by the docs snapshotter; flag it unless the page has a reason.
 - **Is it readable in one view?** Short enough to follow, with realistic names, and with comments
   that explain *why* rather than restating the code.
+- **Does the page work in order, on a clean machine?** Trace by reading (nothing is executed) each
+  path a reader can actually take, top to bottom, as if they pasted each snippet into a fresh
+  environment. Treat independent examples (each
+  starting from the page's shared setup) and mutually exclusive alternatives as separate paths, and
+  when the text tells the reader to insert a fragment into earlier code (inside an earlier `try`
+  block, say), apply that instruction before judging the snippet. Track what each snippet creates, closes, or
+  rebinds: sessions and connections, tables, threads and listeners, variables, imports. A snippet
+  that uses a resource an earlier one closed, or that still expects the previous value or type of a
+  name an earlier one rebound, fails for that reader even though each snippet runs alone. Rebinding
+  a name is fine when every later use expects the new value. Then list what the steps assume without saying: which
+  server or dev server must be running and on which port, how the default server expects the reader
+  to log in, and any package, codec, or image the default distribution lacks. Each must be stated
+  before the step that needs it and agree everywhere on the page (same port, URL, and login). Check
+  the other language's page the same way. (Defaults, failure paths, and version pins are checked
+  against source by the accuracy check's **Example robustness**.) Blocks marked `syntax` or
+  `skip-test` are traced the same way, and a snippet the page presents as a fragment is judged by where the text says it goes.
 
 If the user asked for edits and you change an example's code or its comments, re-verify the
 changed example with `deephaven-core-accuracy-spot-check` before moving on, as in the re-verify
@@ -348,6 +364,19 @@ only for findings that aren't part of a pattern.
 ## Author queries
 Questions the review couldn't resolve from source — mostly technical claims that need an SME.
 Format: AQ1 [heading, para N or line N]: question
+
+## Release notes and missing docs
+Only when the page or PR describes a user-facing code change (a new or changed API, behavior,
+configuration property, or breaking change). Reviewing a page's wording never checks these, so
+state both answers even when the answer is "no":
+- **Release notes:** does the change need a release-notes entry? Say whether the PR carries
+  `ReleaseNotesNeeded` or `NoReleaseNotesNeeded` and whether that matches the change. Don't draft
+  the entry here; release-notes drafting lives in the `deephaven-release-notes` skill in the
+  deephaven.io repo.
+- **Missing docs:** search `docs/` for each user-facing change. List any change with no page that
+  covers it (a new method with no reference entry, a new property absent from the configuration
+  reference), and whether the PR carries `DocumentationNeeded` or `NoDocumentationNeeded`. For
+  release-wide gaps, point to `deephaven-documentation-needs-check`.
 
 ## Coverage
 Factual or behavioral claims in prose, headings, lists, tables, captions, and code comments (the

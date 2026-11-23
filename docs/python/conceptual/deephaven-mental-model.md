@@ -388,7 +388,7 @@ def my_dashboard():
 dashboard = my_dashboard()
 ```
 
-The UI updates automatically as data changes and as users interact with controls. See the [`deephaven.ui` guide](../how-to-guides/deephaven-ui.md) for a full introduction.
+The UI updates automatically as data changes and as users interact with controls. See the [`deephaven.ui` guide](../how-to-guides/deephaven-ui.md) for an introduction, and the [`deephaven.ui` documentation](/core/ui/docs/) for the full guide.
 
 ### Data sources and sinks
 

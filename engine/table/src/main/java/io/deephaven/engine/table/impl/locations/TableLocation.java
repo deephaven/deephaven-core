@@ -88,7 +88,9 @@ public interface TableLocation
     void refresh();
 
     /**
-     * Get an ordered list of columns this location is sorted by.
+     * Get an ordered list of columns this location is sorted by, named by Deephaven column name. The list is ordered by
+     * precedence, representing a multi-column sort: the first column is sorted, and each later column is sorted only
+     * within runs of equal values in the columns before it.
      * 
      * @return A non-null ordered list of {@link SortColumn SortColumns}
      */

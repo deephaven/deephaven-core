@@ -7,7 +7,7 @@ This guide shows how to write filters in [query strings](./query-string-overview
 - [`where`](../reference/table-operations/filter/where.md)
 - [`where_one_of`](../reference/table-operations/filter/where-one-of.md)
 
-[Partitioned table](./partitioned-tables.md) operations and the [`with_filters`](../reference/table-operations/create/rollup.md#methods) method of [rollup](./rollup-table.md) and [tree](./tree-table.md) tables also accept filters.
+[Partitioned table](./partitioned-tables.md) operations also accept filters, as do [`RollupTable.with_filters`](../reference/table-operations/create/rollup.md#methods) on [rollup tables](./rollup-table.md) and [`TreeTable.with_filters`](/core/pydoc/code/deephaven.table.html#deephaven.table.TreeTable.with_filters) on [tree tables](./tree-table.md).
 
 The related [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md) operations do not take filter expressions. Instead, they keep rows based on whether their values match values in another table. For an overview of every filtering operation, including filtering on another table and by row position, see [Filter table data](./use-filters.md).
 
@@ -370,11 +370,12 @@ See the [`TailInitializationFilter`](../reference/table-operations/filter/TailIn
 - [`where_in`](../reference/table-operations/filter/where-in.md)
 - [`where_not_in`](../reference/table-operations/filter/where-not-in.md)
 - [`where_one_of`](../reference/table-operations/filter/where-one-of.md)
-- [`with_filters`](../reference/table-operations/create/rollup.md#methods)
+- [`RollupTable.with_filters`](../reference/table-operations/create/rollup.md#methods)
 - [`deephaven.filters` Pydoc](/core/pydoc/code/deephaven.filters.html)
 - [`Table.where` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.where)
 - [`TailInitializationFilter` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.TailInitializationFilter)
 - [`time_window` Pydoc](/core/pydoc/code/deephaven.experimental.html#deephaven.experimental.time_window)
+- [`TreeTable.with_filters` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.TreeTable.with_filters)
 - [`SyncTableFilter` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/SyncTableFilter.html)
 - [`LeaderTableFilter` Javadoc](/core/javadoc/io/deephaven/engine/util/LeaderTableFilter.html)
 - [`RowSet` Javadoc](/core/javadoc/io/deephaven/engine/rowset/RowSet.html)

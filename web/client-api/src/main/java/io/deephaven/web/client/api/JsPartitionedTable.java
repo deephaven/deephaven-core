@@ -46,12 +46,30 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      * {@link #getTable(Object) getTable}.
      */
     public static final String EVENT_KEYADDED = "keyadded",
+            /**
+             * The connection to the server was lost. No keys are reported until it is back; the key subscription is
+             * re-sent automatically, and {@link #EVENT_RECONNECT} fires when that has happened, or
+             * {@link #EVENT_RECONNECTFAILED} if it cannot be. Constituent tables fetched with {@link #getTable(Object)
+             * getTable} report their own lifecycle.
+             */
             EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT,
+            /**
+             * The connection is back and the key subscription has been re-sent; keys added while disconnected follow as
+             * {@link #EVENT_KEYADDED} events.
+             */
             EVENT_RECONNECT = JsTable.EVENT_RECONNECT,
             /**
-             * Indicates that an error has occurred while communicating with the server.
+             * This partitioned table could not be re-established after a reconnect and cannot be used again; fetch a
+             * new one. {@code event.detail} describes the failure. This says nothing about the connection as a whole.
              */
             EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
+
+    /**
+     * The server ended the key subscription with an error, so no new keys will be reported; keys already known can
+     * still be fetched. Such failures are not recoverable: fetch a new partitioned table. {@code event.detail} is the
+     * server's message.
+     */
+    public static final String EVENT_REQUEST_FAILED = JsTable.EVENT_REQUEST_FAILED;
 
     private final WorkerConnection connection;
     private final JsWidget widget;
@@ -91,9 +109,10 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                 throw new RuntimeException(e);
             }
 
-            return w.getExportedObjects()[0].fetch();
+            // The partitioned table's one exported object is its base table
+            return Js.<Promise<JsTable>>uncheckedCast(w.getExportedObjects()[0].fetch());
         }).then(result -> {
-            baseTable = (JsTable) result;
+            baseTable = result;
             keyColumnTypes = new ArrayList<>();
             InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
                     WebBarrageUtils
@@ -118,19 +137,6 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             this.keyColumns = JsObject.freeze(keyColumns);
 
             // TODO(deephaven-core#3604) in case of a new session, we should do a full refetch
-            baseTable.addEventListener(JsTable.EVENT_DISCONNECT, event -> fireEvent(EVENT_DISCONNECT));
-            baseTable.addEventListener(JsTable.EVENT_RECONNECT, event -> {
-                subscribeToBaseTable().then(ignore -> {
-                    unsuppressEvents();
-                    fireEvent(EVENT_RECONNECT);
-                    return null;
-                }, failure -> {
-                    unsuppressEvents();
-                    fireEvent(EVENT_RECONNECTFAILED, failure);
-                    suppressEvents();
-                    return null;
-                });
-            });
             return subscribeToBaseTable();
         });
     }
@@ -145,6 +151,21 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         subscription = baseTable.subscribe(
                 JsArray.asJsArray(baseTable.findColumns(descriptor.getKeyColumnNamesList().toArray(new String[0]))));
         subscription.addEventListener(TableSubscription.EVENT_UPDATED, this::handleKeys);
+        // The key subscription is this table's live resource and is revived with its state, so its lifecycle is this
+        // table's lifecycle. The base table itself is closed by its exported object on disconnect and never reconnects.
+        subscription.addEventListener(TableSubscription.EVENT_DISCONNECT, e -> fireEvent(EVENT_DISCONNECT));
+        subscription.addEventListener(TableSubscription.EVENT_RECONNECT, e -> {
+            unsuppressEvents();
+            fireEvent(EVENT_RECONNECT);
+        });
+        subscription.addEventListener(TableSubscription.EVENT_RECONNECTFAILED, e -> {
+            unsuppressEvents();
+            fireEvent(EVENT_RECONNECTFAILED, e.getDetail());
+            suppressEvents();
+        });
+        // The subscription is never exposed, so its failures are this table's failures
+        subscription.addEventListener(JsTable.EVENT_REQUEST_FAILED,
+                e -> failureHandled(String.valueOf(e.getDetail())));
 
         LazyPromise<JsPartitionedTable> promise = new LazyPromise<>();
         subscription.addEventListenerOneShot(TableSubscription.EVENT_UPDATED, data -> promise.succeed(this));
@@ -160,8 +181,9 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         added.indexIterator().forEachRemaining((long index) -> {
             // extract the key to use
             JsArray<Object> key = eventData.getColumns().map((c, p1) -> eventData.getData(index, c));
-            knownKeys.add(key.asList());
-            fireEvent(EVENT_KEYADDED, key);
+            if (knownKeys.add(key.asList())) {
+                fireEvent(EVENT_KEYADDED, key);
+            }
         });
     }
 
@@ -231,16 +253,14 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      *
      * @return A merged representation of the constituent tables.
      */
-    public Promise<JsTable> getMergedTable() {
-        return connection.newState((c, cts) -> {
+    public JsPendingTable<JsTable> getMergedTable() {
+        return connection.pendingTable((c, cts) -> {
             MergeRequest requestMessage = MergeRequest.newBuilder()
                     .setPartitionedTable(widget.getTicket())
                     .setResultId(cts.getHandle().makeTicket())
                     .build();
             connection.partitionedTableServiceClient().merge(requestMessage, c);
-        }, "partitioned table merged table")
-                .refetch()
-                .then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
+        }, "partitioned table merged table");
     }
 
     /**

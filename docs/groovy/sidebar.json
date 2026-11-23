@@ -580,7 +580,7 @@
                     "path": "how-to-guides/user-interface/markdown-widget.md"
                   },
                   {
-                    "label": "Format tables in the UI",
+                    "label": "Use table tools in the UI",
                     "path": "how-to-guides/user-interface/formatting-tables.md"
                   },
                   {
@@ -1289,6 +1289,10 @@
                     "path": "reference/data-import-export/CSV/writeCsv.md"
                   }
                 ]
+              },
+              {
+                "label": "html",
+                "path": "reference/data-import-export/HTML/html.md"
               },
               {
                 "label": "Iceberg",
@@ -2937,15 +2941,15 @@
                     "path": "reference/community-questions/whats-minimum-amount-memory-to-allocate.md"
                   },
                   {
-                    "label": "Is it possible disable the Deephaven console?",
+                    "label": "Is it possible to disable the Deephaven console?",
                     "path": "reference/community-questions/possible-to-disable-console.md"
                   },
                   {
-                    "label": "How do I set the default timezone?",
+                    "label": "How do I set the default time zone?",
                     "path": "reference/community-questions/set-timezone.md"
                   },
                   {
-                    "label": "How can I manage the number of cores Deephaven can use?",
+                    "label": "How can I control how many threads Deephaven uses for query processing?",
                     "path": "reference/community-questions/manage-thread-pool-size.md"
                   },
                   {
@@ -3074,7 +3078,7 @@
                 "label": "Performance and memory",
                 "items": [
                   {
-                    "label": "Why do queries run faster the second time they are run?",
+                    "label": "Why do some queries run faster the second time they are run?",
                     "path": "reference/community-questions/query-memoization.md"
                   },
                   {

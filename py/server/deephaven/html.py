@@ -15,8 +15,11 @@ _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 def to_html(table: Table) -> str:
     """Returns a table formatted as an HTML string. Limit use to small tables to avoid running out of memory.
 
+    Args:
+        table (Table): the table to convert
+
     Returns:
-        a HTML string
+        an HTML string
 
     Raises:
         DHError

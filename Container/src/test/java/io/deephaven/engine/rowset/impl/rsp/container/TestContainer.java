@@ -870,8 +870,8 @@ public class TestContainer {
     @Test
     public void testRunOptimize3B() {
         RunContainer rc = new RunContainer();
-        for (short i = 100; i < 30000; i += 2) {
-            rc.iset(i);
+        for (int i = 100; i < 30000; i += 2) {
+            rc.iset((short) i);
         }
         Container c = rc.runOptimize();
         assertTrue(c instanceof ArrayContainer);

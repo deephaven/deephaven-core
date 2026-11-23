@@ -192,9 +192,9 @@ my_input_table.delete_async(new_table([string_col("Key", ["C"])]))
 
 ## Enter clickable links in an input table
 
-Input tables are a convenient way to try out clickable links, because you can type links directly into their cells. Any string column in Deephaven can contain a clickable link if the string is formatted correctly. See [Add clickable links](./user-interface/add-clickable-links.md) for examples of strings that are and aren't displayed as links.
+Input tables are a convenient way to try out clickable links, because you can type links directly into their cells. The UI shows any URL that starts with `http://` or `https://`, and any email address, as a clickable link, in any string column. See [Add clickable links](./user-interface/add-clickable-links.md) for examples of strings that are and aren't displayed as links.
 
-![An input table contains both valid and invalid links, with valid links underlined and highlighted in blue](../assets/how-to/ui/invalid_links.png)
+![An input table with URLs that start with `http://` or `https://` shown as blue, underlined links, and other values shown as plain text](../assets/how-to/ui/invalid_links.png)
 
 Let's create an input table that we can add links to manually:
 

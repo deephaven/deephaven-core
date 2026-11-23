@@ -30,7 +30,10 @@ explicitly asks — replying is outward-facing.
   resolved threads, page through GraphQL `reviewThreads` (`pageInfo`/`endCursor`). Bot reviews can also
   list findings only in the review body ("previously missed"), with no inline thread. Split a
   review body that lists several findings into one triage item per finding, each with its own
-  location and decision, and keep a note of which review it came from for the reply. Note which comments are
+  location and decision, and keep a note of which review it came from for the reply. Before
+  ending a loop, list every body-only finding with its triage decision (apply, redirect, decline, or ask, with
+  the reason) and whether it is done or still open: these have no thread to stay open, so they
+  are the ones that get dropped. Note which comments are
   from bots and which review round each belongs to — how many rounds this page has already had
   matters for triage.
 - Read `ref-deephaven-doc-categories` and identify the page's category. Placement rules differ:
@@ -127,7 +130,9 @@ If the user asked for edits:
    push and reports things in text no one touched, so each push can produce new comments that were
    always there. Before pushing a round of fixes, run the claim ledger from
    `deephaven-core-accuracy-check` over each page you changed (sentences next to your edits
-   included) and fix what it finds in the same push. Batch the round into one push rather than one
+   included) and fix what it finds in the same push. Also run the accuracy check's **Variant matrix**
+   on every sentence your fixes rewrote: each rewrite is a new claim, and the next review will test
+   it against cases the old wording never named. Batch the round into one push rather than one
    per comment, since every push starts another review. Run anything the sweep changes back through steps 3 and 4
    before you push, so the sweep's own edits get the style and coherence checks.
 6. **Merge conflicts with the base branch.** When the base branch changed the same page, the

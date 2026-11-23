@@ -27,11 +27,11 @@ public class AppendOnlyArrayBackedInputTable extends BaseArrayBackedInputTable {
     static final String DEFAULT_DESCRIPTION = "Append Only In-Memory Input Table";
 
     /**
-     * Create an empty AppendOnlyArrayBackedMutableTable with the given definition.
+     * Create an empty AppendOnlyArrayBackedInputTable with the given definition.
      *
      * @param definition the definition of the new table.
      *
-     * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
+     * @return an empty AppendOnlyArrayBackedInputTable with the given definition
      */
     public static AppendOnlyArrayBackedInputTable make(
             @NotNull TableDefinition definition) {
@@ -41,11 +41,12 @@ public class AppendOnlyArrayBackedInputTable extends BaseArrayBackedInputTable {
     }
 
     /**
-     * Create an AppendOnlyArrayBackedMutableTable with the given initial data.
+     * Create an AppendOnlyArrayBackedInputTable with the given initial data.
      *
-     * @param initialTable the initial values to copy into the AppendOnlyArrayBackedMutableTable
+     * @param initialTable the initial values to copy into the AppendOnlyArrayBackedInputTable
      *
-     * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
+     * @return an AppendOnlyArrayBackedInputTable with the definition of {@code initialTable}, containing a copy of its
+     *         rows
      */
     public static AppendOnlyArrayBackedInputTable make(final Table initialTable) {
         final AppendOnlyArrayBackedInputTable result =
