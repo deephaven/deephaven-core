@@ -900,7 +900,7 @@ public abstract class BarrageMessageSubscriptionRoundTripTestBase extends Barrag
     }
 
     /**
-     * A viewport feeds a grid that someone is watching, so a viewport subscription is satisfied in the growth round
+     * A viewport feeds a UI that someone is watching, so a viewport subscription is satisfied in the snapshot round
      * that picks up the subscription, even when the viewport holds more rows than the round's budget. A forward and a
      * reverse viewport of twice the first round's budget of {@link BarrageUtil#MIN_SNAPSHOT_CELL_COUNT} rows, on a
      * one-column table, each arrive in one snapshot message.
@@ -942,9 +942,9 @@ public abstract class BarrageMessageSubscriptionRoundTripTestBase extends Barrag
     }
 
     /**
-     * Only viewport subscriptions may exceed a growth round's budget. When a viewport takes more rows than the round's
-     * budget, a full subscription growing in the same round receives only the rows the viewport shares with the full
-     * subscription, and the full subscription's other rows wait for later rounds.
+     * Only viewport subscriptions may exceed a snapshot round's budget. When a viewport takes more rows than the
+     * round's budget, a full subscription growing in the same round receives only the rows the viewport shares with the
+     * full subscription, and the full subscription's other rows wait for later rounds.
      */
     @Test
     public void testViewportLargerThanBudgetLeavesFullSubscriptionsNothing() {

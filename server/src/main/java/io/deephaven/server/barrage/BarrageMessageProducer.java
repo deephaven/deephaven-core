@@ -569,11 +569,11 @@ public class BarrageMessageProducer extends LivenessArtifact
      * contents move to the variables prefixed with `target`. The propagation job is responsible for building the
      * snapshot(s) and sending to the client. When each snapshot is complete, the `snapshot` variables are flipped to
      * `viewport` and `subscribedColumns`.</li>
-     * <li>While the subscription viewport is growing, it may receive deltas on the rows that have already been
+     * <li>Until the subscription's snapshots are complete, it may receive deltas on the rows that have already been
      * snapshotted and sent to the client. This ensures consistency is maintained through the propagation process. When
-     * the client has received the entire contents of the `target` viewport, the growing subscription is complete. The
-     * `target` variables are promoted to `viewport` and `subscribedColumns` and the subscription is removed from the
-     * list of growing subscriptions. Only deltas will be sent to this subscriber until a change of viewport or columns
+     * the client has received the entire contents of the `target` viewport, the subscription is complete. The `target`
+     * variables are promoted to `viewport` and `subscribedColumns` and the subscription is removed from
+     * {@code growingSubscriptions}. Only deltas will be sent to this subscriber until a change of viewport or columns
      * is requested by the client.</li>
      * <li>If a subscription is updated during or after stage 3, it will be added back to the pendingSubscription list,
      * and the updated requests will sit in the `pending` variables until the next time the update propagation job
@@ -637,7 +637,25 @@ public class BarrageMessageProducer extends LivenessArtifact
         /** the final viewport direction for a changed subscription */
         private boolean targetReverseViewport;
 
-        /** is this subscription actively growing */
+        /**
+         * Whether this subscription still needs rows from a snapshot. Despite the name, every subscription change sets
+         * the flag, a viewport request included, not only a full subscription growing toward the whole table. A
+         * viewport request holds the flag for one snapshot round; a full subscription holds the flag until the
+         * subscription holds every row. The flag:
+         * <ul>
+         * <li>is set when the propagation job accepts a new or changed subscription, and counted in
+         * {@code numGrowingSubscriptions};</li>
+         * <li>puts the subscription into the next snapshot round: the job plans a snapshot while
+         * {@code numGrowingSubscriptions} is above zero, plans positions only for flagged subscriptions, and schedules
+         * the next round immediately while any flagged subscription remains;</li>
+         * <li>keeps the subscription out of the groups of identical stable full subscribers in
+         * {@code groupPropagationTargets}, since the subscription's view differs from a stable full view;</li>
+         * <li>makes a flagged subscription with no target viewport count as full in {@link #isFullSubscription}, so the
+         * subscription's writes follow every viewport subscriber's;</li>
+         * <li>is cleared in {@code finalizeSnapshotForSubscriptions} once {@code growingRemainingViewport} is
+         * empty.</li>
+         * </ul>
+         */
         private boolean isGrowingViewport;
         /** rows still needed to satisfy this subscription target viewport */
         private WritableRowSet growingRemainingViewport = null;
@@ -1587,26 +1605,28 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     /**
-     * Handles updates to subscriptions and propagates snapshots and deltas to subscribed clients. Manages `growing`
-     * viewports, where a subscription receives initial data in one or more snapshots that are assembled client-side
-     * into the complete dataset.
+     * Handles updates to subscriptions and propagates snapshots and deltas to subscribed clients. A viewport request (a
+     * new viewport subscription, or a change to a viewport subscription's viewport, columns or direction) is served
+     * whole in one snapshot. A full subscription `grows` toward the whole table over one or more snapshots, which are
+     * assembled client-side into the complete dataset.
      *
      * <p>
-     * Here is how a subscription viewport `grows` over multiple snapshots:
+     * Here is how a subscription is brought up to date:
      * <ol>
      * <li>When a subscription is updated (on creation or after a change to columns or viewport), a new snapshot must be
-     * created and transmitted to the client. The `growing` snapshot algorithm attempts to keep the UGP responsive by
-     * creating snapshots that consume no more than a certain percentage of the UGP cycle time. In addition, GUI
-     * responsiveness is improved by prioritizing viewport subscription client requests over full subscription clients.
+     * created and transmitted to the client. The snapshot algorithm attempts to keep the UGP responsive by creating
+     * snapshots that consume no more than a certain percentage of the UGP cycle time, and keeps the GUI responsive by
+     * serving viewport requests ahead of full subscriptions and past that limit.
      *
      * <p>
-     * <b>NOTE:</b> All subscriptions are initially considered to be `growing` subscriptions even if they can be
-     * satisfied in a single snapshot.</li>
+     * <b>NOTE:</b> Every updated subscription, a viewport request included, is marked {@code isGrowingViewport} until
+     * the subscription is complete; see that field. A viewport request completes in its first snapshot; only a full
+     * subscription grows over several.</li>
      * <li>When the `BarrageMessageProducer` is ready to provide a new snapshot to an updated subscription, it will
      * transfer the `pending` values (viewport rowset and direction, columns) to `target` values which are the final
-     * goals toward which the viewport grows. In addition, the `growingRemainingViewport` is created which will hold all
-     * the outstanding rows the client needs to receive in the upcoming snapshot(s). If the updated (or new)
-     * subscription is a `full` subscription, this viewport is set to range (0, Long.MAX_VALUE).
+     * goals of the subscription. In addition, the `growingRemainingViewport` is created which will hold all the
+     * outstanding rows the client needs to receive in the upcoming snapshot(s). If the updated (or new) subscription is
+     * a `full` subscription, this viewport is set to range (0, Long.MAX_VALUE).
      * <li>If a client has changed viewports, it is possible that the new viewport overlaps with the previous and some
      * rows may not need to be requested. This can only happen on the first snapshot after the change, so the
      * `isFirstSnapshot` flag is used to add these rows to the viewport on the first snapshot.</li>
@@ -1893,7 +1913,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                     if (subscription.targetViewport != null) {
                         // A viewport feeds a GUI that someone is watching, so this round takes every remaining
                         // position of the viewport, even past the budget. The positions that hold rows are charged,
-                        // which leaves the growing subscriptions only what remains of the budget; the viewport's
+                        // which leaves the growing full subscriptions only what remains of the budget; the viewport's
                         // positions past the table's end cost nothing.
                         rowsRemaining -= reserveSnapshotPositions(subscription, currentSet, directionViewportBuilder,
                                 tableSize - 1, Long.MAX_VALUE);
@@ -1913,7 +1933,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 }
 
                 if (rowsRemaining < 0 && log.isDebugEnabled()) {
-                    log.debug().append(logPrefix).append("viewport subscriptions exceeded the growth budget of ")
+                    log.debug().append(logPrefix).append("viewport subscriptions exceeded the snapshot budget of ")
                             .append(rowBudget).append(" rows by ").append(-rowsRemaining).append(" rows").endl();
                 }
 
@@ -2225,10 +2245,11 @@ public class BarrageMessageProducer extends LivenessArtifact
      * {@link SubViewKey} form one unit, written once for all of them, and every other subscription is a unit by itself.
      * A stable full subscription has the whole table and shares the producer's dictionaries, so its view of a
      * propagated message is decided by its key alone. Any other subscription's view also depends on its own state: a
-     * viewport subscription is sent only its viewport's rows, a growing one only the rows it has so far, and one with a
-     * snapshot viewport the deltas before this cycle's snapshot as its previous viewport, columns and direction see
-     * them. When grouping is off, every subscription is a unit by itself. Larger units come first, so that the longest
-     * writes start first.
+     * viewport subscription is sent only its viewport's rows, a growing full subscription only the rows it has so far,
+     * and one with a snapshot viewport the deltas before this cycle's snapshot as its previous viewport, columns and
+     * direction see them. When grouping is off, every subscription is a unit by itself. Larger units come first, so
+     * that among the full units the longest writes start first; {@link #forEachInParallel} still writes every viewport
+     * unit before any full unit.
      */
     private List<List<Subscription>> groupPropagationTargets(final List<Subscription> targets) {
         final List<List<Subscription>> units = new ArrayList<>(targets.size());

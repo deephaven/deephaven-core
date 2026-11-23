@@ -43,9 +43,9 @@ import static org.junit.Assert.assertTrue;
 /**
  * Round trips through producers that write each propagation phase to their subscribers on several threads at once: that
  * the writes really do run at the same time, that subscribers sharing a producer's dictionaries each still receive
- * every value they are sent, that a failing subscriber is removed without disturbing the others, that many
- * subscriptions growing together all receive their snapshots, and that viewport subscribers are written before full
- * subscribers.
+ * every value they are sent, that a failing subscriber is removed without disturbing the others, that many new viewport
+ * and full subscriptions added together all receive their snapshots, and that viewport subscribers are written before
+ * full subscribers.
  */
 public class BarrageMessageParallelPropagationTest extends BarrageMessageRoundTripTestBase {
 
