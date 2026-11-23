@@ -1,0 +1,63 @@
+name: Gradle Dependency Cache
+
+# The only writer of the Gradle dependency cache; every other job restores it through .github/actions/gradle-setup.
+# Each run seeds only if the current dependency declarations have no entry yet, starting from an empty Gradle user home
+# so the entry holds exactly the current dependencies. rc branches call this from gradle-deps-cache-rc.yml.
+on:
+  schedule:
+    - cron: '30 0 * * 1,3,5'
+  # Changes to the seed itself; other key-file changes on main wait for the next scheduled run.
+  push:
+    branches: [ 'main' ]
+    paths:
+      - 'buildSrc/src/main/groovy/io.deephaven.resolve-all-dependencies.gradle'
+      - '.github/workflows/gradle-deps-cache.yml'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: gradle-deps-cache-${{ github.ref }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup JDKs
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: 'temurin'
+          java-version: |
+            21
+
+      - name: Setup Gradle
+        id: gradle
+        uses: ./.github/actions/gradle-setup
+        with:
+          seed: 'true'
+
+      - name: Setup gradle properties
+        if: ${{ steps.gradle.outputs.cache-hit != 'true' }}
+        run: |
+          .github/scripts/gradle-properties.sh 21 >> gradle.properties
+          cat gradle.properties
+
+      # spotlessCheck resolves its formatter artifacts at task time, in detached configurations resolveAllDependencies
+      # can't see.
+      - name: Resolve dependencies
+        if: ${{ steps.gradle.outputs.cache-hit != 'true' }}
+        run: ./gradlew resolveAllDependencies spotlessCheck
+
+      - name: Save Gradle dependency cache
+        if: ${{ steps.gradle.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches/modules-2
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle.outputs.key }}

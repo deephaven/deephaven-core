@@ -21,6 +21,12 @@ jobs:
           java-version: |
             21
 
+      # dependency-submission sets up Gradle itself.
+      - name: Restore Gradle dependency cache
+        uses: ./.github/actions/gradle-setup
+        with:
+          setup-gradle: 'false'
+
       - name: Setup gradle properties
         run: |
           .github/scripts/gradle-properties.sh 21 >> gradle.properties
@@ -28,6 +34,8 @@ jobs:
 
       - name: Generate and submit dependency graph
         uses: gradle/actions/dependency-submission@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-provider: external
         env:
           # Dependencies derived from :server-jetty-app runtimeClasspath get a "runtime" scope and everything else gets
           # a "development" scope. Ideally, gradle would be able to pass along the finer dependency details (for
