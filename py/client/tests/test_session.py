@@ -19,7 +19,7 @@ from deephaven_core.proto import config_pb2, config_pb2_grpc
 from pydeephaven import DHError, Session
 from pydeephaven.session import _SessionJob
 from pydeephaven.table import Table
-from pydeephaven.ticket import ScopeTicket, SharedTicket
+from pydeephaven.ticket import ScopeTicket, SharedTicket, Ticket
 from tests.testbase import BaseTestCase
 
 _Event = threading.Event
@@ -305,6 +305,63 @@ t1 = empty_table(0) if t.is_blink else None
             self.assertTrue(session._release_thread.is_alive())
         finally:
             session.close()
+
+    def test_release_in_flight_during_close_logs_no_error(self) -> None:
+        release_started = threading.Event()
+        session_closed = threading.Event()
+        failures: list[Exception] = []
+
+        class ReleaseAfterCloseJob(_SessionJob):
+            """A release that close() overtakes: it sends its RPC only after close() has closed the channel."""
+
+            def __init__(self, ticket: Ticket) -> None:
+                self.ticket = ticket
+
+            def run(self, session: Session) -> None:
+                release_started.set()
+                session_closed.wait(10)
+                try:
+                    session.release(self.ticket)
+                except Exception as e:
+                    failures.append(e)
+                    raise
+
+        session = Session()
+        table = session.empty_table(1)
+        releaser = session._release_thread
+        with self.assertNoLogs("pydeephaven.session", level="ERROR"):
+            session._release_queue.put(ReleaseAfterCloseJob(table.ticket))
+            self.assertTrue(release_started.wait(10))
+            session.close()
+            session_closed.set()
+            releaser.join(10)
+        self.assertFalse(releaser.is_alive())
+        self.assertEqual(len(failures), 1, "the release did not fail after close")
+
+    def test_token_refresh_in_flight_during_close_logs_no_warning(self) -> None:
+        refresh_started = threading.Event()
+        session_closed = threading.Event()
+        failures: list[Exception] = []
+
+        def refresh_after_close() -> None:
+            refresh_started.set()
+            session_closed.wait(10)
+            e = DHError("simulated refresh failure on a closed channel")
+            failures.append(e)
+            raise e
+
+        with _short_refresh_sleep():
+            session = Session()
+            session.config_service.get_configuration_constants = refresh_after_close
+            refresher = session._refresh_thread
+            with self.assertNoLogs("pydeephaven.session", level="WARNING"):
+                self.assertTrue(refresh_started.wait(10))
+                session.close()
+                session_closed.set()
+                refresher.join(10)
+            self.assertFalse(refresher.is_alive())
+            self.assertEqual(len(failures), 1)
+            self.assertEqual(session._refresh_failures, 0)
 
     def test_enter_refuses_closed_session(self):
         session = Session()
