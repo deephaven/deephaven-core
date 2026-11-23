@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.replicatedTestDir;
 import com.palantir.javapoet.AnnotationSpec;
 import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
@@ -233,7 +234,7 @@ public class GenerateArrowColumnSourceTests {
                 .build();
 
         String path =
-                "extensions/arrow/src/replicatedTest/" + TASK + "/java/io/deephaven/extensions/arrow/"
+                replicatedTestDir("extensions/arrow", TASK) + "/io/deephaven/extensions/arrow/"
                         + className + ".java";
         try {
             String gradleTask = TASK;
