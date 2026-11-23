@@ -16,15 +16,12 @@ import java.util.stream.Stream;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.globalReplacements;
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 
 public class ReplicateStampKernel {
     private static final String TASK = "replicateStampKernel";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         final String charStampPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/stamp/CharStampKernel.java";
         final String charNoExactStampPath =

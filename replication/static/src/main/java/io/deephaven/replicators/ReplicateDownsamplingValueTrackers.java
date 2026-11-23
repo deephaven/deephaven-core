@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
 
@@ -18,8 +17,6 @@ public class ReplicateDownsamplingValueTrackers extends ReplicatePrimitiveCode {
     private static final String TASK = "replicateDownsamplingValueTrackers";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         charToAllButBoolean(TASK,
                 "ClientSupport/src/main/java/io/deephaven/clientsupport/plotdownsampling/CharValueTracker.java");
     }

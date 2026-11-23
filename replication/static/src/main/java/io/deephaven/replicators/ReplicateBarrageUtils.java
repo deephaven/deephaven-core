@@ -20,8 +20,6 @@ public class ReplicateBarrageUtils {
             "extensions/barrage/src/main/java/io/deephaven/extensions/barrage/chunk";
 
     public static void main(final String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 CHUNK_PACKAGE + "/CharChunkWriter.java");
 

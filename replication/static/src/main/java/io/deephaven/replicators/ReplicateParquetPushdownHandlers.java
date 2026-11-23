@@ -12,7 +12,6 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 public class ReplicateParquetPushdownHandlers {
     private static final String TASK = "replicateParquetPushdownHandlers";
@@ -35,8 +34,6 @@ public class ReplicateParquetPushdownHandlers {
             + "    // reuses this arithmetic rather than duplicating it. See ReplicateParquetPushdownHandlers.\n";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         // char -> byte, short, int, long
         final List<String> integralHandlers = charToIntegers(TASK, CHAR_PUSHDOWN_HANDLER);
         for (final String integralHandler : integralHandlers) {

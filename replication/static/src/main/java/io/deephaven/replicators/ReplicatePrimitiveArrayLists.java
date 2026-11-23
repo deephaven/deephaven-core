@@ -5,7 +5,6 @@ package io.deephaven.replicators;
 
 import java.io.IOException;
 
-import io.deephaven.replication.ReplicationUtils;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolean;
 import static io.deephaven.replication.ReplicatePrimitiveCode.floatToAllFloatingPoints;
@@ -14,8 +13,6 @@ public class ReplicatePrimitiveArrayLists {
     private static final String TASK = "replicatePrimitiveArrayLists";
 
     public static void main(String... args) throws IOException {
-        ReplicationUtils.redirectOutputToReplicated(TASK);
-
         charToAllButBoolean(TASK,
                 "Util/src/main/java/io/deephaven/util/datastructures/list/CharArrayList.java");
         charToAllButBoolean(TASK,

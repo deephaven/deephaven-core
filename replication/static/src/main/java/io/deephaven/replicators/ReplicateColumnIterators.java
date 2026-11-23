@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 /**
  * Code generation for primitive ColumnIterator implementations.
@@ -35,8 +34,6 @@ public class ReplicateColumnIterators {
             "engine/api/src/main/java/io/deephaven/engine/table/iterators/SerialCharacterColumnIterator.java";
 
     public static void main(String... args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         {
             charToByte(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
             charToShort(TASK, CHAR_IFACE_PATH, Collections.emptyMap());

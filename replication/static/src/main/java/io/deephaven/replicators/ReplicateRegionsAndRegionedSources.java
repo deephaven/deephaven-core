@@ -46,8 +46,6 @@ public class ReplicateRegionsAndRegionedSources {
     private static final String GENERAL_MATCH = "binarySearchMatchWithGeneralEquality";
 
     public static void main(String... args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         // Note that Byte and Object regions are not replicated!
         charToAllButBooleanAndByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/regioned/ColumnRegionChar.java");

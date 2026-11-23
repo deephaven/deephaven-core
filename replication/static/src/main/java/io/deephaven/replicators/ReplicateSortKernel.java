@@ -25,8 +25,6 @@ public class ReplicateSortKernel {
     private static final String TASK = "replicateSortKernel";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         replicateLongToInt();
         replicateLongToByte();
 

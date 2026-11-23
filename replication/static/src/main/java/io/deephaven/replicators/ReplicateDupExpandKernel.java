@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
@@ -18,8 +17,6 @@ public class ReplicateDupExpandKernel {
     private static final String TASK = "replicateDupExpandKernel";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         final String charClassPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/dupexpand/CharDupExpandKernel.java";
         ReplicatePrimitiveCode.charToAll(TASK, charClassPath);

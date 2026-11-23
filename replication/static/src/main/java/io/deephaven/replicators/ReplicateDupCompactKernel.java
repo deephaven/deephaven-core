@@ -21,8 +21,6 @@ public class ReplicateDupCompactKernel {
     private static final String TASK = "replicateDupCompactKernel";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         final String charJavaPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/dupcompact/CharDupCompactKernel.java";
         final List<String> kernelsToInvert =

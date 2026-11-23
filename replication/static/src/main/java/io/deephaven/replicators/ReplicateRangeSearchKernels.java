@@ -23,8 +23,6 @@ public class ReplicateRangeSearchKernels {
             "engine/table/src/main/java/io/deephaven/engine/table/impl/rangejoin/RangeSearchKernelChar.java";
 
     public static void main(@NotNull final String... args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         charToAllButBooleanAndFloats(TASK, CHAR_PATH);
 
         fixupDouble(charToDouble(TASK, CHAR_PATH, Collections.emptyMap()));

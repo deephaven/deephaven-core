@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 import java.io.IOException;
 
@@ -18,8 +17,6 @@ public class ReplicateRegionAndRegionedSourceTests {
 
 
     public static void main(String... args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TestRegionedColumnSourceChar.java");
         charToAllButBooleanAndByte(TASK,

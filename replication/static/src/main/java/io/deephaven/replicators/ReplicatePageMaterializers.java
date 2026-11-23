@@ -9,7 +9,6 @@ import java.io.IOException;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToByte;
 import static io.deephaven.replication.ReplicatePrimitiveCode.replaceAll;
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 
 /**
@@ -24,13 +23,7 @@ public class ReplicatePageMaterializers {
             "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/";
 
     // the directory that holds the output of this replicator, for the generated materializers that are also inputs
-    private static final String REPLICATED_DIR;
-
-    static {
-        // the redirect must be registered before the replicated directory is derived
-        redirectOutputToReplicated(TASK);
-        REPLICATED_DIR = replicatedOutputPath(TASK, MATERIALIZER_DIR);
-    }
+    private static final String REPLICATED_DIR = replicatedOutputPath(TASK, MATERIALIZER_DIR);
 
     private static final String CHAR_MATERIALIZER_PATH = MATERIALIZER_DIR + "CharMaterializer.java";
     private static final String SHORT_MATERIALIZER_PATH = REPLICATED_DIR + "ShortMaterializer.java";

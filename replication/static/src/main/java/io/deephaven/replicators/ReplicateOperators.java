@@ -14,15 +14,12 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 
 public class ReplicateOperators {
     private static final String TASK = "replicateOperators";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         charToAllButBooleanAndFloats(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumCharChunk.java");
         charToAllButBooleanAndFloats(TASK,

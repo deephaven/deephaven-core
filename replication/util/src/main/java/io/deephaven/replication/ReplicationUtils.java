@@ -21,15 +21,6 @@ public class ReplicationUtils {
     private static final Pattern REPLICATED_REDIRECT = Pattern.compile("^(.*)/src/(main|test)/java/(.*)$");
 
     /**
-     * No longer needed: replication output is always redirected, see {@link #replicatedOutputPath}.
-     *
-     * @param task the name of the Gradle task that runs the replicator
-     * @deprecated redirection is unconditional; remove the call
-     */
-    @Deprecated(forRemoval = true)
-    public static void redirectOutputToReplicated(@NotNull final String task) {}
-
-    /**
      * The directory that holds the generated main sources of the replication task {@code task} in a project.
      *
      * @param project the project directory relative to the repository root, e.g. {@code "engine/table"}

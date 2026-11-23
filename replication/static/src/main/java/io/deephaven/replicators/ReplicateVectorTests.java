@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
@@ -25,8 +24,6 @@ public class ReplicateVectorTests {
     private static final String CHAR_DIRECT_PATH = BASE_PATH + "CharVectorDirectTest.java";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         ReplicatePrimitiveCode.charToAllButBoolean(TASK, CHAR_BASE_PATH);
         ReplicatePrimitiveCode.charToAllButBoolean(TASK, CHAR_DIRECT_PATH);
         removeStreamAsIntTest(replicatedOutputPath(TASK, BASE_PATH + "IntVectorTest.java"));

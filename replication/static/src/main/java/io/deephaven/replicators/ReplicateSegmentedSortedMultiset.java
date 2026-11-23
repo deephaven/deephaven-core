@@ -28,8 +28,6 @@ public class ReplicateSegmentedSortedMultiset {
     private static final String TASK = "replicateSegmentedSortedMultiset";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         // Replicate FloatCompareOpenHashSet -> DoubleCompareOpenHashSet
         floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/FloatCompareOpenHashSet.java");

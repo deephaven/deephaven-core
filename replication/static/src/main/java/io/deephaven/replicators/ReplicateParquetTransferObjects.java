@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 import java.io.IOException;
 
@@ -44,8 +43,6 @@ public class ReplicateParquetTransferObjects {
     private static final String[] NO_EXCEPTIONS = new String[0];
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         charToShortAndByte(TASK, PARQUET_CHAR_TRANSFER_PATH);
         charToShortAndByte(TASK, PARQUET_CHAR_ARRAY_TRANSFER_PATH);
         charToShortAndByte(TASK, PARQUET_CHAR_VECTOR_TRANSFER_PATH);

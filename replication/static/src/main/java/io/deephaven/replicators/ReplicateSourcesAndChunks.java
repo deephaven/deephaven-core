@@ -31,8 +31,6 @@ public class ReplicateSourcesAndChunks {
     public static final String TASK = "replicateSourcesAndChunks";
 
     public static void main(String... args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         replicateArraySources();
         replicateSparseArraySources();
         replicateSingleValues();

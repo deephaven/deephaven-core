@@ -17,7 +17,6 @@ import java.util.stream.Stream;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolean;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToObject;
 import static io.deephaven.replication.ReplicationUtils.globalReplacements;
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 import static io.deephaven.replication.ReplicationUtils.simpleFixup;
 
@@ -25,8 +24,6 @@ public class ReplicateSegmentedSortedArray {
     private static final String TASK = "replicateSegmentedSortedArray";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         final String charSsaPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssa/CharSegmentedSortedArray.java";
         final List<String> ssas = charToAllButBoolean(TASK, charSsaPath);

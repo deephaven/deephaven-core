@@ -18,8 +18,6 @@ public class ReplicateSegmentedSortedMultisetTests {
     private static final String TASK = "replicateSegmentedSortedMultisetTests";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         ReplicateSegmentedSortedMultiset.main(args);
 
         // Replicate TestFloatSegmentedSortedMultisetSpecialValues -> TestDoubleSegmentedSortedMultisetSpecialValues

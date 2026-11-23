@@ -12,7 +12,6 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 
 public class ReplicateChunkFilters {
@@ -33,8 +32,6 @@ public class ReplicateChunkFilters {
     private static final String FLOAT_RANGE_FILTER = RANGE_FILTER_PATH + "FloatRangeFilter.java";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         // *ChunkFilter.java
         charToAllButBoolean(TASK, CHAR_CHUNK_FILTER);
 

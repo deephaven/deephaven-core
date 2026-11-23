@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
@@ -24,8 +23,6 @@ public class ReplicateVectorChunkFilters {
     private static final String CHAR_ARRAY_CHUNK_FILTER = CHUNK_FILTER_PATH + "CharArrayChunkFilter.java";
 
     public static void main(final String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         charToAllButBoolean(TASK, CHAR_VECTOR_CHUNK_FILTER);
         fixupObject(charToObject(TASK, CHAR_VECTOR_CHUNK_FILTER));
         charToAllButBoolean(TASK, CHAR_ARRAY_CHUNK_FILTER);

@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
@@ -23,8 +22,6 @@ public class ReplicateSortKernelTests {
     private static final String TASK = "replicateSortKernelTests";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         ReplicateSortKernel.main(args);
 
         charToAllButBoolean(TASK,

@@ -6,7 +6,6 @@ package io.deephaven.replicators;
 import java.io.IOException;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.replaceAll;
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 public class ReplicateCachingSupplier {
     private static final String TASK = "replicateCachingSupplier";
@@ -17,8 +16,6 @@ public class ReplicateCachingSupplier {
     private static final String[] NO_EXCEPTIONS = new String[0];
 
     public static void main(final String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         final String[][] pairs = new String[][] {
                 {"Supplier<OUTPUT_TYPE>", "Function<INPUT_TYPE, OUTPUT_TYPE>"},
                 {"internalSupplier\\.get\\(\\)", "internalFunction\\.apply\\(arg\\)"},

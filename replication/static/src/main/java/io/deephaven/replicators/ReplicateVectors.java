@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
@@ -25,8 +24,6 @@ public class ReplicateVectors {
 
     @SuppressWarnings("AutoBoxing")
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         Map<String, Long> serialVersionUIDs = Collections.emptyMap();
 
         final String charVectorJavaPath = "engine/vector/src/main/java/io/deephaven/vector/CharVector.java";

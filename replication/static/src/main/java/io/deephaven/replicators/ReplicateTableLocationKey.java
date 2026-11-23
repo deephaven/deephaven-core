@@ -6,7 +6,6 @@ package io.deephaven.replicators;
 import java.io.IOException;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.replaceAll;
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 public class ReplicateTableLocationKey {
     private static final String TASK = "replicateTableLocationKey";
@@ -19,8 +18,6 @@ public class ReplicateTableLocationKey {
     private static final String[] NO_EXCEPTIONS = new String[0];
 
     public static void main(final String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         final String[][] pairs = new String[][] {
                 {"file\\.getAbsoluteFile\\(\\)", "uri"},
                 {"java.io.File", "java.net.URI"},

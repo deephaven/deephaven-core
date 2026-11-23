@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
@@ -23,8 +22,6 @@ public class ReplicateColumnStats {
     private static final String TASK = "replicateColumnStats";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         final List<String> paths = shortToAllIntegralTypes(TASK,
                 "server/src/main/java/io/deephaven/server/table/stats/ShortChunkedNumericalStats.java");
         final String intPath =

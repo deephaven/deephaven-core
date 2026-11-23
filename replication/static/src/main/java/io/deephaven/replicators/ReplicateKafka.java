@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
 
@@ -13,8 +12,6 @@ public class ReplicateKafka {
     private static final String TASK = "replicateKafka";
 
     public static void main(String[] args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "extensions/kafka/src/main/java/io/deephaven/kafka/ingest/GenericRecordCharFieldCopier.java");
         ReplicatePrimitiveCode.charToAllButBoolean(TASK,
