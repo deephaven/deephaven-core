@@ -20,25 +20,14 @@ import java.util.stream.Stream;
 public class ReplicationUtils {
     private static final Pattern REPLICATED_REDIRECT = Pattern.compile("^(.*)/src/(main|test)/java/(.*)$");
 
-    private static final Set<String> redirectedTasks = new HashSet<>();
-
     /**
-     * Send the output of the replication task {@code task} to its own directory instead of next to its inputs. Call
-     * this once at the start of the replicator's {@code main}. Outputs written through
-     * {@link ReplicatePrimitiveCode#replaceAll} for this task then land in {@code <module>/src/replicated/<task>/java/}
-     * (for main sources) or {@code <module>/src/replicatedTest/<task>/java/} (for test sources), which the Gradle build
-     * includes in the main and test source sets respectively.
-     * <p>
-     * The output directory is not created; whoever adds or migrates a replicator creates it (and checks it in).
-     * <p>
-     * Redirection is tracked per task, so a replicator that invokes another replicator's {@code main} in the same JVM
-     * does not disturb the redirection of either task.
+     * No longer needed: replication output is always redirected, see {@link #replicatedOutputPath}.
      *
      * @param task the name of the Gradle task that runs the replicator
+     * @deprecated redirection is unconditional; remove the call
      */
-    public static void redirectOutputToReplicated(@NotNull final String task) {
-        redirectedTasks.add(task);
-    }
+    @Deprecated(forRemoval = true)
+    public static void redirectOutputToReplicated(@NotNull final String task) {}
 
     /**
      * The directory that holds the generated main sources of the replication task {@code task} in a project.
@@ -63,16 +52,20 @@ public class ReplicationUtils {
     }
 
     /**
-     * Apply the redirection requested by {@link #redirectOutputToReplicated(String)}, if any.
+     * Send the output of a replication task to its own directory instead of next to its inputs. Every output written
+     * through {@link ReplicatePrimitiveCode#replaceAll} is passed through here: a path under
+     * {@code <project>/src/main/java/} lands in {@code <project>/src/replicated/<task>/java/}, and one under
+     * {@code <project>/src/test/java/} in {@code <project>/src/replicatedTest/<task>/java/}. The Gradle build includes
+     * those directories in the main and test source sets respectively. Any other path is returned unchanged, as is a
+     * path that has already been redirected.
+     * <p>
+     * The output directory is not created; whoever adds or migrates a replicator creates it (and checks it in).
      *
      * @param task the task generating the file
      * @param resultJavaPath the path the file would be written to without redirection
      * @return the path to write to
      */
     public static String replicatedOutputPath(@NotNull final String task, @NotNull final String resultJavaPath) {
-        if (!redirectedTasks.contains(task)) {
-            return resultJavaPath;
-        }
         final Matcher matcher = REPLICATED_REDIRECT.matcher(resultJavaPath);
         if (!matcher.matches()) {
             return resultJavaPath;
