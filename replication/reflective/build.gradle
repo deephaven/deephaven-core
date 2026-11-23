@@ -26,14 +26,26 @@ dependencies {
     implementation project(':util-annotations')
 }
 
-task replicateAll {
-    dependsOn Tasks.registerMainExecTask(project, 'replicateTypedHashers', 'io.deephaven.replicators.ReplicateTypedHashers')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateTupleSetKernels', 'io.deephaven.replicators.ReplicateTupleSetKernels')
+def replicatorPackage = 'io.deephaven.replicators'
 
-    dependsOn Tasks.registerMainExecTask(project, 'generateArrowColumnSources', 'io.deephaven.replicators.GenerateArrowColumnSources')
-    dependsOn Tasks.registerMainExecTask(project, 'generateArrowColumnTestSources', 'io.deephaven.replicators.GenerateArrowColumnSourceTests')
+// Registers a JavaExec task per entry of a map of task name to replicator class, and returns the registered tasks.
+// This has to happen outside of any task configuration action, in which tasks cannot be registered.
+def registerReplicators = { Map<String, String> replicators ->
+    replicators.collect { taskName, className ->
+        Tasks.registerMainExecTask(project, taskName, "${replicatorPackage}.${className}")
+    }
+}
 
-    dependsOn Tasks.registerMainExecTask(project, 'generateQueryLanguageFunctions', 'io.deephaven.replicators.GenerateQueryLanguageFunctions')
+def replicators = [
+    replicateTypedHashers: 'ReplicateTypedHashers',
+    replicateTupleSetKernels: 'ReplicateTupleSetKernels',
+    generateArrowColumnSources: 'GenerateArrowColumnSources',
+    generateArrowColumnTestSources: 'GenerateArrowColumnSourceTests',
+    generateQueryLanguageFunctions: 'GenerateQueryLanguageFunctions',
+    generateTimsortKernels: 'GenerateTimsortKernels',
+]
 
-    dependsOn Tasks.registerMainExecTask(project, 'generateTimsortKernels', 'io.deephaven.replicators.GenerateTimsortKernels')
+def replicateAllTasks = registerReplicators(replicators)
+tasks.register('replicateAll') {
+    dependsOn replicateAllTasks
 }
