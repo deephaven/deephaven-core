@@ -210,14 +210,14 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: typedoc-${{ steps.dhc-version.outputs.version }}
-          path: 'web/client-api/types/build/documentation/'
+          path: 'web/client-api/types/build/typedoc/documentation/'
 
       - name: Deploy JavaScript/TypeScript docs
         if: ${{ github.event_name == 'push' }}
         uses: burnett01/rsync-deployments@b8733f9f81fe2d9c29b756e57cd373429be7bae2 # 9.0.4
         with:
           switches: -rlptDvz --delete
-          path: web/client-api/types/build/documentation/
+          path: web/client-api/types/build/typedoc/documentation/
           remote_path: deephaven-core-v2/${{ github.ref_name }}/client-api/javascript/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
