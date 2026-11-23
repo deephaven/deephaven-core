@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.replicatedDir;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.JavaFile;
 import com.palantir.javapoet.MethodSpec;
@@ -54,7 +55,7 @@ public class ReplicateTypedHashers {
     private static void generatePackage(Class<?> baseClass, boolean doDouble) throws IOException {
         final HasherConfig<?> hasherConfig = TypedHasherFactory.hasherConfigForBase(baseClass);
         final String packageName = TypedHasherFactory.packageName(hasherConfig);
-        final File sourceRoot = new File("engine/table/src/replicated/" + TASK + "/java/");
+        final File sourceRoot = new File(replicatedDir("engine/table", TASK));
 
         final MethodSpec singleDispatch = generateSingleDispatch(baseClass, hasherConfig, packageName, sourceRoot);
         final MethodSpec doubleDispatch;
