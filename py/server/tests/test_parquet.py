@@ -1081,6 +1081,36 @@ class ParquetTestCase(BaseTestCase):
             self.assertEqual(table_from_disk.columns[0].data_type, dtypes.BigInteger)
             self.assert_table_equals(table_from_disk, expected)
 
+    def test_unsigned_long_target_big_decimal(self):
+        # 2**63 and above only read back correctly when interpreted as unsigned.
+        values = [0, 1, 2**63 - 1, 2**63, 2**63 + 1, 2**64 - 1, None]
+        file_name = self._write_uint64_parquet("uint64_big_decimal.parquet", values)
+
+        j_big_decimal = dtypes.BigDecimal.j_type
+        expected = new_table(
+            [
+                InputColumn(
+                    name="uint64Col",
+                    data_type=dtypes.BigDecimal,
+                    input_data=[
+                        None if value is None else j_big_decimal(str(value))
+                        for value in values
+                    ],
+                )
+            ]
+        )
+
+        col_instructions = [
+            ColumnInstruction(
+                column_name="uint64Col",
+                parquet_column_name="uint64Col",
+                unsigned_long_target=UnsignedLongTarget.BIG_DECIMAL,
+            )
+        ]
+        table_from_disk = read(file_name, col_instructions=col_instructions)
+        self.assertEqual(table_from_disk.columns[0].data_type, dtypes.BigDecimal)
+        self.assert_table_equals(table_from_disk, expected)
+
     def test_unsigned_long_target_long(self):
         # LONG rejects anything above 2**63 - 1, so this file stays in range.
         file_name = self._write_uint64_parquet(

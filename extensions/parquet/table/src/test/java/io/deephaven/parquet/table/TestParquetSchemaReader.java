@@ -9,6 +9,7 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Types;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,21 @@ public class TestParquetSchemaReader {
         assertEquals(BigInteger.class,
                 convertSoleColumn(uint64Schema(PARQUET_COL, false),
                         withTarget(ParquetInstructions.UnsignedLongTarget.BIG_INTEGER)).getDataType());
+    }
+
+    @Test
+    public void unsignedLongTargetBigDecimal() {
+        assertEquals(BigDecimal.class,
+                convertSoleColumn(uint64Schema(PARQUET_COL, false),
+                        withTarget(ParquetInstructions.UnsignedLongTarget.BIG_DECIMAL)).getDataType());
+    }
+
+    @Test
+    public void repeatedUnsignedLongTargetBigDecimalAppliesToElements() {
+        final ColumnDefinition<?> column = convertSoleColumn(uint64Schema(PARQUET_COL, true),
+                withTarget(ParquetInstructions.UnsignedLongTarget.BIG_DECIMAL));
+        assertEquals(BigDecimal[].class, column.getDataType());
+        assertEquals(BigDecimal.class, column.getComponentType());
     }
 
     @Test
