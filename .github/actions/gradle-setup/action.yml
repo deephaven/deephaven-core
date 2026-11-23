@@ -5,7 +5,7 @@ description: >-
 
 inputs:
   seed:
-    description: "'true' to only look up this week's exact key, without restoring; for the seeding workflow."
+    description: "'true' to only look up the exact key, without restoring; for the seeding workflow."
     required: false
     default: 'false'
   setup-gradle:
@@ -15,25 +15,22 @@ inputs:
 
 outputs:
   cache-hit:
-    description: "'true' when this week's entry for the current dependency declarations exists."
+    description: "'true' when the entry for the current dependency declarations exists."
     value: ${{ steps.restore.outputs.cache-hit }}
   key:
-    description: The exact cache key for this week and the current dependency declarations.
+    description: The exact cache key for the current dependency declarations.
     value: ${{ steps.key.outputs.key }}
 
 runs:
   using: composite
   steps:
-    # The ISO week in the key lets the weekly seed start from an empty cache, since entries can't be overwritten. The
-    # seed's own files are hashed too, so changing how it seeds produces a new entry. Keep in sync with the push paths
-    # in gradle-deps-cache.yml.
+    # The seed's own files are hashed too, so changing how it seeds produces a new entry. Keep in sync with the push
+    # paths in gradle-deps-cache.yml.
     - name: Compute Gradle dependency cache key
       id: key
       shell: bash
       run: |
-        prefix="gradle-deps-${{ hashFiles('gradle/libs.versions.toml', 'buildSrc/build.gradle', 'gradle/wrapper/gradle-wrapper.properties', '.github/scripts/resolve-all-dependencies.gradle', '.github/workflows/gradle-deps-cache.yml') }}-"
-        echo "prefix=${prefix}" >> "$GITHUB_OUTPUT"
-        echo "key=${prefix}$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+        echo "key=gradle-deps-${{ hashFiles('gradle/libs.versions.toml', 'buildSrc/build.gradle', 'gradle/wrapper/gradle-wrapper.properties', '.github/scripts/resolve-all-dependencies.gradle', '.github/workflows/gradle-deps-cache.yml') }}" >> "$GITHUB_OUTPUT"
 
     - name: Restore Gradle dependency cache
       id: restore
@@ -43,10 +40,8 @@ runs:
           ~/.gradle/caches/modules-2
           ~/.gradle/wrapper
         key: ${{ steps.key.outputs.key }}
-        # Falls back to an earlier week for the same declarations, then to any entry.
-        restore-keys: |
-          ${{ inputs.seed != 'true' && steps.key.outputs.prefix || '' }}
-          ${{ inputs.seed != 'true' && 'gradle-deps-' || '' }}
+        # Falls back to the most recent entry, for declarations that haven't been seeded yet.
+        restore-keys: ${{ inputs.seed != 'true' && 'gradle-deps-' || '' }}
         lookup-only: ${{ inputs.seed == 'true' }}
 
     - name: Count cached dependency files

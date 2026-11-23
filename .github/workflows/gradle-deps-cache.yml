@@ -1,24 +1,19 @@
 name: Gradle Dependency Cache
 
 # The only writer of the Gradle dependency cache; every other job restores it through .github/actions/gradle-setup.
-# Each seed starts from an empty Gradle user home, so the entry holds exactly the current dependencies.
+# Each run seeds only if the current dependency declarations have no entry yet, starting from an empty Gradle user home
+# so the entry holds exactly the current dependencies. Release branches call this from gradle-deps-cache-release.yml.
 on:
   schedule:
-    # Early in the ISO week, which is part of the cache key.
-    - cron: '30 0 * * 1'
-  # The files hashed into the cache key in .github/actions/gradle-setup.
+    - cron: '30 0 * * 1,3,5'
+  # Changes to the seed itself; other key-file changes on main wait for the next scheduled run.
   push:
     branches: [ 'main' ]
     paths:
-      - 'gradle/libs.versions.toml'
-      - 'buildSrc/build.gradle'
-      - 'gradle/wrapper/gradle-wrapper.properties'
       - '.github/scripts/resolve-all-dependencies.gradle'
       - '.github/workflows/gradle-deps-cache.yml'
   workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  workflow_call:
 
 permissions:
   contents: read
@@ -27,6 +22,8 @@ jobs:
   seed:
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-24.04
+    concurrency:
+      group: gradle-deps-cache-${{ github.ref }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
