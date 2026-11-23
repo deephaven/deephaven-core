@@ -266,7 +266,7 @@ class TableListenerHandle:
     _bp: dhc.BarrageProcessor
     _writer: flight.FlightStreamWriter
     _reader: flight.FlightStreamReader
-    _thread: threading.Thread
+    _thread: threading.Thread | None
 
     def __init__(self, table: Table, listener: TableListener):
         """Constructor.
@@ -281,29 +281,55 @@ class TableListenerHandle:
         self._listener = listener
         self._cancelled = False
         self._reader_cancelled = False
+        self._thread = None
 
     def start(self) -> None:
         """Subscribes to changes on the table referenced in the constructor. When changes happen, the
-        TableListener passed into the constructor will be invoked."""
+        TableListener passed into the constructor will be invoked. The servicing thread is a daemon thread, so it
+        does not keep the program alive at exit.
 
-        fls = self._table.session.flight_service
-        self._writer, self._reader = fls.do_exchange()
+        Raises:
+            RuntimeError: if start() or stop() was already called on this handle
+        """
+
+        # A second start would overwrite the first stream and thread, which then could never be stopped. A start after
+        # stop() would open a stream whose thread exits at once, because the cancelled flag is already set.
+        if self._thread is not None or self._cancelled:
+            raise RuntimeError(
+                "TableListenerHandle can only be started once, and not after stop()"
+            )
+
+        # The processor rejects unsupported column types, so build it before opening the stream. A failure after
+        # do_exchange() would otherwise leave the stream open with no thread or stop() to close it.
         self._bp = dhc.BarrageProcessor.create(self._table.schema)
         subreq = dhc.BarrageProcessor.create_subscription_request(
             self._table.ticket._ticket_bytes
         )
-        self._writer.write_metadata(subreq)
+        fls = self._table.session.flight_service
+        self._writer, self._reader = fls.do_exchange()
+        try:
+            self._writer.write_metadata(subreq)
+        except Exception:
+            # Close the stream, but let the write failure be the error the caller sees.
+            try:
+                self._reader.cancel()
+                self._writer.close()
+            except Exception:
+                pass
+            raise
 
-        self._thread = threading.Thread(target=self._process_data)
+        self._thread = threading.Thread(target=self._process_data, daemon=True)
         self._thread.start()
 
     def stop(self) -> None:
         """Cancels the subscription to the table and stops the service thread. By the time this method returns, the
         thread servicing the subscription will be destroyed, and the callback will no longer be invoked.
         This method joins the subscription servicing thread, unless stop() was called from that very thread.
-        This can happen if the user's callback calls stop()."""
+        This can happen if the user's callback calls stop(). Calling stop() before start() does nothing."""
 
         self._cancelled = True
+        if self._thread is None:
+            return
         if threading.get_ident() == self._thread.ident:
             # We are inside the callback, so just setting the 'cancelled' flag suffices.
             return
@@ -328,15 +354,16 @@ class TableListenerHandle:
             pass
         except Exception as e:
             if not self._cancelled:
+                # If on_error raises, the finally below still cancels the reader and closes the writer.
                 self._listener.on_error(e)
-
-        try:
-            if not self._reader_cancelled:
-                self._reader_cancelled = True
-                self._reader.cancel()
-            self._writer.close()
-        except Exception:
-            pass
+        finally:
+            try:
+                if not self._reader_cancelled:
+                    self._reader_cancelled = True
+                    self._reader.cancel()
+                self._writer.close()
+            except Exception:
+                pass
 
 
 def listen(

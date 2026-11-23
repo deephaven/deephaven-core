@@ -244,15 +244,19 @@ cdef class ColumnSource:
 
         size = rows.size
 
-        null_flags = np.zeros(size, dtype=np.bool_)
-        cdef bool[::1] null_flags_view = null_flags
-        boolean_chunk = CGenericChunk[bool].CreateView(&null_flags_view[0], size)
-        cdef CGenericChunk[bool] *null_flags_ptr = &boolean_chunk
-
         element_type = deref(self.column_source).GetElementType()
 
         if element_type.ListDepth() > 1:
             raise RuntimeError(f"Can't handle deeply nested type {element_type.ToString()}")
+
+        # An empty list cell gives a zero-length slice. Taking &view[0] on an empty buffer below raises IndexError.
+        if size == 0:
+            return pa.array([], type=_dh_type_to_pa_type(element_type))
+
+        null_flags = np.zeros(size, dtype=np.bool_)
+        cdef bool[::1] null_flags_view = null_flags
+        boolean_chunk = CGenericChunk[bool].CreateView(&null_flags_view[0], size)
+        cdef CGenericChunk[bool] *null_flags_ptr = &boolean_chunk
 
         if element_type.ListDepth() == 1:
             return self._process_list(rows, null_flags, null_flags_ptr)
@@ -374,7 +378,11 @@ cdef class ColumnSource:
         dest_data = []
         for i in range(container_chunk.Size()):
             container_base = container_chunk[i]
-            is_null = deref(null_flags_ptr)[i]
+            # A null cell has no container, so reading its size would dereference a null pointer. The mask already
+            # marks the cell null, so any placeholder works here.
+            if deref(null_flags_ptr)[i] or not container_base:
+                dest_data.append(None)
+                continue
             slice_size = deref(container_base).size()
             container_as_ccs = CCythonSupport.ContainerToColumnSource(container_base)
             slice_cs = ColumnSource.create(container_as_ccs)
@@ -470,7 +478,9 @@ cdef shared_ptr[CColumnSource] _convert_arrow_array_to_column_source(array: pa.A
         # Important: the column source returned is a NumericBufferColumnSource which is only
         # valid as long as the underlying storage is valid. So we need to keep the storage
         # in a separate variable like this. TODO(kosak) make this less fragile.
-        value_lengths = array.value_lengths()
+        # A null list has a null length. Arrow marks it in the validity bitmap over a 0, but the int32 column source
+        # takes nullness only from the Deephaven null value. Without the fill a null list arrives as an empty one.
+        value_lengths = pc.fill_null(array.value_lengths(), pa.scalar(_deephaven_null_value(pa.int32()), type=pa.int32()))
         lengths_cs = _convert_arrow_array_to_column_source(value_lengths)
 
         return CCythonSupport.SlicesToColumnSource(
@@ -582,7 +592,7 @@ cdef shared_ptr[CColumnSource] _convert_arrow_time64_array_to_column_source(arra
 
 # Signature of one of the factory functions in CCythonSupport: CreateDateTimeColumnSource, CreateLocalDateColumnSource
 # or CreateLocalTimeColumnSource.
-ctypedef shared_ptr[CColumnSource](*factory_t)(const int64_t *, const int64_t *, const uint8_t *, const uint8_t *, size_t)
+ctypedef shared_ptr[CColumnSource](*factory_t)(const int64_t *, const int64_t *, const uint8_t *, const uint8_t *, size_t) except +
 
 # Converts one of the numeric Arrow types with an underlying int64 representation to the
 # corresponding ColumnSource type. The created column source does not own the
@@ -681,7 +691,8 @@ cdef class BarrageProcessor:
 
         cdef const void *mdptr = NULL
         cdef size_t mdsize = 0
-        if raw_metadata is not None:
+        # A zero-length buffer has no element 0, so &raw_metadata[0] would raise IndexError.
+        if raw_metadata is not None and raw_metadata.shape[0] > 0:
             mdptr = &raw_metadata[0]
             mdsize = raw_metadata.shape[0]
         result = self._barrage_processor.ProcessNextChunk(column_sources, sizes, mdptr, mdsize)
