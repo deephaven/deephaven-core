@@ -8,7 +8,7 @@ def groovyCompiles = tasks.withType(GroovyCompile)
 tasks.register('resolveAllDependencies') {
     description = 'Resolves the artifacts of every resolvable configuration in this project.'
     doLast {
-        configs.findAll { it.canBeResolved }.each { it.incoming.files.files }
-        groovyCompiles.findAll { !it.source.empty }.each { it.groovyClasspath.files }
+        configs.matching { it.canBeResolved }.each { it.incoming.files.files }
+        groovyCompiles.matching { !it.source.empty }.each { it.groovyClasspath.files }
     }
 }
