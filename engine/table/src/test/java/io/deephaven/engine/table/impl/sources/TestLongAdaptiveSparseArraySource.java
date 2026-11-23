@@ -289,8 +289,8 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
 
     /**
      * Modify a compact leaf in place, remove every row of it, then add rows back, all in one cycle, from sorted and
-     * bitmap leaves: the modification records rows of the leaf, so the removal and the adds record row by row, the
-     * adds into a leaf that the removal left absent.
+     * bitmap leaves: the modification records rows of the leaf, so the removal and the adds record row by row, the adds
+     * into a leaf that the removal left absent.
      */
     @Test
     public void testPreviousValuesOfLeafEmptiedAndRefilled() {
