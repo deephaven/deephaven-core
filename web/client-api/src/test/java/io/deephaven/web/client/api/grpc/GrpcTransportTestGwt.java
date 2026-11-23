@@ -85,14 +85,13 @@ public class GrpcTransportTestGwt extends AbstractAsyncGwtTestCase {
             // We're using h2, so we need to be on https for our current implementation
             return;
         }
-        setupDhInternal().then(ignore -> {
-            delayTestFinish(7101);
-            ConnectOptions connectOptions = new ConnectOptions();
-            connectOptions.transportFactory = makeFetchTransportFactory();
-            CoreClient coreClient = new CoreClient(localServer, connectOptions);
-            return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
-                    .then(ignore2 -> Promise.resolve(coreClient));
-        }).then(this::finish).catch_(this::report);
+        delayTestFinish(7101);
+        ConnectOptions connectOptions = new ConnectOptions();
+        connectOptions.transportFactory = makeFetchTransportFactory();
+        CoreClient coreClient = new CoreClient(localServer, connectOptions);
+        coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
+                .then(ignore -> Promise.resolve(coreClient))
+                .then(this::finish).catch_(this::report);
     }
 
     /**
@@ -217,14 +216,13 @@ public class GrpcTransportTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     public void testDummyGrpcTransport() {
-        setupDhInternal().then(ignore -> {
-            delayTestFinish(7102);
-            ConnectOptions connectOptions = new ConnectOptions();
-            connectOptions.transportFactory = makeDummyTransportFactory();
-            connectOptions.debug = true;
-            CoreClient coreClient = new CoreClient(localServer, connectOptions);
-            return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
-                    .then(ignore2 -> Promise.resolve(coreClient));
-        }).then(this::finish).catch_(this::report);
+        delayTestFinish(7102);
+        ConnectOptions connectOptions = new ConnectOptions();
+        connectOptions.transportFactory = makeDummyTransportFactory();
+        connectOptions.debug = true;
+        CoreClient coreClient = new CoreClient(localServer, connectOptions);
+        coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
+                .then(ignore -> Promise.resolve(coreClient))
+                .then(this::finish).catch_(this::report);
     }
 }

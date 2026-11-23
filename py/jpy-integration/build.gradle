@@ -178,9 +178,9 @@ Closure<TaskProvider<Task>> javaMainInDocker = { String taskName, String javaMai
       copyFile 'classpath', '/classpath'
     }
     entrypoint = ['java', '-cp', '/classpath:/classpath/*',
-                  '-Djpy.jpyLib=/opt/deephaven/venv/lib/python3.12/site-packages/jpy.cpython-312-x86_64-linux-gnu.so',
-                  '-Djpy.jdlLib=/opt/deephaven/venv/lib/python3.12/site-packages/jdl.cpython-312-x86_64-linux-gnu.so',
-                  '-Djpy.pythonLib=/usr/lib/python3.12/config-3.12-x86_64-linux-gnu/libpython3.12.so'
+                  '-Djpy.jpyLib=/opt/deephaven/venv/lib/python3.14/site-packages/jpy.cpython-314-x86_64-linux-gnu.so',
+                  '-Djpy.jdlLib=/opt/deephaven/venv/lib/python3.14/site-packages/jdl.cpython-314-x86_64-linux-gnu.so',
+                  '-Djpy.pythonLib=/usr/lib/python3.14/config-3.14-x86_64-linux-gnu/libpython3.14.so'
     ] + jvmArgs + javaMain
 
     showLogsOnSuccess = true

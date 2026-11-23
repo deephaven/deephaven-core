@@ -221,11 +221,6 @@ public class FunctionGeneratedTableFactory {
                 .map(interval -> Math.toIntExact(interval.toMillis()))
                 .orElseGet(() -> spec.dependencies().isEmpty() ? -1 : 0);
         final TableDefinition specDefinition = spec.tableDefinition().orElse(null);
-        if (specDefinition != null) {
-            // A supplied definition may carry user-provided column names, which TableDefinition does not validate on
-            // construction; reject illegal names before any column sources are created from it.
-            specDefinition.checkHasValidColumnNames();
-        }
         this.executionContextForUpdates = makeExecutionContextForUpdates();
         nextRefresh = System.currentTimeMillis() + this.refreshIntervalMs;
 

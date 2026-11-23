@@ -144,15 +144,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     .onError(Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Release ticket not supplied"));
             return;
         }
-        final SessionState.ExportObject<?> export = session.getExportIfExists(request.getId(), "id");
-        if (export == null) {
-            responseObserver.onError(Exceptions.statusRuntimeException(Code.UNAVAILABLE, "Export not yet defined"));
-            return;
-        }
-
-        // If the export is already in a terminal state, the implementation quietly ignores the request as there
-        // are no additional resources to release.
-        export.cancel();
+        // Cancel whatever state the export is in, including one not created yet; a terminal export ignores this.
+        session.getExport(request.getId(), "id").cancel();
         responseObserver.onNext(ReleaseResponse.getDefaultInstance());
         responseObserver.onCompleted();
     }

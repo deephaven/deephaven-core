@@ -14,7 +14,7 @@ httpclient = "5.6.5"
 classgraph = "4.8.198"
 commons-compress = "1.28.0"
 commons-io = "2.22.0"
-commons-lang3 = "3.21.0"
+commons-lang3 = "3.22.0"
 commons-math3 = "3.6.1"
 commons-text = "1.15.0"
 # confluent and confluent-kafka-clients should be kept in-sync
@@ -40,7 +40,7 @@ groovy = "3.0.25"
 # Only bump this in concert with netty (which will update boringssl). See the dependency matrix
 # for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 grpc = "1.85.1"
-netty = "4.2.20.Final"
+netty = "4.2.21.Final"
 
 protobuf-gwt='4.33.4-1'
 grpc-gwt='1.84.0-1'
@@ -70,33 +70,33 @@ jpy = "2.2.0"
 jsinterop = "2.1.0"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.2.0"
-logback = "1.6.6"
-lz4 = "1.14.0"
+logback = "1.6.7"
+lz4 = "1.14.1"
 mindrot = "0.4"
 nidi = "0.18.1"
-oshi = "7.7.3"
+oshi = "7.8.0"
 pac4j = "6.6.1"
 parquet = "1.18.2"
 picocli = "4.7.7"
 postgresql = "42.7.14"
 protobuf = "4.36.2"
+protobuf-gradle-plugin = "0.10.1"
 randelshofer = "2.0.1"
 rdblue = "0.1.1"
-rewrite-java = "8.90.4"
 # When bumping selenium, also bump the docker image in docker/registry/selenium/gradle.properties to the same version
 selenium = "4.52.0"
 slf4j = "2.0.20"
 snappy = "1.1.10.12"
-zstd-jni = "1.5.7-26"
-javapoet = "0.22.0"
-ayza = "10.1.0"
+zstd-jni = "1.5.7-28"
+javapoet = "0.23.0"
+ayza = "10.1.1"
 tdunning = "3.3"
 undercouch = "2.18.0"
 univocity = "2.9.1"
 vertispan-nio = "1.0-alpha-2"
 vertispan-flatbuffers-gwt = "25.2.10-1"
-vertispan-ts-defs = "1.0.0-RC4"
-xerial = "3.53.4.0"
+vertispan-ts-defs = "1.1.0"
+xerial = "3.54.1.0"
 xz = "1.12"
 
 # test versions
@@ -312,7 +312,6 @@ protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
 randelshofer-fastdoubleparser = { module = "ch.randelshofer:fastdoubleparser", version.ref = "randelshofer" }
 
 rdblue-brotli-codec = { module = "com.github.rdblue:brotli-codec", version.ref = "rdblue" }
-rewrite-java = { module = "org.openrewrite:rewrite-java", version.ref= "rewrite-java"}
 
 selenium-remote-driver = { module = "org.seleniumhq.selenium:selenium-remote-driver", version.ref = "selenium" }
 
@@ -374,3 +373,6 @@ testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-kafka = { module = "org.testcontainers:kafka", version.ref = "testcontainers" }
 testcontainers-redpanda = { module = "org.testcontainers:redpanda", version.ref = "testcontainers" }
+
+[plugins]
+protobuf = { id = "com.google.protobuf", version.ref = "protobuf-gradle-plugin" }

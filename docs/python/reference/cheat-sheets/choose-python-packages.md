@@ -51,7 +51,7 @@ When you install it yourself, use `deephaven-core[autocomplete]`. The `[autocomp
 
 ### `pydeephaven-ticking`
 
-[`pydeephaven-ticking`](https://pypi.org/project/pydeephaven-ticking/) extends [`pydeephaven`](#pydeephaven) so a client can subscribe to [ticking tables](../../conceptual/table-types.md#standard-streaming-tables) and receive the added, removed, and modified rows of each update. It installs [`pydeephaven`](#pydeephaven) as a dependency. PyPI has prebuilt wheels for Linux x86_64 only. For other platforms, see the [version support matrix](../version-matrix.md#client-libraries).
+[`pydeephaven-ticking`](https://pypi.org/project/pydeephaven-ticking/) extends [`pydeephaven`](#pydeephaven) so a client can subscribe to [ticking tables](../../conceptual/table-types.md#standard-streaming-tables) and receive the added, removed, and modified rows of each update. It installs [`pydeephaven`](#pydeephaven) as a dependency. PyPI has prebuilt wheels for Linux x86_64 only. For other platforms, see the [version support matrix](../version-matrix.md#client-libraries). For usage, see [Subscribe to ticking tables from a Python client](../../how-to-guides/pydeephaven-ticking.md).
 
 ## Plugins and plugin development
 

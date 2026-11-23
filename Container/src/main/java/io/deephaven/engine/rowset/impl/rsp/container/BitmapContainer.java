@@ -254,7 +254,7 @@ public final class BitmapContainer extends Container implements Cloneable {
         long newval = previous | (1L << xAsInt);
         bitmap[xAsInt / 64] = newval;
         if (USE_BRANCHLESS) {
-            cardinality += (previous ^ newval) >>> xAsInt;
+            cardinality += (int) ((previous ^ newval) >>> xAsInt);
         } else if (previous != newval) {
             ++cardinality;
         }
@@ -538,9 +538,9 @@ public final class BitmapContainer extends Container implements Cloneable {
         return true;
     }
 
-    protected long bitValue(final short i) {
+    protected int bitValue(final short i) {
         final int x = toIntUnsigned(i);
-        return (bitmap[x / 64] >>> x) & 1;
+        return (int) (bitmap[x / 64] >>> x) & 1;
     }
 
     /**
@@ -624,7 +624,7 @@ public final class BitmapContainer extends Container implements Cloneable {
         }
 
         final BitmapContainer ans = deepCopyIfShared();
-        ans.cardinality += 1 - 2 * ((bef & mask) >>> xAsInt);
+        ans.cardinality += 1 - 2 * (int) ((bef & mask) >>> xAsInt);
         ans.bitmap[index] ^= mask;
         if (isOnAndWillBeTurnedOff) {
             return ans.maybeSwitchContainerAfterShrinking();
@@ -1168,7 +1168,7 @@ public final class BitmapContainer extends Container implements Cloneable {
             long aft = bef | (1L << value2.content[k]);
             bitmap[i] = aft;
             if (USE_BRANCHLESS) {
-                cardinality += (bef - aft) >>> 63;
+                cardinality += (int) ((bef - aft) >>> 63);
             } else {
                 if (bef != aft) {
                     cardinality++;
@@ -1282,7 +1282,7 @@ public final class BitmapContainer extends Container implements Cloneable {
             final int index = toIntUnsigned(vc) >>> 6;
             long ba = bitmap[index];
             // TODO: check whether a branchy version could be faster
-            cardinality += 1 - 2 * ((ba & mask) >>> vc);
+            cardinality += 1 - 2 * (int) ((ba & mask) >>> vc);
             bitmap[index] = ba ^ mask;
         }
         return maybeSwitchContainer();
@@ -1395,7 +1395,7 @@ public final class BitmapContainer extends Container implements Cloneable {
         for (int i = 0; i < bitmap.length - 1; i++) {
             long word = nextWord;
             nextWord = bitmap[i + 1];
-            numRuns += Long.bitCount((~word) & (word << 1)) + ((word >>> 63) & ~nextWord);
+            numRuns += Long.bitCount((~word) & (word << 1)) + (int) ((word >>> 63) & ~nextWord);
         }
 
         final long word = nextWord;
@@ -1427,7 +1427,7 @@ public final class BitmapContainer extends Container implements Cloneable {
             long aft = w | (1L << v);
             answer.bitmap[i] = aft;
             if (USE_BRANCHLESS) {
-                answer.cardinality += (w - aft) >>> 63;
+                answer.cardinality += (int) ((w - aft) >>> 63);
             } else {
                 if (w != aft) {
                     answer.cardinality++;
@@ -1944,7 +1944,7 @@ public final class BitmapContainer extends Container implements Cloneable {
             final long mask = 1L << vc;
             final long val = answer.bitmap[index];
             // TODO: check whether a branchy version could be faster
-            answer.cardinality += 1 - 2 * ((val & mask) >>> vc);
+            answer.cardinality += 1 - 2 * (int) ((val & mask) >>> vc);
             answer.bitmap[index] = val ^ mask;
         }
         return answer.maybeSwitchContainer();

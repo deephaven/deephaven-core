@@ -3,14 +3,11 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-description "Formula validation using lists of pointcuts matched by openrewrite."
+description "Formula validation using lists of method patterns."
 
 dependencies {
-    shadow project(':Util')
-    shadow project(':engine-validation')
-    implementation libs.rewrite.java
-    // openrewrite brings an older Jackson; align the shaded copy with our version
-    implementation platform(libs.jackson.bom)
+    implementation project(':Util')
+    api project(':engine-validation')
 
     testImplementation project(":engine-test-utils")
     testImplementation project(":extensions-validation-base")
@@ -19,23 +16,4 @@ dependencies {
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly libs.slf4j.simple
-}
-
-// Relocate the openrewrite dependencies into a minimized fatjar to avoid potential conflicts.
-shadowJar {
-    for (String pattern : ["com", "de", "google", "groovy", "nonapi", "net", "org"]) {
-        relocate pattern, 'io.deephaven.server.table.validation.methodlist.rebased.' + pattern
-    }
-    relocate('io', 'io.deephaven.server.table.validation.methodlist.rebased.io') {
-        exclude 'io.deephaven.**'
-    }
-
-    mergeServiceFiles()
-    // Shadow 9 honors the default EXCLUDE strategy, which would drop all but the first copy of each service file
-    // (and Kotlin module file) before mergeServiceFiles (and the Kotlin module transformer) sees them.
-    filesMatching(['META-INF/services/**', 'META-INF/*.kotlin_module']) {
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    }
-    zip64 = true
-    minimize()
 }

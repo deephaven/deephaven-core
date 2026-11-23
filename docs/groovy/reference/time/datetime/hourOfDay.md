@@ -10,8 +10,9 @@ title: hourOfDay
 ## Syntax
 
 ```
-hourOfDay(instant, timeZone, localTime)
-hourOfDay(dateTime, localTime)
+hourOfDay(instant, timeZone, asLocalTime)
+hourOfDay(dateTime, asLocalTime)
+hourOfDay(localDateTime)
 hourOfDay(localTime)
 ```
 
@@ -23,8 +24,8 @@ hourOfDay(localTime)
 The time for which to find the hour of the day.
 
 </Param>
-<Param name="timeZone" type="TimeZone">
-s
+<Param name="timeZone" type="ZoneId">
+
 The time zone to use when interpreting the [date-time](../../query-language/types/date-time.md).
 
 </Param>
@@ -33,12 +34,24 @@ The time zone to use when interpreting the [date-time](../../query-language/type
 The zoned date-time for which to find the hour of the day.
 
 </Param>
-<Param name="localTime" type="boolean">
+<Param name="asLocalTime" type="boolean">
 
 Set this parameter to `false` if you need Deephaven to account for daylight savings time.
 
-- If `false`, returns the number of hours from the start of the day. However, on days when daylight savings time events occur, results may be different from what is expected based on the local time. For example, on DST change days, 9:30 AM may be earlier or later in the day based on whether the daylight savings time adjustment is forward or backward. On non-DST days, the result is the same as if `localTime` is `false`.
+- If `false`, returns the number of hours from the start of the day. However, on days when daylight savings time events occur, results may be different from what is expected based on the local time. For example, on DST change days, 9:30 AM may be earlier or later in the day based on whether the daylight savings time adjustment is forward or backward.
 - If `true`, returns the number of hours from the start of the day according to the local time. In this case, `9:30` will always return the same value.
+
+On non-DST days, the result is the same regardless of the value of `asLocalTime`.
+
+</Param>
+<Param name="localDateTime" type="LocalDateTime">
+
+The local date-time for which to find the hour of the day.
+
+</Param>
+<Param name="localTime" type="LocalTime">
+
+The local time for which to find the hour of the day.
 
 </Param>
 </ParamTable>
