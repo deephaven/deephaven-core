@@ -289,6 +289,58 @@ public class TestIntegerAdaptiveSparseArraySource extends AbstractIntegerColumnS
     }
 
     /**
+     * Modify a compact leaf in place, remove every row of it, then add rows back, all in one cycle, from sorted and
+     * bitmap leaves: the modification records rows of the leaf, so the removal and the adds record row by row, the
+     * adds into a leaf that the removal left absent.
+     */
+    @Test
+    public void testPreviousValuesOfLeafEmptiedAndRefilled() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (final int initialSize : new int[] {4, 40}) {
+            for (final int modify : new int[] {MODIFY, MODIFY_CHUNK}) {
+                for (final boolean removeEachRow : new boolean[] {false, true}) {
+                    for (final int add : new int[] {ADD, ADD_CHUNK, PROMOTE}) {
+                        final IntegerAdaptiveSparseArraySource source = makeTestSource();
+                        source.startTrackingPrevValues();
+                        final Long2IntOpenHashMap expected = new Long2IntOpenHashMap();
+                        expected.defaultReturnValue(NULL_INT);
+                        final MutableInt nextValue = new MutableInt(1);
+                        updateGraph.runWithinUnitTestCycle(() -> {
+                            for (int ii = 0; ii < initialSize; ++ii) {
+                                final int value = (int) nextValue.getAndIncrement();
+                                source.set(ii * 3L, value);
+                                expected.put(ii * 3L, value);
+                            }
+                        });
+                        final Long2IntOpenHashMap expectedPrev = new Long2IntOpenHashMap(expected);
+                        expectedPrev.defaultReturnValue(NULL_INT);
+                        final String message = "initialSize " + initialSize + ", modify " + modify
+                                + ", removeEachRow " + removeEachRow + ", add " + add;
+                        updateGraph.startCycleForUnitTests();
+                        applyLeafChange(source, expected, modify, nextValue);
+                        assertLeafMatches(message + " after the modification", source, expected, expectedPrev);
+                        if (removeEachRow) {
+                            for (final long key : expected.keySet().toLongArray()) {
+                                source.setNull(key);
+                            }
+                        } else {
+                            try (final RowSet leaf = RowSetFactory.fromRange(0, BLOCK_SIZE - 1)) {
+                                source.setNull(leaf);
+                            }
+                        }
+                        expected.clear();
+                        assertLeafMatches(message + " after the removal", source, expected, expectedPrev);
+                        applyLeafChange(source, expected, add, nextValue);
+                        assertLeafMatches(message + " after the add", source, expected, expectedPrev);
+                        updateGraph.completeCycleForUnitTests();
+                        assertLeafMatches(message + " after the cycle", source, expected, expected);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Change leaf 0 of {@code source}, whose rows hold values at multiples of 3, as {@code change} says, writing each
      * new value from {@code nextValue}.
      */
