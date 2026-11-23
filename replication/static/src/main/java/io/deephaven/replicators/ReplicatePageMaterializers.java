@@ -10,20 +10,26 @@ import java.io.IOException;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToByte;
 import static io.deephaven.replication.ReplicatePrimitiveCode.replaceAll;
 import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
+import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 
 /**
  * Code generation for basic ToPage implementations.
  */
 public class ReplicatePageMaterializers {
     private static final String TASK = "replicatePageMaterializers";
+
+    static {
+        // must precede REPLICATED_DIR below, which is computed during class initialization
+        redirectOutputToReplicated(TASK);
+    }
+
     private static final String[] NO_EXCEPTIONS = new String[0];
 
     private static final String MATERIALIZER_DIR =
             "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/";
 
     // the directory that holds the output of this replicator, for the generated materializers that are also inputs
-    private static final String REPLICATED_DIR =
-            "extensions/parquet/base/src/replicated/" + TASK + "/java/io/deephaven/parquet/base/materializers/";
+    private static final String REPLICATED_DIR = replicatedOutputPath(TASK, MATERIALIZER_DIR);
 
     private static final String CHAR_MATERIALIZER_PATH = MATERIALIZER_DIR + "CharMaterializer.java";
     private static final String SHORT_MATERIALIZER_PATH = REPLICATED_DIR + "ShortMaterializer.java";
@@ -49,8 +55,6 @@ public class ReplicatePageMaterializers {
     private static final String BIG_INTEGER_MATERIALIZER_PATH = REPLICATED_DIR + "BigIntegerMaterializer.java";
 
     public static void main(String... args) throws IOException {
-        redirectOutputToReplicated(TASK);
-
         charToByte(TASK, CHAR_MATERIALIZER_PATH, NO_EXCEPTIONS);
 
         // LongBase -> IntBase
