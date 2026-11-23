@@ -399,8 +399,9 @@ different part of the page table:
 ## Measured behaviour
 
 All comparisons are against the full block sparse array sources (`DoubleSparseArraySource`), in the same build, with 2
-forks, over a double column. `SparseUpdateBenchmark` runs `update("X = V * 2.0")` over a refreshing parent whose row
-keys follow the pattern, and its cycles change 2^16 rows.
+forks, over a double column. Random `set` compares the median of 5 forks instead, because the full block sources'
+time for it varies by up to 2x from fork to fork. `SparseUpdateBenchmark` runs `update("X = V * 2.0")` over a
+refreshing parent whose row keys follow the pattern, and its cycles change 2^16 rows.
 
 ### Compact leaves
 
@@ -409,29 +410,29 @@ The sources that `select` and `update` create, in the patterns of [Row key patte
 | Pattern | Rows | Bytes per row, full block sources | Bytes per row, adaptive | Initial update, serial | Initial update, parallel |
 |---|---|---|---|---|---|
 | Dense | 8,388,608 | 8.1 | 8.1 | 1.01x | 0.41x |
-| Stride8 | 1,048,576 | 64.3 | 10.1 | 0.83x | 0.21x |
-| Stride64 | 1,048,576 | 515 | 13.8 | 0.16x | 0.11x |
-| Stride512 | 1,048,576 | 4,106 | 42.1 | 0.03x | 0.04x |
-| Random1 | 1,047,586 | 803 | 17.5 | 0.16x | 0.12x |
-| Clustered | 1,033,388 | 66.0 | 8.5 | 0.61x | 0.28x |
+| Stride8 | 1,048,576 | 64.3 | 10.1 | 0.62x | 0.18x |
+| Stride64 | 1,048,576 | 516 | 13.8 | 0.15x | 0.10x |
+| Stride512 | 1,048,576 | 4,109 | 42.7 | 0.03x | 0.04x |
+| Random1 | 1,047,586 | 803 | 17.5 | 0.17x | 0.12x |
+| Clustered | 1,033,388 | 65.9 | 8.8 | 0.60x | 0.25x |
 
 An initial update allocates 1 to 18% as much, except for Dense, which allocates the same. March cycles take 0.12 to
-0.77x as long and allocate 3 to 30% as much, except for Dense, which allocates 1 to 3% more. Modify cycles take 0.33 to
-1.00x as long and allocate 0.84 to 1.18x as much, except for Stride8 and Dense. Stride8 modify cycles allocate 1,068 KB
-against 466 KB, for the compact leaves that record previous values, and Dense modify cycles allocate 14 KB against 9 KB
+0.78x as long and allocate 3 to 30% as much, except for Dense, which allocates 1 to 3% more. Modify cycles take 0.32 to
+0.89x as long and allocate 0.76 to 1.18x as much, except for Stride8 and Dense. Stride8 modify cycles allocate 1,065 KB
+against 465 KB, for the compact leaves that record previous values, and Dense modify cycles allocate 14 KB against 9 KB
 serially and 36 KB against 17 KB in parallel.
 
-A point read in a compact leaf costs a bitmap rank or a sorted leaf count. Random `get` takes 1.25 to 2.59x as long on
-Stride512, Runs64 and Clustered, and 0.73 to 1.06x on Dense, Stride8, Stride64, Random10 and Random1, whose smaller
-footprint offsets the rank. Random `set` takes 0.78 to 2.14x as long, the most on Random1 and Random10, and
-`sequentialFill` 0.24 to 1.46x, the most on Runs64.
+A point read in a compact leaf costs a bitmap rank or a sorted leaf count. Random `get` takes 1.35 to 2.59x as long on
+Stride512, Runs64 and Clustered, and 0.72 to 1.09x on Dense, Stride8, Stride64, Random10 and Random1, whose smaller
+footprint offsets the rank. Random `set` takes 0.75 to 2.11x as long, the most on Random1 and Stride64, and
+`sequentialFill` 0.25 to 1.50x, the most on Runs64.
 
 ### Full block leaves
 
 The sources that the factory methods of `SparseArrayColumnSource` create adapt their page table levels and hold every
 leaf as a full block. In every pattern their memory per row is within 1% of the full block sources. `fillUnordered`
-takes 0.58 to 0.85x as long, random `set` 0.50 to 1.25x, `randomSubsetFill` 0.51 to 1.36x, `sequentialFill` 0.53 to
-1.01x, `populate` 0.95 to 1.09x and random `get` 1.05 to 1.31x, the most on Stride64, Stride512 and Random1, which span
+takes 0.58 to 0.83x as long, random `set` 0.47 to 1.32x, `randomSubsetFill` 0.47 to 1.06x, `sequentialFill` 0.52 to
+1.04x, `populate` 0.95 to 1.01x and random `get` 1.03 to 1.31x, the most on Stride64, Stride512 and Random1, which span
 the most row keys.
 
 ### Small results
@@ -441,16 +442,16 @@ the most row keys.
 
 | Shape | Rows | Full block sources | Adaptive, full block leaves | Adaptive, compact leaves |
 |---|---|---|---|---|
-| Dense | 10 | 860 | 844 | 42.2 |
-| Dense | 3,000 | 52.2 | 8.3 | 8.3 |
+| Dense | 10 | 861 | 844 | 42.3 |
+| Dense | 3,000 | 52.4 | 8.3 | 8.3 |
 | Stride64 | 100 | 1,898 | 578 | 16.8 |
-| Stride64 | 1,000 | 651 | 519 | 14.1 |
-| Spread | 10 | 21,532 | 8,269 | 127 |
-| Spread | 100,000 | 8,251 | 8,248 | 104 |
+| Stride64 | 1,000 | 652 | 519 | 14.1 |
+| Spread | 10 | 21,453 | 8,271 | 127 |
+| Spread | 100,000 | 8,252 | 8,250 | 104 |
 | Level2s | 10 | 21,356 | 8,280 | 144 |
-| Level2s | 10,000 | 8,268 | 8,294 | 127 |
+| Level2s | 10,000 | 8,286 | 8,297 | 127 |
 | Regions | 10 | 4,200,921 | 6,688 | 180 |
-| Regions | 100,000 | 438 | 8.6 | 8.6 |
+| Regions | 100,000 | 439 | 8.6 | 8.6 |
 | FarRegions | 10 | 4,195,968 | 1,680 | 64 |
 
 A `Level0` of the full block sources with more than one child allocates a 32 MB array, which is why every source spread
@@ -462,17 +463,17 @@ with compact leaves and then with full block leaves:
 
 | Shape | `randomGet` | `fillUnordered` | `sequentialFill` |
 |---|---|---|---|
-| Dense | 1.13 to 1.21; 1.13 to 1.20 | 0.72 to 0.78; 0.72 to 0.79 | 0.97 to 1.04; 0.97 to 1.00 |
-| Stride64 | 2.13 to 3.38; 1.01 to 1.21 | 1.03 to 1.47; 0.61 to 0.70 | 1.19 to 1.40; 0.78 to 0.84 |
-| Spread | 1.60 to 2.05; 1.09 to 1.32 | 0.93 to 0.94; 0.60 to 0.81 | 1.18 to 1.48; 1.30 to 1.60 |
-| Level2s | 2.10 to 2.18; 1.34 to 1.38 | 1.07; 0.78 to 0.81 | 0.81 to 1.26; 1.02 to 1.21 |
-| Regions | 1.19 to 1.35; 1.18 to 1.42 | 0.77 to 0.90; 0.77 to 0.90 | 1.01; 0.99 to 1.01 |
-| FarRegions | 2.22 to 2.31; 2.26 to 2.30 | 1.10 to 1.17; 1.10 to 1.17 | 0.96 to 1.03; 1.00 to 1.02 |
+| Dense | 1.15 to 1.20; 1.15 to 1.20 | 0.67 to 0.81; 0.67 to 0.81 | 1.00 to 1.11; 1.01 to 1.10 |
+| Stride64 | 2.15 to 3.34; 1.01 to 1.19 | 1.08 to 1.39; 0.63 to 0.64 | 1.20 to 1.41; 0.77 to 0.84 |
+| Spread | 1.59 to 2.02; 1.10 to 1.30 | 0.92 to 0.93; 0.61 to 0.80 | 1.15 to 1.45; 1.29 to 1.58 |
+| Level2s | 2.10 to 2.25; 1.33 to 1.37 | 1.07 to 1.12; 0.75 to 0.76 | 0.82 to 1.29; 1.02 to 1.19 |
+| Regions | 1.21 to 1.40; 1.19 to 1.48 | 0.79 to 0.88; 0.79 to 0.88 | 0.98 to 1.02; 0.99 to 1.03 |
+| FarRegions | 2.21 to 2.29; 2.23 to 2.29 | 1.05 to 1.13; 1.05 to 1.14 | 1.00 to 1.01; 0.99 to 1.01 |
 
 Random reads of a small result pay for finding each child's position, which an array indexed by child index gives for
 free. FarRegions ranks its two `Level0` children, 800,000 indices apart, so every read searches them. Compact leaves add
 the rank or count within each leaf, which is why Stride64, Spread and Level2s, with few rows per leaf, read slowest with
-them. With compact leaves, populating a small result takes at most 0.78x as long. With either kind of leaf, populating
+them. With compact leaves, populating a small result takes at most 0.79x as long. With either kind of leaf, populating
 one spread across regions takes less than 1% as long, because no 32 MB array is allocated.
 
 ## Traps this code has already fallen into
