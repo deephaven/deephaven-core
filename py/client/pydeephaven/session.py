@@ -661,14 +661,13 @@ class Session:
             DHError
         """
         with self._r_lock:
-            # Disconnect first, before CloseSession. The background threads then stop, and an RPC of theirs that fails
-            # while CloseSession runs is not logged.
-            was_connected = self.is_connected
-            self.is_connected = False
             # Stop the release thread even if already disconnected. The server releases any tickets still queued.
             self._release_queue.put(_STOP)
-            if not was_connected:
+            if not self.is_connected:
                 return
+            # Disconnect before CloseSession. The background threads then stop, and an RPC of theirs that fails while
+            # CloseSession runs is not logged.
+            self.is_connected = False
             try:
                 self.session_service.close()
             finally:
