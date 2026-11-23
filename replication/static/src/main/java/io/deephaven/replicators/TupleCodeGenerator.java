@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.replicatedDir;
 import io.deephaven.util.text.Indenter;
 import org.jetbrains.annotations.NotNull;
 
@@ -32,7 +33,7 @@ public class TupleCodeGenerator {
 
     private static final String OUTPUT_PACKAGE = "io.deephaven.tuple.generated";
     private static final File OUTPUT_RELATIVE_PATH =
-            new File("engine/tuple/src/replicated/" + TASK + "/java/io/deephaven/tuple/generated");
+            new File(replicatedDir("engine/tuple", TASK) + "/io/deephaven/tuple/generated");
 
     private static final String VAL = "$val$";
     private static final String OUT = "$out$";
