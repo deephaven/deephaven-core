@@ -64,7 +64,7 @@ These properties set the defaults for the **Editor** options in the [**Settings*
 
 The `web.user.notebookSettings.python.linter.config` value replaces the UI's built-in Ruff settings rather than merging with them, so include every setting you want. If the value isn't valid JSON, the UI ignores it and uses its built-in settings.
 
-Changing any one **Editor** option in the **Settings** menu saves the current value of every **Editor** option in the user's browser. After that, a change to one of these server defaults no longer reaches that user, even for options they never changed.
+Changing any one **Editor** option in the **Settings** menu saves the current values of **Enable Minimap**, **Format on Save**, and **Enable Ruff Python Linter** in the user's browser, even the ones the user didn't change. After that, a change to one of those server defaults no longer reaches that user. **Customize Ruff Settings** is saved the same way only if it already had a value, from the user or from the server. If it had none, a Ruff configuration that the server adds later still applies.
 
 ## Advanced properties
 
