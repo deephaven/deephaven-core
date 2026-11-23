@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.replicatedDir;
 import com.palantir.javapoet.JavaFile;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.select.TupleSetKernelFactory;
@@ -18,7 +19,7 @@ public class ReplicateTupleSetKernels {
     private static final String TASK = "replicateTupleSetKernels";
 
     public static void main(String[] args) throws IOException {
-        final File sourceRoot = new File("engine/table/src/replicated/" + TASK + "/java/");
+        final File sourceRoot = new File(replicatedDir("engine/table", TASK));
         final ChunkType[] chunkTypes = new ChunkType[2];
         for (final ChunkType first : ChunkType.values()) {
             if (first == ChunkType.Boolean) {
