@@ -201,7 +201,7 @@ A source that tracks previous values records them, the first time a cycle change
 - the old leaf itself, holding the previous values of the whole leaf, when the leaf's first write in the cycle adds or
   removes offsets of a compact leaf, or writes an absent leaf, whose old leaf is `CharSortedLeaf.EMPTY`. Such a write
   puts a new leaf in place of the old one, which is never written again, so the record allocates nothing. The
-  `WHOLE_LEAF` marker, in place of a full block, tells it from recorded offsets.
+  `WHOLE_LEAF` marker, in place of a full block, discriminates it from recorded offsets.
 - otherwise, the offsets recorded this cycle and their values, in a compact leaf: the first write to each row of a full
   block, or of a compact leaf that a write of only offsets it holds changes in place, records the row's value. A row
   without a recorded value has not changed this cycle, so its previous value is its current value.

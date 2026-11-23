@@ -73,11 +73,11 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * table of previous values. A write that adds or removes offsets of a compact or absent leaf puts a new leaf in place
  * of the old one, which is never written again, so the first such write records the old leaf itself, or the empty
  * sorted leaf for an absent leaf, as the previous values of the whole leaf, with a marker in place of a full block that
- * tells them from recorded offsets. Otherwise the first write to each row records the row's value: the recorded offsets
- * are a sorted or bitmap leaf, following the same thresholds, or, once more offsets are recorded than a compact leaf
- * holds, a full block that is a complete copy of the whole leaf. A row without a recorded value has not changed this
- * cycle, so its previous value is its current value. The previous values are discarded when the cycle completes. The
- * complete copies and the arrays of the previous value page table come from recyclers shared by the sources of this
+ * discriminates them from recorded offsets. Otherwise the first write to each row records the row's value: the recorded
+ * offsets are a sorted or bitmap leaf, following the same thresholds, or, once more offsets are recorded than a compact
+ * leaf holds, a full block that is a complete copy of the whole leaf. A row without a recorded value has not changed
+ * this cycle, so its previous value is its current value. The previous values are discarded when the cycle completes.
+ * The complete copies and the arrays of the previous value page table come from recyclers shared by the sources of this
  * type; completing the cycle walks that page table, returning each complete copy, and each array indexed by child index
  * with every entry null. A ranked level holds only its children and a window has at most 64 entries or eight for each
  * child, so the walk costs at most 64 entries for each level and eight for each child the cycle recorded.
@@ -1707,8 +1707,8 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
      * Record the previous values at {@code offsets[0, count)}, ascending and distinct, of the leaf at {@code block2}
      * covering {@code key}, which is the full block {@code block}, or else the compact leaf {@code compact}, or absent
      * if both are null, except those this cycle has already recorded. When nothing is recorded for the leaf and the
-     * write replaces a compact or absent leaf, the record is the old leaf itself, the previous values of the whole leaf.
-     * The records are visible to other threads before the caller writes the new values.
+     * write replaces a compact or absent leaf, the record is the old leaf itself, the previous values of the whole
+     * leaf. The records are visible to other threads before the caller writes the new values.
      *
      * @param replacesLeaf whether the write puts a new leaf in place of {@code compact}, which is then never written
      *        again, rather than writing values into it in place
@@ -1864,6 +1864,8 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
                         return prevBlock[offset];
                     }
                 } else {
+                    // a marker of a whole leaf without the leaf is a whole leaf being recorded, which records nothing
+                    // until the leaf is stored
                     final short[] completeCopy = prevLevel2.blockAt(slot);
                     if (completeCopy != null && completeCopy != WHOLE_LEAF) {
                         return completeCopy[offset];
@@ -2330,9 +2332,10 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
         }
 
         /**
-         * Read the previous values that this cycle has recorded for the current leaf.
+         * Read the previous values that this cycle has recorded for the current leaf into {@link #prevRecorded} and
+         * {@link #prevCompleteCopy}.
          *
-         * @return whether they are not those read before
+         * @return whether they differ from the values those fields held
          */
         private boolean readPrevious() {
             final Level0 prevRoot = source.prevRoot;
@@ -2345,6 +2348,8 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
                 slot = level2.slot(block2(maxKeyInCurrentLeaf));
                 recorded = level2.compactAt(slot);
                 if (recorded == null) {
+                    // a marker of a whole leaf without the leaf is a whole leaf being recorded, which records nothing
+                    // until the leaf is stored
                     final short[] prevBlock = level2.blockAt(slot);
                     completeCopy = prevBlock == WHOLE_LEAF ? null : prevBlock;
                 }
@@ -2362,7 +2367,7 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
 
         /**
          * @return whether {@link #prevRecorded}, which is not null, holds the previous values of the whole leaf, rather
-         *         than recorded offsets; the marker that tells is stored before the leaf, so it is read after
+         *         than recorded offsets; the marker that discriminates them is stored before the leaf, so it is read after
          */
         private boolean recordedWhole() {
             if (recordedKind == KIND_UNKNOWN) {
@@ -2377,7 +2382,8 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
          * A writer records a row before writing it, so if a value read from the current leaf is the new one, the row's
          * recorded value is found now.
          *
-         * @return whether the recorded values are not those read before, and so must be laid over the values read
+         * @return whether the recorded values differ from those read when this state moved to the current leaf, and so
+         *         must be laid over the values read
          */
         private boolean changedDuringRead() {
             if (holdsWholeLeaf()) {
@@ -2720,6 +2726,7 @@ public class ShortAdaptiveSparseArraySource extends SparseArrayColumnSource<Shor
                     VarHandle.loadLoadFence();
                     final short[] prevBlock = prevLevel2.blockAt(slot);
                     if (prevBlock == WHOLE_LEAF) {
+                        // null if the whole leaf is still being recorded, which records nothing until it is stored
                         leaf = compactLeaf;
                     } else if (prevBlock != null) {
                         completeCopy = prevBlock;
