@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
-    # "/" covers only .github/workflows; composite actions live under .github/actions.
+    # "/" covers .github/workflows and a root action.yml; composite actions live under .github/actions.
     directories:
       - "/"
       - "/.github/actions/*"

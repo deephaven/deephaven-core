@@ -40,7 +40,8 @@ runs:
           ~/.gradle/caches/modules-2
           ~/.gradle/wrapper
         key: ${{ steps.key.outputs.key }}
-        # Falls back to the most recent entry, for declarations that haven't been seeded yet.
+        # For declarations that haven't been seeded yet: the most recent entry in this run's branch, then the default
+        # branch's (a pull request can also read its base branch).
         restore-keys: ${{ inputs.seed != 'true' && 'gradle-deps-' || '' }}
         lookup-only: ${{ inputs.seed == 'true' }}
 

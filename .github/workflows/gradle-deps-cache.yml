@@ -2,7 +2,7 @@ name: Gradle Dependency Cache
 
 # The only writer of the Gradle dependency cache; every other job restores it through .github/actions/gradle-setup.
 # Each run seeds only if the current dependency declarations have no entry yet, starting from an empty Gradle user home
-# so the entry holds exactly the current dependencies. Release branches call this from gradle-deps-cache-release.yml.
+# so the entry holds exactly the current dependencies. rc branches call this from gradle-deps-cache-rc.yml.
 on:
   schedule:
     - cron: '30 0 * * 1,3,5'
@@ -47,7 +47,7 @@ jobs:
           .github/scripts/gradle-properties.sh 21 >> gradle.properties
           cat gradle.properties
 
-      # spotlessCheck resolves its formatter artifacts at task time, outside any configuration.
+      # spotlessCheck resolves its formatter artifacts at task time, in detached configurations the init script can't see.
       - name: Resolve dependencies
         if: ${{ steps.gradle.outputs.cache-hit != 'true' }}
         run: ./gradlew --init-script .github/scripts/resolve-all-dependencies.gradle resolveAllDependencies spotlessCheck
