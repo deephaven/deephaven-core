@@ -47,19 +47,26 @@ public class ReplicationUtils {
      * through {@link ReplicatePrimitiveCode#replaceAll} is passed through here: a path under
      * {@code <project>/src/main/java/} lands in {@code <project>/src/replicated/<task>/java/}, and one under
      * {@code <project>/src/test/java/} in {@code <project>/src/replicatedTest/<task>/java/}. The Gradle build includes
-     * those directories in the main and test source sets respectively. Any other path is returned unchanged, as is a
-     * path that has already been redirected.
+     * those directories in the main and test source sets respectively. A path that has already been redirected for this
+     * task is returned unchanged; the output of a replicator may be the input of a later step of the same replicator.
      * <p>
      * The output directory is not created; whoever adds or migrates a replicator creates it (and checks it in).
      *
      * @param task the task generating the file
      * @param resultJavaPath the path the file would be written to without redirection
      * @return the path to write to
+     * @throws IllegalArgumentException if the path is neither under a {@code src/main/java} or {@code src/test/java}
+     *         directory nor already redirected for this task
      */
     public static String replicatedOutputPath(@NotNull final String task, @NotNull final String resultJavaPath) {
+        if (resultJavaPath.contains("/src/replicated/" + task + "/java/")
+                || resultJavaPath.contains("/src/replicatedTest/" + task + "/java/")) {
+            return resultJavaPath;
+        }
         final Matcher matcher = REPLICATED_REDIRECT.matcher(resultJavaPath);
         if (!matcher.matches()) {
-            return resultJavaPath;
+            throw new IllegalArgumentException("Cannot redirect " + resultJavaPath + " for " + task
+                    + ": expected a path under <project>/src/main/java/ or <project>/src/test/java/");
         }
         final String project = matcher.group(1);
         final String dir =
