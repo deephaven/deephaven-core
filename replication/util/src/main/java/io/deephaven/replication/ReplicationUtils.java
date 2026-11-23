@@ -41,6 +41,28 @@ public class ReplicationUtils {
     }
 
     /**
+     * The directory that holds the generated main sources of the replication task {@code task} in a project.
+     *
+     * @param project the project directory relative to the repository root, e.g. {@code "engine/table"}
+     * @param task the name of the Gradle task that runs the replicator
+     * @return {@code <project>/src/replicated/<task>/java}, without a trailing slash
+     */
+    public static String replicatedDir(@NotNull final String project, @NotNull final String task) {
+        return project + "/src/replicated/" + task + "/java";
+    }
+
+    /**
+     * The directory that holds the generated test sources of the replication task {@code task} in a project.
+     *
+     * @param project the project directory relative to the repository root, e.g. {@code "engine/table"}
+     * @param task the name of the Gradle task that runs the replicator
+     * @return {@code <project>/src/replicatedTest/<task>/java}, without a trailing slash
+     */
+    public static String replicatedTestDir(@NotNull final String project, @NotNull final String task) {
+        return project + "/src/replicatedTest/" + task + "/java";
+    }
+
+    /**
      * Apply the redirection requested by {@link #redirectOutputToReplicated(String)}, if any.
      *
      * @param task the task generating the file
@@ -55,8 +77,10 @@ public class ReplicationUtils {
         if (!matcher.matches()) {
             return resultJavaPath;
         }
-        final String dir = matcher.group(2).equals("main") ? "replicated" : "replicatedTest";
-        return matcher.group(1) + "/src/" + dir + "/" + task + "/java/" + matcher.group(3);
+        final String project = matcher.group(1);
+        final String dir =
+                matcher.group(2).equals("main") ? replicatedDir(project, task) : replicatedTestDir(project, task);
+        return dir + "/" + matcher.group(3);
     }
 
     /**
