@@ -2367,7 +2367,8 @@ public class DoubleAdaptiveSparseArraySource extends SparseArrayColumnSource<Dou
 
         /**
          * @return whether {@link #prevRecorded}, which is not null, holds the previous values of the whole leaf, rather
-         *         than recorded offsets; the marker that discriminates them is stored before the leaf, so it is read after
+         *         than recorded offsets; the marker that discriminates them is stored before the leaf, so it is read
+         *         after
          */
         private boolean recordedWhole() {
             if (recordedKind == KIND_UNKNOWN) {
