@@ -6,19 +6,19 @@ package io.deephaven.replicators;
 import java.io.IOException;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.replaceAll;
+import static io.deephaven.replication.ReplicationUtils.redirectOutputToReplicated;
 
 public class ReplicateCachingSupplier {
     private static final String TASK = "replicateCachingSupplier";
 
     private static final String SOFT_CACHING_SUPPLIER_DIR = "Util/src/main/java/io/deephaven/util/datastructures/";
     private static final String SOFT_CACHING_SUPPLIER_PATH = SOFT_CACHING_SUPPLIER_DIR + "SoftCachingSupplier.java";
-    private static final String SOFT_CACHING_FUNCTION_DIR =
-            "Util/src/replicated/" + TASK + "/java/io/deephaven/util/datastructures/";
-    private static final String SOFT_CACHING_FUNCTION_PATH = SOFT_CACHING_FUNCTION_DIR + "SoftCachingFunction.java";
 
     private static final String[] NO_EXCEPTIONS = new String[0];
 
     public static void main(final String[] args) throws IOException {
+        redirectOutputToReplicated(TASK);
+
         final String[][] pairs = new String[][] {
                 {"Supplier<OUTPUT_TYPE>", "Function<INPUT_TYPE, OUTPUT_TYPE>"},
                 {"internalSupplier\\.get\\(\\)", "internalFunction\\.apply\\(arg\\)"},
@@ -26,7 +26,6 @@ public class ReplicateCachingSupplier {
                 {"Supplier", "Function"},
                 {"supplier", "function"},
         };
-        replaceAll(TASK, SOFT_CACHING_SUPPLIER_PATH, SOFT_CACHING_FUNCTION_PATH, null,
-                NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, SOFT_CACHING_SUPPLIER_PATH, null, NO_EXCEPTIONS, pairs);
     }
 }
