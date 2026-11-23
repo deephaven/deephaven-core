@@ -18,18 +18,19 @@ import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 public class ReplicatePageMaterializers {
     private static final String TASK = "replicatePageMaterializers";
 
-    static {
-        // must precede REPLICATED_DIR below, which is computed during class initialization
-        redirectOutputToReplicated(TASK);
-    }
-
     private static final String[] NO_EXCEPTIONS = new String[0];
 
     private static final String MATERIALIZER_DIR =
             "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/";
 
     // the directory that holds the output of this replicator, for the generated materializers that are also inputs
-    private static final String REPLICATED_DIR = replicatedOutputPath(TASK, MATERIALIZER_DIR);
+    private static final String REPLICATED_DIR;
+
+    static {
+        // the redirect must be registered before the replicated directory is derived
+        redirectOutputToReplicated(TASK);
+        REPLICATED_DIR = replicatedOutputPath(TASK, MATERIALIZER_DIR);
+    }
 
     private static final String CHAR_MATERIALIZER_PATH = MATERIALIZER_DIR + "CharMaterializer.java";
     private static final String SHORT_MATERIALIZER_PATH = REPLICATED_DIR + "ShortMaterializer.java";
