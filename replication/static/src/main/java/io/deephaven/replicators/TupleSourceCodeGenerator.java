@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.replicatedDir;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.replication.ReplicationUtils;
 import io.deephaven.util.text.Indenter;
@@ -22,10 +23,13 @@ import java.util.stream.Stream;
  * Generator for a library of TupleSource classes.
  */
 public class TupleSourceCodeGenerator {
+    private static final String TASK = "replicateTupleSources";
+
 
     private static final String OUTPUT_PACKAGE = "io.deephaven.engine.table.impl.tuplesource.generated";
     private static final File OUTPUT_RELATIVE_PATH =
-            new File("engine/tuplesource/src/main/java/io/deephaven/engine/table/impl/tuplesource/generated");
+            new File(replicatedDir("engine/tuplesource", TASK)
+                    + "/io/deephaven/engine/table/impl/tuplesource/generated");
 
     private static final String CS = "$cs$";
     private static final String VAL = "$val$";
@@ -246,7 +250,7 @@ public class TupleSourceCodeGenerator {
         final String[] extraImports = new String[] {TupleCodeGenerator.getTupleImport(tupleClassName),
                 TWO_COLUMN_FACTORY_NAME};
 
-        code.append(ReplicationUtils.fileHeaderString("replicateTupleSources",
+        code.append(ReplicationUtils.fileHeaderString(TASK,
                 TupleSourceCodeGenerator.class.getSimpleName()));
 
         code.append("package ").append(OUTPUT_PACKAGE).append(';').append(NEW_LINE);
@@ -608,7 +612,7 @@ public class TupleSourceCodeGenerator {
         final String[] extraImports = new String[] {TupleCodeGenerator.getTupleImport(tupleClassName),
                 "io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory"};
 
-        code.append(ReplicationUtils.fileHeaderString("replicateTupleSources",
+        code.append(ReplicationUtils.fileHeaderString(TASK,
                 TupleSourceCodeGenerator.class.getSimpleName()));
 
         code.append("package ").append(OUTPUT_PACKAGE).append(';').append(NEW_LINE);

@@ -13,6 +13,7 @@ import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBooleanAndFloats;
 import static io.deephaven.replication.ReplicatePrimitiveCode.floatToAllFloatingPoints;
+import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 
 public class ReplicateSetKernel {
     private static final String TASK = "replicateSetKernel";
@@ -22,7 +23,7 @@ public class ReplicateSetKernel {
         charToAllButBooleanAndFloats(TASK, DIRECTORY + "CharSetKernel.java");
         floatToAllFloatingPoints(TASK, DIRECTORY + "FloatSetKernel.java");
         // A double's bits are a long
-        final File doubleFile = new File(DIRECTORY + "DoubleSetKernel.java");
+        final File doubleFile = new File(replicatedOutputPath(TASK, DIRECTORY + "DoubleSetKernel.java"));
         List<String> lines = FileUtils.readLines(doubleFile, Charset.defaultCharset());
         lines = ReplicationUtils.globalReplacements(lines,
                 "Int2LongOpenHashMap", "Long2LongOpenHashMap",

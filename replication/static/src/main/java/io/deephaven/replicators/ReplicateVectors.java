@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
 import io.deephaven.util.compare.DoubleComparisons;

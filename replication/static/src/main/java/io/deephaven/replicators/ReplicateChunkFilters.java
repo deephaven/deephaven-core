@@ -12,6 +12,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
+import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 
 public class ReplicateChunkFilters {
     private static final String TASK = "replicateChunkFilters";
@@ -41,7 +42,8 @@ public class ReplicateChunkFilters {
         charToAllButBooleanAndFloats(TASK, CHAR_CHUNK_MATCH_FILTER_FACTORY);
         floatToAllFloatingPoints(TASK, FLOAT_CHUNK_MATCH_FILTER_FACTORY);
 
-        final File objectFile = new File(CHUNK_FILTER_PATH + "DoubleChunkMatchFilterFactory.java");
+        final File objectFile = new File(
+                replicatedOutputPath(TASK, CHUNK_FILTER_PATH + "DoubleChunkMatchFilterFactory.java"));
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = ReplicationUtils.replaceRegion(lines, "getBits", List.of("" +
                 "    public static long getBits(double value) {\n" +

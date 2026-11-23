@@ -12,99 +12,81 @@ dependencies {
     implementation libs.commons.io
 }
 
+def replicatorPackage = 'io.deephaven.replicators'
+
+// Registers a JavaExec task per entry of a map of task name to replicator class, and returns the registered tasks.
+// This has to happen outside of any task configuration action, in which tasks cannot be registered.
+def registerReplicators = { Map<String, String> replicators ->
+    replicators.collect { taskName, className ->
+        Tasks.registerMainExecTask(project, taskName, "${replicatorPackage}.${className}")
+    }
+}
+
 // These replicators do not require any manual fix-up and may be run without supervision
-task replicateAllSafe {
-    dependsOn Tasks.registerMainExecTask(project, 'replicateVectors', 'io.deephaven.replicators.ReplicateVectors')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateVectorTests', 'io.deephaven.replicators.ReplicateVectorTests')
+def safeReplicators = [
+    replicateVectors: 'ReplicateVectors',
+    replicateVectorTests: 'ReplicateVectorTests',
+    replicateSourcesAndChunks: 'ReplicateSourcesAndChunks',
+    replicateSourceAndChunkTests: 'ReplicateSourceAndChunkTests',
+    replicateHashing: 'ReplicateHashing',
+    replicateTuples: 'TupleCodeGenerator',
+    replicateTupleSources: 'TupleSourceCodeGenerator',
+    replicateCopyKernel: 'ReplicateCopyKernel',
+    replicateCopyKernelTests: 'ReplicateCopyKernelTests',
+    replicateSortKernel: 'ReplicateSortKernel',
+    replicateSortKernelTests: 'ReplicateSortKernelTests',
+    replicateSortCheck: 'ReplicateSortCheck',
+    replicateArrayComparators: 'ReplicateArrayComparators',
+    replicateChunkFilters: 'ReplicateChunkFilters',
+    replicateColumnIterators: 'ReplicateColumnIterators',
+    replicateStampKernel: 'ReplicateStampKernel',
+    replicateDupCompactKernel: 'ReplicateDupCompactKernel',
+    replicateDupExpandKernel: 'ReplicateDupExpandKernel',
+    replicateFillFromElementKernel: 'ReplicateFillFromElementKernel',
+    replicateReverseKernel: 'ReplicateReverseKernel',
+    replicateSegmentedSortedArray: 'ReplicateSegmentedSortedArray',
+    replicateSegmentedSortedArrayTests: 'ReplicateSegmentedSortedArrayTests',
+    replicateSegmentedSortedMultiset: 'ReplicateSegmentedSortedMultiset',
+    replicateSegmentedSortedMultisetTests: 'ReplicateSegmentedSortedMultisetTests',
+    replicateStaticPercentile: 'ReplicateStaticPercentile',
+    replicateSetKernel: 'ReplicateSetKernel',
+    replicateVectorColumnWrappers: 'ReplicateVectorColumnWrappers',
+    replicateUnboxerKernel: 'ReplicateUnboxerKernel',
+    replicateOperators: 'ReplicateOperators',
+    replicateFreezeBy: 'ReplicateFreezeBy',
+    replicateColumnSourceFillBenchmark: 'ReplicateColumnSourceFillBenchmark',
+    replicateRegionsAndRegionedSources: 'ReplicateRegionsAndRegionedSources',
+    replicateRegionAndRegionedSourceTests: 'ReplicateRegionAndRegionedSourceTests',
+    replicateToPage: 'ReplicateToPage',
+    replicatePageMaterializers: 'ReplicatePageMaterializers',
+    replicateDownsamplingValueTrackers: 'ReplicateDownsamplingValueTrackers',
+    replicateBarrageUtils: 'ReplicateBarrageUtils',
+    replicateKafka: 'ReplicateKafka',
+    replicateRingChunkSources: 'ReplicateRingChunkSources',
+    replicateUpdateBy: 'ReplicateUpdateBy',
+    replicateRingBuffers: 'ReplicateRingBuffers',
+    replicatePrimitiveArrayLists: 'ReplicatePrimitiveArrayLists',
+    replicatePrimitiveInterfaces: 'ReplicatePrimitiveInterfaces',
+    replicateRangeSearchKernels: 'ReplicateRangeSearchKernels',
+    replicateParquetTransferObjects: 'ReplicateParquetTransferObjects',
+    replicateColumnStats: 'ReplicateColumnStats',
+    replicateCachingSupplier: 'ReplicateCachingSupplier',
+    replicateVectorChunkFilters: 'ReplicateVectorChunkFilters',
+    replicateParquetPushdownHandlers: 'ReplicateParquetPushdownHandlers',
+]
 
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSourcesAndChunks', 'io.deephaven.replicators.ReplicateSourcesAndChunks')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSourceAndChunkTests', 'io.deephaven.replicators.ReplicateSourceAndChunkTests')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateHashing', 'io.deephaven.replicators.ReplicateHashing')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateTuples', 'io.deephaven.replicators.TupleCodeGenerator')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateTupleSources', 'io.deephaven.replicators.TupleSourceCodeGenerator')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateCopyKernel', 'io.deephaven.replicators.ReplicateCopyKernel')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateCopyKernelTests', 'io.deephaven.replicators.ReplicateCopyKernelTests')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSortKernel', 'io.deephaven.replicators.ReplicateSortKernel')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSortKernelTests', 'io.deephaven.replicators.ReplicateSortKernelTests')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSortCheck', 'io.deephaven.replicators.ReplicateSortCheck')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateArrayComparators', 'io.deephaven.replicators.ReplicateArrayComparators')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateChunkFilters', 'io.deephaven.replicators.ReplicateChunkFilters')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateColumnIterators', 'io.deephaven.replicators.ReplicateColumnIterators')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateStampKernel', 'io.deephaven.replicators.ReplicateStampKernel')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateDupCompactKernel', 'io.deephaven.replicators.ReplicateDupCompactKernel')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateDupExpandKernel', 'io.deephaven.replicators.ReplicateDupExpandKernel');
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateFillFromElementKernel', 'io.deephaven.replicators.ReplicateFillFromElementKernel')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateReverseKernel', 'io.deephaven.replicators.ReplicateReverseKernel')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSegmentedSortedArray', 'io.deephaven.replicators.ReplicateSegmentedSortedArray')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSegmentedSortedArrayTests', 'io.deephaven.replicators.ReplicateSegmentedSortedArrayTests')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSegmentedSortedMultiset', 'io.deephaven.replicators.ReplicateSegmentedSortedMultiset')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSegmentedSortedMultisetTests', 'io.deephaven.replicators.ReplicateSegmentedSortedMultisetTests')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateStaticPercentile', 'io.deephaven.replicators.ReplicateStaticPercentile')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSetKernel', 'io.deephaven.replicators.ReplicateSetKernel')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateVectorColumnWrappers', 'io.deephaven.replicators.ReplicateVectorColumnWrappers')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateUnboxerKernel', 'io.deephaven.replicators.ReplicateUnboxerKernel')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateOperators', 'io.deephaven.replicators.ReplicateOperators')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateFreezeBy', 'io.deephaven.replicators.ReplicateFreezeBy')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateColumnSourceFillBenchmark', 'io.deephaven.replicators.ReplicateColumnSourceFillBenchmark')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateRegionsAndRegionedSources', 'io.deephaven.replicators.ReplicateRegionsAndRegionedSources')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateRegionAndRegionedSourceTests', 'io.deephaven.replicators.ReplicateRegionAndRegionedSourceTests')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateToPage', 'io.deephaven.replicators.ReplicateToPage')
-    dependsOn Tasks.registerMainExecTask(project, 'replicatePageMaterializers', 'io.deephaven.replicators.ReplicatePageMaterializers')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateDownsamplingValueTrackers', 'io.deephaven.replicators.ReplicateDownsamplingValueTrackers')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateBarrageUtils', 'io.deephaven.replicators.ReplicateBarrageUtils')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateKafka', 'io.deephaven.replicators.ReplicateKafka')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateRingChunkSources', 'io.deephaven.replicators.ReplicateRingChunkSources')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateUpdateBy', 'io.deephaven.replicators.ReplicateUpdateBy')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateRingBuffers', 'io.deephaven.replicators.ReplicateRingBuffers')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveArrayLists', 'io.deephaven.replicators.ReplicatePrimitiveArrayLists')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveInterfaces', 'io.deephaven.replicators.ReplicatePrimitiveInterfaces')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateRangeSearchKernels', 'io.deephaven.replicators.ReplicateRangeSearchKernels')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateParquetTransferObjects', 'io.deephaven.replicators.ReplicateParquetTransferObjects')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateColumnStats', 'io.deephaven.replicators.ReplicateColumnStats')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateCachingSupplier', 'io.deephaven.replicators.ReplicateCachingSupplier')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateVectorChunkFilters', 'io.deephaven.replicators.ReplicateVectorChunkFilters')
+def replicateAllSafeTasks = registerReplicators(safeReplicators)
+tasks.register('replicateAllSafe') {
+    dependsOn replicateAllSafeTasks
 }
 
 // These replicators need manual fix-up post replication and should not be run without supervision
-task replicateAllUnsafe {
-    dependsOn Tasks.registerMainExecTask(project, 'replicateParquetChunkedWriters', 'io.deephaven.replicators.ReplicateParquetChunkedWriters')
+def unsafeReplicators = [
+    replicateParquetChunkedWriters: 'ReplicateParquetChunkedWriters',
+    replicateTableLocationKey: 'ReplicateTableLocationKey',
+]
 
-    dependsOn Tasks.registerMainExecTask(project, 'replicateParquetPushdownHandlers', 'io.deephaven.replicators.ReplicateParquetPushdownHandlers')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicateTableLocationKey', 'io.deephaven.replicators.ReplicateTableLocationKey')
+def replicateAllUnsafeTasks = registerReplicators(unsafeReplicators)
+tasks.register('replicateAllUnsafe') {
+    dependsOn replicateAllUnsafeTasks
 }
