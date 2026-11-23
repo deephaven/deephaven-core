@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.replicatedDir;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.replication.ReplicationUtils;
 import io.deephaven.util.text.Indenter;
@@ -27,9 +28,8 @@ public class TupleSourceCodeGenerator {
 
     private static final String OUTPUT_PACKAGE = "io.deephaven.engine.table.impl.tuplesource.generated";
     private static final File OUTPUT_RELATIVE_PATH =
-            new File(
-                    "engine/tuplesource/src/replicated/" + TASK
-                            + "/java/io/deephaven/engine/table/impl/tuplesource/generated");
+            new File(replicatedDir("engine/tuplesource", TASK)
+                    + "/io/deephaven/engine/table/impl/tuplesource/generated");
 
     private static final String CS = "$cs$";
     private static final String VAL = "$val$";
