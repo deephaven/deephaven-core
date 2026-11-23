@@ -213,7 +213,10 @@ one row, `countAbsent` for a chunk or a parallel preparation, and any removal re
 `recordWholeLeaf`). Once a leaf's offsets are recorded, later writes in the cycle record into them, whether or not they
 replace the leaf. `recordThreshold` is `compactThreshold`, or 128 when `compactThreshold` is 0. So a source with only
 full blocks still records a few changed rows per leaf in a compact leaf, and copies completely only leaves with many
-changes.
+changes. Recording one row copies the recorded offsets into a new leaf, so when the current leaf is a full block, rows
+recorded one at a time become a complete copy once they outgrow a sorted leaf (`sortedThreshold`). A complete copy is
+one `arraycopy` into a recycled block, where recording up to 128 rows one at a time would copy a growing bitmap leaf for
+every row. A bulk write records all of a leaf's rows at once, including those of a `setNull` of scattered row keys.
 
 There is no in-use bitmap. The previous values of a whole leaf hold every row, a compact leaf of recorded offsets is its
 own record of which rows it holds, and a complete copy holds every row. The first write to a leaf in a cycle looks up

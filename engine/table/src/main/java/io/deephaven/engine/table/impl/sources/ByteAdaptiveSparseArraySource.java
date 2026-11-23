@@ -1671,7 +1671,9 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
      * already recorded it. When nothing is recorded for the leaf and the write replaces a compact or absent leaf, the
      * record is the old leaf itself, the previous values of the whole leaf. The record is visible to other threads
      * before the caller writes the new value, so that a reader of previous values that sees the new value finds the
-     * record (see {@link #getPrevValue(long)}).
+     * record (see {@link #getPrevValue(long)}). Each record of a row copies the recorded offsets into a new leaf, so the
+     * offsets of a full block become a complete copy once they would outgrow a sorted leaf, which copies the block once
+     * rather than a growing bitmap leaf for every row.
      *
      * @param replacesLeaf whether the write puts a new leaf in place of {@code compact}, which is then never written
      *        again, rather than writing a value into it in place
@@ -1698,7 +1700,8 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             return;
         }
         final byte value = block != null ? block[offset] : compact == null ? NULL_BYTE : compact.get(offset);
-        final ByteCompactLeaf target = makeRoomInPrevLeaf(key, prevLevel2, recorded, 1, block, compact);
+        final ByteCompactLeaf target = makeRoomInPrevLeaf(key, prevLevel2, recorded, 1, block, compact,
+                block != null ? sortedThreshold : recordThreshold);
         if (target != null) {
             setCompact(true, key, prevLevel2, target.put(offset, value, sortedThreshold));
         }
@@ -1741,7 +1744,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             return;
         }
         final ByteCompactLeaf recorded =
-                makeRoomInPrevLeaf(key, prevLevel2, alreadyRecorded, absent, block, compact);
+                makeRoomInPrevLeaf(key, prevLevel2, alreadyRecorded, absent, block, compact, recordThreshold);
         if (recorded == null) {
             // the leaf's previous values are now a complete copy
             VarHandle.releaseFence();
@@ -1783,6 +1786,7 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
      * {@code recorded} (or null if none), ready to record {@code count} more offsets of the current leaf, which is the
      * full block {@code block}, or else the compact leaf {@code compact}, or absent if both are null.
      *
+     * @param threshold the most offsets recorded before the previous value leaf becomes a complete copy
      * @return the leaf to record into, which the caller puts in place of {@code recorded} once written, or null if the
      *         previous value leaf is now a complete copy of the whole leaf
      */
@@ -1792,9 +1796,10 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
             final ByteCompactLeaf recorded,
             final int count,
             final byte[] block,
-            final ByteCompactLeaf compact) {
+            final ByteCompactLeaf compact,
+            final int threshold) {
         final int newSize = (recorded == null ? 0 : recorded.size()) + count;
-        if (newSize > recordThreshold) {
+        if (newSize > threshold) {
             // the offsets not yet recorded have not changed this cycle, so their current values are previous values
             final byte[] completeCopy = completeCopyRecycler.borrowItem();
             if (block != null) {
@@ -2181,53 +2186,68 @@ public class ByteAdaptiveSparseArraySource extends SparseArrayColumnSource<Byte>
         final boolean trackPrevious = shouldTrackPrevious();
         final int[] offsets = trackPrevious ? new int[BLOCK_SIZE] : null;
         final PrevScratch scratch = trackPrevious ? new PrevScratch(recordThreshold) : null;
-        rowSequence.forAllRowKeyRanges((final long firstKey, final long lastKey) -> {
-            long key = firstKey;
-            while (true) {
-                final long lastKeyInLeaf = Math.min(lastKey, key | INDEX_MASK);
-                final Level2 level2 = getLevel2(key);
-                if (level2 != null) {
-                    final int block2 = block2(key);
-                    final int firstOffset = (int) (key & INDEX_MASK);
-                    final int lastOffset = (int) (lastKeyInLeaf & INDEX_MASK);
-                    final byte[] block = level2.getBlock(block2);
-                    if (block != null) {
-                        if (trackPrevious) {
-                            // the offsets that already hold null are unchanged, so need no previous value
-                            int count = 0;
-                            for (int offset = firstOffset; offset <= lastOffset; ++offset) {
+        try (final RowSequence.Iterator leaves = rowSequence.getRowSequenceIterator()) {
+            while (leaves.hasMore()) {
+                final long firstKey = leaves.peekNextKey();
+                // the ranges of one leaf, whose previous values are recorded at once
+                final LongChunk<OrderedRowKeyRanges> ranges =
+                        leaves.getNextRowSequenceThrough(firstKey | INDEX_MASK).asRowKeyRangesChunk();
+                final Level2 level2 = getLevel2(firstKey);
+                if (level2 == null) {
+                    continue;
+                }
+                final int block2 = block2(firstKey);
+                final byte[] block = level2.getBlock(block2);
+                if (block != null) {
+                    if (trackPrevious) {
+                        // the offsets that already hold null are unchanged, so need no previous value
+                        int count = 0;
+                        for (int ri = 0; ri < ranges.size(); ri += 2) {
+                            final int lastOffset = (int) (ranges.get(ri + 1) & INDEX_MASK);
+                            for (int offset = (int) (ranges.get(ri) & INDEX_MASK); offset <= lastOffset; ++offset) {
                                 if (block[offset] != NULL_BYTE) {
                                     offsets[count++] = offset;
                                 }
                             }
-                            if (count > 0) {
-                                recordPrevious(key, block2, block, null, offsets, count, false, scratch);
-                            }
                         }
-                        Arrays.fill(block, firstOffset, lastOffset + 1, NULL_BYTE);
-                    } else {
-                        final ByteCompactLeaf compact = level2.getCompact(block2);
-                        if (compact != null) {
-                            if (trackPrevious) {
-                                final int count = compact.copyOffsets(firstOffset, lastOffset, offsets);
-                                if (count > 0) {
-                                    recordPrevious(key, block2, null, compact, offsets, count, true, scratch);
-                                }
-                            }
-                            final ByteCompactLeaf remaining =
-                                    compact.removeRange(firstOffset, lastOffset, sortedThreshold);
-                            if (remaining != compact) {
-                                setCompact(false, key, level2, remaining);
+                        if (count > 0) {
+                            recordPrevious(firstKey, block2, block, null, offsets, count, false, scratch);
+                        }
+                    }
+                    for (int ri = 0; ri < ranges.size(); ri += 2) {
+                        Arrays.fill(block, (int) (ranges.get(ri) & INDEX_MASK),
+                                (int) (ranges.get(ri + 1) & INDEX_MASK) + 1, NULL_BYTE);
+                    }
+                    continue;
+                }
+                final ByteCompactLeaf compact = level2.getCompact(block2);
+                if (compact == null) {
+                    continue;
+                }
+                if (trackPrevious) {
+                    int count = 0;
+                    for (int ri = 0; ri < ranges.size(); ri += 2) {
+                        final int lastOffset = (int) (ranges.get(ri + 1) & INDEX_MASK);
+                        for (int offset = (int) (ranges.get(ri) & INDEX_MASK); offset <= lastOffset; ++offset) {
+                            if (compact.contains(offset)) {
+                                offsets[count++] = offset;
                             }
                         }
                     }
+                    if (count > 0) {
+                        recordPrevious(firstKey, block2, null, compact, offsets, count, true, scratch);
+                    }
                 }
-                if (lastKeyInLeaf == lastKey) {
-                    break;
+                ByteCompactLeaf remaining = compact;
+                for (int ri = 0; ri < ranges.size() && remaining != null; ri += 2) {
+                    remaining = remaining.removeRange((int) (ranges.get(ri) & INDEX_MASK),
+                            (int) (ranges.get(ri + 1) & INDEX_MASK), sortedThreshold);
                 }
-                key = lastKeyInLeaf + 1;
+                if (remaining != compact) {
+                    setCompact(false, firstKey, level2, remaining);
+                }
             }
-        });
+        }
     }
 
     @Override
