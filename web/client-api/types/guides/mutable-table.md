@@ -14,12 +14,13 @@ control, see [Table operations by example](table-operations.md).
 
 ## Getting a table
 
-{@link dh.IdeSession.getTable | getTable} gives a `PendingTable<Table>`. Awaiting it gives a {@link dh.Table}.
-{@link dh.IdeSession.getObject | getObject} gives the same for a table, but is typed
-`PendingTable<Table> | Promise<any>` - cast it to `dh.PendingTable<dh.Table>` or narrow it before use. 
+{@link dh.IdeSession.getObject | getObject} gives a `PendingTable<Table>` for a table. Awaiting it gives a
+{@link dh.Table}. It is typed `PendingTable<Table> | Promise<any>`, so awaiting it directly gives `any`; cast it to
+`dh.PendingTable<dh.Table>` or narrow it to chain operations on it. The deprecated
+{@link dh.IdeSession.getTable | getTable} is typed `PendingTable<Table>` already.
 
-A bare `dh.PendingTable` means `PendingTable<ResolvedTable>`, what table operations produce. Given a 
-{@link dh.ResolvedTable}, invoke {@link dh.ResolvedTable.createMutableTable | createMutableTable} to get a 
+A bare `dh.PendingTable` means `PendingTable<ResolvedTable>`, what table operations produce. Given a
+{@link dh.ResolvedTable}, invoke {@link dh.ResolvedTable.createMutableTable | createMutableTable} to get a
 {@link dh.Table}. Changing the new table does not affect the {@link dh.ResolvedTable}, the two are closed separately.
 
 ## Changing the sort, filter and columns
@@ -28,12 +29,19 @@ A bare `dh.PendingTable` means `PendingTable<ResolvedTable>`, what table operati
 {@link dh.Sort.asc | asc}, {@link dh.Sort.desc | desc} and {@link dh.Sort.abs | abs}.
 {@link dh.Table.applyFilter | applyFilter} takes the conditions described in [Filters](filters.md).
 {@link dh.Table.applyCustomColumns | applyCustomColumns} adds columns computed on the server, written as
-`"Name = expression"`.
+`"Name = expression"` or as {@link dh.CustomColumn} objects.
 
-Each call replaces everything set before it and returns the previous value. The calls need not wait for each other:
-make all the changes, then wait for the event that matters, or read the data. {@link dh.Table.sort | sort},
-{@link dh.Table.filter | filter} and {@link dh.Table.customColumns | customColumns} return the new values right away,
-while rows can still arrive under the old ones until the matching event fires.
+Each call replaces its own setting, keeping the others, and returns the previous value: a new sort keeps the filters and
+custom columns. A setting equal to the current one changes nothing, so no request is sent and no event fires. The calls
+need not wait for each other: make all the changes, then wait for the event of the last one, or read the data. A change
+the server rejects fires {@link dh.Table.EVENT_REQUEST_FAILED} instead of its own event, and restores to the previous
+working state. The API will apply custom columns first, then filters, then the sort, so a filter or sort can use a
+column added in the same burst.
+
+{@link dh.Table.sort | sort}, {@link dh.Table.filter | filter} and {@link dh.Table.customColumns | customColumns} return
+the new values right away, while rows can still arrive under the old ones until the matching event fires.
+
+This example sorts, filters and adds a column in one burst, then reads the result:
 
 {@includeCode ../examples/use-cases.ts#changeMutableTable}
 
@@ -54,6 +62,8 @@ while rows can still arrive under the old ones until the matching event fires.
 | {@link dh.Table.EVENT_RECONNECT} | the table is back, and its viewports and subscriptions were requested again |
 | {@link dh.Table.EVENT_RECONNECTFAILED} | the table could not be brought back, and a new one must be fetched |
 
+This example listens for size and connection changes, and shows a rejected change being undone:
+
 {@includeCode ../examples/use-cases.ts#listenToMutableTable}
 
 ## Reading data
@@ -65,11 +75,10 @@ A {@link dh.Table} reads data the same way the other table types do, through sna
 
 ## Copies and table operations
 
-{@link dh.Table.copy | copy} gives a new {@link dh.Table} as this one is now, to sort and filter separately; it must be
-closed too.
-{@link dh.Table.operations | operations} starts [table operations](table-operations.md) from the table as it is at that
-moment, and later changes to the table do not affect them; {@link dh.ResolvedTable.createMutableTable |
-createMutableTable} goes the other way.
+{@link dh.Table.copy | copy} gives a promise of a new {@link dh.Table} as this one is now, to sort and filter
+separately; it must be closed too. {@link dh.Table.operations | operations} starts
+[table operations](table-operations.md) from the table as it is at that moment, and later changes to the table do not
+affect them; {@link dh.ResolvedTable.createMutableTable | createMutableTable} goes the other way.
 
 ## Closing
 

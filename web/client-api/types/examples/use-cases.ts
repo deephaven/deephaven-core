@@ -95,7 +95,8 @@ async function rangeJoin() {
 
 // #region uniqueWithSentinel
 async function uniqueWithSentinel() {
-    const t = session.emptyTable(6).update(["Key = i % 3", "X = i", "L = (long) i"]);
+    // Key 0's rows all have X = 7; the other keys have two distinct values each
+    const t = session.emptyTable(6).update(["Key = i % 3", "X = Key == 0 ? 7 : i", "L = (long) X"]);
     const unique = await t.aggBy({
         aggregations: [
             dh.agg.Aggregation.AggUnique(["X"], false, { type: "int", value: -1 }),
@@ -103,6 +104,10 @@ async function uniqueWithSentinel() {
         ],
         groupByColumns: ["Key"],
     });
+    const data = await unique.createSnapshot({ rows: { first: 0, last: 2 }, columns: unique.columns });
+    const x = unique.findColumn("X");
+    // Prints [ 7, -1, -1 ]: Key 0's unique value, then the sentinel for keys 1 and 2
+    console.log(data.rows.map(row => row.get(x)));
     unique.close();
 }
 // #endregion uniqueWithSentinel
@@ -292,7 +297,7 @@ async function snapshotWhen() {
 async function mergeTwo() {
     const a = await session.emptyTable(2).update(["X = i"]);
     const b = await session.emptyTable(2).update(["X = i + 2"]);
-    // mergeTables takes TableReference[], so chain results, tables and pendings all work
+    // mergeTables takes TableReference[], so resolved and pending tables can be mixed
     const merged = await session.mergeTables([a, b, session.emptyTable(1).update(["X = 99"])]);
     merged.close();
     a.close();
@@ -340,15 +345,20 @@ async function viewport() {
 // #region selectColumns
 async function selectColumns() {
     const t = session.emptyTable(5).update(["Key = i % 2", "X = i"]);
-    const [viewed, selected, extended] = await dh.resolveAll([
-        // view and updateView compute their formulas each time a value is read; select and update compute them once
+    const tables = await dh.resolveAll([
+        // view and select keep only the listed columns; updateView and update keep the others too.
+        // view and updateView compute a formula each time a value is read; select and update compute it up front and
+        // store the results.
         t.view(["Key", "Double = X * 2"]),
-        t.select(["Key", "X"]),
-        t.updateView(["Triple = X * 3"]),
+        t.select(["Key", "Double = X * 2"]),
+        t.updateView(["Double = X * 2"]),
+        t.update(["Double = X * 2"]),
     ]);
-    viewed.close();
-    selected.close();
-    extended.close();
+    for (const table of tables) {
+        console.log(table.columns.map(c => c.name));
+        table.close();
+    }
+    // Prints [ 'Key', 'Double' ] twice, then [ 'Key', 'X', 'Double' ] twice
 }
 // #endregion selectColumns
 
@@ -459,21 +469,29 @@ async function readValues() {
     const long = cell("L") as dh.LongWrapper;
     const exact: string = long.toString();
     const approx: number = long.asNumber();
+    // Prints 9007199254740993 9007199254740992
+    console.log(exact, approx);
 
     // A JS Date keeps milliseconds; the wrapper keeps the nanoseconds
     const when = cell("When") as dh.DateWrapper;
     const date: Date = when.asDate();
     const formatted = dh.i18n.DateTimeFormat.format("yyyy-MM-dd HH:mm:ss.SSSSSSSSS", when,
         dh.i18n.TimeZone.getTimeZone("America/New_York"));
+    // Prints 2026-01-02T03:04:05.123Z 2026-01-01 22:04:05.123456789
+    console.log(date.toISOString(), formatted);
 
     const day = cell("Day") as dh.LocalDateWrapper;
     const month: number = day.getMonthValue();
     const time = cell("Time") as dh.LocalTimeWrapper;
     const hour: number = time.getHour();
+    // Prints 2026-01-02 1 03:04:05.000000000 3
+    console.log(day.toString(), month, time.toString(), hour);
 
     const price = cell("Price") as dh.BigDecimalWrapper;
     const priceText = dh.i18n.NumberFormat.format("#,##0.00", price);
     const big = (cell("Big") as dh.BigIntegerWrapper).toString();
+    // Prints 12,345.67 1180591620717411303424
+    console.log(priceText, big);
     t.close();
 }
 // #endregion readValues
@@ -498,17 +516,25 @@ async function previewArrays() {
 
 // #region filterConditions
 async function filterConditions() {
-    const t = session.emptyTable(20).update(["Sym = i % 2 == 0 ? `AAPL` : `MSFT`", "Price = i * 1.5", "Size = i"]);
+    const t = session.emptyTable(20).update([
+        "Row = i", "Sym = i % 2 == 0 ? `AAPL` : `MSFT`", "Price = i * 1.5", "Size = 10 - i",
+    ]);
     const sym = dh.FilterValue.ofColumn("Sym");
     const price = dh.FilterValue.ofColumn("Price");
     const size = dh.FilterValue.ofColumn("Size");
     // Every condition in the list must hold
     const filtered = await t.where([
+        // Keeps the even rows, where Sym is AAPL
         sym.in([dh.FilterValue.ofString("AAPL"), dh.FilterValue.ofString("GOOG")]),
-        // A column compared with a value, or with another column
+        // A column compared with a value, or with another column: rows 0 to 3, and 7 onward
         price.greaterThan(dh.FilterValue.ofNumber(10)).or(price.lessThan(size)),
-        size.eq(dh.FilterValue.ofNumber(4)).not(),
+        // Drops row 8
+        size.eq(dh.FilterValue.ofNumber(2)).not(),
     ]);
+    const data = await filtered.createSnapshot({ rows: { first: 0, last: filtered.size - 1 }, columns: filtered.columns });
+    const row = filtered.findColumn("Row");
+    // Prints [ 0, 2, 10, 12, 14, 16, 18 ]
+    console.log(data.rows.map(r => r.get(row)));
     filtered.close();
 }
 // #endregion filterConditions

@@ -6,9 +6,8 @@ title: Values
 
 A JavaScript [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number) is a
 64-bit float, exact only for integers up to 2^53, and a JavaScript
-[`Date`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) keeps only
-milliseconds. Column types that do not fit arrive wrapped, so no precision is lost on the way to the client; a null cell
-is `null`.
+[`Date`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) keeps only milliseconds.
+Column types that do not fit arrive wrapped, so no precision is lost on the way to the client; a null cell is `null`.
 
 The API does not use JavaScript's
 [`BigInt`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) at this time.
@@ -16,6 +15,7 @@ The API does not use JavaScript's
 | Column type | Value in JavaScript |
 |---|---|
 | `int`, `short`, `byte`, `float`, `double` | `number` |
+| `char` | `number`, the UTF-16 code |
 | `boolean` | `boolean` |
 | `String` | `string` |
 | `long` | {@link dh.LongWrapper} |
@@ -24,6 +24,10 @@ The API does not use JavaScript's
 | `LocalTime` | {@link dh.LocalTimeWrapper} |
 | `BigDecimal` | {@link dh.BigDecimalWrapper} |
 | `BigInteger` | {@link dh.BigIntegerWrapper} |
+| arrays | a JavaScript array of the element values |
+| other types, such as `Duration` | `string`, the server's text for the value |
+
+A `ZonedDateTime` arrives as the instant it names; its time zone is not sent.
 
 {@includeCode ../examples/use-cases.ts#readValues}
 
@@ -32,6 +36,10 @@ The API does not use JavaScript's
 {@link dh.LongWrapper.toString | toString} gives the exact value, and {@link dh.LongWrapper.asNumber | asNumber} the
 nearest `number`, which differs past 2^53. {@link dh.LongWrapper.ofString | LongWrapper.ofString} makes one to pass
 back, wherever a row position or a `long` value is taken.
+
+To retain precision, wrapper's `valueOf` is its text, so JavaScript operators treat it as a string: with wrappers of 9
+and 10, `+` gives `"910"` and `<` is `false`, and two wrappers of the same value are not `===`. Compare and add
+`asNumber` results where the values fit in 2^53.
 
 ## Dates and times
 
@@ -48,20 +56,20 @@ approximate `number` with `asNumber`.
 ## Formatting
 
 The `dh.i18n` classes format and parse values with the same Java-style patterns the Deephaven server uses, so a UI can
-show values the way the server would. Each has a static `format` and `parse` taking the pattern, and `getFormat`, which
-returns a format for one pattern, cached for reuse.
+show values the way the server would. {@link dh.i18n.DateTimeFormat} and {@link dh.i18n.NumberFormat} each have a static
+`format` and `parse` taking the pattern, and `getFormat`, which returns a format for one pattern, cached for reuse.
 
 {@link dh.i18n.DateTimeFormat.format | DateTimeFormat.format} takes a {@link dh.DateWrapper} or {@link dh.LongWrapper}
-of nanoseconds, a `Date`, or a number or string of nanoseconds, and formats it in an optional
-{@link dh.i18n.TimeZone | TimeZone}, down to the nanosecond. {@link dh.i18n.DateTimeFormat.parse | DateTimeFormat.parse}
-reads text back into a {@link dh.DateWrapper}.
+of nanoseconds, a `Date`, or a number or string of nanoseconds, and formats it down to the nanosecond in the given
+{@link dh.i18n.TimeZone | TimeZone}, or in the browser's or runtime's local zone without one.
+{@link dh.i18n.DateTimeFormat.parse | DateTimeFormat.parse} reads text back into a {@link dh.DateWrapper}.
 
 {@link dh.i18n.NumberFormat.format | NumberFormat.format} takes a `number`, a {@link dh.LongWrapper}, a
 {@link dh.BigDecimalWrapper} or a {@link dh.BigIntegerWrapper}. {@link dh.i18n.NumberFormat.parse | NumberFormat.parse}
 reads text back into a `number`.
 
-{@link dh.i18n.TimeZone.getTimeZone | TimeZone.getTimeZone} takes one of the codes listed on that page, such as
-`America/New_York`.
+{@link dh.i18n.TimeZone.getTimeZone | TimeZone.getTimeZone} takes a standard zone ID, such as `America/New_York` or
+`Europe/Berlin`, or an abbreviation such as `ET`; an unknown code throws.
 
 {@link dh.LocalDateWrapper} and {@link dh.LocalTimeWrapper} are not accepted by either class; their `toString` gives
 `yyyy-MM-dd` and `HH:mm:ss.nnnnnnnnn` text, and their getters give each field to format another way.

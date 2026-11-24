@@ -4,11 +4,15 @@ title: Table operations by example
 
 # Table operations by example
 
-The interface {@link dh.TableOperations} exposes methods for each table operation. Each returns a new 
-{@link dh.PendingTable} for its in-process server-side table, and awaiting it will give a {@link dh.ResolvedTable}
+The interface {@link dh.TableOperations} exposes methods for each table operation. Each returns a new
+{@link dh.PendingTable} for a server-side table still being made, and awaiting it will give a {@link dh.ResolvedTable}
 which represents the finished server side table, and can provide details about the table's definitions and its data.
 Each example here shows an operation, awaits the work, then {@link dh.ResolvedTable#close | closes the table} when
 finished.
+
+The examples use an {@link dh.IdeSession} named `session`, and server tables named `source`, `left` and `right`. Several
+await more than one table at once with {@link dh.resolveAll}, which closes the tables that arrived if any fails; see
+[Several tables at once](#several-tables-at-once).
 
 {@includeCode ../examples/use-cases.ts#createAndTransform}
 
@@ -16,8 +20,14 @@ finished.
 
 ## Selecting and computing columns
 
-{@link dh.TableOperations.view | view}, {@link dh.TableOperations.select | select} and
-{@link dh.TableOperations.updateView | updateView} choose and compute columns.
+{@link dh.TableOperations.view | view}, {@link dh.TableOperations.select | select},
+{@link dh.TableOperations.updateView | updateView} and {@link dh.TableOperations.update | update} choose and compute
+columns. They differ in which columns the new table keeps, and in when formulas are computed:
+
+| | Keeps only the listed columns | Keeps the other columns, adding or replacing the listed ones |
+|---|---|---|
+| Computes a formula each time a value is read | `view` | `updateView` |
+| Computes formulas up front and stores the results | `select` | `update` |
 
 {@includeCode ../examples/use-cases.ts#selectColumns}
 
@@ -27,7 +37,8 @@ finished.
 
 ## Filtering
 
-{@link dh.TableOperations.where | where} takes conditions built with {@link dh.FilterValue}.
+{@link dh.TableOperations.where | where} takes conditions built with {@link dh.FilterValue}; [Filters](filters.md)
+covers them.
 
 {@includeCode ../examples/use-cases.ts#filterNamed}
 
@@ -38,8 +49,8 @@ in another table.
 
 ## Sorting
 
-{@link dh.TableOperations.sort | sort} takes column names for ascending order, or a {@link dh.SimpleSort} with a
-direction.
+{@link dh.TableOperations.sort | sort} takes column names or {@link dh.Column}s for ascending order, or a
+{@link dh.SimpleSort} or {@link dh.Sort} with a direction.
 
 {@includeCode ../examples/use-cases.ts#tickingSorted}
 
@@ -82,8 +93,8 @@ rows.
 
 {@includeCode ../examples/use-cases.ts#crossJoin}
 
-{@link dh.TableOperations.aj | aj} and {@link dh.TableOperations.raj | raj} match the closest right row at or before,
-or at or after, each left row.
+{@link dh.TableOperations.aj | aj} and {@link dh.TableOperations.raj | raj} match the closest right row at or before, or
+at or after, each left row.
 
 {@includeCode ../examples/use-cases.ts#asOfJoins}
 
@@ -95,13 +106,13 @@ or at or after, each left row.
 ## Aggregations
 
 {@link dh.TableOperations.aggBy | aggBy} takes {@link dh.agg.AggByOptions}, with aggregations from
-{@link dh.agg.Aggregation} or written as object literals. {@link dh.TableOperations.countBy | countBy} is shorthand
-for {@link dh.TableOperations.aggBy | aggBy} with {@link dh.agg.Aggregation.AggCount | AggCount}.
+{@link dh.agg.Aggregation} or written as object literals. {@link dh.TableOperations.countBy | countBy} is shorthand for
+{@link dh.TableOperations.aggBy | aggBy} with {@link dh.agg.Aggregation.AggCount | AggCount}.
 
 {@includeCode ../examples/use-cases.ts#aggregate}
 
 {@link dh.agg.Aggregation.AggUnique | AggUnique} shows the single unique value in a column, with a typed sentinel for
-groups without one unique value.
+groups with more than one distinct value; a group of only nulls gives null.
 
 {@includeCode ../examples/use-cases.ts#uniqueWithSentinel}
 
@@ -175,7 +186,8 @@ signal in its {@link dh.ResolveOptions}.
 
 ## Reading results
 
-{@link dh.ResolvedTable.createViewportSubscription | createViewportSubscription} reads a window of rows as they change.
+{@link dh.ResolvedTable.createViewportSubscription | createViewportSubscription} reads a window of rows as they change;
+[Reading data](read-data.md) covers the other ways.
 
 {@includeCode ../examples/use-cases.ts#viewport}
 
@@ -187,6 +199,7 @@ A function lent a {@link dh.ResolvedTable} reads it and closes only what it made
 
 {@link dh.Table}, {@link dh.TotalsTable} and {@link dh.ResolvedTable} share their read members;
 {@link dh.Table.operations | operations} chains on a {@link dh.Table} as it is now.
+[Working with a dh.Table](mutable-table.md) covers the mutable table.
 
 {@includeCode ../examples/use-cases.ts#readEither}
 
