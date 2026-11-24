@@ -309,8 +309,10 @@ class TableListenerHandle:
         self._writer, self._reader = fls.do_exchange()
         try:
             self._writer.write_metadata(subreq)
-        except Exception:
-            # Close the stream, but let the write failure be the error the caller sees.
+        except BaseException:
+            # Close the stream, but let the write failure be the error the caller sees. BaseException also catches
+            # KeyboardInterrupt. Without it, a Ctrl+C here leaves the stream open, and stop() can't close it because
+            # _thread is still None.
             try:
                 self._reader.cancel()
                 self._writer.close()
