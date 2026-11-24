@@ -26,7 +26,7 @@ dependencies {
     // Expose Avro to the users of this extension.
     api libs.avro
 
-    // Using io.confluent dependencies requires code in the toplevel build.gradle to add their maven repository.
+    // Using io.confluent dependencies requires the confluent maven repository, declared in settings.gradle.
     // Note: the -ccs flavor is provided by confluent as their community edition. It is equivalent to the maven central
     // version, but has a different version to make it easier to keep confluent dependencies aligned.
     api libs.confluent.kafka.clients
