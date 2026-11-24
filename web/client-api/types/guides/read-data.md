@@ -9,14 +9,14 @@ subscription to a window of rows, or a subscription to the whole table.
 
 ## One-off reads
 
-{@link dh.ResolvedTable.createSnapshot | createSnapshot} takes {@link dh.SnapshotOptions} naming the rows and columns,
-and gives a {@link dh.TableData} of their current values.
+{@link dh.ResolvedTable.createSnapshot | createSnapshot} takes {@link dh.SnapshotOptions} specifying the rows and columns,
+and resolves to a {@link dh.TableData} of their current values.
 
 ## Viewport subscriptions
 
 {@link dh.ResolvedTable.createViewportSubscription | createViewportSubscription} takes
 {@link dh.ViewportSubscriptionOptions} and returns a {@link dh.TableViewportSubscription}, whose updates carry a
-{@link dh.ViewportData} for the rows in view; change the window with
+{@link dh.ViewportData} for the rows in view. The visible window can be moved with
 {@link dh.TableViewportSubscription.update | update}.
 
 ## Full-table subscriptions
@@ -27,7 +27,9 @@ modified.
 
 ## Reading table data
 
-A {@link dh.TableData} gives rows and cells by position and by column, along with any formatting.
+A {@link dh.TableData} gives rows and cells by position and by column, along with any formatting. Deephaven tables
+are columnar on the server, over the wire, and on the client, so reading large tables by column is often more efficient
+than reading by row.
 
 ## Ticking tables
 

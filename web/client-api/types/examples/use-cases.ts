@@ -1,4 +1,4 @@
-// Examples of the table operations, embedded in the guides. The build type-checks them and runs each against a server.
+// Examples embedded in the guides. The build type-checks them and runs each against a server.
 import { dh } from "@deephaven/jsapi-types";
 declare const session: dh.IdeSession;
 
@@ -441,3 +441,87 @@ async function downsampleForChart() {
     small.close();
 }
 // #endregion downsampleForChart
+
+// #region readValues
+async function readValues() {
+    const t = await session.emptyTable(1).update([
+        "L = 9007199254740993L",
+        "When = parseInstant(`2026-01-02T03:04:05.123456789Z`)",
+        "Day = parseLocalDate(`2026-01-02`)",
+        "Time = parseLocalTime(`03:04:05`)",
+        "Price = java.math.BigDecimal.valueOf(1234567, 2)",
+        "Big = java.math.BigInteger.TWO.pow(70)",
+    ]);
+    const data = await t.createSnapshot({ rows: { first: 0, last: 0 }, columns: t.columns });
+    const cell = (name: string) => data.getData(0, t.findColumn(name));
+
+    // 2^53 + 1: exact as a string, while asNumber() gives the nearest double
+    const long = cell("L") as dh.LongWrapper;
+    const exact: string = long.toString();
+    const approx: number = long.asNumber();
+
+    // A JS Date keeps milliseconds; the wrapper keeps the nanoseconds
+    const when = cell("When") as dh.DateWrapper;
+    const date: Date = when.asDate();
+    const formatted = dh.i18n.DateTimeFormat.format("yyyy-MM-dd HH:mm:ss.SSSSSSSSS", when,
+        dh.i18n.TimeZone.getTimeZone("America/New_York"));
+
+    const day = cell("Day") as dh.LocalDateWrapper;
+    const month: number = day.getMonthValue();
+    const time = cell("Time") as dh.LocalTimeWrapper;
+    const hour: number = time.getHour();
+
+    const price = cell("Price") as dh.BigDecimalWrapper;
+    const priceText = dh.i18n.NumberFormat.format("#,##0.00", price);
+    const big = (cell("Big") as dh.BigIntegerWrapper).toString();
+    t.close();
+}
+// #endregion readValues
+
+// #region previewArrays
+async function previewArrays() {
+    const t = await session.emptyTable(2).update(["Values = new int[] {1, 2, 3, 4, 5, 6}"]);
+    // At most three elements of each array, plus one more when it is longer, to show there are more
+    const data = await t.createSnapshot({
+        rows: { first: 0, last: 1 },
+        columns: t.columns,
+        previewOptions: { array: 3 },
+    });
+    const values = t.findColumn("Values");
+    for (const row of data.rows) {
+        // Prints [ 1, 2, 3, 4 ]: the three asked for, and a fourth because each array holds six
+        console.log(Array.from(row.get(values)));
+    }
+    t.close();
+}
+// #endregion previewArrays
+
+// #region filterConditions
+async function filterConditions() {
+    const t = session.emptyTable(20).update(["Sym = i % 2 == 0 ? `AAPL` : `MSFT`", "Price = i * 1.5", "Size = i"]);
+    const sym = dh.FilterValue.ofColumn("Sym");
+    const price = dh.FilterValue.ofColumn("Price");
+    const size = dh.FilterValue.ofColumn("Size");
+    // Every condition in the list must hold
+    const filtered = await t.where([
+        sym.in([dh.FilterValue.ofString("AAPL"), dh.FilterValue.ofString("GOOG")]),
+        // A column compared with a value, or with another column
+        price.greaterThan(dh.FilterValue.ofNumber(10)).or(price.lessThan(size)),
+        size.eq(dh.FilterValue.ofNumber(4)).not(),
+    ]);
+    filtered.close();
+}
+// #endregion filterConditions
+
+// #region filterMutableTable
+async function filterMutableTable() {
+    const table = (await session.getObject({ type: "Table", name: "source" })) as dh.Table;
+    // Column.filter() starts a condition from one of the table's columns, so conditions can follow the columns it has
+    const integerColumns = table.columns.filter(column => column.type === "int" || column.type === "long");
+    const applied = table.nextEvent(dh.Table.EVENT_FILTERCHANGED, 5000);
+    // Replaces the table's filters; the table changes asynchronously, then fires EVENT_FILTERCHANGED
+    table.applyFilter(integerColumns.map(column => column.filter().greaterThan(dh.FilterValue.ofNumber(2))));
+    await applied;
+    table.close();
+}
+// #endregion filterMutableTable
