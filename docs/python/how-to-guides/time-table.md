@@ -11,7 +11,7 @@ Time tables often serve as trigger tables. A trigger table is a table whose upda
 
 ## Set the period
 
-The [`time_table`](../reference/table-operations/create/timeTable.md) function creates a table that adds one row every `period`, the interval between rows. The period can be a number of nanoseconds, a [duration](../reference/query-language/types/durations.md) string, a `datetime.timedelta`, a `numpy.timedelta64`, or a `pandas.Timedelta`. To pass it as nanoseconds:
+The [`time_table`](../reference/table-operations/create/timeTable.md) function creates a table that adds one row every `period`, the interval between rows. The period can be a number of nanoseconds, a [duration](../reference/query-language/types/durations.md) string, a Java `Duration`, a `datetime.timedelta`, a `numpy.timedelta64`, or a `pandas.Timedelta`. To pass it as nanoseconds:
 
 ```python ticking-table order=null
 from deephaven import time_table

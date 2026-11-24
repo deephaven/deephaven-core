@@ -2,14 +2,17 @@
 title: shortCol
 ---
 
-The `shortCol` method creates a column containing Java primitive short values.
+The `shortCol` method creates a column containing Java primitive `short` values (16-bit signed integers).
 
 > [!NOTE]
-> This method is commonly used with [`newTable`](./newTable.md) to create tables.
+> Pass the column that `shortCol` returns to [`newTable`](./newTable.md) to create a table.
+
+> [!IMPORTANT]
+> The value -32768 (`Short.MIN_VALUE`) is reserved to represent [null](../../query-language/types/nulls.md) in `short` columns. A cast that overflows, such as `(short)32768`, wraps around to -32768 and so becomes null.
 
 ## Syntax
 
-```
+```groovy syntax
 shortCol(name, data...)
 ```
 
@@ -23,7 +26,7 @@ The name of the new column.
 </Param>
 <Param name="data" type="short...">
 
-The column values.
+The column values. Each value must be a `short`. Groovy integer literals are `Integer` values, so cast each literal, for example `(short)86`. Use [`NULL_SHORT`](/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_SHORT) to store a null value.
 
 </Param>
 </ParamTable>
@@ -34,7 +37,7 @@ A [`ColumnHolder`](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnHolde
 
 ## Example
 
-The following examples use [`newTable`](./newTable.md) to create a table with a single column of shorts named `Shorts`.
+The following example uses [`newTable`](./newTable.md) to create a table with a single column of shorts named `Shorts`.
 
 ```groovy
 result = newTable(
@@ -44,6 +47,9 @@ result = newTable(
 
 ## Related documentation
 
-- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`newTable`](./newTable.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#shortCol(java.lang.String,short...))
+- [Nulls](../../query-language/types/nulls.md)
+- [`TableTools.shortCol` Javadoc](/core/javadoc/io/deephaven/engine/util/TableTools.html#shortCol(java.lang.String,short...))
+- [`ColumnHolder` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnHolder.html)
+- [`QueryConstants` Javadoc](/core/javadoc/io/deephaven/util/QueryConstants.html)

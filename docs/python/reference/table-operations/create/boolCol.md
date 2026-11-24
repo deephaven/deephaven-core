@@ -2,15 +2,15 @@
 title: bool_col
 ---
 
-The `bool_col` method creates a column containing Java primitive boolean values.
+The `bool_col` function creates a column containing Java `Boolean` values.
 
 > [!NOTE]
-> This method is commonly used with [`new_table`](./newTable.md) to create tables.
+> Pass the column that `bool_col` returns to [`new_table`](./newTable.md) to create a table.
 
 ## Syntax
 
 ```python syntax
-bool_col(name: str, data: Sequence[bool]) -> InputColumn
+bool_col(name: str, data: Sequence) -> InputColumn
 ```
 
 ## Parameters
@@ -21,20 +21,20 @@ bool_col(name: str, data: Sequence[bool]) -> InputColumn
 The name of the new column.
 
 </Param>
-<Param name="data" type="Sequence[bool]">
+<Param name="data" type="Sequence">
 
-The column values. This can be any sequence of compatible data, e.g., list, tuple, ndarray, pandas series, etc.
+The column values, as Python `bool` values, such as a list, tuple, NumPy array, or pandas Series. In a list or tuple, `None` values become [null](../../query-language/types/nulls.md).
 
 </Param>
 </ParamTable>
 
 ## Returns
 
-An [`InputColumn`](/core/pydoc/code/deephaven.column.html#deephaven.column.InputColumn).
+An [`InputColumn`](./inputColumn.md).
 
 ## Example
 
-The following examples use [`new_table`](./newTable.md) to create a table with a single column of boolean values.
+The following example uses [`new_table`](./newTable.md) to create a table with a single column of boolean values named `Booleans`.
 
 ```python
 from deephaven import new_table
@@ -43,9 +43,10 @@ from deephaven.column import bool_col
 result = new_table([bool_col("Booleans", [True, False, True])])
 ```
 
-## Related Documentation
+## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`new_table`](./newTable.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#booleanCol(java.lang.String,java.lang.Boolean...))
+- [`InputColumn`](./inputColumn.md)
+- [Nulls](../../query-language/types/nulls.md)
 - [Pydoc](/core/pydoc/code/deephaven.column.html#deephaven.column.bool_col)

@@ -2,20 +2,22 @@
 title: new_table
 ---
 
-The `new_table` method creates an in-memory table from a list of columns. Each column must have an equal number of elements.
+The `new_table` function creates an in-memory table from a list of columns or a dictionary of column names and column data. Each column must have an equal number of elements.
 
 ## Syntax
 
 ```python syntax
-new_table(cols: list[InputColumn]) -> Table
+new_table(cols: Sequence[InputColumn] | Mapping[str, Sequence]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="InputColumn">
+<Param name="cols" type="Sequence[InputColumn] | Mapping[str, Sequence]">
 
-Columns are created using the following methods:
+The columns of the new table, given as either a list of [`InputColumn`](./inputColumn.md) objects or a dictionary that maps column names to column data.
+
+Each of the following functions returns an [`InputColumn`](./inputColumn.md):
 
 - [`bool_col`](./boolCol.md)
 - [`byte_col`](./byteCol.md)
@@ -24,10 +26,15 @@ Columns are created using the following methods:
 - [`double_col`](./doubleCol.md)
 - [`float_col`](./floatCol.md)
 - [`int_col`](./intCol.md)
+- [`jobj_col`](./jobj_col.md)
 - [`long_col`](./longCol.md)
 - [`pyobj_col`](./pyobj_col.md)
 - [`short_col`](./shortCol.md)
 - [`string_col`](./stringCol.md)
+
+To create a column of a type that no helper function creates, such as an array type, construct an [`InputColumn`](./inputColumn.md) directly.
+
+When `cols` is a dictionary, `new_table` first converts it to a pandas `DataFrame`, so pandas type inference determines the column types. The conversion also rewrites each dictionary key: each run of characters other than letters, digits, and underscores becomes a single underscore, and such characters at the start or end of a key are removed. For example, the key `"Price ($)"` becomes the column `Price`. Keys that are still not valid column names after this rewrite, such as `"123"` or `"in"`, raise an error.
 
 </Param>
 </ParamTable>
@@ -61,19 +68,30 @@ result = new_table(
 )
 ```
 
+The following example creates a table from a dictionary. In this example, pandas infers the column types: `Ints` is a `long` column and `Strs` is a `String` column.
+
+```python
+from deephaven import new_table
+
+result = new_table({"Ints": [1, 2, 3], "Strs": ["a", "b", "c"]})
+```
+
 ## Related documentation
 
-- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`empty_table`](./emptyTable.md)
+- [`InputColumn`](./inputColumn.md)
 - [`bool_col`](./boolCol.md)
 - [`byte_col`](./byteCol.md)
 - [`char_col`](./charCol.md)
-- [`pyobj_col`](./pyobj_col.md)
 - [`datetime_col`](./dateTimeCol.md)
 - [`double_col`](./doubleCol.md)
 - [`float_col`](./floatCol.md)
+- [`int_col`](./intCol.md)
+- [`jobj_col`](./jobj_col.md)
 - [`long_col`](./longCol.md)
+- [`pyobj_col`](./pyobj_col.md)
 - [`short_col`](./shortCol.md)
 - [`string_col`](./stringCol.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#emptyTable(long))
+- [Javadoc](/core/javadoc/io/deephaven/engine/table/TableFactory.html#newTable(io.deephaven.qst.column.Column...))
 - [Pydoc](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.new_table)

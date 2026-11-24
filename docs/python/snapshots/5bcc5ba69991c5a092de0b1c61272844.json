@@ -1,0 +1,1 @@
+{"file":"reference/table-operations/create/jobj_col.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Values","type":"java.lang.Object"},{"name":"ClassName","type":"java.lang.String"}],"rows":[[{"value":"2024-01-01"},{"value":"LocalDate"}],[{"value":"[]"},{"value":"ArrayList"}],[{"value":"a"},{"value":"String"}]]}}}}

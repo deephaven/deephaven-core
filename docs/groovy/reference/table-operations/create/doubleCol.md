@@ -2,14 +2,17 @@
 title: doubleCol
 ---
 
-The `doubleCol` method creates a column containing Java primitive double values.
+The `doubleCol` method creates a column containing Java primitive `double` values (64-bit floating-point numbers).
 
 > [!NOTE]
-> This method is commonly used with [`newTable`](./newTable.md) to create tables.
+> Pass the column that `doubleCol` returns to [`newTable`](./newTable.md) to create a table.
+
+> [!IMPORTANT]
+> The value `-Double.MAX_VALUE` is reserved to represent [null](../../query-language/types/nulls.md) in `double` columns. [NaN](../../query-language/types/NaNs.md) and infinite values are stored as-is, not as null.
 
 ## Syntax
 
-```
+```groovy syntax
 doubleCol(name, data...)
 ```
 
@@ -23,7 +26,7 @@ The name of the new column.
 </Param>
 <Param name="data" type="double...">
 
-The column values.
+The column values. Use [`NULL_DOUBLE`](/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_DOUBLE) to store a null value.
 
 </Param>
 </ParamTable>
@@ -34,7 +37,7 @@ A [`ColumnHolder`](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnHolde
 
 ## Example
 
-The following examples use [`newTable`](./newTable.md) to create a table with a single column of doubles named `Doubles`.
+The following example uses [`newTable`](./newTable.md) to create a table with a single column of doubles named `Doubles`.
 
 ```groovy
 result = newTable(
@@ -44,6 +47,10 @@ result = newTable(
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`newTable`](./newTable.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#doubleCol(java.lang.String,double...))
+- [NaNs](../../query-language/types/NaNs.md)
+- [Nulls](../../query-language/types/nulls.md)
+- [`TableTools.doubleCol` Javadoc](/core/javadoc/io/deephaven/engine/util/TableTools.html#doubleCol(java.lang.String,double...))
+- [`ColumnHolder` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnHolder.html)
+- [`QueryConstants` Javadoc](/core/javadoc/io/deephaven/util/QueryConstants.html)

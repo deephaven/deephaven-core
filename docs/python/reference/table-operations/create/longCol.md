@@ -2,15 +2,18 @@
 title: long_col
 ---
 
-The `long_col` method creates a column containing Java primitive long values.
+The `long_col` function creates a column containing Java primitive `long` values (64-bit signed integers).
 
 > [!NOTE]
-> This method is commonly used with [`new_table`](./newTable.md) to create tables.
+> Pass the column that `long_col` returns to [`new_table`](./newTable.md) to create a table.
+
+> [!IMPORTANT]
+> The value -9223372036854775808 (`Long.MIN_VALUE`, available as [`NULL_LONG`](/core/pydoc/code/deephaven.constants.html#deephaven.constants.NULL_LONG)) is reserved to represent [null](../../query-language/types/nulls.md) in `long` columns. A Python `int` outside the 64-bit range raises a `DHError` instead of wrapping around. `long` columns do not support infinite or not-a-number (NaN) values.
 
 ## Syntax
 
 ```python syntax
-long_col(name: str, data: Sequence[int]) -> InputColumn
+long_col(name: str, data: Sequence) -> InputColumn
 ```
 
 ## Parameters
@@ -21,31 +24,33 @@ long_col(name: str, data: Sequence[int]) -> InputColumn
 The name of the new column.
 
 </Param>
-<Param name="data" type="Sequence[int]">
+<Param name="data" type="Sequence">
 
-The column values.
+The column values, such as a list, tuple, NumPy array, or pandas Series. `None` values become null.
 
 </Param>
 </ParamTable>
 
 ## Returns
 
-An [`InputColumn`](/core/pydoc/code/deephaven.column.html#deephaven.column.InputColumn).
+An [`InputColumn`](./inputColumn.md).
 
 ## Example
 
-The following examples use [`new_table`](./newTable.md) to create a table with a single column of longs named `Longs`.
+The following example uses [`new_table`](./newTable.md) to create a table with a single column of longs named `Longs`.
 
 ```python
 from deephaven import new_table
 from deephaven.column import long_col
 
-result = new_table([long_col("Longs", [10000000, 987654321, -314159265])])
+result = new_table([long_col("Longs", [10000000, 9876543210, -314159265])])
 ```
 
 ## Related documentation
 
-- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`new_table`](./newTable.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#longCol(java.lang.String,long...))
+- [`InputColumn`](./inputColumn.md)
+- [Nulls](../../query-language/types/nulls.md)
+- [`deephaven.constants` Pydoc](/core/pydoc/code/deephaven.constants.html)
 - [Pydoc](/core/pydoc/code/deephaven.column.html#deephaven.column.long_col)

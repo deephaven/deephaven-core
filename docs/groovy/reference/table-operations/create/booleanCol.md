@@ -2,14 +2,14 @@
 title: booleanCol
 ---
 
-The `booleanCol` method creates a column containing Java primitive boolean values.
+The `booleanCol` method creates a column containing Java `Boolean` values.
 
 > [!NOTE]
-> This method is commonly used with [`newTable`](./newTable.md) to create tables.
+> Pass the column that `booleanCol` returns to [`newTable`](./newTable.md) to create a table.
 
 ## Syntax
 
-```
+```groovy syntax
 booleanCol(name, data...)
 ```
 
@@ -21,9 +21,9 @@ booleanCol(name, data...)
 The name of the new column.
 
 </Param>
-<Param name="data" type="boolean...">
+<Param name="data" type="Boolean...">
 
-The column values.
+The column values. Use `null` to store a [null](../../query-language/types/nulls.md) value.
 
 </Param>
 </ParamTable>
@@ -34,7 +34,7 @@ A [`ColumnHolder`](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnHolde
 
 ## Example
 
-The following examples use [`newTable`](./newTable.md) to create a table with a single column of booleans named `Booleans`.
+The following example uses [`newTable`](./newTable.md) to create a table with a single column of boolean values named `Booleans`.
 
 ```groovy
 result = newTable(
@@ -44,6 +44,8 @@ result = newTable(
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`newTable`](./newTable.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#booleanCol(java.lang.String,java.lang.Boolean...))
+- [Nulls](../../query-language/types/nulls.md)
+- [`TableTools.booleanCol` Javadoc](/core/javadoc/io/deephaven/engine/util/TableTools.html#booleanCol(java.lang.String,java.lang.Boolean...))
+- [`ColumnHolder` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnHolder.html)
