@@ -1,7 +1,6 @@
 plugins {
     id 'base'
     id 'io.deephaven.lifecycle-conventions'
-    id 'io.deephaven.repository-conventions'
     id 'io.deephaven.resolve-all-dependencies'
 }
 
