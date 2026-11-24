@@ -11,7 +11,7 @@ permissions:
 
 # Maven Central mirror, see .github/scripts/gradle/maven-central-mirror.init.gradle.kts. Unset (e.g. on forks) means no mirror.
 env:
-  MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+  MAVEN_CENTRAL_MIRROR_URL: https://maven-central.storage-download.googleapis.com/maven2/
   MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
   MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
