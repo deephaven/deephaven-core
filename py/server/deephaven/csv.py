@@ -48,9 +48,10 @@ def read(
         header_row (int): the header row number, all the rows before it will be skipped, default is 0. Must be 0 if
             headless is True, otherwise an exception will be raised
         skip_rows (int): number of data rows to skip before processing data. This is useful when you want to parse
-            data in chunks. Defaults to 0
+            data in chunks. Empty lines skipped by ignore_empty_lines count toward this number. Defaults to 0
         num_rows (int): max number of rows to process. This is useful when you want to parse data in chunks.
-            Defaults to the maximum 64bit integer value
+            Empty lines skipped by ignore_empty_lines count toward this number. Defaults to the maximum 64bit integer
+            value
         ignore_empty_lines (bool): whether to ignore empty lines, default is False
         allow_missing_columns (bool): whether the library should allow missing columns in the input. If this flag is
             set, then rows that are too short (that have fewer columns than the header row) will be interpreted as if
@@ -118,7 +119,7 @@ def write(table: Table, path: str, cols: Sequence[str] = []) -> None:
     Args:
         table (Table): the source table
         path (str): the path of the CSV file
-        cols (Sequence[str]): the names of the columns to be written out
+        cols (Sequence[str]): the names of the columns to be written out; defaults to all columns
 
     Raises:
         DHError

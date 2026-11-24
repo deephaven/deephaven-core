@@ -255,7 +255,7 @@ def long_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Sequence): a python sequence of compatible data, could be numpy array or Pandas series
+        data (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -303,12 +303,13 @@ def string_col(name: str, data: Sequence) -> InputColumn:
 
 
 def datetime_col(name: str, data: Sequence) -> InputColumn:
-    """Creates an input column containing Deephaven Datetime instances.
+    """Creates an input column containing Java Instant values.
 
     Args:
         name (str): the column name
-        data (Sequence): a sequence of Datetime instances or values that can be converted to Datetime instances
-            (e.g. Instant, int nanoseconds since the Epoch, str, datetime.datetime, numpy.datetime64, pandas.Timestamp).
+        data (Sequence): a sequence of Instant values or values that can be converted to Instant values (e.g. int
+            nanoseconds since the Epoch, str, datetime.datetime, numpy.datetime64, pandas.Timestamp). None values
+            become nulls. datetime.datetime values should be timezone-aware.
 
     Returns:
         a new input column
@@ -335,7 +336,8 @@ def jobj_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Sequence): a sequence of Java objects
+        data (Sequence): a sequence of Java objects, or of Python str, int, float, bool, or None values, which are
+            converted to Java objects. Other Python values raise an error; use pyobj_col for them.
 
     Returns:
         a new input column
