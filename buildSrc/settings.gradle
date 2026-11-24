@@ -1,7 +1,22 @@
-// Plugins (settings plugins, and plugins applied by id and version) are resolved only from the Gradle plugin portal.
+// Plugins (settings plugins, and plugins applied by id and version) are resolved with their dependencies from here.
+// Each artifact should come from exactly one repository: the Gradle plugin portal serves the plugin markers (the
+// artifacts that map a plugin id to its implementation) and the plugin implementations that Maven Central doesn't host.
+// Everything else, such as the dependencies of a plugin, comes from Maven Central; the portal would only redirect those
+// to Maven Central itself.
 pluginManagement {
     repositories {
-        gradlePluginPortal()
+        exclusiveContent {
+            forRepository {
+                gradlePluginPortal()
+            }
+            filter {
+                // Plugin markers: group is the plugin id, module is "<plugin id>.gradle.plugin".
+                includeModuleByRegex '.*', '.*\\.gradle\\.plugin'
+                // Plugin implementations that Maven Central doesn't host
+                includeModule 'org.gradle.toolchains', 'foojay-resolver'
+            }
+        }
+        mavenCentral()
     }
 }
 
