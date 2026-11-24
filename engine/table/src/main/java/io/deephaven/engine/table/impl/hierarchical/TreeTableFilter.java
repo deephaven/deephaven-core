@@ -564,9 +564,9 @@ public class TreeTableFilter {
                 // only matched and ancestor rows are recorded in parentIdToChildRows; resultRows may still hold rows
                 // that this update removed from both
                 try (final WritableRowSet affectedRows = matchedSourceRows.subSetByKeyRange(beginRange, endRange);
-                        final RowSet affectedAncestorRows =
+                        final WritableRowSet affectedAncestorRows =
                                 ancestorSourceRows.subSetByKeyRange(beginRange, endRange)) {
-                    affectedRows.insert(affectedAncestorRows);
+                    affectedRows.subsume(affectedAncestorRows);
                     try (final RowSequence.Iterator affectedRowsIter = affectedRows.getRowSequenceIterator()) {
                         while (affectedRowsIter.hasMore()) {
                             final RowSequence chunkAffectedRows =

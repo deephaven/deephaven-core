@@ -365,44 +365,40 @@ public class TestTreeTable extends RefreshingTableTestCase {
     }
 
     @Test
-    public void testFilterParentCycleOnModify() throws Exception {
-        runWithTimeout(() -> {
-            final QueryTable source = testRefreshingTable(i(10, 20, 30, 40).toTracking(),
-                    intCol("ID", 1, 2, 3, 4),
-                    intCol("Parent", NULL_INT, 1, 2, 3));
-            final TreeTable tree = source.tree("ID", "Parent");
-            final Table filtered = tree.withFilter(WhereFilterFactory.getExpression("ID = 4")).getSource();
-            assertTableEquals(source, filtered);
+    public void testFilterParentCycleOnModify() {
+        final QueryTable source = testRefreshingTable(i(10, 20, 30, 40).toTracking(),
+                intCol("ID", 1, 2, 3, 4),
+                intCol("Parent", NULL_INT, 1, 2, 3));
+        final TreeTable tree = source.tree("ID", "Parent");
+        final Table filtered = tree.withFilter(WhereFilterFactory.getExpression("ID = 4")).getSource();
+        assertTableEquals(source, filtered);
 
-            // the root becomes a child of its own descendant
-            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-            allowingError(() -> updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(source, i(10), intCol("ID", 1), intCol("Parent", 4));
-                source.notifyListeners(i(), i(), i(10));
-            }), TestTreeTable::containsParentCycleError);
-            assertTrue(filtered.isFailed());
-        });
+        // the root becomes a child of its own descendant
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        allowingError(() -> updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(10), intCol("ID", 1), intCol("Parent", 4));
+            source.notifyListeners(i(), i(), i(10));
+        }), TestTreeTable::containsParentCycleError);
+        assertTrue(filtered.isFailed());
     }
 
     @Test
-    public void testFilterParentCycleOnAdd() throws Exception {
-        runWithTimeout(() -> {
-            // the matched row 2 is an orphan until a row with its parent identifier arrives
-            final QueryTable source = testRefreshingTable(i(10, 20).toTracking(),
-                    intCol("ID", 1, 2),
-                    intCol("Parent", NULL_INT, 5));
-            final TreeTable tree = source.tree("ID", "Parent");
-            final Table filtered = tree.withFilter(WhereFilterFactory.getExpression("ID = 2")).getSource();
-            assertTableEquals(source.where("ID = 2"), filtered);
+    public void testFilterParentCycleOnAdd() {
+        // the matched row 2 is an orphan until a row with its parent identifier arrives
+        final QueryTable source = testRefreshingTable(i(10, 20).toTracking(),
+                intCol("ID", 1, 2),
+                intCol("Parent", NULL_INT, 5));
+        final TreeTable tree = source.tree("ID", "Parent");
+        final Table filtered = tree.withFilter(WhereFilterFactory.getExpression("ID = 2")).getSource();
+        assertTableEquals(source.where("ID = 2"), filtered);
 
-            // the new row's parent is the matched row, which closes a cycle
-            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-            allowingError(() -> updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(source, i(30), intCol("ID", 5), intCol("Parent", 2));
-                source.notifyListeners(i(30), i(), i());
-            }), TestTreeTable::containsParentCycleError);
-            assertTrue(filtered.isFailed());
-        });
+        // the new row's parent is the matched row, which closes a cycle
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        allowingError(() -> updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(30), intCol("ID", 5), intCol("Parent", 2));
+            source.notifyListeners(i(30), i(), i());
+        }), TestTreeTable::containsParentCycleError);
+        assertTrue(filtered.isFailed());
     }
 
     @Test
@@ -431,6 +427,10 @@ public class TestTreeTable extends RefreshingTableTestCase {
     /**
      * Runs {@code test} on a daemon thread with this test's execution context, failing if it does not finish within a
      * minute, so that a filter which never terminates fails the test rather than hanging the suite.
+     * <p>
+     * This only bounds work done on the daemon thread. A listener that never terminates runs on the update graph's own
+     * threads and leaves its cycle unfinished, which the fixture's teardown cannot recover from, so update cycles are
+     * not run inside this method.
      */
     private static void runWithTimeout(final Runnable test) throws Exception {
         final ExecutionContext executionContext = ExecutionContext.getContext();
