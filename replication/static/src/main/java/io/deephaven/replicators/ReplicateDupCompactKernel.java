@@ -18,25 +18,37 @@ import java.util.stream.Stream;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateDupCompactKernel {
+    private static final String TASK = "replicateDupCompactKernel";
+
     public static void main(String[] args) throws IOException {
         final String charJavaPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/dupcompact/CharDupCompactKernel.java";
         final List<String> kernelsToInvert =
-                ReplicatePrimitiveCode.charToAllButBoolean("replicateDupCompactKernel", charJavaPath);
-        final String objectDupCompact = ReplicatePrimitiveCode.charToObject("replicateDupCompactKernel", charJavaPath);
+                ReplicatePrimitiveCode.charToAllButBoolean(TASK, charJavaPath);
+        final String objectDupCompact = ReplicatePrimitiveCode.charToObject(TASK, charJavaPath);
         fixupObjectDupCompact(objectDupCompact);
 
         kernelsToInvert.add(charJavaPath);
         kernelsToInvert.add(objectDupCompact);
         for (String kernel : kernelsToInvert) {
-            final String dupCompactReversePath = kernel.replaceAll("DupCompactKernel", "ReverseDupCompactKernel");
+            final String dupCompactReversePath = reversePath(kernel);
             invertSense(kernel, dupCompactReversePath);
         }
 
-        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy("replicateDupCompactKernel", "CharDupCompactKernel",
+        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy(TASK, "CharDupCompactKernel",
                 objectDupCompact);
-        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy("replicateDupCompactKernel", "CharDupCompactKernel",
-                objectDupCompact.replaceAll("DupCompactKernel", "ReverseDupCompactKernel"));
+        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy(TASK, "CharDupCompactKernel",
+                reversePath(objectDupCompact));
+    }
+
+    /**
+     * The path of the reverse kernel for the given kernel; only the file name is renamed, not the directories.
+     */
+    private static String reversePath(String path) {
+        final File file = new File(path);
+        return replicatedOutputPath(TASK,
+                new File(file.getParent(), file.getName().replaceAll("DupCompactKernel", "ReverseDupCompactKernel"))
+                        .getPath());
     }
 
     private static void invertSense(String path, String descendingPath) throws IOException {
@@ -67,7 +79,7 @@ public class ReplicateDupCompactKernel {
         // the header names the Char class that every variant is replicated from, and follows the class name
         // replacements because their patterns also match the source class name
         final String charClassName = className.replaceFirst("^(Byte|Short|Int|Long|Float|Double|Object)", "Char");
-        return Stream.concat(ReplicationUtils.fileHeaderStream("replicateDupCompactKernel", charClassName),
+        return Stream.concat(ReplicationUtils.fileHeaderStream(TASK, charClassName),
                 lines.stream()).collect(Collectors.toList());
     }
 

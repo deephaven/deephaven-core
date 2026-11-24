@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -18,17 +19,19 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.shortToAllIntegral
 import static io.deephaven.replication.ReplicationUtils.globalReplacements;
 
 public class ReplicateColumnStats {
+    private static final String TASK = "replicateColumnStats";
+
     public static void main(String[] args) throws IOException {
-        final List<String> paths = shortToAllIntegralTypes("replicateColumnStats",
+        final List<String> paths = shortToAllIntegralTypes(TASK,
                 "server/src/main/java/io/deephaven/server/table/stats/ShortChunkedNumericalStats.java");
         final String intPath =
                 paths.stream().filter(p -> p.contains("Integer")).findFirst().orElseThrow(FileNotFoundException::new);
         fixupIntegerChunkName(intPath);
 
-        ReplicatePrimitiveCode.floatToAllFloatingPoints("replicateColumnStats",
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(TASK,
                 "server/src/main/java/io/deephaven/server/table/stats/FloatChunkedNumericalStats.java");
 
-        final String objectPath = ReplicatePrimitiveCode.charToObject("replicateColumnStats",
+        final String objectPath = ReplicatePrimitiveCode.charToObject(TASK,
                 "server/src/main/java/io/deephaven/server/table/stats/CharacterChunkedStats.java");
         fixupObjectChunk(objectPath);
     }

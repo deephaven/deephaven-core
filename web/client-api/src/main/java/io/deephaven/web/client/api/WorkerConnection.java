@@ -9,7 +9,6 @@ import com.google.protobuf.ByteStringAccess;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
-import elemental2.core.TypedArray;
 import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
@@ -918,13 +917,13 @@ public class WorkerConnection {
     }
 
     private Ticket sharedTicketFromStringOrBytes(SharedExportBytesUnion sharedTicketBytes) {
-        final TypedArray.SetArrayUnionType array;
+        final Uint8Array.SetArrayUnionType array;
         if (sharedTicketBytes.isString()) {
             byte[] arr = sharedTicketBytes.asString().getBytes(StandardCharsets.UTF_8);
-            array = TypedArray.SetArrayUnionType.of(arr);
+            array = Uint8Array.SetArrayUnionType.of(arr);
         } else {
             Uint8Array bytes = sharedTicketBytes.asUint8Array();
-            array = TypedArray.SetArrayUnionType.of(bytes);
+            array = Uint8Array.SetArrayUnionType.of(bytes);
         }
         return tickets.sharedTicket(array);
     }

@@ -1,0 +1,15 @@
+name: Gradle Dependency Cache (rc)
+
+# Seeds an rc branch's Gradle dependency cache on each push, so only rc lines with recent merges keep an entry; idle ones
+# expire after 7 days unread. PRs into an rc branch can restore it. A separate workflow because main's push trigger is
+# filtered by path.
+on:
+  push:
+    branches: [ 'rc/v*' ]
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    uses: ./.github/workflows/gradle-deps-cache.yml

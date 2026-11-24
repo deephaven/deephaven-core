@@ -31,8 +31,8 @@ public class ReplicateSegmentedSortedMultiset {
         // Replicate FloatCompareOpenHashSet -> DoubleCompareOpenHashSet
         floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/FloatCompareOpenHashSet.java");
-        final File doubleCompareHashSetFile = new File(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/DoubleCompareOpenHashSet.java");
+        final File doubleCompareHashSetFile = new File(replicatedOutputPath(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/DoubleCompareOpenHashSet.java"));
         List<String> doubleCompareLines = FileUtils.readLines(doubleCompareHashSetFile, Charset.defaultCharset());
         doubleCompareLines = globalReplacements(doubleCompareLines,
                 "0\\.0f", "0.0d",
@@ -106,9 +106,11 @@ public class ReplicateSegmentedSortedMultiset {
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java");
         updateFloatPercentileHelper(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/FloatPercentileTypeHelper.java");
+                replicatedOutputPath(TASK,
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/FloatPercentileTypeHelper.java"));
         updateDoublePercentileHelper(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/DoublePercentileTypeHelper.java");
+                replicatedOutputPath(TASK,
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/DoublePercentileTypeHelper.java"));
         fixupObjectSsm(
                 charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java"),
@@ -120,7 +122,8 @@ public class ReplicateSegmentedSortedMultiset {
         floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/FloatPercentileTypeMedianHelper.java");
         updateDoublePercentileHelper(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/DoublePercentileTypeMedianHelper.java");
+                replicatedOutputPath(TASK,
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/DoublePercentileTypeMedianHelper.java"));
 
         for (final String netChangeKernel : charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharNetChangeKernel.java")) {

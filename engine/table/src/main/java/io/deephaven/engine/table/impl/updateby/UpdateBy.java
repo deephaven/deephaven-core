@@ -15,6 +15,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ResettableWritableObjectChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -149,7 +150,19 @@ public abstract class UpdateBy {
 
             if (upstream.removed().isNonempty()) {
                 final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
-                upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(writableRowRedirection.remove(key)));
+                // the inner row keys of a chunk of removed rows are read, then the chunk's redirections removed at once
+                final int chunkSize = (int) Math.min(upstream.removed().size(), REDIRECTION_CHUNK_SIZE);
+                try (final RowSequence.Iterator it = upstream.removed().getRowSequenceIterator();
+                        final ChunkSource.FillContext fillContext =
+                                writableRowRedirection.makeFillContext(chunkSize, null);
+                        final WritableLongChunk<RowKeys> innerKeys = WritableLongChunk.makeWritableChunk(chunkSize)) {
+                    while (it.hasMore()) {
+                        final RowSequence removedChunk = it.getNextRowSequenceWithLength(chunkSize);
+                        writableRowRedirection.fillChunk(fillContext, innerKeys, removedChunk);
+                        writableRowRedirection.removeAll(removedChunk);
+                        freeBuilder.addRowKeysChunk(innerKeys);
+                    }
+                }
                 // store all freed rows as the candidate toClear set
                 toClear = freeBuilder.build();
                 freeRows.insert(toClear);
@@ -167,10 +180,21 @@ public abstract class UpdateBy {
 
             if (upstream.added().isNonempty()) {
                 final WritableRowSet.Iterator freeIt = freeRows.iterator();
-                upstream.added().forAllRowKeys(outerKey -> {
-                    final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : innerRowKeyCapacity++;
-                    writableRowRedirection.put(outerKey, innerKey);
-                });
+                // each chunk of added rows takes the next free inner row keys, or new ones, and is redirected at once
+                final int chunkSize = (int) Math.min(upstream.added().size(), REDIRECTION_CHUNK_SIZE);
+                try (final RowSequence.Iterator it = upstream.added().getRowSequenceIterator();
+                        final ChunkSink.FillFromContext fillFromContext =
+                                writableRowRedirection.makeFillFromContext(chunkSize);
+                        final WritableLongChunk<RowKeys> innerKeys = WritableLongChunk.makeWritableChunk(chunkSize)) {
+                    while (it.hasMore()) {
+                        final RowSequence addedChunk = it.getNextRowSequenceWithLength(chunkSize);
+                        innerKeys.setSize(0);
+                        for (int ii = addedChunk.intSize(); ii > 0; --ii) {
+                            innerKeys.add(freeIt.hasNext() ? freeIt.nextLong() : innerRowKeyCapacity++);
+                        }
+                        writableRowRedirection.fillFromChunk(fillFromContext, innerKeys, addedChunk);
+                    }
+                }
                 if (freeIt.hasNext()) {
                     try (final RowSet added = freeRows.subSetByKeyRange(0, freeIt.nextLong() - 1)) {
                         toClear.remove(added);

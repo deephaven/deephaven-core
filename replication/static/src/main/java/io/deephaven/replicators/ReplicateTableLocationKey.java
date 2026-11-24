@@ -8,6 +8,8 @@ import java.io.IOException;
 import static io.deephaven.replication.ReplicatePrimitiveCode.replaceAll;
 
 public class ReplicateTableLocationKey {
+    private static final String TASK = "replicateTableLocationKey";
+
     private static final String TABLE_LOCATION_KEY_DIR =
             "engine/table/src/main/java/io/deephaven/engine/table/impl/locations/local/";
     private static final String FILE_TABLE_LOCATION_KEY_PATH = TABLE_LOCATION_KEY_DIR + "FileTableLocationKey.java";
@@ -22,7 +24,7 @@ public class ReplicateTableLocationKey {
                 {"file", "uri"},
                 {"File", "URI"},
         };
-        replaceAll("replicateTableLocationKey", FILE_TABLE_LOCATION_KEY_PATH, URI_TABLE_LOCATION_KEY_PATH, null,
+        replaceAll(TASK, FILE_TABLE_LOCATION_KEY_PATH, URI_TABLE_LOCATION_KEY_PATH, null,
                 NO_EXCEPTIONS, pairs);
     }
 }

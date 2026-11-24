@@ -15,11 +15,11 @@ import static io.deephaven.replication.ReplicationUtils.addImport;
 import static java.nio.file.Files.readAllLines;
 
 public class ReplicateParquetChunkedWriters {
+    private static final String TASK = "replicateParquetChunkedWriters";
 
     public static void main(String[] args) throws IOException {
-
         ReplicatePrimitiveCode.intToLongAndFloatingPoints(
-                "replicateParquetChunkedWriters",
+                TASK,
                 "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/PlainIntChunkedWriter.java",
                 "int pageSize",
                 "IntBuffer.allocate\\(4\\)",
