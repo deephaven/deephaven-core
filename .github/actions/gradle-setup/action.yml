@@ -99,7 +99,11 @@ runs:
         cp .github/gradle/maven-central-mirror.init.gradle "$gradle_home/init.d/"
         # Java properties syntax: backslashes are escapes.
         escape() { printf '%s' "${1//\\/\\\\}"; }
+        # The file may already exist (umask only affects new files), so restrict it before the secret is written.
         umask 077
+        properties="$gradle_home/gradle.properties"
+        touch "$properties"
+        chmod 600 "$properties"
         {
           echo "mavenCentralMirrorUrl=$(escape "$MIRROR_URL")"
           if [[ -n "$MIRROR_USERNAME" ]]; then
@@ -108,4 +112,4 @@ runs:
           if [[ -n "$MIRROR_PASSWORD" ]]; then
             echo "mavenCentralMirrorPassword=$(escape "$MIRROR_PASSWORD")"
           fi
-        } >> "$gradle_home/gradle.properties"
+        } >> "$properties"
