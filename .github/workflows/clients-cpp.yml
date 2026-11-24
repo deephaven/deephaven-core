@@ -72,9 +72,6 @@ concurrency:
 #===============================================================================
 
 env:
-  MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-  MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-  MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
   GH_PACKAGES_USERNAME: ${{ github.repository_owner }}
   GH_PACKAGES_FEED: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
   DEEPHAVEN_CPP_DEPS_IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/deephaven-core-cpp-deps
@@ -194,6 +191,8 @@ jobs:
 
       - name: Setup Gradle
         uses: ./.github/actions/gradle-setup
+        with:
+          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
 
       # Needed only to push the deps image; pulls are anonymous.
       - name: Login to GitHub Container Registry
@@ -214,6 +213,9 @@ jobs:
       - name: Publish C++ deps image
         if: github.event_name == 'push'
         env:
+          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
           GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VCPKG_NUGET_MODE: readwrite
         run: ./gradlew :cpp-client:cppDepsImagePublish
@@ -224,6 +226,9 @@ jobs:
       # rebuilt; PR runs cannot write to that cache.
       - name: Build C++ client
         env:
+          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
           GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VCPKG_NUGET_MODE: ${{ github.event_name == 'push' && 'readwrite' || 'read' }}
         run: ./gradlew :cpp-client:cppClient

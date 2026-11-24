@@ -13,3 +13,5 @@ permissions:
 jobs:
   seed:
     uses: ./.github/workflows/gradle-deps-cache.yml
+    # The mirror password is a secret, which a called workflow only receives when it is passed.
+    secrets: inherit

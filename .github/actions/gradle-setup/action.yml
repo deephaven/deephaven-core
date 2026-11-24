@@ -12,6 +12,13 @@ inputs:
     description: "'false' to skip gradle/actions/setup-gradle, for jobs that use another Gradle action."
     required: false
     default: 'true'
+  maven-central-mirror:
+    description: >-
+      'true' to install the Maven Central mirror init script. The Gradle steps of the job must then provide
+      MAVEN_CENTRAL_MIRROR_URL (and the _USERNAME and _PASSWORD pair, or neither) in their environment; the script fails
+      the build without them.
+    required: false
+    default: 'false'
 
 outputs:
   cache-hit:
@@ -57,10 +64,10 @@ runs:
       with:
         cache-provider: external
 
-    # Routes Maven Central through the internal mirror when the calling workflow provides one (MAVEN_CENTRAL_MIRROR_URL,
-    # _USERNAME and _PASSWORD; see the init script); the script is not installed otherwise (e.g. on forks), as it fails without a URL.
+    # Routes Maven Central through the internal mirror (see the init script). Not installed otherwise, as the script
+    # fails when it has no mirror URL.
     - name: Setup Maven Central mirror
-      if: ${{ env.MAVEN_CENTRAL_MIRROR_URL != '' }}
+      if: ${{ inputs.maven-central-mirror == 'true' }}
       shell: bash
       run: |
         init_dir="${GRADLE_USER_HOME:-$HOME/.gradle}/init.d"

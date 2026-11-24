@@ -13,12 +13,6 @@ concurrency:
 permissions:
   contents: read
 
-# Maven Central mirror, see .github/gradle/maven-central-mirror.init.gradle. Unset (e.g. on forks) means no mirror.
-env:
-  MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-  MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-  MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
-
 jobs:
   nightly-publish:
     runs-on: ubuntu-24.04
@@ -37,6 +31,8 @@ jobs:
 
       - name: Setup Gradle
         uses: ./.github/actions/gradle-setup
+        with:
+          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
 
       - name: Setup gradle properties
         run: |
@@ -48,6 +44,9 @@ jobs:
         # snapshots does not even create staging repositories.
         run: ./gradlew publishToMavenCentral
         env:
+          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.CI_AT_DEEPHAVEN_KEY }}

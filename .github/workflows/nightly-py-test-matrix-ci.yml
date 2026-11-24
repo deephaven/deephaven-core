@@ -21,12 +21,6 @@ on:
 permissions:
   contents: read
 
-# Maven Central mirror, see .github/gradle/maven-central-mirror.init.gradle. Unset (e.g. on forks) means no mirror.
-env:
-  MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-  MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-  MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
-
 jobs:
   build:
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
@@ -47,6 +41,8 @@ jobs:
 
       - name: Setup Gradle
         uses: ./.github/actions/gradle-setup
+        with:
+          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
 
       - name: Setup gradle properties
         run: |
@@ -55,6 +51,10 @@ jobs:
 
       - name: Build the wheels
         run: ./gradlew --scan :py-embedded-server:assemble :py-server:assemble :py-client:assemble
+        env:
+          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Upload the build outputs
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -7,12 +7,6 @@ on:
 permissions:
   contents: write
 
-# Maven Central mirror, see .github/gradle/maven-central-mirror.init.gradle. Unset (e.g. on forks) means no mirror.
-env:
-  MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-  MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-  MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
-
 jobs:
   dependency-submission:
     runs-on: ubuntu-24.04
@@ -31,6 +25,7 @@ jobs:
       - name: Restore Gradle dependency cache
         uses: ./.github/actions/gradle-setup
         with:
+          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
           setup-gradle: 'false'
 
       - name: Setup gradle properties
@@ -43,6 +38,9 @@ jobs:
         with:
           cache-provider: external
         env:
+          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
           # Dependencies derived from :server-jetty-app runtimeClasspath get a "runtime" scope and everything else gets
           # a "development" scope. Ideally, gradle would be able to pass along the finer dependency details (for
           # example, the exact configuration scopes), but this is a limitation of GitHub dependency submissions API, see
