@@ -1,0 +1,130 @@
+name: Nightly Python Wheels CI
+
+on:
+  schedule:
+    # 1:30AM EST == 5:30AM UTC -- offset from nightly-publish-ci.yml so the two do not contend
+    # for runners.
+    - cron:  '30 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  # Required to mint the OIDC token that Workload Identity Federation exchanges for Google
+  # credentials. Without it the auth step fails.
+  id-token: write
+
+jobs:
+  nightly-wheels:
+    runs-on: ubuntu-24.04
+    # Publishing must only ever happen from the canonical repository's main branch. The
+    # `schedule` trigger already only fires on the default branch, but `workflow_dispatch` can be
+    # invoked from any branch, so the ref is checked explicitly here.
+    if: ${{ github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
+
+    env:
+      GAR_PROJECT: deephaven-testing
+      GAR_LOCATION: us-central1
+      # Set this repository variable to the Artifact Registry repository name to start
+      # publishing. While it is empty the authentication and upload steps are skipped and the job
+      # still builds and archives the wheels, so it never fails (and pages Slack) before GCP is
+      # wired up -- and it doubles as a kill switch that needs no revert PR.
+      GAR_REPOSITORY: ${{ vars.NIGHTLY_WHEELS_GAR_REPOSITORY }}
+      # Same workload identity pool and provider the iris repository uses; see its
+      # .github/actions/gcloud-setup/action.yml.
+      GAR_WIF_PROVIDER: projects/249788155593/locations/global/workloadIdentityPools/gh-actions/providers/dh-ent
+      GAR_SERVICE_ACCOUNT: jenkins-agent@deephaven-testing.iam.gserviceaccount.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup JDKs
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: |
+            21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Setup gradle properties
+        run: |
+          .github/scripts/gradle-properties.sh 21 >> gradle.properties
+          cat gradle.properties
+
+      - name: Build wheels
+        # Only the two pure-Python wheels are published nightly. `deephaven-server` bundles the
+        # full server classpath and `pydeephaven-ticking` is a Cython/C++ extension needing a
+        # platform matrix; both are out of scope here.
+        #
+        # `assemble` pulls in the buildWheel task without re-running the check suite, which
+        # nightly-check-ci.yml already covers.
+        run: ./gradlew py-server:assemble py-client:assemble
+
+      - name: Collect wheels
+        # Gather both packages into one directory so the archive and the upload each take a
+        # single path.
+        run: |
+          set -eux
+          mkdir -p build/nightly-wheels
+          cp py/server/build/wheel/*.whl build/nightly-wheels/
+          cp py/client/build/wheel/*.whl build/nightly-wheels/
+          ls -l build/nightly-wheels/
+
+      - name: Archive wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-wheels
+          path: build/nightly-wheels/
+
+      # The `env` context is unavailable in a job-level `if`, so the three steps below are gated
+      # individually on GAR_REPOSITORY being set.
+      - name: Authenticate to Google Cloud
+        id: auth
+        if: ${{ env.GAR_REPOSITORY != '' }}
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.GAR_PROJECT }}
+          workload_identity_provider: ${{ env.GAR_WIF_PROVIDER }}
+          service_account: ${{ env.GAR_SERVICE_ACCOUNT }}
+          # Mint a short-lived OAuth access token directly rather than a credentials file, so
+          # twine needs neither the gcloud CLI nor the Artifact Registry keyring backend.
+          token_format: access_token
+
+      - name: Setup Python
+        if: ${{ env.GAR_REPOSITORY != '' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Publish wheels to Google Artifact Registry
+        if: ${{ env.GAR_REPOSITORY != '' }}
+        env:
+          # Artifact Registry accepts the OAuth access token as the password under this fixed
+          # username.
+          TWINE_USERNAME: oauth2accesstoken
+          TWINE_PASSWORD: ${{ steps.auth.outputs.access_token }}
+        run: |
+          set -eu
+          python -m pip install --upgrade twine
+          twine upload \
+            --repository-url "https://${GAR_LOCATION}-python.pkg.dev/${GAR_PROJECT}/${GAR_REPOSITORY}/" \
+            build/nightly-wheels/*.whl
+
+      - name: Slack Nightly Failure
+        uses: slackapi/slack-github-action@v2.1.0
+        id: slack-nightly-wheels-failure
+        if: failure()
+        with:
+          webhook-type: webhook-trigger
+          payload: |
+            {
+              "slack_message": "Nightly wheel publish failure @ ${{ github.head_ref }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
