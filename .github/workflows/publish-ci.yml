@@ -64,7 +64,9 @@ jobs:
       - name: Setup Gradle
         uses: ./.github/actions/gradle-setup
         with:
-          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Setup gradle properties
         run: |
@@ -82,10 +84,6 @@ jobs:
       - name: Build all artifacts, publish to Maven Local
         if: ${{ !startsWith(github.ref, 'refs/heads/release/v') }}
         run: ./gradlew server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build py-client-ticking:build web-client-api:types:build publishToMavenLocal
-        env:
-          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Build all artifacts, publish to Sonatype for staging to Maven Central Portal
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
@@ -93,9 +91,6 @@ jobs:
         # Edit: unclear if above note is still possible with the new portal API / plugin implementation.
         run: ./gradlew --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build py-client-ticking:build web-client-api:types:build publishToMavenCentral
         env:
-          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.CI_AT_DEEPHAVEN_KEY }}

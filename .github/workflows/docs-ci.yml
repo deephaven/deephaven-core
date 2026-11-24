@@ -141,7 +141,9 @@ jobs:
       - name: Setup Gradle
         uses: ./.github/actions/gradle-setup
         with:
-          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Setup gradle properties
         run: |
@@ -150,10 +152,6 @@ jobs:
 
       - name: All Javadoc
         run: ./gradlew --scan outputVersion combined-javadoc:allJavadoc
-        env:
-          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Get Deephaven Version
         id: dhc-version
@@ -199,7 +197,9 @@ jobs:
       - name: Setup Gradle
         uses: ./.github/actions/gradle-setup
         with:
-          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Setup gradle properties
         run: |
@@ -208,10 +208,6 @@ jobs:
 
       - name: Run typedoc on JS API
         run: ./gradlew --scan outputVersion :web-client-api:types:typedoc
-        env:
-          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Get Deephaven Version
         id: dhc-version
@@ -257,7 +253,9 @@ jobs:
       - name: Setup Gradle
         uses: ./.github/actions/gradle-setup
         with:
-          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Setup gradle properties
         run: |
@@ -266,10 +264,6 @@ jobs:
 
       - name: Generate Python Docs
         run: ./gradlew --scan outputVersion sphinx:pythonDocs sphinx:pydeephavenDocs
-        env:
-          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Get Deephaven Version
         id: dhc-version
@@ -342,7 +336,9 @@ jobs:
       - name: Setup Gradle
         uses: ./.github/actions/gradle-setup
         with:
-          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Setup gradle properties
         run: |
@@ -351,10 +347,6 @@ jobs:
 
       - name: Generate C++ Docs
         run: ./gradlew --scan outputVersion sphinx:cppClientDocs sphinx:cppExamplesDocs
-        env:
-          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Get Deephaven Version
         id: dhc-version
@@ -419,7 +411,9 @@ jobs:
       - name: Setup Gradle
         uses: ./.github/actions/gradle-setup
         with:
-          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Setup gradle properties
         run: |
@@ -428,10 +422,6 @@ jobs:
 
       - name: Generate R Docs
         run: ./gradlew --scan outputVersion R:rClientSite
-        env:
-          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Get Deephaven Version
         id: dhc-version
@@ -484,7 +474,9 @@ jobs:
       - name: Setup Gradle
         uses: ./.github/actions/gradle-setup
         with:
-          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Setup gradle properties
         run: |
@@ -493,10 +485,6 @@ jobs:
 
       - name: Generate Protobuf Docs
         run: ./gradlew --scan outputVersion :proto:proto-backplane-grpc:generateProtobuf
-        env:
-          MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
-          MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
-          MAVEN_CENTRAL_MIRROR_PASSWORD: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       - name: Get Deephaven Version
         id: dhc-version

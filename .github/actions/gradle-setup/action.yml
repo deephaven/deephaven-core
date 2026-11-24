@@ -12,13 +12,21 @@ inputs:
     description: "'false' to skip gradle/actions/setup-gradle, for jobs that use another Gradle action."
     required: false
     default: 'true'
-  maven-central-mirror:
+  maven-central-mirror-url:
     description: >-
-      'true' to install the Maven Central mirror init script. The Gradle steps of the job must then provide
-      MAVEN_CENTRAL_MIRROR_URL (and the _USERNAME and _PASSWORD pair, or neither) in their environment; the script fails
-      the build without them.
+      URL of a Maven Central mirror; when non-empty, the action writes it, with the username and password, to the Gradle
+      user home's gradle.properties and installs the init script that routes Maven Central through it. Empty means no
+      mirror.
     required: false
-    default: 'false'
+    default: ''
+  maven-central-mirror-username:
+    description: 'Username for the mirror; set together with the password, or neither.'
+    required: false
+    default: ''
+  maven-central-mirror-password:
+    description: 'Password for the mirror; set together with the username, or neither.'
+    required: false
+    default: ''
 
 outputs:
   cache-hit:
@@ -64,12 +72,32 @@ runs:
       with:
         cache-provider: external
 
-    # Routes Maven Central through the internal mirror (see the init script). Not installed otherwise, as the script
-    # fails when it has no mirror URL.
+    # Routes Maven Central through the internal mirror (see the init script, which reads these Gradle properties and
+    # fails if the URL is missing, so it is only installed when there is a mirror). The user-level properties and init
+    # script apply to every Gradle invocation in the job, buildSrc and other Gradle actions included.
     - name: Setup Maven Central mirror
-      if: ${{ inputs.maven-central-mirror == 'true' }}
+      if: ${{ inputs.maven-central-mirror-url != '' }}
       shell: bash
+      env:
+        MIRROR_URL: ${{ inputs.maven-central-mirror-url }}
+        MIRROR_USERNAME: ${{ inputs.maven-central-mirror-username }}
+        MIRROR_PASSWORD: ${{ inputs.maven-central-mirror-password }}
       run: |
-        init_dir="${GRADLE_USER_HOME:-$HOME/.gradle}/init.d"
-        mkdir -p "$init_dir"
-        cp .github/gradle/maven-central-mirror.init.gradle "$init_dir/"
+        if [[ -n "$MIRROR_PASSWORD" ]]; then
+          echo "::add-mask::$MIRROR_PASSWORD"
+        fi
+        gradle_home="${GRADLE_USER_HOME:-$HOME/.gradle}"
+        mkdir -p "$gradle_home/init.d"
+        cp .github/gradle/maven-central-mirror.init.gradle "$gradle_home/init.d/"
+        # Java properties syntax: backslashes are escapes.
+        escape() { printf '%s' "${1//\\/\\\\}"; }
+        umask 077
+        {
+          echo "mavenCentralMirrorUrl=$(escape "$MIRROR_URL")"
+          if [[ -n "$MIRROR_USERNAME" ]]; then
+            echo "mavenCentralMirrorUsername=$(escape "$MIRROR_USERNAME")"
+          fi
+          if [[ -n "$MIRROR_PASSWORD" ]]; then
+            echo "mavenCentralMirrorPassword=$(escape "$MIRROR_PASSWORD")"
+          fi
+        } >> "$gradle_home/gradle.properties"

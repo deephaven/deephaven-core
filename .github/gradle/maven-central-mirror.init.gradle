@@ -1,12 +1,17 @@
 // Gradle init script: resolve everything a build would fetch from Maven Central through a mirror,
 // without changing the build.
 //
-// CI installs this into $GRADLE_USER_HOME/init.d (see .github/actions/gradle-setup) when MAVEN_CENTRAL_MIRROR_URL is set.
-// The script fails the build if the variable is unset or blank: it is only meant to be applied deliberately, so
-// a misconfigured mirror is an error, never a silent fallback to Maven Central.
+// CI installs this into $GRADLE_USER_HOME/init.d, with the Gradle properties below in $GRADLE_USER_HOME/gradle.properties
+// (see .github/actions/gradle-setup). The script fails the build if mavenCentralMirrorUrl is unset or blank: it is only
+// meant to be applied deliberately, so a misconfigured mirror is an error, never a silent fallback to Maven Central.
+//
+// Gradle properties (gradle.properties in the Gradle user home, -P, or ORG_GRADLE_PROJECT_* environment variables):
+//     mavenCentralMirrorUrl       required; e.g. https://maven-proxy.example.com
+//     mavenCentralMirrorUsername  optional, but required together with the password
+//     mavenCentralMirrorPassword  optional, but required together with the username
 //
 // For one build:
-//     MAVEN_CENTRAL_MIRROR_URL=https://maven-proxy.example.com ./gradlew build --init-script .github/gradle/maven-central-mirror.init.gradle
+//     ./gradlew build -PmavenCentralMirrorUrl=https://maven-proxy.example.com --init-script .github/gradle/maven-central-mirror.init.gradle
 //
 // Every Maven repository whose URL is Maven Central is pointed at the mirror, wherever the build
 // declares it: mavenCentral() or an explicit maven { url = ... }, in project repositories,
@@ -16,9 +21,9 @@
 // itself to Maven Central, which no rewrite here can intercept, so settings.gradle declares it with exclusiveContent for
 // only the plugin markers and plugin implementations that Maven Central lacks; all else is requested from mavenCentral().
 //
-// If MAVEN_CENTRAL_MIRROR_USERNAME and MAVEN_CENTRAL_MIRROR_PASSWORD are set, they are sent to the
-// mirror with HTTP Basic authentication on every request (preemptively, not after a 401).
-// Credentials are only sent over HTTPS, or plain HTTP to this machine (for a local test mirror).
+// If the username and password are set, they are sent to the mirror with HTTP Basic authentication on every request
+// (preemptively, not after a 401). Credentials are only sent over HTTPS, or plain HTTP to this machine (for a local
+// test mirror).
 //
 // Run with --info to see each repository that is redirected.
 //
@@ -34,22 +39,30 @@ import org.gradle.authentication.http.BasicAuthentication
 def mavenCentral = ['repo.maven.apache.org/maven2', 'repo1.maven.org/maven2']
 
 def fail = { String message -> throw new GradleException("maven-central-mirror init script: ${message}") }
-
-def configured = System.getenv('MAVEN_CENTRAL_MIRROR_URL')
-if (!configured?.trim()) {
-    fail('MAVEN_CENTRAL_MIRROR_URL must be set')
-}
-def mirror = new URI(configured.trim().replaceAll('/+$', '') + '/')
 def logger = Logging.getLogger('maven-central-mirror')
 
-def mirrorUsername = System.getenv('MAVEN_CENTRAL_MIRROR_USERNAME') ?: null
-def mirrorPassword = System.getenv('MAVEN_CENTRAL_MIRROR_PASSWORD') ?: null
-if ((mirrorUsername == null) != (mirrorPassword == null)) {
-    fail('set both MAVEN_CENTRAL_MIRROR_USERNAME and MAVEN_CENTRAL_MIRROR_PASSWORD, or neither')
-}
-def isHttps = mirror.scheme?.equalsIgnoreCase('https')
-if (mirrorUsername != null && !isHttps && !(mirror.host in ['localhost', '127.0.0.1', '[::1]', '::1'])) {
-    fail("refusing to send credentials to ${mirror} over plain HTTP")
+// Read from the Gradle properties once the settings exist (see beforeSettings below).
+def mirror = null
+def mirrorUsername = null
+def mirrorPassword = null
+def isHttps = false
+
+def readConfiguration = { Settings settings ->
+    def property = { String name -> settings.providers.gradleProperty(name).orNull?.trim() ?: null }
+    def url = property('mavenCentralMirrorUrl')
+    if (url == null) {
+        fail('the Gradle property mavenCentralMirrorUrl must be set')
+    }
+    mirror = new URI(url.replaceAll('/+$', '') + '/')
+    mirrorUsername = property('mavenCentralMirrorUsername')
+    mirrorPassword = property('mavenCentralMirrorPassword')
+    if ((mirrorUsername == null) != (mirrorPassword == null)) {
+        fail('set both mavenCentralMirrorUsername and mavenCentralMirrorPassword, or neither')
+    }
+    isHttps = mirror.scheme?.equalsIgnoreCase('https')
+    if (mirrorUsername != null && !isHttps && !(mirror.host in ['localhost', '127.0.0.1', '[::1]', '::1'])) {
+        fail("refusing to send credentials to ${mirror} over plain HTTP")
+    }
 }
 
 def isMavenCentral = { URI url ->
@@ -93,6 +106,7 @@ def mirrorMavenCentral = { RepositoryHandler repositories ->
 }
 
 gradle.beforeSettings { Settings settings ->
+    readConfiguration(settings)
     mirrorMavenCentral(settings.buildscript.repositories)
     mirrorMavenCentral(settings.pluginManagement.repositories)
 }

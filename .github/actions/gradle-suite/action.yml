@@ -9,12 +9,18 @@ inputs:
     description: 'The JDK to install and register as a gradle toolchain.'
     required: false
     default: '21'
-  maven-central-mirror:
-    description: >-
-      'true' to route Maven Central through the mirror; the calling step must then provide MAVEN_CENTRAL_MIRROR_URL,
-      _USERNAME and _PASSWORD in its env. See gradle-setup.
+  maven-central-mirror-url:
+    description: See gradle-setup.
     required: false
-    default: 'false'
+    default: ''
+  maven-central-mirror-username:
+    description: See gradle-setup.
+    required: false
+    default: ''
+  maven-central-mirror-password:
+    description: See gradle-setup.
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -41,7 +47,9 @@ runs:
     - name: Setup Gradle
       uses: ./.github/actions/gradle-setup
       with:
-        maven-central-mirror: ${{ inputs.maven-central-mirror }}
+        maven-central-mirror-url: ${{ inputs.maven-central-mirror-url }}
+        maven-central-mirror-username: ${{ inputs.maven-central-mirror-username }}
+        maven-central-mirror-password: ${{ inputs.maven-central-mirror-password }}
 
     - name: Setup gradle properties
       shell: bash
