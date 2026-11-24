@@ -57,8 +57,12 @@ runs:
       with:
         cache-provider: external
 
-    # Routes Maven Central through the internal mirror when the calling workflow provides one (see the script for the
-    # MAVEN_CENTRAL_MIRROR_* variables); a no-op otherwise. After setup-gradle, which also writes to the Gradle user home.
-    - name: Setup Maven mirrors
+    # Routes Maven Central through the internal mirror when the calling workflow provides one (MAVEN_CENTRAL_MIRROR_URL,
+    # _USERNAME and _PASSWORD; see the init script); the script is not installed otherwise (e.g. on forks), as it fails without a URL.
+    - name: Setup Maven Central mirror
+      if: ${{ env.MAVEN_CENTRAL_MIRROR_URL != '' }}
       shell: bash
-      run: .github/scripts/maven-mirror-setup.sh
+      run: |
+        init_dir="${GRADLE_USER_HOME:-$HOME/.gradle}/init.d"
+        mkdir -p "$init_dir"
+        cp .github/gradle/maven-central-mirror.init.gradle.kts "$init_dir/"

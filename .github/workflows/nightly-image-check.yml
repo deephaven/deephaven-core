@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 
-# Maven Central mirror, see .github/scripts/maven-mirror-setup.sh. Unset (e.g. on forks) means no mirror.
+# Maven Central mirror, see .github/scripts/gradle/maven-central-mirror.init.gradle.kts. Unset (e.g. on forks) means no mirror.
 env:
   MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
   MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
