@@ -111,7 +111,7 @@ from_pyarrow = dharrow.to_table(pa_table)
 
 - Exact types listed in `deephaven.arrow.SUPPORTED_ARROW_TYPES`, such as `pa.int64()`, `pa.string()`, and `pa.timestamp("ns")`. [`to_table`](../reference/arrow/to-table.md) maps each of these directly to a Deephaven type.
 - Some parameterized types, which take arguments such as a precision, an element type, or a time zone: 128-bit and 256-bit decimals (`pa.decimal128` and `pa.decimal256`), lists, list views, fixed-size lists, maps, fixed-size binary, unions, and timestamps with a time zone. `SUPPORTED_ARROW_TYPES` doesn't list these types, so [`to_table`](../reference/arrow/to-table.md) leaves their mapping to the Deephaven engine. The element types of a list, map, or union must be supported as well.
-- Dictionary-encoded and run-end-encoded columns whose values have one of the types above. `deephaven.arrow.SUPPORTED_ARROW_ENCODINGS` lists these encodings. The column becomes a plain Deephaven column of its value type.
+- Starting in version 43.0, dictionary-encoded and run-end-encoded columns whose values have one of the types above. `deephaven.arrow.SUPPORTED_ARROW_ENCODINGS` lists these encodings. The column becomes a plain Deephaven column of its value type.
 
 To see the full list of exact types, print `SUPPORTED_ARROW_TYPES`:
 
@@ -119,7 +119,7 @@ To see the full list of exact types, print `SUPPORTED_ARROW_TYPES`:
 print(dharrow.SUPPORTED_ARROW_TYPES)
 ```
 
-[`to_table`](../reference/arrow/to-table.md) raises an error for any other column type, including large strings, large binary, large lists, and structs. To check whether it accepts a type, call `deephaven.arrow.is_deephaven_compatible`, which covers all three groups above.
+[`to_table`](../reference/arrow/to-table.md) raises an error for any other column type, including large strings, large binary, large lists, and structs. Starting in version 43.0, you can check whether it accepts a type with `deephaven.arrow.is_deephaven_compatible`, which covers all three groups above.
 
 ## Write a Feather file
 
@@ -132,7 +132,7 @@ feather.write_feather(pa_iris, "/tmp/iris.feather")
 iris_roundtrip = dharrow.read_feather("/tmp/iris.feather")
 ```
 
-[`read_feather`](../reference/arrow/read-feather.md) reads fewer column types than [`to_table`](../reference/arrow/to-table.md): it can't read list, map, union, duration, or most time-of-day columns. To bring such a file back into Deephaven, read it with PyArrow's [`read_table`](https://arrow.apache.org/docs/python/generated/pyarrow.feather.read_table.html) and convert the result with [`to_table`](../reference/arrow/to-table.md).
+[`read_feather`](../reference/arrow/read-feather.md) reads fewer column types than [`to_table`](../reference/arrow/to-table.md): it can't read many column types, such as list, map, union, duration, and most time-of-day columns, and it can't read encoded columns. See the [`read_feather`](../reference/arrow/read-feather.md#returns) reference for the full list. To bring such a file back into Deephaven, read it with PyArrow's [`read_table`](https://arrow.apache.org/docs/python/generated/pyarrow.feather.read_table.html) and convert the result with [`to_table`](../reference/arrow/to-table.md).
 
 ## Related documentation
 

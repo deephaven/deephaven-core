@@ -2,7 +2,7 @@
 title: write
 ---
 
-The `write` method will write a table to a standard Parquet file.
+The `write` function writes a table to a standard Parquet file.
 
 ## Syntax
 
