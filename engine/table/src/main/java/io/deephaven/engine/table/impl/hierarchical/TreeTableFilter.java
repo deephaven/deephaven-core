@@ -561,9 +561,12 @@ public class TreeTableFilter {
                 final long beginRange = upstreamShifts.getBeginRange(si);
                 final long endRange = upstreamShifts.getEndRange(si);
                 final long shiftDelta = upstreamShifts.getShiftDelta(si);
-                try (final RowSequence.Iterator rowsIter = resultRows.getRowSequenceIterator()) {
-                    rowsIter.advance(beginRange);
-                    final RowSequence affectedRows = rowsIter.getNextRowSequenceThrough(endRange);
+                // only matched and ancestor rows are recorded in parentIdToChildRows; resultRows may still hold rows
+                // that this update removed from both
+                try (final WritableRowSet affectedRows = matchedSourceRows.subSetByKeyRange(beginRange, endRange);
+                        final RowSet affectedAncestorRows =
+                                ancestorSourceRows.subSetByKeyRange(beginRange, endRange)) {
+                    affectedRows.insert(affectedAncestorRows);
                     try (final RowSequence.Iterator affectedRowsIter = affectedRows.getRowSequenceIterator()) {
                         while (affectedRowsIter.hasMore()) {
                             final RowSequence chunkAffectedRows =
