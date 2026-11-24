@@ -577,7 +577,7 @@ def function_generated_table(
 
     def table_generator_function():
         with exec_ctx:
-            result = table_generator(*args, **(kwargs or {}))
+            result = table_generator(*args, **(kwargs if kwargs is not None else {}))
 
         # A None result means "no new table"; the previously produced result is retained for the next cycle.
         if result is None:

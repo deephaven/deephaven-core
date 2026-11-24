@@ -125,6 +125,8 @@ def write(table: Table, path: str, cols: Sequence[str] | None = None) -> None:
         DHError
     """
     try:
-        _JCsvTools.writeCsv(table.j_table, False, path, *(cols or []))
+        _JCsvTools.writeCsv(
+            table.j_table, False, path, *(cols if cols is not None else [])
+        )
     except Exception as e:
         raise DHError(message="write csv failed.") from e

@@ -678,8 +678,8 @@ class CrossJoinOp(TableOp):
         reserve_bits: int = 10,
     ):
         self.table = table
-        self.keys = keys or []
-        self.columns_to_add = columns_to_add or []
+        self.keys = keys if keys is not None else []
+        self.columns_to_add = columns_to_add if columns_to_add is not None else []
         self.reserve_bits = reserve_bits
 
     @classmethod
@@ -720,8 +720,8 @@ class AjOp(TableOp):
         columns_to_add: list[str] | None = None,
     ):
         self.table = table
-        self.keys = keys or []
-        self.columns_to_add = columns_to_add or []
+        self.keys = keys if keys is not None else []
+        self.columns_to_add = columns_to_add if columns_to_add is not None else []
 
     @classmethod
     def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
@@ -761,8 +761,8 @@ class RajOp(TableOp):
         columns_to_add: list[str] | None = None,
     ):
         self.table = table
-        self.keys = keys or []
-        self.columns_to_add = columns_to_add or []
+        self.keys = keys if keys is not None else []
+        self.columns_to_add = columns_to_add if columns_to_add is not None else []
 
     @classmethod
     def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
