@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup;
 import static io.deephaven.engine.table.impl.by.TreeConstants.SOURCE_ROW_LOOKUP_ROW_KEY_COLUMN;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * Lookup from a tree row's identifier column value to its row key in the source table.
@@ -62,7 +63,7 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
         if (idAggregationRow == rowLookup.noEntryValue()) {
             return noEntryValue();
         }
-        return sourceRowKeyColumnSource.getLong(idAggregationRow);
+        return toSourceRowKey(sourceRowKeyColumnSource.getLong(idAggregationRow));
     }
 
     /**
@@ -77,7 +78,15 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
         if (idAggregationRow == rowLookup.noEntryValue()) {
             return noEntryValue();
         }
-        return sourceRowKeyColumnSource.getPrevLong(idAggregationRow);
+        return toSourceRowKey(sourceRowKeyColumnSource.getPrevLong(idAggregationRow));
+    }
+
+    /**
+     * The aggregation keeps the state for an identifier after the last row with that identifier is removed, holding a
+     * null row key; that identifier is not found in the table.
+     */
+    private long toSourceRowKey(final long aggregatedRowKey) {
+        return aggregatedRowKey == NULL_LONG ? noEntryValue() : aggregatedRowKey;
     }
 
     @Override
