@@ -46,8 +46,8 @@ jobs:
 
       - uses: ./.github/actions/gradle-suite
         with:
-          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
           gradle-task: check
+          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
         env:
           MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
           MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
@@ -69,8 +69,8 @@ jobs:
 
       - uses: ./.github/actions/gradle-suite
         with:
-          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
           gradle-task: testSerial
+          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
         env:
           MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
           MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
@@ -88,8 +88,8 @@ jobs:
 
       - uses: ./.github/actions/gradle-suite
         with:
-          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
           gradle-task: testParallel
+          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
         env:
           MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
           MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
@@ -107,8 +107,8 @@ jobs:
 
       - uses: ./.github/actions/gradle-suite
         with:
-          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
           gradle-task: testOutOfBand
+          maven-central-mirror: ${{ vars.MAVEN_CENTRAL_MIRROR_URL != '' }}
         env:
           MAVEN_CENTRAL_MIRROR_URL: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
           MAVEN_CENTRAL_MIRROR_USERNAME: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
