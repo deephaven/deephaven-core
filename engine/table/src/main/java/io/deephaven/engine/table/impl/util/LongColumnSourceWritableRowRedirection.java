@@ -4,12 +4,17 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
@@ -24,6 +29,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public final class LongColumnSourceWritableRowRedirection
         extends LongColumnSourceRowRedirection<WritableColumnSource<Long>>
         implements WritableRowRedirection {
+
+    private static final int SHIFT_CHUNK_SIZE = 4096;
 
     public LongColumnSourceWritableRowRedirection(@NotNull final WritableColumnSource<Long> columnSource) {
         super(columnSource);
@@ -68,6 +75,57 @@ public final class LongColumnSourceWritableRowRedirection
         final int size = outerRowKeys.size();
         for (int ii = 0; ii < size; ++ii) {
             columnSource.setNull(outerRowKeys.get(ii));
+        }
+    }
+
+    /**
+     * Moves the inner row keys of the rows of {@code tableRowSet} that {@code shiftData} moves a chunk of rows at a
+     * time: each chunk is read, cleared and written at its shifted row keys in bulk, so that the column source records
+     * the previous values of a chunk at once rather than row by row.
+     */
+    @Override
+    public void applyShift(@NotNull final RowSet tableRowSet, @NotNull final RowSetShiftData shiftData) {
+        if (shiftData.empty() || tableRowSet.isEmpty()) {
+            return;
+        }
+        final int chunkSize = (int) Math.min(SHIFT_CHUNK_SIZE, tableRowSet.size());
+        try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(chunkSize);
+                final ChunkSink.FillFromContext fillFromContext = columnSource.makeFillFromContext(chunkSize);
+                final WritableLongChunk<Values> innerRowKeys = WritableLongChunk.makeWritableChunk(chunkSize);
+                final WritableLongChunk<OrderedRowKeys> movedRowKeys = WritableLongChunk.makeWritableChunk(chunkSize)) {
+            shiftData.apply((beginRange, endRange, shiftDelta) -> {
+                try (final RowSet toShift = tableRowSet.subSetByKeyRange(beginRange, endRange)) {
+                    final long size = toShift.size();
+                    // like a memmove, rows moving up are moved from the last, and rows moving down from the first, so
+                    // that no chunk overwrites rows not yet moved
+                    for (long done = 0; done < size; done += chunkSize) {
+                        final long length = Math.min(chunkSize, size - done);
+                        final long firstPosition = shiftDelta > 0 ? size - done - length : done;
+                        try (final RowSequence rows = toShift.getRowSequenceByPosition(firstPosition, length)) {
+                            columnSource.fillChunk(fillContext, innerRowKeys, rows);
+                            columnSource.setNull(rows);
+                            // rows without a redirection stay without one
+                            final LongChunk<OrderedRowKeys> outerRowKeys = rows.asRowKeyChunk();
+                            movedRowKeys.setSize(0);
+                            int kept = 0;
+                            for (int ii = 0; ii < outerRowKeys.size(); ++ii) {
+                                final long innerRowKey = innerRowKeys.get(ii);
+                                if (innerRowKey != NULL_LONG) {
+                                    innerRowKeys.set(kept++, innerRowKey);
+                                    movedRowKeys.add(outerRowKeys.get(ii) + shiftDelta);
+                                }
+                            }
+                            innerRowKeys.setSize(kept);
+                            if (kept > 0) {
+                                try (final RowSequence moved =
+                                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(movedRowKeys)) {
+                                    columnSource.fillFromChunk(fillFromContext, innerRowKeys, moved);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
     }
 
