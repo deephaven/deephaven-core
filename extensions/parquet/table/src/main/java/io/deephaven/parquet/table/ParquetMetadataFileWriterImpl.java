@@ -123,23 +123,77 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
             throw new UncheckedDeephavenException("No parquet files to write metadata for");
         }
         mergeMetadata();
-        final ParquetMetadata metadataFooter = new ParquetMetadata(new FileMetaData(mergedSchema,
-                mergedKeyValueMetaData, mergedCreatedByString), mergedBlocks);
-        writeMetadataFile(metadataFooter, metadataOutputStream);
+        writeMetadataAndCommonMetadataFiles(mergedSchema, mergedKeyValueMetaData, mergedCreatedByString, mergedBlocks,
+                partitioningColumnsSchema, metadataOutputStream, commonMetadataOutputStream);
+
+        // Clear the accumulated metadata
+        clear();
+    }
+
+    /**
+     * Write {@value ParquetUtils#METADATA_FILE_NAME} and {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files that
+     * carry a schema and no row groups, for a data set with no parquet files. The files hold what
+     * {@link #writeMetadataFiles} writes for parquet files with the provided footer, without the blocks and the
+     * per-file entries that describe each parquet file. The output streams are marked as
+     * {@link CompletableOutputStream#done()} after writing is finished.
+     *
+     * @param footer The footer of a parquet file with no rows, as written for the data set's leaf schema
+     * @param partitioningColumnsSchema The common schema for partitioning columns to be included in the
+     *        {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file, can be null if there are no partitioning columns.
+     * @param metadataOutputStream The output stream for the {@value ParquetUtils#METADATA_FILE_NAME} file
+     * @param commonMetadataOutputStream The output stream for the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
+     */
+    static void writeSchemaOnlyMetadataFiles(
+            @NotNull final ParquetMetadata footer,
+            @Nullable final MessageType partitioningColumnsSchema,
+            @NotNull final CompletableOutputStream metadataOutputStream,
+            @NotNull final CompletableOutputStream commonMetadataOutputStream) throws IOException {
+        final FileMetaData fileMetaData = footer.getFileMetaData();
+        final Map<String, String> keyValueMetaData = new HashMap<>(fileMetaData.getKeyValueMetaData());
+        final String tableInfoJSON = keyValueMetaData.get(METADATA_KEY);
+        if (tableInfoJSON != null) {
+            final TableInfo tableInfo = TableInfo.deserializeFromJSON(tableInfoJSON);
+            keyValueMetaData.put(METADATA_KEY, mergedTableInfoJSON(tableInfo.columnTypes(), tableInfo.version()));
+        }
+        writeMetadataAndCommonMetadataFiles(fileMetaData.getSchema(), keyValueMetaData, fileMetaData.getCreatedBy(),
+                new ArrayList<>(), partitioningColumnsSchema, metadataOutputStream, commonMetadataOutputStream);
+    }
+
+    /**
+     * Write the {@value ParquetUtils#METADATA_FILE_NAME} file with the provided schema and blocks, and the
+     * {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file with the partitioning columns merged into the provided
+     * schema and no blocks. Both files carry the provided key-value metadata and created-by string. The output streams
+     * are marked as {@link CompletableOutputStream#done()} after writing is finished.
+     *
+     * @param schema The schema of the parquet files, without the partitioning columns
+     * @param keyValueMetaData The key-value metadata for both files
+     * @param createdBy The created-by string for both files
+     * @param blocks The row groups of the parquet files, empty for a data set with no parquet files
+     * @param partitioningColumnsSchema The common schema for partitioning columns to be included in the
+     *        {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file, can be null if there are no partitioning columns.
+     * @param metadataOutputStream The output stream for the {@value ParquetUtils#METADATA_FILE_NAME} file
+     * @param commonMetadataOutputStream The output stream for the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
+     */
+    private static void writeMetadataAndCommonMetadataFiles(
+            @NotNull final MessageType schema,
+            @NotNull final Map<String, String> keyValueMetaData,
+            @NotNull final String createdBy,
+            @NotNull final List<BlockMetaData> blocks,
+            @Nullable final MessageType partitioningColumnsSchema,
+            @NotNull final CompletableOutputStream metadataOutputStream,
+            @NotNull final CompletableOutputStream commonMetadataOutputStream) throws IOException {
+        writeMetadataFile(new ParquetMetadata(new FileMetaData(schema, keyValueMetaData, createdBy), blocks),
+                metadataOutputStream);
         metadataOutputStream.done();
 
         // Skip the blocks data and merge schema with partitioning columns' schema to write the common metadata file.
         // The ordering of arguments in method call is important because we want to keep partitioning columns in the
         // beginning.
-        mergedSchema = mergeSchemaInto(mergedSchema, partitioningColumnsSchema);
-        final ParquetMetadata commonMetadataFooter =
-                new ParquetMetadata(new FileMetaData(mergedSchema, mergedKeyValueMetaData, mergedCreatedByString),
-                        new ArrayList<>());
-        writeMetadataFile(commonMetadataFooter, commonMetadataOutputStream);
+        final MessageType commonSchema = mergeSchemaInto(schema, partitioningColumnsSchema);
+        writeMetadataFile(
+                new ParquetMetadata(new FileMetaData(commonSchema, keyValueMetaData, createdBy), new ArrayList<>()),
+                commonMetadataOutputStream);
         commonMetadataOutputStream.done();
-
-        // Clear the accumulated metadata
-        clear();
     }
 
     /**
@@ -161,13 +215,26 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
                     + " files.");
         }
         // Add table info to the merged key-value metadata
-        final TableInfo.Builder tableInfoBuilder = TableInfo.builder().addAllColumnTypes(mergedColumnTypes);
-        if (mergedVersion != null) {
-            tableInfoBuilder.version(mergedVersion);
-        }
-        mergedKeyValueMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
+        mergedKeyValueMetaData.put(METADATA_KEY, mergedTableInfoJSON(mergedColumnTypes, mergedVersion));
         mergedCreatedByString =
                 mergedCreatedBy.size() == 1 ? mergedCreatedBy.iterator().next() : mergedCreatedBy.toString();
+    }
+
+    /**
+     * Build the table info stored under {@value ParquetUtils#METADATA_KEY} in the metadata files, from the fields that
+     * apply to all the parquet files.
+     *
+     * @param columnTypes The per-column type information, the same for all the parquet files
+     * @param version The version that wrote all the parquet files, or null if the files disagree
+     */
+    private static String mergedTableInfoJSON(
+            @NotNull final List<ColumnTypeInfo> columnTypes,
+            @Nullable final String version) throws IOException {
+        final TableInfo.Builder tableInfoBuilder = TableInfo.builder().addAllColumnTypes(columnTypes);
+        if (version != null) {
+            tableInfoBuilder.version(version);
+        }
+        return tableInfoBuilder.build().serializeToJSON();
     }
 
     /**
