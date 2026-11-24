@@ -82,7 +82,15 @@ runs:
         MIRROR_URL: ${{ inputs.maven-central-mirror-url }}
         MIRROR_USERNAME: ${{ inputs.maven-central-mirror-username }}
         MIRROR_PASSWORD: ${{ inputs.maven-central-mirror-password }}
+        PR_AUTHOR: ${{ github.event.pull_request.user.login }}
       run: |
+        # Dependabot-triggered runs get variables but not the repository secrets (only Dependabot secrets), so the
+        # username can be set while the password is empty. Build without the mirror there. Anywhere else, a missing
+        # password is a misconfiguration, and the init script fails the build.
+        if [[ -n "$MIRROR_USERNAME" && -z "$MIRROR_PASSWORD" && "$PR_AUTHOR" == "dependabot[bot]" ]]; then
+          echo "::notice::Maven Central mirror password is unavailable to Dependabot; resolving from Maven Central directly."
+          exit 0
+        fi
         if [[ -n "$MIRROR_PASSWORD" ]]; then
           echo "::add-mask::$MIRROR_PASSWORD"
         fi
