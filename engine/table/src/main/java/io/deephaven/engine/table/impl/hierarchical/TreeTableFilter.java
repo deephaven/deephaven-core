@@ -409,14 +409,19 @@ public class TreeTableFilter {
         try {
             while (!bucketed.isEmpty()) {
                 final RowSetBuilderRandom levelParentRowsBuilder = RowSetFactory.builderRandom();
-                final RowSetBuilderRandom levelRowsWithParentBuilder = RowSetFactory.builderRandom();
+                // only ancestor levels are split into top rows; a builder that is never built would keep the child row
+                // sets' storage marked as shared
+                final RowSetBuilderRandom levelRowsWithParentBuilder =
+                        levelRows == null ? null : RowSetFactory.builderRandom();
                 bucketed.forEach((final Object parentId, final RowSetBuilderSequential childRowsBuilder) -> {
                     final WritableRowSet childRows = childRowsBuilder.build();
                     final long parentRow =
                             usePrev ? sourceRowLookup.getPrev(parentId) : sourceRowLookup.get(parentId);
                     if (parentRow != sourceRowLookup.noEntryValue()) {
                         levelParentRowsBuilder.addKey(parentRow);
-                        levelRowsWithParentBuilder.addRowSet(childRows);
+                        if (levelRowsWithParentBuilder != null) {
+                            levelRowsWithParentBuilder.addRowSet(childRows);
+                        }
                     }
                     // accumulateChildRows closes childRows when parentId already has child rows
                     parentIdToChildRows.merge(parentId, childRows, TreeTableFilter::accumulateChildRows);
@@ -446,14 +451,16 @@ public class TreeTableFilter {
             }
         }
 
-        // a cycle that the walk reaches always leads back to a row that was already expanded
-        if (revisited) {
-            try (final RowSet topRows = topRowsBuilder.build()) {
+        // the top rows are built and closed even when unused, which releases the builder's shared references to the
+        // storage of the row sets it was given
+        try (final RowSet topRows = topRowsBuilder.build()) {
+            // a cycle that the walk reaches always leads back to a row that was already expanded
+            if (revisited) {
                 checkForCycles(usePrev, includedParentRows, topRows);
-            } catch (final RuntimeException e) {
-                includedParentRows.close();
-                throw e;
             }
+        } catch (final RuntimeException e) {
+            includedParentRows.close();
+            throw e;
         }
         return includedParentRows;
     }
