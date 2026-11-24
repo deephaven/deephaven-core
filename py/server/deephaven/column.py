@@ -336,8 +336,9 @@ def jobj_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Sequence): a sequence of Java objects, or of Python str, int, float, bool, or None values, which are
-            converted to Java objects. Other Python values raise an error; use pyobj_col for them.
+        data (Sequence): a sequence of Java objects, or of Python str, int (within the 64-bit range), float, bool, or
+            None values, which are converted to Java objects. Other values, such as dicts, lists, tuples,
+            datetime.datetime values, and NumPy integer and boolean scalars, raise an error; use pyobj_col for them.
 
     Returns:
         a new input column
