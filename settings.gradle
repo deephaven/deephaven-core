@@ -29,7 +29,8 @@ dependencyResolutionManagement {
             }
         }
         exclusiveContent {
-            // Confluent's own artifacts, and its "-ccs" flavor of kafka-clients. Not all of io.confluent is hosted here;
+            // Confluent's own artifacts (including the parent POMs and BOMs of the serializers, which Gradle looks up as modules),
+            // and its "-ccs" flavor of kafka-clients. Not all of io.confluent is hosted here;
             // e.g. logredactor is only on Maven Central, so the group can't be claimed wholesale.
             forRepository {
                 maven {
@@ -38,7 +39,7 @@ dependencyResolutionManagement {
                 }
             }
             filter {
-                includeModuleByRegex 'io\\.confluent', '(common-|kafka-).*'
+                includeModuleByRegex 'io\\.confluent', '(?!logredactor).*'
                 includeVersionByRegex 'org\\.apache\\.kafka', 'kafka-clients', '.*-ccs'
             }
         }
