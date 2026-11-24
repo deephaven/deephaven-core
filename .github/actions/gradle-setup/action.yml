@@ -56,3 +56,9 @@ runs:
       uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
       with:
         cache-provider: external
+
+    # Routes Maven Central through the internal mirror when the calling workflow provides one (see the script for the
+    # MAVEN_CENTRAL_MIRROR_* variables); a no-op otherwise. After setup-gradle, which also writes to the Gradle user home.
+    - name: Setup Maven mirrors
+      shell: bash
+      run: .github/scripts/maven-mirror-setup.sh
