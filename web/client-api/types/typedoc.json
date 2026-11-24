@@ -14,7 +14,7 @@
     "guides/filters.md",
     // "guides/errors.md",
     // "guides/typescript.md",
-    // "guides/mutable-table.md",
+    "guides/mutable-table.md",
     "guides/table-operations.md"
     // "guides/pending-tables.md",
     // "guides/ownership.md"

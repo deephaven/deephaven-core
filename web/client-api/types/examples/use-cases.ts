@@ -525,3 +525,43 @@ async function filterMutableTable() {
     table.close();
 }
 // #endregion filterMutableTable
+
+// #region changeMutableTable
+async function changeMutableTable() {
+    const table = (await session.getObject({ type: "Table", name: "source" })) as dh.Table;
+    const x = table.findColumn("X");
+    // No need to wait between changes: make them all, then wait for the one that matters
+    const columnsChanged = table.nextEvent(dh.Table.EVENT_CUSTOMCOLUMNSCHANGED, 5000);
+    table.applySort([x.sort().desc()]);
+    table.applyFilter([x.filter().lessThan(dh.FilterValue.ofNumber(8))]);
+    table.applyCustomColumns(["Doubled = X * 2"]);
+    await columnsChanged;
+
+    // The data reflects all three changes; prints [ 14, 12, 10, 8, 6, 4, 2, 0 ]
+    const data = await table.createSnapshot({ rows: { first: 0, last: table.size - 1 }, columns: table.columns });
+    const doubled = table.findColumn("Doubled");
+    console.log(data.rows.map(row => row.get(doubled)));
+    table.close();
+}
+// #endregion changeMutableTable
+
+// #region listenToMutableTable
+async function listenToMutableTable() {
+    const table = (await session.getObject({ type: "Table", name: "source" })) as dh.Table;
+    // addEventListener returns a function that removes the listener
+    const removeListeners = [
+        table.addEventListener(dh.Table.EVENT_SIZECHANGED, () => console.log("size", table.size)),
+        table.addEventListener(dh.Table.EVENT_DISCONNECT, () => console.log("disconnected")),
+        table.addEventListener(dh.Table.EVENT_RECONNECT, () => console.log("reconnected")),
+        table.addEventListener(dh.Table.EVENT_RECONNECTFAILED, e => console.log("cannot reconnect", e.detail)),
+    ];
+    // A change the server rejects fires EVENT_REQUEST_FAILED, and the table returns to its last working state
+    const failed = table.nextEvent(dh.Table.EVENT_REQUEST_FAILED, 5000);
+    table.applyCustomColumns(["Bad = NoSuchColumn"]);
+    console.warn("request failed", (await failed).detail);
+    // Prints 0: the rejected column is gone again
+    console.log(table.customColumns.length);
+    removeListeners.forEach(remove => remove());
+    table.close();
+}
+// #endregion listenToMutableTable
