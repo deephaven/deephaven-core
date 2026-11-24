@@ -673,13 +673,13 @@ class CrossJoinOp(TableOp):
     def __init__(
         self,
         table: Table,
-        keys: list[str] = [],
-        columns_to_add: list[str] = [],
+        keys: list[str] | None = None,
+        columns_to_add: list[str] | None = None,
         reserve_bits: int = 10,
     ):
         self.table = table
-        self.keys = keys
-        self.columns_to_add = columns_to_add
+        self.keys = keys or []
+        self.columns_to_add = columns_to_add or []
         self.reserve_bits = reserve_bits
 
     @classmethod
@@ -714,11 +714,14 @@ class CrossJoinOp(TableOp):
 
 class AjOp(TableOp):
     def __init__(
-        self, table: Table, keys: list[str] = [], columns_to_add: list[str] = []
+        self,
+        table: Table,
+        keys: list[str] | None = None,
+        columns_to_add: list[str] | None = None,
     ):
         self.table = table
-        self.keys = keys
-        self.columns_to_add = columns_to_add
+        self.keys = keys or []
+        self.columns_to_add = columns_to_add or []
 
     @classmethod
     def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
@@ -752,11 +755,14 @@ class AjOp(TableOp):
 
 class RajOp(TableOp):
     def __init__(
-        self, table: Table, keys: list[str] = [], columns_to_add: list[str] = []
+        self,
+        table: Table,
+        keys: list[str] | None = None,
+        columns_to_add: list[str] | None = None,
     ):
         self.table = table
-        self.keys = keys
-        self.columns_to_add = columns_to_add
+        self.keys = keys or []
+        self.columns_to_add = columns_to_add or []
 
     @classmethod
     def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:

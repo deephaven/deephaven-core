@@ -497,7 +497,7 @@ def function_generated_table(
     refresh_interval_ms: int | None = None,
     exec_ctx: ExecutionContext | None = None,
     args: tuple = (),
-    kwargs: dict = {},
+    kwargs: dict | None = None,
     copy_data: bool = True,
     blink_table: bool = False,
     table_definition: TableDefinitionLike | None = None,
@@ -542,7 +542,8 @@ def function_generated_table(
         exec_ctx (ExecutionContext | None): A custom execution context. If 'None', the current
             execution context is used.
         args (tuple): Optional tuple of positional arguments to pass to table_generator. Defaults to ()
-        kwargs (dict): Optional dictionary of keyword arguments to pass to table_generator. Defaults to {}
+        kwargs (dict | None): Optional dictionary of keyword arguments to pass to table_generator. Defaults to None,
+            meaning no keyword arguments are passed
         copy_data (bool): When True (the default), the generated data is copied into the result's own column sources
             and the result uses a flat, contiguous row set. When False, the result delegates directly to the generated
             table's column sources, avoiding the copy and adopting the generated table's row set as-is: the added rows
@@ -576,7 +577,7 @@ def function_generated_table(
 
     def table_generator_function():
         with exec_ctx:
-            result = table_generator(*args, **kwargs)
+            result = table_generator(*args, **(kwargs or {}))
 
         # A None result means "no new table"; the previously produced result is retained for the next cycle.
         if result is None:

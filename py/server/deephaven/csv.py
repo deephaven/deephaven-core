@@ -112,18 +112,19 @@ def read(
         raise DHError(e, "read csv failed") from e
 
 
-def write(table: Table, path: str, cols: Sequence[str] = []) -> None:
+def write(table: Table, path: str, cols: Sequence[str] | None = None) -> None:
     """Write a table to a standard CSV file.
 
     Args:
         table (Table): the source table
         path (str): the path of the CSV file
-        cols (Sequence[str]): the names of the columns to be written out
+        cols (Sequence[str] | None): the names of the columns to be written out, defaults to None, meaning every
+            column is written
 
     Raises:
         DHError
     """
     try:
-        _JCsvTools.writeCsv(table.j_table, False, path, *cols)
+        _JCsvTools.writeCsv(table.j_table, False, path, *(cols or []))
     except Exception as e:
         raise DHError(message="write csv failed.") from e
