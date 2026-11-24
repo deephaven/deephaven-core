@@ -65,4 +65,4 @@ runs:
       run: |
         init_dir="${GRADLE_USER_HOME:-$HOME/.gradle}/init.d"
         mkdir -p "$init_dir"
-        cp .github/gradle/maven-central-mirror.init.gradle.kts "$init_dir/"
+        cp .github/gradle/maven-central-mirror.init.gradle "$init_dir/"
