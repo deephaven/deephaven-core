@@ -66,7 +66,7 @@ Start from `CsvTools.builder` rather than `CsvSpecs.builder`. `CsvTools.builder`
 - `headerLegalizer(Function<String[],String[]>)`: The function that rewrites column headers into legal names. `CsvTools.builder` sets Deephaven's column-name legalizer, and setting this option replaces it.
 - `headers(Iterable<String>)`: Column headers you supply. If `hasHeaderRow` is `true`, these headers replace the headers in the input. If `hasHeaderRow` is `false`, they supply the missing headers.
 - `headerValidator(Predicate<String>)`: The check that a column header is legal. `CsvTools.builder` sets Deephaven's column-name validator.
-- `ignoreEmptyLines(boolean)`: Whether to skip empty lines in the input. If `false`, `readCsv` reads an empty line as a row whose first value is null and whose other columns are missing, which raises an error unless `allowMissingColumns` is `true`. The default is `false`.
+- `ignoreEmptyLines(boolean)`: Whether to skip empty lines in the input. If `false`, `readCsv` reads an empty line as a row whose first value is null and whose other columns are missing. If the file has more than one column, `readCsv` raises an error unless `allowMissingColumns` is `true`, in which case it fills the missing columns with null values. The default is `false`.
 - `ignoreExcessColumns(boolean)`: Whether to allow excess columns in the input. The default is `false`.
 - `ignoreSurroundingSpaces(boolean)`: Whether to trim leading and trailing spaces and tabs from non-quoted values. The default is `true`.
 - `nullParser(Parser<?>)`: The parser to use when all values in the column are null. The default is `Parsers.STRING`.
