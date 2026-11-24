@@ -23,14 +23,20 @@ import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -260,6 +266,75 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
                 "MyNamespace.TestTableWithNettyClientManagedByIceberg");
     }
 
+
+    /**
+     * Each catalog has its own FileIO, as each REST-catalog table does when its load response carries config or
+     * credentials. Reading through more FileIOs must not add AWS SDK thread pools.
+     */
+    @Test
+    void testFileIOsShareSdkThreadPools(TestInfo testInfo, @TempDir Path rootDir)
+            throws ExecutionException, InterruptedException, TimeoutException, IOException {
+        final int numReaders = 3;
+        final Map<String, String> properties = new HashMap<>();
+        SqliteHelper.setJdbcCatalogProperties(properties, rootDir);
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table data = TableTools.newTable(
+                intCol("intCol", 2, 4, 6, 8, 10),
+                doubleCol("doubleCol", 2.5, 5.0, 7.5, 10.0, 12.5));
+        final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
+                .dataInstructions(s3Instructions())
+                .build();
+
+        final List<IcebergCatalogAdapter> adapters = new ArrayList<>();
+        try {
+            final IcebergCatalogAdapter writer = catalogAdapterForScheme(testInfo, properties, "s3", false);
+            adapters.add(writer);
+            writer.createTable(tableIdentifier, data.getDefinition())
+                    .tableWriter(writerOptionsBuilder().tableDefinition(data.getDefinition()).build())
+                    .append(IcebergWriteInstructions.builder().addTables(data).build());
+            // Read once first, so that any pools shared by design already exist.
+            assertTableEquals(data, writer.loadTable(tableIdentifier).table(readInstructions));
+
+            final Set<String> before = sdkThreadPools();
+            final Set<String> added = new TreeSet<>();
+            for (int ii = 0; ii < numReaders; ++ii) {
+                final IcebergCatalogAdapter reader = catalogAdapterForScheme(testInfo, properties, "s3", false);
+                adapters.add(reader);
+                assertTableEquals(data, reader.loadTable(tableIdentifier).table(readInstructions));
+                // Sample after every read; idle SDK threads can time out before the loop ends.
+                added.addAll(sdkThreadPools());
+            }
+            added.removeAll(before);
+            assertThat(added).as("AWS SDK thread pools added by %d more FileIOs", numReaders).isEmpty();
+
+            // Closing one FileIO's clients must leave the shared executors usable by the others.
+            adapters.remove(1).close();
+            assertTableEquals(data,
+                    adapters.get(adapters.size() - 1).loadTable(tableIdentifier).table(readInstructions));
+        } finally {
+            for (final IcebergCatalogAdapter adapter : adapters) {
+                adapter.close();
+            }
+        }
+    }
+
+    /**
+     * The per-client AWS SDK thread pools that are alive, as {@code <prefix>-<pool number>}.
+     */
+    private static Set<String> sdkThreadPools() {
+        final Set<String> pools = new TreeSet<>();
+        for (final Thread thread : Thread.getAllStackTraces().keySet()) {
+            final Matcher matcher = SDK_THREAD_NAME.matcher(thread.getName());
+            if (matcher.matches()) {
+                pools.add(matcher.group(1));
+            }
+        }
+        return pools;
+    }
+
+    // The SDK's ThreadFactoryBuilder names threads <prefix>-<pool number>-<thread number>.
+    private static final Pattern SDK_THREAD_NAME = Pattern.compile(
+            "((?:sdk-ScheduledExecutor|sdk-async-response|aws-java-sdk-NettyEventLoop)-\\d+)-\\d+");
 
     private void testReadWriteImpl(final IcebergCatalogAdapter catalogAdapter, final String tableIdentifierStr) {
         final TableIdentifier tableIdentifier = TableIdentifier.parse(tableIdentifierStr);

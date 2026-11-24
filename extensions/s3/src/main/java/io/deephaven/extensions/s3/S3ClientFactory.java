@@ -112,6 +112,19 @@ final class S3ClientFactory {
                 .applyMutation(b -> applyCrossRegionAccess(b, instructions));
     }
 
+    /**
+     * Applies this factory's shared executors to a builder configured elsewhere, keeping its other overrides.
+     */
+    static void applySharedAsyncExecutors(@NotNull final S3AsyncClientBuilder builder) {
+        builder.overrideConfiguration(builder.overrideConfiguration().toBuilder()
+                .scheduledExecutorService(ensureScheduledExecutor())
+                .build());
+        builder.asyncConfiguration(ClientAsyncConfiguration.builder()
+                .advancedOption(SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR,
+                        ensureAsyncFutureCompletionExecutor())
+                .build());
+    }
+
     private static <Builder extends AwsClientBuilder<Builder, Client>, Client> void applyAllSharedCommon(
             @NotNull final Builder builder,
             @NotNull final S3Instructions instructions) {
