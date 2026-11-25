@@ -398,15 +398,15 @@ public class TreeTableFilter {
      * @return the ancestor rows, which may overlap {@code rowsToParent}
      */
     private WritableRowSet computeParents(final boolean usePrev, @NotNull final RowSet rowsToParent) {
-        final WritableRowSet includedParentRows = RowSetFactory.empty();
         // ancestor rows whose parent identifier is null or does not name a row in the source
         final RowSetBuilderRandom topRowsBuilder = RowSetFactory.builderRandom();
         boolean revisited = false;
 
+        final WritableRowSet ancestorRows;
         // null for the first level, whose rows are rowsToParent rather than ancestors
         WritableRowSet levelRows = null;
         Map<Object, RowSetBuilderSequential> bucketed = bucketChildRowsByParentId(usePrev, rowsToParent);
-        try {
+        try (final RowSetAccumulator includedParentRows = new RowSetAccumulator()) {
             while (!bucketed.isEmpty()) {
                 final RowSetBuilderRandom levelParentRowsBuilder = RowSetFactory.builderRandom();
                 // only ancestor levels are split into top rows; a builder that is never built would keep the child row
@@ -436,7 +436,7 @@ public class TreeTableFilter {
                 }
                 levelRows = levelParentRowsBuilder.build();
                 final long levelParentRowsSize = levelRows.size();
-                levelRows.remove(includedParentRows);
+                includedParentRows.removeFrom(levelRows);
                 revisited |= levelRows.size() != levelParentRowsSize;
                 includedParentRows.insert(levelRows);
                 bucketed = bucketChildRowsByParentId(usePrev, levelRows);
@@ -445,6 +445,7 @@ public class TreeTableFilter {
                 // the parent identifiers of the last level are all null
                 topRowsBuilder.addRowSet(levelRows);
             }
+            ancestorRows = includedParentRows.build();
         } finally {
             if (levelRows != null) {
                 levelRows.close();
@@ -456,13 +457,13 @@ public class TreeTableFilter {
         try (final RowSet topRows = topRowsBuilder.build()) {
             // a cycle that the walk reaches always leads back to a row that was already expanded
             if (revisited) {
-                checkForCycles(usePrev, includedParentRows, topRows);
+                checkForCycles(usePrev, ancestorRows, topRows);
             }
         } catch (final RuntimeException e) {
-            includedParentRows.close();
+            ancestorRows.close();
             throw e;
         }
-        return includedParentRows;
+        return ancestorRows;
     }
 
     /**
@@ -481,9 +482,10 @@ public class TreeTableFilter {
             final boolean usePrev,
             @NotNull final RowSet ancestorRows,
             @NotNull final RowSet topRows) {
-        try (final WritableRowSet reachedRows = topRows.copy();
+        try (final RowSetAccumulator reachedRows = new RowSetAccumulator();
                 final ChunkSource.GetContext idGetContext = idSource.makeGetContext(CHUNK_SIZE);
                 final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(idSource.getChunkType(), CHUNK_SIZE)) {
+            reachedRows.insert(topRows);
             WritableRowSet frontier = topRows.copy();
             while (frontier.isNonempty()) {
                 final RowSetBuilderRandom childRowsBuilder = RowSetFactory.builderRandom();
@@ -503,19 +505,95 @@ public class TreeTableFilter {
                 }
                 frontier = childRowsBuilder.build();
                 frontier.retain(ancestorRows);
-                frontier.remove(reachedRows);
+                reachedRows.removeFrom(frontier);
                 reachedRows.insert(frontier);
             }
             frontier.close();
 
             if (reachedRows.size() != ancestorRows.size()) {
-                try (final RowSet unreachedRows = ancestorRows.minus(reachedRows)) {
+                try (final RowSet allReachedRows = reachedRows.build();
+                        final RowSet unreachedRows = ancestorRows.minus(allReachedRows)) {
                     final long unreachedRow = unreachedRows.firstRowKey();
                     final Object unreachedId = usePrev ? idSource.getPrev(unreachedRow) : idSource.get(unreachedRow);
                     throw new IllegalStateException("Tree table parent identifiers contain a cycle: the ancestors of "
                             + idColumnName.name() + "=" + unreachedId + " never reach a root");
                 }
             }
+        }
+    }
+
+    /**
+     * A set of row keys that grows by inserting disjoint row sets in any key order.
+     * <p>
+     * Inserting keys before the end of a sparse row set copies its storage, so inserting the rows of a deep tree one
+     * level at a time into a single row set takes quadratic time. The keys are instead held in disjoint row sets, each
+     * more than twice the size of the next. An insertion merges the smallest row sets as a binary counter carries, so
+     * each key is copied a logarithmic number of times.
+     */
+    private static final class RowSetAccumulator implements SafeCloseable {
+        /** Disjoint row sets, each more than twice the size of the one after it. */
+        private final List<WritableRowSet> rowSets = new ArrayList<>();
+        private long size;
+
+        private long size() {
+            return size;
+        }
+
+        /**
+         * Remove the row keys of this accumulator from {@code rows}.
+         */
+        private void removeFrom(@NotNull final WritableRowSet rows) {
+            for (int ii = rowSets.size() - 1; ii >= 0 && rows.isNonempty(); --ii) {
+                rows.remove(rowSets.get(ii));
+            }
+        }
+
+        /**
+         * Add {@code rows}, which must not contain any row key of this accumulator.
+         */
+        private void insert(@NotNull final RowSet rows) {
+            if (rows.isEmpty()) {
+                return;
+            }
+            size += rows.size();
+            WritableRowSet merged = rows.copy();
+            while (!rowSets.isEmpty()) {
+                final int lastIndex = rowSets.size() - 1;
+                final WritableRowSet last = rowSets.get(lastIndex);
+                if (last.size() > 2 * merged.size()) {
+                    break;
+                }
+                rowSets.remove(lastIndex);
+                last.insert(merged);
+                merged.close();
+                merged = last;
+            }
+            rowSets.add(merged);
+        }
+
+        /**
+         * Remove and return the union of the row sets inserted, leaving this accumulator empty.
+         */
+        private WritableRowSet build() {
+            if (rowSets.isEmpty()) {
+                return RowSetFactory.empty();
+            }
+            final WritableRowSet result = rowSets.get(0);
+            for (int ii = 1; ii < rowSets.size(); ++ii) {
+                try (final RowSet rowSet = rowSets.get(ii)) {
+                    result.insert(rowSet);
+                }
+            }
+            rowSets.clear();
+            size = 0;
+            return result;
+        }
+
+        @Override
+        public void close() {
+            rowSets.forEach(RowSet::close);
+            rowSets.clear();
+            size = 0;
         }
     }
 
