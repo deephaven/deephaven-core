@@ -165,6 +165,44 @@ public class RowSetAccumulatorTest {
     }
 
     @Test
+    public void testRemoveFromOneOrSeveralHeldRowSets() {
+        try (final RowSetAccumulator accumulator = new RowSetAccumulator();
+                final RowSet large = RowSetFactory.fromRange(100, 199);
+                final RowSet small = RowSetFactory.fromRange(0, 9)) {
+            accumulator.insert(large);
+            accumulator.insert(small);
+            assertThat(accumulator.rowSetSizes()).containsExactly(100, 10);
+
+            // overlaps only the large row set
+            try (final WritableRowSet rows = RowSetFactory.fromRange(150, 249);
+                    final RowSet expected = RowSetFactory.fromRange(200, 249)) {
+                accumulator.removeFrom(rows);
+                assertThat(rows).isEqualTo(expected);
+            }
+            // overlaps only the small row set
+            try (final WritableRowSet rows = RowSetFactory.fromRange(5, 14);
+                    final RowSet expected = RowSetFactory.fromRange(10, 14)) {
+                accumulator.removeFrom(rows);
+                assertThat(rows).isEqualTo(expected);
+            }
+            // overlaps both
+            try (final WritableRowSet rows = RowSetFactory.fromRange(5, 104);
+                    final RowSet expected = RowSetFactory.fromRange(10, 99)) {
+                accumulator.removeFrom(rows);
+                assertThat(rows).isEqualTo(expected);
+            }
+            // overlaps neither
+            try (final WritableRowSet rows = RowSetFactory.fromRange(20, 29);
+                    final RowSet expected = RowSetFactory.fromRange(20, 29)) {
+                accumulator.removeFrom(rows);
+                assertThat(rows).isEqualTo(expected);
+            }
+            // the held row sets are unchanged
+            assertThat(accumulator.rowSetSizes()).containsExactly(100, 10);
+        }
+    }
+
+    @Test
     public void testRemoveFrom() {
         final Random random = new Random(0);
         final List<Integer> positions = positions(2000);

@@ -52,21 +52,38 @@ public final class RowSetAccumulator implements SafeCloseable {
      * @param rows The row set to remove this accumulator's row keys from
      */
     public void removeFrom(@NotNull final WritableRowSet rows) {
+        RowSet firstOverlapping = null;
+        // only used when more than one held row set overlaps rows
         RowSetBuilderRandom heldRowsBuilder = null;
         for (final RowSet rowSet : rowSets) {
-            if (rows.overlaps(rowSet)) {
-                if (heldRowsBuilder == null) {
-                    heldRowsBuilder = RowSetFactory.builderRandom();
-                }
-                try (final RowSet heldRows = rows.intersect(rowSet)) {
-                    heldRowsBuilder.addRowSet(heldRows);
-                }
+            if (!rows.overlaps(rowSet)) {
+                continue;
             }
+            if (firstOverlapping == null) {
+                firstOverlapping = rowSet;
+                continue;
+            }
+            if (heldRowsBuilder == null) {
+                heldRowsBuilder = RowSetFactory.builderRandom();
+                addIntersection(heldRowsBuilder, rows, firstOverlapping);
+            }
+            addIntersection(heldRowsBuilder, rows, rowSet);
         }
         if (heldRowsBuilder != null) {
             try (final RowSet heldRows = heldRowsBuilder.build()) {
                 rows.remove(heldRows);
             }
+        } else if (firstOverlapping != null) {
+            rows.remove(firstOverlapping);
+        }
+    }
+
+    private static void addIntersection(
+            @NotNull final RowSetBuilderRandom builder,
+            @NotNull final RowSet rows,
+            @NotNull final RowSet rowSet) {
+        try (final RowSet intersection = rows.intersect(rowSet)) {
+            builder.addRowSet(intersection);
         }
     }
 
