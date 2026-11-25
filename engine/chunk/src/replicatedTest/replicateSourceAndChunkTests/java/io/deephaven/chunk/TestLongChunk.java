@@ -492,6 +492,27 @@ public class TestLongChunk {
     }
 
     @Test
+    public void copyFromSameChunkOverlapping() {
+        // A chunk at offset 20 of its array copies its elements [0, 10) to [5, 15), which overlap. The copy is shorter
+        // than SYSTEM_ARRAYCOPY_THRESHOLD, so the chunk copies element by element and must copy backward.
+        final Random rng = new Random(651830331);
+        final long[] data = ReplicatorHelpers.randomLongs(rng, 64);
+        final long[] manualData = data.clone();
+
+        final int chunkOffset = 20;
+        final int chunkCapacity = 30;
+        final int srcCopyOffset = 0;
+        final int destCopyOffset = 5;
+        final int copyLength = 10;
+
+        final WritableLongChunk<Values> chunk = WritableLongChunk.writableChunkWrap(data, chunkOffset, chunkCapacity);
+        chunk.copyFromChunk(chunk, srcCopyOffset, destCopyOffset, copyLength);
+        System.arraycopy(manualData, chunkOffset + srcCopyOffset, manualData, chunkOffset + destCopyOffset,
+                copyLength);
+        assertTrue("Arrays are not the same", Arrays.equals(data, manualData));
+    }
+
+    @Test
     public void testChunkChunk() {
         final Random rng = new Random(49042646);
         final long[] valueData = ReplicatorHelpers.randomLongs(rng, 2);
