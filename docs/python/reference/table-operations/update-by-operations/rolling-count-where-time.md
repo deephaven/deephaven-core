@@ -11,9 +11,9 @@ time intervals relative to the current row.
 def rolling_count_where_time(
     ts_col: str,
     col: str,
-    filters: Union[str, Filter, List[str], List[Filter]],
-    rev_time: Union[int, str] = 0,
-    fwd_time: Union[int, str] = 0) -> UpdateByOperation:
+    filters: str | Filter | list[str] | list[Filter],
+    rev_time: int | str,
+    fwd_time: int | str = 0) -> UpdateByOperation:
 ```
 
 ## Parameters
@@ -30,19 +30,19 @@ The name of the column containing timestamps.
 The name of the column that will contain the count of values that pass the filters.
 
 </Param>
-<Param name="filters" type="Union[str, Filter, Sequence[str], Sequence[Filter]]">
+<Param name="filters" type="str | Filter | Sequence[str] | Sequence[Filter]">
 
 Formulas for filtering as a list of [Strings](../../query-language/types/strings.md).
 
 Any filter is permitted, as long as it is not refreshing and does not use row position/key variables or arrays.
 
 </Param>
-<Param name="rev_time" type="Union[int,str]">
+<Param name="rev_time" type="int | str">
 
 The look-behind window size. This can be expressed as an integer in nanoseconds or a string [duration](../../query-language/types/durations.md); e.g., `"PT00:00:00.001"` or `"PTnHnMnS"`, where `H` is hour, `M` is minute, and `S` is second.
 
 </Param>
-<Param name="fwd_time" type="Union[int,str]">
+<Param name="fwd_time" type="int | str" optional>
 
 The look-forward window size. This can be expressed as an integer in nanoseconds or a string [duration](../../query-language/types/durations.md); e.g., `"PT00:00:00.001"` or `"PTnHnMnS"`, where `H` is hour, `M` is minute, and `S` is second.
 

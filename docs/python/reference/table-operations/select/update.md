@@ -19,13 +19,13 @@ When using `update`, the new columns are evaluated and stored in memory. Existin
 ## Syntax
 
 ```
-update(formulas: Union[str, Sequence[str]]) -> Table
+update(formulas: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="formulas" type="Union[str, Sequence[str]]">
+<Param name="formulas" type="str | Sequence[str]">
 
 Formulas to compute columns in the new table; e.g., `"X = A * sqrt(B)"`.
 

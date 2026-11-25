@@ -199,7 +199,7 @@ my_project/
 [project]
 name = "my-deephaven-project"
 version = "0.1.0"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "deephaven-server>=42.7",
 ]

@@ -7,15 +7,15 @@ title: group
 ## Syntax
 
 ```
-group(cols: Union[str, list[str]]) -> Aggregation
+group(cols: str | list[str] | None = None) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str] | None" optional>
 
-The source column(s) for the calculations.
+The source column(s) for the calculations. Leave it out only when you pass this aggregation to [`agg_all_by`](./AggAllBy.md), which applies it to every non-key column.
 
 - `["X"]` will output an array of all values in the `X` column for each group.
 - `["Y = X"]` will output an [array](../../query-language/types/arrays.md) of all values in the `X` column for each group and rename it to `Y`.

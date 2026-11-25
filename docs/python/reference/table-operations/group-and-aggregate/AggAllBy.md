@@ -10,7 +10,7 @@ title: agg_all_by
 ## Syntax
 
 ```python syntax
-agg_all_by(agg: Aggregation, by: Sequence[str] = None) -> Table
+agg_all_by(agg: Aggregation, by: Sequence[str] | None = None) -> Table
 ```
 
 ## Parameters
@@ -21,7 +21,7 @@ agg_all_by(agg: Aggregation, by: Sequence[str] = None) -> Table
 The aggregation to apply to all columns of the source table.
 
 </Param>
-<Param name="by" type="Sequence[str]" optional>
+<Param name="by" type="Sequence[str] | None" optional>
 
 The grouping column names. Set to `None` by default.
 

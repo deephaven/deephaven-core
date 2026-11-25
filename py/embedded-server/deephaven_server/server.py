@@ -127,16 +127,16 @@ class Server:
         Creates a Deephaven embedded server. Only one instance can be created at this time.
 
         Args:
-            host (Optional[str]): The host to bind the server to, defaults to None. When None, if a user defined
+            host (str | None): The host to bind the server to, defaults to None. When None, if a user defined
                 configuration file is present and 'http.host' is specified in it, use its value, otherwise, the server
                 listens on all network interfaces. Refer to the Deephaven documentation for more information on the configuration file.
-            port (Optional[int]): The port to bind the server to, defaults to None. When None, if a user defined
+            port (int | None): The port to bind the server to, defaults to None. When None, if a user defined
                 configuration file is present and 'http.port' is specified in it, use that port, otherwise, use the
                 default 10000. Refer to the Deephaven documentation for more information on the configuration file.
-            jvm_args (Optional[List[str]]): The common, user specific JVM arguments, such as JVM heap size, and other
+            jvm_args (list[str] | None): The common, user specific JVM arguments, such as JVM heap size, and other
                 related JVM options. Defaults to None.
-            extra_classpath (Optional[List[str]]): The extra classpath to use.
-            default_jvm_args (Optional[List[str]]): The advanced JVM arguments to use instead of the default ones that
+            extra_classpath (list[str] | None): The extra classpath to use.
+            default_jvm_args (list[str] | None): The advanced JVM arguments to use instead of the default ones that
                 Deephaven recommends, such as a specific garbage collector and related tuning parameters, or whether to
                 let Python or Java handle signals. Defaults to None, the Deephaven defaults.
         """

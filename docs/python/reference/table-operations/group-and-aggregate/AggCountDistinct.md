@@ -7,15 +7,15 @@ title: count_distinct
 ## Syntax
 
 ```python syntax
-count_distinct(cols: Union[str, list[str]] = None, count_nulls: bool = False) -> Aggregation
+count_distinct(cols: str | list[str] | None = None, count_nulls: bool = False) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str] | None">
 
-The source column(s) for the calculations.
+The source column(s) for the calculations. Leave it out only when you pass this aggregation to [`agg_all_by`](./AggAllBy.md), which applies it to every non-key column.
 
 - `["X"]` will output the number of distinct values in the `X` column for each group.
 - `["Y = X"]` will output the number of distinct values in the `X` column for each group and rename it to `Y`.

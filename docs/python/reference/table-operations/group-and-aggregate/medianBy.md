@@ -7,13 +7,13 @@ title: median_by
 ## Syntax
 
 ```
-table.median_by(by: Union[str, list[str]]) -> Table
+table.median_by(by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="by" type="Union[str, list[str]]" optional>
+<Param name="by" type="str | list[str] | None" optional>
 
 The column(s) by which to group data.
 

@@ -197,7 +197,7 @@ Use [`to_string`](../reference/table-operations/metadata/to_string.md) to return
 ```python syntax
 source.to_string(
     num_rows: int = 10,
-    cols: Optional[Union[str, Sequence[str]]] = None
+    cols: str | Sequence[str] | None = None
 ) -> str
 ```
 

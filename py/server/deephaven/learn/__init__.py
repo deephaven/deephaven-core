@@ -26,7 +26,7 @@ class Input:
         """Initializes an Input object with the given arguments.
 
         Args:
-            col_names (Union[str, list[str]]) : column name or list of column names from which to gather input.
+            col_names (str | list[str]) : column name or list of column names from which to gather input.
             gather_func (Callable): function that determines how input gets transformed into an object.
         """
         self.input = _JLearnInput(col_names, gather_func)
@@ -46,7 +46,7 @@ class Output:
             col_name (str) : name of the new column that will store results.
             scatter_func (Callable): function that determines how data is taken from an object and placed into a
                 Deephaven table column.
-            col_type (Optional[str]) : the type name of the new output column, as a string such as "double". Each value is
+            col_type (str | None) : the type name of the new output column, as a string such as "double". Each value is
                 cast to this type. Pass None for no explicit type cast. This argument has no default.
         """
         self.output = _JLearnOutput(col_name, scatter_func, col_type)
@@ -61,7 +61,7 @@ def _validate(inputs: list[Input], outputs: list[Output] | None, table: Table) -
 
     Args:
         inputs (list[Input])  : list of Inputs to validate.
-        outputs (Optional[list[Output]]) : list of Outputs to validate, or None for no outputs.
+        outputs (list[Output] | None) : list of Outputs to validate, or None for no outputs.
         table (Table)  : table to check Input and Output columns against.
 
     Raises:
@@ -134,13 +134,13 @@ def learn(
 
     Args:
         table (Table): the Deephaven table to perform computations on.
-        model_func (Optional[Callable]): function that performs computations on the table.
-        inputs (Optional[list[Input]]): list of Input objects that determine how data gets extracted from the table,
+        model_func (Callable | None): function that performs computations on the table.
+        inputs (list[Input] | None): list of Input objects that determine how data gets extracted from the table,
             defaults to None, meaning no inputs.
-        outputs (Optional[list[Output]]): list of Output objects that determine how data gets scattered back into the
+        outputs (list[Output] | None): list of Output objects that determine how data gets scattered back into the
             results table, defaults to None, meaning the result table gets no new columns. model_func still runs on
             every batch. An empty list means the same as None.
-        batch_size (Optional[int]): maximum number of rows for which model_func is evaluated at once.
+        batch_size (int | None): maximum number of rows for which model_func is evaluated at once.
 
     Returns:
         a Table with added columns containing the results of evaluating model_func.

@@ -9,10 +9,10 @@ The `keyed_transpose` operation takes a source table with a set of aggregations 
 ```
 keyed_transpose(
     table: Table,
-    aggs: Union[Aggregation, Sequence[Aggregation]],
-    row_by_cols: Union[str, Sequence[str]],
-    col_by_cols: Union[str, Sequence[str]],
-    initial_groups: Table = None,
+    aggs: Aggregation | Sequence[Aggregation],
+    row_by_cols: str | Sequence[str],
+    col_by_cols: str | Sequence[str],
+    initial_groups: Table | None = None,
     new_column_behavior: NewColumnBehaviorType = NewColumnBehaviorType.FAIL) -> Table:
 ```
 
@@ -24,22 +24,22 @@ keyed_transpose(
 The source table to transpose.
 
 </Param>
-<Param name="aggs" type="Union[Aggregation, Sequence[Aggregation]]">
+<Param name="aggs" type="Aggregation | Sequence[Aggregation]">
 
 The aggregations to apply to the source table.
 
 </Param>
-<Param name="row_by_cols" type="Union[str, list[str]]">
+<Param name="row_by_cols" type="str | list[str]">
 
 The columns to use as row keys in the transposed table.
 
 </Param>
-<Param name="col_by_cols" type="Union[str, list[str]]">
+<Param name="col_by_cols" type="str | list[str]">
 
 The columns whose values become the new aggregated columns.
 
 </Param>
-<Param name="initial_groups" type="Table">
+<Param name="initial_groups" type="Table | None">
 
 An optional initial set of groups to ensure all aggregated columns are present in the output.
 

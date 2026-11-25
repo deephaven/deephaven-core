@@ -141,7 +141,7 @@ def dh_today(tz: TimeZone | None = None) -> str:
     because fewer Java/Python boundary crossings will be needed.
 
     Args:
-        tz (Optional[TimeZone]): Time zone to use when determining the date.
+        tz (TimeZone | None): Time zone to use when determining the date.
             If None is provided, the Deephaven system default time zone is used.
 
     Returns:
@@ -232,7 +232,7 @@ def _tzinfo_to_j_time_zone(tzi: datetime.tzinfo | None = None) -> TimeZone:
     Converts a Python time zone to a Java TimeZone.
 
     Args:
-        tzi (Optional[datetime.tzinfo]): time zone info
+        tzi (datetime.tzinfo | None): time zone info
 
     Returns:
         Java TimeZone
@@ -297,7 +297,7 @@ def to_j_time_zone(tz: TimeZoneLike | None) -> TimeZone | None:
     or a pandas.Timestamp.
 
     Args:
-        tz (Optional[TimeZoneLike]): A time zone value.
+        tz (TimeZoneLike | None): A time zone value.
             If None is provided, None is returned.
             If a string is provided, it is parsed as a time zone name.
 
@@ -341,7 +341,7 @@ def to_j_local_date(dt: LocalDateLike | None) -> LocalDate | None:
     Date strings can be formatted according to the ISO 8601 date time format as 'YYYY-MM-DD'.
 
     Args:
-        dt (Optional[LocalDateLike]): A date time value. If None is provided, None is returned.
+        dt (LocalDateLike | None): A date time value. If None is provided, None is returned.
 
     Returns:
         LocalDate
@@ -386,7 +386,7 @@ def to_j_local_time(dt: LocalTimeLike | None) -> LocalTime | None:
     Time strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]'.
 
     Args:
-        dt (Optional[LocalTimeLike]): A date time value.  If None is provided, None is returned.
+        dt (LocalTimeLike | None): A date time value.  If None is provided, None is returned.
 
     Returns:
         LocalTime
@@ -442,7 +442,7 @@ def to_j_instant(dt: InstantLike | None) -> Instant | None:
     from the Epoch.  Expected date ranges are used to infer the units.
 
     Args:
-        dt (Optional[InstantLike]): A date time value. If None is provided, None is returned.
+        dt (InstantLike | None): A date time value. If None is provided, None is returned.
 
     Returns:
         Instant, TypeError
@@ -491,7 +491,7 @@ def to_j_zdt(dt: ZonedDateTimeLike | None) -> ZonedDateTime | None:
     Converting a numpy.datetime64 to a ZonedDateTime will use the Deephaven default time zone.
 
     Args:
-        dt (Optional[ZonedDateTimeLike]): A date time value. If None is provided, None is returned.
+        dt (ZonedDateTimeLike | None): A date time value. If None is provided, None is returned.
 
     Returns:
         ZonedDateTime
@@ -552,7 +552,7 @@ def to_j_duration(dt: DurationLike | None) -> Duration | None:
         |    "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
 
     Args:
-        dt (Optional[DurationLike]): A time duration value. If None is provided, None is returned.
+        dt (DurationLike | None): A time duration value. If None is provided, None is returned.
 
     Returns:
         Duration
@@ -606,7 +606,7 @@ def to_j_period(dt: PeriodLike | None) -> Period | None:
         |    "-P1Y2M"          -- -1 Year, -2 Months
 
     Args:
-        dt (Optional[PeriodLike]): A Python period or period string. If None is provided, None is returned.
+        dt (PeriodLike | None): A Python period or period string. If None is provided, None is returned.
 
     Returns:
         Period
@@ -687,7 +687,7 @@ def to_date(dt: None | LocalDate | ZonedDateTime) -> datetime.date | None:
     Converts a Java date time to a datetime.date.
 
     Args:
-        dt (Union[None, LocalDate, ZonedDateTime]): A Java date time.
+        dt (LocalDate | ZonedDateTime | None): A Java date time.
             If None is provided, None is returned.
 
     Returns:
@@ -724,7 +724,7 @@ def to_time(dt: None | LocalTime | ZonedDateTime) -> datetime.time | None:
     Converts a Java date time to a datetime.time.
 
     Args:
-        dt (Union[None, LocalTime, ZonedDateTime]): A Java date time.
+        dt (LocalTime | ZonedDateTime | None): A Java date time.
             If None is provided, None is returned.
 
     Returns:
@@ -761,7 +761,7 @@ def to_datetime(dt: None | Instant | ZonedDateTime) -> datetime.datetime | None:
     Converts a Java date time to a datetime.datetime.
 
     Args:
-        dt (Union[None, Instant, ZonedDateTime]): A Java date time.
+        dt (Instant | ZonedDateTime | None): A Java date time.
             If None is provided, None is returned.
 
     Returns:
@@ -798,7 +798,7 @@ def to_pd_timestamp(
     Converts a Java date time to a pandas.Timestamp.
 
     Args:
-        dt (Union[None, Instant, ZonedDateTime]): A Java date time.
+        dt (Instant | ZonedDateTime | None): A Java date time.
             If None is provided, None is returned.
 
     Returns:
@@ -830,7 +830,7 @@ def to_np_datetime64(
     Converts a Java date time to a numpy.datetime64.
 
     Args:
-        dt (Union[None, Instant, ZonedDateTime]): A Java date time.
+        dt (Instant | ZonedDateTime | None): A Java date time.
             If None is provided, None is returned.
 
     Returns:
@@ -865,7 +865,7 @@ def to_timedelta(dt: None | Duration) -> datetime.timedelta | None:
     Converts a Java time duration to a datetime.timedelta.
 
     Args:
-        dt (Union[None, Duration]): A Java time duration.  If None is provided, None is returned.
+        dt (Duration | None): A Java time duration.  If None is provided, None is returned.
 
     Returns:
         datetime.timedelta
@@ -909,7 +909,7 @@ def to_pd_timedelta(dt: None | Duration) -> pandas.Timedelta | None:
     Converts a Java time duration to a pandas.Timedelta.
 
     Args:
-        dt (Union[None, Duration]): A Java time duration.  If None is provided, None is returned.
+        dt (Duration | None): A Java time duration.  If None is provided, None is returned.
 
     Returns:
         pandas.Timedelta
@@ -956,7 +956,7 @@ def to_np_timedelta64(dt: None | Duration | Period) -> numpy.timedelta64 | None:
     Converts a Java time durationto a numpy.timedelta64.
 
     Args:
-        dt (Union[None, Duration, Period]): A Java time period.  If None is provided, None is returned.
+        dt (Duration | Period | None): A Java time period.  If None is provided, None is returned.
 
     Returns:
         numpy.timedelta64

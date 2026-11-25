@@ -14,7 +14,7 @@ title: to_j_period
 ## Syntax
 
 ```
-to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]) -> Period
+to_j_period(dt: Period | str | datetime.timedelta | numpy.timedelta64 | pandas.Timedelta | None) -> Period
 ```
 
 ## Parameters

@@ -15,14 +15,14 @@ title: to_j_instant
 
 ```python syntax
 to_j_instant(
-  dt: Union[None, Instant, int, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+  dt: Instant | int | str | datetime.datetime | numpy.datetime64 | pandas.Timestamp | None
   ) -> Instant
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="dt" type="Union[None, Instant, int, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]">
+<Param name="dt" type="Instant | int | str | datetime.datetime | numpy.datetime64 | pandas.Timestamp | None">
 
 A date-time value to convert to a Java Instant.
 

@@ -9,8 +9,8 @@ The `UnboundResolver` class provides options for explicitly mapping Deephaven co
 ```python syntax
 UnboundResolver(
     table_definition: TableDefinitionLike,
-    column_instructions: Optional[Mapping[str, Union[int, str]]] = None,
-    schema_provider: Optional[SchemaProvider] = None
+    column_instructions: Mapping[str, int | str] | None = None,
+    schema_provider: SchemaProvider | None = None
 )
 ```
 
@@ -22,12 +22,12 @@ UnboundResolver(
 The Deephaven table definition to use when loading the Iceberg table.
 
 </Param>
-<Param name="column_instructions" type="Optional[Mapping[str, Union[int, str]]]" Optional>
+<Param name="column_instructions" type="Mapping[str, int | str] | None" Optional>
 
 A mapping from Deephaven column names to instructions for mapping to Iceberg columns. An `int` value is treated as a schema field ID, and a `str` value is treated as a schema field name. Columns not in this map are assumed to match by name.
 
 </Param>
-<Param name="schema_provider" type="Optional[SchemaProvider]" Optional>
+<Param name="schema_provider" type="SchemaProvider | None" Optional>
 
 The Iceberg schema to use for mapping. If not specified, the current schema from the Iceberg table is used.
 

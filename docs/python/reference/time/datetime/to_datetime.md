@@ -10,13 +10,13 @@ title: to_datetime
 ## Syntax
 
 ```python syntax
-to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> datetime.datetime
+to_datetime(dt: Instant | ZonedDateTime | None) -> datetime.datetime
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="dt" type="Union[None, Instant, ZonedDateTime]">
+<Param name="dt" type="Instant | ZonedDateTime | None">
 
 A Java date-time to convert to a `datetime.datetime`. If `None` is provided, `None` is returned.
 

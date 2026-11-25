@@ -15,7 +15,7 @@ The `snapshot_when` method produces an in-memory copy of a source table that add
 ```
 source.snapshot_when(
     trigger_table: Table,
-    stamp_cols: Optional[Union[str, Sequence[str]]] = None,
+    stamp_cols: str | Sequence[str] | None = None,
     initial: bool = False,
     incremental: bool = False,
     history: bool = False,
@@ -32,7 +32,7 @@ A [`PartitionedTableProxy`](https://deephaven.io/core/pydoc/code/deephaven.table
 The table that triggers the snapshot. This should be a ticking table, as changes in this table trigger the snapshot.
 
 </Param>
-<Param name="stamp_cols" type="Optional[Union[str, Sequence[str]]]" optional>
+<Param name="stamp_cols" type="str | Sequence[str] | None" optional>
 
 One or more column names to act as stamp columns. Each stamp column will be included in the final result, and will contain the value of the stamp column from the trigger table at the time of the snapshot. If only one column, a string or list can be used. If more than one column, a list must be used. The default value is `None`, which means that all columns from the trigger table will be appended to the source table.
 

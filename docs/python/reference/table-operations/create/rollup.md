@@ -9,7 +9,7 @@ The Deephaven `rollup` method creates a rollup table from a source table with ze
 ```python syntax
 result = source.rollup(
     aggs: list[Aggregation],
-    by: list[str] = None,
+    by: list[str] | None = None,
     include_constituents: bool = False,
 ) -> RollupTable
 ```
@@ -42,7 +42,7 @@ The following aggregations are supported:
 - [`weighted_sum`](../group-and-aggregate/AggWSum.md)
 
 </Param>
-<Param name="by" type="list[str]">
+<Param name="by" type="list[str] | None">
 
 Zero or more column names to group on and create a hierarchy from. If `None`, no hierarchy is created.
 

@@ -76,7 +76,7 @@ def sum_(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a Sum aggregation.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -89,7 +89,7 @@ def abs_sum(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates an Absolute-sum aggregation.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -102,7 +102,7 @@ def group(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a Group aggregation.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -115,7 +115,7 @@ def avg(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates an Average aggregation.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -148,7 +148,7 @@ def count_where(
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
+        filters (str | Filter | Sequence[str] | Sequence[Filter]): the filter condition
             expression(s) or Filter object(s)
 
     Returns:
@@ -191,7 +191,7 @@ def count_distinct(
     each of the given columns.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
         count_nulls (bool): whether null values should be counted, default is False
 
@@ -205,7 +205,7 @@ def first(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a First aggregation.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -241,10 +241,10 @@ def formula(
 
     Args:
         formula (str): the user defined formula to apply
-        formula_param (Optional[str]): If provided, supplies the parameter name for the input column's vector within the
+        formula_param (str | None): If provided, supplies the parameter name for the input column's vector within the
             formula. If formula is `max(each)`, then `each` should be the formula_param. This must be set to None (the
             default when omitted) when the `formula` argument specifies the input and output columns.
-        cols (Optional[Union[str, Sequence[str]]]): If provided, supplies the column(s) to aggregate, can be renaming
+        cols (str | Sequence[str] | None): If provided, supplies the column(s) to aggregate, can be renaming
             expressions, i.e. "new_col = col". This must be set to None (the default when omitted) when the `formula`
             argument specifies the input and output columns.
         reaggregating (bool): If True, the formula is applied to the prior level of the rollup.
@@ -269,7 +269,7 @@ def last(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates Last aggregation.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -282,7 +282,7 @@ def min_(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a Min aggregation.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -295,7 +295,7 @@ def max_(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a Max aggregation to the ComboAggregation object.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -312,7 +312,7 @@ def median(
     given columns.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
         average_evenly_divided (bool): when the group size is an even number, whether to average the two middle values
             for the output value. When set to True, average the two middle values. When set to False, use the smaller
@@ -334,7 +334,7 @@ def pct(
 
     Args:
         percentile (float): the percentile used for calculation
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
         average_evenly_divided (bool): when the percentile splits the group into two halves, whether to average the two
             middle values for the output value. When set to True, average the two middle values. When set to False, use
@@ -353,7 +353,7 @@ def sorted_first(order_by: str, cols: str | Sequence[str] | None = None) -> Aggr
 
     Args:
         order_by (str): the column to sort by
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -367,7 +367,7 @@ def sorted_last(order_by: str, cols: str | Sequence[str] | None = None) -> Aggre
 
     Args:
         order_by (str): the column to sort by
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -384,7 +384,7 @@ def std(cols: str | Sequence[str] | None = None) -> Aggregation:
 
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -403,11 +403,11 @@ def unique(
     result is null or the specified non_unique_sentinel value.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
         include_nulls (bool): whether null is treated as a value for the purpose of determining if the values in the
             aggregation group are unique, default is False.
-        non_unique_sentinel (Optional[Any]): the non-null sentinel value when no unique value exists, default is None. Must be
+        non_unique_sentinel (Any | None): the non-null sentinel value when no unique value exists, default is None. Must be
             a non-None value when include_nulls is True.
 
     Returns:
@@ -436,7 +436,7 @@ def var(cols: str | Sequence[str] | None = None) -> Aggregation:
 
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -450,7 +450,7 @@ def weighted_avg(wcol: str, cols: str | Sequence[str] | None = None) -> Aggregat
 
     Args:
         wcol (str): the name of the weight column
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -464,7 +464,7 @@ def weighted_sum(wcol: str, cols: str | Sequence[str] | None = None) -> Aggregat
 
     Args:
         wcol (str): the name of the weight column
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -480,7 +480,7 @@ def distinct(
     given columns and stores them as vectors.
 
     Args:
-        cols (Optional[Union[str, Sequence[str]]]): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
+        cols (str | Sequence[str] | None): the column(s) to aggregate, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
         include_nulls (bool): whether nulls should be included as distinct values, default is False
 

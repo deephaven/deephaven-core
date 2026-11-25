@@ -7,13 +7,13 @@ title: restrict_sort_to
 ## Syntax
 
 ```
-restrict_sort_to(cols: Union[str, Sequence[str]]) -> Table
+restrict_sort_to(cols: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, Sequence[str]]">
+<Param name="cols" type="str | Sequence[str]">
 
 The column(s) on which sorting is allowed.
 

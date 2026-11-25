@@ -7,13 +7,13 @@ The `get_constituent` method returns a single constituent table according to the
 ## Syntax
 
 ```python syntax
-get_constituent(key_values: Union[Any, Sequence[Any]]) -> Table
+get_constituent(key_values: Any | Sequence[Any]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="key_values" type="Union[Any, Sequence[Any]]">
+<Param name="key_values" type="Any | Sequence[Any]">
 
 The values for key column(s) to match.
 

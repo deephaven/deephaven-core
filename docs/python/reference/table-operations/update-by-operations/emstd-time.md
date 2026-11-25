@@ -29,9 +29,9 @@ Where:
 ```python syntax
 emstd_time(
     ts_col: str,
-    decay_time: Union[str, int],
+    decay_time: str | int,
     cols: list[str],
-    op_control: OperationControl = None,
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation
 ```
 
@@ -43,7 +43,7 @@ emstd_time(
 The name of the column containing timestamps.
 
 </Param>
-<Param name="decay_time" type="Union[str,int]">
+<Param name="decay_time" type="str | int">
 
 The decay rate. This can be expressed as an integer in nanoseconds or a string [duration](../../query-language/types/durations.md); e.g., `"PT00:00:00.001"` or `"PTnHnMnS"`, where `H` is hour, `M` is minute, and `S` is second.
 
