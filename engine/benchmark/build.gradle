@@ -134,3 +134,4 @@ createDeephavenTestExecTask('sparseSmallMemory', 'io.deephaven.benchmark.engine.
 tasks.named('sparseSmallMemory') {
     maxHeapSize = '16g'
 }
+createJmhTask('jmhRunAsOfJoinRestamp', ['AsOfJoinRestampBenchmark', '-prof=gc'], [], '16g')

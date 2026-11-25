@@ -782,7 +782,7 @@ public class AsOfJoinHelper {
 
                                 chunkSsaStamp.processRemovals(leftValuesChunk, leftKeyChunk, rightValues.get(),
                                         rightKeyIndices.get(), priorRedirections.get(), rowRedirection, restampContext,
-                                        modifiedBuilder, disallowExactMatch);
+                                        disallowExactMatch);
                             }
                         }
                     }
@@ -955,7 +955,7 @@ public class AsOfJoinHelper {
                             // noinspection unchecked
                             chunkSsaStamp.processInsertion(leftValuesChunk, leftKeyChunk, rightStampChunk.get(),
                                     insertedIndices.get(), nextRightValue.get(), rowRedirection, restampContext,
-                                    modifiedBuilder, endsWithLastValue, disallowExactMatch);
+                                    endsWithLastValue, disallowExactMatch);
                         }
 
                         // and then finally we handle the case where the keys and stamps were not modified, but we must
@@ -997,6 +997,7 @@ public class AsOfJoinHelper {
                     SafeCloseable.closeAll(sortContext, leftStampFillContext, rightStampFillContext, rightValues,
                             rightKeyIndices, rightKeysForLeft);
 
+                    restampContext.addRestampedRowsTo(modifiedBuilder);
                     downstream.modified = modifiedBuilder.build();
 
                     final boolean processedAdditionsOrRemovals = removedSlotCount > 0 || addedSlotCount > 0;
@@ -1455,7 +1456,7 @@ public class AsOfJoinHelper {
                                         ssa.removeAndGetPrior(rightStampChunk, rightKeyIndices, priorRedirections);
                                         chunkSsaStamp.processRemovals(leftStampValues, leftStampKeys, rightStampChunk,
                                                 rightKeyIndices, priorRedirections, rowRedirection, restampContext,
-                                                modifiedBuilder, disallowExactMatch);
+                                                disallowExactMatch);
                                     }
                                 }
 
@@ -1516,7 +1517,7 @@ public class AsOfJoinHelper {
 
                                             chunkSsaStamp.processInsertion(leftStampValues, leftStampKeys, stampChunk,
                                                     insertedIndices, nextRightValue, rowRedirection, restampContext,
-                                                    modifiedBuilder, endsWithLastValue, disallowExactMatch);
+                                                    endsWithLastValue, disallowExactMatch);
                                         }
                                     }
                                 }
@@ -1547,6 +1548,7 @@ public class AsOfJoinHelper {
                                     }
                                 }
                             }
+                            restampContext.addRestampedRowsTo(modifiedBuilder);
                         }
 
                         if (stampModified || upstream.added().isNonempty() || upstream.removed().isNonempty()) {

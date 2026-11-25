@@ -15,10 +15,14 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -45,9 +49,11 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
 import java.util.stream.IntStream;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
@@ -1223,6 +1229,45 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertEquals("ObjArray is not a sortable type: class [Ljava.lang.Object;", iae2.getMessage());
     }
 
+    /**
+     * A sort whose first column uses an explicit comparator does not mark that column as naturally sorted, so a later
+     * natural sort of the column reorders the data. This holds both when the comparator sort reorders rows and when its
+     * input is already in comparator order.
+     */
+    @Test
+    public void testComparatorSortDoesNotMarkColumnNaturallySorted() {
+        final QueryTable source = (QueryTable) newTable(stringCol("S", "b", "A", "c", "B", "a"));
+        final Table caseInsensitive = source.sort(ComparatorSortColumn.asc("S", String.CASE_INSENSITIVE_ORDER));
+        assertArrayEquals(new String[] {"A", "a", "b", "B", "c"},
+                ColumnVectors.ofObject(caseInsensitive, "S", String.class).toArray());
+        assertTrue(SortedColumnsAttribute.getSortedColumns(caseInsensitive).isEmpty());
+        assertArrayEquals(new String[] {"A", "B", "a", "b", "c"},
+                ColumnVectors.ofObject(caseInsensitive.sort("S"), "S", String.class).toArray());
+
+        final QueryTable reverseOrdered = (QueryTable) newTable(stringCol("S", "c", "b", "a"));
+        final Table alreadySorted =
+                reverseOrdered.sort(ComparatorSortColumn.asc("S", Comparator.reverseOrder(), true));
+        assertArrayEquals(new String[] {"c", "b", "a"},
+                ColumnVectors.ofObject(alreadySorted, "S", String.class).toArray());
+        assertTrue(SortedColumnsAttribute.getSortedColumns(alreadySorted).isEmpty());
+        assertArrayEquals(new String[] {"a", "b", "c"},
+                ColumnVectors.ofObject(alreadySorted.sort("S"), "S", String.class).toArray());
+    }
+
+    /**
+     * A range filter on the result of a sort whose first column uses an explicit comparator returns exactly the
+     * matching rows.
+     */
+    @Test
+    public void testRangeFilterOnComparatorSort() {
+        final QueryTable source = (QueryTable) newTable(stringCol("S", "b", "A", "c", "B", "a"));
+        final Table reversed = source.sort(ComparatorSortColumn.asc("S", Comparator.reverseOrder(), true));
+        assertArrayEquals(new String[] {"c", "b", "a", "B", "A"},
+                ColumnVectors.ofObject(reversed, "S", String.class).toArray());
+        assertArrayEquals(new String[] {"c", "b", "a"},
+                ColumnVectors.ofObject(reversed.where("S >= `a`"), "S", String.class).toArray());
+    }
+
     @Test
     public void testAlreadySortedEmpty() {
         final Table x = TableTools.newTable(intCol("Sentinel"), intCol("Value"));
@@ -1317,6 +1362,99 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table y = x.update("ZD=" + QueryTableSortTest.class.getCanonicalName() + ".toZdtLondon(InstArray)");
         final Table s2 = y.sort("ZD");
         assertTableEquals(y.sort("Sentinel"), s2);
+    }
+
+    /**
+     * A long column source over a LongArraySource that counts the scalar current-value reads of one watched row key.
+     */
+    private static final class WatchedKeyCountingLongSource extends AbstractColumnSource<Long>
+            implements MutableColumnSourceGetDefaults.ForLong {
+        private final LongArraySource inner;
+        private long watchedKey = -1;
+        private long watchedKeyGets;
+
+        WatchedKeyCountingLongSource(final LongArraySource inner) {
+            super(long.class);
+            this.inner = inner;
+        }
+
+        void watch(final long rowKey) {
+            watchedKey = rowKey;
+            watchedKeyGets = 0;
+        }
+
+        @Override
+        public long getLong(final long rowKey) {
+            if (rowKey == watchedKey) {
+                ++watchedKeyGets;
+            }
+            return inner.getLong(rowKey);
+        }
+
+        @Override
+        public long getPrevLong(final long rowKey) {
+            return inner.getPrevLong(rowKey);
+        }
+
+        @Override
+        public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+            return inner.makeFillContext(chunkCapacity, sharedContext);
+        }
+
+        @Override
+        public void fillChunk(@NotNull final FillContext context,
+                @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+            inner.fillChunk(context, destination, rowSequence);
+        }
+
+        @Override
+        public void fillPrevChunk(@NotNull final FillContext context,
+                @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+            inner.fillPrevChunk(context, destination, rowSequence);
+        }
+
+        @Override
+        public boolean isImmutable() {
+            return false;
+        }
+    }
+
+    /**
+     * Placing an added row into a refreshing sort's result reads that row's sort value with at most one scalar get,
+     * however many binary search probes the placement takes.
+     */
+    @Test
+    public void testPlacementReadsAddedValueOnce() {
+        final int size = 100_000;
+        final LongArraySource values = new LongArraySource();
+        values.ensureCapacity(size + 3);
+        for (int ii = 0; ii < size; ++ii) {
+            values.set(ii, 2L * ii);
+        }
+        values.startTrackingPrevValues();
+        final WatchedKeyCountingLongSource counting = new WatchedKeyCountingLongSource(values);
+        final TrackingWritableRowSet rowSet = RowSetFactory.flat(size).toTracking();
+        final QueryTable source = new QueryTable(rowSet, Collections.singletonMap("V", counting));
+        source.setRefreshing(true);
+        final Table sorted = source.sort("V");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final LongBinaryOperator addInCycle = (rowKey, value) -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                values.set(rowKey, value);
+                rowSet.insert(rowKey);
+                source.notifyListeners(i(rowKey), i(), i());
+            });
+            return counting.watchedKeyGets;
+        };
+        // place rows at the back and the middle of the result first, so the last placement probes a spread layout
+        addInCycle.applyAsLong(size, 2L * size + 1);
+        addInCycle.applyAsLong(size + 1, size + 1);
+        counting.watch(size + 2);
+        final long gets = addInCycle.applyAsLong(size + 2, size + 9);
+        assertEquals(size + 3, sorted.size());
+        assertTrue("placing one added row read its sort value with " + gets + " scalar gets", gets <= 1);
+        assertTableEquals(source.snapshot().sort("V"), sorted);
     }
 
     private static void checkMixed(final Table resultRows, final boolean mixed) {

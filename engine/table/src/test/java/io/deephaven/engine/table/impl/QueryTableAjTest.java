@@ -46,6 +46,11 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.sources.TestColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -2187,6 +2192,98 @@ public class QueryTableAjTest {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * A right row added to or removed from the join of a static left table restamps one run of left rows, in stamp
+     * order. With more left rows in the run than a chunk holds, the run is written in slices; with the left stamps a
+     * permutation of the row keys, the row keys of successive slices overlap. Each cycle checks the mappings, the
+     * previous values and the exact modified rows, and a final cycle that restamps one row reports that row alone.
+     */
+    @Test
+    public void testAjLeftStaticRightIncrementalLongScrambledRun() {
+        final int leftSize = 3 * ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY + 17;
+        final int firstRestampedStamp = 5;
+        final int lastRunStamp = leftSize - 1000;
+        final int[] leftStamps = IntStream.range(0, leftSize).toArray();
+        final Random random = new Random(0);
+        for (int ii = leftSize - 1; ii > 0; --ii) {
+            final int swapWith = random.nextInt(ii + 1);
+            final int swapped = leftStamps[ii];
+            leftStamps[ii] = leftStamps[swapWith];
+            leftStamps[swapWith] = swapped;
+        }
+        final String[] buckets = new String[leftSize];
+        Arrays.fill(buckets, "A");
+        final Table left = newTable(col("Bucket", buckets), intCol("LeftStamp", leftStamps));
+
+        for (final boolean bucketed : new boolean[] {false, true}) {
+            final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), col("Bucket", "A", "A"),
+                    intCol("RightStamp", -1, lastRunStamp), intCol("Sentinel", 1, 3));
+            final Table result = left.aj(right, bucketed ? "Bucket,LeftStamp>=RightStamp" : "LeftStamp>=RightStamp",
+                    "Sentinel");
+            final ColumnSource<Integer> sentinel = result.getColumnSource("Sentinel", int.class);
+
+            final WritableRowSet restamped = RowSetFactory.fromKeys(IntStream.range(0, leftSize)
+                    .filter(ii -> leftStamps[ii] >= firstRestampedStamp && leftStamps[ii] < lastRunStamp)
+                    .mapToLong(ii -> ii).toArray());
+            assertTrue(restamped.size() > 2L * ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY);
+
+            final int[] expectedPrevious = new int[leftSize];
+            final int[] expectedCurrent = new int[leftSize];
+            for (int ii = 0; ii < leftSize; ++ii) {
+                expectedCurrent[ii] = leftStamps[ii] >= lastRunStamp ? 3 : 1;
+            }
+            final MutableObject<RowSet> expectedModified = new MutableObject<>();
+            final MutableInt updates = new MutableInt(0);
+            final TableUpdateListener listener = new InstrumentedTableUpdateListenerAdapter(result, false) {
+                @Override
+                public void onUpdate(final TableUpdate upstream) {
+                    updates.increment();
+                    assertTrue(upstream.added().isEmpty());
+                    assertTrue(upstream.removed().isEmpty());
+                    assertRowSetEquals(expectedModified.getValue(), upstream.modified());
+                    for (int ii = 0; ii < leftSize; ++ii) {
+                        assertEquals(expectedCurrent[ii], sentinel.getInt(ii));
+                        assertEquals(expectedPrevious[ii], sentinel.getPrevInt(ii));
+                    }
+                }
+            };
+            result.addUpdateListener(listener);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            for (int cycle = 0; cycle < 4; ++cycle) {
+                final boolean adding = cycle % 2 == 0;
+                System.arraycopy(expectedCurrent, 0, expectedPrevious, 0, leftSize);
+                restamped.forAllRowKeys(rowKey -> expectedCurrent[(int) rowKey] = adding ? 2 : 1);
+                expectedModified.setValue(restamped);
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    if (adding) {
+                        addToTable(right, i(2), col("Bucket", "A"), intCol("RightStamp", firstRestampedStamp),
+                                intCol("Sentinel", 2));
+                        right.notifyListeners(i(2), i(), i());
+                    } else {
+                        removeRows(right, i(2));
+                        right.notifyListeners(i(), i(2), i());
+                    }
+                });
+                assertEquals(cycle + 1, updates.intValue());
+            }
+
+            // a right row whose stamp is one left row's restamps that row alone
+            final int lastRestampedRow = IntStream.range(0, leftSize)
+                    .filter(ii -> leftStamps[ii] == lastRunStamp - 1).findFirst().orElseThrow();
+            System.arraycopy(expectedCurrent, 0, expectedPrevious, 0, leftSize);
+            expectedCurrent[lastRestampedRow] = 4;
+            expectedModified.setValue(i(lastRestampedRow));
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(right, i(3), col("Bucket", "A"), intCol("RightStamp", lastRunStamp - 1),
+                        intCol("Sentinel", 4));
+                right.notifyListeners(i(3), i(), i());
+            });
+            assertEquals(5, updates.intValue());
+            result.removeUpdateListener(listener);
         }
     }
 
