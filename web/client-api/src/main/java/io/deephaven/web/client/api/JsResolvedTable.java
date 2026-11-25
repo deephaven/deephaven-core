@@ -19,8 +19,8 @@ import jsinterop.annotations.JsMethod;
  * releases every server-side table it made when closed.
  * <p>
  * Each instance has one owner which closes it when done so the server can free its resources. For multiple owners with
- * independent lifetimes, {@link #copy()} produces a distinct ResolvedTable instance referencing the same server-side
- * table.
+ * independent lifetimes, {@link #copy()} produces a distinct {@code ResolvedTable} instance referencing the same
+ * server-side table.
  * <p>
  * To instead use a {@link JsTable}, invoke {@link #createMutableTable()}, which will return a new {@link JsTable} based
  * on this table, which can then have its filters, sorts, and custom columns changed without affecting this table.

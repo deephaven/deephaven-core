@@ -18,6 +18,62 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ReplicationUtils {
+    private static final Pattern REPLICATED_REDIRECT = Pattern.compile("^(.*)/src/(main|test)/java/(.*)$");
+
+    /**
+     * The directory that holds the generated main sources of the replication task {@code task} in a project.
+     *
+     * @param project the project directory relative to the repository root, e.g. {@code "engine/table"}
+     * @param task the name of the Gradle task that runs the replicator
+     * @return {@code <project>/src/replicated/<task>/java}, without a trailing slash
+     */
+    public static String replicatedDir(@NotNull final String project, @NotNull final String task) {
+        return project + "/src/replicated/" + task + "/java";
+    }
+
+    /**
+     * The directory that holds the generated test sources of the replication task {@code task} in a project.
+     *
+     * @param project the project directory relative to the repository root, e.g. {@code "engine/table"}
+     * @param task the name of the Gradle task that runs the replicator
+     * @return {@code <project>/src/replicatedTest/<task>/java}, without a trailing slash
+     */
+    public static String replicatedTestDir(@NotNull final String project, @NotNull final String task) {
+        return project + "/src/replicatedTest/" + task + "/java";
+    }
+
+    /**
+     * Send the output of a replication task to its own directory instead of next to its inputs. Every output written
+     * through {@link ReplicatePrimitiveCode#replaceAll} is passed through here: a path under
+     * {@code <project>/src/main/java/} lands in {@code <project>/src/replicated/<task>/java/}, and one under
+     * {@code <project>/src/test/java/} in {@code <project>/src/replicatedTest/<task>/java/}. The Gradle build includes
+     * those directories in the main and test source sets respectively. A path that has already been redirected for this
+     * task is returned unchanged; the output of a replicator may be the input of a later step of the same replicator.
+     * <p>
+     * The output directory is not created; whoever adds or migrates a replicator creates it (and checks it in).
+     *
+     * @param task the task generating the file
+     * @param resultJavaPath the path the file would be written to without redirection
+     * @return the path to write to
+     * @throws IllegalArgumentException if the path is neither under a {@code src/main/java} or {@code src/test/java}
+     *         directory nor already redirected for this task
+     */
+    public static String replicatedOutputPath(@NotNull final String task, @NotNull final String resultJavaPath) {
+        if (resultJavaPath.contains("/src/replicated/" + task + "/java/")
+                || resultJavaPath.contains("/src/replicatedTest/" + task + "/java/")) {
+            return resultJavaPath;
+        }
+        final Matcher matcher = REPLICATED_REDIRECT.matcher(resultJavaPath);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("Cannot redirect " + resultJavaPath + " for " + task
+                    + ": expected a path under <project>/src/main/java/ or <project>/src/test/java/");
+        }
+        final String project = matcher.group(1);
+        final String dir =
+                matcher.group(2).equals("main") ? replicatedDir(project, task) : replicatedTestDir(project, task);
+        return dir + "/" + matcher.group(3);
+    }
+
     /**
      * Take a list of lines; and apply a given fixup expressed as a code region, regular expression, then function from
      * the matcher to the replacement line.

@@ -62,9 +62,9 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
 /**
  * Operations on a table that need none of its data or metadata, so they can be chained without waiting on a promise.
  * <p>
- * Every instance stands for one server-side table, with its definition fixed when created. Compared with a
+ * Every instance represents one server-side table, with its definition fixed when created. Compared with a
  * {@link JsTable}, it is "immutable", and has no methods to change its columns, filters, sort, etc. A ticking table's
- * rows still change as the server's update graph adds, removes and modifies them. Each operation returns a new pending
+ * rows still change as the server's update graph adds, removes, and modifies them. Each operation returns a new pending
  * table, so the caller decides the order of operations by how they chain them.
  * <p>
  * Each table holds server resources until it is closed, by whoever owns it:

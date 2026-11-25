@@ -47,7 +47,7 @@ An `UpdateByOperation` that will produce a calculation from one or more given co
 - [`RollingProduct`](./rolling-product.md)
 - [`RollingStd`](./rolling-std.md)
 - [`RollingSum`](./rolling-sum.md)
-- [`RollingWavg`](./rolling-wavg.md)
+- [`RollingWAvg`](./rolling-wavg.md)
 
 </Param>
 <Param name="operations" type="Collection<UpdateByOperation>">
@@ -81,7 +81,7 @@ source = emptyTable(10).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = i")
 result = source.updateBy(CumSum("SumX = X"), "Letter")
 ```
 
-The following example takes the same source data, but instead computes a row-based rolling sum using [`RollingSum`](./rolling-sum.md). The rolling sum is calculated given a window of two rows back, and two rows ahead. Thus, `SumX` has the windowed sum of a five-row window, where each value is at the center of the window. Rows at the beginning and end of the table don't have enough data above and below them, respectively, so their summed values are smaller.
+The following example takes the same source data, but instead computes a row-based rolling sum using [`RollingSum`](./rolling-sum.md). The rolling sum is calculated given a window of two rows back, and two rows ahead. Thus, `SumX` has the windowed sum of a five-row window, where each value is at the center of the window. Rows at the beginning and end of the table do not have enough data above and below them, respectively, so their summed values are smaller.
 
 ```groovy order=source,result
 source = emptyTable(10).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = i")

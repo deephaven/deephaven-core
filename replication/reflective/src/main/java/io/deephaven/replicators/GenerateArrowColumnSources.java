@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.replicatedDir;
 import com.palantir.javapoet.AnnotationSpec;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.JavaFile;
@@ -54,6 +55,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class GenerateArrowColumnSources {
+    private static final String TASK = "generateArrowColumnSources";
+
 
     public static final String ARROW_VECTOR_PREFIX = "Arrow Vector: {@link ";
     public static final String RETURNS_PREFIX = "Deephaven Type: ";
@@ -300,9 +303,11 @@ public class GenerateArrowColumnSources {
                 .skipJavaLangImports(true)
                 .build();
 
-        String path = "extensions/arrow/src/main/java/io/deephaven/extensions/arrow/sources/" + className + ".java";
+        String path =
+                replicatedDir("extensions/arrow", TASK) + "/io/deephaven/extensions/arrow/sources/"
+                        + className + ".java";
         try {
-            String gradleTask = "generateArrowColumnSources";
+            String gradleTask = TASK;
             Class<?> generatorClass = GenerateArrowColumnSources.class;
             final String header = String.join("\n",
                     "//",

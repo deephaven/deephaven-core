@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
@@ -15,16 +16,18 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolea
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToObject;
 
 public class ReplicateSegmentedSortedArrayTests {
+    private static final String TASK = "replicateSegmentedSortedArrayTests";
+
     public static void main(String[] args) throws IOException {
         ReplicateSegmentedSortedArray.main(args);
 
-        charToAllButBoolean("replicateSegmentedSortedArrayTests",
+        charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/TestCharSegmentedSortedArray.java");
         final String objectSsaTest =
-                charToObject("replicateSegmentedSortedArrayTests",
+                charToObject(TASK,
                         "engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/TestCharSegmentedSortedArray.java");
         fixupObjectSsaTest(objectSsaTest);
-        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy("replicateSegmentedSortedArrayTests",
+        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy(TASK,
                 "TestCharSegmentedSortedArray", objectSsaTest);
     }
 

@@ -1,6 +1,50 @@
+// Plugins (settings plugins, and plugins applied by id and version) are resolved only from the Gradle plugin portal.
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+    }
+}
+
 plugins {
     id 'com.gradle.develocity' version '4.6.1'
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+// Repositories are declared here, centrally; project-level `repositories {}` blocks are rejected
+// (FAIL_ON_PROJECT_REPOS). Each artifact should come from exactly one repository: repositories that serve only a
+// known set of artifacts are declared with exclusiveContent, and everything else comes from Maven Central.
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        exclusiveContent {
+            // Brotli codec, used by parquet tests
+            forRepository {
+                maven {
+                    name = 'jitpack'
+                    url = 'https://jitpack.io'
+                }
+            }
+            filter {
+                includeGroup 'com.github.rdblue'
+            }
+        }
+        exclusiveContent {
+            // Confluent's own artifacts (including the parent POMs and BOMs of the serializers, which Gradle looks up as modules),
+            // and its "-ccs" flavor of kafka-clients. Not all of io.confluent is hosted here;
+            // e.g. logredactor is only on Maven Central, so the group can't be claimed wholesale.
+            forRepository {
+                maven {
+                    name = 'confluent'
+                    url = 'https://packages.confluent.io/maven'
+                }
+            }
+            filter {
+                includeModuleByRegex 'io\\.confluent', '(?!logredactor).*'
+                includeVersionByRegex 'org\\.apache\\.kafka', 'kafka-clients', '.*-ccs'
+            }
+        }
+        mavenCentral()
+    }
 }
 
 gradle.ext.buildStartTime = new Date()
@@ -190,6 +234,9 @@ project(':engine-updategraph').projectDir = file('engine/updategraph')
 
 include(':engine-api')
 project(':engine-api').projectDir = file('engine/api')
+
+include(':engine-api-proto')
+project(':engine-api-proto').projectDir = file('engine/api-proto')
 
 include(':engine-rowset')
 project(':engine-rowset').projectDir = file('engine/rowset')
