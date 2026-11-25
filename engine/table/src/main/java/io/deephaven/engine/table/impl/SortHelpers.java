@@ -1025,17 +1025,31 @@ public class SortHelpers {
                 if (maximumRunLength > kernelCapacity) {
                     if (kernel != null) {
                         kernel.close();
+                        kernel = null;
                     }
                     kernelCapacity = Math.max(maximumRunLength, Math.min(targetSize, 2 * kernelCapacity));
                     kernel = kernelFactory.apply(kernelCapacity);
                 }
             }
 
+            /**
+             * Close the chunks and contexts and clear their fields, so that a failure while reallocating them leaves
+             * nothing for {@link #close()} to close again.
+             */
             private void closeChunks() {
                 SafeCloseable.closeAll(batchKeys, rowKeys, keyPositions, positions, keySortContext, keysFillContext,
                         keysFillFromContext);
+                batchKeys = null;
+                rowKeys = null;
+                keyPositions = null;
+                positions = null;
+                keySortContext = null;
+                keysFillContext = null;
+                keysFillFromContext = null;
                 if (values != null) {
-                    SafeCloseable.closeAll(values);
+                    final WritableChunk<Values>[] toClose = values;
+                    values = null;
+                    SafeCloseable.closeAll(toClose);
                 }
             }
 
@@ -1363,7 +1377,7 @@ public class SortHelpers {
     /**
      * A factory of kernels, given the size of each, that sort by the sort columns [firstColumn, columnSources.length),
      * or null when no kernel is available for them. A single column uses the pregenerated kernels, which cover every
-     * chunk type but boolean.
+     * chunk type but boolean. Two or more columns use a generated kernel, which is compiled before this returns.
      */
     @Nullable
     private static IntFunction<MultiColumnSortKernel<Any>> remainingColumnsKernelFactory(
@@ -1385,6 +1399,8 @@ public class SortHelpers {
         if (!IndirectTimsortKernelFactory.hasKernel(kernelChunkTypes, kernelComparators)) {
             return null;
         }
+        // compile the kernel now, so that a compilation failure is reported before the sort does any work
+        IndirectTimsortKernelFactory.prepareKernel(kernelChunkTypes, kernelOrder, kernelComparators);
         return size -> IndirectTimsortKernelFactory.makeContext(kernelChunkTypes, kernelOrder, kernelComparators,
                 size);
     }
