@@ -10,6 +10,7 @@ import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Before;
 import org.junit.Rule;
@@ -93,13 +94,14 @@ public class BigDecimalMatchFilterTest {
     }
 
     @Test
-    public void columnSourceMatchSkipsValueOfAnotherType() {
-        // ColumnSource.match reaches the chunk filter without going through MatchFilter
+    public void chunkFilterSkipsValueOfAnotherType() {
+        // a chunk filter built directly reaches the factory without MatchFilter dropping the values of another type
         final ColumnSource<?> source = unsorted.getColumnSource("X");
         final Object[] keys = {5.0, new BigDecimal("7"), "5"};
-        try (final WritableRowSet matched = source.match(false, MatchOptions.REGULAR, unsorted.getRowSet(), keys);
-                final WritableRowSet unmatched =
-                        source.match(false, MatchOptions.INVERTED, unsorted.getRowSet(), keys)) {
+        try (final WritableRowSet matched = ChunkFilter.applyChunkFilter(unsorted.getRowSet(), source, false,
+                ChunkMatchFilterFactory.getChunkFilter(BigDecimal.class, MatchOptions.REGULAR, keys));
+                final WritableRowSet unmatched = ChunkFilter.applyChunkFilter(unsorted.getRowSet(), source, false,
+                        ChunkMatchFilterFactory.getChunkFilter(BigDecimal.class, MatchOptions.INVERTED, keys))) {
             // only the 7, the last row, matches
             assertEquals(1, matched.size());
             assertEquals(6, matched.firstRowKey());

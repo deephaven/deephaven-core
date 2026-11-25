@@ -1113,54 +1113,5 @@ public class WindowCheck {
             return localTimes.clockStep < currentStep ? localTimes.currentTime : localTimes.prevTime;
         }
 
-        @Override
-        public WritableRowSet match(
-                final boolean usePrev,
-                @NotNull final MatchOptions matchOptions,
-                @NotNull RowSet selection, Object... keys) {
-            final List<Object> keysList = Arrays.asList(keys);
-            final boolean includeNull = keysList.contains(null) ^ matchOptions.inverted();
-            final boolean includeTrue = keysList.contains(true) ^ matchOptions.inverted();
-            final boolean includeFalse = keysList.contains(false) ^ matchOptions.inverted();
-            final long time = usePrev ? timeStampForPrev() : times.currentTime;
-
-            final int getSize = (int) Math.min(4096, selection.size());
-
-            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-
-            try (final GetContext getContext = timeStampSource.makeGetContext(getSize);
-                    final RowSequence.Iterator rsit = selection.getRowSequenceIterator()) {
-                while (rsit.hasMore()) {
-                    final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(getSize);
-                    final LongChunk<OrderedRowKeys> rowKeys = chunkRs.asRowKeyChunk();
-                    final LongChunk<? extends Values> timeStamps;
-                    if (usePrev) {
-                        timeStamps = timeStampSource.getPrevChunk(getContext, chunkRs).asLongChunk();
-                    } else {
-                        timeStamps = timeStampSource.getChunk(getContext, chunkRs).asLongChunk();
-                    }
-                    final int chunkSize = rowKeys.size();
-                    for (int ii = 0; ii < chunkSize; ++ii) {
-                        final long rowKey = rowKeys.get(ii);
-                        final Boolean inWindow = computeInWindow(timeStamps.get(ii), time);
-                        if (inWindow == null) {
-                            if (includeNull) {
-                                builder.appendKey(rowKey);
-                            }
-                        } else if (inWindow) {
-                            if (includeTrue) {
-                                builder.appendKey(rowKey);
-                            }
-                        } else {
-                            if (includeFalse) {
-                                builder.appendKey(rowKey);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return builder.build();
-        }
     }
 }

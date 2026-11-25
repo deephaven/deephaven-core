@@ -143,9 +143,10 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
                 ? new MatchFilter(matchOptions, newName, values)
                 : new MatchFilter(null, matchOptions, newName, strValues, null);
         renamed.initialized = true;
-        renamed.chunkFilter = chunkFilter;
         renamed.values = values;
         renamed.columnType = columnType;
+        // the rename keeps the values, options and column type, so the renamed filter shares the built chunk filters
+        renamed.chunkFilters = chunkFilters;
         return Optional.of(renamed);
     }
 
@@ -344,6 +345,10 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
             }
             failedOver = true;
         }
+        if (!failedOver) {
+            // replaces any chunk filters built before init, which matched the unconverted values
+            chunkFilters = new MatchChunkFilters(columnType, matchOptions, values);
+        }
         initialized = true;
     }
 
@@ -357,7 +362,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
         }
 
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return columnSource.match(usePrev, matchOptions, selection, values);
+        return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, matchChunkFilters().regular());
     }
 
     @NotNull
@@ -373,28 +378,95 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
         }
 
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        final MatchOptions options = matchOptions.withInverted(!matchOptions.inverted());
-        return columnSource.match(usePrev, options, selection, values);
+        return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, matchChunkFilters().inverted());
     }
 
-    private ChunkFilter chunkFilter;
+    /**
+     * The chunk filters built from {@link #values}, or null before {@link #init} and before {@link #chunkFilter()}
+     * first builds them. Copies and renames of an initialized filter share the instance, so the set of values is built
+     * once for all of them, however many parallel segments and update cycles call {@link #filter} or
+     * {@link #filterInverse}.
+     */
+    private volatile MatchChunkFilters chunkFilters;
+
+    @NotNull
+    private MatchChunkFilters matchChunkFilters() {
+        MatchChunkFilters local = chunkFilters;
+        if (local == null) {
+            synchronized (this) {
+                local = chunkFilters;
+                if (local == null) {
+                    // chunkFilter() of a filter that was constructed with values and has not been initialized
+                    chunkFilters = local = new MatchChunkFilters(columnType, matchOptions, values);
+                }
+            }
+        }
+        return local;
+    }
 
     @Override
     public Optional<ChunkFilter> chunkFilter() {
-        if (chunkFilter == null) {
-            final WhereFilter failover = getFailoverFilter();
-            if (failover != null) {
-                if (failover instanceof ExposesChunkFilter) {
-                    return ((ExposesChunkFilter) failover).chunkFilter();
-                }
-                return Optional.empty();
+        final WhereFilter failover = getFailoverFilter();
+        if (failover != null) {
+            if (failover instanceof ExposesChunkFilter) {
+                return ((ExposesChunkFilter) failover).chunkFilter();
             }
-            if (values == null) {
-                return Optional.empty();
-            }
-            chunkFilter = ChunkMatchFilterFactory.getChunkFilter(columnType, matchOptions, values);
+            return Optional.empty();
         }
-        return Optional.of(chunkFilter);
+        if (values == null) {
+            return Optional.empty();
+        }
+        return Optional.of(matchChunkFilters().regular());
+    }
+
+    /**
+     * The chunk filters for one set of values, column type and {@link MatchOptions}: the regular filter and the
+     * inverted filter, each built on first use and then kept. A chunk filter holds no per-call state, so one instance
+     * serves every thread that filters with the instance.
+     */
+    private static final class MatchChunkFilters {
+        private final Class<?> columnType;
+        private final MatchOptions matchOptions;
+        private final Object[] values;
+
+        private volatile ChunkFilter regular;
+        private volatile ChunkFilter inverted;
+
+        private MatchChunkFilters(
+                final Class<?> columnType,
+                final MatchOptions matchOptions,
+                final Object[] values) {
+            this.columnType = columnType;
+            this.matchOptions = matchOptions;
+            this.values = values;
+        }
+
+        private ChunkFilter regular() {
+            ChunkFilter local = regular;
+            if (local == null) {
+                synchronized (this) {
+                    local = regular;
+                    if (local == null) {
+                        regular = local = ChunkMatchFilterFactory.getChunkFilter(columnType, matchOptions, values);
+                    }
+                }
+            }
+            return local;
+        }
+
+        private ChunkFilter inverted() {
+            ChunkFilter local = inverted;
+            if (local == null) {
+                synchronized (this) {
+                    local = inverted;
+                    if (local == null) {
+                        inverted = local = ChunkMatchFilterFactory.getChunkFilter(
+                                columnType, matchOptions.withInverted(!matchOptions.inverted()), values);
+                    }
+                }
+            }
+            return local;
+        }
     }
 
     @Override
@@ -1232,8 +1304,9 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
         }
         if (initialized) {
             copy.initialized = true;
-            // a chunk filter holds no state of its own, so the copy shares ours rather than building another
-            copy.chunkFilter = chunkFilter;
+            // a chunk filter holds no per-call state, so the copy shares the built chunk filters rather than building
+            // another set of values
+            copy.chunkFilters = chunkFilters;
             copy.values = values;
             copy.columnType = columnType;
             // If we failed over, the copy must too, or it would claim to be initialized without any values to match.

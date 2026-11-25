@@ -8,8 +8,8 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Default;
 
 /**
- * An object for controlling the behavior of a {@code match} operation. Used by {@code ColumnSource#match} and when
- * creating {@code MatchFilter}.
+ * An object for controlling the behavior of a {@code match} operation. Used when creating {@code MatchFilter} and when
+ * building a match chunk filter with {@code ChunkMatchFilterFactory}.
  */
 @Immutable
 @BuildableStyle

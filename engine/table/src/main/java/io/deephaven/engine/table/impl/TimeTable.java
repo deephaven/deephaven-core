@@ -17,13 +17,20 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
+import io.deephaven.engine.table.impl.select.AbstractRangeFilter;
+import io.deephaven.engine.table.impl.select.LongRangeFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.RangeFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Numeric;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -36,12 +43,13 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Stream;
 
 import static io.deephaven.time.DateTimeUtils.currentClock;
 import static io.deephaven.time.DateTimeUtils.epochNanos;
 import static io.deephaven.time.DateTimeUtils.epochNanosToInstant;
-import static io.deephaven.time.DateTimeUtils.isBefore;
 import static io.deephaven.time.DateTimeUtils.minus;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
 import static io.deephaven.time.DateTimeUtils.parseDurationNanos;
@@ -270,40 +278,155 @@ public final class TimeTable extends QueryTable implements Runnable, HasRefreshi
         }
 
         @Override
-        public WritableRowSet match(
+        public void estimatePushdownFilterCost(
+                final WhereFilter filter,
+                final RowSet selection,
                 final boolean usePrev,
-                @NotNull final MatchOptions matchOptions,
-                @NotNull final RowSet selection,
-                final Object... keys) {
-            if (startTime == null) {
-                // there are no valid rows for this column source yet
-                return RowSetFactory.empty();
+                final PushdownFilterContext context,
+                final JobScheduler jobScheduler,
+                final LongConsumer onComplete,
+                final Consumer<Exception> onError) {
+            // A range on either timestamp column is a LongRangeFilter on epoch nanoseconds: an InstantRangeFilter on
+            // the Instant column, and a plain LongRangeFilter on the long reinterpretation. Computing a row key costs
+            // about as much as testing one row, so a match with more values than the selection has rows is scanned.
+            final WhereFilter unwrapped = WhereFilterDelegating.maybeUnwrapFilter(filter);
+            final MatchFilter matchFilter = MatchFilter.extractMatchFilter(unwrapped).orElse(null);
+            final boolean supported = matchFilter != null
+                    ? matchFilter.getValues().length <= selection.size()
+                    : RangeFilter.extractRangeFilter(unwrapped).orElse(null) instanceof LongRangeFilter;
+            final long cost = supported ? PushdownResult.TABLE_KEY_LOOKUP_COST : PushdownResult.UNSUPPORTED_ACTION_COST;
+            onComplete.accept(cost);
+        }
+
+        /**
+         * Answer a match or range filter from the start time and period, without reading any row. The row at key
+         * {@code k} holds the timestamp {@code startTime + period * k}, which rises with {@code k} and is never null.
+         */
+        @Override
+        public void pushdownFilter(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final long costCeiling,
+                final JobScheduler jobScheduler,
+                final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            if (costCeiling < PushdownResult.TABLE_KEY_LOOKUP_COST) {
+                onComplete.accept(PushdownResult.allMaybeMatch(selection));
+                return;
             }
+            final WhereFilter unwrapped = WhereFilterDelegating.maybeUnwrapFilter(filter);
+            final MatchFilter matchFilter = MatchFilter.extractMatchFilter(unwrapped).orElse(null);
+            if (matchFilter != null) {
+                onComplete.accept(pushdownMatchFilter(matchFilter, selection));
+                return;
+            }
+            final AbstractRangeFilter rangeFilter = RangeFilter.extractRangeFilter(unwrapped).orElse(null);
+            if (rangeFilter instanceof LongRangeFilter) {
+                onComplete.accept(pushdownRangeFilter((LongRangeFilter) rangeFilter, selection));
+                return;
+            }
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+        }
 
-            final RowSetBuilderRandom matchingSet = RowSetFactory.builderRandom();
-
-            for (Object o : keys) {
-                if (!(o instanceof Instant)) {
+        /**
+         * The rows of {@code selection} that {@code matchFilter} selects, from the row key each value computes to. A
+         * value matches at most one row. A value that is neither an {@link Instant} nor a {@link Long}, null included,
+         * matches no row.
+         */
+        @NotNull
+        private PushdownResult pushdownMatchFilter(
+                @NotNull final MatchFilter matchFilter,
+                @NotNull final RowSet selection) {
+            final boolean inverted = matchFilter.getMatchOptions().inverted();
+            final Instant localStartTime = startTime;
+            if (localStartTime == null) {
+                // the table has no rows until the first refresh sets the start time
+                return inverted ? PushdownResult.allMatch(selection) : PushdownResult.noneMatch(selection);
+            }
+            final long startNanos = epochNanos(localStartTime);
+            final RowSetBuilderRandom matchingKeys = RowSetFactory.builderRandom();
+            for (final Object value : matchFilter.getValues()) {
+                final long valueNanos;
+                if (value instanceof Instant) {
+                    try {
+                        valueNanos = epochNanos((Instant) value);
+                    } catch (final DateTimeUtils.DateTimeOverflowException e) {
+                        // outside the range of epoch nanoseconds, where every timestamp of the table lies
+                        continue;
+                    }
+                } else if (value instanceof Long) {
+                    valueNanos = (Long) value;
+                } else {
                     continue;
                 }
-                final Instant key = (Instant) o;
-
-                if (epochNanos(key) % period != epochNanos(startTime) % period || isBefore(key, startTime)) {
+                if (valueNanos < startNanos) {
                     continue;
                 }
-
-                matchingSet.addKey(minus(key, startTime) / period);
-            }
-
-            if (matchOptions.inverted()) {
-                try (final WritableRowSet matching = matchingSet.build()) {
-                    return selection.minus(matching);
+                final long offsetNanos;
+                try {
+                    offsetNanos = Math.subtractExact(valueNanos, startNanos);
+                } catch (final ArithmeticException e) {
+                    // no row key reaches a timestamp this far after the start time
+                    continue;
+                }
+                if (offsetNanos % period == 0) {
+                    matchingKeys.addKey(offsetNanos / period);
                 }
             }
+            try (final WritableRowSet keys = matchingKeys.build();
+                    final WritableRowSet matching = inverted ? selection.minus(keys) : keys.intersect(selection)) {
+                return PushdownResult.exactMatch(selection, matching);
+            }
+        }
 
-            final WritableRowSet matching = matchingSet.build();
-            matching.retain(selection);
-            return matching;
+        /**
+         * The rows of {@code selection} that {@code rangeFilter} selects. The timestamps rise with the row key, so the
+         * rows in the range are one run of keys, from the first key at or above the lowest matching timestamp to the
+         * last key at or below the highest.
+         */
+        @NotNull
+        private PushdownResult pushdownRangeFilter(
+                @NotNull final LongRangeFilter rangeFilter,
+                @NotNull final RowSet selection) {
+            final Instant localStartTime = startTime;
+            if (localStartTime == null) {
+                // the table has no rows until the first refresh sets the start time
+                return PushdownResult.noneMatch(selection);
+            }
+            final long lower = rangeFilter.getLower();
+            final long upper = rangeFilter.getUpper();
+            if ((!rangeFilter.isLowerInclusive() && lower == Long.MAX_VALUE)
+                    || (!rangeFilter.isUpperInclusive() && upper == Long.MIN_VALUE)) {
+                return PushdownResult.noneMatch(selection);
+            }
+            final long lowestNanos = rangeFilter.isLowerInclusive() ? lower : lower + 1;
+            final long highestNanos = rangeFilter.isUpperInclusive() ? upper : upper - 1;
+            final long startNanos = epochNanos(localStartTime);
+            if (highestNanos < startNanos || lowestNanos > highestNanos) {
+                return PushdownResult.noneMatch(selection);
+            }
+            // Each offset below is positive, so a negative difference means the subtraction overflowed: the bound lies
+            // further after the start time than any row key reaches.
+            final long firstKey;
+            if (lowestNanos <= startNanos) {
+                firstKey = 0;
+            } else {
+                final long lowestOffset = lowestNanos - startNanos;
+                if (lowestOffset < 0) {
+                    return PushdownResult.noneMatch(selection);
+                }
+                firstKey = lowestOffset / period + (lowestOffset % period == 0 ? 0 : 1);
+            }
+            final long highestOffset = highestNanos - startNanos;
+            final long lastKey = highestOffset < 0 ? Long.MAX_VALUE : highestOffset / period;
+            if (firstKey > lastKey) {
+                return PushdownResult.noneMatch(selection);
+            }
+            try (final WritableRowSet matching = selection.subSetByKeyRange(firstKey, lastKey)) {
+                return PushdownResult.exactMatch(selection, matching);
+            }
         }
 
         @Override
@@ -411,40 +534,31 @@ public final class TimeTable extends QueryTable implements Runnable, HasRefreshi
             }
 
             @Override
-            public WritableRowSet match(
+            public void estimatePushdownFilterCost(
+                    final WhereFilter filter,
+                    final RowSet selection,
                     final boolean usePrev,
-                    @NotNull final MatchOptions matchOptions,
-                    @NotNull final RowSet selection,
-                    final Object... keys) {
-                if (startTime == null) {
-                    // there are no valid rows for this column source yet
-                    return RowSetFactory.empty();
-                }
+                    final PushdownFilterContext context,
+                    final JobScheduler jobScheduler,
+                    final LongConsumer onComplete,
+                    final Consumer<Exception> onError) {
+                // the bounds and values of a filter on either timestamp column are epoch nanoseconds
+                SyntheticInstantSource.this.estimatePushdownFilterCost(
+                        filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+            }
 
-                final RowSetBuilderRandom matchingSet = RowSetFactory.builderRandom();
-
-                for (Object o : keys) {
-                    if (!(o instanceof Long)) {
-                        continue;
-                    }
-                    final long key = (Long) o;
-
-                    if (key % period != epochNanos(startTime) % period || key < epochNanos(startTime)) {
-                        continue;
-                    }
-
-                    matchingSet.addKey((key - epochNanos(startTime)) / period);
-                }
-
-                if (matchOptions.inverted()) {
-                    try (final WritableRowSet matching = matchingSet.build()) {
-                        return selection.minus(matching);
-                    }
-                }
-
-                final WritableRowSet matching = matchingSet.build();
-                matching.retain(selection);
-                return matching;
+            @Override
+            public void pushdownFilter(
+                    final WhereFilter filter,
+                    final RowSet selection,
+                    final boolean usePrev,
+                    final PushdownFilterContext context,
+                    final long costCeiling,
+                    final JobScheduler jobScheduler,
+                    final Consumer<PushdownResult> onComplete,
+                    final Consumer<Exception> onError) {
+                SyntheticInstantSource.this.pushdownFilter(
+                        filter, selection, usePrev, context, costCeiling, jobScheduler, onComplete, onError);
             }
 
             @Override

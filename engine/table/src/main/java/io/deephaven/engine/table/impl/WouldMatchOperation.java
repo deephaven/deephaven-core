@@ -12,7 +12,10 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.util.SafeCloseable;
@@ -22,6 +25,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -385,17 +390,61 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         @Override
-        public WritableRowSet match(
+        public void estimatePushdownFilterCost(
+                final WhereFilter filter,
+                final RowSet selection,
                 final boolean usePrev,
-                @NotNull final MatchOptions matchOptions,
+                final PushdownFilterContext context,
+                final JobScheduler jobScheduler,
+                final LongConsumer onComplete,
+                final Consumer<Exception> onError) {
+            final boolean supported =
+                    MatchFilter.extractMatchFilter(WhereFilterDelegating.maybeUnwrapFilter(filter)).isPresent();
+            final long cost = supported ? PushdownResult.TABLE_KEY_LOOKUP_COST : PushdownResult.UNSUPPORTED_ACTION_COST;
+            onComplete.accept(cost);
+        }
+
+        /**
+         * Answer a match filter from {@link #source}, without reading the column a chunk at a time.
+         */
+        @Override
+        public void pushdownFilter(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final long costCeiling,
+                final JobScheduler jobScheduler,
+                final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            if (costCeiling < PushdownResult.TABLE_KEY_LOOKUP_COST) {
+                onComplete.accept(PushdownResult.allMaybeMatch(selection));
+                return;
+            }
+            final MatchFilter matchFilter =
+                    MatchFilter.extractMatchFilter(WhereFilterDelegating.maybeUnwrapFilter(filter)).orElse(null);
+            if (matchFilter != null) {
+                onComplete.accept(pushdownMatchFilter(matchFilter, selection, usePrev));
+                return;
+            }
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+        }
+
+        /**
+         * The rows of {@code selection} that {@code matchFilter} selects, from {@link #source} or its previous value.
+         */
+        @NotNull
+        private PushdownResult pushdownMatchFilter(
+                @NotNull final MatchFilter matchFilter,
                 @NotNull final RowSet selection,
-                final Object... keys) {
+                final boolean usePrev) {
+            // A row's value is true exactly when the source row set contains the row, and is never null, so a null
+            // value matches no row.
             boolean hasFalse = false;
             boolean hasTrue = false;
-
-            for (Object key : keys) {
-                if (key instanceof Boolean) {
-                    if ((Boolean) key) {
+            for (final Object value : matchFilter.getValues()) {
+                if (value instanceof Boolean) {
+                    if ((Boolean) value) {
                         hasTrue = true;
                     } else {
                         hasFalse = true;
@@ -403,24 +452,19 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 }
             }
 
+            final boolean inverted = matchFilter.getMatchOptions().inverted();
             if (hasTrue && hasFalse) {
-                return matchOptions.inverted() ? RowSetFactory.empty() : selection.copy();
+                return inverted ? PushdownResult.noneMatch(selection) : PushdownResult.allMatch(selection);
             } else if (!hasTrue && !hasFalse) {
-                return matchOptions.inverted() ? selection.copy() : RowSetFactory.empty();
+                return inverted ? PushdownResult.allMatch(selection) : PushdownResult.noneMatch(selection);
             }
 
             try (final SafeCloseableList closer = new SafeCloseableList()) {
-                final WritableRowSet intersection;
-                if (usePrev) {
-                    intersection = selection.intersect(closer.add(source.copyPrev()));
-                } else {
-                    intersection = selection.intersect(source);
-                }
-                if (matchOptions.inverted() ^ hasFalse) {
-                    closer.add(intersection);
-                    return selection.minus(intersection);
-                }
-                return intersection;
+                final WritableRowSet intersection = closer.add(usePrev
+                        ? selection.intersect(closer.add(source.copyPrev()))
+                        : selection.intersect(source));
+                final RowSet matching = inverted ^ hasFalse ? closer.add(selection.minus(intersection)) : intersection;
+                return PushdownResult.exactMatch(selection, matching);
             }
         }
 

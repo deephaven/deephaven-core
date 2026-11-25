@@ -19,6 +19,8 @@ import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
@@ -244,10 +246,12 @@ public class TestWindowCheck {
         Assert.assertNull(resultSource.getPrev(3));
 
         // matching previous values uses the previous time, as getPrev does
+        final ChunkFilter inWindowFilter =
+                ChunkMatchFilterFactory.getChunkFilter(Boolean.class, MatchOptions.REGULAR, Boolean.TRUE);
         try (final WritableRowSet prevInWindow =
-                resultSource.match(true, MatchOptions.REGULAR, i(0, 1, 2, 3), Boolean.TRUE);
+                ChunkFilter.applyChunkFilter(i(0, 1, 2, 3), resultSource, true, inWindowFilter);
                 final WritableRowSet inWindow =
-                        resultSource.match(false, MatchOptions.REGULAR, i(0, 1, 2, 3), Boolean.TRUE)) {
+                        ChunkFilter.applyChunkFilter(i(0, 1, 2, 3), resultSource, false, inWindowFilter)) {
             Assert.assertEquals(i(1, 2), prevInWindow);
             Assert.assertEquals(i(2), inWindow);
         }

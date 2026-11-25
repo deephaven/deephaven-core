@@ -13,6 +13,7 @@ import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ShiftObliviousListener;
@@ -20,16 +21,20 @@ import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterImpl;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -436,14 +441,16 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
             // A row that matched on the previous step still reports that it did.
             assertEquals(Boolean.TRUE, matchColumn.getPrev(6));
 
-            // The same distinction through the column source's own match, which is what a where on the match column
-            // uses when it reads previous values.
-            try (final WritableRowSet currentMatches =
-                    matchColumn.match(false, MatchOptions.REGULAR, result.getRowSet(), true);
-                    final WritableRowSet previousMatches =
-                            matchColumn.match(true, MatchOptions.REGULAR, result.getRowSet(), true)) {
-                assertEquals(i(2, 6), currentMatches);
-                assertEquals(i(6), previousMatches);
+            // The same distinction through the match column's pushdown, which is what a where on the match column
+            // uses, reading previous values when it filters them.
+            final MatchFilter matchesTrue = matchFilter(result, MatchOptions.REGULAR, true);
+            try (final PushdownResult currentMatches = pushdown(matchColumn, matchesTrue, result.getRowSet(), false);
+                    final PushdownResult previousMatches =
+                            pushdown(matchColumn, matchesTrue, result.getRowSet(), true)) {
+                assertEquals(i(2, 6), currentMatches.match());
+                assertTrue(currentMatches.maybeMatch().isEmpty());
+                assertEquals(i(6), previousMatches.match());
+                assertTrue(previousMatches.maybeMatch().isEmpty());
             }
         } finally {
             updateGraph.completeCycleForUnitTests();
@@ -460,13 +467,73 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         final Table result = source.wouldMatch("M=Number > 1");
         final ColumnSource<Boolean> matchColumn = result.getColumnSource("M");
 
-        try (final WritableRowSet all =
-                matchColumn.match(false, MatchOptions.REGULAR, result.getRowSet(), true, false);
-                final WritableRowSet none =
-                        matchColumn.match(false, MatchOptions.INVERTED, result.getRowSet(), true, false)) {
-            assertEquals(result.getRowSet(), all);
-            assertTrue(none.isEmpty());
+        try (final PushdownResult all = pushdown(matchColumn,
+                matchFilter(result, MatchOptions.REGULAR, true, false), result.getRowSet(), false);
+                final PushdownResult none = pushdown(matchColumn,
+                        matchFilter(result, MatchOptions.INVERTED, true, false), result.getRowSet(), false)) {
+            assertEquals(result.getRowSet(), all.match());
+            assertTrue(all.maybeMatch().isEmpty());
+            assertTrue(none.match().isEmpty());
+            assertTrue(none.maybeMatch().isEmpty());
         }
+    }
+
+    /**
+     * A where on the match column answers from the match column's row set, and agrees with scanning the column, for
+     * each boolean regular and inverted, for null, and through updates of the source.
+     */
+    @Test
+    public void testWhereOnMatchColumn() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6, 8).toTracking(), col("Number", 0, 1, 2, 3));
+        final Table result = source.wouldMatch("M=Number > 1");
+        final Object[][] valueSets = {{true}, {false}, {null}, {true, false}, {true, null}};
+
+        final Runnable check = () -> {
+            // a static copy of the current rows, through sources that decline pushdown
+            final Map<String, ColumnSource<?>> scanSources = new LinkedHashMap<>();
+            result.getColumnSourceMap()
+                    .forEach((name, cs) -> scanSources.put(name, new NoPushdownColumnSourceWrapper<>(cs)));
+            final Table scanned = new QueryTable(result.getRowSet().copy().toTracking(), scanSources);
+            for (final Object[] values : valueSets) {
+                for (final MatchOptions options : new MatchOptions[] {MatchOptions.REGULAR, MatchOptions.INVERTED}) {
+                    final MatchFilter filter = matchFilter(result, options, values);
+                    try (final PushdownResult pushedDown = pushdown(result.getColumnSource("M", Boolean.class),
+                            filter, result.getRowSet(), false)) {
+                        assertTrue(pushedDown.maybeMatch().isEmpty());
+                    }
+                    assertTableEquals(scanned.where(filter.copy()), result.where(filter.copy()));
+                }
+            }
+        };
+        check.run();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(2, 10), col("Number", 5, 0));
+            removeRows(source, i(8));
+            source.notifyListeners(i(10), i(8), i(2));
+        });
+        check.run();
+    }
+
+    private static MatchFilter matchFilter(final Table table, final MatchOptions options, final Object... values) {
+        final MatchFilter filter = new MatchFilter(options, "M", values);
+        filter.init(table.getDefinition());
+        return filter;
+    }
+
+    private static PushdownResult pushdown(
+            final ColumnSource<Boolean> matchColumn,
+            final MatchFilter filter,
+            final RowSet selection,
+            final boolean usePrev) {
+        final MutableObject<PushdownResult> result = new MutableObject<>();
+        ((AbstractColumnSource<Boolean>) matchColumn).pushdownFilter(filter, selection, usePrev,
+                PushdownFilterContext.NO_PUSHDOWN_CONTEXT, Long.MAX_VALUE, new ImmediateJobScheduler(),
+                result::setValue, failure -> {
+                    throw new AssertionError(failure);
+                });
+        return result.getValue();
     }
 
     /**

@@ -13,6 +13,8 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.NotificationAwareDependency;
 import io.deephaven.engine.table.impl.NotificationStepReceiver;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.WindowCheck;
 import io.deephaven.time.DateTimeUtils;
@@ -327,6 +329,10 @@ public class TimeSeriesFilter
         // the column source containing the window; which we match on
         private final ColumnSource<Object> windowColumnSource;
 
+        // matches the rows whose window column is TRUE; built once, as a chunk filter holds no per-call state
+        private final ChunkFilter inWindowFilter =
+                ChunkMatchFilterFactory.getChunkFilter(Boolean.class, MatchOptions.REGULAR, Boolean.TRUE);
+
         protected TimeSeriesFilterWindowListener(String listenerDescription, QueryTable tableWithWindow,
                 final String windowSourceName) {
             super(listenerDescription, tableWithWindow, false);
@@ -354,7 +360,7 @@ public class TimeSeriesFilter
             // The original filter did not include nulls for a regular filter, so we do not include them here either to
             // maintain compatibility. That also means the inverted filter is going to include nulls (as the null is
             // less than the current time using Deephaven long comparisons).
-            return windowColumnSource.match(usePrev, MatchOptions.REGULAR, rowSet, Boolean.TRUE);
+            return ChunkFilter.applyChunkFilter(rowSet, windowColumnSource, usePrev, inWindowFilter);
         }
     }
 
