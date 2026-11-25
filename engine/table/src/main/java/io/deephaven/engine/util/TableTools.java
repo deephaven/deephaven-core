@@ -699,7 +699,8 @@ public class TableTools {
     /**
      * Creates a new Table.
      *
-     * @param size the number of rows to allocate
+     * @param size the number of rows in the new table; the table reads each column source at row keys 0 through
+     *        {@code size - 1} without copying
      * @param names a List of column names
      * @param columnSources a List of the ColumnSource(s)
      * @return a Deephaven Table
@@ -712,7 +713,8 @@ public class TableTools {
     /**
      * Creates a new Table.
      *
-     * @param size the number of rows to allocate
+     * @param size the number of rows in the new table; the table reads each column source at row keys 0 through
+     *        {@code size - 1} without copying
      * @param columns a Map of column names and ColumnSources
      * @return a Deephaven Table
      */
@@ -765,10 +767,29 @@ public class TableTools {
         return queryTable;
     }
 
+    /**
+     * Creates a new in-memory table from {@code columnHolders} with the given definition. The definition must have the
+     * same column names, types, and order as the holders; it is not validated.
+     *
+     * @param definition the TableDefinition (column names and properties) to use for the new table
+     * @param columnHolders a list of ColumnHolders from which to create the table; all must have the same number of
+     *        rows
+     * @return a Deephaven Table
+     */
     public static Table newTable(TableDefinition definition, ColumnHolder<?>... columnHolders) {
         return newTable(definition, null, columnHolders);
     }
 
+    /**
+     * Creates a new in-memory table from {@code columnHolders} with the given definition and initial attributes. The
+     * definition must have the same column names, types, and order as the holders; it is not validated.
+     *
+     * @param definition the TableDefinition (column names and properties) to use for the new table
+     * @param attributes initial table attributes, or {@code null}
+     * @param columnHolders a list of ColumnHolders from which to create the table; all must have the same number of
+     *        rows
+     * @return a Deephaven Table
+     */
     public static Table newTable(TableDefinition definition, @Nullable Map<String, Object> attributes,
             ColumnHolder<?>... columnHolders) {
         checkSizes(columnHolders);

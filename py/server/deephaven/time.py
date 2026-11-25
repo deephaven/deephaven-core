@@ -445,10 +445,10 @@ def to_j_instant(dt: InstantLike | None) -> Instant | None:
         dt (Optional[InstantLike]): A date time value. If None is provided, None is returned.
 
     Returns:
-        Instant, TypeError
+        Instant
 
     Raises:
-        DHError
+        DHError, TypeError
     """
     try:
         if dt is None or pandas.isnull(dt):
