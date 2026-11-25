@@ -29,7 +29,7 @@ The column values, as a list, tuple, NumPy array, or other sequence. Each value 
 </ParamTable>
 
 > [!CAUTION]
-> A naive `datetime.datetime` value, which has no time zone, is read as UTC when the sequence contains no strings, but in the server's local time zone when the sequence contains a string. Pass `datetime.datetime` values that include a time zone, and do not mix naive `datetime.datetime` values with strings in the same sequence.
+> A naive `datetime.datetime` value, which has no time zone, can be read as UTC or in the server's local time zone, depending on how `datetime_col` converts the sequence. For example, it is read as UTC in a list of `datetime.datetime` values, but in the server's local time zone when the list also contains a string or when the values are in an object-dtype NumPy array. Pass `datetime.datetime` values that include a time zone.
 
 ## Returns
 

@@ -34,7 +34,7 @@ Each of the following functions returns an [`InputColumn`](./inputColumn.md):
 
 To create a column of a type that no helper function creates, such as an array type, construct an [`InputColumn`](./inputColumn.md) directly.
 
-When `cols` is a dictionary, `new_table` first converts it to a pandas `DataFrame`, so pandas type inference determines the column types. The conversion also rewrites each dictionary key: each run of characters other than letters, digits, and underscores becomes a single underscore, and such characters at the start or end of a key are removed. For example, the key `"Price ($)"` becomes the column `Price`. Keys that are still not valid column names after this rewrite, such as `"123"` or `"in"`, raise an error.
+When `cols` is a dictionary, `new_table` first converts it to a pandas `DataFrame`, so pandas type inference determines the column types. The conversion also rewrites each dictionary key, as [`to_table`](../../pandas/to-table.md) does. Usually, each run of characters other than letters, digits, and underscores becomes a single underscore, and such characters at the start or end of a key are removed. For example, the key `"Price ($)"` becomes the column `Price`. If any column has a pyarrow-backed `pd.ArrowDtype`, the characters are removed instead, so `"Shades.1"` becomes `Shades1`. Keys that are still not valid column names after this rewrite, such as `"123"` or `"in"`, raise an error.
 
 </Param>
 </ParamTable>
@@ -93,5 +93,6 @@ result = new_table({"Ints": [1, 2, 3], "Strs": ["a", "b", "c"]})
 - [`pyobj_col`](./pyobj_col.md)
 - [`short_col`](./shortCol.md)
 - [`string_col`](./stringCol.md)
+- [`pandas.to_table`](../../pandas/to-table.md)
 - [Javadoc](/core/javadoc/io/deephaven/engine/table/TableFactory.html#newTable(io.deephaven.qst.column.Column...))
 - [Pydoc](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.new_table)

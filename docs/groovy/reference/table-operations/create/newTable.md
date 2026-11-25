@@ -108,7 +108,7 @@ definition = TableDefinition.of(
 result = newTable(definition)
 ```
 
-The following example builds a new table from the [`ColumnSource`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html)s of an existing [static](../../../conceptual/table-types.md#static-tables), [flat](./flatten.md) table. It passes `source.size()` as `size`, and gives the column names and sources first as two lists in the same order, and then as a map.
+The following example builds a new table from the [`ColumnSource`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html)s of an existing [static](../../../conceptual/table-types.md#static-tables), [flat](./flatten.md) table. It passes the row count of `source` as `size`, and gives the column names and sources first as two lists in the same order, and then as a map.
 
 ```groovy order=resultFromLists,resultFromMap,source
 source = emptyTable(3).update("X = i", "Y = X * 1.5")
