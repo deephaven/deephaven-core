@@ -346,7 +346,8 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
             failedOver = true;
         }
         if (!failedOver) {
-            // replaces any chunk filters built before init, which matched the unconverted values
+            // Created here rather than on first use, so that every copy and rename made from now on shares one holder,
+            // which builds each chunk filter once, on first use.
             chunkFilters = new MatchChunkFilters(columnType, matchOptions, values);
         }
         initialized = true;
@@ -382,24 +383,23 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
     }
 
     /**
-     * The chunk filters built from {@link #values}, or null before {@link #init} and before {@link #chunkFilter()}
-     * first builds them. Copies and renames of an initialized filter share the instance, so the set of values is built
+     * The chunk filters built from the converted {@link #values}, set by an {@link #init} that does not fail over, and
+     * null otherwise. Copies and renames of an initialized filter share the instance, so the set of values is built
      * once for all of them, however many parallel segments and update cycles call {@link #filter} or
      * {@link #filterInverse}.
      */
     private volatile MatchChunkFilters chunkFilters;
 
+    /**
+     * The chunk filters of this initialized filter, which did not fail over.
+     *
+     * @throws IllegalStateException if {@link #init} has not run
+     */
     @NotNull
     private MatchChunkFilters matchChunkFilters() {
-        MatchChunkFilters local = chunkFilters;
+        final MatchChunkFilters local = chunkFilters;
         if (local == null) {
-            synchronized (this) {
-                local = chunkFilters;
-                if (local == null) {
-                    // chunkFilter() of a filter that was constructed with values and has not been initialized
-                    chunkFilters = local = new MatchChunkFilters(columnType, matchOptions, values);
-                }
-            }
+            throw new IllegalStateException("Filter must be initialized before matching");
         }
         return local;
     }
@@ -411,9 +411,6 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
             if (failover instanceof ExposesChunkFilter) {
                 return ((ExposesChunkFilter) failover).chunkFilter();
             }
-            return Optional.empty();
-        }
-        if (values == null) {
             return Optional.empty();
         }
         return Optional.of(matchChunkFilters().regular());

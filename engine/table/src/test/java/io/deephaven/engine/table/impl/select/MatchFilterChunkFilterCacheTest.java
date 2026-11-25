@@ -35,6 +35,7 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 
 /**
  * A {@link MatchFilter} builds the chunk filter for its values once, and every {@link MatchFilter#filter} and
@@ -92,6 +93,28 @@ public class MatchFilterChunkFilterCacheTest {
         assertSame(builtByCopy, filter.chunkFilter().orElseThrow());
         assertSame(builtByCopy, renamed.chunkFilter().orElseThrow());
         assertSame(builtByCopy, ((MatchFilter) renamed.copy()).chunkFilter().orElseThrow());
+    }
+
+    /**
+     * The chunk filters are built from the values that {@link MatchFilter#init} converts, so a filter that has not been
+     * initialized has none to match with.
+     */
+    @Test
+    public void uninitializedFilterHasNoChunkFilter() {
+        final Table table = data();
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "X", VALUES);
+        assertThrows(IllegalStateException.class, filter::chunkFilter);
+        assertThrows(IllegalStateException.class,
+                () -> filter.filter(table.getRowSet(), table.getRowSet(), table, false));
+        assertThrows(IllegalStateException.class,
+                () -> filter.filterInverse(table.getRowSet(), table.getRowSet(), table, false));
+
+        // a copy of the uninitialized filter initializes on its own and builds its own chunk filters
+        final MatchFilter copy = (MatchFilter) filter.copy();
+        copy.init(table.getDefinition());
+        try (final WritableRowSet matched = copy.filter(table.getRowSet(), table.getRowSet(), table, false)) {
+            assertEquals(i(1, 3, 5, 7, 9), matched);
+        }
     }
 
     /**
