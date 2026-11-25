@@ -59,6 +59,8 @@ public final class ShortIndirectTimsortKernel {
             insertionSort(positions, valuesToSort0, offset, length);
             return;
         }
+        // each sort starts galloping from the initial threshold, independent of earlier sorts with this context
+        context.minGallop = TimsortUtils.INITIAL_GALLOP;
         context.runCount = 0;
         int startRun = offset;
         while (startRun < offset + length) {
@@ -228,8 +230,6 @@ public final class ShortIndirectTimsortKernel {
     /**
      * Merge context temporary and run2 between mergeStartPosition and length2 (which is not the full run length, but
      * the length of things we might need to merge.
-     * <p>
-     * We eventually need to do galloping here, but are skipping that for now
      */
     private static void frontMerge(ShortIndirectSortKernelContext<?> context,
             WritableIntChunk<ChunkPositions> positions, ShortChunk<?> valuesToSort0,
@@ -271,7 +271,7 @@ public final class ShortIndirectTimsortKernel {
             // nodataleft
             while (ii < mergeEndExclusive) {
                 // if we had a lot of things from run1, we take the next thing from run2 then find it in run1
-                final int copyUntil1 = upperBound(context.temporaryPositions, valuesToSort0, tempCursor, run1size, val2Pos);
+                final int copyUntil1 = gallopForward(context.temporaryPositions, valuesToSort0, tempCursor, run1size, val2Pos, false);
                 final int gallopLength1 = copyUntil1 - tempCursor;
                 if (gallopLength1 > 0) {
                     copyToChunk(context.temporaryPositions, positions, tempCursor, ii, gallopLength1);
@@ -284,7 +284,7 @@ public final class ShortIndirectTimsortKernel {
                     context.minGallop--;
                 }
                 // if we had a lot of things from run2, we take the next thing from run1 and then find it in run2
-                final int copyUntil2 = lowerBound(positions, valuesToSort0, run2Cursor, mergeEndExclusive, val1Pos);
+                final int copyUntil2 = gallopForward(positions, valuesToSort0, run2Cursor, mergeEndExclusive, val1Pos, true);
                 final int gallopLength2 = copyUntil2 - run2Cursor;
                 if (gallopLength2 > 0) {
                     copyToChunk(positions, positions, run2Cursor, ii, gallopLength2);
@@ -312,8 +312,6 @@ public final class ShortIndirectTimsortKernel {
 
     /**
      * Merge context temporary and run1 between mergeStartPosition + length1 + temporary.length
-     * <p>
-     * We eventually need to do galloping here, but are skipping that for now
      */
     private static void backMerge(ShortIndirectSortKernelContext<?> context,
             WritableIntChunk<ChunkPositions> positions, ShortChunk<?> valuesToSort0,
@@ -356,7 +354,7 @@ public final class ShortIndirectTimsortKernel {
             // nodataleft
             while (ii >= mergeStartPosition) {
                 // if we had a lot of things from run2, we take the next thing from run1 then find it in run2
-                final int copyUntil2 = lowerBound(context.temporaryPositions, valuesToSort0, 0, tempCursor, val1Pos) + 1;
+                final int copyUntil2 = gallopBackward(context.temporaryPositions, valuesToSort0, 0, tempCursor + 1, val1Pos, true);
                 final int gallopLength2 = tempCursor - copyUntil2 + 1;
                 if (gallopLength2 > 0) {
                     copyToChunk(context.temporaryPositions, positions, copyUntil2, ii - gallopLength2 + 1, gallopLength2);
@@ -369,10 +367,10 @@ public final class ShortIndirectTimsortKernel {
                     context.minGallop--;
                 }
                 // if we had a lot of things from run1, we take the next thing from run2 and then find it in run1
-                final int copyUntil1 = upperBound(positions, valuesToSort0, mergeStartPosition, run1Cursor, val2Pos);
-                final int gallopLength1 = run1Cursor - copyUntil1;
+                final int copyUntil1 = gallopBackward(positions, valuesToSort0, mergeStartPosition, run1Cursor + 1, val2Pos, false);
+                final int gallopLength1 = run1Cursor - copyUntil1 + 1;
                 if (gallopLength1 > 0) {
-                    copyToChunk(positions, positions, copyUntil1, ii - gallopLength1, gallopLength1 + 1);
+                    copyToChunk(positions, positions, copyUntil1, ii - gallopLength1 + 1, gallopLength1);
                     run1Cursor -= gallopLength1;
                     ii -= gallopLength1;
                     if (run1Cursor < mergeStartPosition) {
@@ -440,6 +438,44 @@ public final class ShortIndirectTimsortKernel {
             }
         }
         return lo;
+    }
+
+    /**
+     * Returns the same position as bound, probing lo, lo + 1, lo + 3, lo + 7, ... before the binary search, so the
+     * number of comparisons is logarithmic in the distance from lo to the result.
+     */
+    private static int gallopForward(IntChunk<ChunkPositions> positions,
+            ShortChunk<?> valuesToSort0, int lo, int hi, int searchPos, final boolean lower) {
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
+        final int maxDistance = hi - lo;
+        // every element before searchLo is before the result
+        int searchLo = lo;
+        int distance = 0;
+        while (distance < maxDistance && compareColumns(valuesToSort0, positions.get(lo + distance), searchPos) <= compareLimit) {
+            searchLo = lo + distance + 1;
+            distance = distance < (maxDistance >> 1) ? (distance << 1) + 1 : maxDistance;
+        }
+        return bound(positions, valuesToSort0, searchLo, lo + distance, searchPos, lower);
+    }
+
+    /**
+     * Returns the same position as bound, probing hi - 1, hi - 2, hi - 4, hi - 8, ... before the binary search, so
+     * the number of comparisons is logarithmic in the distance from the result to hi.
+     */
+    private static int gallopBackward(IntChunk<ChunkPositions> positions,
+            ShortChunk<?> valuesToSort0, int lo, int hi, int searchPos, final boolean lower) {
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
+        final int maxDistance = hi - lo;
+        // every element at or after searchHi is after the result
+        int searchHi = hi;
+        int distance = 0;
+        while (distance < maxDistance && compareColumns(valuesToSort0, positions.get(hi - 1 - distance), searchPos) > compareLimit) {
+            searchHi = hi - 1 - distance;
+            distance = distance < (maxDistance >> 1) ? (distance << 1) + 1 : maxDistance;
+        }
+        return bound(positions, valuesToSort0, hi - distance, searchHi, searchPos, lower);
     }
 
     private static void insertionSort(WritableIntChunk<ChunkPositions> positions,
@@ -511,6 +547,8 @@ public final class ShortIndirectTimsortKernel {
         @Override
         public void mergePositions(WritableIntChunk<ChunkPositions> positions,
                 WritableChunk<? extends Any>[] valuesToSort, int start1, int length1, int length2) {
+            // each merge starts galloping from the initial threshold, independent of earlier sorts with this context
+            minGallop = TimsortUtils.INITIAL_GALLOP;
             ShortIndirectTimsortKernel.merge(this, positions, valuesToSort[0].asShortChunk(), start1, length1, length2);
         }
 

@@ -7,7 +7,10 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.*;
+import io.deephaven.base.verify.Assert;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Comparator;
 
 public interface FindRunsKernel {
 
@@ -33,8 +36,24 @@ public interface FindRunsKernel {
     }
 
     /**
-     * Find runs of identical values in a sorted chunk. This is used as part of an overall sort, after the timsort (or
-     * other sorting) kernel to identify the runs that must be sorted according to secondary keys.
+     * Get a kernel that finds runs of values that compare equal under {@code comparator}, or under the natural ordering
+     * of {@code chunkType} when {@code comparator} is null.
+     *
+     * @param chunkType the type of the sorted chunks
+     * @param comparator the comparator the values were sorted with, or null for the natural ordering
+     * @return a kernel whose runs are the ties of a sort with the same ordering
+     */
+    static FindRunsKernel getInstance(ChunkType chunkType, Comparator<?> comparator) {
+        if (comparator == null) {
+            return getInstance(chunkType);
+        }
+        Assert.eq(chunkType, "chunkType", ChunkType.Object, "ChunkType.Object");
+        return new ObjectComparatorFindRunsKernel(comparator);
+    }
+
+    /**
+     * Find runs of values that compare equal in a sorted chunk. This is used as part of an overall sort, after the
+     * timsort (or other sorting) kernel to identify the runs that must be sorted according to secondary keys.
      * <p>
      * Runs with only a single value are not included.
      *
@@ -48,7 +67,7 @@ public interface FindRunsKernel {
             @NotNull WritableIntChunk<ChunkLengths> lengthsOut);
 
     /**
-     * Find runs of identical values in a sorted chunk.
+     * Find runs of values that compare equal in a sorted chunk.
      * <p>
      * Runs of a single values are included.
      *
@@ -62,8 +81,8 @@ public interface FindRunsKernel {
             @NotNull WritableIntChunk<ChunkLengths> lengthsOut);
 
     /**
-     * Find runs of identical values in a sorted chunk. This is used as part of an overall sort, after the timsort (or
-     * other sorting) kernel to identify the runs that must be sorted according to secondary keys.
+     * Find runs of values that compare equal in a sorted chunk. This is used as part of an overall sort, after the
+     * timsort (or other sorting) kernel to identify the runs that must be sorted according to secondary keys.
      *
      * @param sortedValues a chunk of sorted values
      * @param offsetsIn the offsets within the chunk to check for runs

@@ -9,9 +9,11 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.compare.ByteComparisons;
+import io.deephaven.util.datastructures.SizeException;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -71,6 +73,43 @@ public class QueryTableHugeSortTest {
             TableTools.showWithRowSet(expected);
 
             assertTableEquals(expected, sorted);
+        } finally {
+            SortHelpers.megaSortSize = megaSortSize;
+            SortHelpers.sortChunkSize = sortChunkSize;
+        }
+    }
+
+    /**
+     * A ticking sort of at least megaSortSize rows (lowered here) fails with a message that states the number of rows
+     * and the limit.
+     */
+    @Test
+    public void testRefreshingSortAtMegaSortSize() {
+        final QueryTable table = TstUtils.testRefreshingTable(TableTools.intCol("A", 5, 3, 1, 4, 2, 0));
+        checkMegaSortSizeLimit(table);
+    }
+
+    /**
+     * A blink table sort whose initial rows number at least megaSortSize (lowered here) fails with a message that
+     * states the number of rows and the limit.
+     */
+    @Test
+    public void testBlinkSortAtMegaSortSize() {
+        final QueryTable table = TstUtils.testRefreshingTable(TableTools.intCol("A", 5, 3, 1, 4, 2, 0));
+        table.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        checkMegaSortSizeLimit(table);
+    }
+
+    private static void checkMegaSortSizeLimit(final QueryTable table) {
+        final int megaSortSize = SortHelpers.megaSortSize;
+        final int sortChunkSize = SortHelpers.sortChunkSize;
+        try {
+            SortHelpers.megaSortSize = 4;
+            SortHelpers.sortChunkSize = 2;
+            final SizeException exception = org.junit.Assert.assertThrows(SizeException.class, () -> table.sort("A"));
+            assertEquals("Cannot sort a ticking or blink table: Input size 6 larger than maximum 3",
+                    exception.getMessage());
+            assertEquals(3, exception.getMaximumSize());
         } finally {
             SortHelpers.megaSortSize = megaSortSize;
             SortHelpers.sortChunkSize = sortChunkSize;
