@@ -52,3 +52,5 @@ The string is a copy of the table's rows at the moment you call [`to_html`](../.
 - [Read HTML files](./html-import.md)
 - [Export CSV files](./csv-export.md)
 - [`to_html`](../../reference/data-import-export/HTML/to-html.md)
+- [`datetime_col`](../../reference/table-operations/create/dateTimeCol.md)
+- [Pydoc](/core/pydoc/code/deephaven.html.html)

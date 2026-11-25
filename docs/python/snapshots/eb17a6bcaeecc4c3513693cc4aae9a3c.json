@@ -1,0 +1,1 @@
+{"file":"reference/arrow/to-table.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Animals","type":"java.lang.String"},{"name":"NumLegs","type":"long"}],"rows":[[{"value":"Flamingo"},{"value":"2"}],[{"value":"Horse"},{"value":"4"}],[{"value":"Brittle stars"},{"value":"5"}],[{"value":"Centipede"},{"value":"100"}]]}}}}

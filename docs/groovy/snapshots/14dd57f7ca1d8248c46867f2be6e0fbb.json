@@ -1,0 +1,1 @@
+{"file":"reference/data-import-export/CSV/readCsv.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"X","type":"java.lang.String"},{"name":"Y","type":"int"},{"name":"Z","type":"long"}],"rows":[[{"value":"A"},{"value":"2"},{"value":"55"}],[{"value":"B"},{"value":"4"},{"value":"76"}],[{"value":"C"},{"value":"1"},{"value":"20"}]]}}}}

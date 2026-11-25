@@ -217,7 +217,7 @@ icebergWriter.append(IcebergWriteInstructions.builder().addTables(myDeephavenTab
 
 ## HTML
 
-The [`html`](/core/javadoc/io/deephaven/engine/util/TableTools.html#html(io.deephaven.engine.table.Table)) method from the [`io.deephaven.engine.util.TableTools`](/core/javadoc/io/deephaven/engine/util/TableTools.html) class converts a Deephaven table into an HTML string. This is useful for displaying small tables in web pages or for creating simple HTML reports. `html` builds the whole string in memory, so avoid converting large tables.
+The [`html`](../../reference/data-import-export/HTML/html.md) method from the [`io.deephaven.engine.util.TableTools`](/core/javadoc/io/deephaven/engine/util/TableTools.html) class converts a Deephaven table into an HTML string. This is useful for displaying small tables in web pages or for creating simple HTML reports. `html` builds the whole string in memory, so avoid converting large tables.
 
 ```groovy order=:log,sourceTable
 import io.deephaven.engine.util.TableTools

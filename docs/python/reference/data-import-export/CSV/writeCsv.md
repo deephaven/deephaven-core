@@ -2,16 +2,19 @@
 title: write_csv
 ---
 
-The `write_csv` method will write a table to a standard CSV file.
+The `write_csv` function writes a table to a standard CSV file. `write_csv` writes null values as empty fields, separates fields with commas, and writes `Instant` values in the Deephaven server's system default time zone, followed by their UTC offset (for example, `2021-07-04T12:00Z` in UTC).
+
+> [!NOTE]
+> `write_csv` writes the rows the table holds when the call runs, and reads them without taking a snapshot. If the table ticks during the write, the file can be inconsistent. To write a ticking table, write a [`snapshot`](../../table-operations/snapshot/snapshot.md) of it instead, as shown in [Write a ticking table](../../../how-to-guides/data-import-export/csv-export.md#write-a-ticking-table).
 
 ## Syntax
 
 ```python syntax
-write(table: Table, path: str, cols: list[str])
+write_csv(table: Table, path: str, cols: Sequence[str] = []) -> None
 ```
 
 > [!NOTE]
-> The `deephaven` package's `write_csv` method is identical in function to `deephaven.csv.write`; however, `write_csv` is the preferred method as it differentiates the method from [`deephaven.parquet.write`](../Parquet/writeTable.md).
+> The `write_csv` function in the `deephaven` package is the same function as [`deephaven.csv.write`](/core/pydoc/code/deephaven.csv.html#deephaven.csv.write). Use `write_csv` because its name distinguishes it from [`deephaven.parquet.write`](../Parquet/writeTable.md).
 
 ## Parameters
 
@@ -23,11 +26,11 @@ The table to write to file.
 </Param>
 <Param name="path" type="str">
 
-Path name of the file where the table will be stored.
+The path of the file to write the table to. If the file exists, `write_csv` overwrites it. The parent directory must already exist.
 
 </Param>
 
-<Param name="cols" type="list[str]" optional>
+<Param name="cols" type="Sequence[str]" optional>
 
 The source column(s) to include in the CSV file. The default value is all source columns.
 
@@ -36,20 +39,18 @@ The source column(s) to include in the CSV file. The default value is all source
 
 ## Returns
 
-A CSV file located in the specified path.
+None. `write_csv` writes the table as a CSV file at `path`.
 
 ## Examples
 
 > [!NOTE]
-> Deephaven writes files to locations relative to the base of its Docker container. See [Docker bind mounts](../../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
+> The path is resolved on the Deephaven server's file system. When Deephaven runs in Docker, that is the container's file system. See [Docker bind mounts](../../../conceptual/docker-data-volumes.md) to learn how container paths map to your local file system.
 
-In the following example, `write_csv` writes the source table to `/data/output.csv`. All columns are included.
+In the following example, `write_csv` writes all columns of the source table to `/data/output.csv`.
 
 ```python
-from deephaven import new_table
-
+from deephaven import new_table, write_csv
 from deephaven.column import string_col, int_col
-from deephaven import write_csv
 from deephaven.constants import NULL_INT
 
 source = new_table(
@@ -63,12 +64,11 @@ source = new_table(
 write_csv(source, "/data/output.csv")
 ```
 
-In the following example, only the columns `X` and `Z` are written to the output file.
+In the following example, `write_csv` writes only the columns `X` and `Z` to the output file.
 
 ```python
-from deephaven import new_table
-from deephaven.column import string_col, int_col, double_col
-from deephaven import write_csv
+from deephaven import new_table, write_csv
+from deephaven.column import string_col, int_col
 from deephaven.constants import NULL_INT
 
 source = new_table(
@@ -87,4 +87,7 @@ write_csv(source, "/data/output.csv", cols=["X", "Z"])
 - [Read CSV or other delimited files](../../../how-to-guides/data-import-export/csv-import.md)
 - [Export data to CSV or other delimited files](../../../how-to-guides/data-import-export/csv-export.md)
 - [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
-- [Pydoc](/core/pydoc/code/deephaven.html#deephaven.write_csv)
+- [`snapshot`](../../table-operations/snapshot/snapshot.md)
+- [`parquet.write`](../Parquet/writeTable.md)
+- [Pydoc: `deephaven.write_csv`](/core/pydoc/code/deephaven.html#deephaven.write_csv)
+- [Pydoc: `deephaven.csv.write`](/core/pydoc/code/deephaven.csv.html#deephaven.csv.write)

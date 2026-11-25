@@ -1,0 +1,1 @@
+{"file":"reference/data-import-export/CSV/writeCsv.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"DateTimes","type":"java.time.Instant"}],"rows":[[{"value":"2021-07-04 08:00:00.000"}],[{"value":"2021-07-04 10:00:00.000"}],[{"value":"2021-07-04 04:00:00.000"}]]}}}}
