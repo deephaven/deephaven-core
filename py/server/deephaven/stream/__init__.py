@@ -18,8 +18,9 @@ _JAddOnlyToBlinkTableAdapter = jpy.get_type(
 
 
 def add_only_to_blink(table: Table) -> Table:
-    """Creates a blink table from the given add-only table.  The blink table contains the rows added in the latest
-    update cycle.
+    """Creates a blink table from the given add-only or append-only table. On creation the blink table contains all
+    rows currently in the source table; in each later update cycle it contains only the rows added in that cycle. If
+    the table is already a blink table, it is returned unchanged.
 
     Note that the use of this function should be limited to add-only tables that are not fully in-memory, or when
     blink table specific aggregation semantics are desired. If the table is fully in-memory, creating a downstream blink
@@ -27,13 +28,13 @@ def add_only_to_blink(table: Table) -> Table:
     but instead increases memory usage.
 
     Args:
-        table (Table): the source table
+        table (Table): the source table, which must be refreshing and only add rows
 
     Returns:
         a blink table
 
     Raises:
-        DHError
+        DHError: if the table is not refreshing
     """
     try:
         return Table(j_table=_JAddOnlyToBlinkTableAdapter.toBlink(table.j_table))
@@ -42,7 +43,8 @@ def add_only_to_blink(table: Table) -> Table:
 
 
 def blink_to_append_only(table: Table) -> Table:
-    """Creates an 'append only' table from the blink table.
+    """Creates an 'append only' table from the blink table. The result retains every row it receives; unlike the Java
+    BlinkTableTools.blinkToAppendOnly, this function has no size-limit parameter.
 
     Args:
         table (Table): a blink table
@@ -51,7 +53,7 @@ def blink_to_append_only(table: Table) -> Table:
         an append-only table
 
     Raises:
-        DHError
+        DHError: if the table is not a blink table
     """
     try:
         return Table(j_table=_JBlinkTableTools.blinkToAppendOnly(table.j_table))

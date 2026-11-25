@@ -53,13 +53,16 @@ class TableReplayer(JObjectWrapper):
 
         Args:
             table (Table): the table to be replayed
-            col (str): column in the table containing timestamps
+            col (str): column in the table containing timestamps. The column must be of type Instant, must not
+                contain nulls, and must be sorted in non-decreasing order. Replaying fails when it reaches a null or
+                decreasing timestamp.
 
         Returns:
             a replay Table
 
         Raises:
-            DHError
+            DHError: if the table cannot be registered for replay, for example because 'col' is not an Instant
+                column, or because a null or decreasing timestamp is read during registration
         """
         try:
             replay_table = Table(j_table=self._j_replayer.replay(table.j_table, col))

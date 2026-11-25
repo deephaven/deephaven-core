@@ -72,6 +72,7 @@ public interface ReplayerInterface {
      *
      * @param dataSource historical table to replay
      * @param timeColumn column in the table containing timestamps
+     * @param byColumn column whose values define the groups; rows within each group are replayed in order
      * @return dynamic, replayed version of the table.
      */
     Table replayGrouped(Table dataSource, String timeColumn, String byColumn) throws IOException;

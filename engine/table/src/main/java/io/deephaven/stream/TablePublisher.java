@@ -75,7 +75,8 @@ public class TablePublisher {
      * @param onFlushCallback the on-flush callback
      * @param onShutdownCallback the on-shutdown callback
      * @param updateGraph the update graph for the blink table
-     * @param chunkSize the chunk size is the maximum size
+     * @param chunkSize the maximum number of rows filled into each chunk from the added table during
+     *        {@link #add(Table)}; must be positive
      * @return the table publisher
      */
     public static TablePublisher of(

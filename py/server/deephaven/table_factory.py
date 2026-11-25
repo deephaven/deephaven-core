@@ -512,8 +512,8 @@ def function_generated_table(
     function-generated tables can create tables that are produced by arbitrary Python logic (including using Pandas or
     numpy). They can also be used to retrieve data from external sources (such as files or websites).
 
-    The table definition must not change between invocations of the 'table_generator' function, or an exception will
-    be raised.
+    Every generated table must have the same column names and types as the result's definition (column order may
+    differ), or an exception is raised.
 
     Every refresh in which 'table_generator' produces a table replaces the result in full: the update removes all
     previous rows and adds all newly generated rows, with no modifications or shifts, even when the generated data is
@@ -521,14 +521,13 @@ def function_generated_table(
     with no update (or clears a blink result). The 'copy_data' and 'blink_table' arguments refine this behavior
     independently of one another.
 
-    Note that the 'table_generator' may access data in the sourceTables but should not perform further table operations
-    on them without careful handling. Table operations may be memoized, and it is possible that a table operation will
-    return a table created by a previous invocation of the same operation. Since that result will not have been included
-    in the 'source_table', it's not automatically treated as a dependency for purposes of determining when it's safe to
-    invoke 'table_generator', allowing races to exist between accessing the operation result and that result's own
-    update
-    processing. It's best to include all dependencies directly in 'source_table', or only compute on-demand inputs under
-    a LivenessScope.
+    Note that the 'table_generator' may access data in the 'source_tables' but should not perform further table
+    operations on them without careful handling. Table operations may be memoized, and it is possible that a table
+    operation will return a table created by a previous invocation of the same operation. Since that result will not
+    have been included in the 'source_tables', it's not automatically treated as a dependency for purposes of
+    determining when it's safe to invoke 'table_generator', allowing races to exist between accessing the operation
+    result and that result's own update processing. It's best to include all dependencies directly in 'source_tables',
+    or only compute on-demand inputs under a LivenessScope.
 
     Args:
         table_generator (Callable[..., Optional[Table]]): The table generator function. This function must return a Table, or None
@@ -538,7 +537,10 @@ def function_generated_table(
         source_tables (Optional[Union[Table, Sequence[Table]]]): Source tables used by the 'table_generator' function. The
             'table_generator' is rerun when any of these tables tick.
         refresh_interval_ms (Optional[int]): Interval (in milliseconds) at which the 'table_generator' function is
-            rerun. A non-positive interval is treated the same as no trigger at all, producing a static result.
+            rerun. The interval is checked once per update cycle, so the 'table_generator' runs on the first cycle
+            after the interval elapses, and never more than once per cycle. A non-positive interval is treated the same
+            as no trigger at all, producing a static result. An interval greater than 2,147,483,647 ms (about 24.8 days)
+            raises an error.
         exec_ctx (Optional[ExecutionContext]): A custom execution context. If 'None', the current
             execution context is used.
         args (tuple): Optional tuple of positional arguments to pass to table_generator. Defaults to ()
@@ -567,7 +569,7 @@ def function_generated_table(
     """
     if refresh_interval_ms is not None and source_tables is not None:
         raise DHError(
-            "Only one of refresh_interval_ms and source_tables must be provided!"
+            "At most one of refresh_interval_ms and source_tables may be provided."
         )
 
     # If no execution context is provided, assume we want to use the current one.
