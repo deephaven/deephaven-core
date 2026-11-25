@@ -385,27 +385,158 @@ public class TreeTableFilter {
         return rowsToReParent.build();
     }
 
+    /**
+     * Find all ancestors of {@code rowsToParent}, recording each visited row under its parent identifier in
+     * {@link #parentIdToChildRows}.
+     * <p>
+     * Each ancestor row is expanded at most once. A row can be reached a second time when rows at different depths
+     * share an ancestor, or when the parent identifiers form a cycle; in the second case this method throws an
+     * {@link IllegalStateException}.
+     *
+     * @param usePrev whether to read previous values
+     * @param rowsToParent the rows whose ancestors to find
+     * @return the ancestor rows, which may overlap {@code rowsToParent}
+     */
     private WritableRowSet computeParents(final boolean usePrev, @NotNull final RowSet rowsToParent) {
-        final RowSetBuilderRandom includedParentRowsBuilder = RowSetFactory.builderRandom();
+        // ancestor rows whose parent identifier is null or does not name a row in the source
+        final RowSetBuilderRandom topRowsBuilder = RowSetFactory.builderRandom();
+        boolean revisited = false;
 
+        final WritableRowSet ancestorRows;
+        // null for the first level, whose rows are rowsToParent rather than ancestors
+        WritableRowSet levelRows = null;
         Map<Object, RowSetBuilderSequential> bucketed = bucketChildRowsByParentId(usePrev, rowsToParent);
-        while (!bucketed.isEmpty()) {
-            final RowSetBuilderRandom levelIncludedParentRowsBuilder = RowSetFactory.builderRandom();
-            bucketed.forEach((final Object parentId, final RowSetBuilderSequential levelChildRowsForParent) -> {
-                final long parentRow = usePrev ? sourceRowLookup.getPrev(parentId) : sourceRowLookup.get(parentId);
-                if (parentRow != sourceRowLookup.noEntryValue()) {
-                    levelIncludedParentRowsBuilder.addKey(parentRow);
+        try (final RowSetAccumulator includedParentRows = new RowSetAccumulator()) {
+            while (!bucketed.isEmpty()) {
+                final RowSetBuilderRandom levelParentRowsBuilder = RowSetFactory.builderRandom();
+                // only ancestor levels are split into top rows; a builder that is never built would keep the child row
+                // sets' storage marked as shared
+                final RowSetBuilderRandom levelRowsWithParentBuilder =
+                        levelRows == null ? null : RowSetFactory.builderRandom();
+                bucketed.forEach((final Object parentId, final RowSetBuilderSequential childRowsBuilder) -> {
+                    final WritableRowSet childRows = childRowsBuilder.build();
+                    final long parentRow =
+                            usePrev ? sourceRowLookup.getPrev(parentId) : sourceRowLookup.get(parentId);
+                    if (parentRow != sourceRowLookup.noEntryValue()) {
+                        levelParentRowsBuilder.addKey(parentRow);
+                        if (levelRowsWithParentBuilder != null) {
+                            levelRowsWithParentBuilder.addRowSet(childRows);
+                        }
+                    }
+                    // accumulateChildRows closes childRows when parentId already has child rows
+                    parentIdToChildRows.merge(parentId, childRows, TreeTableFilter::accumulateChildRows);
+                });
+                if (levelRows != null) {
+                    try (final RowSet levelRowsWithParent = levelRowsWithParentBuilder.build();
+                            final RowSet levelTopRows = levelRows.minus(levelRowsWithParent)) {
+                        topRowsBuilder.addRowSet(levelTopRows);
+                    }
+                    levelRows.close();
+                    levelRows = null;
                 }
-                parentIdToChildRows.merge(parentId, levelChildRowsForParent.build(),
-                        TreeTableFilter::accumulateChildRows);
-            });
-            try (final RowSet levelIncludedParentRows = levelIncludedParentRowsBuilder.build()) {
-                includedParentRowsBuilder.addRowSet(levelIncludedParentRows);
-                bucketed = bucketChildRowsByParentId(usePrev, levelIncludedParentRows);
+                levelRows = levelParentRowsBuilder.build();
+                final long levelParentRowsSize = levelRows.size();
+                includedParentRows.removeFrom(levelRows);
+                revisited |= levelRows.size() != levelParentRowsSize;
+                includedParentRows.insert(levelRows);
+                bucketed = bucketChildRowsByParentId(usePrev, levelRows);
+            }
+            if (levelRows != null) {
+                // the parent identifiers of the last level are all null
+                topRowsBuilder.addRowSet(levelRows);
+            }
+            ancestorRows = includedParentRows.build();
+        } finally {
+            if (levelRows != null) {
+                levelRows.close();
             }
         }
 
-        return includedParentRowsBuilder.build();
+        // the top rows are built and closed even when unused, which releases the builder's shared references to the
+        // storage of the row sets it was given
+        try (final RowSet topRows = topRowsBuilder.build()) {
+            // a cycle that the walk reaches always leads back to a row that was already expanded
+            if (revisited) {
+                checkForCycles(usePrev, ancestorRows, topRows);
+            }
+        } catch (final RuntimeException e) {
+            ancestorRows.close();
+            throw e;
+        }
+        return ancestorRows;
+    }
+
+    /**
+     * Verify that every row in {@code ancestorRows} descends from a row in {@code topRows}.
+     * <p>
+     * Every row in {@code ancestorRows} either is in {@code topRows} or has its parent in {@code ancestorRows}. Rows
+     * that cannot be reached by descending from {@code topRows} through {@link #parentIdToChildRows} lie on or below a
+     * cycle of parent identifiers.
+     * <p>
+     * The descent reaches each row at most once: {@link #parentIdToChildRows} records each row only under its own
+     * parent identifier, identifiers are unique, and the parent identifier of a top row names no row that the descent
+     * can reach.
+     *
+     * @param usePrev whether to read previous values
+     * @param ancestorRows the ancestor rows found by {@link #computeParents(boolean, RowSet)}
+     * @param topRows the rows of {@code ancestorRows} whose parent identifier does not name a row in the source
+     * @throws IllegalStateException if the parent identifiers of {@code ancestorRows} contain a cycle
+     */
+    private void checkForCycles(
+            final boolean usePrev,
+            @NotNull final RowSet ancestorRows,
+            @NotNull final RowSet topRows) {
+        // the reached rows are disjoint, so they are only ever inserted, and counted to bound the descent
+        final RowSetBuilderRandom reachedRowsBuilder = RowSetFactory.builderRandom();
+        reachedRowsBuilder.addRowSet(topRows);
+        long reachedRowCount = topRows.size();
+        try (final ChunkSource.GetContext idGetContext = idSource.makeGetContext(CHUNK_SIZE);
+                final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(idSource.getChunkType(), CHUNK_SIZE)) {
+            WritableRowSet frontier = topRows.copy();
+            while (frontier.isNonempty()) {
+                final RowSetBuilderRandom childRowsBuilder = RowSetFactory.builderRandom();
+                try (final RowSet ignored = frontier;
+                        final RowSequence.Iterator frontierIter = frontier.getRowSequenceIterator()) {
+                    while (frontierIter.hasMore()) {
+                        final RowSequence chunkRows = frontierIter.getNextRowSequenceWithLength(CHUNK_SIZE);
+                        final ObjectChunk<?, ? extends Values> ids =
+                                getIds(usePrev, idSource, idGetContext, boxer, chunkRows);
+                        for (int ii = 0; ii < ids.size(); ++ii) {
+                            final RowSet childRows = parentIdToChildRows.get(ids.get(ii));
+                            if (childRows != null) {
+                                childRowsBuilder.addRowSet(childRows);
+                            }
+                        }
+                    }
+                }
+                frontier = childRowsBuilder.build();
+                frontier.retain(ancestorRows);
+                reachedRowCount += frontier.size();
+                if (reachedRowCount > ancestorRows.size()) {
+                    frontier.close();
+                    throw new IllegalStateException("Tree table parent references reach " + reachedRowCount
+                            + " rows descending from the roots, more than the " + ancestorRows.size()
+                            + " ancestor rows");
+                }
+                reachedRowsBuilder.addRowSet(frontier);
+            }
+            frontier.close();
+        } catch (final RuntimeException e) {
+            // building releases the builder's shared references to the row sets it was given
+            reachedRowsBuilder.build().close();
+            throw e;
+        }
+
+        try (final RowSet reachedRows = reachedRowsBuilder.build()) {
+            if (reachedRows.size() != ancestorRows.size()) {
+                try (final RowSet unreachedRows = ancestorRows.minus(reachedRows)) {
+                    final long unreachedRow = unreachedRows.firstRowKey();
+                    final Object unreachedId = usePrev ? idSource.getPrev(unreachedRow) : idSource.get(unreachedRow);
+                    throw new IllegalStateException("Tree table parent identifiers contain a cycle: the ancestors of "
+                            + idColumnName.name() + "=" + unreachedId + " never reach a root");
+                }
+            }
+        }
     }
 
     private static WritableRowSet accumulateChildRows(
@@ -457,9 +588,12 @@ public class TreeTableFilter {
                 final long beginRange = upstreamShifts.getBeginRange(si);
                 final long endRange = upstreamShifts.getEndRange(si);
                 final long shiftDelta = upstreamShifts.getShiftDelta(si);
-                try (final RowSequence.Iterator rowsIter = resultRows.getRowSequenceIterator()) {
-                    rowsIter.advance(beginRange);
-                    final RowSequence affectedRows = rowsIter.getNextRowSequenceThrough(endRange);
+                // only matched and ancestor rows are recorded in parentIdToChildRows; resultRows may still hold rows
+                // that this update removed from both
+                try (final WritableRowSet affectedRows = matchedSourceRows.subSetByKeyRange(beginRange, endRange);
+                        final WritableRowSet affectedAncestorRows =
+                                ancestorSourceRows.subSetByKeyRange(beginRange, endRange)) {
+                    affectedRows.subsume(affectedAncestorRows);
                     try (final RowSequence.Iterator affectedRowsIter = affectedRows.getRowSequenceIterator()) {
                         while (affectedRowsIter.hasMore()) {
                             final RowSequence chunkAffectedRows =
