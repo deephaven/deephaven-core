@@ -308,6 +308,30 @@ public class TimeTableTest extends RefreshingTableTestCase {
     }
 
     /**
+     * An {@link Instant} far enough before the epoch makes {@link DateTimeUtils#epochNanos(Instant)} wrap around, here
+     * to exactly 0, the timestamp of row 0. The pushdown matches no row for such a value, as a scan of the
+     * {@link Instant} column does.
+     */
+    @Test
+    public void testTimestampPushdownUnderflowingInstant() {
+        build(TimeTable.newBuilder().period(10));
+        final ColumnSource<Instant> dtColumn = timeTable.getColumnSource("Timestamp");
+        tick(0);
+        tick(100);
+        final Instant underflowing = Instant.ofEpochSecond(-18446744074L, 290448384L);
+        Assert.assertEquals(0, DateTimeUtils.epochNanos(underflowing));
+        final RowSet selection = timeTable.getRowSet();
+
+        assertExactMatch(RowSetFactory.empty(),
+                pushdown(dtColumn, instantFilter(MatchOptions.REGULAR, underflowing), selection));
+        assertExactMatch(selection, pushdown(dtColumn, instantFilter(MatchOptions.INVERTED, underflowing), selection));
+        final MatchFilter regular = instantFilter(MatchOptions.REGULAR, underflowing);
+        final MatchFilter inverted = instantFilter(MatchOptions.INVERTED, underflowing);
+        assertTableEquals(scanned(regular), pushedDown(regular));
+        assertTableEquals(scanned(inverted), pushedDown(inverted));
+    }
+
+    /**
      * The timestamp columns decline a filter that is neither a match nor a range filter (here an inverted range), and a
      * cost ceiling below the cost of computing the row keys. The estimate declines a match with more values than the
      * selection has rows, which a scan answers more cheaply, but a pushdown of such a match still answers exactly.

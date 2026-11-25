@@ -350,8 +350,14 @@ public final class TimeTable extends QueryTable implements Runnable, HasRefreshi
             for (final Object value : matchFilter.getValues()) {
                 final long valueNanos;
                 if (value instanceof Instant) {
+                    final Instant instant = (Instant) value;
+                    if (instant.isBefore(localStartTime)) {
+                        // Before the first row. Checked before the conversion, since epochNanos checks only the upper
+                        // bound and wraps an Instant far before the epoch around to an unrelated value.
+                        continue;
+                    }
                     try {
-                        valueNanos = epochNanos((Instant) value);
+                        valueNanos = epochNanos(instant);
                     } catch (final DateTimeUtils.DateTimeOverflowException e) {
                         // outside the range of epoch nanoseconds, where every timestamp of the table lies
                         continue;
