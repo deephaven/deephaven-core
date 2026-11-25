@@ -862,27 +862,21 @@ public class MultiColumnSortTest {
     }
 
     /**
-     * A sort of at least megaSortSize rows by several columns, any of which has a comparator, is not supported.
+     * A mega sort with comparator columns matches the sort of fewer than megaSortSize rows: a comparator on the first
+     * column, ascending and descending, whose runs exceed megaSortSize and span sort chunks; on the column sorted
+     * within first-column runs of megaSortSize rows or more; and on a later column of the run batches. Values that tie
+     * under the comparator, such as "a" and "A", remain in row key order.
      */
     @Test
-    public void testMegaSortWithComparatorThrows() {
-        final QueryTable table = makeMegaSortTestTable(1006, 2000, false);
-        final SortSpec caseInsensitive = ComparatorSortColumn.asc("S", String.CASE_INSENSITIVE_ORDER);
-        final int oldMegaSortSize = SortHelpers.megaSortSize;
-        final int oldSortChunkSize = SortHelpers.sortChunkSize;
-        try {
-            SortHelpers.megaSortSize = TEST_MEGA_SORT_SIZE;
-            SortHelpers.sortChunkSize = TEST_SORT_CHUNK_SIZE;
-            final UnsupportedOperationException firstColumn = assertThrows(UnsupportedOperationException.class,
-                    () -> table.sort(caseInsensitive, asc("Group")));
-            assertEquals("Cannot sort more than 1000 rows with a comparator", firstColumn.getMessage());
-            final UnsupportedOperationException laterColumn = assertThrows(UnsupportedOperationException.class,
-                    () -> table.sort(asc("Group"), desc("D"), caseInsensitive));
-            assertEquals("Cannot sort more than 1000 rows with a comparator", laterColumn.getMessage());
-        } finally {
-            SortHelpers.megaSortSize = oldMegaSortSize;
-            SortHelpers.sortChunkSize = oldSortChunkSize;
-        }
+    public void testMegaSortWithComparators() {
+        final int size = 5000;
+        final QueryTable table = makeMegaSortTestTable(1006, size, false);
+        final QueryTable refreshing = makeMegaSortTestTable(1006, size, true);
+        final Comparator<String> caseInsensitive = Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER);
+        checkMegaSort(table, refreshing, ComparatorSortColumn.asc("S", caseInsensitive), asc("Group"));
+        checkMegaSort(table, refreshing, ComparatorSortColumn.desc("S", caseInsensitive), desc("L"));
+        checkMegaSort(table, refreshing, asc("Pair"), ComparatorSortColumn.desc("S", caseInsensitive), asc("L"));
+        checkMegaSort(table, refreshing, asc("Group"), desc("D"), ComparatorSortColumn.asc("S", caseInsensitive));
     }
 
     @Test

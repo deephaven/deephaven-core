@@ -670,10 +670,8 @@ public class SortHelpers {
     }
 
     /**
-     * Sort at least {@link #megaSortSize} rows by one or more columns, each in its natural order, into a mapping backed
-     * by a column source; see {@link MegaSort}.
-     *
-     * @throws UnsupportedOperationException if any column has a comparator
+     * Sort at least {@link #megaSortSize} rows by one or more columns, each in its natural order or the order of its
+     * comparator, into a mapping backed by a column source; see {@link MegaSort}.
      */
     @NotNull
     private static SortMapping doMegaSort(
@@ -683,19 +681,13 @@ public class SortHelpers {
             final RowSet rowSet,
             final boolean usePrev,
             final long sortSize) {
-        for (final Comparator comparator : comparators) {
-            if (comparator != null) {
-                throw new UnsupportedOperationException(
-                        "Cannot sort more than " + megaSortSize + " rows with a comparator");
-            }
-        }
         final MegaSort megaSort = new MegaSort(order, columnSources, comparators, usePrev);
         return new ColumnSourceSortMapping(megaSort.sortRows(0, rowSet, null, 0, sortSize), sortSize);
     }
 
     /**
-     * A sort of at least {@link #megaSortSize} rows by one or more columns, each in its natural order, into a
-     * LongArraySource of row keys.
+     * A sort of at least {@link #megaSortSize} rows by one or more columns, each in its natural order or the order of
+     * its comparator, into a LongArraySource of row keys.
      * <p>
      * The rows are sorted by the first column in chunks of {@link #sortChunkSize} rows, each merged with the
      * LongMegaMergeKernel into the row keys and a column source of the first column's values. The runs of equal first
@@ -710,6 +702,7 @@ public class SortHelpers {
     private static final class MegaSort {
         private final SortingOrder[] order;
         private final ColumnSource<Comparable<?>>[] columnSources;
+        private final Comparator[] comparators;
         private final boolean usePrev;
         /**
          * For each column but the last, a factory of kernels that sort by the columns after it.
@@ -723,6 +716,7 @@ public class SortHelpers {
                 final boolean usePrev) {
             this.order = order;
             this.columnSources = columnSources;
+            this.comparators = comparators;
             this.usePrev = usePrev;
             // noinspection unchecked
             runKernelFactories = new IntFunction[columnSources.length - 1];
@@ -805,9 +799,9 @@ public class SortHelpers {
             final ChunkType chunkType = columnSource.getChunkType();
             final int chunkCapacity = (int) Math.min(sortChunkSize, size);
             final LongMegaMergeKernel<Values, RowKeys> mergeKernel =
-                    LongMegaMergeKernel.makeContext(chunkType, order[column]);
+                    LongMegaMergeKernel.makeContext(chunkType, order[column], comparators[column]);
             try (final LongSortKernel<Values, RowKeys> sortContext =
-                    LongSortKernel.makeContext(chunkType, order[column], chunkCapacity, true);
+                    getSortContext(columnSource, order[column], chunkCapacity, comparators[column], true);
                     final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(chunkCapacity);
                     final WritableChunk<Values> values = chunkType.makeWritableChunk(chunkCapacity);
                     final ChunkSource.FillContext keysFillContext =
@@ -855,7 +849,7 @@ public class SortHelpers {
                 final long size) {
             final LongArrayList largeRuns = new LongArrayList();
             final ChunkType chunkType = columnSources[column].getChunkType();
-            final FindRunsKernel findRunsKernel = FindRunsKernel.getInstance(chunkType);
+            final FindRunsKernel findRunsKernel = FindRunsKernel.getInstance(chunkType, comparators[column]);
             final int windowCapacity = (int) Math.min(sortChunkSize + 1L, size);
             try (final RunBatch batch = new RunBatch(column + 1, sortedKeys, size);
                     final WritableChunk<Values> window = chunkType.makeWritableChunk(windowCapacity);

@@ -20,11 +20,11 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 
 public class DoubleLongMegaMergeKernel {
+    // region Context
     private DoubleLongMegaMergeKernel() {
         throw new UnsupportedOperationException();
     }
 
-    // region Context
     public static class DoubleLongMegaMergeKernelContext<ATTR extends Any, KEY_INDICES extends Indices>
             implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
         @SuppressWarnings("rawtypes")
@@ -38,12 +38,12 @@ public class DoubleLongMegaMergeKernel {
                     destinationOffset, destinationSize, indexKeys, valuesToMerge.asDoubleChunk());
         }
     }
-    // endregion Context
 
     public static <ATTR extends Any, KEY_INDICES extends Indices> DoubleLongMegaMergeKernelContext<ATTR, KEY_INDICES> createContext() {
         // noinspection unchecked
         return DoubleLongMegaMergeKernelContext.INSTANCE;
     }
+    // endregion Context
 
     static public <ATTR extends Any, KEY_INDICES extends Indices> void merge(LongArraySource destinationKeys,
             DoubleArraySource destinationValues,
