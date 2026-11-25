@@ -14,7 +14,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.NonScanningFilters;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ShiftObliviousListener;
@@ -26,6 +25,7 @@ import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.generator.*;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -519,29 +519,33 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
     /**
      * A where on a match column answers regular and inverted matches from the pushdown alone, for the initial rows and
-     * for the rows an update adds and modifies: each filter fails the test if the engine scans with the filter.
+     * for the rows an update adds and modifies: the engine scans no row with the filter.
      */
     @Test
     public void testWhereOnMatchColumnTakesThePushdown() {
         final QueryTable source = testRefreshingTable(i(2, 4, 6, 8).toTracking(), col("Number", 0, 1, 2, 3));
         final Table result = source.wouldMatch("M=Number > 1");
-        final MatchFilter regularFilter = NonScanningFilters.match(MatchOptions.REGULAR, "M", true);
-        regularFilter.init(result.getDefinition());
-        final MatchFilter invertedFilter = NonScanningFilters.match(MatchOptions.INVERTED, "M", true);
-        invertedFilter.init(result.getDefinition());
-        final Table regular = result.where(regularFilter);
-        final Table inverted = result.where(invertedFilter);
-        assertTableEquals(result.where("Number > 1"), regular);
-        assertTableEquals(result.where("Number <= 1"), inverted);
+        try (final RowSetCapturingFilter regularFilter =
+                new RowSetCapturingFilter(new MatchFilter(MatchOptions.REGULAR, "M", true));
+                final RowSetCapturingFilter invertedFilter =
+                        new RowSetCapturingFilter(new MatchFilter(MatchOptions.INVERTED, "M", true))) {
+            final Table regular = result.where(regularFilter);
+            final Table inverted = result.where(invertedFilter);
+            assertTableEquals(result.where("Number > 1"), regular);
+            assertTableEquals(result.where("Number <= 1"), inverted);
 
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.runWithinUnitTestCycle(() -> {
-            addToTable(source, i(2, 10, 12), col("Number", 5, 0, 7));
-            removeRows(source, i(8));
-            source.notifyListeners(i(10, 12), i(8), i(2));
-        });
-        assertTableEquals(result.where("Number > 1"), regular);
-        assertTableEquals(result.where("Number <= 1"), inverted);
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(source, i(2, 10, 12), col("Number", 5, 0, 7));
+                removeRows(source, i(8));
+                source.notifyListeners(i(10, 12), i(8), i(2));
+            });
+            assertTableEquals(result.where("Number > 1"), regular);
+            assertTableEquals(result.where("Number <= 1"), inverted);
+
+            assertEquals(0, regularFilter.numRowsProcessed());
+            assertEquals(0, invertedFilter.numRowsProcessed());
+        }
     }
 
     private static MatchFilter matchFilter(final Table table, final MatchOptions options, final Object... values) {
