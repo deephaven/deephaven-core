@@ -125,6 +125,15 @@ public class TestSort extends RefreshingTableTestCase {
     }
 
     @Test
+    public void testRestrictSortToAppliesWhenAlreadySorted() {
+        final Table restricted = TableTools.newTable(TableTools.intCol("A", 3, 1, 2), TableTools.intCol("B", 1, 2, 3))
+                .sort("A")
+                .restrictSortTo("B");
+        assertThrows(NotSortableException.class, () -> restricted.sortDescending("A"));
+        assertThrows(NotSortableException.class, () -> restricted.sort("A"));
+    }
+
+    @Test
     public void testRestrictSortToNoColumns() {
         final QueryTable source = (QueryTable) TableTools.emptyTable(10)
                 .update("ID = i", "Parent = i == 0 ? NULL_INT : i - 1")

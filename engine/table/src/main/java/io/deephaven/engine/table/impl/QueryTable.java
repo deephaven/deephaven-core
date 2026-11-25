@@ -3063,6 +3063,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             if (columnsToSortBy.length == 1 && !ComparatorSortColumn.hasComparator(columnsToSortBy[0])) {
                 final String columnName = columnsToSortBy[0].column().name();
                 final SortingOrder order = SortingOrder.from(columnsToSortBy[0]);
+                assertSortable(columnName);
                 if (SortedColumnsAttribute.isSortedBy(this, columnName, order)) {
                     return prepareReturnThis();
                 }
