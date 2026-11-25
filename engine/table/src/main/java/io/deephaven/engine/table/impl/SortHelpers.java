@@ -1262,7 +1262,8 @@ public class SortHelpers {
 
     @NotNull
     static WritableRowRedirection createSortRowRedirection() {
-        final WritableColumnSource<Long> sparseLongSource = new LongSparseArraySource();
+        final WritableColumnSource<Long> sparseLongSource =
+                SparseArrayColumnSource.getSparseMemoryColumnSource(long.class);
         return new LongColumnSourceWritableRowRedirection(sparseLongSource);
     }
 }

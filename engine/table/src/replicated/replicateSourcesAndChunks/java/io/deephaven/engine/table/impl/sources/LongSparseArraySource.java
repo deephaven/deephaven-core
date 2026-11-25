@@ -56,7 +56,7 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  *
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
-public class LongSparseArraySource extends SparseArrayColumnSource<Long>
+public class LongSparseArraySource extends OneOrNSparseArrayColumnSource<Long>
         implements MutableColumnSourceGetDefaults.ForLong , ConvertibleTimeSource {
     private static final int SHIFT_CHUNK_SIZE = 4096;
 

@@ -9,7 +9,8 @@ package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
-import io.deephaven.engine.table.impl.sources.ByteSparseArraySource;
+import io.deephaven.engine.table.impl.sources.BooleanSparseArraySource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 
 import io.deephaven.chunk.Chunk;
@@ -218,7 +219,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
 
     // region extra-methods
     protected WritableColumnSource<Byte> makeSparseSource() {
-        return new ByteSparseArraySource();
+        return SparseArrayColumnSource.getSparseMemoryColumnSource(byte.class);
     }
 
     protected WritableColumnSource<Byte> makeDenseSource() {
@@ -249,11 +250,11 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
 
     // region Shifts
     @Override
-    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {
+    public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
         if (outputSource instanceof BooleanSparseArraySource.ReinterpretedAsByte) {
-            ((BooleanSparseArraySource.ReinterpretedAsByte)outputSource).shift(subIndexToShift, delta);
+            ((BooleanSparseArraySource.ReinterpretedAsByte) outputSource).shift(subRowSetToShift, delta);
         } else {
-            ((ByteSparseArraySource)outputSource).shift(subIndexToShift, delta);
+            ((SparseArrayColumnSource<?>) outputSource).shift(subRowSetToShift, delta);
         }
     }
     // endregion Shifts

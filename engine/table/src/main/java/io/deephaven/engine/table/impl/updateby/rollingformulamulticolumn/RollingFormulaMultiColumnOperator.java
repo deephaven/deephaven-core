@@ -9,6 +9,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftCallback;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
@@ -457,7 +458,7 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((SparseArrayColumnSource<?>) outputSource).shift(subRowSetToShift, delta);
+        ((RowSetShiftCallback) outputSource).shift(subRowSetToShift, delta);
     }
 
     @Override

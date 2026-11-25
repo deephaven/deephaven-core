@@ -54,7 +54,7 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  *
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
-public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
+public class BooleanSparseArraySource extends OneOrNSparseArrayColumnSource<Boolean>
         implements MutableColumnSourceGetDefaults.ForBoolean /* MIXIN_IMPLS */ {
     private static final int SHIFT_CHUNK_SIZE = 4096;
 
@@ -1399,6 +1399,26 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
         @Override
         public void prepareForParallelPopulation(RowSequence rowSequence) {
            wrapped.prepareForParallelPopulation(rowSequence);
+        }
+
+        @Override
+        public int parallelPopulationAlignment() {
+            return wrapped.parallelPopulationAlignment();
+        }
+
+        @Override
+        public void prepareForParallelPopulation(final RowSequence rowSequence, final boolean alignedDivisions) {
+            wrapped.prepareForParallelPopulation(rowSequence, alignedDivisions);
+        }
+
+        @Override
+        public void prepareForParallelPopulationInDivisions(final RowSequence rowSequence) {
+            wrapped.prepareForParallelPopulationInDivisions(rowSequence);
+        }
+
+        @Override
+        public void prepareDivisionForParallelPopulation(final RowSequence division) {
+            wrapped.prepareDivisionForParallelPopulation(division);
         }
     }
     // endregion reinterpretation

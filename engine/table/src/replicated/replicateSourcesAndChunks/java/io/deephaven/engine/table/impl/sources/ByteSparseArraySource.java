@@ -48,7 +48,7 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  *
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
-public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
+public class ByteSparseArraySource extends OneOrNSparseArrayColumnSource<Byte>
         implements MutableColumnSourceGetDefaults.ForByte /* MIXIN_IMPLS */ {
     private static final int SHIFT_CHUNK_SIZE = 4096;
 

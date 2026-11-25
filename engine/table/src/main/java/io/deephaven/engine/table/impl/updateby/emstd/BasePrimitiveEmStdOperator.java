@@ -12,7 +12,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
-import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
@@ -126,7 +125,7 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
             } else {
                 maybeEmaInnerSource = null;
                 // region create-sparse
-                emaSource = new DoubleSparseArraySource();
+                emaSource = SparseArrayColumnSource.getSparseMemoryColumnSource(double.class);
                 // endregion create-sparse
             }
         } else {
@@ -181,7 +180,7 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
         super.applyOutputShift(subRowSetToShift, delta);
         if (emaSource != null) {
-            ((DoubleSparseArraySource) emaSource).shift(subRowSetToShift, delta);
+            ((SparseArrayColumnSource<?>) emaSource).shift(subRowSetToShift, delta);
         }
     }
     // endregion Shifts
