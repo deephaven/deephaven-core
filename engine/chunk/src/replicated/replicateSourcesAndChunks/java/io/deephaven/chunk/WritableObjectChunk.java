@@ -155,7 +155,7 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
             System.arraycopy(src, srcOffset, data, netDestOffset, length);
             return;
         }
-        if (ChunkHelpers.canCopyForward(src, srcOffset, data, destOffset, length)) {
+        if (ChunkHelpers.canCopyForward(src, srcOffset, data, netDestOffset, length)) {
             // noinspection ManualArrayCopy
             for (int ii = 0; ii < length; ++ii) {
                 data[netDestOffset + ii] = src[srcOffset + ii];

@@ -8,7 +8,9 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortSpec;
 import io.deephaven.api.SortColumn;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
@@ -20,14 +22,18 @@ import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.vectors.ColumnVectors;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.test.types.SerialTest;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
@@ -686,6 +692,290 @@ public class MultiColumnSortTest {
         DataIndexer.getOrCreateDataIndex(table, "Group");
         assertArrayEquals(new int[] {1, 2, 3, 4},
                 ColumnVectors.ofInt(table.sort("Group", "Path", "Tie"), "Tie").toArray());
+    }
+
+    /**
+     * The columns of the index test tables: an int, String and double first column for an index (with nulls, and NaN
+     * for the double), a first column whose index has mostly single-row groups, and later columns with nulls, NaN,
+     * signed zeros and case-insensitive String ties.
+     */
+    private static Table makeIndexTestTable(final long seed, final int size, final boolean refreshing) {
+        final Random random = new Random(seed);
+        final int[] groupInt = new int[size];
+        final String[] groupString = new String[size];
+        final double[] groupDouble = new double[size];
+        final int[] mostlyUnique = new int[size];
+        final double[] doubles = new double[size];
+        final String[] strings = new String[size];
+        final long[] longs = new long[size];
+        final double[] doubleChoices = {Double.NaN, QueryConstants.NULL_DOUBLE, -0.0, 0.0, 1.5, -2.5, 3};
+        final String[] stringChoices = {"a", "A", "b", "B", null, "c"};
+        for (int ii = 0; ii < size; ++ii) {
+            final int group = random.nextInt(25);
+            groupInt[ii] = group == 0 ? QueryConstants.NULL_INT : group;
+            groupString[ii] = group == 0 ? null : "g" + group;
+            groupDouble[ii] = group == 0 ? QueryConstants.NULL_DOUBLE : group == 1 ? Double.NaN : group * 0.5;
+            mostlyUnique[ii] = random.nextInt(size * 4);
+            doubles[ii] = doubleChoices[random.nextInt(doubleChoices.length)];
+            strings[ii] = stringChoices[random.nextInt(stringChoices.length)];
+            longs[ii] = random.nextInt(10) == 0 ? QueryConstants.NULL_LONG : random.nextInt(8);
+        }
+        final ColumnHolder<?>[] columns = {
+                TableTools.intCol("GroupInt", groupInt),
+                TableTools.stringCol("GroupString", groupString),
+                TableTools.doubleCol("GroupDouble", groupDouble),
+                TableTools.intCol("MostlyUnique", mostlyUnique),
+                TableTools.doubleCol("D", doubles),
+                TableTools.stringCol("S", strings),
+                TableTools.longCol("L", longs)};
+        return refreshing
+                ? TstUtils.testRefreshingTable(RowSetFactory.flat(size).toTracking(), columns)
+                : TableTools.newTable(columns);
+    }
+
+    /**
+     * Sort with the generated kernel and no index, then check that the other paths give the same result: the
+     * one-column-at-a-time path with and without the index on the first column, the generated kernel with that index
+     * present but its groups below the minimum size, and the index groups sorted by the remaining columns.
+     */
+    private static void checkFirstColumnIndexSort(final Table unindexed, final Table indexed, final SortSpec... specs) {
+        final boolean oldKernels = QueryTable.USE_INDIRECT_SORT_KERNELS;
+        final int oldMinimumGroupSize = SortHelpers.minimumIndexGroupSize;
+        try {
+            QueryTable.USE_INDIRECT_SORT_KERNELS = true;
+            final Table expected = ((QueryTable) unindexed).sort(specs);
+            SortHelpers.minimumIndexGroupSize = 1;
+            TstUtils.assertTableEquals(expected, ((QueryTable) indexed).sort(specs));
+            SortHelpers.minimumIndexGroupSize = Integer.MAX_VALUE;
+            TstUtils.assertTableEquals(expected, ((QueryTable) indexed).sort(specs));
+            QueryTable.USE_INDIRECT_SORT_KERNELS = false;
+            TstUtils.assertTableEquals(expected, ((QueryTable) unindexed).sort(specs));
+            TstUtils.assertTableEquals(expected, ((QueryTable) indexed).sort(specs));
+        } finally {
+            QueryTable.USE_INDIRECT_SORT_KERNELS = oldKernels;
+            SortHelpers.minimumIndexGroupSize = oldMinimumGroupSize;
+        }
+    }
+
+    private static SortSpec asc(final String column) {
+        return SortColumn.asc(ColumnName.of(column));
+    }
+
+    private static SortSpec desc(final String column) {
+        return SortColumn.desc(ColumnName.of(column));
+    }
+
+    /**
+     * A sort whose first column has a data index sorts each index group by the remaining columns, giving the same
+     * result as the generated kernel without the index and the one-column-at-a-time path: for two and more columns,
+     * ascending and descending, nulls, NaN and signed zeros, comparators on later columns, and indexes whose groups are
+     * mostly single rows. The groups are sorted serially and in parallel tasks.
+     */
+    @Test
+    public void testFirstColumnIndexSortMatchesOtherPaths() {
+        final int size = 5000;
+        final Table unindexed = makeIndexTestTable(31337, size, false);
+        final Table indexed = makeIndexTestTable(31337, size, false);
+        for (final String first : new String[] {"GroupInt", "GroupString", "GroupDouble", "MostlyUnique"}) {
+            DataIndexer.getOrCreateDataIndex(indexed, first);
+        }
+        final Comparator<String> caseInsensitive = Comparator.nullsFirst(String.CASE_INSENSITIVE_ORDER);
+
+        final long oldMinimumParallel = QueryTable.MINIMUM_PARALLEL_SORT_ROWS;
+        final long oldSegmentSize = SortHelpers.parallelSortSegmentSize;
+        try {
+            for (final boolean parallel : new boolean[] {false, true}) {
+                QueryTable.MINIMUM_PARALLEL_SORT_ROWS = parallel ? 1 : Long.MAX_VALUE;
+                SortHelpers.parallelSortSegmentSize = 256;
+                for (final String first : new String[] {"GroupInt", "GroupString", "GroupDouble", "MostlyUnique"}) {
+                    checkFirstColumnIndexSort(unindexed, indexed, asc(first), asc("D"));
+                    checkFirstColumnIndexSort(unindexed, indexed, desc(first), desc("S"));
+                    checkFirstColumnIndexSort(unindexed, indexed, asc(first), desc("S"), asc("D"), desc("L"));
+                    checkFirstColumnIndexSort(unindexed, indexed, desc(first), asc("L"), desc("D"));
+                    checkFirstColumnIndexSort(unindexed, indexed, asc(first),
+                            ComparatorSortColumn.asc("S", caseInsensitive), asc("L"));
+                    checkFirstColumnIndexSort(unindexed, indexed, desc(first),
+                            ComparatorSortColumn.desc("S", caseInsensitive));
+                }
+            }
+        } finally {
+            QueryTable.MINIMUM_PARALLEL_SORT_ROWS = oldMinimumParallel;
+            SortHelpers.parallelSortSegmentSize = oldSegmentSize;
+        }
+    }
+
+    /**
+     * The initial sort of a refreshing table with a data index on its first column sorts the index groups, and the sort
+     * then stays correct as rows are added.
+     */
+    @Test
+    public void testRefreshingFirstColumnIndexSort() {
+        final int size = 2000;
+        final QueryTable source = (QueryTable) makeIndexTestTable(4242, size, true);
+        DataIndexer.getOrCreateDataIndex(source, "GroupInt");
+        final int oldMinimumGroupSize = SortHelpers.minimumIndexGroupSize;
+        final Table sorted;
+        try {
+            SortHelpers.minimumIndexGroupSize = 1;
+            sorted = source.sort("GroupInt", "S", "D", "L");
+        } finally {
+            SortHelpers.minimumIndexGroupSize = oldMinimumGroupSize;
+        }
+        TstUtils.assertTableEquals(makeIndexTestTable(4242, size, false).sort("GroupInt", "S", "D", "L"), sorted);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet added = RowSetFactory.fromRange(size, size + 2);
+            TstUtils.addToTable(source, added, TableTools.intCol("GroupInt", 3, 4, 3),
+                    TableTools.stringCol("GroupString", "g3", "g4", "g3"),
+                    TableTools.doubleCol("GroupDouble", 1.5, 2.0, 1.5),
+                    TableTools.intCol("MostlyUnique", 1, 2, 3),
+                    TableTools.doubleCol("D", 0.0, Double.NaN, -0.0),
+                    TableTools.stringCol("S", "b", null, "B"),
+                    TableTools.longCol("L", 1, 2, 3));
+            source.notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+        TstUtils.assertTableEquals(source.select().sort("GroupInt", "S", "D", "L"), sorted);
+    }
+
+    /**
+     * A refreshing sort with a data index on its first column, created during an update cycle after its source has
+     * changed but before the source notifies, sorts the index groups of the source's previous values, and matches a
+     * fresh sort once the cycle completes.
+     */
+    @Test
+    public void testRefreshingFirstColumnIndexSortCreatedDuringUpdate() {
+        final int size = 2000;
+        final QueryTable source = (QueryTable) makeIndexTestTable(4243, size, true);
+        DataIndexer.getOrCreateDataIndex(source, "GroupInt");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final MutableObject<Table> sorted = new MutableObject<>();
+        final int oldMinimumGroupSize = SortHelpers.minimumIndexGroupSize;
+        try {
+            SortHelpers.minimumIndexGroupSize = 1;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet added = RowSetFactory.fromRange(size, size + 2);
+                TstUtils.addToTable(source, added, TableTools.intCol("GroupInt", 3, 4, 3),
+                        TableTools.stringCol("GroupString", "g3", "g4", "g3"),
+                        TableTools.doubleCol("GroupDouble", 1.5, 2.0, 1.5),
+                        TableTools.intCol("MostlyUnique", 1, 2, 3),
+                        TableTools.doubleCol("D", 0.0, Double.NaN, -0.0),
+                        TableTools.stringCol("S", "b", null, "B"),
+                        TableTools.longCol("L", 1, 2, 3));
+                final RowSet modified = RowSetFactory.fromKeys(0, 1);
+                TstUtils.addToTable(source, modified, TableTools.intCol("GroupInt", 4, 3),
+                        TableTools.stringCol("GroupString", "g4", "g3"),
+                        TableTools.doubleCol("GroupDouble", 2.0, 1.5),
+                        TableTools.intCol("MostlyUnique", 4, 5),
+                        TableTools.doubleCol("D", 1.0, 2.0),
+                        TableTools.stringCol("S", "a", "c"),
+                        TableTools.longCol("L", 4, 5));
+                // the source has not notified yet, so the sort initializes from its previous values
+                sorted.setValue(source.sort("GroupInt", "S", "D", "L"));
+                source.notifyListeners(added, RowSetFactory.empty(), modified);
+                updateGraph.markSourcesRefreshedForUnitTests();
+            }, false);
+        } finally {
+            SortHelpers.minimumIndexGroupSize = oldMinimumGroupSize;
+        }
+        TstUtils.assertTableEquals(source.select().sort("GroupInt", "S", "D", "L"), sorted.getValue());
+    }
+
+    /**
+     * Sorting the groups of a data index on the first column reads none of the first column's values and each value of
+     * the remaining columns once; the generated kernel without the index reads every column.
+     */
+    @Test
+    public void testFirstColumnIndexSortReadsOnlyRemainingColumns() {
+        final int size = 3000;
+        final Random random = new Random(1618);
+        final int[] groups = new int[size];
+        final int[] second = new int[size];
+        final int[] third = new int[size];
+        for (int ii = 0; ii < size; ++ii) {
+            groups[ii] = random.nextInt(10);
+            second[ii] = random.nextInt(5);
+            third[ii] = random.nextInt(1000);
+        }
+        final AtomicInteger firstReads = new AtomicInteger();
+        final AtomicInteger remainingReads = new AtomicInteger();
+        QueryScope.addParam("firstReads", firstReads);
+        QueryScope.addParam("remainingReads", remainingReads);
+        final Table table = TableTools.newTable(TableTools.intCol("RawA", groups), TableTools.intCol("RawB", second),
+                TableTools.intCol("RawC", third)).updateView(
+                        "A = RawA + 0 * firstReads.getAndIncrement()",
+                        "B = RawB + 0 * remainingReads.getAndIncrement()",
+                        "C = RawC + 0 * remainingReads.getAndIncrement()");
+        // computing the index reads A, so it is computed before the reads are counted
+        DataIndexer.getOrCreateDataIndex(table, "A").table();
+
+        final boolean oldKernels = QueryTable.USE_INDIRECT_SORT_KERNELS;
+        final int oldMinimumGroupSize = SortHelpers.minimumIndexGroupSize;
+        try {
+            QueryTable.USE_INDIRECT_SORT_KERNELS = true;
+            SortHelpers.minimumIndexGroupSize = 1;
+            firstReads.set(0);
+            remainingReads.set(0);
+            final Table indexGroupsSorted = table.sort("A", "B", "C");
+            assertEquals("first column reads when sorting the index groups", 0, firstReads.get());
+            assertEquals("remaining column reads when sorting the index groups", 2 * size, remainingReads.get());
+
+            SortHelpers.minimumIndexGroupSize = Integer.MAX_VALUE;
+            firstReads.set(0);
+            remainingReads.set(0);
+            final Table kernelSorted = table.sort("A", "B", "C");
+            assertEquals("first column reads by the generated kernel", size, firstReads.get());
+            assertEquals("remaining column reads by the generated kernel", 2 * size, remainingReads.get());
+            TstUtils.assertTableEquals(kernelSorted, indexGroupsSorted);
+        } finally {
+            QueryTable.USE_INDIRECT_SORT_KERNELS = oldKernels;
+            SortHelpers.minimumIndexGroupSize = oldMinimumGroupSize;
+        }
+    }
+
+    /**
+     * A data index on all the sort columns that is too large for the sort to use leaves the sort to the generated
+     * kernel, which reads every sort column. Without the generated kernels, the one-column-at-a-time path reads the
+     * second column only for ties of the first, and here the first column has none.
+     */
+    @Test
+    public void testTooLargeFullIndexUsesGeneratedKernel() {
+        final int size = 1000;
+        final Random random = new Random(2718);
+        final int[] distinct = new int[size];
+        final int[] second = new int[size];
+        for (int ii = 0; ii < size; ++ii) {
+            distinct[ii] = ii;
+            second[ii] = random.nextInt(10);
+        }
+        for (int ii = size - 1; ii > 0; --ii) {
+            final int jj = random.nextInt(ii + 1);
+            final int swap = distinct[ii];
+            distinct[ii] = distinct[jj];
+            distinct[jj] = swap;
+        }
+        final AtomicInteger secondReads = new AtomicInteger();
+        QueryScope.addParam("secondReads", secondReads);
+        final Table table = TableTools.newTable(TableTools.intCol("A", distinct), TableTools.intCol("RawB", second))
+                .updateView("B = RawB + 0 * secondReads.getAndIncrement()");
+        // computing the index reads B, so it is computed before the reads are counted
+        DataIndexer.getOrCreateDataIndex(table, "A", "B").table();
+
+        final boolean oldKernels = QueryTable.USE_INDIRECT_SORT_KERNELS;
+        try {
+            QueryTable.USE_INDIRECT_SORT_KERNELS = false;
+            secondReads.set(0);
+            final Table columnAtATime = table.sort("A", "B");
+            assertEquals("second column reads with the generated kernels disabled", 0, secondReads.get());
+
+            QueryTable.USE_INDIRECT_SORT_KERNELS = true;
+            secondReads.set(0);
+            final Table generated = table.sort("A", "B");
+            assertEquals("second column reads by the generated kernel", size, secondReads.get());
+            TstUtils.assertTableEquals(columnAtATime, generated);
+        } finally {
+            QueryTable.USE_INDIRECT_SORT_KERNELS = oldKernels;
+        }
     }
 
     @Test
