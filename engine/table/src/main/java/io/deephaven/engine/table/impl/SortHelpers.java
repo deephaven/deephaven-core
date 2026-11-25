@@ -34,7 +34,6 @@ import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sort.timsort.ParallelTimsort;
-import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortDispatcher;
 import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortKernelFactory;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
@@ -1017,11 +1016,13 @@ public class SortHelpers {
 
     /**
      * Attempt to sort with the groups of a data index on the first sort column. The index table is sorted by the first
-     * column, its groups are laid out in that order, and the rows of each group are sorted by the remaining columns
-     * with a generated kernel; the first column's values are never read. The remaining columns are filled once each in
-     * row set order, and each group's rows are sorted by their positions in the row set. Groups are sorted in parallel
-     * when the sort is large enough. Returns null, leaving rowKeysArray unused, when the index's groups are smaller on
-     * average than {@link #minimumIndexGroupSize} rows or no kernel is available for the remaining columns.
+     * column, its groups are laid out in that order, and the rows of each group are sorted by the remaining columns;
+     * the first column's values are never read. One remaining column is sorted with a direct kernel: each group's
+     * values are filled in row key order and sorted with the group's row keys. Two or more remaining columns are sorted
+     * with a generated kernel: the remaining columns are filled once each in row set order, and each group's rows are
+     * sorted by their positions in the row set. Groups are sorted in parallel when the sort is large enough. Returns
+     * null, leaving rowKeysArray unused, when the index's groups are smaller on average than
+     * {@link #minimumIndexGroupSize} rows or no kernel is available for the remaining columns.
      */
     @Nullable
     private static SortMapping tryFirstColumnIndexSortMapping(
@@ -1042,26 +1043,25 @@ public class SortHelpers {
         }
 
         final int remainingColumns = columnSources.length - 1;
-        final ChunkType[] remainingChunkTypes = new ChunkType[remainingColumns];
-        final SortingOrder[] remainingOrder = new SortingOrder[remainingColumns];
-        final Comparator[] remainingComparators = new Comparator[remainingColumns];
-        for (int ci = 0; ci < remainingColumns; ++ci) {
-            remainingChunkTypes[ci] = columnSources[ci + 1].getChunkType();
-            remainingOrder[ci] = order[ci + 1];
-            remainingComparators[ci] = comparators[ci + 1];
+        // a single remaining column is sorted with the direct kernels, which cover every chunk type
+        final IntFunction<MultiColumnSortKernel<Any>> contextFactory;
+        if (remainingColumns == 1) {
+            contextFactory = null;
+        } else {
+            final ChunkType[] remainingChunkTypes = new ChunkType[remainingColumns];
+            final SortingOrder[] remainingOrder = new SortingOrder[remainingColumns];
+            final Comparator[] remainingComparators = new Comparator[remainingColumns];
+            for (int ci = 0; ci < remainingColumns; ++ci) {
+                remainingChunkTypes[ci] = columnSources[ci + 1].getChunkType();
+                remainingOrder[ci] = order[ci + 1];
+                remainingComparators[ci] = comparators[ci + 1];
+            }
+            if (!IndirectTimsortKernelFactory.hasKernel(remainingChunkTypes, remainingComparators)) {
+                return null;
+            }
+            contextFactory = size -> IndirectTimsortKernelFactory.makeContext(remainingChunkTypes, remainingOrder,
+                    remainingComparators, size);
         }
-        // a single remaining column uses the pregenerated kernels, which cover every chunk type but boolean
-        final boolean remainingKernelAvailable = remainingColumns == 1
-                ? remainingChunkTypes[0] != ChunkType.Boolean
-                : IndirectTimsortKernelFactory.hasKernel(remainingChunkTypes, remainingComparators);
-        if (!remainingKernelAvailable) {
-            return null;
-        }
-        final IntFunction<MultiColumnSortKernel<Any>> contextFactory = remainingColumns == 1
-                ? size -> IndirectTimsortDispatcher.makeContext(remainingChunkTypes, remainingOrder,
-                        remainingComparators, size)
-                : size -> IndirectTimsortKernelFactory.makeContext(remainingChunkTypes, remainingOrder,
-                        remainingComparators, size);
 
         final ColumnSource<Comparable<?>> originalIndexKeyColumn = indexTable.getColumnSource(
                 dataIndex.keyColumnNamesByIndexedColumn().get(originalColumnSources[0]),
@@ -1092,6 +1092,19 @@ public class SortHelpers {
         }
         Assert.eq(groupOffsets[groupCount], "groupOffsets[groupCount]", sortSize, "sortSize");
 
+        if (remainingColumns == 1) {
+            final IndexGroupSorter groupSorter = (firstGroup, endGroup) -> sortIndexGroupsDirect(order[1],
+                    columnSources[1], comparators[1], usePrev, groups, groupOffsets, rowKeysArray, firstGroup,
+                    endGroup);
+            final int sortSegments = parallelSortSegments(sortSize);
+            if (sortSegments > 1) {
+                sortIndexGroupsParallel(groupSorter, groupOffsets, groupCount, sortSize, sortSegments);
+            } else {
+                groupSorter.sortGroups(0, groupCount);
+            }
+            return new ArraySortMapping(rowKeysArray);
+        }
+
         // the row key at each row set position, for mapping sorted positions back to row keys
         final long[] rowKeysByPosition = new long[sortSize];
         rowSet.fillRowKeyChunk(WritableLongChunk.writableChunkWrap(rowKeysByPosition));
@@ -1114,6 +1127,54 @@ public class SortHelpers {
             SafeCloseable.closeAll(values);
         }
         return new ArraySortMapping(rowKeysArray);
+    }
+
+    /**
+     * Write the row keys of groups [firstGroup, endGroup) into their ranges of rowKeysArray, each group's rows sorted
+     * by the one remaining sort column. Each group's values are filled in row key order and sorted with a direct kernel
+     * that carries the row keys along.
+     */
+    private static void sortIndexGroupsDirect(
+            final SortingOrder order,
+            final ColumnSource<Comparable<?>> columnSource,
+            final Comparator comparator,
+            final boolean usePrev,
+            final RowSet[] groups,
+            final int[] groupOffsets,
+            final long[] rowKeysArray,
+            final int firstGroup,
+            final int endGroup) {
+        int maximumGroupSize = 0;
+        for (int gi = firstGroup; gi < endGroup; ++gi) {
+            maximumGroupSize = Math.max(maximumGroupSize, groupOffsets[gi + 1] - groupOffsets[gi]);
+        }
+        if (maximumGroupSize <= 1) {
+            for (int gi = firstGroup; gi < endGroup; ++gi) {
+                rowKeysArray[groupOffsets[gi]] = groups[gi].firstRowKey();
+            }
+            return;
+        }
+        try (final LongSortKernel<Values, RowKeys> sortContext =
+                getSortContext(columnSource, order, maximumGroupSize, comparator, false);
+                final ColumnSource.FillContext fillContext = columnSource.makeFillContext(maximumGroupSize);
+                final WritableChunk<Values> values = columnSource.getChunkType().makeWritableChunk(maximumGroupSize);
+                final ResettableWritableLongChunk<RowKeys> groupKeys =
+                        ResettableWritableLongChunk.makeResettableChunk()) {
+            for (int gi = firstGroup; gi < endGroup; ++gi) {
+                final int offset = groupOffsets[gi];
+                final int length = groupOffsets[gi + 1] - offset;
+                groups[gi].fillRowKeyChunk(groupKeys.resetFromTypedArray(rowKeysArray, offset, length));
+                if (length == 1) {
+                    continue;
+                }
+                if (usePrev) {
+                    columnSource.fillPrevChunk(fillContext, values, groups[gi]);
+                } else {
+                    columnSource.fillChunk(fillContext, values, groups[gi]);
+                }
+                sortContext.sort(groupKeys, values);
+            }
+        }
     }
 
     /** Sorts the index groups [firstGroup, endGroup), which no other sorter shares. */
