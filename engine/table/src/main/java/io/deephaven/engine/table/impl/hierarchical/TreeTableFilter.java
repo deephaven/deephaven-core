@@ -564,7 +564,7 @@ public class TreeTableFilter {
                     break;
                 }
                 rowSets.remove(lastIndex);
-                last.insert(merged);
+                last.subsume(merged);
                 merged.close();
                 merged = last;
             }
@@ -580,8 +580,8 @@ public class TreeTableFilter {
             }
             final WritableRowSet result = rowSets.get(0);
             for (int ii = 1; ii < rowSets.size(); ++ii) {
-                try (final RowSet rowSet = rowSets.get(ii)) {
-                    result.insert(rowSet);
+                try (final WritableRowSet rowSet = rowSets.get(ii)) {
+                    result.subsume(rowSet);
                 }
             }
             rowSets.clear();
