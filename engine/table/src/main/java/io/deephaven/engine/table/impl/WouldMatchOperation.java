@@ -460,9 +460,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             }
 
             try (final SafeCloseableList closer = new SafeCloseableList()) {
-                final WritableRowSet intersection = closer.add(usePrev
-                        ? selection.intersect(closer.add(source.copyPrev()))
-                        : selection.intersect(source));
+                // the previous row set is read only for this one intersection, during the updating phase
+                final WritableRowSet intersection = closer.add(selection.intersect(usePrev ? source.prev() : source));
                 final RowSet matching = inverted ^ hasFalse ? closer.add(selection.minus(intersection)) : intersection;
                 return PushdownResult.exactMatch(selection, matching);
             }
