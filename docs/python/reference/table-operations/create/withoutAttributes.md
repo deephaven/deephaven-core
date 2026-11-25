@@ -7,13 +7,13 @@ The `without_attributes` method returns a table that is identical to the source 
 ## Syntax
 
 ```
-without_attributes(attrs: Union[str, Sequence[str]]) -> Table
+without_attributes(attrs: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="attrs" type="Union[str, Sequence[str]]">
+<Param name="attrs" type="str | Sequence[str]">
 
 The names of the attributes to remove.
 

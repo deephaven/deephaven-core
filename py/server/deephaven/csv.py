@@ -39,7 +39,7 @@ def read(
     """Read the CSV data specified by the path parameter as a table.
 
     Args:
-        header (Optional[dict[str, DType]]): a dict to define the table columns with key being the name, value being the data type.
+        header (dict[str, DType] | None): a dict to define the table columns with key being the name, value being the data type.
             The keys are applied by position: the first key names and types the first column of the file, the second
             key the second column, and so on. When the file has a header row, these names replace the names in it;
             they are not matched against it. The dict must therefore list the columns in the file's order. A dict in a
@@ -112,18 +112,21 @@ def read(
         raise DHError(e, "read csv failed") from e
 
 
-def write(table: Table, path: str, cols: Sequence[str] = []) -> None:
+def write(table: Table, path: str, cols: Sequence[str] | None = None) -> None:
     """Write a table to a standard CSV file.
 
     Args:
         table (Table): the source table
         path (str): the path of the CSV file
-        cols (Sequence[str]): the names of the columns to be written out
+        cols (Sequence[str] | None): the names of the columns to be written out, defaults to None, meaning every
+            column is written
 
     Raises:
         DHError
     """
     try:
-        _JCsvTools.writeCsv(table.j_table, False, path, *cols)
+        _JCsvTools.writeCsv(
+            table.j_table, False, path, *(cols if cols is not None else [])
+        )
     except Exception as e:
         raise DHError(message="write csv failed.") from e

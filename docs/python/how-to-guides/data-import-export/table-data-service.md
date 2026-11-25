@@ -136,7 +136,7 @@ The following code blocks contain two example classes:
 <summary>An in-memory data store for the backend</summary>
 
 ```python test-set=1 order=null
-from typing import Optional, Dict, Callable
+from typing import Callable
 import pyarrow as pa
 
 
@@ -151,7 +151,7 @@ class TestTable:
         """
 
         def __init__(
-            self, data_schema: pa.Schema, partitioning_values: Optional[pa.Table]
+            self, data_schema: pa.Schema, partitioning_values: pa.Table | None
         ):
             self.partitioning_values = partitioning_values
             self.size_cb: Callable[[int], None] = lambda *x: x
@@ -169,12 +169,12 @@ class TestTable:
             self.size_cb(self.data.num_rows)
 
     def __init__(
-        self, data_schema: pa.Schema, partitioning_column_schema: Optional[pa.Schema]
+        self, data_schema: pa.Schema, partitioning_column_schema: pa.Schema | None
     ):
         self.data_schema = data_schema
         self.partitioning_column_schema = partitioning_column_schema
-        self.locations: Dict[TableLocationKey, self.TestTableLocation] = {}
-        self.location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None] = (
+        self.locations: dict[TableLocationKey, self.TestTableLocation] = {}
+        self.location_cb: Callable[[TableLocationKeyImpl, pa.Table | None], None] = (
             lambda *x: x
         )
         self.location_failure_cb: Callable[[Exception], None] = lambda *x: x
@@ -182,7 +182,7 @@ class TestTable:
     def add_table_location(
         self,
         table_location_key: TableLocationKeyImpl,
-        partitioning_column_values: Optional[pa.Table],
+        partitioning_column_values: pa.Table | None,
         data_values: pa.Table,
     ):
         """
@@ -229,7 +229,7 @@ class TestBackend(TableDataServiceBackend):
     """
 
     def __init__(self):
-        self.tables: Dict[TableKey, TestTable] = {}
+        self.tables: dict[TableKey, TestTable] = {}
 
     def add_table(self, table_key: TableKeyImpl, table: TestTable):
         """
@@ -242,7 +242,7 @@ class TestBackend(TableDataServiceBackend):
     def table_schema(
         self,
         table_key: TableKeyImpl,
-        schema_cb: Callable[[pa.Schema, Optional[pa.Schema]], None],
+        schema_cb: Callable[[pa.Schema, pa.Schema | None], None],
         failure_cb: Callable[[Exception], None],
     ) -> None:
         """
@@ -258,7 +258,7 @@ class TestBackend(TableDataServiceBackend):
     def table_locations(
         self,
         table_key: TableKeyImpl,
-        location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None],
+        location_cb: Callable[[TableLocationKeyImpl, pa.Table | None], None],
         success_cb: Callable[[], None],
         failure_cb: Callable[[Exception], None],
     ) -> None:
@@ -331,7 +331,7 @@ class TestBackend(TableDataServiceBackend):
     def subscribe_to_table_locations(
         self,
         table_key: TableKeyImpl,
-        location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None],
+        location_cb: Callable[[TableLocationKeyImpl, pa.Table | None], None],
         success_cb: Callable[[], None],
         failure_cb: Callable[[Exception], None],
     ) -> Callable[[], None]:

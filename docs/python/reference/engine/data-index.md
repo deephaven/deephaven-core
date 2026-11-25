@@ -15,9 +15,9 @@ title: data_index
 ```python syntax
 data_index(
     table: Table,
-    key_cols: List[str],
+    key_cols: list[str],
     create_if_absent: bool = True
-) -> Optional[DataIndex]
+) -> DataIndex | None
 ```
 
 ## Parameters
@@ -28,7 +28,7 @@ data_index(
 The table to index.
 
 </Param>
-<Param name="key_cols" type="List[str]">
+<Param name="key_cols" type="list[str]">
 
 The names of the key column(s) to index.
 

@@ -82,7 +82,7 @@ class TableDataServiceBackend(ABC):
 
         Args:
             table_key (TableKey): the table key
-            schema_cb (Callable[[pa.Schema, Optional[pa.Schema]], None]): the callback function with two arguments: the
+            schema_cb (Callable[[pa.Schema, pa.Schema | None], None]): the callback function with two arguments: the
                 table data schema and the optional partitioning column schema
             failure_cb (Callable[[Exception], None]): the failure callback function
         """
@@ -117,7 +117,7 @@ class TableDataServiceBackend(ABC):
 
         Args:
             table_key (TableKey): the table key
-            location_cb (Callable[[TableLocationKey, Optional[pa.Table]], None]): the callback function
+            location_cb (Callable[[TableLocationKey, pa.Table | None], None]): the callback function
             success_cb (Callable[[], None]): the success callback function
             failure_cb (Callable[[Exception], None]): the failure callback function
         """
@@ -153,7 +153,7 @@ class TableDataServiceBackend(ABC):
 
         Args:
             table_key (TableKey): the table key
-            location_cb (Callable[[TableLocationKey, Optional[pa.Table]], None]): the table location callback function
+            location_cb (Callable[[TableLocationKey, pa.Table | None], None]): the table location callback function
             success_cb (Callable[[], None]): the success callback function
             failure_cb (Callable[[Exception], None]): the failure callback function
 
@@ -287,9 +287,9 @@ class TableDataService(JObjectWrapper):
 
         Args:
             backend (TableDataServiceBackend): the user-implemented backend service implementation
-            chunk_reader_factory (Optional[jpy.JType]): the Barrage chunk reader factory, default is None
-            stream_reader_options (Optional[jpy.JType]): the Barrage stream reader options, default is None
-            page_size (Optional[int]): the page size for the table service, default is None, meaning to use the configurable
+            chunk_reader_factory (jpy.JType | None): the Barrage chunk reader factory, default is None
+            stream_reader_options (jpy.JType | None): the Barrage stream reader options, default is None
+            page_size (int | None): the page size for the table service, default is None, meaning to use the configurable
                 jvm property: PythonTableDataService.defaultPageSize which defaults to 64K.
         """
         self._backend = backend

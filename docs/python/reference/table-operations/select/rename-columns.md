@@ -7,13 +7,13 @@ The `rename_columns` method creates a new table with specified columns renamed.
 ## Syntax
 
 ```
-rename_columns(cols: Union[str, Sequence[str]]) -> Table
+rename_columns(cols: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, Sequence[str]]">
+<Param name="cols" type="str | Sequence[str]">
 
 Columns that will be renamed in the new table.
 

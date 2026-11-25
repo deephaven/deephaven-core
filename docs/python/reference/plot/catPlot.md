@@ -9,16 +9,18 @@ The `plot_cat` method uses data from Deephaven tables to create a plot with disc
 ```python syntax
 plot_cat(
     series_name: str,
-    t: Union[Table, SelectableDataSet],
-    category: Union[str, list[str], list[int], list[float]],
-    y: Union[str, list[int], list[float], list[DateTime]],
-    y_low: Union[str, list[int], list[float], list[DateTime]] = None,
-    y_high: Union[str, list[int], list[float], list[DateTime]] = None,
-    by: list[str] = None,
+    t: Table | SelectableDataSet | None = None,
+    category: str | list[str] | list[int] | list[float] | None = None,
+    y: str | list[int] | list[float] | list[DateTime] | None = None,
+    y_low: str | list[int] | list[float] | list[DateTime] | None = None,
+    y_high: str | list[int] | list[float] | list[DateTime] | None = None,
+    by: list[str] | None = None,
 ) -> Figure
 ```
 
 ## Parameters
+
+Every call needs `category` and `y`. Pass `t` when they are column names, and leave it out when they hold the values. Pass `y_low` and `y_high` together. `by` needs `t`.
 
 <ParamTable>
 <Param name="series_name" type="str">
@@ -26,34 +28,34 @@ plot_cat(
 The name (as a [String](../query-language/types/strings.md)) you want to use to identify the series on the plot itself.
 
 </Param>
-<Param name="t" type="Union[Table, SelectableDataSet]">
+<Param name="t" type="Table | SelectableDataSet | None" optional>
 
 The table (or other selectable data set) that holds the data to be plotted.
 
 </Param>
-<Param name="category" type="Union[str, list[str], list[int], list[float]]">
+<Param name="category" type="str | list[str] | list[int] | list[float] | None" optional>
 
 The names of the columns to be used for the categories.
 
 </Param>
 
-<Param name="y" type="Union[str, list[int], list[float], list[DateTime]]">
+<Param name="y" type="str | list[int] | list[float] | list[DateTime] | None" optional>
 
 The name of the column containing the discrete values.
 
 </Param>
 
-<Param name="y_low" type="Union[str, list[int], list[float], list[DateTime]]" optional>
+<Param name="y_low" type="str | list[int] | list[float] | list[DateTime] | None" optional>
 
 The name of the column containing lower Y error bar data.
 
 </Param>
-<Param name="y_high" type="Union[str, list[int], list[float], list[DateTime]]" optional>
+<Param name="y_high" type="str | list[int] | list[float] | list[DateTime] | None" optional>
 
 The name of the column containing upper Y error bar data.
 
 </Param>
-<Param name="by" type="list[str]" optional>
+<Param name="by" type="list[str] | None" optional>
 
 A list of one or more columns that contain grouping data.
 

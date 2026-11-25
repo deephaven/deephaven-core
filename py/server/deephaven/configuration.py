@@ -29,7 +29,7 @@ class Configuration(JObjectWrapper):
         """Initialize a Configuration wrapper.
 
         Args:
-            j_configuration (Optional[jpy.JType]): The Java Configuration instance to wrap. If None, uses the
+            j_configuration (jpy.JType | None): The Java Configuration instance to wrap. If None, uses the
                 default Configuration.getInstance().
         """
         self._j_configuration = (
@@ -50,11 +50,11 @@ class Configuration(JObjectWrapper):
 
         Args:
             property_name (str): The name of the property to retrieve.
-            default (Optional[str]): The default value to return if the property is not set. If None and the
+            default (str | None): The default value to return if the property is not set. If None and the
                 property is not set, raises DHError.
 
         Returns:
-            Optional[str]: The property value as a string, or the default value if provided and the property is not set.
+            str | None: The property value as a string, or the default value if provided and the property is not set.
 
         Raises:
             DHError: If the property is not set and no default value is provided.
@@ -74,11 +74,11 @@ class Configuration(JObjectWrapper):
 
         Args:
             property_name (str): The name of the property to retrieve.
-            default (Optional[str]): The default value to return if the property is not set. If None and the
+            default (str | None): The default value to return if the property is not set. If None and the
                 property is not set, raises DHError.
 
         Returns:
-            Optional[str]: The property value as a string, or the default value if provided and the property is not set.
+            str | None: The property value as a string, or the default value if provided and the property is not set.
 
         Raises:
             DHError: If the property is not set and no default value is provided.
@@ -90,11 +90,11 @@ class Configuration(JObjectWrapper):
 
         Args:
             property_name (str): The name of the property to retrieve.
-            default (Optional[int]): The default value to return if the property is not set. If None and the
+            default (int | None): The default value to return if the property is not set. If None and the
                 property is not set, raises DHError.
 
         Returns:
-            Optional[int]: The property value as an integer, or the default value if provided and the property is not set.
+            int | None: The property value as an integer, or the default value if provided and the property is not set.
 
         Raises:
             DHError: If the property is not set and no default value is provided, or if the property value
@@ -119,11 +119,11 @@ class Configuration(JObjectWrapper):
 
         Args:
             property_name (str): The name of the property to retrieve.
-            default (Optional[float]): The default value to return if the property is not set. If None and the
+            default (float | None): The default value to return if the property is not set. If None and the
                 property is not set, raises DHError.
 
         Returns:
-            Optional[float]: The property value as a float, or the default value if provided and the property is not set.
+            float | None: The property value as a float, or the default value if provided and the property is not set.
 
         Raises:
             DHError: If the property is not set and no default value is provided, or if the property value
@@ -146,11 +146,11 @@ class Configuration(JObjectWrapper):
 
         Args:
             property_name (str): The name of the property to retrieve.
-            default (Optional[bool]): The default value to return if the property is not set. If None and the
+            default (bool | None): The default value to return if the property is not set. If None and the
                 property is not set, raises DHError.
 
         Returns:
-            Optional[bool]: The property value as a boolean, or the default value if provided and the property is not set.
+            bool | None: The property value as a boolean, or the default value if provided and the property is not set.
 
         Raises:
             DHError: If the property is not set and no default value is provided, or if the property value
@@ -173,11 +173,11 @@ class Configuration(JObjectWrapper):
 
         Args:
             property_name (str): The name of the property to retrieve.
-            default (Optional[int]): The default value to return if the property is not set. If None and the
+            default (int | None): The default value to return if the property is not set. If None and the
                 property is not set, raises DHError.
 
         Returns:
-            Optional[int]: The property value as a long integer, or the default value if provided and the property is not set.
+            int | None: The property value as a long integer, or the default value if provided and the property is not set.
 
         Raises:
             DHError: If the property is not set and no default value is provided, or if the property value

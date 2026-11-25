@@ -7,7 +7,7 @@ The `to_table` method creates a new table from a NumPy [NDArray](https://numpy.o
 ## Syntax
 
 ```python syntax
-to_table(np_array: numpy.ndarray, cols: List[str]) -> Table
+to_table(np_array: numpy.ndarray, cols: list[str]) -> Table
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ to_table(np_array: numpy.ndarray, cols: List[str]) -> Table
 The source table to convert to a `numpy.ndarray`.
 
 </Param>
-<Param name="cols" type="List[str]">
+<Param name="cols" type="list[str]">
 
 Defines the names of the columns in the resulting table. This parameter _must_ have exactly as many column names as there are columns in the source NumPy [NDArray](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html).
 

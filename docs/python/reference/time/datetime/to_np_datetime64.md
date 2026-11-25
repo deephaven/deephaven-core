@@ -13,13 +13,13 @@ title: to_np_datetime64
 ## Syntax
 
 ```python syntax
-to_np_datetime64(dt: Union[None, Instant, ZonedDateTime]) -> numpy.datetime64
+to_np_datetime64(dt: Instant | ZonedDateTime | None) -> numpy.datetime64
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="dt" type="Union[None, Instant, ZonedDateTime]">
+<Param name="dt" type="Instant | ZonedDateTime | None">
 
 A Java date-time to convert to a `numpy.datetime64`. If `None` is provided, `None` is returned.
 

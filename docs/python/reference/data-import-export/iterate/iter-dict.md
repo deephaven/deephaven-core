@@ -9,13 +9,13 @@ If locking is not explicitly specified, this method will automatically lock to e
 ## Syntax
 
 ```python syntax
-iter_dict(cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: int = 2048) -> Generator[Dict[str, Any], None, None]
+iter_dict(cols: str | Sequence[str] | None = None, *, chunk_size: int = 2048) -> Generator[dict[str, Any], None, None]
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, Sequence[str]]" Optional>
+<Param name="cols" type="str | Sequence[str] | None" Optional>
 
 The columns to read. If not given, all columns are read. The default is `None`, which reads all columns.
 

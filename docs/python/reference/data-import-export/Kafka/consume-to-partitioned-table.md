@@ -10,11 +10,11 @@ The `consume_to_partitioned_table` method reads a Kafka stream into an in-memory
 consume_to_partitioned_table(
   kafka_config: dict,
   topic: str,
-  partitions: list[int],
-  offsets: dict[int, int],
-  key_spec: KeyValueSpec,
-  value_spec: KeyValueSpec,
-  table_type: TableType,
+  partitions: list[int] | None = None,
+  offsets: dict[int, int] | None = None,
+  key_spec: KeyValueSpec | None = None,
+  value_spec: KeyValueSpec | None = None,
+  table_type: TableType | None = None,
 ) -> Table
 ```
 
@@ -31,13 +31,13 @@ Configuration for the associated Kafka consumer and the resulting table. Once th
 The Kafka topic name.
 
 </Param>
-<Param name="partitions" type="list[int]" optional>
+<Param name="partitions" type="list[int] | None" optional>
 
 - Subscribe to all partitions by default.
 - Specify partitions as a comma-separated list; e.g.,`partitions=[1, 3, 5 ]` to only listen to partitions 1, 3, and 5.
 
 </Param>
-<Param name="offsets" type="dict[int, int]" optional>
+<Param name="offsets" type="dict[int, int] | None" optional>
 
 - `ALL_PARTITIONS_DONT_SEEK` (default) - Start each partition without seeking, so Kafka picks the starting offset: the consumer group's committed offset if `group.id` is set and the group has one, otherwise Kafka's `auto.offset.reset` setting (default `latest`, the end of the partition).
 - `ALL_PARTITIONS_SEEK_TO_END` - Go to the newest available message for every partition.
@@ -49,7 +49,7 @@ The Kafka topic name.
     - Start with offset 27 in partition 5.
 
 </Param>
-<Param name="key_spec" type="KeyValueSpec" optional>
+<Param name="key_spec" type="KeyValueSpec | None" optional>
 
 Specifies how to map the Key field in Kafka messages to table column(s). Any of the following found in `deephaven.stream.kafka.consumer` can be used:
 
@@ -62,7 +62,7 @@ Specifies how to map the Key field in Kafka messages to table column(s). Any of 
 - `KeyValueSpec.FROM_PROPERTIES` (default) - Creates a single key column. The column name comes from the `deephaven.key.column.name` entry in `kafka_config` and defaults to `KafkaKey` if that entry is not set. The column type comes from the `deephaven.key.column.type` entry or, if that entry is not set, from a recognized `key.deserializer` entry. If neither entry is set, `consume_to_partitioned_table` raises an error.
 
 </Param>
-<Param name="value_spec" type="KeyValueSpec" optional>
+<Param name="value_spec" type="KeyValueSpec | None" optional>
 
 Specifies how to map the Value field in Kafka messages to table column(s). Any of the following specifications found in [`deephaven.stream.kafka.consumer`](/core/pydoc/code/deephaven.stream.kafka.consumer.html) can be used:
 
@@ -75,7 +75,7 @@ Specifies how to map the Value field in Kafka messages to table column(s). Any o
 - `KeyValueSpec.FROM_PROPERTIES` (default) - Creates a single value column. The column name comes from the `deephaven.value.column.name` entry in `kafka_config` and defaults to `KafkaValue` if that entry is not set. The column type comes from the `deephaven.value.column.type` entry or, if that entry is not set, from a recognized `value.deserializer` entry. If neither entry is set, `consume_to_partitioned_table` raises an error.
 
 </Param>
-<Param name="table_type" type="TableType" optional>
+<Param name="table_type" type="TableType | None" optional>
 
 One of the following `TableType` enums:
 

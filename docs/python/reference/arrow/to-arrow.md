@@ -7,7 +7,7 @@ title: to_arrow
 ## Syntax
 
 ```python syntax
-to_arrow(table: Table, cols: list[str] = None) -> pyarrow.lib.Table
+to_arrow(table: Table, cols: list[str] | None = None) -> pyarrow.lib.Table
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ to_arrow(table: Table, cols: list[str] = None) -> pyarrow.lib.Table
 A Deephaven table.
 
 </Param>
-<Param name="cols" type="list[str]" optional>
+<Param name="cols" type="list[str] | None" optional>
 
 The columns to convert. Default is `None` which means all columns.
 

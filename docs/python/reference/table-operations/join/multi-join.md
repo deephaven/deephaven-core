@@ -8,20 +8,20 @@ The `multi_join` method creates a [`MultiJoinTable`](#multijointable) object by 
 
 ```python syntax
 multi_join(
-  input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
-  on: Union[str, Sequence[str]] = None,
+  input: Table | Sequence[Table] | MultiJoinInput | Sequence[MultiJoinInput],
+  on: str | Sequence[str] | None = None,
 ) -> MultiJoinTable
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="input" type="Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]">
+<Param name="input" type="Table | Sequence[Table] | MultiJoinInput | Sequence[MultiJoinInput]">
 
 The tables to join, or [`MultiJoinInput`](#multijoininput) objects specifiying tables and columns to join.
 
 </Param>
-<Param name="on" type="Union[str, Sequence[str]]" optional>
+<Param name="on" type="str | Sequence[str] | None" optional>
 
 The column(s) to match. This can be a common name or an equality expression that renames columns to match, e.g., `"col_A = col_B"`.
 
@@ -51,8 +51,8 @@ A `MultiJoinInput` is an object that represents the input tables, key columns, a
 ```python syntax
 MultiJoinInput(
   table: Table,
-  on: Union[str, Sequence[str]],
-  joins: Union[str, Sequence[str]] = None,
+  on: str | Sequence[str],
+  joins: str | Sequence[str] | None = None,
 ) -> MultiJoinInput
 ```
 
@@ -64,12 +64,12 @@ MultiJoinInput(
 The table to join onto.
 
 </Param>
-<Param name="on" type="Union[str, Sequence[str]]" optional>
+<Param name="on" type="str | Sequence[str]">
 
 The column(s) to match. This can be a name common to both columns or an equality expression that renames columns to match, e.g., `"col_A = col_B"`.
 
 </Param>
-<Param name="joins" type="Union[str, Sequence[str]]" optional>
+<Param name="joins" type="str | Sequence[str] | None" optional>
 
 The column(s) to be added from this table to the result table. This can be a common name or an equality expression that renames columns to match, e.g., `"col_A = col_B"`.
 
