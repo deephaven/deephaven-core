@@ -18,7 +18,11 @@ import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
@@ -33,6 +37,7 @@ import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sort.timsort.ParallelTimsort;
+import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortDispatcher;
 import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortKernelFactory;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
@@ -53,6 +58,8 @@ import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,6 +69,7 @@ import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.IntFunction;
 import java.util.function.LongPredicate;
 import java.util.stream.IntStream;
 
@@ -652,52 +660,423 @@ public class SortHelpers {
         final long sortSize = rowSet.size();
 
         if (sortSize >= megaSortSize) {
-            if (comparator != null) {
-                throw new UnsupportedOperationException(
-                        "Cannot sort more than " + megaSortSize + " rows with a comparator");
-            }
-            return doMegaSortOne(order, columnSource, rowSet, usePrev, sortSize);
+            // noinspection unchecked
+            return doMegaSort(new SortingOrder[] {order}, new ColumnSource[] {columnSource},
+                    new Comparator[] {comparator}, rowSet, usePrev, sortSize);
         } else {
             return new ArraySortMapping(
                     doChunkSortingOne(order, columnSource, comparator, rowSet, usePrev, (int) sortSize));
         }
     }
 
+    /**
+     * Sort at least {@link #megaSortSize} rows by one or more columns, each in its natural order or the order of its
+     * comparator, into a mapping backed by a column source; see {@link MegaSort}.
+     */
     @NotNull
-    private static SortMapping doMegaSortOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            RowSet rowSet, boolean usePrev, long sortSize) {
-        final LongArraySource resultIndices = new LongArraySource();
-        resultIndices.ensureCapacity(sortSize, false);
-        final WritableColumnSource<?> valuesToMerge =
-                ArrayBackedColumnSource.getMemoryColumnSource(0, columnSource.getType());
-        valuesToMerge.ensureCapacity(sortSize, false);
+    private static SortMapping doMegaSort(
+            final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] columnSources,
+            @NotNull final Comparator[] comparators,
+            final RowSet rowSet,
+            final boolean usePrev,
+            final long sortSize) {
+        final MegaSort megaSort = new MegaSort(order, columnSources, comparators, usePrev);
+        return new ColumnSourceSortMapping(megaSort.sortRows(0, rowSet, null, 0, sortSize), sortSize);
+    }
 
-        long accumulatedSize = 0;
-        final LongMegaMergeKernel<Values, RowKeys> longMegaMergeKernel =
-                LongMegaMergeKernel.makeContext(columnSource.getChunkType(), order);
-        try (final LongSortKernel<Values, RowKeys> sortContext =
-                LongSortKernel.makeContext(columnSource.getChunkType(), order, sortChunkSize, true);
-                final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
-            while (rsIt.hasMore()) {
-                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(sortChunkSize);
-                final int chunkSize = chunkOk.intSize();
+    /**
+     * A sort of at least {@link #megaSortSize} rows by one or more columns, each in its natural order or the order of
+     * its comparator, into a LongArraySource of row keys.
+     * <p>
+     * The rows are sorted by the first column in chunks of {@link #sortChunkSize} rows, each merged with the
+     * LongMegaMergeKernel into the row keys and a column source of the first column's values. The runs of equal first
+     * column values are then found in the merged values, a window of rows at a time. A run of fewer than megaSortSize
+     * rows is sorted by the remaining columns with a generated kernel, in batches of runs of about sortChunkSize rows
+     * in all; a run of megaSortSize rows or more is sorted by the remaining columns with this same procedure once the
+     * first column's values are released.
+     * <p>
+     * The chunk sorts and the merges are stable, and the rows of each chunk are in row key order, so the rows of every
+     * run are in row key order and rows that tie on every column remain in row key order.
+     */
+    private static final class MegaSort {
+        private final SortingOrder[] order;
+        private final ColumnSource<Comparable<?>>[] columnSources;
+        private final Comparator[] comparators;
+        private final boolean usePrev;
+        /**
+         * For each column but the last, a factory of kernels that sort by the columns after it.
+         */
+        private final IntFunction<MultiColumnSortKernel<Any>>[] runKernelFactories;
 
-                try (final WritableChunk<Values> partialValues = makeAndFillValues(usePrev, chunkOk, columnSource)) {
-                    final long[] partialKeysArray = new long[chunkSize];
-                    final WritableLongChunk<RowKeys> partialKeys =
-                            WritableLongChunk.writableChunkWrap(partialKeysArray);
-                    chunkOk.fillRowKeyChunk(partialKeys);
-
-                    sortContext.sort(partialKeys, partialValues);
-
-                    longMegaMergeKernel.merge(resultIndices, valuesToMerge, 0, accumulatedSize, partialKeys,
-                            partialValues);
-                    accumulatedSize += chunkSize;
+        private MegaSort(
+                final SortingOrder[] order,
+                final ColumnSource<Comparable<?>>[] columnSources,
+                @NotNull final Comparator[] comparators,
+                final boolean usePrev) {
+            this.order = order;
+            this.columnSources = columnSources;
+            this.comparators = comparators;
+            this.usePrev = usePrev;
+            // noinspection unchecked
+            runKernelFactories = new IntFunction[columnSources.length - 1];
+            for (int ci = 0; ci < runKernelFactories.length; ++ci) {
+                runKernelFactories[ci] = remainingColumnsKernelFactory(order, columnSources, comparators, ci + 1);
+                if (runKernelFactories[ci] == null) {
+                    throw new UnsupportedOperationException("Cannot sort more than " + megaSortSize
+                            + " rows by columns of chunk types " + Arrays.toString(Arrays.stream(columnSources)
+                                    .map(ColumnSource::getChunkType).toArray()));
                 }
             }
         }
 
-        return new ColumnSourceSortMapping(resultIndices, sortSize);
+        /**
+         * Sort rows by columns [column, columnSources.length).
+         *
+         * @param column the first column to sort by
+         * @param rowSet the rows to sort, or null to sort the row keys at positions [sourceOffset, sourceOffset + size)
+         *        of sourceKeys, which are in ascending order
+         * @param sourceKeys the row keys to sort when rowSet is null
+         * @param sourceOffset the position in sourceKeys of the first row key to sort
+         * @param size the number of rows to sort
+         * @return the sorted row keys, in positions [0, size)
+         */
+        private LongArraySource sortRows(
+                final int column,
+                @Nullable final RowSet rowSet,
+                @Nullable final LongArraySource sourceKeys,
+                final long sourceOffset,
+                final long size) {
+            final LongArraySource sortedKeys = new LongArraySource();
+            sortedKeys.ensureCapacity(size, false);
+            final LongArrayList largeRuns = mergeAndSortRuns(column, rowSet, sourceKeys, sourceOffset, size,
+                    sortedKeys);
+            for (int ri = 0; ri < largeRuns.size(); ri += 2) {
+                final long runStart = largeRuns.getLong(ri);
+                final long runLength = largeRuns.getLong(ri + 1);
+                final LongArraySource runKeys = sortRows(column + 1, null, sortedKeys, runStart, runLength);
+                copyKeys(runKeys, sortedKeys, runStart, runLength);
+            }
+            return sortedKeys;
+        }
+
+        /**
+         * Sort the rows by column into sortedKeys, and sort each run of fewer than megaSortSize rows that tie on column
+         * by the columns after it. The merged values of column are released on return.
+         *
+         * @return the start and length of each run of at least megaSortSize rows that tie on column, which remain in
+         *         row key order
+         */
+        private LongArrayList mergeAndSortRuns(
+                final int column,
+                @Nullable final RowSet rowSet,
+                @Nullable final LongArraySource sourceKeys,
+                final long sourceOffset,
+                final long size,
+                final LongArraySource sortedKeys) {
+            final WritableColumnSource<?> sortedValues =
+                    ArrayBackedColumnSource.getMemoryColumnSource(columnSources[column].getChunkType());
+            sortedValues.ensureCapacity(size, false);
+            merge(column, rowSet, sourceKeys, sourceOffset, size, sortedKeys, sortedValues);
+            if (column == columnSources.length - 1) {
+                return new LongArrayList();
+            }
+            return sortRuns(column, sortedKeys, sortedValues, size);
+        }
+
+        /**
+         * Sort the rows by column in chunks of sortChunkSize rows, merging each chunk into sortedKeys and sortedValues.
+         */
+        private void merge(
+                final int column,
+                @Nullable final RowSet rowSet,
+                @Nullable final LongArraySource sourceKeys,
+                final long sourceOffset,
+                final long size,
+                final LongArraySource sortedKeys,
+                final WritableColumnSource<?> sortedValues) {
+            final ColumnSource<Comparable<?>> columnSource = columnSources[column];
+            final ChunkType chunkType = columnSource.getChunkType();
+            final int chunkCapacity = (int) Math.min(sortChunkSize, size);
+            final LongMegaMergeKernel<Values, RowKeys> mergeKernel =
+                    LongMegaMergeKernel.makeContext(chunkType, order[column], comparators[column]);
+            try (final LongSortKernel<Values, RowKeys> sortContext =
+                    getSortContext(columnSource, order[column], chunkCapacity, comparators[column], true);
+                    final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(chunkCapacity);
+                    final WritableChunk<Values> values = chunkType.makeWritableChunk(chunkCapacity);
+                    final ChunkSource.FillContext keysFillContext =
+                            sourceKeys == null ? null : sourceKeys.makeFillContext(chunkCapacity);
+                    final RowSequence.Iterator rowsIterator =
+                            rowSet == null ? null : rowSet.getRowSequenceIterator()) {
+                long accumulated = 0;
+                while (accumulated < size) {
+                    final int chunkSize = (int) Math.min(chunkCapacity, size - accumulated);
+                    if (rowsIterator != null) {
+                        final RowSequence chunkRows = rowsIterator.getNextRowSequenceWithLength(chunkSize);
+                        chunkRows.fillRowKeyChunk(keys);
+                        fillValues(usePrev, chunkRows, columnSource, values);
+                    } else {
+                        final long firstPosition = sourceOffset + accumulated;
+                        try (final RowSequence positions =
+                                RowSequenceFactory.forRange(firstPosition, firstPosition + chunkSize - 1)) {
+                            // noinspection unchecked
+                            sourceKeys.fillChunk(keysFillContext, (WritableChunk<Values>) (WritableChunk<?>) keys,
+                                    positions);
+                        }
+                        try (final RowSequence chunkRows =
+                                RowSequenceFactory.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(keys))) {
+                            fillValues(usePrev, chunkRows, columnSource, values);
+                        }
+                    }
+                    sortContext.sort(keys, values);
+                    mergeKernel.merge(sortedKeys, sortedValues, 0, accumulated, keys, values);
+                    accumulated += chunkSize;
+                }
+            }
+        }
+
+        /**
+         * Find the runs of rows that tie on column in sortedValues and sort each run of fewer than megaSortSize rows by
+         * the columns after it. Each window of sortedValues overlaps the previous window by one row, so that a run
+         * spanning windows is found whole.
+         *
+         * @return the start and length of each run of at least megaSortSize rows
+         */
+        private LongArrayList sortRuns(
+                final int column,
+                final LongArraySource sortedKeys,
+                final WritableColumnSource<?> sortedValues,
+                final long size) {
+            final LongArrayList largeRuns = new LongArrayList();
+            final ChunkType chunkType = columnSources[column].getChunkType();
+            final FindRunsKernel findRunsKernel = FindRunsKernel.getInstance(chunkType, comparators[column]);
+            final int windowCapacity = (int) Math.min(sortChunkSize + 1L, size);
+            try (final RunBatch batch = new RunBatch(column + 1, sortedKeys, size);
+                    final WritableChunk<Values> window = chunkType.makeWritableChunk(windowCapacity);
+                    final WritableIntChunk<ChunkPositions> runOffsets =
+                            WritableIntChunk.makeWritableChunk(windowCapacity);
+                    final WritableIntChunk<ChunkLengths> runLengths =
+                            WritableIntChunk.makeWritableChunk(windowCapacity);
+                    final ChunkSource.FillContext fillContext = sortedValues.makeFillContext(windowCapacity)) {
+                // the start of the run that holds the row before position
+                long runStart = 0;
+                long position = 0;
+                while (position < size) {
+                    final long windowStart = position == 0 ? 0 : position - 1;
+                    final long windowEnd = Math.min(size, windowStart + windowCapacity);
+                    try (final RowSequence windowRows = RowSequenceFactory.forRange(windowStart, windowEnd - 1)) {
+                        sortedValues.fillChunk(fillContext, window, windowRows);
+                    }
+                    findRunsKernel.findRunsSingles(window, runOffsets, runLengths);
+                    final int runCount = runOffsets.size();
+                    for (int ri = 0; ri < runCount; ++ri) {
+                        final long start = windowStart + runOffsets.get(ri);
+                        // the first run of a later window holds the row before position, so it continues runStart
+                        final long fullStart = ri == 0 && position > 0 ? runStart : start;
+                        if (ri == runCount - 1 && windowEnd < size) {
+                            // the last run of the window may continue into the next window
+                            runStart = fullStart;
+                            continue;
+                        }
+                        final long runLength = start + runLengths.get(ri) - fullStart;
+                        if (runLength >= megaSortSize) {
+                            largeRuns.add(fullStart);
+                            largeRuns.add(runLength);
+                        } else if (runLength > 1) {
+                            batch.addRun(fullStart, (int) runLength);
+                        }
+                    }
+                    position = windowEnd;
+                }
+                batch.flush();
+            }
+            return largeRuns;
+        }
+
+        /**
+         * Runs of rows that tie on the columns before firstColumn, each of fewer than megaSortSize rows, accumulated
+         * and then sorted together by columns [firstColumn, columnSources.length). The values of every run in a batch
+         * are filled together, in row key order.
+         */
+        private final class RunBatch implements SafeCloseable {
+            private final int firstColumn;
+            private final LongArraySource sortedKeys;
+            private final IntFunction<MultiColumnSortKernel<Any>> kernelFactory;
+            /**
+             * The number of rows at which a batch is sorted; a single run may be larger.
+             */
+            private final int targetSize;
+
+            private RowSetBuilderSequential batchPositions = RowSetFactory.builderSequential();
+            private final IntArrayList runLengths = new IntArrayList();
+            private int batchSize;
+            private int maximumRunLength;
+
+            private int capacity;
+            /** the row keys of the batch in position order, then their sorted order */
+            private WritableLongChunk<Values> batchKeys;
+            /** the row keys of the batch in ascending order */
+            private WritableLongChunk<Any> rowKeys;
+            /** the position in batchKeys of each row key in rowKeys */
+            private WritableIntChunk<ChunkPositions> keyPositions;
+            /** for each position in batchKeys, the position of its row key in rowKeys */
+            private WritableIntChunk<ChunkPositions> positions;
+            private WritableChunk<Values>[] values;
+            private LongIntTimsortKernel.LongIntSortKernelContext<Any, ChunkPositions> keySortContext;
+            private ChunkSource.FillContext keysFillContext;
+            private ChunkSink.FillFromContext keysFillFromContext;
+
+            private int kernelCapacity;
+            private MultiColumnSortKernel<Any> kernel;
+
+            private RunBatch(final int firstColumn, final LongArraySource sortedKeys, final long size) {
+                this.firstColumn = firstColumn;
+                this.sortedKeys = sortedKeys;
+                kernelFactory = runKernelFactories[firstColumn - 1];
+                targetSize = (int) Math.min(sortChunkSize, size);
+            }
+
+            /**
+             * Add the run at positions [start, start + length) of sortedKeys, sorting the batch first if the run would
+             * take it past the target size.
+             */
+            private void addRun(final long start, final int length) {
+                if (batchSize > 0 && (long) batchSize + length > targetSize) {
+                    flush();
+                }
+                batchPositions.appendRange(start, start + length - 1);
+                runLengths.add(length);
+                batchSize += length;
+                maximumRunLength = Math.max(maximumRunLength, length);
+            }
+
+            /**
+             * Sort each run of the batch by the columns from firstColumn and write its row keys back to sortedKeys.
+             */
+            private void flush() {
+                if (batchSize == 0) {
+                    return;
+                }
+                ensureCapacity();
+                try (final RowSet batchRows = batchPositions.build()) {
+                    sortedKeys.fillChunk(keysFillContext, batchKeys, batchRows);
+                    rowKeys.copyFromChunk(batchKeys, 0, 0, batchSize);
+                    rowKeys.setSize(batchSize);
+                    keyPositions.setSize(batchSize);
+                    for (int ii = 0; ii < batchSize; ++ii) {
+                        keyPositions.set(ii, ii);
+                    }
+                    LongIntTimsortKernel.sort(keySortContext, keyPositions, rowKeys);
+                    try (final RowSequence rows =
+                            RowSequenceFactory.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(rowKeys))) {
+                        for (int ci = 0; ci < values.length; ++ci) {
+                            fillValues(usePrev, rows, columnSources[firstColumn + ci], values[ci]);
+                        }
+                    }
+                    positions.setSize(batchSize);
+                    for (int ii = 0; ii < batchSize; ++ii) {
+                        positions.set(keyPositions.get(ii), ii);
+                    }
+                    // each run's positions start in ascending order, so ties remain in row key order
+                    int offset = 0;
+                    for (int ri = 0; ri < runLengths.size(); ++ri) {
+                        final int length = runLengths.getInt(ri);
+                        kernel.sortPositions(positions, values, offset, length);
+                        offset += length;
+                    }
+                    for (int ii = 0; ii < batchSize; ++ii) {
+                        batchKeys.set(ii, rowKeys.get(positions.get(ii)));
+                    }
+                    sortedKeys.fillFromChunk(keysFillFromContext, batchKeys, batchRows);
+                }
+                batchPositions = RowSetFactory.builderSequential();
+                runLengths.clear();
+                batchSize = 0;
+                maximumRunLength = 0;
+            }
+
+            /**
+             * Make the chunks and contexts large enough for the batch. The chunks grow by doubling up to the target
+             * size, or to the size of a batch that is larger.
+             */
+            private void ensureCapacity() {
+                if (batchSize > capacity) {
+                    closeChunks();
+                    capacity = Math.max(batchSize, Math.min(targetSize, 2 * capacity));
+                    batchKeys = WritableLongChunk.makeWritableChunk(capacity);
+                    rowKeys = WritableLongChunk.makeWritableChunk(capacity);
+                    keyPositions = WritableIntChunk.makeWritableChunk(capacity);
+                    positions = WritableIntChunk.makeWritableChunk(capacity);
+                    // noinspection unchecked
+                    values = new WritableChunk[columnSources.length - firstColumn];
+                    for (int ci = 0; ci < values.length; ++ci) {
+                        values[ci] = columnSources[firstColumn + ci].getChunkType().makeWritableChunk(capacity);
+                    }
+                    keySortContext = LongIntTimsortKernel.createContext(capacity);
+                    keysFillContext = sortedKeys.makeFillContext(capacity);
+                    keysFillFromContext = sortedKeys.makeFillFromContext(capacity);
+                }
+                if (maximumRunLength > kernelCapacity) {
+                    if (kernel != null) {
+                        kernel.close();
+                        kernel = null;
+                    }
+                    kernelCapacity = Math.max(maximumRunLength, Math.min(targetSize, 2 * kernelCapacity));
+                    kernel = kernelFactory.apply(kernelCapacity);
+                }
+            }
+
+            /**
+             * Close the chunks and contexts and clear their fields, so that a failure while reallocating them leaves
+             * nothing for {@link #close()} to close again.
+             */
+            private void closeChunks() {
+                SafeCloseable.closeAll(batchKeys, rowKeys, keyPositions, positions, keySortContext, keysFillContext,
+                        keysFillFromContext);
+                batchKeys = null;
+                rowKeys = null;
+                keyPositions = null;
+                positions = null;
+                keySortContext = null;
+                keysFillContext = null;
+                keysFillFromContext = null;
+                if (values != null) {
+                    final WritableChunk<Values>[] toClose = values;
+                    values = null;
+                    SafeCloseable.closeAll(toClose);
+                }
+            }
+
+            @Override
+            public void close() {
+                closeChunks();
+                if (kernel != null) {
+                    kernel.close();
+                }
+            }
+        }
+    }
+
+    /**
+     * Copy the row keys at positions [0, length) of source to positions [destinationOffset, destinationOffset + length)
+     * of destination.
+     */
+    private static void copyKeys(
+            final LongArraySource source,
+            final LongArraySource destination,
+            final long destinationOffset,
+            final long length) {
+        final int chunkCapacity = (int) Math.min(sortChunkSize, length);
+        try (final WritableLongChunk<Values> keys = WritableLongChunk.makeWritableChunk(chunkCapacity);
+                final ChunkSource.FillContext fillContext = source.makeFillContext(chunkCapacity)) {
+            for (long copied = 0; copied < length; copied += keys.size()) {
+                try (final RowSequence positions =
+                        RowSequenceFactory.forRange(copied, Math.min(length, copied + chunkCapacity) - 1)) {
+                    source.fillChunk(fillContext, keys, positions);
+                }
+                destination.copyFromChunk(destinationOffset + copied, keys.size(), keys, 0);
+            }
+        }
     }
 
     /**
@@ -831,6 +1210,10 @@ public class SortHelpers {
             final RowSet rowSet,
             boolean usePrev) {
         Assert.gt(columnSources.length, "columnSources.length", 1);
+        if (rowSet.size() >= megaSortSize) {
+            // the data index paths and the paths below sort arrays of the rows
+            return doMegaSort(order, columnSources, comparators, rowSet, usePrev, rowSet.size());
+        }
         final int sortSize = rowSet.intSize();
 
         final long[] rowKeysArray = new long[sortSize];
@@ -986,6 +1369,37 @@ public class SortHelpers {
     }
 
     /**
+     * A factory of kernels, given the size of each, that sort by the sort columns [firstColumn, columnSources.length),
+     * or null when no kernel is available for them. A single column uses the pregenerated kernels, which cover every
+     * chunk type but boolean. Two or more columns use a generated kernel, which is compiled before this returns.
+     */
+    @Nullable
+    private static IntFunction<MultiColumnSortKernel<Any>> remainingColumnsKernelFactory(
+            final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] columnSources,
+            @NotNull final Comparator[] comparators,
+            final int firstColumn) {
+        final ChunkType[] kernelChunkTypes = Arrays.stream(columnSources, firstColumn, columnSources.length)
+                .map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
+        final SortingOrder[] kernelOrder = Arrays.copyOfRange(order, firstColumn, columnSources.length);
+        final Comparator[] kernelComparators = Arrays.copyOfRange(comparators, firstColumn, columnSources.length);
+        if (kernelChunkTypes.length == 1) {
+            if (kernelChunkTypes[0] == ChunkType.Boolean) {
+                return null;
+            }
+            return size -> IndirectTimsortDispatcher.makeContext(kernelChunkTypes, kernelOrder, kernelComparators,
+                    size);
+        }
+        if (!IndirectTimsortKernelFactory.hasKernel(kernelChunkTypes, kernelComparators)) {
+            return null;
+        }
+        // compile the kernel now, so that a compilation failure is reported before the sort does any work
+        IndirectTimsortKernelFactory.prepareKernel(kernelChunkTypes, kernelOrder, kernelComparators);
+        return size -> IndirectTimsortKernelFactory.makeContext(kernelChunkTypes, kernelOrder, kernelComparators,
+                size);
+    }
+
+    /**
      * Attempt to sort all of the key columns in a single pass with a generated multi-column timsort kernel that
      * compares each column in turn (using each column's comparator, when present, in place of the natural ordering),
      * rather than sorting one column at a time with run finding in between. Returns null only when no kernel is
@@ -1101,25 +1515,35 @@ public class SortHelpers {
 
         final WritableChunk<Values> values = columnSource.getChunkType().makeWritableChunk(sortSize);
         try {
-            final int fillSegments = parallelFillSegments(sortSize);
-            if (fillSegments > 1) {
-                fillValuesParallel(usePrev, ok, columnSource, values, sortSize, fillSegments);
-                return values;
-            }
-
-            try (final ColumnSource.FillContext primaryColumnSourceContext =
-                    columnSource.makeFillContext(sortSize)) {
-                if (usePrev) {
-                    columnSource.fillPrevChunk(primaryColumnSourceContext, values, ok);
-                } else {
-                    columnSource.fillChunk(primaryColumnSourceContext, values, ok);
-                }
-            }
+            fillValues(usePrev, ok, columnSource, values);
             return values;
         } catch (final Throwable t) {
             // the caller takes ownership of the chunk only once it is filled
             values.close();
             throw t;
+        }
+    }
+
+    /**
+     * Fill values, whose capacity must be at least the size of ok, with the column's values for the rows of ok, in
+     * parallel segments when the fill is large enough.
+     */
+    private static void fillValues(final boolean usePrev, final RowSequence ok, final ColumnSource<?> columnSource,
+            final WritableChunk<Values> values) {
+        final int sortSize = LongSizedDataStructure.intSize("SortHelper.fillValues", ok.size());
+        values.setSize(sortSize);
+        final int fillSegments = parallelFillSegments(sortSize);
+        if (fillSegments > 1) {
+            fillValuesParallel(usePrev, ok, columnSource, values, sortSize, fillSegments);
+            return;
+        }
+
+        try (final ColumnSource.FillContext primaryColumnSourceContext = columnSource.makeFillContext(sortSize)) {
+            if (usePrev) {
+                columnSource.fillPrevChunk(primaryColumnSourceContext, values, ok);
+            } else {
+                columnSource.fillChunk(primaryColumnSourceContext, values, ok);
+            }
         }
     }
 

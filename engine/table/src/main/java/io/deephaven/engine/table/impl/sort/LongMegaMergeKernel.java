@@ -10,6 +10,10 @@ import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.megamerge.*;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
+import io.deephaven.base.verify.Assert;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Comparator;
 
 /**
  * The LongMegaMergeKernel merges sorted chunks into a column source, with a parallel long array of row keys.
@@ -80,6 +84,25 @@ public interface LongMegaMergeKernel<ATTR extends Any, KEY_INDICES extends Indic
                 }
         }
         throw new IllegalStateException("Did not match chunk type: " + chunkType);
+    }
+
+    /**
+     * Creates a merge kernel for the given chunkType that orders values with comparator, or in their natural order when
+     * comparator is null.
+     *
+     * @param chunkType the type of chunk we are sorting; must be Object when comparator is not null
+     * @param order whether we should sort in an ascending or descending direction
+     * @param comparator the comparator for the values, or null for their natural order
+     * @return a merge kernel suitable for the given type, order, and comparator
+     */
+    static <ATTR extends Any, KEY_INDICES extends Indices> LongMegaMergeKernel<ATTR, KEY_INDICES> makeContext(
+            ChunkType chunkType, SortingOrder order, @Nullable Comparator<?> comparator) {
+        if (comparator == null) {
+            return makeContext(chunkType, order);
+        }
+        Assert.eq(chunkType, "chunkType", ChunkType.Object, "ChunkType.Object");
+        return ComparatorLongMegaMergeKernel.createContext(
+                order == SortingOrder.Ascending ? comparator : comparator.reversed());
     }
 
     void merge(LongArraySource indexDestinationSource, WritableColumnSource<?> valuesDestinationSource,

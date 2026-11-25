@@ -172,15 +172,15 @@ public class QueryTableHugeSortTest {
     }
 
     @Test
-    public void testNoComparators() {
+    public void testComparatorMegaSort() {
         final int megaSortSize = SortHelpers.megaSortSize;
         final int sortChunkSize = SortHelpers.sortChunkSize;
         try {
             // ideally we would sort something that is bigger than Integer.MAX_VALUE, but the test VMs can not handle
             // that.
             // So instead we adjust the mega sort parameters so that we'll exercise the code path anyway.
-            SortHelpers.megaSortSize = 1 << 24; // 16 Million
-            SortHelpers.sortChunkSize = 1 << 21; // 2 Million
+            SortHelpers.megaSortSize = 1 << 20; // 1 Million
+            SortHelpers.sortChunkSize = 1 << 17; // 128 Thousand
 
             final long bigSize = (long) SortHelpers.megaSortSize * 2L;
             final int smallSize = SortHelpers.megaSortSize / 64;
@@ -210,11 +210,16 @@ public class QueryTableHugeSortTest {
             final Table bigTable =
                     TableTools.emptyTable(bigSize).updateView("SortCol=Byte.toString((byte)(ii%100))", "Sentinel=k");
 
-            final UnsupportedOperationException iae2 =
-                    org.junit.Assert.assertThrows(UnsupportedOperationException.class,
-                            () -> ((QueryTable) bigTable).sort(sortBy));
-            assertEquals("Cannot sort more than " + SortHelpers.megaSortSize + " rows with a comparator",
-                    iae2.getMessage());
+            // the mega sort of bigTable matches the sort of an array of its rows
+            final SortSpec sortByDescending =
+                    ComparatorSortColumn.desc("SortCol", new NumericStringComparator(), true);
+            final int lowerMegaSortSize = SortHelpers.megaSortSize;
+            SortHelpers.megaSortSize = megaSortSize;
+            final Table expectedBig = ((QueryTable) bigTable).sort(sortBy);
+            final Table expectedBigDescending = ((QueryTable) bigTable).sort(sortByDescending);
+            SortHelpers.megaSortSize = lowerMegaSortSize;
+            assertTableEquals(expectedBig, ((QueryTable) bigTable).sort(sortBy));
+            assertTableEquals(expectedBigDescending, ((QueryTable) bigTable).sort(sortByDescending));
 
         } finally {
             SortHelpers.megaSortSize = megaSortSize;

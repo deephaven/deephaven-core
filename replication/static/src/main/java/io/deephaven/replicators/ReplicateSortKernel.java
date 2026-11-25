@@ -68,6 +68,62 @@ public class ReplicateSortKernel {
                 invertSense(path, descendingPath);
             }
         }
+
+        replicateComparatorMegaMerge(objectSortPath);
+    }
+
+    /**
+     * Make a mega merge kernel that orders values with a comparator from the ascending Object kernel. The kernel holds
+     * its comparator, so its merge methods are instance methods; a descending merge uses the reversed comparator.
+     *
+     * @param objectPath the path of the ascending Object mega merge kernel
+     */
+    private static void replicateComparatorMegaMerge(String objectPath) throws IOException {
+        final String comparatorPath = objectPath.replace("ObjectLongMegaMergeKernel", "ComparatorLongMegaMergeKernel");
+        List<String> lines = FileUtils.readLines(new File(objectPath), Charset.defaultCharset());
+        lines = globalReplacements(lines, "ObjectLongMegaMergeKernel", "ComparatorLongMegaMergeKernel");
+        lines = replaceRegion(lines, "Context", Arrays.asList(
+                "    private final Comparator comparator;",
+                "",
+                "    private ComparatorLongMegaMergeKernel(final Comparator comparator) {",
+                "        this.comparator = comparator;",
+                "    }",
+                "",
+                "    public static class ComparatorLongMegaMergeKernelContext<ATTR extends Any, KEY_INDICES extends Indices>",
+                "            implements LongMegaMergeKernel<ATTR, KEY_INDICES> {",
+                "        private final ComparatorLongMegaMergeKernel kernel;",
+                "",
+                "        private ComparatorLongMegaMergeKernelContext(final ComparatorLongMegaMergeKernel kernel) {",
+                "            this.kernel = kernel;",
+                "        }",
+                "",
+                "        @Override",
+                "        public void merge(LongArraySource indexDestinationSource, WritableColumnSource<?> valuesDestinationSource,",
+                "                long destinationOffset, long destinationSize, LongChunk<KEY_INDICES> indexKeys,",
+                "                Chunk<ATTR> valuesToMerge) {",
+                "            kernel.merge(indexDestinationSource, (ObjectArraySource) valuesDestinationSource,",
+                "                    destinationOffset, destinationSize, indexKeys, valuesToMerge.asObjectChunk());",
+                "        }",
+                "    }",
+                "",
+                "    /**",
+                "     * Create a context that merges values in the order of comparator.",
+                "     *",
+                "     * @param comparator the comparator, already reversed for a descending merge",
+                "     */",
+                "    public static <ATTR extends Any, KEY_INDICES extends Indices> ComparatorLongMegaMergeKernelContext<ATTR, KEY_INDICES> createContext(",
+                "            final Comparator comparator) {",
+                "        return new ComparatorLongMegaMergeKernelContext<>(new ComparatorLongMegaMergeKernel(comparator));",
+                "    }"));
+        lines = replaceRegion(lines, "comparison functions", Arrays.asList(
+                "    private int doComparison(Object lhs, Object rhs) {",
+                "        // noinspection unchecked",
+                "        return comparator.compare(lhs, rhs);",
+                "    }"));
+        lines = globalReplacements(lines, "^(\\s+)private static ", "$1private ", "^(\\s+)static public ", "$1public ");
+        lines = removeImport(lines, "\\s*import\\s+io\\.deephaven\\.util\\.compare\\.ObjectComparisons\\s*;");
+        lines = addImport(lines, "import java.util.Comparator;");
+        FileUtils.writeLines(new File(comparatorPath), lines);
     }
 
     private static void replicateLongToInt() throws IOException {

@@ -24,7 +24,10 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.test.types.SerialTest;
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
@@ -686,6 +689,194 @@ public class MultiColumnSortTest {
         DataIndexer.getOrCreateDataIndex(table, "Group");
         assertArrayEquals(new int[] {1, 2, 3, 4},
                 ColumnVectors.ofInt(table.sort("Group", "Path", "Tie"), "Tie").toArray());
+    }
+
+    private static SortSpec asc(final String column) {
+        return SortColumn.asc(ColumnName.of(column));
+    }
+
+    private static SortSpec desc(final String column) {
+        return SortColumn.desc(ColumnName.of(column));
+    }
+
+    private static final int TEST_MEGA_SORT_SIZE = 1000;
+    private static final int TEST_SORT_CHUNK_SIZE = 100;
+
+    /**
+     * The columns of the mega sort test tables, for megaSortSize 1000 and sortChunkSize 100 and a few thousand rows:
+     * Low (four int values with null) and Pair and Coin (two values each, a String and a byte) whose runs exceed
+     * megaSortSize; Group (25 int values with null) whose runs span chunks; MostlyUnique, whose runs are mostly single
+     * rows; later columns with nulls, NaN, signed zeros and case-insensitive String ties; and Id, the row position.
+     */
+    private static QueryTable makeMegaSortTestTable(final long seed, final int size, final boolean refreshing) {
+        final Random random = new Random(seed);
+        final int[] low = new int[size];
+        final String[] pair = new String[size];
+        final byte[] coin = new byte[size];
+        final int[] group = new int[size];
+        final int[] mostlyUnique = new int[size];
+        final double[] doubles = new double[size];
+        final String[] strings = new String[size];
+        final long[] longs = new long[size];
+        final long[] id = new long[size];
+        final double[] doubleChoices = {Double.NaN, QueryConstants.NULL_DOUBLE, -0.0, 0.0, 1.5, -2.5, 3};
+        final String[] stringChoices = {"a", "A", "b", "B", null, "c"};
+        for (int ii = 0; ii < size; ++ii) {
+            final int lowValue = random.nextInt(4);
+            low[ii] = lowValue == 0 ? QueryConstants.NULL_INT : lowValue;
+            pair[ii] = random.nextBoolean() ? "x" : "y";
+            coin[ii] = (byte) random.nextInt(2);
+            final int groupValue = random.nextInt(25);
+            group[ii] = groupValue == 0 ? QueryConstants.NULL_INT : groupValue;
+            mostlyUnique[ii] = random.nextInt(size * 4);
+            doubles[ii] = doubleChoices[random.nextInt(doubleChoices.length)];
+            strings[ii] = stringChoices[random.nextInt(stringChoices.length)];
+            longs[ii] = random.nextInt(10) == 0 ? QueryConstants.NULL_LONG : random.nextInt(8);
+            id[ii] = ii;
+        }
+        final ColumnHolder<?>[] columns = {
+                TableTools.intCol("Low", low),
+                TableTools.stringCol("Pair", pair),
+                TableTools.byteCol("Coin", coin),
+                TableTools.intCol("Group", group),
+                TableTools.intCol("MostlyUnique", mostlyUnique),
+                TableTools.doubleCol("D", doubles),
+                TableTools.stringCol("S", strings),
+                TableTools.longCol("L", longs),
+                TableTools.longCol("Id", id)};
+        return refreshing
+                ? TstUtils.testRefreshingTable(RowSetFactory.flat(size).toTracking(), columns)
+                : (QueryTable) TableTools.newTable(columns);
+    }
+
+    /**
+     * Sort the table with the default megaSortSize, then check that a mega sort (with megaSortSize and sortChunkSize
+     * lowered) gives the same result. The sort of the refreshing copy of the table fails with a SizeException, as a
+     * ticking sort cannot use the mapping of a mega sort.
+     */
+    private static void checkMegaSort(final QueryTable table, final QueryTable refreshing, final SortSpec... specs) {
+        final Table expected = table.sort(specs);
+        final int oldMegaSortSize = SortHelpers.megaSortSize;
+        final int oldSortChunkSize = SortHelpers.sortChunkSize;
+        try {
+            SortHelpers.megaSortSize = TEST_MEGA_SORT_SIZE;
+            SortHelpers.sortChunkSize = TEST_SORT_CHUNK_SIZE;
+            TstUtils.assertTableEquals(expected, table.sort(specs));
+            assertThrows(SizeException.class, () -> refreshing.sort(specs));
+        } finally {
+            SortHelpers.megaSortSize = oldMegaSortSize;
+            SortHelpers.sortChunkSize = oldSortChunkSize;
+        }
+    }
+
+    /**
+     * A mega sort by two columns matches the sort of fewer than megaSortSize rows, for ascending and descending ints,
+     * longs, doubles and Strings with nulls, NaN and signed zeros, first columns whose runs span sort chunks, and a
+     * first column whose runs are mostly single rows.
+     */
+    @Test
+    public void testMegaSortTwoColumns() {
+        final int size = 5000;
+        final QueryTable table = makeMegaSortTestTable(1001, size, false);
+        final QueryTable refreshing = makeMegaSortTestTable(1001, size, true);
+        checkMegaSort(table, refreshing, asc("Group"), desc("D"));
+        checkMegaSort(table, refreshing, desc("Group"), asc("S"));
+        checkMegaSort(table, refreshing, asc("D"), asc("L"));
+        checkMegaSort(table, refreshing, desc("D"), desc("Id"));
+        checkMegaSort(table, refreshing, desc("S"), asc("Group"));
+        checkMegaSort(table, refreshing, asc("L"), desc("S"));
+        checkMegaSort(table, refreshing, asc("MostlyUnique"), asc("L"));
+    }
+
+    /**
+     * A mega sort by three columns matches the sort of fewer than megaSortSize rows, with mixed ascending and
+     * descending columns.
+     */
+    @Test
+    public void testMegaSortThreeColumns() {
+        final int size = 4000;
+        final QueryTable table = makeMegaSortTestTable(1002, size, false);
+        final QueryTable refreshing = makeMegaSortTestTable(1002, size, true);
+        checkMegaSort(table, refreshing, asc("Group"), desc("S"), asc("D"));
+        checkMegaSort(table, refreshing, desc("D"), asc("L"), desc("S"));
+        checkMegaSort(table, refreshing, asc("S"), desc("D"), desc("L"));
+        checkMegaSort(table, refreshing, desc("L"), asc("Group"), asc("MostlyUnique"));
+    }
+
+    /**
+     * A first column with runs of at least megaSortSize rows sorts each such run by the remaining columns with another
+     * mega sort, which in turn handles its own runs of at least megaSortSize rows the same way.
+     */
+    @Test
+    public void testMegaSortRunsOfMegaSortSize() {
+        final int size = 6000;
+        final QueryTable table = makeMegaSortTestTable(1003, size, false);
+        final QueryTable refreshing = makeMegaSortTestTable(1003, size, true);
+        checkMegaSort(table, refreshing, asc("Low"), desc("D"));
+        checkMegaSort(table, refreshing, desc("Low"), asc("S"), asc("L"));
+        checkMegaSort(table, refreshing, asc("Pair"), desc("Coin"), asc("D"));
+        checkMegaSort(table, refreshing, desc("Pair"), asc("Coin"), desc("Low"), asc("S"));
+        checkMegaSort(table, refreshing, asc("Coin"), asc("Group"), desc("MostlyUnique"));
+    }
+
+    /**
+     * Rows that tie on every column of a mega sort remain in row key order, both within runs of fewer than megaSortSize
+     * rows and within the runs of larger ones.
+     */
+    @Test
+    public void testMegaSortTiesKeepRowKeyOrder() {
+        final int size = 5000;
+        final QueryTable table = makeMegaSortTestTable(1004, size, false);
+        final QueryTable refreshing = makeMegaSortTestTable(1004, size, true);
+        checkMegaSort(table, refreshing, asc("Low"), desc("Pair"));
+        checkMegaSort(table, refreshing, asc("Pair"), asc("Coin"));
+        checkMegaSort(table, refreshing, desc("Coin"), asc("Low"), asc("Pair"));
+        checkMegaSort(table, refreshing, asc("Group"), desc("Coin"));
+    }
+
+    /**
+     * A mega sort ignores a data index on its first column, and a full data index on its sort columns is still used.
+     */
+    @Test
+    public void testMegaSortWithDataIndex() {
+        final int size = 5000;
+        final QueryTable firstColumnIndexed = makeMegaSortTestTable(1005, size, false);
+        final QueryTable refreshing = makeMegaSortTestTable(1005, size, true);
+        DataIndexer.getOrCreateDataIndex(firstColumnIndexed, "Group");
+        DataIndexer.getOrCreateDataIndex(refreshing, "Group");
+        checkMegaSort(firstColumnIndexed, refreshing, asc("Group"), desc("D"), asc("S"));
+
+        final QueryTable fullyIndexed = makeMegaSortTestTable(1005, size, false);
+        DataIndexer.getOrCreateDataIndex(fullyIndexed, "Low", "Coin");
+        final Table expected = fullyIndexed.sort(asc("Low"), desc("Coin"));
+        final int oldMegaSortSize = SortHelpers.megaSortSize;
+        final int oldSortChunkSize = SortHelpers.sortChunkSize;
+        try {
+            SortHelpers.megaSortSize = TEST_MEGA_SORT_SIZE;
+            SortHelpers.sortChunkSize = TEST_SORT_CHUNK_SIZE;
+            TstUtils.assertTableEquals(expected, fullyIndexed.sort(asc("Low"), desc("Coin")));
+        } finally {
+            SortHelpers.megaSortSize = oldMegaSortSize;
+            SortHelpers.sortChunkSize = oldSortChunkSize;
+        }
+    }
+
+    /**
+     * A mega sort with comparator columns matches the sort of fewer than megaSortSize rows: a comparator on the first
+     * column, ascending and descending, whose runs exceed megaSortSize and span sort chunks; on the column sorted
+     * within first-column runs of megaSortSize rows or more; and on a later column of the run batches. Values that tie
+     * under the comparator, such as "a" and "A", remain in row key order.
+     */
+    @Test
+    public void testMegaSortWithComparators() {
+        final int size = 5000;
+        final QueryTable table = makeMegaSortTestTable(1006, size, false);
+        final QueryTable refreshing = makeMegaSortTestTable(1006, size, true);
+        final Comparator<String> caseInsensitive = Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER);
+        checkMegaSort(table, refreshing, ComparatorSortColumn.asc("S", caseInsensitive), asc("Group"));
+        checkMegaSort(table, refreshing, ComparatorSortColumn.desc("S", caseInsensitive), desc("L"));
+        checkMegaSort(table, refreshing, asc("Pair"), ComparatorSortColumn.desc("S", caseInsensitive), asc("L"));
+        checkMegaSort(table, refreshing, asc("Group"), desc("D"), ComparatorSortColumn.asc("S", caseInsensitive));
     }
 
     @Test
