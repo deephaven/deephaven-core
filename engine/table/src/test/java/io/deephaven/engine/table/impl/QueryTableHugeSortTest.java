@@ -4,6 +4,9 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.SortSpec;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
@@ -25,6 +28,7 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.engine.util.TableTools.show;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Category(OutOfBandTest.class)
 public class QueryTableHugeSortTest {
@@ -86,7 +90,34 @@ public class QueryTableHugeSortTest {
     @Test
     public void testRefreshingSortAtMegaSortSize() {
         final QueryTable table = TstUtils.testRefreshingTable(TableTools.intCol("A", 5, 3, 1, 4, 2, 0));
-        checkMegaSortSizeLimit(table);
+        checkMegaSortSizeLimit(table, "Cannot sort a ticking table: Input size 6 larger than maximum 3");
+    }
+
+    /**
+     * A ticking sort that grows to megaSortSize rows (lowered here) fails with a message that states the number of rows
+     * and the limit.
+     */
+    @Test
+    public void testRefreshingSortGrowingToMegaSortSize() {
+        final int megaSortSize = SortHelpers.megaSortSize;
+        final int sortChunkSize = SortHelpers.sortChunkSize;
+        try {
+            SortHelpers.megaSortSize = 4;
+            SortHelpers.sortChunkSize = 2;
+            final QueryTable source = TstUtils.testRefreshingTable(TableTools.intCol("A", 5, 3, 1));
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            final Table sorted = updateGraph.sharedLock().computeLocked(() -> source.sort("A"));
+            rule.allowingError(() -> updateGraph.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(source, RowSetFactory.fromKeys(3), TableTools.intCol("A", 4));
+                source.notifyListeners(RowSetFactory.fromKeys(3), RowSetFactory.empty(), RowSetFactory.empty());
+            }), errors -> errors.size() == 1 && errors.get(0) instanceof SizeException
+                    && "Cannot sort a ticking table: Input size 4 larger than maximum 3"
+                            .equals(errors.get(0).getMessage()));
+            assertTrue(sorted.isFailed());
+        } finally {
+            SortHelpers.megaSortSize = megaSortSize;
+            SortHelpers.sortChunkSize = sortChunkSize;
+        }
     }
 
     /**
@@ -97,18 +128,17 @@ public class QueryTableHugeSortTest {
     public void testBlinkSortAtMegaSortSize() {
         final QueryTable table = TstUtils.testRefreshingTable(TableTools.intCol("A", 5, 3, 1, 4, 2, 0));
         table.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
-        checkMegaSortSizeLimit(table);
+        checkMegaSortSizeLimit(table, "Cannot sort a ticking or blink table: Input size 6 larger than maximum 3");
     }
 
-    private static void checkMegaSortSizeLimit(final QueryTable table) {
+    private static void checkMegaSortSizeLimit(final QueryTable table, final String expectedMessage) {
         final int megaSortSize = SortHelpers.megaSortSize;
         final int sortChunkSize = SortHelpers.sortChunkSize;
         try {
             SortHelpers.megaSortSize = 4;
             SortHelpers.sortChunkSize = 2;
             final SizeException exception = org.junit.Assert.assertThrows(SizeException.class, () -> table.sort("A"));
-            assertEquals("Cannot sort a ticking or blink table: Input size 6 larger than maximum 3",
-                    exception.getMessage());
+            assertEquals(expectedMessage, exception.getMessage());
             assertEquals(3, exception.getMaximumSize());
         } finally {
             SortHelpers.megaSortSize = megaSortSize;

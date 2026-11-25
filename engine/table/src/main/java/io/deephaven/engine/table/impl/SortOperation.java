@@ -323,10 +323,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
             final RowSet rowSetToSort = usePrev ? parent.getRowSet().prev() : parent.getRowSet();
 
-            if (rowSetToSort.size() >= Integer.MAX_VALUE) {
-                throw new UnsupportedOperationException("Can not perform ticking sort for table larger than "
-                        + Integer.MAX_VALUE + " rows, table is" + rowSetToSort.size());
-            }
+            SortHelpers.checkTickingSortSize(rowSetToSort.size());
 
             final long[] sortedKeys = SortHelpers
                     .getSortedKeys(sortOrder, originalSortColumns, sortColumns, comparators, comparatorsRespectEquality,

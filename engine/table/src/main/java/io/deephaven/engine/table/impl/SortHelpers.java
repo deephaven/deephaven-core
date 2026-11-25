@@ -49,6 +49,7 @@ import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps;
 import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.SafeCloseable;
@@ -129,6 +130,25 @@ public class SortHelpers {
      */
     public static long parallelSortSegmentSize = Configuration.getInstance()
             .getLongWithDefault("QueryTable.parallelSortSegmentSize", 1L << 18);
+
+    /**
+     * The most rows a ticking sort holds. Its initial sort maps the rows with an array, which a sort of at least
+     * {@link #megaSortSize} rows does not produce, and its reverse lookup holds at most
+     * {@link NullableLongLongMaps#MAXIMUM_SIZE} rows.
+     */
+    static long maximumTickingSortSize() {
+        return Math.min(megaSortSize - 1L, NullableLongLongMaps.MAXIMUM_SIZE);
+    }
+
+    /**
+     * Throws a {@link SizeException} when a ticking sort of size rows exceeds {@link #maximumTickingSortSize()}.
+     */
+    static void checkTickingSortSize(final long size) {
+        final long maximumSize = maximumTickingSortSize();
+        if (size > maximumSize) {
+            throw new SizeException("Cannot sort a ticking table", size, maximumSize);
+        }
+    }
 
     interface SortMapping extends LongSizedDataStructure {
         long size();
