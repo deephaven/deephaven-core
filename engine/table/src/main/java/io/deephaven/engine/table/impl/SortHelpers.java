@@ -541,6 +541,10 @@ public class SortHelpers {
             final boolean comparatorRespectsEquality,
             final RowSet rowSet,
             final boolean usePrev) {
+        if (rowSet.size() >= megaSortSize) {
+            // the symbol table sort sorts every row in one chunk; a sort this large sorts chunks and merges them
+            return getSortMappingOne(order, columnSource, comparator, rowSet, usePrev);
+        }
         final int sortSize = rowSet.intSize();
 
         final ColumnSource<Long> reinterpreted = columnSource.reinterpret(long.class);

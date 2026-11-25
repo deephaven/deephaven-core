@@ -1110,6 +1110,34 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
+    /**
+     * A sort of a symbol table column of at least megaSortSize rows sorts chunks and merges them, ordering the rows as
+     * the same sort of an in-memory column.
+     */
+    @Test
+    public void testSymbolTableSortAtMegaSortSize() throws IOException {
+        final Table memory = newTable(stringCol("S", "b", null, "a", "b", null, "a", "c", "a", "c", "b"),
+                intCol("N", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        final File directory = Files.createTempDirectory("SymbolTableMegaSort").toFile();
+        final int megaSortSize = SortHelpers.megaSortSize;
+        final int sortChunkSize = SortHelpers.sortChunkSize;
+        try {
+            final String path = new File(directory, "table.parquet").getPath();
+            ParquetTools.writeTable(memory, path);
+            final Table source = ParquetTools.readTable(path);
+            final Table disk = source.coalesce();
+            SortHelpers.megaSortSize = 4;
+            SortHelpers.sortChunkSize = 3;
+            assertTableEquals(memory.sort("S"), disk.sort("S"));
+            assertTableEquals(memory.sortDescending("S"), disk.sortDescending("S"));
+            source.close();
+        } finally {
+            SortHelpers.megaSortSize = megaSortSize;
+            SortHelpers.sortChunkSize = sortChunkSize;
+            FileUtils.deleteRecursively(directory);
+        }
+    }
+
     @Test
     public void testSymbolTableSortIncremental() throws IOException {
         diskBackedTestHarness(this::doSymbolTableIncrementalTest);
