@@ -236,7 +236,8 @@ def to_arrow(table: Table, cols: Sequence[str] | None = None) -> pa.Table:
 
     For a refreshing table, the result is a snapshot taken at the time of the call. Some columns of the result may be
     dictionary-encoded or run-end-encoded. The server chooses these encodings, unless the table has a BarrageSchema
-    attribute, in which case the encodings in that schema are used.
+    attribute and cols is None or empty, in which case the encodings in that schema are used. A nonempty cols selects
+    the columns with Table.view, which drops the BarrageSchema attribute.
 
     Args:
         table (Table): the Deephaven table
