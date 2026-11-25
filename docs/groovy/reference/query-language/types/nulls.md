@@ -2,18 +2,18 @@
 title: Nulls
 ---
 
-Null values indicate that a value does not exist in the data. Within Deephaven, each data type represents nulls differently and special null values are assigned. Complex data types, such as Objects, are stored as standard `null` or `None` references. Primitive types, such as doubles or integers, are stored as a single `null` value from the type’s range.
+Null values indicate that a value does not exist in the data. Within Deephaven, each data type represents nulls differently and special null values are assigned. Complex data types, such as Objects, are stored as standard `null` references. Primitive types, such as doubles or integers, are stored as a single `null` value from the type's range.
 
 ## Example
 
 The following script displays Deephaven null values:
 
 ```groovy
-nulls = [byte: NULL_BYTE, short: NULL_SHORT, int: NULL_INT, long: NULL_LONG, float: NULL_FLOAT, double: NULL_DOUBLE]
+nulls = [byte: NULL_BYTE, short: NULL_SHORT, int: NULL_INT, long: NULL_LONG, float: NULL_FLOAT, double: NULL_DOUBLE, char: NULL_CHAR]
 println(nulls)
 ```
 
-Null values can be detected using the `isNull` filter.
+Null values can be detected using the `isNull` function.
 
 ```groovy order=source,result
 source = newTable(
@@ -27,7 +27,7 @@ result = source.update(
 )
 ```
 
-## Related Documentation
+## Related documentation
 
 - [How to handle null, infinity, and not-a-number values](../../../how-to-guides/null-inf-nan.md)
 - [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)

@@ -2,17 +2,17 @@
 title: intCol
 ---
 
-The `intCol` method creates a column containing Java primitive integer values.
+The `intCol` method creates a column containing Java primitive `int` values (32-bit signed integers).
 
 > [!NOTE]
-> This method is commonly used with [`newTable`](./newTable.md) to create tables.
+> Pass the column that `intCol` returns to [`newTable`](./newTable.md) to create a table.
 
 > [!IMPORTANT]
-> Integer columns do not support infinite and not-a-number (NaN) values.
+> The value -2147483648 (`Integer.MIN_VALUE`) is reserved to represent [null](../../query-language/types/nulls.md) in `int` columns. A cast that overflows, such as `(int)2147483648L`, wraps around to -2147483648 and so becomes null. `int` columns do not support infinite or not-a-number (NaN) values.
 
 ## Syntax
 
-```
+```groovy syntax
 intCol(name, data...)
 ```
 
@@ -26,7 +26,7 @@ The name of the new column.
 </Param>
 <Param name="data" type="int...">
 
-The column values.
+The column values. Use [`NULL_INT`](/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_INT) to store a null value.
 
 </Param>
 </ParamTable>
@@ -37,7 +37,7 @@ A [`ColumnHolder`](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnHolde
 
 ## Example
 
-The following examples use [`newTable`](./newTable.md) to create a table with a single column of integers named `Integers`.
+The following example uses [`newTable`](./newTable.md) to create a table with a single column of integers named `Integers`.
 
 ```groovy
 result = newTable(
@@ -47,6 +47,9 @@ result = newTable(
 
 ## Related documentation
 
-- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`newTable`](./newTable.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#intCol(java.lang.String,int...))
+- [Nulls](../../query-language/types/nulls.md)
+- [`TableTools.intCol` Javadoc](/core/javadoc/io/deephaven/engine/util/TableTools.html#intCol(java.lang.String,int...))
+- [`ColumnHolder` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnHolder.html)
+- [`QueryConstants` Javadoc](/core/javadoc/io/deephaven/util/QueryConstants.html)

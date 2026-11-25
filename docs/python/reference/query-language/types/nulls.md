@@ -2,7 +2,7 @@
 title: Nulls
 ---
 
-Null values indicate that a value does not exist in the data. Within Deephaven, each data type represents nulls differently and special null values are assigned. Complex data types, such as Objects, are stored as standard `null` or `None` references. Primitive types, such as doubles or integers, are stored as a single `null` value from the type’s range.
+Null values indicate that a value does not exist in the data. Within Deephaven, each data type represents nulls differently and special null values are assigned. Complex data types, such as Objects, are stored as standard `null` or `None` references. Primitive types, such as doubles or integers, are stored as a single `null` value from the type's range.
 
 ## Example
 
@@ -16,6 +16,7 @@ from deephaven.constants import (
     NULL_LONG,
     NULL_FLOAT,
     NULL_DOUBLE,
+    NULL_CHAR,
 )
 
 nulls = {
@@ -25,11 +26,12 @@ nulls = {
     "long": NULL_LONG,
     "float": NULL_FLOAT,
     "double": NULL_DOUBLE,
+    "char": NULL_CHAR,
 }
 print(nulls)
 ```
 
-Null values can be detected using the `isNull` filter.
+Null values can be detected using the `isNull` function.
 
 ```python order=source,result
 from deephaven import new_table
@@ -45,7 +47,7 @@ result = source.update(
 )
 ```
 
-## Related Documentation
+## Related documentation
 
 - [Built-in query language constants](../../../how-to-guides/built-in-constants.md)
 - [Built-in query language variables](../../../how-to-guides/built-in-variables.md)

@@ -2,15 +2,18 @@
 title: byte_col
 ---
 
-The `byte_col` method creates a column containing Java primitive byte values.
+The `byte_col` function creates a column containing Java primitive `byte` values (8-bit signed integers).
 
 > [!NOTE]
-> This method is commonly used with [`new_table`](./newTable.md) to create tables.
+> Pass the column that `byte_col` returns to [`new_table`](./newTable.md) to create a table.
+
+> [!IMPORTANT]
+> Values must be within the `byte` range, -128 to 127. Values outside the range wrap around without an error, for example 300 becomes 44. The value -128 (`Byte.MIN_VALUE`, available as [`NULL_BYTE`](/core/pydoc/code/deephaven.constants.html#deephaven.constants.NULL_BYTE)) is reserved to represent [null](../../query-language/types/nulls.md) in `byte` columns, so -128, and any value that wraps around to it, becomes null.
 
 ## Syntax
 
 ```python syntax
-byte_col(name: str, data: Sequence[byte]) -> InputColumn
+byte_col(name: str, data: Sequence) -> InputColumn
 ```
 
 ## Parameters
@@ -21,20 +24,20 @@ byte_col(name: str, data: Sequence[byte]) -> InputColumn
 The name of the new column.
 
 </Param>
-<Param name="data" type="Sequence[byte]">
+<Param name="data" type="Sequence">
 
-The column values. This can be any sequence of compatible data, e.g., list, tuple, ndarray, pandas series, etc.
+The column values, such as a list, tuple, NumPy array, or pandas Series. `None` values become null.
 
 </Param>
 </ParamTable>
 
 ## Returns
 
-An [`InputColumn`](/core/pydoc/code/deephaven.column.html#deephaven.column.InputColumn).
+An [`InputColumn`](./inputColumn.md).
 
 ## Example
 
-The following examples use [`new_table`](./newTable.md) to create a table with a single column of bytes named `Bytes`.
+The following example uses [`new_table`](./newTable.md) to create a table with a single column of bytes named `Bytes`.
 
 ```python
 from deephaven import new_table
@@ -45,7 +48,9 @@ result = new_table([byte_col("Bytes", [1, 2, 3, 4])])
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`new_table`](./newTable.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#byteCol(java.lang.String,byte...))
+- [`InputColumn`](./inputColumn.md)
+- [Nulls](../../query-language/types/nulls.md)
+- [`deephaven.constants` Pydoc](/core/pydoc/code/deephaven.constants.html)
 - [Pydoc](/core/pydoc/code/deephaven.column.html#deephaven.column.byte_col)

@@ -32,7 +32,7 @@ The [Create new columns in a table](#create-new-columns-in-a-table) section show
 
 Deephaven's [`new_table`](../reference/table-operations/create/newTable.md) function creates a new table that you populate with data. It accepts either a list of column objects or a dictionary that maps column names to data. This section covers column objects first, including the [column types](#column-types) they support and [array columns](#array-columns), then [creating a table from a dictionary](#create-a-table-from-a-dictionary).
 
-A column object is an [`InputColumn`](/core/pydoc/code/deephaven.column.html#deephaven.column.InputColumn), which stores a column's name, type, and data. Functions such as [`string_col`](../reference/table-operations/create/stringCol.md) and [`int_col`](../reference/table-operations/create/intCol.md) create them. The [Column types](#column-types) section lists these functions.
+A column object is an [`InputColumn`](../reference/table-operations/create/inputColumn.md), which stores a column's name, type, and data. Functions such as [`string_col`](../reference/table-operations/create/stringCol.md) and [`int_col`](../reference/table-operations/create/intCol.md) create them. The [Column types](#column-types) section lists these functions.
 
 The following query creates a new table with a `String` column and an `int` column from a list of column objects:
 
@@ -65,7 +65,7 @@ The following functions create columns of common types:
 | `int`               | [`int_col`](../reference/table-operations/create/intCol.md)           |
 | `java.lang.Object`  | [`jobj_col`](../reference/table-operations/create/jobj_col.md)        |
 | `long`              | [`long_col`](../reference/table-operations/create/longCol.md)         |
-| Python Object       | [`pyobj_col`](../reference/table-operations/create/pyobj_col.md)      |
+| `org.jpy.PyObject`  | [`pyobj_col`](../reference/table-operations/create/pyobj_col.md)      |
 | `short`             | [`short_col`](../reference/table-operations/create/shortCol.md)       |
 | `String`            | [`string_col`](../reference/table-operations/create/stringCol.md)     |
 
@@ -73,7 +73,7 @@ To create a column of a type not in this list, such as an array column, see [Arr
 
 ### Array columns
 
-[`new_table`](../reference/table-operations/create/newTable.md) can also create array columns, where each cell holds an array. Typed functions such as [`int_col`](../reference/table-operations/create/intCol.md) and [`string_col`](../reference/table-operations/create/stringCol.md) can't create these. Instead, construct an [`InputColumn`](/core/pydoc/code/deephaven.column.html#deephaven.column.InputColumn) yourself with an array type from the [`deephaven.dtypes`](../reference/python/deephaven-python-types.md) module, such as `dtypes.int32_array`.
+[`new_table`](../reference/table-operations/create/newTable.md) can also create array columns, where each cell holds an array. Typed functions such as [`int_col`](../reference/table-operations/create/intCol.md) and [`string_col`](../reference/table-operations/create/stringCol.md) can't create these. Instead, construct an [`InputColumn`](../reference/table-operations/create/inputColumn.md) yourself with an array type from the [`deephaven.dtypes`](../reference/python/deephaven-python-types.md) module, such as `dtypes.int32_array`.
 
 The following example creates a new table with a single integer array column. [`dtypes.array`](/core/pydoc/code/deephaven.dtypes.html#deephaven.dtypes.array) converts a NumPy array to a Java `int` array. The column's data is a list that holds that one array, so the table has one row.
 
@@ -186,6 +186,33 @@ For more about DQL, see the [Query string overview](./query-string-overview.md) 
 - [Operators in query strings](./operators.md)
 - [Select and create columns](./use-select-view-update.md)
 - [Query string overview](./query-string-overview.md)
+- [Python variables in query strings](./python-variables.md)
+- [Python functions in query strings](./python-functions.md)
+- [Create a time table](./time-table.md)
+- [Write data to an in-memory, real-time table](./table-publisher.md)
+- [Create and use input tables](./input-tables.md)
+- [Replay data from static tables](./replay-data.md)
+- [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)
+- [Data types in the Deephaven Python dtypes package](../reference/python/deephaven-python-types.md)
+- [Special variables and constants](../reference/query-language/variables/special-variables.md)
+- [`bool_col`](../reference/table-operations/create/boolCol.md)
+- [`byte_col`](../reference/table-operations/create/byteCol.md)
+- [`char_col`](../reference/table-operations/create/charCol.md)
+- [`datetime_col`](../reference/table-operations/create/dateTimeCol.md)
+- [`double_col`](../reference/table-operations/create/doubleCol.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
+- [`float_col`](../reference/table-operations/create/floatCol.md)
+- [`InputColumn`](../reference/table-operations/create/inputColumn.md)
+- [`int_col`](../reference/table-operations/create/intCol.md)
+- [`jobj_col`](../reference/table-operations/create/jobj_col.md)
+- [`lazy_update`](../reference/table-operations/select/lazy-update.md)
+- [`long_col`](../reference/table-operations/create/longCol.md)
 - [`new_table`](../reference/table-operations/create/newTable.md)
+- [`pyobj_col`](../reference/table-operations/create/pyobj_col.md)
+- [`select`](../reference/table-operations/select/select.md)
+- [`short_col`](../reference/table-operations/create/shortCol.md)
+- [`string_col`](../reference/table-operations/create/stringCol.md)
 - [`update`](../reference/table-operations/select/update.md)
+- [`update_view`](../reference/table-operations/select/update-view.md)
+- [`view`](../reference/table-operations/select/view.md)
+- [`dtypes.array` Pydoc](/core/pydoc/code/deephaven.dtypes.html#deephaven.dtypes.array)

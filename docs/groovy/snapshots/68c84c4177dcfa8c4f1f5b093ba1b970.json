@@ -1,0 +1,1 @@
+{"file":"reference/table-operations/create/longCol.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Longs","type":"long"}],"rows":[[{"value":"10,000,000"}],[{"value":"9,876,543,210"}],[{"value":"-314,159,265"}]]}}}}

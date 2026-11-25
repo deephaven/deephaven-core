@@ -1,0 +1,1 @@
+{"file":"reference/table-operations/create/timeTable.md","objects":{"t":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"InitialExecutionTime","type":"java.time.Instant"}],"rows":[[{"value":"2026-11-24 09:18:58.000"},{"value":"2026-11-24 09:18:53.906"}]]}}}}

@@ -2,14 +2,14 @@
 title: stringCol
 ---
 
-The `stringCol` method creates a column containing string object values.
+The `stringCol` method creates a column containing Java `String` values.
 
 > [!NOTE]
-> This method is commonly used with [`newTable`](./newTable.md) to create tables.
+> Pass the column that `stringCol` returns to [`newTable`](./newTable.md) to create a table.
 
 ## Syntax
 
-```
+```groovy syntax
 stringCol(name, data...)
 ```
 
@@ -23,7 +23,7 @@ The name of the new column.
 </Param>
 <Param name="data" type="String...">
 
-The column values.
+The column values. Use `null` to store a [null](../../query-language/types/nulls.md) value.
 
 </Param>
 </ParamTable>
@@ -34,7 +34,7 @@ A [`ColumnHolder`](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnHolde
 
 ## Example
 
-The following examples use [`newTable`](./newTable.md) to create a table with a single column of strings named `Strings`.
+The following example uses [`newTable`](./newTable.md) to create a table with a single column of strings named `Strings`. `stringCol` does not parse the values, so `"3.14"` stays a string and is not converted to a number.
 
 ```groovy
 result = newTable(
@@ -44,6 +44,8 @@ result = newTable(
 
 ## Related documentation
 
-- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`newTable`](./newTable.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#stringCol(java.lang.String,java.lang.String...))
+- [Nulls](../../query-language/types/nulls.md)
+- [`TableTools.stringCol` Javadoc](/core/javadoc/io/deephaven/engine/util/TableTools.html#stringCol(java.lang.String,java.lang.String...))
+- [`ColumnHolder` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/ColumnHolder.html)

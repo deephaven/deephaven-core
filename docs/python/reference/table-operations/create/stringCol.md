@@ -2,15 +2,15 @@
 title: string_col
 ---
 
-The `string_col` method creates a column containing string object values.
+The `string_col` function creates a column containing Java `String` values.
 
 > [!NOTE]
-> This method is commonly used with [`new_table`](./newTable.md) to create tables.
+> Pass the column that `string_col` returns to [`new_table`](./newTable.md) to create a table.
 
 ## Syntax
 
 ```python syntax
-string_col(name: str, data: Sequence[str]) -> InputColumn
+string_col(name: str, data: Sequence) -> InputColumn
 ```
 
 ## Parameters
@@ -21,20 +21,20 @@ string_col(name: str, data: Sequence[str]) -> InputColumn
 The name of the new column.
 
 </Param>
-<Param name="data" type="Sequence[str]">
+<Param name="data" type="Sequence">
 
-The column values. This can be any sequence of compatible data, e.g., list, tuple, ndarray, pandas series, etc.
+The column values, as `str` values, such as a list, tuple, NumPy array, or pandas Series. `None` values become [null](../../query-language/types/nulls.md).
 
 </Param>
 </ParamTable>
 
 ## Returns
 
-An [`InputColumn`](/core/pydoc/code/deephaven.column.html#deephaven.column.InputColumn).
+An [`InputColumn`](./inputColumn.md).
 
 ## Example
 
-The following examples use [`new_table`](./newTable.md) to create a table with a single column of strings named `Strings`.
+The following example uses [`new_table`](./newTable.md) to create a table with a single column of strings named `Strings`. `string_col` does not parse the values, so `"3.14"` stays a string and is not converted to a number.
 
 ```python
 from deephaven import new_table
@@ -45,7 +45,8 @@ result = new_table([string_col("Strings", ["Deephaven", "3.14", "Community"])])
 
 ## Related documentation
 
-- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`new_table`](./newTable.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#stringCol(java.lang.String,java.lang.String...))
+- [`InputColumn`](./inputColumn.md)
+- [Nulls](../../query-language/types/nulls.md)
 - [Pydoc](/core/pydoc/code/deephaven.column.html#deephaven.column.string_col)

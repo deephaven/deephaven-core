@@ -1,0 +1,1 @@
+{"file":"reference/table-operations/create/timeTable.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}}}}

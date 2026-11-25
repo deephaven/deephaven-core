@@ -85,6 +85,10 @@ Value: table update operation failed. : Cannot find method sin(org.jpy.PyObject)
 
 No [`sin`](/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) overload accepts a `PyObject` argument. To call [`sin`](/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) on these values, [cast](./casting.md) them in the formula, as in `Y = sin((double)X)`. You can also add a [type hint](./python-functions.md#type-hints) to the function. See [How to avoid PyObject columns](#how-to-avoid-pyobject-columns).
 
+### Sorting
+
+`PyObject` columns cannot be sorted. [`PyObject`](https://jpy.readthedocs.io/en/latest/_static/java-apidocs/org/jpy/PyObject.html) does not implement Java's `Comparable` interface, so [`sort`](../reference/table-operations/sort/sort.md) on a `PyObject` column fails with an error that the column is not a sortable type. To sort by these values, convert them to a Java type first, for example with a [cast](./casting.md) in an [`update`](../reference/table-operations/select/update.md) formula.
+
 ### Performance
 
 `PyObject` columns are less performant than [Java primitive](./data-types.md#primitive-types) columns for two reasons:
@@ -206,9 +210,11 @@ source_meta = source.meta_table
 - [Work with arrays](./work-with-arrays.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`meta_table`](../reference/table-operations/metadata/meta_table.md)
+- [`sort`](../reference/table-operations/sort/sort.md)
 - [`update`](../reference/table-operations/select/update.md)
 - [`empty_table` Pydoc](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.empty_table)
 - [`meta_table` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.meta_table)
+- [`sort` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.sort)
 - [`update` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update)
 - [`deephaven.dtypes.array` Pydoc](/core/pydoc/code/deephaven.dtypes.html#deephaven.dtypes.array)
 - [`jpy.array` Pydoc](/core/pydoc/code/jpy.html#jpy.array)

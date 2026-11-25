@@ -1,0 +1,1 @@
+{"file":"reference/table-operations/create/newTable.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Ints","type":"long"},{"name":"Strs","type":"java.lang.String"}],"rows":[[{"value":"1"},{"value":"a"}],[{"value":"2"},{"value":"b"}],[{"value":"3"},{"value":"c"}]]}}}}
