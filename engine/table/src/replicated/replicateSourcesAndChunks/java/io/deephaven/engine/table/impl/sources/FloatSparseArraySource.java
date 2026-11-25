@@ -21,6 +21,7 @@ import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.sparse.FloatOneOrN;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.SoftRecyclerWindow;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -49,6 +50,8 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  */
 public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
         implements MutableColumnSourceGetDefaults.ForFloat /* MIXIN_IMPLS */ {
+    private static final int SHIFT_CHUNK_SIZE = 4096;
+
     // region recyclers
     private static final SoftRecycler<float[]> recycler =
             SoftRecyclerWindow.register(new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY,
@@ -138,17 +141,80 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
         blocksInner[indexWithinBlock] = value;
     }
 
+    /**
+     * Moves the values of {@code keysToShift} to their row keys plus {@code shiftDelta} a chunk of rows at a time: each
+     * chunk is read, nulled and written at its shifted row keys in bulk, so that previous values are recorded a block
+     * at a time rather than row by row.
+     */
     @Override
     public void shift(final RowSet keysToShift, final long shiftDelta) {
-        // Shifting up has to walk the keys in descending order so that a shifted value never overwrites one that has
-        // not been read yet.
-        try (final RowSet.SearchIterator it =
-                (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator()) {
-            it.forEachLong((i) -> {
-                set(i + shiftDelta, getFloat(i));
-                setNull(i);
-                return true;
-            });
+        if (keysToShift.isEmpty() || shiftDelta == 0) {
+            return;
+        }
+        final int chunkSize = (int) Math.min(SHIFT_CHUNK_SIZE, keysToShift.size());
+        try (final FillContext fillContext = makeFillContext(chunkSize);
+                final FillFromContext fillFromContext = makeFillFromContext(chunkSize);
+                final WritableChunk<Values> values = getChunkType().makeWritableChunk(chunkSize);
+                final WritableLongChunk<OrderedRowKeyRanges> movedRanges =
+                        WritableLongChunk.makeWritableChunk(2 * chunkSize);
+                final WritableLongChunk<OrderedRowKeys> movedRowKeys = WritableLongChunk.makeWritableChunk(chunkSize)) {
+            // like a memmove, rows moving down are moved from the first, and rows moving up from the last, so that no
+            // chunk overwrites rows not yet moved
+            if (shiftDelta < 0) {
+                try (final RowSequence.Iterator rowsIterator = keysToShift.getRowSequenceIterator()) {
+                    while (rowsIterator.hasMore()) {
+                        shiftChunk(rowsIterator.getNextRowSequenceWithLength(chunkSize), shiftDelta, fillContext,
+                                fillFromContext, values, movedRanges, movedRowKeys);
+                    }
+                }
+            } else {
+                // a RowSequence.Iterator walks only forward, so each chunk from the last is found by position
+                for (long endPosition = keysToShift.size(); endPosition > 0; endPosition -= chunkSize) {
+                    final long length = Math.min(chunkSize, endPosition);
+                    try (final RowSequence rows = keysToShift.getRowSequenceByPosition(endPosition - length, length)) {
+                        shiftChunk(rows, shiftDelta, fillContext, fillFromContext, values, movedRanges, movedRowKeys);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Moves the values of {@code rowsToShift} to their row keys plus {@code shiftDelta}, nulling the row keys they
+     * leave. Rows in long runs are read and written by range; otherwise their row keys are read into
+     * {@code movedRowKeys} once, and every read and write uses that chunk.
+     */
+    private void shiftChunk(
+            @NotNull final RowSequence rowsToShift,
+            final long shiftDelta,
+            @NotNull final FillContext fillContext,
+            @NotNull final FillFromContext fillFromContext,
+            @NotNull final WritableChunk<Values> values,
+            @NotNull final WritableLongChunk<OrderedRowKeyRanges> movedRanges,
+            @NotNull final WritableLongChunk<OrderedRowKeys> movedRowKeys) {
+        if (rowsToShift.getAverageRunLengthEstimate() >= USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillChunk(fillContext, values, rowsToShift);
+            setNull(rowsToShift);
+            final LongChunk<OrderedRowKeyRanges> ranges = rowsToShift.asRowKeyRangesChunk();
+            movedRanges.setSize(ranges.size());
+            for (int ii = 0; ii < ranges.size(); ++ii) {
+                movedRanges.set(ii, ranges.get(ii) + shiftDelta);
+            }
+            try (final RowSequence moved = RowSequenceFactory.wrapKeyRangesChunkAsRowSequence(movedRanges)) {
+                fillFromChunk(fillFromContext, values, moved);
+            }
+            return;
+        }
+        rowsToShift.fillRowKeyChunk(movedRowKeys);
+        try (final RowSequence rows = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(movedRowKeys)) {
+            fillChunk(fillContext, values, rows);
+            setNull(rows);
+        }
+        for (int ii = 0; ii < movedRowKeys.size(); ++ii) {
+            movedRowKeys.set(ii, movedRowKeys.get(ii) + shiftDelta);
+        }
+        try (final RowSequence moved = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(movedRowKeys)) {
+            fillFromChunk(fillFromContext, values, moved);
         }
     }
 
@@ -558,10 +624,10 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
                     // endregion copyFromTypedArray
                 }
                 ctx.offset += length;
-                firstKey += length;
-                if (firstKey > lastKey) {
+                if (rightKeyForThisBlock == lastKey) {
                     break;
                 }
+                firstKey += length;
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(firstKey);
                 ctx.maxKeyInCurrentBlock = firstKey | INDEX_MASK;
             }
@@ -720,7 +786,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
             long firstKey = ranges.get(ii);
             final long lastKey = ranges.get(ii + 1);
 
-            while (firstKey <= lastKey) {
+            while (true) {
                 final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
                 final long lastKeyToUse = Math.min(maxKeyInCurrentBlock, lastKey);
                 final int length = (int) (lastKeyToUse - firstKey + 1);
@@ -760,8 +826,11 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
                 chunk.copyToTypedArray(offset, block, sIndexWithinBlock, length);
                 // endregion copyToTypedArray
 
-                firstKey += length;
                 offset += length;
+                if (lastKeyToUse == lastKey) {
+                    break;
+                }
+                firstKey += length;
             }
         }
     }

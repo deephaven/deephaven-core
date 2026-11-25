@@ -124,3 +124,4 @@ createDeephavenTestExecTask('sumByBenchmark', 'io.deephaven.benchmark.engine.Sum
 createDeephavenTestExecTask('percentileByBenchmark', 'io.deephaven.benchmark.engine.PercentileByBenchmark')
 createDeephavenTestExecTask('lastByBenchmark', 'io.deephaven.benchmark.engine.LastByBenchmark')
 createJmhTask('jmhRunAsOfJoinRestamp', ['AsOfJoinRestampBenchmark', '-prof=gc'], [], '16g')
+createJmhTask('jmhRunUpdateByShift', ['UpdateByShiftBenchmark', '-prof=gc'], [], '16g')
