@@ -185,9 +185,9 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         recordMetric(stats -> stats.snapshotNanos, snapshotNanos);
     }
 
-    private void recordWriteMetrics(final long bytes, final long cpuNanos) {
+    private void recordWriteMetrics(final long bytes, final long writeNanos) {
         recordMetric(stats -> stats.writeBytes, bytes);
-        recordMetric(stats -> stats.writeNanos, cpuNanos);
+        recordMetric(stats -> stats.writeNanos, writeNanos);
     }
 
     private void recordMetric(@NotNull final Function<Stats, Histogram> histogramGetter, final long value) {

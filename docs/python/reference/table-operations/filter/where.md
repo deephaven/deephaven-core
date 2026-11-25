@@ -10,13 +10,13 @@ The `where` method filters rows of data from the source table.
 ## Syntax
 
 ```python syntax
-table.where(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Table
+table.where(filters: str | Filter | Sequence[str] | Sequence[Filter]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="filters" type="Union[str, Filter, Sequence[str], Sequence[Filter]]">
+<Param name="filters" type="str | Filter | Sequence[str] | Sequence[Filter]">
 
 Formulas for filtering as a list of [Strings](../../query-language/types/strings.md).
 

@@ -22,3 +22,23 @@ pluginManager.withPlugin('eclipse') {
     eclipse.classpath.baseSourceOutputDir = layout.buildDirectory.dir('eclipse')
     eclipse.classpath.defaultOutputDir = layout.buildDirectory.dir('eclipse/default').get().asFile
 }
+
+// Replicated (machine-generated, but checked in) sources live apart from hand-written sources, one directory per
+// replication task:
+//
+//   src/replicated/<task>/java       -> main source set
+//   src/replicatedTest/<task>/java   -> test source set
+//
+// <task> is the name of the Gradle task that regenerates the files (for example, replicateCachingSupplier). The
+// directories are discovered automatically, so migrating a replicator only requires pointing it at its new directory.
+// The files remain part of the regular source sets, so they share classpath, package-private access, and jar contents
+// with the hand-written code.
+[replicated: 'main', replicatedTest: 'test'].each { String dirName, String sourceSetName ->
+    def root = layout.projectDirectory.dir("src/${dirName}").asFile
+    def taskDirs = root.listFiles({ File f -> f.isDirectory() } as FileFilter)
+    if (taskDirs != null) {
+        taskDirs.sort().each { File taskDir ->
+            sourceSets.named(sourceSetName).configure { it.java.srcDir(new File(taskDir, 'java')) }
+        }
+    }
+}

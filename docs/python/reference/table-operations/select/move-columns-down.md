@@ -7,13 +7,13 @@ The `move_columns_down` method creates a new table with specified columns appear
 ## Syntax
 
 ```
-move_columns_down(cols: Union[str, Sequence[str]]) -> Table
+move_columns_down(cols: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, Sequence[str]]">
+<Param name="cols" type="str | Sequence[str]">
 
 Columns to move to the right side of the new table.
 

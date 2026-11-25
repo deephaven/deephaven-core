@@ -13,13 +13,13 @@ title: to_np_timedelta64
 ## Syntax
 
 ```python syntax
-to_np_timedelta64(dt: Union[None, Duration, Period]) -> numpy.timedelta64
+to_np_timedelta64(dt: Duration | Period | None) -> numpy.timedelta64
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="dt" type="Union[None, Duration, Period]">
+<Param name="dt" type="Duration | Period | None">
 
 A Java time duration to convert to a `numpy.timedelta64`. If `None` is provided, `None` is returned.
 

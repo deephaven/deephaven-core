@@ -101,9 +101,18 @@ def _run_release_worker(
         try:
             job.run(session)
         except Exception:
-            logger.exception(
-                f"{session._logpfx}: background job {type(job).__name__} failed"
-            )
+            if not session.is_connected:
+                # The session disconnected while this job was in flight, usually because close() ran. The job then
+                # fails because the channel or the server session is gone. The server frees the session's tickets
+                # anyway, so logging it as an error shows users a traceback for a harmless failure.
+                logger.debug(
+                    f"{session._logpfx}: background job {type(job).__name__} failed after the session disconnected",
+                    exc_info=True,
+                )
+            else:
+                logger.exception(
+                    f"{session._logpfx}: background job {type(job).__name__} failed"
+                )
         del session  # hold the session only weakly while waiting
 
 
@@ -208,8 +217,8 @@ class Session:
         """Initializes a Session object that connects to the Deephaven server
 
         Args:
-            host (Optional[str]): the host name or IP address of the remote machine, if None, 'localhost' is used.
-            port (Optional[int]): the port number that Deephaven server is listening on, if None, 10000 is used.
+            host (str | None): the host name or IP address of the remote machine, if None, 'localhost' is used.
+            port (int | None): the port number that Deephaven server is listening on, if None, 10000 is used.
             auth_type (str): the authentication type string, can be "Anonymous', 'Basic", or any custom-built
                 authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler",
                 default is 'Anonymous'.
@@ -219,21 +228,21 @@ class Session:
             never_timeout (bool): never allow the session to timeout, default is True
             session_type (str): the Deephaven session type. Defaults to 'python'
             use_tls (bool): if True, use a TLS connection.  Defaults to False
-            tls_root_certs (Optional[bytes]): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
+            tls_root_certs (bytes | None): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
                  If not None implies use a TLS connection and the use_tls argument should have been passed
                  as True. Defaults to None
-            client_cert_chain (Optional[bytes]): PEM encoded client certificate if using mutual TLS.  Defaults to None,
+            client_cert_chain (bytes | None): PEM encoded client certificate if using mutual TLS.  Defaults to None,
                  which implies not using mutual TLS.
-            client_private_key (Optional[bytes]): PEM encoded client private key for client_cert_chain if using mutual TLS.
+            client_private_key (bytes | None): PEM encoded client private key for client_cert_chain if using mutual TLS.
                  Defaults to None, which implies not using mutual TLS.
-            client_opts (Optional[list[Tuple[str,Union[int,str]]]): list of tuples for name and value of options to
+            client_opts (list[tuple[str, int | str]] | None): list of tuples for name and value of options to
                 the underlying grpc channel creation.  Defaults to None, which implies not using any channel
                 options.
                 See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of valid options.
                 Example options:
                   [ ('grpc.target_name_override', 'idonthaveadnsforthishost'),
                     ('grpc.min_reconnect_backoff_ms', 2000) ]
-            extra_headers (Optional[dict[bytes, bytes]]): additional headers (and values) to add to server requests.
+            extra_headers (dict[bytes, bytes] | None): additional headers (and values) to add to server requests.
                 Defaults to None, which implies not using any extra headers.
 
         Raises:
@@ -589,6 +598,11 @@ class Session:
         if self._refresh_token():
             self._refresh_failures = 0
             wakeup = 0.5 * self._timeout_seconds
+        elif not self.is_connected:
+            # The session disconnected during the refresh, usually because close() ran, so the refresh failed. Stop
+            # refreshing without a retry warning.
+            self._next_refresh = None
+            return
         else:
             self._refresh_failures += 1
             if self._refresh_failures >= len(self._refresh_backoff):
@@ -611,9 +625,16 @@ class Session:
             self.config_service.get_configuration_constants()
             return True
         except Exception as ex:
-            logger.warning(
-                f"{self._logpfx}: caught exception while refreshing auth token: {ex}."
-            )
+            if not self.is_connected:
+                # The session disconnected during the refresh, usually because close() ran. The failure is expected,
+                # so don't warn about it.
+                logger.debug(
+                    f"{self._logpfx}: auth token refresh failed after the session disconnected: {ex}."
+                )
+            else:
+                logger.warning(
+                    f"{self._logpfx}: caught exception while refreshing auth token: {ex}."
+                )
             return False
 
     @property
@@ -644,13 +665,15 @@ class Session:
             self._release_queue.put(_STOP)
             if not self.is_connected:
                 return
+            # Disconnect before CloseSession. The background threads then stop, and an RPC of theirs that fails while
+            # CloseSession runs is not logged.
+            self.is_connected = False
             try:
                 self.session_service.close()
             finally:
                 # Disconnect locally even if CloseSession fails.
                 if self.grpc_channel:
                     self.grpc_channel.close()
-                self.is_connected = False
                 self._last_export_ticket_number = 0
                 if self._flight_client:
                     self._flight_client.close()
@@ -674,7 +697,7 @@ class Session:
 
         Args:
             script (str): the Python script code
-            systemic (Optional[bool]): Whether to treat the code as systemically important. Defaults to None which uses the
+            systemic (bool | None): Whether to treat the code as systemically important. Defaults to None which uses the
                     default system behavior
 
         Raises:
@@ -809,9 +832,9 @@ class Session:
         """Creates a time table on the server.
 
         Args:
-            period (Union[int, str]): the interval at which the time table ticks (adds a row); units are nanoseconds
+            period (int | str): the interval at which the time table ticks (adds a row); units are nanoseconds
                 or a time interval string, e.g. "PT00:00:.001" or "PT1S"
-            start_time (Optional[Union[int, str]]): the start time for the time table in nanoseconds or as a date time
+            start_time (int | str | None): the start time for the time table in nanoseconds or as a date time
                 formatted string; default is None (meaning now)
             blink_table (bool): if the time table should be a blink table, defaults to False
 
@@ -902,9 +925,9 @@ class Session:
         keyed if key columns are provided, otherwise it will be append-only.
 
         Args:
-            schema (Optional[pa.Schema]): the schema for the InputTable
-            init_table (Optional[Table]): the initial table
-            key_cols (Optional[Union[str, list[str]]]): the name(s) of the key column(s)
+            schema (pa.Schema | None): the schema for the InputTable
+            init_table (Table | None): the initial table
+            key_cols (str | list[str] | None): the name(s) of the key column(s)
             blink_table (bool): whether the InputTable should be a blink table, default is False
 
         Returns:

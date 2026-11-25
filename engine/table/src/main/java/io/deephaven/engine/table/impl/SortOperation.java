@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
@@ -28,6 +29,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.IntPredicate;
 import java.util.function.LongUnaryOperator;
 
 import static io.deephaven.engine.table.Table.SORT_REVERSE_LOOKUP_ATTRIBUTE;
@@ -92,9 +94,12 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 comparators[ii] = ((ComparatorSortColumn) sortSpecIn[ii]).comparator();
                 comparatorsRespectEquality[ii] = ((ComparatorSortColumn) sortSpecIn[ii]).respectsEquality();
             } else {
-                comparatorsRespectEquality[ii] = true;
-
                 final Comparator<?> defaultComparator = ComparatorRegistry.INSTANCE.getComparator(columnType);
+                // a registered comparator orders a type that is not Comparable, such as an array, whose equals it need
+                // not agree with; a natural order respects equality for a primitive and for a type that the engine
+                // knows to order consistently with equals
+                comparatorsRespectEquality[ii] = defaultComparator == null && (columnType.isPrimitive()
+                        || BinarySearchKernelHelper.compareConsistentWithEquality(columnType));
                 if (defaultComparator == null) {
                     final boolean isSortable =
                             Comparable.class.isAssignableFrom(columnType) || columnType.isPrimitive();
@@ -146,18 +151,29 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     /**
-     * Returns the optimal data index for the supplied table, or null if no index is available. The ideal index would
-     * contain all key columns but matching the first column is still useful.
+     * Returns the optimal data index for the supplied table, or null if no index is available. The sort drops constant
+     * columns, so the index is chosen from the remaining columns: the ideal index contains all of them, but an index on
+     * the first of them is still useful. The sort uses an index only when the comparator of each of its columns
+     * respects equality, since an index group holds equal values while a comparator may order unequal values as ties.
+     * An index table is an aggregation keyed by the indexed columns, and an aggregation cannot key on an array, so no
+     * index on an array column is chosen.
      */
     @Nullable
     private DataIndex optimalIndex(final Table inputTable) {
-        final DataIndex full = DataIndexer.getDataIndex(inputTable, sortColumnNames);
-        if (full != null) {
-            // We have an index for all sort columns.
-            return full;
+        final int[] effectiveColumns = SortHelpers.effectiveSortColumns(sortColumns, comparatorsRespectEquality);
+        final IntPredicate usableIndexKey =
+                ii -> comparatorsRespectEquality[ii] && !sortColumns[ii].getType().isArray();
+        if (effectiveColumns.length == 0 || !usableIndexKey.test(effectiveColumns[0])) {
+            return null;
         }
-        // Return an index for the first column (if one exists) or null.
-        return DataIndexer.getDataIndex(inputTable, sortColumnNames[0]);
+        if (Arrays.stream(effectiveColumns).allMatch(usableIndexKey)) {
+            final DataIndex full = DataIndexer.getDataIndex(inputTable,
+                    Arrays.stream(effectiveColumns).mapToObj(ii -> sortColumnNames[ii]).toArray(String[]::new));
+            if (full != null) {
+                return full;
+            }
+        }
+        return DataIndexer.getDataIndex(inputTable, sortColumnNames[effectiveColumns[0]]);
     }
 
     private static boolean alreadySorted(final QueryTable parent, @NotNull final SortHelpers.SortMapping sortedKeys) {
@@ -270,11 +286,17 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     private void setSorted(QueryTable table) {
-        // no matter what we are always sorted by the first column
-        SortedColumnsAttribute.setOrderForColumn(table, sortColumnNames[0], sortOrder[0]);
+        // The attribute declares the natural order of the first column, so a first column ordered by an explicit
+        // comparator is not recorded.
+        if (!ComparatorSortColumn.hasComparator(sortSpec[0])) {
+            SortedColumnsAttribute.setOrderForColumn(table, sortColumnNames[0], sortOrder[0]);
+        }
     }
 
     private QueryTable withSorted(QueryTable table) {
+        if (ComparatorSortColumn.hasComparator(sortSpec[0])) {
+            return (QueryTable) table.withAttributes(IDENTITY_REDIRECTION_ATTRIBUTES);
+        }
         return (QueryTable) SortedColumnsAttribute.withOrderForColumn(table, sortColumnNames[0], sortOrder[0],
                 IDENTITY_REDIRECTION_ATTRIBUTES);
     }

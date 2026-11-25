@@ -14,13 +14,13 @@ title: to_j_zdt
 ## Syntax
 
 ```
-to_j_zdt(dt: Union[None, ZonedDateTime, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]) -> ZonedDateTime
+to_j_zdt(dt: ZonedDateTime | str | datetime.datetime | numpy.datetime64 | pandas.Timestamp | None) -> ZonedDateTime
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="dt" type="Union[None, ZonedDateTime, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]">
+<Param name="dt" type="ZonedDateTime | str | datetime.datetime | numpy.datetime64 | pandas.Timestamp | None">
 
 A date-time value to convert to a Java `ZonedDateTime`.
 

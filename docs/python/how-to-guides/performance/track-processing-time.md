@@ -48,7 +48,7 @@ process_time_col = SelectColumnFactory.getExpression(
     "ProcessTime = now()"
 ).withRecomputeOnModifiedRow()
 
-# Call j_table.update directly since the Python wrapper doesn't recognize jpy types
+# Call j_table.update directly: the Python update method doesn't accept a SelectColumn created through jpy
 result = Table(j_table=source.j_table.update(j_array_list([process_time_col])))
 ```
 

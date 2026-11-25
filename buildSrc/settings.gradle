@@ -1,4 +1,30 @@
+// Plugins (settings plugins, and plugins applied by id and version) are resolved only from the Gradle plugin portal.
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+    }
+}
+
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention'
 }
 rootProject.name = 'buildSrc'
+
+// Repositories are declared here, centrally, and buildSrc/build.gradle must not declare its own
+// (FAIL_ON_PROJECT_REPOS). Each artifact should come from exactly one repository: the plugin portal (which also mirrors
+// Maven Central) is only used for the plugins that Maven Central doesn't host; everything else comes from Maven Central.
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        exclusiveContent {
+            forRepository {
+                gradlePluginPortal()
+            }
+            filter {
+                includeGroup 'de.esoco.gwt'
+                includeGroup 'com.bmuschko'
+            }
+        }
+        mavenCentral()
+    }
+}

@@ -14,13 +14,13 @@ title: to_j_time_zone
 ## Syntax
 
 ```
-to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]) -> TimeZone
+to_j_time_zone(tz: TimeZone | str | datetime.tzinfo | datetime.datetime | pandas.Timestamp | None) -> TimeZone
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="tz" type="Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]">
+<Param name="tz" type="TimeZone | str | datetime.tzinfo | datetime.datetime | pandas.Timestamp | None">
 
 The time zone value to convert to a Java `TimeZone`.
 

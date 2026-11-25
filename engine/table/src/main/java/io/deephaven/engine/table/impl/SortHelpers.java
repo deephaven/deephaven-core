@@ -49,6 +49,7 @@ import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -203,9 +204,13 @@ public class SortHelpers {
             return size;
         }
 
+        /**
+         * A mapping of this size exists only for sorts of at least {@link #megaSortSize} rows, which the ticking and
+         * blink sorts that require an array mapping do not support.
+         */
         @NotNull
         public long[] getArrayMapping() {
-            throw new ArrayIndexOutOfBoundsException();
+            throw new SizeException("Cannot sort a ticking or blink table", size, megaSortSize - 1);
         }
 
         @Override
@@ -252,7 +257,7 @@ public class SortHelpers {
                 });
                 return mapping;
             } else {
-                throw new ArrayIndexOutOfBoundsException();
+                throw new SizeException("Cannot sort a ticking or blink table", size);
             }
         }
 
@@ -295,7 +300,7 @@ public class SortHelpers {
      * dropped when its comparator respects equality; a comparator with respectsEquality=false may still rely on the
      * column's sort pass for tie-handling order.
      */
-    private static int[] effectiveSortColumns(
+    static int[] effectiveSortColumns(
             final ColumnSource<Comparable<?>>[] columnsToSortBy,
             final boolean[] comparatorsRespectEquality) {
         return IntStream.range(0, columnsToSortBy.length)
@@ -350,7 +355,7 @@ public class SortHelpers {
         @NotNull
         public long[] getArrayMapping() {
             if (rowSet.size() > (long) Integer.MAX_VALUE) {
-                throw new ArrayIndexOutOfBoundsException();
+                throw new SizeException("Cannot sort a ticking or blink table", rowSet.size());
             }
             final long[] mapping = new long[rowSet.intSize()];
             rowSet.fillRowKeyChunk(WritableLongChunk.writableChunkWrap(mapping));
@@ -894,7 +899,7 @@ public class SortHelpers {
                 sortContext.sort(rowKeys, values);
             }
 
-            final FindRunsKernel findRunsKernel = FindRunsKernel.getInstance(chunkType);
+            final FindRunsKernel findRunsKernel = FindRunsKernel.getInstance(chunkType, comparators[0]);
             findRunsKernel.findRuns(values, offsetsOut, lengthsOut);
             values.close();
         }
@@ -932,7 +937,9 @@ public class SortHelpers {
             for (int columnIndex = 2; columnIndex < columnSources.length; ++columnIndex) {
                 columnSource = columnSources[columnIndex];
 
-                final FindRunsKernel findRunsKernel = FindRunsKernel.getInstance(chunkType);
+                // values holds the previous column, whose ties are the runs to sort by this column
+                final FindRunsKernel findRunsKernel =
+                        FindRunsKernel.getInstance(chunkType, comparators[columnIndex - 1]);
                 findRunsKernel.findRuns(values, offsetsIn, lengthsIn, offsetsOut, lengthsOut);
                 if (offsetsOut.size() == 0) {
                     break;

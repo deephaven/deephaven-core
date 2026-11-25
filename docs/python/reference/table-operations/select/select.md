@@ -20,13 +20,13 @@ When using `select`, the entire requested dataset is evaluated and stored in mem
 ## Syntax
 
 ```
-select(formulas: Union[str, Sequence[str]]) -> Table
+select(formulas: str | Sequence[str] | None = None) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="formulas" type="Union[str, Sequence[str]]">
+<Param name="formulas" type="str | Sequence[str] | None" optional>
 
 Formulas to compute columns in the new table:
 

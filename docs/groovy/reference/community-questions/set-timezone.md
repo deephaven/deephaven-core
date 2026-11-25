@@ -1,22 +1,20 @@
 ---
-title: How do I set the default timezone in Deephaven Community Core?
+title: How do I set the default time zone in Deephaven Community Core?
 ---
 
-There are two ways to set the default time zone in Deephaven.
+Deephaven has two separate time zone settings: the time zone the UI uses to display date-time values, and the default time zone the engine uses for calculations.
 
-## Change displayed time zone in the UI
+## Change the displayed time zone in the UI
 
-Setting the default time zone via the UI changes how date-time data gets displayed, but not how it's handled by the engine. Select the gear icon (**User Settings**) at the top right of the UI, and choose a **Time zone** from the dropdown. For more information, see [Set date-time format](../../how-to-guides/set-date-time-format.md#time-zone).
+Setting the time zone in the UI changes how date-time data gets displayed, but not how it's handled by the engine. Select the gear icon (**User Settings**) at the top right of the UI, and choose a **Time zone** from the dropdown. For more information, see [Set date-time format](../../how-to-guides/set-date-time-format.md#time-zone).
 
 ## Change the default time zone used by the engine
 
-To actually change the default time zone used by the engine, you need to pass an additional space-separated configuration property when you start Deephaven.
+To change the default time zone used by the engine, set the JVM's `user.timezone` system property (for example, `-Duser.timezone=America/New_York`) when you start Deephaven.
 
-The following docker-compose modifies Deephaven's [basic Groovy configuration](https://github.com/deephaven/deephaven-core/blob/main/containers/groovy/docker-compose.yml) by setting the default timezone to `America/New_York`:
+The following Docker Compose file modifies Deephaven's [basic Groovy configuration](https://github.com/deephaven/deephaven-core/blob/main/containers/groovy/docker-compose.yml) by setting the default time zone to `America/New_York`:
 
-```sh
-version: "3.4"
-
+```yaml
 services:
   deephaven:
     image: ghcr.io/deephaven/server-slim:${VERSION:-latest}
@@ -25,13 +23,13 @@ services:
     volumes:
       - ./data:/data
     environment:
-      - START_OPTS=-Xmx4g -Duser.timezone="America/New_York"
+      - START_OPTS=-Xmx4g -Duser.timezone=America/New_York
 ```
 
-The following Docker command modifies the one-liner in our [quickstart](../../getting-started/quickstart.md#1-install-and-launch-deephaven) to set the default timezone to `America/New_York`:
+The following Docker command modifies the one-liner in our [quickstart](../../getting-started/quickstart.md#1-install-and-launch-deephaven) to set the default time zone to `America/New_York`:
 
 ```sh
-docker run --rm --name deephaven -p 10000:10000 --env START_OPTS="-Dauthentication.psk=YOUR_PASSWORD_HERE -Duser.timezone=America/New_York" ghcr.io/deephaven/server-slim:latest
+docker run --rm --name deephaven -p 10000:10000 -v "$(pwd)/data:/data" --env START_OPTS="-Dauthentication.psk=YOUR_PASSWORD_HERE -Duser.timezone=America/New_York" ghcr.io/deephaven/server-slim:latest
 ```
 
 > [!NOTE]

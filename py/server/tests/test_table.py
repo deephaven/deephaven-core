@@ -49,6 +49,7 @@ from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
 from deephaven.table import (
     NaturalJoinType,
+    NodeType,
     SearchDisplayMode,
     Selectable,
     Table,
@@ -259,6 +260,50 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             unique_table = self.test_table.select_distinct(formulas=123)
         self.assertIn("RuntimeError", cm.exception.root_cause)
+
+    def test_udf_error_root_cause(self) -> None:
+        def raise_exception(x: int) -> int:
+            raise Exception("udf failed with Exception")
+
+        def raise_value_error(x: int) -> int:
+            raise ValueError("udf failed with ValueError")
+
+        def raise_multi_line(x: int) -> int:
+            raise Exception("udf failed\nwith details")
+
+        def raise_caused_by_line(x: int) -> int:
+            raise Exception("udf failed\ncaused by upstream failure")
+
+        for func_name, expected in [
+            ("raise_exception", "Exception: udf failed with Exception"),
+            ("raise_value_error", "ValueError: udf failed with ValueError"),
+            ("raise_multi_line", "Exception: udf failed"),
+            ("raise_caused_by_line", "Exception: udf failed"),
+        ]:
+            with self.subTest(func_name=func_name):
+                with self.assertRaises(DHError) as cm:
+                    empty_table(1).update(f"X = {func_name}(i)")
+                self.assertEqual(expected, cm.exception.root_cause)
+                self.assertEqual(
+                    expected, cm.exception.compact_traceback.splitlines()[-1]
+                )
+                self.assertNotIn(
+                    "caused by upstream failure", cm.exception.compact_traceback
+                )
+
+    def test_java_error_root_cause_with_by(self) -> None:
+        # The root cause keeps the whole cause line, even when the message has the word "by" in it.
+        try:
+            raise RuntimeError(
+                "io.deephaven.SomeException: failed\n"
+                "caused by java.lang.IllegalArgumentException: Group by columns are invalid"
+            )
+        except RuntimeError as e:
+            dh_error = DHError(e, "operation failed")
+        self.assertEqual(
+            "java.lang.IllegalArgumentException: Group by columns are invalid",
+            dh_error.root_cause,
+        )
 
     #
     # Table operation category: Filter
@@ -1110,6 +1155,40 @@ class TableTestCase(BaseTestCase):
                 tree_table = t.update("P = A - 1").tree(id_col="A", parent_col="P")
                 filtered = tree_table.with_filters("A < local_int")
                 self.assertEqual(3, filtered.j_tree_table.getSource().size())
+
+        inner_func()
+
+    def test_local_scope_node_operations(self) -> None:
+        # The formulas compile when the call is made, which captures the variables they use. Without the function's
+        # scope, local_int is unknown and each call raises.
+        def inner_func() -> None:
+            local_int = 3
+            t = empty_table(10).update(["A = i", "B = i % 2", "P = A - 1"])
+            rollup_table = t.rollup(aggs=[sum_("A")], by="B")
+            rollup_recorder = rollup_table.node_operation_recorder(NodeType.AGGREGATED)
+            tree_table = t.tree(id_col="A", parent_col="P")
+            tree_recorder = tree_table.node_operation_recorder()
+
+            # Call each method directly from this function. The query scope comes from the caller's frame, so a
+            # lambda would hide local_int.
+            with self.subTest("RollupTable.with_update_view"):
+                self.assertIsNotNone(rollup_table.with_update_view("C = A + local_int"))
+            with self.subTest("update_view"):
+                self.assertIsNotNone(rollup_recorder.update_view("C = A + local_int"))
+            with self.subTest("format_column"):
+                self.assertIsNotNone(
+                    rollup_recorder.format_column("A = A > local_int ? `RED` : `BLUE`")
+                )
+            with self.subTest("format_row_where"):
+                self.assertIsNotNone(
+                    rollup_recorder.format_row_where("A > local_int", "RED")
+                )
+            with self.subTest("format_column_where"):
+                self.assertIsNotNone(
+                    rollup_recorder.format_column_where("A", "A > local_int", "RED")
+                )
+            with self.subTest("where"):
+                self.assertIsNotNone(tree_recorder.where("A > local_int"))
 
         inner_func()
 

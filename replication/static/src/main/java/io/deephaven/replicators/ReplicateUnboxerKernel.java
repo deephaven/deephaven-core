@@ -3,13 +3,16 @@
 //
 package io.deephaven.replicators;
 
+
 import io.deephaven.replication.ReplicatePrimitiveCode;
 
 import java.io.IOException;
 
 public class ReplicateUnboxerKernel {
+    private static final String TASK = "replicateUnboxerKernel";
+
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateUnboxerKernel",
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/unboxer/CharUnboxer.java");
     }
 }

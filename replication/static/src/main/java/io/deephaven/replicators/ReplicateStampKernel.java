@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.globalReplacements;
+import static io.deephaven.replication.ReplicationUtils.replicatedOutputPath;
 
 public class ReplicateStampKernel {
     private static final String TASK = "replicateStampKernel";
@@ -41,7 +42,9 @@ public class ReplicateStampKernel {
         stampKernels.add(objectNoExactStamp);
 
         for (String stampKernel : stampKernels) {
-            final String stampReversePath = stampKernel.replaceAll("StampKernel", "ReverseStampKernel");
+            final File stampFile = new File(stampKernel);
+            final String stampReversePath = replicatedOutputPath(TASK, new File(stampFile.getParent(),
+                    stampFile.getName().replaceAll("StampKernel", "ReverseStampKernel")).getPath());
             invertSense(stampKernel, stampReversePath);
         }
     }

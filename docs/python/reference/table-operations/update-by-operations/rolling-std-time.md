@@ -12,8 +12,8 @@ Sample standard deviation is calculated as the square root of the [Bessel-correc
 rolling_std_time(
     ts_col: str,
     cols: list[str],
-    rev_time: Union[int, str],
-    fwd_time: Union[int, str],
+    rev_time: int | str,
+    fwd_time: int | str,
 ) -> UpdateByOperation
 ```
 
@@ -30,12 +30,12 @@ The name of the column containing timestamps.
 The column(s) to be operated on. These can include expressions to rename the output (e.g., `NewCol = Col`). If `None` the rolling sample standard deviation is calculated for all applicable columns.
 
 </Param>
-<Param name="rev_time" type="Union[int,str]">
+<Param name="rev_time" type="int | str">
 
 The look-behind window size. This can be expressed as an integer in nanoseconds or a string [duration](../../query-language/types/durations.md), e.g., `"PT00:00:00.001"` or `"PTnHnMnS"`, where `H` is hour, `M` is minute, and `S` is second.
 
 </Param>
-<Param name="fwd_time" type="Union[int,str]">
+<Param name="fwd_time" type="int | str">
 
 The look-forward window size. This can be expressed as an integer in nanoseconds or a string [duration](../../query-language/types/durations.md), e.g., `"PT00:00:00.001"` or `"PTnHnMnS"`, where `H` is hour, `M` is minute, and `S` is second.
 

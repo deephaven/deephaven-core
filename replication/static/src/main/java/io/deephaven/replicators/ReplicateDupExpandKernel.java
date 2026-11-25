@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
@@ -13,11 +14,13 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 public class ReplicateDupExpandKernel {
+    private static final String TASK = "replicateDupExpandKernel";
+
     public static void main(String[] args) throws IOException {
         final String charClassPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/dupexpand/CharDupExpandKernel.java";
-        ReplicatePrimitiveCode.charToAll("replicateDupExpandKernel", charClassPath);
-        fixupObjectDupCompact(ReplicatePrimitiveCode.charToObject("replicateDupExpandKernel", charClassPath));
+        ReplicatePrimitiveCode.charToAll(TASK, charClassPath);
+        fixupObjectDupCompact(ReplicatePrimitiveCode.charToObject(TASK, charClassPath));
     }
 
     private static void fixupObjectDupCompact(String objectPath) throws IOException {

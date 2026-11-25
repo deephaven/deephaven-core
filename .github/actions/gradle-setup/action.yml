@@ -1,0 +1,58 @@
+name: Setup Gradle
+description: >-
+  Restores the shared Gradle dependency cache, then sets up Gradle without its own caching. Only the seeding workflow
+  (gradle-deps-cache.yml) saves to the cache.
+
+inputs:
+  seed:
+    description: "'true' to only look up the exact key, without restoring; for the seeding workflow."
+    required: false
+    default: 'false'
+  setup-gradle:
+    description: "'false' to skip gradle/actions/setup-gradle, for jobs that use another Gradle action."
+    required: false
+    default: 'true'
+
+outputs:
+  cache-hit:
+    description: "'true' when the entry for the current dependency declarations exists."
+    value: ${{ steps.restore.outputs.cache-hit }}
+  key:
+    description: The exact cache key for the current dependency declarations.
+    value: ${{ steps.key.outputs.key }}
+
+runs:
+  using: composite
+  steps:
+    # The seed's own files are hashed too, so changing how it seeds produces a new entry. Keep in sync with the push
+    # paths in gradle-deps-cache.yml.
+    - name: Compute Gradle dependency cache key
+      id: key
+      shell: bash
+      run: |
+        echo "key=gradle-deps-${{ hashFiles('gradle/libs.versions.toml', 'buildSrc/build.gradle', 'gradle/wrapper/gradle-wrapper.properties', 'buildSrc/src/main/groovy/io.deephaven.resolve-all-dependencies.gradle', '.github/workflows/gradle-deps-cache.yml') }}" >> "$GITHUB_OUTPUT"
+
+    - name: Restore Gradle dependency cache
+      id: restore
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.gradle/caches/modules-2
+          ~/.gradle/wrapper
+        key: ${{ steps.key.outputs.key }}
+        # For declarations that haven't been seeded yet: the most recent entry in this run's branch, then the default
+        # branch's (a pull request can also read its base branch).
+        restore-keys: ${{ inputs.seed != 'true' && 'gradle-deps-' || '' }}
+        lookup-only: ${{ inputs.seed == 'true' }}
+
+    - name: Count cached dependency files
+      shell: bash
+      run: |
+        echo "GRADLE_DEPS_FILES_BEFORE=$(.github/scripts/gradle-deps-count.sh)" >> "$GITHUB_ENV"
+        echo "GRADLE_DEPS_CACHE_HIT=${{ steps.restore.outputs.cache-hit }}" >> "$GITHUB_ENV"
+
+    - name: Setup Gradle
+      if: ${{ inputs.setup-gradle == 'true' }}
+      uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      with:
+        cache-provider: external

@@ -9,7 +9,7 @@ The `read_csv` method will read a CSV file into an in-memory table.
 ```python syntax
 read_csv(
     path: str,
-    header: Sequence[str] | dict[str, dht.DType] = None,
+    header: Sequence[str] | dict[str, dht.DType] | None = None,
     headless: bool = False,
     header_row: int = 0,
     skip_rows: int = 0,
@@ -21,7 +21,7 @@ read_csv(
     quote: str = '"',
     ignore_surrounding_spaces: bool = True,
     trim: bool = False,
-    col_types: dict[str, dht.DType] = None,
+    col_types: dict[str, dht.DType] | None = None,
 ) -> Table:
 ```
 
@@ -40,7 +40,7 @@ The column names come from the file's header row, from `header`, or are `Column1
 The file to load into a table. Note that compressed files _are_ accepted: paths ending in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst", or ".tar" will automatically be decompressed before they are read.
 
 </Param>
-<Param name="header" type="Sequence[str] | dict" optional>
+<Param name="header" type="Sequence[str] | dict | None" optional>
 
 The column names, applied by position. The number of names sets the number of columns. A row with more cells is an error, unless `ignore_excess_columns` is `True`. Default is `None`, which takes the names from the file.
 
@@ -114,7 +114,7 @@ Trim leading and trailing blanks from non-quoted values. Default is `True`.
 Trim leading and trailing blanks from inside quoted values. Default is `False`.
 
 </Param>
-<Param name="col_types" type="dict" optional>
+<Param name="col_types" type="dict | None" optional>
 
 The data types of some or all columns, matched by name: `dict[str, DType]`. A name that matches no column raises an error. Default is `None`, which infers the types, except those a `header` dict sets.
 

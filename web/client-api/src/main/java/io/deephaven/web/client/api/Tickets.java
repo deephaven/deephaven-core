@@ -5,7 +5,7 @@ package io.deephaven.web.client.api;
 
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
-import elemental2.core.TypedArray;
+import elemental2.core.Uint8Array;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
@@ -133,7 +133,7 @@ public class Tickets {
      * @param array array of bytes to populate the ticket with
      * @return a new shared ticket
      */
-    public Ticket sharedTicket(TypedArray.SetArrayUnionType array) {
+    public Ticket sharedTicket(Uint8Array.SetArrayUnionType array) {
         JsArrayLike<Object> arrayLike = Js.asArrayLike(array);
         int length = arrayLike.getLength();
         byte[] bytes = new byte[length + 2];

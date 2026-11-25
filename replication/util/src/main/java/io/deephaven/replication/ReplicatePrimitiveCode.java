@@ -541,6 +541,7 @@ public class ReplicatePrimitiveCode {
         if (resultClassJavaPath == null || resultClassJavaPath.isEmpty()) {
             resultClassJavaPath = getResultClassPathFromSourceClassPath(sourceClassJavaPath, exemptions, pairs);
         }
+        resultClassJavaPath = ReplicationUtils.replicatedOutputPath(gradleTask, resultClassJavaPath);
         final String resultClassName = ReplicationUtils.className(resultClassJavaPath);
         final String resultClassPackageName = packageName(resultClassJavaPath);
         final String fullResultClassName = resultClassPackageName + '.' + resultClassName;

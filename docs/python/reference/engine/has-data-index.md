@@ -7,7 +7,7 @@ title: has_data_index
 ## Syntax
 
 ```python syntax
-has_data_index(table: Table, key_cols: List[str]) -> bool
+has_data_index(table: Table, key_cols: list[str]) -> bool
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ has_data_index(table: Table, key_cols: List[str]) -> bool
 The table to check.
 
 </Param>
-<Param name="key_cols" type="List[str]">
+<Param name="key_cols" type="list[str]">
 
 The names of the key column(s) indexed.
 

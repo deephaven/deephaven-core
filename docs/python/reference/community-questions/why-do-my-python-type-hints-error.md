@@ -6,36 +6,57 @@ title: Why does my function with type hints throw an error on null values?
 
 <p></p>
 
-The following code will run in earlier Deephaven versions, but due to stricter type hint enforcing, fails in version 0.32 and up:
+How a null value reaches a Python function depends on the column's type and the parameter's type hint:
 
-```python should-fail
-from typing import Optional
+- **String and Boolean columns with a built-in `str` or `bool` type hint** — A null arrives as `None`, with or without `| None`. The function must handle `None` if the column can contain nulls.
+- **String and Boolean columns with a NumPy `np.str_` or `np.bool_` type hint** — Deephaven converts every argument to the NumPy type, so a null arrives as the string `"None"` or as `False`, with or without `| None`. An `is None` check never catches these nulls, so use the built-in `str` or `bool` type hint when the column can contain nulls.
+- **Numeric columns with a numeric type hint (`int`, `float`, NumPy scalars)** — A null arrives as the Deephaven null sentinel for the column's type, such as `NULL_INT` for an `int` column or `NULL_LONG` for a `long` column. The sentinel is an ordinary number, so a function that doesn't check for it silently computes with it. Adding `| None` to the type hint converts the sentinel to `None`.
+- **Numeric columns with an `object` type hint** — A null arrives as the null sentinel for the column's type, even with `| None`.
+
+The following example shows the difference between a plain numeric type hint and one with `| None`:
+
+```python order=t_str,t_int,t_optional,source
 from deephaven import empty_table
 
 
-def f1(x: str) -> str:
-    return x
+def f_str(x: str) -> str:
+    return f"got {x}"
 
 
-def f2(x: Optional[str]) -> Optional[str]:
-    return x
+def f_int(x: int) -> int:
+    return x + 1
 
 
-t = empty_table(10).update(["X = i%2 == 0 ? null : `A`"])
+def f_optional_int(x: int | None) -> int | None:
+    if x is None:
+        return None
+    return x + 1
 
-t2 = t.update("Y = f1(X)")
-t3 = t.update("Z = f2(X)")
+
+source = empty_table(6).update(
+    ["X = i % 2 == 0 ? null : `hello`", "Y = i % 2 == 0 ? NULL_INT : i"]
+)
+
+# A null string arrives as None, so f_str returns "got None"
+t_str = source.update("S = f_str(X)")
+
+# NULL_INT arrives as an ordinary int, so f_int returns NULL_INT + 1 instead of null
+t_int = source.update("Z = f_int(Y)")
+
+# int | None converts NULL_INT to None, so f_optional_int returns null
+t_optional = source.update("Z = f_optional_int(Y)")
 ```
 
-It throws this error:
+To handle nulls in numeric columns, either:
 
-```text
-RuntimeError: java.lang.RuntimeException: Error in Python interpreter:
-Type: <class 'TypeError'>
-Value: Argument None is not compatible with annotation {<class 'str'>}
-Line: 255
-Namespace: _convert_arg
-```
+1. **Add `| None` to a numeric type hint**, such as `int | None` or `float | None`, to convert nulls to `None`, then handle `None` in the function body. `object | None` does not convert null sentinels.
+2. **Filter out nulls** before applying the function, for example with `where("Y != null")`.
 
-The calculation of `t2` fails because the type signature of `f1` says that it handles `str` arguments, but the column being passed to it contains nulls. An error results because the data received does not match the type hint in the function.
-In most cases, a user wouldn't really _want_ this to work - their type hint doesn't indicate how nulls should be handled, and the error that is thrown makes sure the issue is clearly visible to the user.
+## Related documentation
+
+- [Python functions: Type hints](../../how-to-guides/python-functions.md#type-hints)
+- [Python functions: Optional return values](../../how-to-guides/python-functions.md#optional-return-values)
+- [How do I troubleshoot type hints?](./how-do-i-troubleshoot-type-hints.md)
+
+> [!NOTE]
+> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

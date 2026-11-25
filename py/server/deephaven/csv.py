@@ -108,7 +108,7 @@ def read(
     order, and uses the names before Deephaven makes them legal.
 
     Args:
-        header (Optional[Union[Sequence[str], Mapping[str, DType]]]): the column names, applied by position. The
+        header (Sequence[str] | Mapping[str, DType] | None): the column names, applied by position. The
             number of names sets the number of columns. A row with more cells is an error, unless
             ignore_excess_columns is True. A sequence only renames the columns. A dict also sets each column's
             type, so its keys must be in the file's column order, or the names and types go to the wrong columns.
@@ -133,7 +133,7 @@ def read(
         ignore_surrounding_spaces (bool): Indicates whether surrounding white space should be ignored for unquoted
             text fields, default is True
         trim (bool): indicates whether to trim white space inside a quoted string, default is False
-        col_types (Optional[dict[str, DType]]): the data types of some or all columns, matched by name. A name
+        col_types (dict[str, DType] | None): the data types of some or all columns, matched by name. A name
             that matches no column raises an error. Defaults to None, meaning the types are inferred, except those
             set by a header dict.
 
@@ -196,18 +196,21 @@ def read(
         raise DHError(e, "read csv failed") from e
 
 
-def write(table: Table, path: str, cols: Sequence[str] = []) -> None:
+def write(table: Table, path: str, cols: Sequence[str] | None = None) -> None:
     """Write a table to a standard CSV file.
 
     Args:
         table (Table): the source table
         path (str): the path of the CSV file
-        cols (Sequence[str]): the names of the columns to be written out
+        cols (Sequence[str] | None): the names of the columns to be written out, defaults to None, meaning every
+            column is written
 
     Raises:
         DHError
     """
     try:
-        _JCsvTools.writeCsv(table.j_table, False, path, *cols)
+        _JCsvTools.writeCsv(
+            table.j_table, False, path, *(cols if cols is not None else [])
+        )
     except Exception as e:
         raise DHError(message="write csv failed.") from e

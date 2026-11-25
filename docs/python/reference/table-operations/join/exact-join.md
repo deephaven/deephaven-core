@@ -10,9 +10,9 @@ The output table contains all of the rows and columns of the left table plus add
 
 ```
 left.exact_join(
-    right: Table,
-    on: Union[str, Sequence[str]],
-    joins: Union[str, Sequence[str]] = None
+    table: Table,
+    on: str | Sequence[str],
+    joins: str | Sequence[str] | None = None
 ) -> Table
 ```
 
@@ -24,7 +24,7 @@ left.exact_join(
 The table data is added from (the right table).
 
 </Param>
-<Param name="on" type="Union[str, Sequence[str]]">
+<Param name="on" type="str | Sequence[str]">
 
 Columns from the left and right tables used to join on.
 
@@ -33,7 +33,7 @@ Columns from the left and right tables used to join on.
 - `["X, A = B"]` will join when column `X` matches from both the left and right tables, and when column `A` from the left table matches column `B` from the right table.
 
 </Param>
-<Param name="joins" type="Union[str, Sequence[str]]" optional>
+<Param name="joins" type="str | Sequence[str] | None" optional>
 
 Columns from the right table to be added to the left table based on key may be specified in this list:
 

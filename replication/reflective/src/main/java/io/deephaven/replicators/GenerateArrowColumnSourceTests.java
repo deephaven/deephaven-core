@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.replicatedTestDir;
 import com.palantir.javapoet.AnnotationSpec;
 import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
@@ -33,6 +34,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class GenerateArrowColumnSourceTests {
+    private static final String TASK = "generateArrowColumnTestSources";
+
 
     public static void main(String[] args) {
         List<Long> expectedRows = Arrays.asList(0L, 1L, 2L, 4L, 8L, 9L);
@@ -230,9 +233,11 @@ public class GenerateArrowColumnSourceTests {
                 .skipJavaLangImports(true)
                 .build();
 
-        String path = "extensions/arrow/src/test/java/io/deephaven/extensions/arrow/" + className + ".java";
+        String path =
+                replicatedTestDir("extensions/arrow", TASK) + "/io/deephaven/extensions/arrow/"
+                        + className + ".java";
         try {
-            String gradleTask = "generateArrowColumnTestSources";
+            String gradleTask = TASK;
             Class<?> generatorClass = GenerateArrowColumnSourceTests.class;
             final String header = String.join("\n",
                     "//",

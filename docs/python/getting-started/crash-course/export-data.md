@@ -94,7 +94,7 @@ grades = dhpq.read(
 
 [Apache Kafka](https://kafka.apache.org/) is a distributed event streaming platform for publishing and subscribing to streams of records. Deephaven can consume data from Kafka streams and publish data to them. See the [Kafka guide](../../how-to-guides/data-import-export/kafka-stream.md) for more.
 
-The examples below connect to a Kafka broker at `redpanda:9092`. Redpanda is a Kafka-compatible broker. To run the examples, start Deephaven alongside Redpanda as described in [Launching Kafka with Deephaven](../../how-to-guides/data-import-export/kafka-stream.md#launching-kafka-with-deephaven). Run the `docker compose` commands below from the directory that holds the `docker-compose.yml` file from that guide.
+The examples below connect to a Kafka broker at `redpanda:9092`. Redpanda is a Kafka-compatible broker. To run the examples, start Deephaven alongside Redpanda as described in [Launch Kafka with Deephaven](../../how-to-guides/data-import-export/kafka-stream.md#launch-kafka-with-deephaven). Run the `docker compose` commands below from the directory that holds the `docker-compose.yml` file from that guide.
 
 The code below consumes a stream.
 

@@ -18,7 +18,7 @@ from deephaven import read_csv
 
 read_csv(
     path: str,
-    header: Optional[Union[Sequence[str], dict[str, DType]]] = None,
+    header: Sequence[str] | dict[str, DType] | None = None,
     headless: bool = False,
     header_row: int = 0,
     skip_rows: int = 0,
@@ -30,7 +30,7 @@ read_csv(
     quote: str = '"',
     ignore_surrounding_spaces: bool = True,
     trim: bool = False,
-    col_types: Optional[dict[str, DType]] = None,
+    col_types: dict[str, DType] | None = None,
 ) -> Table
 ```
 

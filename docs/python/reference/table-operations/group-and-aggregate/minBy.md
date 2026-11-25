@@ -7,13 +7,13 @@ title: min_by
 ## Syntax
 
 ```
-table.min_by(by: Union[str, list[str]]) -> Table
+table.min_by(by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="by" type="Union[str, list[str]]">
+<Param name="by" type="str | list[str] | None" optional>
 
 The column(s) by which to group data.
 

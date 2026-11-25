@@ -82,7 +82,7 @@ class TableInterface(ABC, Generic[T]):
         columns.
 
         Args:
-            cols (Union[str, list[str]]) : the column name(s)
+            cols (str | list[str]) : the column name(s)
 
         Returns:
             {returns}
@@ -96,7 +96,7 @@ class TableInterface(ABC, Generic[T]):
         """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
-            formulas (Union[str, list[str]]): the column formula(s)
+            formulas (str | list[str]): the column formula(s)
 
         Returns:
             {returns}
@@ -110,7 +110,7 @@ class TableInterface(ABC, Generic[T]):
         """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
 
         Args:
-            formulas (Union[str, list[str]]): the column formula(s)
+            formulas (str | list[str]): the column formula(s)
 
         Returns:
             {returns}
@@ -124,7 +124,7 @@ class TableInterface(ABC, Generic[T]):
         """The view method creates a new formula table that includes one column for each formula.
 
         Args:
-            formulas (Union[str, list[str]]): the column formula(s)
+            formulas (str | list[str]): the column formula(s)
 
         Returns:
             {returns}
@@ -138,7 +138,7 @@ class TableInterface(ABC, Generic[T]):
         """The update_view method creates a new table containing a new, formula column for each formula.
 
         Args:
-            formulas (Union[str, list[str]]): the column formula(s)
+            formulas (str | list[str]): the column formula(s)
 
         Returns:
             {returns}
@@ -153,7 +153,7 @@ class TableInterface(ABC, Generic[T]):
         is specified, all columns will be included.
 
         Args:
-            formulas (Optional[Union[str, list[str]]]): the column formula(s), default is None
+            formulas (str | list[str] | None): the column formula(s), default is None
 
         Returns:
             {returns}
@@ -169,7 +169,7 @@ class TableInterface(ABC, Generic[T]):
         selected columns.
 
         Args:
-            cols (Optional[Union[str, list[str]]]): the column name(s), default is None
+            cols (str | list[str] | None): the column name(s), default is None
 
         Returns:
             {returns}
@@ -188,8 +188,8 @@ class TableInterface(ABC, Generic[T]):
         columns.
 
         Args:
-            order_by (Union[str, list[str]]): the column(s) to be sorted on
-            order (Optional[Union[SortDirection, list[SortDirection]]]): the corresponding sort direction(s) for each
+            order_by (str | list[str]): the column(s) to be sorted on
+            order (SortDirection | list[SortDirection] | None): the corresponding sort direction(s) for each
                 sort column, default is None. In the absence of explicit sort directions, data will be sorted in the
                 ascending order.
 
@@ -206,7 +206,7 @@ class TableInterface(ABC, Generic[T]):
         the table.
 
         Args:
-            filters (Union[str, list[str], Filter, list[Filter]]): the filter condition expression(s)
+            filters (str | list[str] | Filter | list[Filter]): the filter condition expression(s)
 
         Returns:
             {returns}
@@ -274,9 +274,9 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, list[str]]): the column(s) to match, can be a common name or an equal expression,
+            on (str | list[str]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
+            joins (str | list[str] | None): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
             type (NaturalJoinType): the action to be taken when duplicate right hand rows are
@@ -305,9 +305,9 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, list[str]]): the column(s) to match, can be a common name or an equal expression,
+            on (str | list[str]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
+            joins (str | list[str] | None): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
 
@@ -335,9 +335,9 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             table (Table): the right-table of the join
-            on (Optional[Union[str, list[str]]]): the column(s) to match, can be a common name or an equal expression,
+            on (str | list[str] | None): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names, default is None
-            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
+            joins (str | list[str] | None): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
             reserve_bits(int): the number of bits of key-space to initially reserve per group; default is 10
@@ -369,11 +369,11 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, list[str]]): the column(s) to match, can be a common name or a match condition of two
+            on (str | list[str]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
                 '>=' is used for the comparison.
-            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
+            joins (str | list[str] | None): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
 
@@ -404,11 +404,11 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, list[str]]): the column(s) to match, can be a common name or a match condition of two
+            on (str | list[str]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
                 '<=' is used for the comparison.
-            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
+            joins (str | list[str] | None): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
 
@@ -430,7 +430,7 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             num_rows (int): the number of rows at the beginning of each group
-            by (Union[str, list[str]]): the group-by column name(s)
+            by (str | list[str]): the group-by column name(s)
 
         Returns:
             {returns}
@@ -445,7 +445,7 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             num_rows (int): the number of rows at the end of each group
-            by (Union[str, list[str]]): the group-by column name(s)
+            by (str | list[str]): the group-by column name(s)
 
         Returns:
             {returns}
@@ -462,7 +462,7 @@ class TableInterface(ABC, Generic[T]):
         If no group-by column is given, the content of each column is grouped into its own array.
 
         Args:
-            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
+            by (str | list[str] | None): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -478,7 +478,7 @@ class TableInterface(ABC, Generic[T]):
         separate rows. The ungroup columns should be of array types.
 
         Args:
-            cols (Optional[Union[str, list[str]]]): the array column(s), default is None, meaning all array columns will
+            cols (str | list[str] | None): the array column(s), default is None, meaning all array columns will
                 be ungrouped, default is None, meaning all array columns will be ungrouped
             null_fill (bool): indicates whether null should be used to fill missing cells, default is True
 
@@ -494,7 +494,7 @@ class TableInterface(ABC, Generic[T]):
         """The first_by method creates a new table which contains the first row of each distinct group.
 
         Args:
-            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
+            by (str | list[str] | None): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -509,7 +509,7 @@ class TableInterface(ABC, Generic[T]):
         """The last_by method creates a new table which contains the last row of each distinct group.
 
         Args:
-            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
+            by (str | list[str] | None): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -525,7 +525,7 @@ class TableInterface(ABC, Generic[T]):
         must be of numeric types.
 
         Args:
-            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
+            by (str | list[str] | None): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -541,7 +541,7 @@ class TableInterface(ABC, Generic[T]):
         grouping must be of numeric types.
 
         Args:
-            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
+            by (str | list[str] | None): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -560,7 +560,7 @@ class TableInterface(ABC, Generic[T]):
         which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
-            by (Optional[Union[str, list[str]]]): the group-by column names(s), default is None, meaning grouping
+            by (str | list[str] | None): the group-by column names(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -579,7 +579,7 @@ class TableInterface(ABC, Generic[T]):
         which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
-            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
+            by (str | list[str] | None): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -595,7 +595,7 @@ class TableInterface(ABC, Generic[T]):
         grouping must be of numeric types.
 
         Args:
-            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
+            by (str | list[str] | None): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -611,7 +611,7 @@ class TableInterface(ABC, Generic[T]):
         grouping must be of numeric types.
 
         Args:
-            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
+            by (str | list[str] | None): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -627,7 +627,7 @@ class TableInterface(ABC, Generic[T]):
         grouping must be of numeric types.
 
         Args:
-            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
+            by (str | list[str] | None): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -644,7 +644,7 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             col (str): the name of the column to store the counts
-            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
+            by (str | list[str] | None): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -660,8 +660,8 @@ class TableInterface(ABC, Generic[T]):
         data is defined by the aggregation(s) specified.
 
         Args:
-            aggs (Union[Aggregation, list[Aggregation]]): the aggregation(s) to be applied
-            by (Union[str, list[str]]): the group-by column name(s)
+            aggs (Aggregation | list[Aggregation]): the aggregation(s) to be applied
+            by (str | list[str]): the group-by column name(s)
 
         Returns:
             {returns}
@@ -688,7 +688,7 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             agg (Aggregation): the aggregation to be applied
-            by (Union[str, list[str]]): the group-by column name(s)
+            by (str | list[str]): the group-by column name(s)
 
         Returns:
             {returns}
@@ -714,8 +714,8 @@ class TableInterface(ABC, Generic[T]):
         identified by the provided key columns.
 
         Args:
-            ops (Union[UpdateByOperation, list[UpdateByOperation]]): the UpdateByOperation(s) to be applied
-            by (Optional[Union[str, list[str]]]): the group-by column name(s), defaults to None, meaning all calculations are
+            ops (UpdateByOperation | list[UpdateByOperation]): the UpdateByOperation(s) to be applied
+            by (str | list[str] | None): the group-by column name(s), defaults to None, meaning all calculations are
                 performed over the entire table
 
         Returns:
@@ -753,7 +753,7 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             trigger_table (Table): the trigger table
-            stamp_cols (Optional[Union[str, list[str]]]): The column(s) from trigger_table that form the "stamp key", may be
+            stamp_cols (str | list[str] | None): The column(s) from trigger_table that form the "stamp key", may be
                 renames, default is None, meaning that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
                 resulting table will remain empty until trigger_table first updates.
@@ -785,7 +785,7 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             filter_table (Table): the table containing the set of values to filter on
-            cols (Union[str, list[str]]): the column name(s)
+            cols (str | list[str]): the column name(s)
 
         Returns:
             {returns}
@@ -803,7 +803,7 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             filter_table (Table): the table containing the set of values to filter on
-            cols (Union[str, list[str]]): the column name(s)
+            cols (str | list[str]): the column name(s)
 
         Returns:
             {returns}

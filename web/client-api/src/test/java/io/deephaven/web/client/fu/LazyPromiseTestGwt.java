@@ -4,6 +4,7 @@
 package io.deephaven.web.client.fu;
 
 import com.google.gwt.junit.client.GWTTestCase;
+import elemental2.promise.Promise;
 
 /**
  * Test that the LazyPromise class behaves as expected
@@ -90,6 +91,22 @@ public class LazyPromiseTestGwt extends GWTTestCase {
 
             // We make sure that the failure is only called once
             assertTrue(hasFailed[0]);
+            finishTest();
+            return null;
+        });
+    }
+
+    /** asPromise() gives the same promise every time, before and after the LazyPromise settles */
+    public void testAsPromiseIsShared() {
+        delayTestFinish(1009);
+        LazyPromise<Integer> lazyPromise = new LazyPromise<>();
+        Promise<Integer> first = lazyPromise.asPromise();
+        assertSame(first, lazyPromise.asPromise());
+        lazyPromise.succeed(42);
+        assertSame(first, lazyPromise.asPromise());
+        first.then(value -> {
+            assertEquals(42, (int) value);
+            assertSame(first, lazyPromise.asPromise());
             finishTest();
             return null;
         });

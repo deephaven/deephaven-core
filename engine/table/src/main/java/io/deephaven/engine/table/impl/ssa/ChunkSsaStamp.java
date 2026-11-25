@@ -9,7 +9,12 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.util.SafeCloseable;
@@ -86,12 +91,12 @@ public interface ChunkSsaStamp {
     void processRemovals(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys,
             WritableLongChunk<RowKeys> priorRedirections, WritableRowRedirection rowRedirection,
-            RestampContext restampContext, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
+            RestampContext restampContext, boolean disallowExactMatch);
 
     void processInsertion(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
-            WritableRowRedirection rowRedirection, RestampContext restampContext, RowSetBuilderRandom modifiedBuilder,
-            boolean endsWithLastValue, boolean disallowExactMatch);
+            WritableRowRedirection rowRedirection, RestampContext restampContext, boolean endsWithLastValue,
+            boolean disallowExactMatch);
 
     int findModified(int first, Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             RowRedirection rowRedirection, Chunk<? extends Values> rightStampChunk,
@@ -106,12 +111,18 @@ public interface ChunkSsaStamp {
      * rows to one right row through a single {@link WritableRowRedirection}. Its chunks grow with the longest run
      * written, up to {@link ChunkPoolConstants#LARGEST_POOLED_CHUNK_CAPACITY}, so one context serves every call of an
      * update cycle.
+     * <p>
+     * A run is consecutive positions in stamp order, so its row keys need not be in row key order. Each slice of a run
+     * is sorted, so that it is written with an ordered fill and inserted into a row set of the restamped rows, which
+     * {@link #addRestampedRowsTo} adds to the modified builder whole.
      */
     final class RestampContext implements SafeCloseable {
         private final WritableRowRedirection rowRedirection;
-        private final ResettableLongChunk<RowKeys> outerRowKeys = ResettableLongChunk.makeResettableChunk();
         private WritableLongChunk<RowKeys> innerRowKeys;
+        private WritableLongChunk<RowKeys> sortedRowKeys;
         private ChunkSink.FillFromContext fillFromContext;
+        /** The left rows restamped since the last {@link #addRestampedRowsTo}, or null when there are none. */
+        private WritableRowSet restampedRows;
 
         /**
          * @param rowRedirection the row redirection that every call given this context writes
@@ -122,11 +133,11 @@ public interface ChunkSsaStamp {
 
         /**
          * Redirect the left keys at positions {@code [start, end)} to {@code innerRowKey}, a
-         * {@link io.deephaven.engine.rowset.RowSequence#NULL_ROW_KEY} removing their mappings, and add them to
-         * {@code modifiedBuilder}.
+         * {@link io.deephaven.engine.rowset.RowSequence#NULL_ROW_KEY} removing their mappings, and gather them for
+         * {@link #addRestampedRowsTo}.
          */
         void restamp(final WritableRowRedirection rowRedirection, final LongChunk<RowKeys> leftStampKeys,
-                final int start, final int end, final long innerRowKey, final RowSetBuilderRandom modifiedBuilder) {
+                final int start, final int end, final long innerRowKey) {
             assert rowRedirection == this.rowRedirection;
             final int runLength = end - start;
             if (runLength == 0) {
@@ -137,29 +148,54 @@ public interface ChunkSsaStamp {
                 // doubling bounds the reallocations of a cycle by the log of its longest run
                 final int newCapacity = Math.min(Math.max(runLength, 2 * capacity),
                         ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY);
-                SafeCloseable.closeAll(innerRowKeys, fillFromContext);
+                SafeCloseable.closeAll(innerRowKeys, sortedRowKeys, fillFromContext);
                 innerRowKeys = null;
+                sortedRowKeys = null;
                 fillFromContext = null;
                 innerRowKeys = WritableLongChunk.makeWritableChunk(newCapacity);
+                sortedRowKeys = WritableLongChunk.makeWritableChunk(newCapacity);
                 fillFromContext = rowRedirection.makeFillFromContext(newCapacity);
             }
             // the inner row keys of a run are one value, so one chunk of them serves every slice of the run
             final int sliceCapacity = Math.min(runLength, innerRowKeys.capacity());
             innerRowKeys.fillWithValue(0, sliceCapacity, innerRowKey);
+            if (restampedRows == null) {
+                restampedRows = RowSetFactory.empty();
+            }
             for (int sliceStart = start; sliceStart < end; sliceStart += sliceCapacity) {
                 final int sliceLength = Math.min(sliceCapacity, end - sliceStart);
                 innerRowKeys.setSize(sliceLength);
-                outerRowKeys.resetFromTypedChunk(leftStampKeys, sliceStart, sliceLength);
-                rowRedirection.fillFromChunkUnordered(fillFromContext, innerRowKeys, outerRowKeys);
+                sortedRowKeys.copyFromChunk(leftStampKeys, sliceStart, 0, sliceLength);
+                sortedRowKeys.setSize(sliceLength);
+                sortedRowKeys.sort();
+                final LongChunk<OrderedRowKeys> orderedRowKeys = LongChunk.downcast(sortedRowKeys);
+                restampedRows.insert(orderedRowKeys, 0, sliceLength);
+                try (final RowSequence rows = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(orderedRowKeys)) {
+                    rowRedirection.fillFromChunk(fillFromContext, innerRowKeys, rows);
+                }
             }
-            modifiedBuilder.addRowKeysChunk(leftStampKeys, start, end - start);
+        }
+
+        /**
+         * Add the left rows restamped since the last call to {@code modifiedBuilder}.
+         *
+         * @param modifiedBuilder the builder of the rows the update modifies
+         */
+        public void addRestampedRowsTo(final RowSetBuilderRandom modifiedBuilder) {
+            if (restampedRows != null) {
+                modifiedBuilder.addRowSet(restampedRows);
+                restampedRows.close();
+                restampedRows = null;
+            }
         }
 
         @Override
         public void close() {
-            SafeCloseable.closeAll(outerRowKeys, innerRowKeys, fillFromContext);
+            SafeCloseable.closeAll(innerRowKeys, sortedRowKeys, fillFromContext, restampedRows);
             innerRowKeys = null;
+            sortedRowKeys = null;
             fillFromContext = null;
+            restampedRows = null;
         }
     }
 }

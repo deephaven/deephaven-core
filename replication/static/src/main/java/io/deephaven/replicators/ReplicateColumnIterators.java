@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.replicatedDir;
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -19,16 +20,18 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
  * Code generation for primitive ColumnIterator implementations.
  */
 public class ReplicateColumnIterators {
+    public static final String TASK = "replicateColumnIterators";
 
     private static final String CHAR_IFACE_PATH =
             "engine/api/src/main/java/io/deephaven/engine/table/iterators/CharacterColumnIterator.java";
+    // generated from the Character iterator, and the source of the Long and Double iterators
     private static final String INT_IFACE_PATH =
-            "engine/api/src/main/java/io/deephaven/engine/table/iterators/IntegerColumnIterator.java";
+            replicatedDir("engine/api", TASK)
+                    + "/io/deephaven/engine/table/iterators/IntegerColumnIterator.java";
     private static final String CHAR_CHUNKED_PATH =
             "engine/api/src/main/java/io/deephaven/engine/table/iterators/ChunkedCharacterColumnIterator.java";
     private static final String CHAR_SERIAL_PATH =
             "engine/api/src/main/java/io/deephaven/engine/table/iterators/SerialCharacterColumnIterator.java";
-    public static final String TASK = "replicateColumnIterators";
 
     public static void main(String... args) throws IOException {
         {

@@ -3,7 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
-import io.deephaven.web.client.fu.JsIterator;
+import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
 import jsinterop.annotations.JsIgnore;
@@ -64,8 +64,8 @@ public class JsRangeSet {
      * 
      * @return Iterator of {@link LongWrapper}
      */
-    public JsIterator<LongWrapper> iterator() {
-        return new JsIterator<>(
+    public elemental2.core.JsIterator<LongWrapper, Void, Void> iterator() {
+        return JsItr.jsIterator(
                 StreamSupport.longStream(Spliterators.spliterator(range.indexIterator(), Long.MAX_VALUE, 0), false)
                         .mapToObj(LongWrapper::of)
                         .iterator());

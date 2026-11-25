@@ -19,9 +19,9 @@ Ticks are row counts, and you may specify the reverse and forward window in numb
 ```python syntax
 rolling_formula_tick(
   formula: str,
-  formula_param: str,
-  cols: Union[str, list[str]],
-  rev_ticks: int,
+  formula_param: str | None = None,
+  cols: str | list[str] | None = None,
+  rev_ticks: int = 0,
   fwd_ticks: int = 0
 ) -> UpdateByOperation
 ```
@@ -42,22 +42,22 @@ If `formula_param` is not `None`, the formula can only be applied to one column 
 Key column(s) can be used as input to the formula. When this happens, key values are treated as scalars.
 
 </Param>
-<Param name="formula_param" type="str">
+<Param name="formula_param" type="str | None" optional>
 
 The parameter name within the formula. If `formula_param` is `each`, then `formula` must contain `each`. For example, `max(each)`, `min(each)`, etc. Use of this parameter is deprecated.
 
 </Param>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str] | None" optional>
 
 The column(s) to be operated on. These can include expressions to rename the output (e.g., `NewCol = Col`). When left empty, the rolling formula operation is performed on all columns.
 
 </Param>
-<Param name="rev_ticks" type="int">
+<Param name="rev_ticks" type="int" optional>
 
 The look-behind window size in rows. If positive, it defines the maximum number of rows _before_ the current row that will be used. If negative, it defines the minimum number of rows _after_ the current row that will be used. Includes the current row.
 
 </Param>
-<Param name="fwd_ticks" type="int">
+<Param name="fwd_ticks" type="int" optional>
 
 The look-forward window size in rows. If positive, it defines the maximum number of rows _after_ the current row that will be used. If negative, it defines the minimum number of rows _before_ the current row that will be used.
 

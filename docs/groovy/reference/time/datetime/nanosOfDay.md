@@ -7,9 +7,10 @@ title: nanosOfDay
 ## Syntax
 
 ```
-nanosOfDay(dateTime, timeZone, localTime)
-nanosOfDay(dateTime, localTime)
-nanosOfDay(lotalTime)
+nanosOfDay(instant, timeZone, asLocalTime)
+nanosOfDay(dateTime, asLocalTime)
+nanosOfDay(localDateTime)
+nanosOfDay(localTime)
 ```
 
 ## Parameters
@@ -30,12 +31,24 @@ The time zone.
 The [date-time](../../query-language/types/date-time.md) from which to return the number of nanoseconds.
 
 </Param>
-<Param name="localTime" type="boolean">
+<Param name="asLocalTime" type="boolean">
 
 Set this parameter to `false` if you need Deephaven to account for daylight savings time.
 
-- If `false`, returns the number of nanoseconds from the start of the day. However, on days when daylight savings time events occur, results may be different from what is expected based on the local time. For example, on DST change days, 9:30 AM may be earlier or later in the day based on whether the daylight savings time adjustment is forward or backward. On non-DST days, the result is the same as if `localTime` is `false`.
+- If `false`, returns the number of nanoseconds from the start of the day. However, on days when daylight savings time events occur, results may be different from what is expected based on the local time. For example, on DST change days, 9:30 AM may be earlier or later in the day based on whether the daylight savings time adjustment is forward or backward.
 - If `true`, returns the number of nanoseconds from the start of the day according to the local time. In this case, `9:30` will always return the same value.
+
+On non-DST days, the result is the same regardless of the value of `asLocalTime`.
+
+</Param>
+<Param name="localDateTime" type="LocalDateTime">
+
+The local date-time from which to return the number of nanoseconds.
+
+</Param>
+<Param name="localTime" type="LocalTime">
+
+The local time from which to return the number of nanoseconds.
 
 </Param>
 </ParamTable>

@@ -55,7 +55,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         """Returns a new Filter with the given declared barriers.
 
         Args:
-            barriers (Union[Barrier, Sequence[Barrier]]): the barrier(s) to declare
+            barriers (Barrier | Sequence[Barrier]): the barrier(s) to declare
 
         Returns:
             a new Filter with the given declared barriers
@@ -73,7 +73,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         """Returns a new Filter with the given respected barriers.
 
         Args:
-            barriers (Union[Barrier, Sequence[Barrier]]): the barrier(s) to respect
+            barriers (Barrier | Sequence[Barrier]): the barrier(s) to respect
 
         Returns:
             a new Filter with the given respected barriers
@@ -114,7 +114,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         """Creates filter(s) from the given condition(s).
 
         Args:
-            conditions (Union[str, Sequence[str]]): filter condition(s)
+            conditions (str | Sequence[str]): filter condition(s)
 
         Returns:
             filter(s)
@@ -137,7 +137,7 @@ def or_(filters: str | Filter | Sequence[str] | Sequence[Filter]) -> Filter:
     """Creates a new filter that evaluates to true when any of the given filters evaluates to true.
 
     Args:
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the component filter(s)
+        filters (str | Filter | Sequence[str] | Sequence[Filter]): the component filter(s)
 
     Returns:
         a new or Filter
@@ -153,7 +153,7 @@ def and_(filters: str | Filter | Sequence[str] | Sequence[Filter]) -> Filter:
     """Creates a new filter that evaluates to true when all the given filters evaluates to true.
 
     Args:
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the component filters
+        filters (str | Filter | Sequence[str] | Sequence[Filter]): the component filters
 
     Returns:
         a new and Filter
@@ -273,7 +273,7 @@ def in_(col: str, values: Sequence[bool | int | float | str]) -> Filter:
 
     Args:
         col (str): the column name
-        values (Sequence[Union[bool, int, float, str]]): the values to check against
+        values (Sequence[bool | int | float | str]): the values to check against
 
     Returns:
         a new in Filter
@@ -319,8 +319,8 @@ def eq(
     """Creates a new filter that evaluates to true when the left operand is equal to the right operand.
 
     Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+        left (bool | int | float | str | ColumnName): the left operand, either a literal value or a column name
+        right (bool | int | float | str | ColumnName): the right operand, either a literal value or a column name
 
     Returns:
         Filter: a new equality filter
@@ -335,8 +335,8 @@ def ne(
     """Creates a new filter that evaluates to true when the left operand is not equal to the right operand.
 
     Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+        left (bool | int | float | str | ColumnName): the left operand, either a literal value or a column name
+        right (bool | int | float | str | ColumnName): the right operand, either a literal value or a column name
 
     Returns:
         Filter: a new inequality filter
@@ -351,8 +351,8 @@ def lt(
     """Creates a new filter that evaluates to true when the left operand is less than the right operand.
 
     Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+        left (bool | int | float | str | ColumnName): the left operand, either a literal value or a column name
+        right (bool | int | float | str | ColumnName): the right operand, either a literal value or a column name
 
     Returns:
         Filter: a new less-than filter
@@ -367,8 +367,8 @@ def le(
     """Creates a new filter that evaluates to true when the left operand is less than or equal to the right operand.
 
     Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+        left (bool | int | float | str | ColumnName): the left operand, either a literal value or a column name
+        right (bool | int | float | str | ColumnName): the right operand, either a literal value or a column name
 
     Returns:
         Filter: a new less-than-or-equal filter
@@ -383,8 +383,8 @@ def gt(
     """Creates a new filter that evaluates to true when the left operand is greater than the right operand.
 
     Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+        left (bool | int | float | str | ColumnName): the left operand, either a literal value or a column name
+        right (bool | int | float | str | ColumnName): the right operand, either a literal value or a column name
 
     Returns:
         Filter: a new greater-than filter
@@ -399,8 +399,8 @@ def ge(
     """Creates a new filter that evaluates to true when the left operand is greater than or equal to the right operand.
 
     Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+        left (bool | int | float | str | ColumnName): the left operand, either a literal value or a column name
+        right (bool | int | float | str | ColumnName): the right operand, either a literal value or a column name
 
     Returns:
         Filter: a new greater-than-or-equal filter

@@ -14,13 +14,13 @@ title: to_j_duration
 ## Syntax
 
 ```python syntax
-to_duration(dt: Union[None, Duration, int, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]) -> Duration
+to_duration(dt: Duration | int | str | datetime.timedelta | numpy.timedelta64 | pandas.Timedelta | None) -> Duration
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="dt" type="Union[None, Duration, int, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]">
+<Param name="dt" type="Duration | int | str | datetime.timedelta | numpy.timedelta64 | pandas.Timedelta | None">
 
 A date-time value to convert to a Java Duration.
 

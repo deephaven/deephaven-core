@@ -199,7 +199,7 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
         """Returns a new Selectable with the given declared barriers.
 
         Args:
-            barriers (Union[Barrier, Sequence[Barrier]]): The declared barrier(s).
+            barriers (Barrier | Sequence[Barrier]): The declared barrier(s).
 
         Returns:
             Selectable
@@ -223,7 +223,7 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
         """Returns a new Selectable with the given respected barriers.
 
         Args:
-            barriers (Union[Barrier, Sequence[Barrier]]): The respected barrier(s).
+            barriers (Barrier | Sequence[Barrier]): The respected barrier(s).
 
         Returns:
             Selectable
@@ -322,7 +322,8 @@ class _FormatOperationsRecorder(Protocol):
         j_format_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFormatOperationsRecorder
         )
-        return self.__class__(j_format_ops_recorder.formatColumns(formulas))
+        with query_scope_ctx():
+            return self.__class__(j_format_ops_recorder.formatColumns(formulas))
 
     def format_row_where(self, cond: str, formula: str):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.format_row_where` operation applied to
@@ -330,7 +331,8 @@ class _FormatOperationsRecorder(Protocol):
         j_format_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFormatOperationsRecorder
         )
-        return self.__class__(j_format_ops_recorder.formatRowWhere(cond, formula))
+        with query_scope_ctx():
+            return self.__class__(j_format_ops_recorder.formatRowWhere(cond, formula))
 
     def format_column_where(self, col: str, cond: str, formula: str):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.format_column_where` operation applied to
@@ -338,9 +340,10 @@ class _FormatOperationsRecorder(Protocol):
         j_format_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFormatOperationsRecorder
         )
-        return self.__class__(
-            j_format_ops_recorder.formatColumnWhere(col, cond, formula)
-        )
+        with query_scope_ctx():
+            return self.__class__(
+                j_format_ops_recorder.formatColumnWhere(col, cond, formula)
+            )
 
 
 class _SortOperationsRecorder(Protocol):
@@ -381,7 +384,8 @@ class _FilterOperationsRecorder(Protocol):
         j_filter_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFilterOperationsRecorder
         )
-        return self.__class__(j_filter_ops_recorder.where(and_(filters).j_filter))
+        with query_scope_ctx():
+            return self.__class__(j_filter_ops_recorder.where(and_(filters).j_filter))
 
 
 class _UpdateViewOperationsRecorder(Protocol):
@@ -397,7 +401,8 @@ class _UpdateViewOperationsRecorder(Protocol):
         j_update_view_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JUpdateViewOperationsRecorder
         )
-        return self.__class__(j_update_view_ops_recorder.updateView(*formulas))
+        with query_scope_ctx():
+            return self.__class__(j_update_view_ops_recorder.updateView(*formulas))
 
 
 class RollupNodeOperationsRecorder(
@@ -407,7 +412,7 @@ class RollupNodeOperationsRecorder(
     _UpdateViewOperationsRecorder,
 ):
     """Recorder for node-level operations to be applied when gathering snapshots of RollupTable. Supported operations
-    include column formatting and sorting.
+    include column formatting, sorting, and adding columns with update_view.
 
     Note: It should not be instantiated directly. User code must call :meth:`~RollupTable.node_operation_recorder` to
     create an instance of the recorder.
@@ -514,7 +519,7 @@ class RollupTable(JObjectWrapper):
         source table is not used.
 
         Args:
-            compression_types (Optional[Union[str, Sequence[str]]]): the name, or names, of the compression types to
+            compression_types (str | Sequence[str] | None): the name, or names, of the compression types to
                 allow, most preferred first; an empty sequence returns a RollupTable that is never compressed, and
                 None one that uses the server's default compression types
 
@@ -566,10 +571,15 @@ class RollupTable(JObjectWrapper):
     def with_filters(
         self, filters: str | Filter | Sequence[str] | Sequence[Filter]
     ) -> RollupTable:
-        """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
+        """Returns a new RollupTable by applying the given set of filters to this RollupTable. The rollup is
+        re-aggregated, so the aggregated rows reflect only the rows that pass the filters. Filters that use only
+        group-by columns are applied at the lowest aggregated level. Other filters are applied to the source table, and
+        the rollup is rebuilt. Filters cannot use a column that an aggregation summarizes (the input column of an
+        aggregation's input/output pair, such as Salary in sum_("Salary")), and cannot refer to other rows, for example
+        with virtual row variables such as i or column arrays.
 
         Args:
-            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
+            filters (str | Filter | Sequence[str] | Sequence[Filter]): the filter condition
                 expression(s) or Filter object(s)
 
         Returns:
@@ -591,10 +601,11 @@ class RollupTable(JObjectWrapper):
             raise DHError(e, "with_filters operation on RollupTable failed.") from e
 
     def with_update_view(self, formulas: str | Sequence[str]) -> RollupTable:
-        """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
+        """Returns a new RollupTable by applying the given formulas as a view, which adds columns at the aggregated
+        node level of this RollupTable.
 
         Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
+            formulas (str | Sequence[str]): the column formula(s)
 
         Returns:
             a new RollupTable
@@ -604,8 +615,10 @@ class RollupTable(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
+            with query_scope_ctx():
+                j_rollup_table = self.j_rollup_table.withUpdateView(*formulas)
             return RollupTable(
-                j_rollup_table=self.j_rollup_table.withUpdateView(*formulas),
+                j_rollup_table=j_rollup_table,
                 include_constituents=self.include_constituents,
                 aggs=self.aggs,
                 by=self.by,
@@ -705,7 +718,7 @@ class TreeTable(JObjectWrapper):
         table is not used.
 
         Args:
-            compression_types (Optional[Union[str, Sequence[str]]]): the name, or names, of the compression types to
+            compression_types (str | Sequence[str] | None): the name, or names, of the compression types to
                 allow, most preferred first; an empty sequence returns a TreeTable that is never compressed, and
                 None one that uses the server's default compression types
 
@@ -754,7 +767,7 @@ class TreeTable(JObjectWrapper):
         """Returns a new TreeTable by applying the given set of filters to the columns of this TreeTable.
 
         Args:
-            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
+            filters (str | Filter | Sequence[str] | Sequence[Filter]): the filter condition
                 expression(s) or Filter object(s)
 
         Returns:
@@ -987,7 +1000,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         columns.
 
         Args:
-            cols (Union[str, Sequence[str]]): the column name(s)
+            cols (str | Sequence[str]): the column name(s)
 
         Returns:
             {returns}
@@ -1008,7 +1021,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
-            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or
+            formulas (str | Sequence[str] | Selectable | Sequence[Selectable]): the column formula(s) or
             Selectable(s)
 
         Returns:
@@ -1035,7 +1048,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
 
         Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
+            formulas (str | Sequence[str]): the column formula(s)
 
         Returns:
             {returns}
@@ -1054,7 +1067,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The view method creates a new formula table that includes one column for each formula.
 
         Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
+            formulas (str | Sequence[str]): the column formula(s)
 
         Returns:
             {returns}
@@ -1073,7 +1086,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The update_view method creates a new table containing a new, formula column for each formula.
 
         Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
+            formulas (str | Sequence[str]): the column formula(s)
 
         Returns:
             {returns}
@@ -1096,7 +1109,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         is specified, all columns will be included.
 
         Args:
-            formulas (Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]]): the column formula(s)
+            formulas (str | Sequence[str] | Selectable | Sequence[Selectable] | None): the column formula(s)
                 or Selectable(s), default is None
 
         Returns:
@@ -1126,7 +1139,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         the selected columns.
 
         Args:
-            formulas (Optional[Union[str, Sequence[str]]]): the column name(s), default is None
+            formulas (str | Sequence[str] | None): the column name(s), default is None
 
         Returns:
             {returns}
@@ -1149,7 +1162,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         the table.
 
         Args:
-            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition
+            filters (str | Filter | Sequence[str] | Sequence[Filter] | None): the filter condition
                 expression(s) or Filter object(s), default is None
 
         Returns:
@@ -1173,7 +1186,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             filter_table ({right_type}): the table containing the set of values to filter on
-            cols (Union[str, Sequence[str]]): the column name(s)
+            cols (str | Sequence[str]): the column name(s)
 
         Returns:
             {returns}
@@ -1198,7 +1211,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             filter_table ({right_type}): the table containing the set of values to filter on
-            cols (Union[str, Sequence[str]]): the column name(s)
+            cols (str | Sequence[str]): the column name(s)
 
         Returns:
             {returns}
@@ -1303,7 +1316,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             trigger_table ({right_type}): the trigger table
-            stamp_cols (Optional[Union[str, Sequence[str]]]): The columns from trigger_table that form the "stamp key", may be
+            stamp_cols (str | Sequence[str] | None): The columns from trigger_table that form the "stamp key", may be
                 renames. None, or empty, means that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
                 resulting table will remain empty until trigger_table first updates.
@@ -1342,8 +1355,8 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The sort method creates a new table where the rows are ordered based on values in a specified set of columns.
 
         Args:
-            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
-            order (Optional[Union[SortDirection, Sequence[SortDirection]]): the corresponding sort directions for
+            order_by (str | Sequence[str]): the column(s) to be sorted on
+            order (SortDirection | Sequence[SortDirection] | None): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
         Returns:
@@ -1388,7 +1401,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         the order_by column(s).
 
         Args:
-            order_by (Union[str, Sequence[str]]): the column name(s)
+            order_by (str | Sequence[str]): the column name(s)
 
         Returns:
             {returns}
@@ -1419,9 +1432,9 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             table ({right_type}): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+            on (str | Sequence[str]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
+            joins (str | Sequence[str] | None): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
             type (NaturalJoinType): the action to be taken when duplicate right hand rows are
                 encountered; default is ERROR_ON_DUPLICATE
@@ -1459,9 +1472,9 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             table ({right_type}): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+            on (str | Sequence[str]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
+            joins (str | Sequence[str] | None): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
@@ -1503,12 +1516,12 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             table ({right_type}): the right-table of the join
-            on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal
+            on (str | Sequence[str] | None): the column(s) to match, can be a common name or an equal
             expression,
                 i.e. "col_a = col_b" for different column names; default is None
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
+            joins (str | Sequence[str] | None): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            reserve_bits (Optional[int]): the number of bits to reserve for the right row, between 1 and 62
+            reserve_bits (int | None): the number of bits to reserve for the right row, between 1 and 62
                 (inclusive); default is None, meaning the configured value is used, which is 10 bits by default.
 
         Returns:
@@ -1551,11 +1564,11 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             table ({right_type}): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+            on (str | Sequence[str]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
                 '>=' is used for the comparison.
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
+            joins (str | Sequence[str] | None): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
             {returns}
@@ -1590,11 +1603,11 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             table ({right_type}): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+            on (str | Sequence[str]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
                 '<=' is used for the comparison.
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
+            joins (str | Sequence[str] | None): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
@@ -1707,10 +1720,10 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             table ({right_type}): the right table of the join
-            on (Union[str, Sequence[str]]): the match expression(s) that must include zero-or-more exact match
+            on (str | Sequence[str]): the match expression(s) that must include zero-or-more exact match
             expression,
                 and exactly one range match expression as described above
-            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s) to perform over the
+            aggs (Aggregation | Sequence[Aggregation]): the aggregation(s) to perform over the
             responsive ranges from
                 the right table for each row from this Table
 
@@ -1738,7 +1751,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         grouped into vectors.
 
         Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -1761,7 +1774,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         separate rows.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): the name(s) of the array column(s), if None, all array columns
+            cols (str | Sequence[str] | None): the name(s) of the array column(s), if None, all array columns
                 will be ungrouped, default is None
 
         Returns:
@@ -1793,13 +1806,13 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         {right_note}
 
         Args:
-            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), if not provided, all rows from
+            aggs (Aggregation | Sequence[Aggregation]): the aggregation(s)
+            by (str | Sequence[str] | None): the group-by column name(s), if not provided, all rows from
                 this table are grouped into a single group of rows before the aggregations are applied to the
                 result, default is None.
             preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
                 a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
-            initial_groups (Optional[{right_type}]): a table whose distinct combinations of values for
+            initial_groups ({right_type} | None): a table whose distinct combinations of values for
                 the group-by column(s) should be used to create an initial set of aggregation groups. All other columns
                 are ignored. This is useful in combination with preserve_empty=True to ensure that particular groups
                 appear in the result table, or with preserve_empty=False to control the encounter order for a
@@ -1861,7 +1874,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             agg (Aggregation): the aggregation
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -1882,7 +1895,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             col (str): the name of the column to store the counts
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -1904,7 +1917,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The first_by method creates a new table containing the first row for each group.
 
         Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -1926,7 +1939,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The last_by method creates a new table containing the last row for each group.
 
         Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -1948,7 +1961,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The min_by method creates a new table containing the minimum value for each group.
 
         Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -1970,7 +1983,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The max_by method creates a new table containing the maximum value for each group.
 
         Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -1992,7 +2005,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The sum_by method creates a new table containing the sum for each group.
 
         Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -2014,7 +2027,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The abs_sum_by method creates a new table containing the absolute sum for each group.
 
         Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -2037,7 +2050,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             wcol (str): the name of the weight column
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -2059,7 +2072,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The avg_by method creates a new table containing the average for each group.
 
         Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -2082,7 +2095,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
 
         Args:
             wcol (str): the name of the weight column
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -2104,7 +2117,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         """The median_by method creates a new table containing the median for each group.
 
         Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -2130,7 +2143,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -2155,7 +2168,7 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             {returns}
@@ -2184,8 +2197,8 @@ class _TableOperations(JObjectWrapper, Generic[T]):
         compute the results over the entire table or each row group as identified by the provided key columns.
 
         Args:
-            ops (Union[UpdateByOperation, Sequence[UpdateByOperation]]): the update-by operation definition(s)
-            by (Optional[Union[str, Sequence[str]]]): the key column name(s) to group the rows of the table
+            ops (UpdateByOperation | Sequence[UpdateByOperation]): the update-by operation definition(s)
+            by (str | Sequence[str] | None): the key column name(s) to group the rows of the table
 
         Returns:
             {returns}
@@ -2367,7 +2380,7 @@ class Table(_TableOperations["Table"]):
         it.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            cols (str | Sequence[str] | None): The columns to read. If None, all columns are read.
             chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python
             boundary
                 crossings. Default is 2048.
@@ -2405,7 +2418,7 @@ class Table(_TableOperations["Table"]):
         it.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read. Default
+            cols (str | Sequence[str] | None): The columns to read. If None, all columns are read. Default
             is None.
             tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
             chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python
@@ -2443,7 +2456,7 @@ class Table(_TableOperations["Table"]):
         it.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            cols (str | Sequence[str] | None): The columns to read. If None, all columns are read.
             chunk_size (int): The number of rows to read at a time. Default is 2048.
 
         Returns:
@@ -2485,12 +2498,12 @@ class Table(_TableOperations["Table"]):
         it.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            cols (str | Sequence[str] | None): The columns to read. If None, all columns are read.
             tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
             chunk_size (int): The number of rows to read at a time. Default is 2048.
 
         Returns:
-            A generator that yields a named tuple for each row in the table.
+            A generator that yields a named tuple for each chunk of rows in the table.
 
         Raises:
             ValueError
@@ -2508,7 +2521,7 @@ class Table(_TableOperations["Table"]):
         not in the table.
 
         Args:
-            cols (Union[str, Sequence[str]]): the column name(s)
+            cols (str | Sequence[str]): the column name(s)
 
         Returns:
             bool
@@ -2551,7 +2564,7 @@ class Table(_TableOperations["Table"]):
         attributes removed.
 
         Args:
-            attrs (Union[str, Sequence[str]]): the attribute name(s) to be removed
+            attrs (str | Sequence[str]): the attribute name(s) to be removed
 
         Returns:
             a new Table
@@ -2594,7 +2607,7 @@ class Table(_TableOperations["Table"]):
         compression types, pass None, or call :meth:`reset_transport_compression`.
 
         Args:
-            compression_types (Optional[Union[str, Sequence[str]]]): the name, or names, of the compression types to
+            compression_types (str | Sequence[str] | None): the name, or names, of the compression types to
                 allow, most preferred first, ignoring case; an empty sequence returns a table that is never
                 compressed, and None one that uses the server's default compression types
 
@@ -2635,7 +2648,7 @@ class Table(_TableOperations["Table"]):
         columns marked as its key columns.
 
         Args:
-            cols (Union[str, Sequence[str]]): the key column name(s), must name at least one existing column
+            cols (str | Sequence[str]): the key column name(s), must name at least one existing column
 
         Returns:
             a new Table
@@ -2654,7 +2667,7 @@ class Table(_TableOperations["Table"]):
         columns marked as its key columns, additionally indicating that each key set will be unique.
 
         Args:
-            cols (Union[str, Sequence[str]]): the key column name(s), must name at least one existing column
+            cols (str | Sequence[str]): the key column name(s), must name at least one existing column
 
         Returns:
             a new Table
@@ -2675,7 +2688,7 @@ class Table(_TableOperations["Table"]):
 
         Args:
             num_rows (int): the number of rows at the beginning of the table
-            cols (Optional[Union[str, Sequence[str]]]): the column name(s), default is None
+            cols (str | Sequence[str] | None): the column name(s), default is None
 
         Returns:
             string
@@ -2712,7 +2725,7 @@ class Table(_TableOperations["Table"]):
 
         Args:
             idx (int): the column index where the specified columns will be moved in the new table.
-            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
+            cols (str | Sequence[str]) : the column name(s) or the column rename expr(s) as "X = Y"
 
         Returns:
             a new table
@@ -2733,7 +2746,7 @@ class Table(_TableOperations["Table"]):
         prohibited.
 
         Args:
-            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
+            cols (str | Sequence[str]) : the column name(s) or the column rename expr(s) as "X = Y"
 
         Returns:
             a new table
@@ -2754,7 +2767,7 @@ class Table(_TableOperations["Table"]):
         prohibited.
 
         Args:
-            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
+            cols (str | Sequence[str]) : the column name(s) or the column rename expr(s) as "X = Y"
 
         Returns:
             a new table
@@ -2776,7 +2789,7 @@ class Table(_TableOperations["Table"]):
         (a swap), nothing is dropped.
 
         Args:
-            cols (Union[str, Sequence[str]]) : the column rename expr(s) as "X = Y"
+            cols (str | Sequence[str]) : the column rename expr(s) as "X = Y"
 
         Returns:
             a new table
@@ -2805,7 +2818,7 @@ class Table(_TableOperations["Table"]):
         least one filter.
 
         Args:
-            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition expression(
+            filters (str | Filter | Sequence[str] | Sequence[Filter] | None): the filter condition expression(
             s), default is None
 
         Returns:
@@ -2867,7 +2880,7 @@ class Table(_TableOperations["Table"]):
         operations as they interact with tables in the UI.
 
         Args:
-            cols (Union[str, Sequence[str]]): the column name(s)
+            cols (str | Sequence[str]): the column name(s)
 
         Returns:
             a new table
@@ -2950,7 +2963,7 @@ class Table(_TableOperations["Table"]):
         Args:
             col_name (str): the column that the table must be sorted by.
             order (SortDirection): the expected sort direction; defaults to ASCENDING.
-            description (Optional[str]): an optional label included in the error message if the assertion is violated.
+            description (str | None): an optional label included in the error message if the assertion is violated.
 
         Returns:
             a new Table with the sorted-column assertion applied.
@@ -2978,7 +2991,7 @@ class Table(_TableOperations["Table"]):
 
         Args:
             num_rows (int): the number of rows at the beginning of each group
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2998,7 +3011,7 @@ class Table(_TableOperations["Table"]):
 
         Args:
             num_rows (int): the number of rows at the end of each group
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -3026,11 +3039,11 @@ class Table(_TableOperations["Table"]):
         name __CONSTITUENT__.
 
         Args:
-            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            aggs (Aggregation | Sequence[Aggregation]): the aggregation(s)
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
             preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
                 a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
-            initial_groups (Optional[Table]): a table whose distinct combinations of values for the group-by column(s)
+            initial_groups (Table | None): a table whose distinct combinations of values for the group-by column(s)
                 should be used to create an initial set of aggregation groups. All other columns are ignored. This is
                 useful in combination with preserve_empty=True to ensure that particular groups appear in the result
                 table, or with preserve_empty=False to control the encounter order for a collection of groups and
@@ -3067,7 +3080,7 @@ class Table(_TableOperations["Table"]):
         """Applies color formatting to the columns of the table.
 
         Args:
-            formulas (Union[str, Sequence[str]]): formatting string(s) in the form of "column=color_expression"
+            formulas (str | Sequence[str]): formatting string(s) in the form of "column=color_expression"
                 where color_expression can be a color name or a Java ternary expression that results in a color.
 
         Returns:
@@ -3136,19 +3149,19 @@ class Table(_TableOperations["Table"]):
         """Sets layout hints on the Table
 
         Args:
-            front (Optional[Union[str, Sequence[str]]]): the columns to show at the front.
-            back (Optional[Union[str, Sequence[str]]]): the columns to show at the back.
-            freeze (Optional[Union[str, Sequence[str]]]): the columns to freeze to the front.
+            front (str | Sequence[str] | None): the columns to show at the front.
+            back (str | Sequence[str] | None): the columns to show at the back.
+            freeze (str | Sequence[str] | None): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
-            hide (Optional[Union[str, Sequence[str]]]): the columns to hide.
-            column_groups (Optional[Sequence[dict]]): A sequence of dicts specifying which columns should be grouped in
+            hide (str | Sequence[str] | None): the columns to hide.
+            column_groups (Sequence[dict] | None): A sequence of dicts specifying which columns should be grouped in
             the UI.
                 The dicts can specify the following:
 
                 * name (str): The group name
                 * children (Sequence[str]): The column names in the group
-                * color (Optional[str]): The hex color string or Deephaven color name
-            search_display_mode (Optional[SearchDisplayMode]): set the search bar to explicitly be accessible or
+                * color (str | None): The hex color string or Deephaven color name
+            search_display_mode (SearchDisplayMode | None): set the search bar to explicitly be accessible or
             inaccessible,
                 or use the system default. :attr:`SearchDisplayMode.SHOW` will show the search bar,
                 :attr:`SearchDisplayMode.HIDE` will hide the search bar, and :attr:`SearchDisplayMode.DEFAULT` will
@@ -3202,7 +3215,7 @@ class Table(_TableOperations["Table"]):
         """Creates a PartitionedTable from this table, partitioned according to the specified key columns.
 
         Args:
-            by (Union[str, Sequence[str]]): the column(s) by which to group data
+            by (str | Sequence[str]): the column(s) by which to group data
             drop_keys (bool): whether to drop key columns in the constituent tables, default is False
 
         Returns:
@@ -3258,11 +3271,16 @@ class Table(_TableOperations["Table"]):
         replaced with null on each level.
 
         Note that some aggregations can not be used in creating a rollup table: partition, median, pct, and
-        formula when formula_param is provided
+        formula when formula_param is provided.
+
+        If this table is a blink table, rollup also does not support include_constituents=True, the first, last,
+        sorted_first, and sorted_last aggregations (which agg_by supports on blink tables, but rollup does not), or the
+        group and formula aggregations. Convert the blink table with :func:`~deephaven.stream.blink_to_append_only` to
+        use them.
 
         Args:
-            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
+            aggs (Aggregation | Sequence[Aggregation]): the aggregation(s)
+            by (str | Sequence[str] | None): the group-by column name(s), default is None
             include_constituents (bool): whether to include the constituent rows at the leaf level, default is False
 
         Returns:
@@ -3314,7 +3332,7 @@ class Table(_TableOperations["Table"]):
 
         Args:
             id_col (str): the name of a column containing a unique identifier for a particular row in the table
-            parent_col (str): the name of a column containing the parent's identifier, {@code null} for rows that are
+            parent_col (str): the name of a column containing the parent's identifier, None for rows that are
                 part of the root table
             promote_orphans (bool): whether to promote node tables whose parents don't exist to be children of the
                 root node, default is False
@@ -3346,7 +3364,7 @@ class Table(_TableOperations["Table"]):
         """Waits until either this refreshing Table is updated or the timeout elapses if provided.
 
         Args:
-            timeout (Optional[int]): the maximum time to wait in milliseconds, default is None, meaning no timeout
+            timeout (int | None): the maximum time to wait in milliseconds, default is None, meaning no timeout
 
         Returns:
             True when the table is updated or False when the timeout has been reached.
@@ -3422,11 +3440,11 @@ class PartitionedTable(JObjectWrapper):
 
         Args:
             table (Table): the underlying partitioned table
-            key_cols (Optional[Union[str, Sequence[str]]]): the key column name(s) of 'table'
-            unique_keys (Optional[bool]): whether the keys in 'table' are guaranteed to be unique
-            constituent_column (Optional[str]): the constituent column name in 'table'
-            constituent_table_columns (Optional[TableDefinitionLike]): the table definitions of the constituent table
-            constituent_changes_permitted (Optional[bool]): whether the values of the constituent column can change
+            key_cols (str | Sequence[str] | None): the key column name(s) of 'table'
+            unique_keys (bool | None): whether the keys in 'table' are guaranteed to be unique
+            constituent_column (str | None): the constituent column name in 'table'
+            constituent_table_columns (TableDefinitionLike | None): the table definitions of the constituent table
+            constituent_changes_permitted (bool | None): whether the values of the constituent column can change
 
         Returns:
             a PartitionedTable
@@ -3484,7 +3502,7 @@ class PartitionedTable(JObjectWrapper):
 
         Args:
             tables (Sequence[Table]): the constituent tables
-            constituent_table_columns (Optional[TableDefinitionLike]): the table definition compatible with all the
+            constituent_table_columns (TableDefinitionLike | None): the table definition compatible with all the
                 constituent tables, default is None
 
         Returns:
@@ -3607,7 +3625,7 @@ class PartitionedTable(JObjectWrapper):
         Filters can not use the constituent column.
 
         Args:
-            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition  expression(s) or
+            filters (str | Filter | Sequence[str] | Sequence[Filter]): the filter condition  expression(s) or
                 Filter object(s)
 
         Returns:
@@ -3640,8 +3658,8 @@ class PartitionedTable(JObjectWrapper):
         set of columns. Sort can not use the constituent column.
 
         Args:
-            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
-            order (Optional[Union[SortDirection, Sequence[SortDirection]]): the corresponding sort directions for
+            order_by (str | Sequence[str]): the column(s) to be sorted on.  Can't include the constituent column.
+            order (SortDirection | Sequence[SortDirection] | None): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
         Returns:
@@ -3677,7 +3695,7 @@ class PartitionedTable(JObjectWrapper):
         If there are no matching rows, the result is None. If there are multiple matching rows, a DHError is thrown.
 
         Args:
-            key_values (Union[Any, Sequence[Any]]): the value(s) of the key column(s)
+            key_values (Any | Sequence[Any]): the value(s) of the key column(s)
 
         Returns:
             a Table or None
@@ -3711,7 +3729,7 @@ class PartitionedTable(JObjectWrapper):
 
         Args:
             func (Callable[[Table], Table]): a function which takes a Table as input and returns a new Table
-            dependencies (Optional[Sequence[Union[Table, PartitionedTable]]]): additional dependencies that must be
+            dependencies (Sequence[Table | PartitionedTable] | None): additional dependencies that must be
                 satisfied before applying the provided transform function to added or modified constituents during
                 update processing. If the transform function uses any other refreshing Table or refreshing Partitioned
                 Table, they must be included in this argument. Defaults to None.
@@ -3764,7 +3782,7 @@ class PartitionedTable(JObjectWrapper):
             other (PartitionedTable): the other Partitioned table whose constituent tables will be passed in as the 2nd
                 argument to the provided function
             func (Callable[[Table, Table], Table]): a function which takes two Tables as input and returns a new Table
-            dependencies (Optional[Sequence[Union[Table, PartitionedTable]]]): additional dependencies that must be
+            dependencies (Sequence[Table | PartitionedTable] | None): additional dependencies that must be
                 satisfied before applying the provided transform function to added, modified, or newly-matched
                 constituents during update processing. If the transform function uses any other refreshing Table or
                 refreshing Partitioned Table, they must be included in this argument. Defaults to None.
@@ -3854,7 +3872,7 @@ class PartitionedTableProxy(_TableOperations["PartitionedTableProxy"]):
 
     _doc_vars = {
         "returns": "a new PartitionedTableProxy",
-        "right_type": "Union[Table, PartitionedTableProxy]",
+        "right_type": "Table | PartitionedTableProxy",
         "intro": "Applies the :meth:`~Table.{op}` table operation to all constituent tables of the underlying\n"
         "partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of\n"
         "its underlying partitioned table. On each constituent table, :meth:`~Table.{op}` works as described below.",
@@ -3923,9 +3941,9 @@ class MultiJoinInput(JObjectWrapper):
 
         Args:
             table (Table): the right table to include in the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+            on (str | Sequence[str]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the table to the result
+            joins (str | Sequence[str] | None): the column(s) to be added from the table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Raises:
@@ -3963,9 +3981,9 @@ class MultiJoinTable(JObjectWrapper):
         """Creates a new MultiJoinTable. The join can be specified in terms of either tables or MultiJoinInputs.
 
         Args:
-            input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects
+            input (Table | Sequence[Table] | MultiJoinInput | Sequence[MultiJoinInput]): the input objects
                 specifying the tables and columns to include in the join.
-            on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equality
+            on (str | Sequence[str] | None): the column(s) to match, can be a common name or an equality
                 expression that matches every input table, i.e. "col_a = col_b" to rename output column names. Note:
                 When MultiJoinInput objects are supplied, this parameter must be omitted.
 
@@ -4013,10 +4031,10 @@ def multi_join(
     have a matching row for each key, but they may not have multiple matching rows for a given key.
 
     Args:
-        input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying
+        input (Table | Sequence[Table] | MultiJoinInput | Sequence[MultiJoinInput]): the input objects specifying
         the
             tables and columns to include in the join.
-        on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equality expression
+        on (str | Sequence[str] | None): the column(s) to match, can be a common name or an equality expression
             that matches every input table, i.e. "col_a = col_b" to rename output column names. Note: When
             MultiJoinInput objects are supplied, this parameter must be omitted.
 
@@ -4167,10 +4185,10 @@ def keyed_transpose(
 
     Args:
         table (Table): The source table to transpose.
-        aggs (Union[Aggregation, Sequence[Aggregation]]): The aggregation(s) to apply to the source table.
-        row_by_cols (Union[str, Sequence[str]]): The column(s) to use as row keys in the transposed table.
-        col_by_cols (Union[str, Sequence[str]]): The columns whose values become the new aggregated columns.
-        initial_groups (Optional[Table]): An optional initial set of groups to ensure all columns are present in the
+        aggs (Aggregation | Sequence[Aggregation]): The aggregation(s) to apply to the source table.
+        row_by_cols (str | Sequence[str]): The column(s) to use as row keys in the transposed table.
+        col_by_cols (str | Sequence[str]): The columns whose values become the new aggregated columns.
+        initial_groups (Table | None): An optional initial set of groups to ensure all columns are present in the
             output, defaults to None.
         new_column_behavior (NewColumnBehaviorType): The behavior when a new column would be added to the
             table, default is NewColumnBehaviorType.FAIL.

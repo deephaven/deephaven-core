@@ -10,11 +10,11 @@ The `adapter_s3_rest` method creates a catalog adapter using an [S3](https://aws
 adapter_s3_rest(
     catalog_uri: str,
     warehouse_location: str,
-    name: str = None,
-    region_name: str = None,
-    access_key_id: str = None,
-    secret_access_key: str = None,
-    end_point_override: str = None
+    name: str | None = None,
+    region_name: str | None = None,
+    access_key_id: str | None = None,
+    secret_access_key: str | None = None,
+    end_point_override: str | None = None
 ) -> IcebergCatalogAdapter
 ```
 
@@ -31,12 +31,12 @@ The URI of the REST catalog.
 The location of the warehouse.
 
 </Param>
-<Param name="name" type="str" Optional>
+<Param name="name" type="str | None" Optional>
 
 A descriptive name of the catalog. If not given, the catalog name is inferred from the catalog URI.
 
 </Param>
-<Param name="region_name" type="str" Optional>
+<Param name="region_name" type="str | None" Optional>
 
 The S3 region name to use. If not given, the default region will be picked from the AWS SDK in the following order:
 
@@ -47,17 +47,17 @@ The S3 region name to use. If not given, the default region will be picked from 
 - The EC2 metadata service, if using AWS EC2.
 
 </Param>
-<Param name="access_key_id" type="str" Optional>
+<Param name="access_key_id" type="str | None" Optional>
 
 The access key for reading files. Both this parameter and `secret_access_key` must be given to use static credentials. If not given, default credentials will be used.
 
 </Param>
-<Param name="secret_access_key" type="str" Optional>
+<Param name="secret_access_key" type="str | None" Optional>
 
 The secret access key for reading files. Both this parameter and `access_key_id` must be given to use static credentials. If not given, default credentials will be used.
 
 </Param>
-<Param name="end_point_override" type="str" Optional>
+<Param name="end_point_override" type="str | None" Optional>
 
 The S3 endpoint to connect to. Callers connecting to AWS do not typically need to set this parameter. It is typically used to connect to non-AWS, S3-compatible APIs.
 

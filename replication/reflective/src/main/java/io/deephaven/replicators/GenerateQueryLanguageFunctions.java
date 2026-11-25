@@ -3,6 +3,7 @@
 //
 package io.deephaven.replicators;
 
+import static io.deephaven.replication.ReplicationUtils.replicatedDir;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.replication.ReplicationUtils;
@@ -21,7 +22,8 @@ public class GenerateQueryLanguageFunctions {
     private static final String TASK = "generateQueryLanguageFunctions";
 
     private static final String OUTPUT_FILE =
-            "./engine/table/src/main/java/io/deephaven/engine/table/impl/lang/QueryLanguageFunctionUtils.java";
+            replicatedDir("engine/table", TASK)
+                    + "/io/deephaven/engine/table/impl/lang/QueryLanguageFunctionUtils.java";
 
     public static void main(String[] args) throws IOException {
         final long start = System.currentTimeMillis();

@@ -29,6 +29,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.CrossJoinRightColumnSource;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.sources.IntTestSource;
@@ -1526,6 +1527,304 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * The result of a join or left outer join with a blink left table is itself a blink table, with and without match
+     * columns, against a static or refreshing right table, and whether or not the left table reuses removed row keys
+     * for its new rows, so a downstream aggregation accumulates over every row the left table has produced.
+     */
+    @Test
+    public void testBlinkLeftResultIsBlink() {
+        for (final boolean rightRefreshing : new boolean[] {false, true}) {
+            for (final String columnsToMatch : new String[] {"Key", ""}) {
+                for (final boolean leftOuter : new boolean[] {false, true}) {
+                    for (final boolean reuseRowKey : new boolean[] {false, true}) {
+                        final String description = "rightRefreshing=" + rightRefreshing + ", columnsToMatch="
+                                + columnsToMatch + ", leftOuter=" + leftOuter + ", reuseRowKey=" + reuseRowKey;
+                        // a flat blink source, like most, adds its new rows at the row keys it just removed
+                        final long addedRowKey = reuseRowKey ? 0 : 1;
+                        final QueryTable source = testRefreshingTable(i(0).toTracking(),
+                                intCol("Key", 1), intCol("LVal", 10));
+                        final Table blinkLeft = source.assertBlink();
+                        final QueryTable rTable = rightRefreshing
+                                ? testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4))
+                                : testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+
+                        final QueryTable result = (QueryTable) (leftOuter
+                                ? OuterJoinTools.leftOuterJoin(blinkLeft, rTable, columnsToMatch, "RVal",
+                                        numRightBitsToReserve)
+                                : blinkLeft.join(rTable, columnsToMatch, "RVal", numRightBitsToReserve));
+                        assertTrue(description, result.isBlink());
+                        final Table count = result.countBy("N");
+                        final SimpleListener listener = new SimpleListener(result);
+                        result.addUpdateListener(listener);
+                        final RowSet rowsBefore = result.getRowSet().copy();
+
+                        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                                .runWithinUnitTestCycle(() -> {
+                                    removeRows(source, i(0));
+                                    addToTable(source, i(addedRowKey), intCol("Key", 1), intCol("LVal", 20));
+                                    source.notifyListeners(i(addedRowKey), i(0), i());
+                                    if (rightRefreshing) {
+                                        // the right table modifies a matched row and adds a third match
+                                        addToTable(rTable, i(0, 2), intCol("Key", 1, 1), intCol("RVal", 5, 6));
+                                        rTable.notifyListeners(i(2), i(), i(0));
+                                    }
+                                });
+
+                        assertEquals(description, 1, listener.getCount());
+                        final TableUpdate update = listener.getUpdate();
+                        assertEquals(description, rowsBefore, update.removed());
+                        assertEquals(description, rightRefreshing ? 3 : 2, update.added().size());
+                        assertTrue(description, update.modified().isEmpty());
+                        assertTrue(description, update.shifted().empty());
+                        assertEquals(description, rightRefreshing ? 5L : 4L, ColumnVectors.ofLong(count, "N").get(0));
+                        for (final int lVal : ColumnVectors.ofInt(result, "LVal").toArray()) {
+                            assertEquals(description, 20, lVal);
+                        }
+                        listener.close();
+                        rowsBefore.close();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * With memoization enabled, a join of a blink copy of a table is still a blink table, and does not share a result
+     * with the same join of the table itself, in either order.
+     */
+    @Test
+    public void testBlinkLeftResultIsBlinkWithMemoization() {
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            for (final boolean blinkFirst : new boolean[] {true, false}) {
+                final QueryTable source = testRefreshingTable(i(0).toTracking(),
+                        intCol("Key", 1), intCol("LVal", 10));
+                final QueryTable rTable = testRefreshingTable(i(0, 1).toTracking(),
+                        intCol("Key", 1, 1), intCol("RVal", 3, 4));
+                final Table blinkLeft = source.assertBlink();
+
+                final Table blinkResult;
+                final Table plainResult;
+                if (blinkFirst) {
+                    blinkResult = blinkLeft.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    plainResult = source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                } else {
+                    plainResult = source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    blinkResult = blinkLeft.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                }
+                final String description = "blinkFirst=" + blinkFirst;
+                assertTrue(description, ((QueryTable) blinkResult).isBlink());
+                assertFalse(description, ((QueryTable) plainResult).isBlink());
+                assertSame(description, blinkResult,
+                        blinkLeft.join(rTable, "Key", "RVal", numRightBitsToReserve));
+                assertSame(description, plainResult, source.join(rTable, "Key", "RVal", numRightBitsToReserve));
+            }
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
+     * With memoization enabled, a copy whose attributes match its parent's shares the parent's join, and the result
+     * keeps the attributes the join derived from the left table.
+     */
+    @Test
+    public void testMemoizedJoinSharedWithCopy() {
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            final QueryTable source = testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10));
+            source.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+            final QueryTable rTable = testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+
+            final Table plainResult = source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+            assertTrue(((QueryTable) plainResult).isAddOnly());
+            final Table copiedResult = source.copy().join(rTable, "Key", "RVal", numRightBitsToReserve);
+            assertTrue(copiedResult instanceof QueryTable.CopiedTable);
+            assertTrue(((QueryTable.CopiedTable) copiedResult).checkParent(plainResult));
+            assertTrue(((QueryTable) copiedResult).isAddOnly());
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
+     * With memoization enabled and a refreshing right table, a copy that differs from its parent only in add-only or
+     * append-only shares the parent's join, whichever join is cached first, because neither result carries those
+     * attributes.
+     */
+    @Test
+    public void testMemoizedJoinSharedWithAddOnlyCopyRefreshingRight() {
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            for (final boolean appendOnly : new boolean[] {false, true}) {
+                for (final boolean copyFirst : new boolean[] {true, false}) {
+                    final String description = "appendOnly=" + appendOnly + ", copyFirst=" + copyFirst;
+                    final QueryTable source =
+                            testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10));
+                    final QueryTable rTable =
+                            testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+                    final Table copy = appendOnly ? source.assertAppendOnly() : source.assertAddOnly();
+
+                    final QueryTable copyResult;
+                    final QueryTable plainResult;
+                    if (copyFirst) {
+                        copyResult = (QueryTable) copy.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                        plainResult = (QueryTable) source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    } else {
+                        plainResult = (QueryTable) source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                        copyResult = (QueryTable) copy.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    }
+                    assertTrue(description, copyResult instanceof QueryTable.CopiedTable);
+                    assertTrue(description, ((QueryTable.CopiedTable) copyResult).checkParent(plainResult));
+                    assertFalse(description, plainResult.isAddOnly());
+                    assertFalse(description, copyResult.isAddOnly());
+                    assertFalse(description, copyResult.isAppendOnly());
+                }
+            }
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
+     * An inner join of a blink left table with a static empty right table is static, so it is not marked blink.
+     */
+    @Test
+    public void testBlinkLeftStaticEmptyRight() {
+        final Table blinkLeft =
+                testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10)).assertBlink();
+        final QueryTable rTable = testTable(i().toTracking(), intCol("Key"), intCol("RVal"));
+        for (final String columnsToMatch : new String[] {"Key", ""}) {
+            final Table result = blinkLeft.join(rTable, columnsToMatch, "RVal", numRightBitsToReserve);
+            assertFalse(columnsToMatch, result.isRefreshing());
+            assertNull(columnsToMatch, result.getAttribute(Table.BLINK_TABLE_ATTRIBUTE));
+        }
+    }
+
+    /**
+     * A blink left table replaces all of its rows every cycle, at the row keys it just removed, while the right table
+     * receives random removes, shifts, modifies and adds that grow its groups. The keyed and zero-key join and left
+     * outer join results must match a fresh join every cycle, and {@link BaseTable#notifyListeners(TableUpdate)}
+     * asserts that each of their updates removes every previous row and adds every current one, with no modifies or
+     * shifts.
+     */
+    @Test
+    public void testBlinkLeftRandomRightUpdates() {
+        for (int seed = 0; seed < 4; ++seed) {
+            final Random random = new Random(seed);
+            final int rightSize = 64;
+            final int leftMaxSize = 8;
+            final int numGroups = 4;
+
+            final QueryTable source = testRefreshingTable(i().toTracking(), intCol("ltSym"), intCol("ltIntCol"));
+            final Table blinkLeft = source.assertBlink();
+            final ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
+            final QueryTable rightTicking = getTable(rightSize, random, rightColumns);
+
+            final EvalNugget[] en = new EvalNugget[] {
+                    EvalNugget.from(() -> blinkLeft.join(rightTicking, "ltSym=rtSym", "rtIntCol",
+                            numRightBitsToReserve)),
+                    EvalNugget.from(() -> blinkLeft.join(rightTicking, "", "rtIntCol", numRightBitsToReserve)),
+                    EvalNugget.from(() -> OuterJoinTools.leftOuterJoin(blinkLeft, rightTicking, "ltSym=rtSym",
+                            "rtIntCol", numRightBitsToReserve)),
+                    EvalNugget.from(() -> OuterJoinTools.leftOuterJoin(blinkLeft, rightTicking, "", "rtIntCol",
+                            numRightBitsToReserve)),
+            };
+            for (final EvalNugget nugget : en) {
+                assertTrue("seed=" + seed, ((QueryTable) nugget.originalValue).isBlink());
+            }
+
+            for (int step = 0; step < 50; ++step) {
+                final int leftSize = random.nextInt(leftMaxSize + 1);
+                final int[] syms = new int[leftSize];
+                final int[] values = new int[leftSize];
+                for (int ii = 0; ii < leftSize; ++ii) {
+                    // one more than the right groups, so some left rows have no match
+                    syms[ii] = random.nextInt(numGroups + 1);
+                    values[ii] = random.nextInt(1000);
+                }
+                final boolean rightTicks = random.nextInt(4) != 0;
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> {
+                            final RowSet removed = source.getRowSet().copy();
+                            final RowSet added = RowSetFactory.flat(leftSize);
+                            removeRows(source, removed);
+                            addToTable(source, added, intCol("ltSym", syms), intCol("ltIntCol", values));
+                            source.notifyListeners(added, removed, i());
+                            if (rightTicks) {
+                                GenerateTableUpdates.generateShiftAwareTableUpdates(
+                                        GenerateTableUpdates.DEFAULT_PROFILE, rightSize / 4, random, rightTicking,
+                                        rightColumns);
+                            }
+                        });
+                TstUtils.validate("seed=" + seed + ", step=" + step, en);
+            }
+        }
+    }
+
+    /**
+     * With memoization enabled, a copy that differs from its parent in an attribute the join derives from the left
+     * table does not share the parent's join, whichever join is cached first, and each result carries its own left
+     * table's attributes.
+     */
+    @Test
+    public void testMemoizedJoinCopyWithDifferentAttributes() {
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            for (final String variant : new String[] {"addOnly", "appendOnly", "description"}) {
+                for (final boolean copyFirst : new boolean[] {true, false}) {
+                    final String description = "variant=" + variant + ", copyFirst=" + copyFirst;
+                    final QueryTable source =
+                            testRefreshingTable(i(0).toTracking(), intCol("Key", 1), intCol("LVal", 10));
+                    final QueryTable rTable =
+                            testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+                    final Table copy;
+                    switch (variant) {
+                        case "addOnly":
+                            copy = source.assertAddOnly();
+                            break;
+                        case "appendOnly":
+                            copy = source.assertAppendOnly();
+                            break;
+                        default:
+                            copy = source.withColumnDescription("LVal", "left value");
+                            break;
+                    }
+
+                    final QueryTable copyResult;
+                    final QueryTable plainResult;
+                    if (copyFirst) {
+                        copyResult = (QueryTable) copy.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                        plainResult = (QueryTable) source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    } else {
+                        plainResult = (QueryTable) source.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                        copyResult = (QueryTable) copy.join(rTable, "Key", "RVal", numRightBitsToReserve);
+                    }
+                    assertNotSame(description, plainResult, copyResult);
+                    assertFalse(description, plainResult.isAddOnly());
+                    assertNull(description, plainResult.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+                    switch (variant) {
+                        case "addOnly":
+                            assertTrue(description, copyResult.isAddOnly());
+                            assertFalse(description, copyResult.isAppendOnly());
+                            break;
+                        case "appendOnly":
+                            assertTrue(description, copyResult.isAppendOnly());
+                            break;
+                        default:
+                            assertFalse(description, copyResult.isAddOnly());
+                            assertEquals(description, Map.of("LVal", "left value"),
+                                    copyResult.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+                            break;
+                    }
+                }
+            }
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
         }
     }
 }

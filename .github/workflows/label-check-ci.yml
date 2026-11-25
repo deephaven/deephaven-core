@@ -19,6 +19,9 @@ env:
   # "docs:", "docs(readme):", "docs!:") do not need documentation or release notes labels.
   IS_DOCS_PR: ${{ startsWith(github.event.pull_request.title, 'docs:') || startsWith(github.event.pull_request.title, 'docs(') || startsWith(github.event.pull_request.title, 'docs!:') }}
 
+permissions:
+  contents: read
+
 jobs:
   doc-labels:
     runs-on: ubuntu-24.04

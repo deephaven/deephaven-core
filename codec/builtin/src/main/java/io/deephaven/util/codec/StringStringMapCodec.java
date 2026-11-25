@@ -28,7 +28,7 @@ public class StringStringMapCodec extends StringKeyedMapCodec<String> {
             estimate += entry.getKey().length() + Integer.BYTES;
             estimate += entry.getValue().length() + Integer.BYTES;
         }
-        estimate *= 1.1;
+        estimate += estimate / 10;
         return estimate;
     }
 

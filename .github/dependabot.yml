@@ -1,7 +1,16 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
-    directory: "/"
+    # "/" covers .github/workflows and a root action.yml; composite actions live under .github/actions.
+    directories:
+      - "/"
+      - "/.github/actions/*"
+    groups:
+      # One pull request per action across all directories, so their pins stay in step.
+      github-actions:
+        patterns:
+          - "*"
+        group-by: dependency-name
     open-pull-requests-limit: 99
     schedule:
       interval: "weekly"

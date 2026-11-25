@@ -11,13 +11,13 @@ Key columns are metadata used by consumers such as the Deephaven UI to identify 
 ## Syntax
 
 ```
-with_unique_keys(cols: Union[str, Sequence[str]]) -> Table
+with_unique_keys(cols: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, Sequence[str]]">
+<Param name="cols" type="str | Sequence[str]">
 
 The key column name(s). Must name at least one existing column in the source table.
 

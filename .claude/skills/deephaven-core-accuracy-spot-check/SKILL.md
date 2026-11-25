@@ -1,7 +1,7 @@
 ---
 name: deephaven-core-accuracy-spot-check
 description: >
-  Quick, scoped accuracy check for one isolated deephaven-core (Community) doc edit — one code snippet, one changed sentence, one paragraph addition, one claim. **Use this skill when:** someone says "spot-check," "quick check," "verify just this one," "is this code correct," "check if this parameter/method name is right," or asks about a single isolated change. This skill verifies the changed lines against source, plus the claims in the sentences and clauses directly around them, and does not review the rest of the page. **Do NOT use for:** a change touching multiple sections or several independent claims, full file reviews (use deephaven-core-accuracy-check), new docs, substantial rewrites, style/formatting issues (use deephaven-writing-style), reorganization (use deephaven-doc-structure-review), or Enterprise/deephaven-ent docs.
+  Quick, scoped accuracy check for one isolated deephaven-core (Community) doc edit — one code snippet, one changed sentence, one paragraph addition, one claim. **Use this skill when:** someone says "spot-check," "quick check," "verify just this one," "is this code correct," "check if this parameter/method name is right," or asks about a single isolated change. This skill verifies the changed lines against source, plus the claims in the sentences and clauses directly around them, and does not review the rest of the page. **If the request just says "review" or "check" without saying how deep, use deephaven-docs-help first.** **Do NOT use for:** a change touching multiple sections or several independent claims, full file reviews (use deephaven-core-accuracy-check), new docs, substantial rewrites, style/formatting issues (use deephaven-writing-style), reorganization (use deephaven-doc-structure-review), or Enterprise/deephaven-ent docs.
 allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 ---
 
@@ -25,7 +25,9 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    not in the diff, but a reader takes the sentence as one claim, and the unchanged clause is often
    the wrong one. Checking that a neighbor still agrees with your edit is not enough. List each
    claim the neighboring sentences make and verify it against source on its own, the same way you
-   verify the changed claim, and report any that source does not support.
+   verify the changed claim, and report any that source does not support. If the changed line is a
+   nested list item (Markdown, Javadoc, or docstring), confirm it names its own subject, so it
+   reads true to someone who skims it without the parent item.
 
    **Placement gate:** a verified-true fix can still be the wrong fix. This applies only to
    narrative pages: Concept guides (`conceptual/`) and Tutorials (`getting-started/crash-course/`).
