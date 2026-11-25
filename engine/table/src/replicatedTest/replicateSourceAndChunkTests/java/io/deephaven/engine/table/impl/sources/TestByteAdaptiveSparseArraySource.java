@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
@@ -1359,6 +1360,120 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
                 final byte value = key == RowSequence.NULL_ROW_KEY ? NULL_BYTE : expected.get(key);
                 checkValue("key " + key, value, values.get(ii));
             }
+        }
+    }
+
+    /**
+     * Shifts row keys whose leaves are sorted, bitmap and full blocks, plus a run, more than one chunk of them, up and
+     * down by deltas both smaller and larger than a chunk, checking within each cycle that every row key near them
+     * holds its shifted value and its value before the shift as its previous value, and that row keys outside the
+     * shifted rows are untouched.
+     */
+    @Test
+    public void testShiftRecordsPreviousValues() {
+        final Random random = new Random(0);
+        final int regionSize = 10 * BLOCK_SIZE;
+        final int span = 4 * regionSize;
+        final long windowStart = 1L << 20;
+        final long shiftedStart = windowStart + span;
+        final int windowSize = 3 * span;
+        // one row in this many, by region: sorted leaves, bitmap leaves, full blocks, and a run
+        final int[] regionSpacing = {64, 12, 4, 1};
+
+        final RowSetBuilderRandom keysBuilder = RowSetFactory.builderRandom();
+        for (int ii = 0; ii < span; ++ii) {
+            final int spacing = regionSpacing[ii / regionSize];
+            if (spacing == 1 ? ii % regionSize < 3_000 : random.nextInt(spacing) == 0) {
+                keysBuilder.addKey(shiftedStart + ii);
+            }
+        }
+        WritableRowSet keys = keysBuilder.build();
+        assertTrue(keys.size() > 4096);
+
+        final ByteAdaptiveSparseArraySource source = makeTestSource();
+        keys.forAllRowKeys(key -> source.set(key, randomValue(random)));
+        final long beforeWindow = windowStart - 5;
+        final long afterWindow = windowStart + windowSize + 5;
+        source.set(beforeWindow, randomValue(random));
+        source.set(afterWindow, randomValue(random));
+        // the expected values are read back boxed, so that every element type compares them the same way
+        Object[] expected = new Object[windowSize];
+        for (int ii = 0; ii < windowSize; ++ii) {
+            expected[ii] = source.get(windowStart + ii);
+        }
+        final Object expectedBefore = source.get(beforeWindow);
+        final Object expectedAfter = source.get(afterWindow);
+
+        source.startTrackingPrevValues();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (final long shiftDelta : new long[] {1, -1, 3, 4096 + 7, -(4096 + 7), -2}) {
+            final Object[] previous = expected;
+            final Object[] current = Arrays.copyOf(previous, windowSize);
+            keys.forAllRowKeys(key -> current[(int) (key - windowStart)] = null);
+            keys.forAllRowKeys(key -> current[(int) (key + shiftDelta - windowStart)] =
+                    previous[(int) (key - windowStart)]);
+
+            updateGraph.startCycleForUnitTests();
+            source.shift(keys, shiftDelta);
+            for (int ii = 0; ii < windowSize; ++ii) {
+                assertEquals(current[ii], source.get(windowStart + ii));
+                assertEquals(previous[ii], source.getPrev(windowStart + ii));
+            }
+            assertEquals(expectedBefore, source.get(beforeWindow));
+            assertEquals(expectedAfter, source.get(afterWindow));
+            updateGraph.completeCycleForUnitTests();
+
+            final WritableRowSet shiftedKeys = keys.shift(shiftDelta);
+            keys.close();
+            keys = shiftedKeys;
+            expected = current;
+        }
+        keys.close();
+    }
+
+    /**
+     * Shifts a run ending at {@link Long#MAX_VALUE} down, and back up to end there, so that ranges ending at the
+     * largest row key are read and written, in a compact leaf and in full blocks.
+     */
+    @Test
+    public void testShiftAtMaxRowKey() {
+        checkShiftAtMaxRowKey(16);
+        checkShiftAtMaxRowKey(BLOCK_SIZE + COMPACT_THRESHOLD + 1);
+    }
+
+    private void checkShiftAtMaxRowKey(final int runLength) {
+        final long firstKey = Long.MAX_VALUE - runLength + 1;
+        final ByteAdaptiveSparseArraySource source = makeTestSource();
+        final Random random = new Random(0);
+        for (int ii = 0; ii < runLength; ++ii) {
+            source.set(firstKey + ii, randomValue(random));
+        }
+        final Object[] expected = new Object[runLength + 1];
+        for (int ii = 0; ii < runLength; ++ii) {
+            expected[ii] = source.get(firstKey + ii);
+        }
+
+        source.startTrackingPrevValues();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final WritableRowSet keys = RowSetFactory.fromRange(firstKey, Long.MAX_VALUE)) {
+            updateGraph.startCycleForUnitTests();
+            source.shift(keys, -1);
+            assertEquals(expected[0], source.get(firstKey - 1));
+            for (int ii = 0; ii < runLength; ++ii) {
+                assertEquals(expected[ii + 1], source.get(firstKey + ii));
+                assertEquals(expected[ii], source.getPrev(firstKey + ii));
+            }
+            updateGraph.completeCycleForUnitTests();
+
+            keys.shiftInPlace(-1);
+            updateGraph.startCycleForUnitTests();
+            source.shift(keys, 1);
+            assertNull(source.get(firstKey - 1));
+            for (int ii = 0; ii < runLength; ++ii) {
+                assertEquals(expected[ii], source.get(firstKey + ii));
+                assertEquals(expected[ii + 1], source.getPrev(firstKey + ii));
+            }
+            updateGraph.completeCycleForUnitTests();
         }
     }
 }

@@ -14,8 +14,10 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -97,6 +99,8 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
     public static final int DEFAULT_SORTED_THRESHOLD = 16;
     /** The largest number of values a sorted or bitmap leaf holds. */
     public static final int DEFAULT_COMPACT_THRESHOLD = 128;
+    /** The number of rows shift moves at a time. */
+    private static final int SHIFT_CHUNK_SIZE = 4096;
 
     /**
      * Prepare reads the row keys in pieces of 64 leaves of key space, which bounds the chunk of ranges each piece
@@ -2253,17 +2257,80 @@ public class ObjectAdaptiveSparseArraySource<T> extends SparseArrayColumnSource<
         }
     }
 
+    /**
+     * Moves the values of {@code keysToShift} to their row keys plus {@code shiftDelta} a chunk of rows at a time: each
+     * chunk is read, nulled and written at its shifted row keys in bulk, so that previous values are recorded a block
+     * at a time rather than row by row.
+     */
     @Override
     public void shift(final RowSet keysToShift, final long shiftDelta) {
-        // Shifting up has to walk the keys in descending order so that a shifted value never overwrites one that has
-        // not been read yet.
-        try (final RowSet.SearchIterator it =
-                (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator()) {
-            it.forEachLong((final long key) -> {
-                set(key + shiftDelta, get(key));
-                setNull(key);
-                return true;
-            });
+        if (keysToShift.isEmpty() || shiftDelta == 0) {
+            return;
+        }
+        final int chunkSize = (int) Math.min(SHIFT_CHUNK_SIZE, keysToShift.size());
+        try (final FillContext fillContext = makeFillContext(chunkSize);
+                final FillFromContext fillFromContext = makeFillFromContext(chunkSize);
+                final WritableChunk<Values> values = getChunkType().makeWritableChunk(chunkSize);
+                final WritableLongChunk<OrderedRowKeyRanges> movedRanges =
+                        WritableLongChunk.makeWritableChunk(2 * chunkSize);
+                final WritableLongChunk<OrderedRowKeys> movedRowKeys = WritableLongChunk.makeWritableChunk(chunkSize)) {
+            // like a memmove, rows moving down are moved from the first, and rows moving up from the last, so that no
+            // chunk overwrites rows not yet moved
+            if (shiftDelta < 0) {
+                try (final RowSequence.Iterator rowsIterator = keysToShift.getRowSequenceIterator()) {
+                    while (rowsIterator.hasMore()) {
+                        shiftChunk(rowsIterator.getNextRowSequenceWithLength(chunkSize), shiftDelta, fillContext,
+                                fillFromContext, values, movedRanges, movedRowKeys);
+                    }
+                }
+            } else {
+                // a RowSequence.Iterator walks only forward, so each chunk from the last is found by position
+                for (long endPosition = keysToShift.size(); endPosition > 0; endPosition -= chunkSize) {
+                    final long length = Math.min(chunkSize, endPosition);
+                    try (final RowSequence rows = keysToShift.getRowSequenceByPosition(endPosition - length, length)) {
+                        shiftChunk(rows, shiftDelta, fillContext, fillFromContext, values, movedRanges, movedRowKeys);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Moves the values of {@code rowsToShift} to their row keys plus {@code shiftDelta}, nulling the row keys they
+     * leave. Rows in long runs are read and written by range; otherwise their row keys are read into
+     * {@code movedRowKeys} once, and every read and write uses that chunk.
+     */
+    private void shiftChunk(
+            @NotNull final RowSequence rowsToShift,
+            final long shiftDelta,
+            @NotNull final FillContext fillContext,
+            @NotNull final FillFromContext fillFromContext,
+            @NotNull final WritableChunk<Values> values,
+            @NotNull final WritableLongChunk<OrderedRowKeyRanges> movedRanges,
+            @NotNull final WritableLongChunk<OrderedRowKeys> movedRowKeys) {
+        if (rowsToShift.getAverageRunLengthEstimate() >= USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillChunk(fillContext, values, rowsToShift);
+            setNull(rowsToShift);
+            final LongChunk<OrderedRowKeyRanges> ranges = rowsToShift.asRowKeyRangesChunk();
+            movedRanges.setSize(ranges.size());
+            for (int ii = 0; ii < ranges.size(); ++ii) {
+                movedRanges.set(ii, ranges.get(ii) + shiftDelta);
+            }
+            try (final RowSequence moved = RowSequenceFactory.wrapKeyRangesChunkAsRowSequence(movedRanges)) {
+                fillFromChunk(fillFromContext, values, moved);
+            }
+            return;
+        }
+        rowsToShift.fillRowKeyChunk(movedRowKeys);
+        try (final RowSequence rows = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(movedRowKeys)) {
+            fillChunk(fillContext, values, rows);
+            setNull(rows);
+        }
+        for (int ii = 0; ii < movedRowKeys.size(); ++ii) {
+            movedRowKeys.set(ii, movedRowKeys.get(ii) + shiftDelta);
+        }
+        try (final RowSequence moved = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(movedRowKeys)) {
+            fillFromChunk(fillFromContext, values, moved);
         }
     }
 
