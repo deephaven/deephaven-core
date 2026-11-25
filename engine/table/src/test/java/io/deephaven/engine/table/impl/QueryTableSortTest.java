@@ -1078,6 +1078,38 @@ public class QueryTableSortTest extends QueryTableTestBase {
         sentinels.clear();
     }
 
+    /**
+     * A symbol table sort orders nulls as the sort's comparator does, and as natural order does without one, exactly as
+     * the same sort of an in-memory column.
+     */
+    @Test
+    public void testSymbolTableSortOrdersNullsByComparator() throws IOException {
+        final Table memory = newTable(stringCol("S", "b", null, "a", "b", null, "a", "c"),
+                intCol("N", 0, 1, 2, 3, 4, 5, 6));
+        final File directory = Files.createTempDirectory("SymbolTableNullOrder").toFile();
+        try {
+            final String path = new File(directory, "table.parquet").getPath();
+            ParquetTools.writeTable(memory, path);
+            final Table source = ParquetTools.readTable(path);
+            final QueryTable disk = (QueryTable) source.coalesce();
+            final Comparator<String> nullsLast = Comparator.nullsLast(Comparator.naturalOrder());
+            final Comparator<String> nullsFirst = Comparator.nullsFirst(Comparator.naturalOrder());
+            final SortSpec[] specs = {
+                    ComparatorSortColumn.asc("S", nullsLast, true),
+                    ComparatorSortColumn.desc("S", nullsLast, true),
+                    ComparatorSortColumn.asc("S", nullsFirst, true),
+                    ComparatorSortColumn.desc("S", nullsFirst, true),
+                    SortColumn.asc(ColumnName.of("S")),
+                    SortColumn.desc(ColumnName.of("S"))};
+            for (final SortSpec spec : specs) {
+                assertTableEquals(((QueryTable) memory).sort(spec), disk.sort(spec));
+            }
+            source.close();
+        } finally {
+            FileUtils.deleteRecursively(directory);
+        }
+    }
+
     @Test
     public void testSymbolTableSortIncremental() throws IOException {
         diskBackedTestHarness(this::doSymbolTableIncrementalTest);
