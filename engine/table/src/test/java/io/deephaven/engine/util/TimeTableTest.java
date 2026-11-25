@@ -28,6 +28,7 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.InstantRangeFilter;
 import io.deephaven.engine.table.impl.select.LongRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.NonScanningFilters;
 import io.deephaven.engine.table.impl.select.ReinterpretedColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
@@ -329,6 +330,75 @@ public class TimeTableTest extends RefreshingTableTestCase {
         final MatchFilter inverted = instantFilter(MatchOptions.INVERTED, underflowing);
         assertTableEquals(scanned(regular), pushedDown(regular));
         assertTableEquals(scanned(inverted), pushedDown(inverted));
+    }
+
+    /**
+     * A where on either timestamp column answers matches and ranges from the pushdown alone: each filter fails the test
+     * if the engine scans with the filter.
+     */
+    @Test
+    public void testTimestampWhereTakesThePushdown() {
+        build(TimeTable.newBuilder().period(10));
+        tick(0);
+        tick(2000);
+        final Table instants = new QueryTable(timeTable.getRowSet().copy().toTracking(),
+                Map.of("Timestamp", timeTable.getColumnSource("Timestamp")));
+        final Table longs = new QueryTable(timeTable.getRowSet().copy().toTracking(), Map.of("Timestamp", column));
+
+        // timestamps 1000, 1050 and 1100 are rows 100, 105 and 110; 1025 lies off the period grid
+        final Long[] longValues = {1000L, 1050L, 1100L, 1025L};
+        final Object[] instantValues = Arrays.stream(longValues).map(DateTimeUtils::epochNanosToInstant).toArray();
+        try (final RowSet matching = RowSetFactory.fromKeys(100, 105, 110);
+                final RowSet notMatching = timeTable.getRowSet().minus(matching)) {
+            assertWhere(matching, instants, NonScanningFilters.match(MatchOptions.REGULAR, "Timestamp", instantValues));
+            assertWhere(notMatching, instants,
+                    NonScanningFilters.match(MatchOptions.INVERTED, "Timestamp", instantValues));
+            assertWhere(matching, longs,
+                    NonScanningFilters.match(MatchOptions.REGULAR, "Timestamp", (Object[]) longValues));
+            assertWhere(notMatching, longs,
+                    NonScanningFilters.match(MatchOptions.INVERTED, "Timestamp", (Object[]) longValues));
+        }
+
+        // timestamps 510 through 1540
+        try (final RowSet inRange = RowSetFactory.fromRange(51, 154)) {
+            assertWhere(inRange, instants, NonScanningFilters.instantRange("Timestamp", 505, 1550, true, false));
+            assertWhere(inRange, longs, NonScanningFilters.longRange("Timestamp", 505, 1550, true, false));
+        }
+    }
+
+    /**
+     * A where on the ticking time table answers the rows each refresh adds from the pushdown too. Each refresh adds at
+     * least as many rows as the match has values, so the match pushdown never yields to a scan.
+     */
+    @Test
+    public void testTickingTimestampWhereTakesThePushdown() {
+        build(TimeTable.newBuilder().period(10));
+        tick(0);
+        tick(100);
+        final Table matched = timeTable.where(initialized(NonScanningFilters.match(MatchOptions.REGULAR, "Timestamp",
+                DateTimeUtils.epochNanosToInstant(1000), DateTimeUtils.epochNanosToInstant(3000))));
+        final Table inRange = timeTable.where(initialized(
+                NonScanningFilters.instantRange("Timestamp", 505, 1550, true, false)));
+        Assert.assertTrue(matched.isEmpty());
+        Assert.assertTrue(inRange.isEmpty());
+
+        tick(2000);
+        Assert.assertEquals(RowSetFactory.fromKeys(100), matched.getRowSet());
+        Assert.assertEquals(RowSetFactory.fromRange(51, 154), inRange.getRowSet());
+
+        tick(4000);
+        Assert.assertEquals(RowSetFactory.fromKeys(100, 300), matched.getRowSet());
+        Assert.assertEquals(RowSetFactory.fromRange(51, 154), inRange.getRowSet());
+    }
+
+    private static void assertWhere(final RowSet expected, final Table table, final WhereFilter filter) {
+        filter.init(table.getDefinition());
+        Assert.assertEquals(filter.toString(), expected, table.where(filter).getRowSet());
+    }
+
+    private <F extends WhereFilter> F initialized(final F filter) {
+        filter.init(timeTable.getDefinition());
+        return filter;
     }
 
     /**
