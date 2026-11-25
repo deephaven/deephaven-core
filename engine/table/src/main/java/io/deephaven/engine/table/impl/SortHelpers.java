@@ -225,12 +225,12 @@ public class SortHelpers {
         }
 
         /**
-         * A mapping of this size exists only for sorts of at least {@link #megaSortSize} rows, which the ticking and
-         * blink sorts that require an array mapping do not support.
+         * A mapping of this size exists only for sorts of at least {@link #megaSortSize} rows, which a ticking sort,
+         * whose initial sort requires an array mapping, does not support.
          */
         @NotNull
         public long[] getArrayMapping() {
-            throw new SizeException("Cannot sort a ticking or blink table", size, megaSortSize - 1);
+            throw new SizeException("Cannot sort a ticking table", size, megaSortSize - 1);
         }
 
         @Override

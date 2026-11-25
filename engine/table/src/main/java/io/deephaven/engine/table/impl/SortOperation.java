@@ -208,19 +208,36 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         return resultTable;
     }
 
+    /**
+     * The row keys of a blink sort's sorted rows, by position: the column source of a mega sort's row keys, or else a
+     * chunk source over the array of row keys, reusing recycled when it is not null.
+     */
+    @NotNull
+    private static ColumnSource<Long> blinkInnerRedirectionSource(
+            @NotNull final SortHelpers.SortMapping sortedKeys,
+            @Nullable final LongChunkColumnSource recycled) {
+        if (sortedKeys instanceof SortHelpers.ColumnSourceSortMapping) {
+            return ((SortHelpers.ColumnSourceSortMapping) sortedKeys).columnSource;
+        }
+        final LongChunkColumnSource innerRedirectionSource = recycled == null ? new LongChunkColumnSource() : recycled;
+        if (sortedKeys.size() > 0) {
+            innerRedirectionSource.addChunk(WritableLongChunk.writableChunkWrap(sortedKeys.getArrayMapping()));
+        }
+        return innerRedirectionSource;
+    }
+
     @NotNull
     private Result<QueryTable> blinkTableSort(@NotNull final SortHelpers.SortMapping initialSortedKeys) {
-        final LongChunkColumnSource initialInnerRedirectionSource = new LongChunkColumnSource();
-        if (initialSortedKeys.size() > 0) {
-            initialInnerRedirectionSource
-                    .addChunk(WritableLongChunk.writableChunkWrap(initialSortedKeys.getArrayMapping()));
-        }
         final MutableObject<LongChunkColumnSource> recycledInnerRedirectionSource = new MutableObject<>();
-        final SwitchColumnSource<Long> redirectionSource = new SwitchColumnSource<>(initialInnerRedirectionSource,
+        final SwitchColumnSource<Long> redirectionSource = new SwitchColumnSource<>(
+                blinkInnerRedirectionSource(initialSortedKeys, null),
                 (final ColumnSource<Long> previousInnerRedirectionSource) -> {
-                    final LongChunkColumnSource recycled = (LongChunkColumnSource) previousInnerRedirectionSource;
-                    recycled.clear();
-                    recycledInnerRedirectionSource.setValue(recycled);
+                    // a mega sort's column source is not reused
+                    if (previousInnerRedirectionSource instanceof LongChunkColumnSource) {
+                        final LongChunkColumnSource recycled = (LongChunkColumnSource) previousInnerRedirectionSource;
+                        recycled.clear();
+                        recycledInnerRedirectionSource.setValue(recycled);
+                    }
                 });
 
         sortMapping = new LongColumnSourceRowRedirection<>(redirectionSource);
@@ -261,14 +278,12 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                                         comparatorsRespectEquality, null,
                                         upstream.added(), false, DISALLOW_SYMBOL_TABLE);
                         final LongChunkColumnSource recycled = recycledInnerRedirectionSource.getValue();
-                        recycledInnerRedirectionSource.setValue(null);
-                        final LongChunkColumnSource updateInnerRedirectSource =
-                                recycled == null ? new LongChunkColumnSource() : recycled;
-                        if (updateSortedKeys.size() > 0) {
-                            updateInnerRedirectSource
-                                    .addChunk(WritableLongChunk.writableChunkWrap(updateSortedKeys.getArrayMapping()));
+                        final ColumnSource<Long> updateInnerRedirectionSource =
+                                blinkInnerRedirectionSource(updateSortedKeys, recycled);
+                        if (updateInnerRedirectionSource == recycled) {
+                            recycledInnerRedirectionSource.setValue(null);
                         }
-                        redirectionSource.setNewCurrent(updateInnerRedirectSource);
+                        redirectionSource.setNewCurrent(updateInnerRedirectionSource);
 
                         final RowSet added = RowSetFactory.flat(upstream.added().size());
                         final RowSet removed = RowSetFactory.flat(upstream.removed().size());

@@ -20,8 +20,11 @@ import io.deephaven.util.datastructures.SizeException;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Random;
 
 import org.junit.experimental.categories.Category;
 
@@ -121,14 +124,81 @@ public class QueryTableHugeSortTest {
     }
 
     /**
-     * A blink table sort whose initial rows number at least megaSortSize (lowered here) fails with a message that
-     * states the number of rows and the limit.
+     * A blink table sort maps a cycle of at least megaSortSize rows (lowered here) with the mega sort's column source
+     * of row keys and a smaller cycle with an array of them, in any order of cycles, sorting by one column and by two.
      */
     @Test
     public void testBlinkSortAtMegaSortSize() {
-        final QueryTable table = TstUtils.testRefreshingTable(TableTools.intCol("A", 5, 3, 1, 4, 2, 0));
-        table.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
-        checkMegaSortSizeLimit(table, "Cannot sort a ticking or blink table: Input size 6 larger than maximum 3");
+        final int megaSortSize = SortHelpers.megaSortSize;
+        final int sortChunkSize = SortHelpers.sortChunkSize;
+        try {
+            SortHelpers.megaSortSize = 4;
+            SortHelpers.sortChunkSize = 2;
+            checkBlinkSortCycles("A");
+            checkBlinkSortCycles("A", "B");
+        } finally {
+            SortHelpers.megaSortSize = megaSortSize;
+            SortHelpers.sortChunkSize = sortChunkSize;
+        }
+    }
+
+    /**
+     * Sort a blink table by sortColumns through cycles of several sizes, at least and below megaSortSize, and check
+     * each cycle's rows are its rows sorted by A, then B when sorting by both, then row key.
+     */
+    private static void checkBlinkSortCycles(final String... sortColumns) {
+        final Random random = new Random(sortColumns.length);
+        final int[] cycleSizes = {6, 2, 5, 3, 7, 1, 4};
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final int[][] firstCycle = randomBlinkCycle(random, cycleSizes[0]);
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(cycleSizes[0]).toTracking(),
+                TableTools.intCol("A", firstCycle[0]), TableTools.intCol("B", firstCycle[1]));
+        source.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        final Table sorted = updateGraph.sharedLock().computeLocked(() -> source.sort(sortColumns));
+        assertTableEquals(expectedBlinkSort(firstCycle, sortColumns.length), sorted);
+
+        long firstKey = 0;
+        for (int ci = 1; ci < cycleSizes.length; ++ci) {
+            final int[][] cycle = randomBlinkCycle(random, cycleSizes[ci]);
+            final long removedFirstKey = firstKey;
+            final long removedLastKey = firstKey + cycleSizes[ci - 1] - 1;
+            firstKey = removedLastKey + 1;
+            final long addedFirstKey = firstKey;
+            final long addedLastKey = firstKey + cycleSizes[ci] - 1;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                TstUtils.removeRows(source, RowSetFactory.fromRange(removedFirstKey, removedLastKey));
+                TstUtils.addToTable(source, RowSetFactory.fromRange(addedFirstKey, addedLastKey),
+                        TableTools.intCol("A", cycle[0]), TableTools.intCol("B", cycle[1]));
+                source.notifyListeners(RowSetFactory.fromRange(addedFirstKey, addedLastKey),
+                        RowSetFactory.fromRange(removedFirstKey, removedLastKey), RowSetFactory.empty());
+            });
+            assertTableEquals(expectedBlinkSort(cycle, sortColumns.length), sorted);
+        }
+    }
+
+    /** Columns A and B of a blink cycle of size rows, with values from 0 to 3 so that many rows tie. */
+    private static int[][] randomBlinkCycle(final Random random, final int size) {
+        final int[][] cycle = new int[2][size];
+        for (int ii = 0; ii < size; ++ii) {
+            cycle[0][ii] = random.nextInt(4);
+            cycle[1][ii] = random.nextInt(4);
+        }
+        return cycle;
+    }
+
+    /**
+     * The rows of a blink cycle, in row key order, sorted by A, then by B when sortColumnCount is two, keeping tied
+     * rows in row key order.
+     */
+    private static Table expectedBlinkSort(final int[][] cycle, final int sortColumnCount) {
+        final List<Integer> order = new ArrayList<>();
+        for (int ii = 0; ii < cycle[0].length; ++ii) {
+            order.add(ii);
+        }
+        final Comparator<Integer> byA = Comparator.comparingInt(row -> cycle[0][row]);
+        order.sort(sortColumnCount == 1 ? byA : byA.thenComparingInt(row -> cycle[1][row]));
+        return TableTools.newTable(TableTools.intCol("A", order.stream().mapToInt(row -> cycle[0][row]).toArray()),
+                TableTools.intCol("B", order.stream().mapToInt(row -> cycle[1][row]).toArray()));
     }
 
     private static void checkMegaSortSizeLimit(final QueryTable table, final String expectedMessage) {
