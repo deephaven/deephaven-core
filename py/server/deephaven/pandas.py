@@ -173,9 +173,10 @@ def to_pandas(
             timestamp types, and requires pandas 2.0.0 or later. Other types use pyarrow's default conversion.
             Deephaven nulls become pd.NA in the columns that use these dtypes. Columns that use pyarrow's default
             conversion get its missing-value marker instead, such as NaT for timestamp columns with "numpy_nullable".
-            None reads the column data into NumPy-backed Series; when conv_null is
-            True, boolean, char, and numeric columns then use pandas nullable dtypes so that Deephaven nulls become
-            pd.NA. Default is "numpy_nullable".
+            None reads the column data into NumPy-backed Series; when conv_null is True, boolean, char, numeric, and
+            string columns then use pandas nullable dtypes so that Deephaven nulls become pd.NA. Default is
+            "numpy_nullable". With None and conv_null True, or with "numpy_nullable" on pandas 3.0.0 or later, a NaN
+            in a float or double column also becomes pd.NA. Use "pyarrow" to keep NaN and null apart.
         conv_null (bool): when dtype_backend is set to None, whether to check for Deephaven nulls in the data and
             automatically replace them with pd.NA. default is True.
 
@@ -263,16 +264,22 @@ def _map_na(array: np.ndarray | ExtensionArray) -> np.ndarray:
     dh_null = _PANDAS_EXTYPE_DH_NULL_MAP.get(
         type(pd_dtype)
     ) or _PANDAS_EXTYPE_DH_NULL_MAP.get(pd_dtype)
-    # To preserve NaNs in floating point arrays, Pandas doesn't distinguish NaN/Null as far as NA testing is
-    # concerned, thus its fillna() method will replace both NaN/Null in the data.
+    # Every masked slot becomes a Deephaven null, and an unmasked NaN stays NaN. A masked slot is "missing" to pandas,
+    # and aggregations skip it, just as they skip a Deephaven null.
+    #
+    # Don't read the data under the mask to tell None from NaN. Both leave NaN there, and on pandas 3 NaN and NA are
+    # the same in these dtypes unless pd.options.future.distinguish_nan_and_na is on.
+    #
+    # The cost: a Deephaven NaN that goes through to_pandas() with dtype_backend=None, or "numpy_nullable" on pandas
+    # 3, comes back as null. dtype_backend="pyarrow" keeps NaN and null apart.
     if isinstance(pd_dtype, (pd.Float32Dtype, pd.Float64Dtype)) and isinstance(
         getattr(array, "_data"), np.ndarray
     ):
         np_array = array._data  # type: ignore[attr-defined]
-        null_mask = np.logical_and(array._mask, np.logical_not(np.isnan(np_array)))  # type: ignore[attr-defined]
-        if any(null_mask):
+        mask = array._mask  # type: ignore[attr-defined]
+        if mask.any():
             np_array = np.copy(np_array)
-            np_array[null_mask] = dh_null
+            np_array[mask] = dh_null
         return np_array
 
     if isinstance(pd_dtype, pd.BooleanDtype) or pd_dtype == pd.ArrowDtype(pa.bool_()):
@@ -300,6 +307,9 @@ def to_table(
     digits, and underscores becomes a single underscore, and such characters at the start or end of a name are
     removed: "Shades.1" becomes "Shades_1". This second conversion changes nothing else, so a name such as "123" or
     the reserved word "in" is still rejected.
+
+    In a pandas nullable column, each value where isna() is True becomes a Deephaven null. In a Float32 or Float64
+    column, that includes None and np.nan. A NaN that pandas doesn't mark missing stays NaN.
 
     Args:
         df (DataFrame): the pandas DataFrame instance

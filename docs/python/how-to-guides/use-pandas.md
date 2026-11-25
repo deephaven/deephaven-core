@@ -68,7 +68,10 @@ A dtype backend is the kind of array that stores each DataFrame column. The `dty
 
 - `"numpy_nullable"` (the default) uses pandas nullable dtypes, which can hold a missing value, [`pandas.NA`](https://pandas.pydata.org/docs/user_guide/missing_data.html). Numeric, `char`, Boolean, and string columns get them, for example `Int32` and `boolean`. Deephaven [null values](../reference/query-language/types/nulls.md) in those columns become `pandas.NA`. [Nulls](../reference/query-language/types/nulls.md) in [date-time](../reference/query-language/types/date-time.md) columns become `NaT`, the pandas missing value for date-times.
 - `"pyarrow"` uses [PyArrow](./pyarrow.md)-backed dtypes for numeric, `char`, Boolean, string, and [date-time](../reference/query-language/types/date-time.md) columns, and Deephaven [null values](../reference/query-language/types/nulls.md) in them become `pandas.NA`. This option requires pandas 2.0.0 or later.
-- `None` builds each column from a [NumPy](./use-numpy.md) array. Conversion of Deephaven [null values](../reference/query-language/types/nulls.md) to `pandas.NA` is still on by default, so numeric, `char`, and Boolean columns get pandas nullable dtypes, just as they do with `"numpy_nullable"`. To get plain [NumPy](./use-numpy.md) dtypes, turn null conversion off, as described in [Keep null sentinel values](#keep-null-sentinel-values).
+- `None` builds each column from a [NumPy](./use-numpy.md) array. Conversion of Deephaven [null values](../reference/query-language/types/nulls.md) to `pandas.NA` is still on by default, so numeric, `char`, Boolean, and String columns get pandas nullable dtypes, just as they do with `"numpy_nullable"`. To get plain [NumPy](./use-numpy.md) dtypes, turn null conversion off, as described in [Keep null sentinel values](#keep-null-sentinel-values).
+
+> [!WARNING]
+> With `None` and `conv_null=True`, or with `"numpy_nullable"` on pandas 3.0.0 or later, a [`NaN`](../reference/query-language/types/NaNs.md) in a `float` or `double` column also becomes `pandas.NA`. To keep `NaN` and null apart, use `"pyarrow"`.
 
 The following example converts the `source` table from [Convert a table to a DataFrame and back](#convert-a-table-to-a-dataframe-and-back) with the `"pyarrow"` and `None` backends and prints the dtypes of each DataFrame. Compare them with the default `"numpy_nullable"` dtypes printed in that section:
 
@@ -120,9 +123,9 @@ With the default, the null is `<NA>` in an `Int32` column. With `conv_null=False
 
 ## Convert missing values back to Deephaven nulls
 
-In the other direction, [`to_table`](../reference/pandas/to-table.md) converts `pandas.NA` in nullable integer, Boolean, string, and [PyArrow](./pyarrow.md) columns to Deephaven [nulls](../reference/query-language/types/nulls.md). Missing values in a [NumPy](./use-numpy.md) `float64` column, or in a nullable `Float32` or `Float64` column, become [`NaN`](../reference/query-language/types/NaNs.md) instead. See [Null, infinity, and NaN values](./null-inf-nan.md) for how Deephaven treats each.
+In the other direction, [`to_table`](../reference/pandas/to-table.md) turns each missing value in a nullable column into a Deephaven [null](../reference/query-language/types/nulls.md). Nullable columns are the pandas extension dtypes, such as `Int32`, `Float64`, `boolean`, and `string`, and [PyArrow](./pyarrow.md)-backed columns. In a nullable float column, both `None` and `np.nan` count as missing. A plain [NumPy](./use-numpy.md) `float64` column has no missing marker, so its `NaN` stays [`NaN`](../reference/query-language/types/NaNs.md). See [Null, infinity, and NaN values](./null-inf-nan.md) for how Deephaven treats each.
 
-The following example converts a DataFrame with a nullable `Int32` column and a plain `float64` column, each with one missing value. It then uses [`update`](../reference/table-operations/select/update.md) to check the missing values with the built-in [`isNull`](../reference/query-language/types/nulls.md) and [`isNaN`](../reference/query-language/types/NaNs.md) functions:
+The following example converts a DataFrame with a nullable `Int32` column, a nullable `Float64` column, and a plain `float64` column, each with one missing value. It then uses [`update`](../reference/table-operations/select/update.md) to check the missing values with the built-in [`isNull`](../reference/query-language/types/nulls.md) and [`isNaN`](../reference/query-language/types/NaNs.md) functions:
 
 ```python order=t_nulls
 from deephaven import pandas as dhpd
@@ -131,6 +134,7 @@ import pandas as pd
 df_nulls = pd.DataFrame(
     {
         "NullableInt": pd.Series([1, None], dtype="Int32"),
+        "NullableFloat": pd.Series([1.0, None], dtype="Float64"),
         "PlainFloat": pd.Series([1.0, float("nan")]),
     }
 )
@@ -138,13 +142,14 @@ df_nulls = pd.DataFrame(
 t_nulls = dhpd.to_table(df_nulls).update(
     [
         "IntIsNull = isNull(NullableInt)",
+        "NullableFloatIsNull = isNull(NullableFloat)",
         "FloatIsNull = isNull(PlainFloat)",
         "FloatIsNaN = isNaN(PlainFloat)",
     ]
 )
 ```
 
-In the second row, `IntIsNull` is `true`: the missing `Int32` value became a Deephaven [null](../reference/query-language/types/nulls.md). `FloatIsNull` is `false` and `FloatIsNaN` is `true`: the missing `float64` value stayed [`NaN`](../reference/query-language/types/NaNs.md).
+In the second row, `IntIsNull` and `NullableFloatIsNull` are `true`: the missing `Int32` and `Float64` values became Deephaven [nulls](../reference/query-language/types/nulls.md). `FloatIsNull` is `false` and `FloatIsNaN` is `true`: the missing `float64` value stayed [`NaN`](../reference/query-language/types/NaNs.md).
 
 ## Infer types for `object` columns
 

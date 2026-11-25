@@ -2440,7 +2440,10 @@ class Table(_TableOperations["Table"]):
         )
 
     def iter_chunk_dict(
-        self, cols: str | Sequence[str] | None = None, chunk_size: int = 2048
+        self,
+        cols: str | Sequence[str] | None = None,
+        chunk_size: int = 2048,
+        bool_str_null_as_none: bool = False,
     ) -> Generator[dict[str, np.ndarray], None, None]:
         """Returns a generator that reads one chunk of rows at a time from the table into a dictionary. The dictionary
         is a map of column names to numpy arrays of the column data type.
@@ -2458,6 +2461,9 @@ class Table(_TableOperations["Table"]):
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
             chunk_size (int): The number of rows to read at a time. Default is 2048.
+            bool_str_null_as_none (bool): whether Boolean and String columns become object arrays that hold None for
+                a null. Default is False, meaning a null Boolean reads as True and a null String reads as 'None'.
+                Other columns aren't affected.
 
         Returns:
             A generator that yields a dictionary of column names to numpy arrays.
@@ -2475,6 +2481,7 @@ class Table(_TableOperations["Table"]):
             row_set=self.j_table.getRowSet(),
             chunk_size=chunk_size,
             prev=False,
+            bool_str_null_as_none=bool_str_null_as_none,
         )
 
     def iter_chunk_tuple(
@@ -2482,6 +2489,7 @@ class Table(_TableOperations["Table"]):
         cols: str | Sequence[str] | None = None,
         tuple_name: str = "Deephaven",
         chunk_size: int = 2048,
+        bool_str_null_as_none: bool = False,
     ) -> Generator[tuple[np.ndarray, ...], None, None]:
         """Returns a generator that reads one chunk of rows at a time from the table into a named tuple. The named
         tuple is made up of fields with their names being the column names and their values being numpy arrays of the
@@ -2501,6 +2509,9 @@ class Table(_TableOperations["Table"]):
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
             tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
             chunk_size (int): The number of rows to read at a time. Default is 2048.
+            bool_str_null_as_none (bool): whether Boolean and String columns become object arrays that hold None for
+                a null. Default is False, meaning a null Boolean reads as True and a null String reads as 'None'.
+                Other columns aren't affected.
 
         Returns:
             A generator that yields a named tuple for each chunk of rows in the table.
@@ -2513,7 +2524,11 @@ class Table(_TableOperations["Table"]):
         )  # to prevent circular import
 
         return _table_reader_chunk_tuple(
-            self, cols=cols, tuple_name=tuple_name, chunk_size=chunk_size
+            self,
+            cols=cols,
+            tuple_name=tuple_name,
+            chunk_size=chunk_size,
+            bool_str_null_as_none=bool_str_null_as_none,
         )
 
     def has_columns(self, cols: str | Sequence[str]):

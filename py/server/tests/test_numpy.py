@@ -105,6 +105,25 @@ class NumpyTestCase(BaseTestCase):
             np_array = to_numpy(tmp_table, tmp_table.column_names)
             self.assertEqual((2, 5), np_array.shape)
 
+    def test_to_numpy_bool_str_null_as_none(self) -> None:
+        t = new_table(
+            [
+                bool_col("B1", [True, None]),
+                bool_col("B2", [None, False]),
+                string_col("S", ["a", None]),
+            ]
+        )
+
+        bools = to_numpy(t, cols=["B1", "B2"])
+        self.assertEqual([[True, True], [True, False]], bools.tolist())
+        bools = to_numpy(t, cols=["B1", "B2"], bool_str_null_as_none=True)
+        self.assertEqual(np.object_, bools.dtype)
+        self.assertEqual([[True, None], [None, False]], bools.tolist())
+
+        self.assertEqual([["a"], ["None"]], to_numpy(t, cols=["S"]).tolist())
+        strs = to_numpy(t, cols=["S"], bool_str_null_as_none=True)
+        self.assertEqual([["a"], [None]], strs.tolist())
+
     def test_to_numpy_remap(self):
         for col_name in self.test_table.definition:
             with self.subTest(f"test single column to numpy - {col_name}"):

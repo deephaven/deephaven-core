@@ -43,7 +43,7 @@ result = new_table(
 )
 ```
 
-[`new_table`](../table-operations/create/newTable.md) also accepts a dictionary that maps column names to data. In that case, pandas infers the column types, so `Integers` becomes a `long` column rather than the `int` column that [`int_col`](../table-operations/create/intCol.md) creates.
+[`new_table`](../table-operations/create/newTable.md) also accepts a dictionary that maps column names to data. In that case, `new_table` infers each column's type from its data, so `Integers` becomes a `long` column rather than the `int` column that [`int_col`](../table-operations/create/intCol.md) creates.
 
 ```python order=result
 from deephaven import new_table
