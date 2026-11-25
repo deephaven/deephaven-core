@@ -146,7 +146,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
         renamed.values = values;
         renamed.columnType = columnType;
         // the rename keeps the values, options and column type, so the renamed filter shares the built chunk filters
-        renamed.chunkFilters = chunkFilters;
+        renamed.chunkFilterCache = chunkFilterCache;
         return Optional.of(renamed);
     }
 
@@ -346,9 +346,9 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
             failedOver = true;
         }
         if (!failedOver) {
-            // Created here rather than on first use, so that every copy and rename made from now on shares one holder,
+            // Created here rather than on first use, so that every copy and rename made from now on shares one cache,
             // which builds each chunk filter once, on first use.
-            chunkFilters = new MatchChunkFilters(columnType, matchOptions, values);
+            chunkFilterCache = new ChunkFilterCache(columnType, matchOptions, values);
         }
         initialized = true;
     }
@@ -363,7 +363,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
         }
 
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, matchChunkFilters().regular());
+        return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilterCache().regular());
     }
 
     @NotNull
@@ -379,25 +379,25 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
         }
 
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, matchChunkFilters().inverted());
+        return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilterCache().inverted());
     }
 
     /**
-     * The chunk filters built from the converted {@link #values}, set by an {@link #init} that does not fail over, and
-     * null otherwise. Copies and renames of an initialized filter share the instance, so the set of values is built
-     * once for all of them, however many parallel segments and update cycles call {@link #filter} or
+     * The cache of chunk filters built from the converted {@link #values}, set by an {@link #init} that does not fail
+     * over, and null otherwise. Copies and renames of an initialized filter share the instance, so the set of values is
+     * built once for all of them, however many parallel segments and update cycles call {@link #filter} or
      * {@link #filterInverse}.
      */
-    private volatile MatchChunkFilters chunkFilters;
+    private volatile ChunkFilterCache chunkFilterCache;
 
     /**
-     * The chunk filters of this initialized filter, which did not fail over.
+     * The cache of chunk filters of this initialized filter, which did not fail over.
      *
      * @throws IllegalStateException if {@link #init} has not run
      */
     @NotNull
-    private MatchChunkFilters matchChunkFilters() {
-        final MatchChunkFilters local = chunkFilters;
+    private ChunkFilterCache chunkFilterCache() {
+        final ChunkFilterCache local = chunkFilterCache;
         if (local == null) {
             throw new IllegalStateException("Filter must be initialized before matching");
         }
@@ -413,15 +413,15 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
             }
             return Optional.empty();
         }
-        return Optional.of(matchChunkFilters().regular());
+        return Optional.of(chunkFilterCache().regular());
     }
 
     /**
-     * The chunk filters for one set of values, column type and {@link MatchOptions}: the regular filter and the
-     * inverted filter, each built on first use and then kept. A chunk filter holds no per-call state, so one instance
-     * serves every thread that filters with the instance.
+     * The cache of chunk filters for one set of values, column type and {@link MatchOptions}: the regular filter and
+     * the inverted filter, each built on first use and then kept. A chunk filter holds no per-call state, so one
+     * instance serves every thread that filters with the instance.
      */
-    private static final class MatchChunkFilters {
+    private static final class ChunkFilterCache {
         private final Class<?> columnType;
         private final MatchOptions matchOptions;
         private final Object[] values;
@@ -429,7 +429,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
         private volatile ChunkFilter regular;
         private volatile ChunkFilter inverted;
 
-        private MatchChunkFilters(
+        private ChunkFilterCache(
                 final Class<?> columnType,
                 final MatchOptions matchOptions,
                 final Object[] values) {
@@ -1303,7 +1303,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
             copy.initialized = true;
             // a chunk filter holds no per-call state, so the copy shares the built chunk filters rather than building
             // another set of values
-            copy.chunkFilters = chunkFilters;
+            copy.chunkFilterCache = chunkFilterCache;
             copy.values = values;
             copy.columnType = columnType;
             // If we failed over, the copy must too, or it would claim to be initialized without any values to match.

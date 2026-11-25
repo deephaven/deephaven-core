@@ -151,6 +151,13 @@ public class TimeSeriesFilter
         return new Builder();
     }
 
+    /**
+     * Matches the rows whose in-window column is {@code TRUE}. A chunk filter holds no per-call state, so every window
+     * listener, and every thread, shares the one instance.
+     */
+    private static final ChunkFilter IN_WINDOW_FILTER =
+            ChunkMatchFilterFactory.getChunkFilter(Boolean.class, MatchOptions.REGULAR, Boolean.TRUE);
+
     private final String columnName;
     private final long periodNanos;
     private final boolean invert;
@@ -329,10 +336,6 @@ public class TimeSeriesFilter
         // the column source containing the window; which we match on
         private final ColumnSource<Object> windowColumnSource;
 
-        // matches the rows whose window column is TRUE; built once, as a chunk filter holds no per-call state
-        private final ChunkFilter inWindowFilter =
-                ChunkMatchFilterFactory.getChunkFilter(Boolean.class, MatchOptions.REGULAR, Boolean.TRUE);
-
         protected TimeSeriesFilterWindowListener(String listenerDescription, QueryTable tableWithWindow,
                 final String windowSourceName) {
             super(listenerDescription, tableWithWindow, false);
@@ -360,7 +363,7 @@ public class TimeSeriesFilter
             // The original filter did not include nulls for a regular filter, so we do not include them here either to
             // maintain compatibility. That also means the inverted filter is going to include nulls (as the null is
             // less than the current time using Deephaven long comparisons).
-            return ChunkFilter.applyChunkFilter(rowSet, windowColumnSource, usePrev, inWindowFilter);
+            return ChunkFilter.applyChunkFilter(rowSet, windowColumnSource, usePrev, IN_WINDOW_FILTER);
         }
     }
 
