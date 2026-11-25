@@ -166,7 +166,7 @@ t2_meta = t2.meta_table
 ```
 
 > [!WARNING]
-> A `SimpleDateFormat` is not thread-safe. On a large table, the engine can run a [formula](../../how-to-guides/formulas.md) on several threads at once, and a shared `SimpleDateFormat` can then return wrong values. The example above prevents this. It passes the formula to [`Selectable.parse`](/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) and marks the column serial with [`with_serial`](../../conceptual/query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where), so the engine never runs the formula concurrently with itself. The later examples on this page that use [`simple_date_format`](../time/datetime/simple_date_format.md) need the same change on large tables.
+> A `SimpleDateFormat` is not thread-safe. On a large table, the engine can run a [formula](../../how-to-guides/formulas.md) on several threads at once, and a shared `SimpleDateFormat` can then return wrong values. The example above prevents this. It passes the formula to [`Selectable.parse`](/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) and marks the column serial with [`with_serial`](../../conceptual/query-engine/parallelization.md#serial-execution), so the engine never runs the formula concurrently with itself. The later examples on this page that use [`simple_date_format`](../time/datetime/simple_date_format.md) need the same change on large tables.
 
 In this example, the strings use a different layout and already carry the abbreviation `CST`. `SimpleDateFormat` recognizes `CST`, so the query does not call `replaceAll`:
 

@@ -133,7 +133,7 @@ A formula should not depend on which thread runs it. The engine can evaluate one
 
 You can't mark a [`view`](../../reference/table-operations/select/view.md) or [`updateView`](../../reference/table-operations/select/update-view.md) formula serial. By default, the engine rejects a serial column in those operations, because they compute values on whichever thread reads them, in any order. For those formulas, make the shared state thread-safe.
 
-If several formulas in the same [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), or [`where`](../../reference/table-operations/filter/where.md) call share the state, also order them with [Barriers](../../reference/query-language/types/Barrier.md), as described in [Parallelizing queries](../../conceptual/query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where). Formulas in different operations can run at the same time on different threads, so any state they share must be thread-safe.
+If several formulas in the same [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), or [`where`](../../reference/table-operations/filter/where.md) call share the state, also order them with [Barriers](../../reference/query-language/types/Barrier.md), as described in [Parallelizing queries](../../conceptual/query-engine/parallelization.md#controlling-execution-order). Formulas in different operations can run at the same time on different threads, so any state they share must be thread-safe.
 
 ## Table operations in formulas
 

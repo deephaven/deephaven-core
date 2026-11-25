@@ -13,7 +13,7 @@ These properties control query-engine parallelism, not total JVM CPU use. Other 
 
 Set them like any other configuration property, for example with `-DPeriodicUpdateGraph.updateThreads=4` in `START_OPTS`. See [How to set properties](../../how-to-guides/configuration/configuration-properties.md#how-to-set-properties).
 
-For more on concurrency in Deephaven, see [Managing thread pool sizes](../../conceptual/query-engine/parallelization.md#managing-thread-pool-sizes).
+For more on concurrency in Deephaven, see [Configuration](../../conceptual/query-engine/parallelization.md#configuration).
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not answered in our documentation, [join our Community](/slack) and we'll be happy to help.

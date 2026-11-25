@@ -124,7 +124,7 @@ t2Meta = t2.meta()
 ```
 
 > [!WARNING]
-> A `SimpleDateFormat` is not thread-safe. On a large table, the engine can run a [formula](../../how-to-guides/formulas.md) on several threads at once, and a shared `SimpleDateFormat` can then return wrong values. The example above prevents this. It passes the formula to [`Selectable.parse`](/core/javadoc/io/deephaven/api/Selectable.html#parse(java.lang.String)) and marks the column serial with [`withSerial`](../../conceptual/query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where), so the engine never runs the formula concurrently with itself. The later examples on this page that use [`SimpleDateFormat`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html) need the same change on large tables.
+> A `SimpleDateFormat` is not thread-safe. On a large table, the engine can run a [formula](../../how-to-guides/formulas.md) on several threads at once, and a shared `SimpleDateFormat` can then return wrong values. The example above prevents this. It passes the formula to [`Selectable.parse`](/core/javadoc/io/deephaven/api/Selectable.html#parse(java.lang.String)) and marks the column serial with [`withSerial`](../../conceptual/query-engine/parallelization.md#serial-execution), so the engine never runs the formula concurrently with itself. The later examples on this page that use [`SimpleDateFormat`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html) need the same change on large tables.
 
 In this example, the strings use a different layout and already carry the abbreviation `CST`. `SimpleDateFormat` recognizes `CST`, so the query does not call `replaceAll`:
 
