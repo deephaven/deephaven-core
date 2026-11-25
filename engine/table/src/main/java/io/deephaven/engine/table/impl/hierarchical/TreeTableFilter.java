@@ -472,6 +472,10 @@ public class TreeTableFilter {
      * Every row in {@code ancestorRows} either is in {@code topRows} or has its parent in {@code ancestorRows}. Rows
      * that cannot be reached by descending from {@code topRows} through {@link #parentIdToChildRows} lie on or below a
      * cycle of parent identifiers.
+     * <p>
+     * The descent reaches each row at most once: {@link #parentIdToChildRows} records each row only under its own
+     * parent identifier, identifiers are unique, and the parent identifier of a top row names no row that the descent
+     * can reach.
      *
      * @param usePrev whether to read previous values
      * @param ancestorRows the ancestor rows found by {@link #computeParents(boolean, RowSet)}
@@ -482,10 +486,12 @@ public class TreeTableFilter {
             final boolean usePrev,
             @NotNull final RowSet ancestorRows,
             @NotNull final RowSet topRows) {
-        try (final RowSetAccumulator reachedRows = new RowSetAccumulator();
-                final ChunkSource.GetContext idGetContext = idSource.makeGetContext(CHUNK_SIZE);
+        // the reached rows are disjoint, so they are only ever inserted, and counted to bound the descent
+        final RowSetBuilderRandom reachedRowsBuilder = RowSetFactory.builderRandom();
+        reachedRowsBuilder.addRowSet(topRows);
+        long reachedRowCount = topRows.size();
+        try (final ChunkSource.GetContext idGetContext = idSource.makeGetContext(CHUNK_SIZE);
                 final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(idSource.getChunkType(), CHUNK_SIZE)) {
-            reachedRows.insert(topRows);
             WritableRowSet frontier = topRows.copy();
             while (frontier.isNonempty()) {
                 final RowSetBuilderRandom childRowsBuilder = RowSetFactory.builderRandom();
@@ -505,14 +511,25 @@ public class TreeTableFilter {
                 }
                 frontier = childRowsBuilder.build();
                 frontier.retain(ancestorRows);
-                reachedRows.removeFrom(frontier);
-                reachedRows.insert(frontier);
+                reachedRowCount += frontier.size();
+                if (reachedRowCount > ancestorRows.size()) {
+                    frontier.close();
+                    throw new IllegalStateException("Tree table parent references reach " + reachedRowCount
+                            + " rows descending from the roots, more than the " + ancestorRows.size()
+                            + " ancestor rows");
+                }
+                reachedRowsBuilder.addRowSet(frontier);
             }
             frontier.close();
+        } catch (final RuntimeException e) {
+            // building releases the builder's shared references to the row sets it was given
+            reachedRowsBuilder.build().close();
+            throw e;
+        }
 
+        try (final RowSet reachedRows = reachedRowsBuilder.build()) {
             if (reachedRows.size() != ancestorRows.size()) {
-                try (final RowSet allReachedRows = reachedRows.build();
-                        final RowSet unreachedRows = ancestorRows.minus(allReachedRows)) {
+                try (final RowSet unreachedRows = ancestorRows.minus(reachedRows)) {
                     final long unreachedRow = unreachedRows.firstRowKey();
                     final Object unreachedId = usePrev ? idSource.getPrev(unreachedRow) : idSource.get(unreachedRow);
                     throw new IllegalStateException("Tree table parent identifiers contain a cycle: the ancestors of "
