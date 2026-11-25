@@ -624,10 +624,10 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
                     // endregion copyFromTypedArray
                 }
                 ctx.offset += length;
-                firstKey += length;
-                if (firstKey > lastKey) {
+                if (rightKeyForThisBlock == lastKey) {
                     break;
                 }
+                firstKey += length;
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(firstKey);
                 ctx.maxKeyInCurrentBlock = firstKey | INDEX_MASK;
             }
@@ -786,7 +786,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
             long firstKey = ranges.get(ii);
             final long lastKey = ranges.get(ii + 1);
 
-            while (firstKey <= lastKey) {
+            while (true) {
                 final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
                 final long lastKeyToUse = Math.min(maxKeyInCurrentBlock, lastKey);
                 final int length = (int) (lastKeyToUse - firstKey + 1);
@@ -826,8 +826,11 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
                 chunk.copyToTypedArray(offset, block, sIndexWithinBlock, length);
                 // endregion copyToTypedArray
 
-                firstKey += length;
                 offset += length;
+                if (lastKeyToUse == lastKey) {
+                    break;
+                }
+                firstKey += length;
             }
         }
     }

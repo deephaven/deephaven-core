@@ -140,4 +140,46 @@ public class TestIntegerSparseArraySource extends AbstractIntegerColumnSourceTes
         }
         keys.close();
     }
+
+    /**
+     * Shifts a run ending at {@link Long#MAX_VALUE} down, and back up to end there, so that ranges ending at the
+     * largest row key are read and written.
+     */
+    @Test
+    public void testShiftAtMaxRowKey() {
+        final int runLength = 16;
+        final long firstKey = Long.MAX_VALUE - runLength + 1;
+        final IntegerSparseArraySource source = makeTestSource();
+        final int[] values = ArrayGenerator.randomInts(new Random(0), runLength);
+        for (int ii = 0; ii < runLength; ++ii) {
+            source.set(firstKey + ii, values[ii]);
+        }
+        final Object[] expected = new Object[runLength + 1];
+        for (int ii = 0; ii < runLength; ++ii) {
+            expected[ii] = source.get(firstKey + ii);
+        }
+
+        source.startTrackingPrevValues();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final WritableRowSet keys = RowSetFactory.fromRange(firstKey, Long.MAX_VALUE)) {
+            updateGraph.startCycleForUnitTests();
+            source.shift(keys, -1);
+            assertEquals(expected[0], source.get(firstKey - 1));
+            for (int ii = 0; ii < runLength; ++ii) {
+                assertEquals(expected[ii + 1], source.get(firstKey + ii));
+                assertEquals(expected[ii], source.getPrev(firstKey + ii));
+            }
+            updateGraph.completeCycleForUnitTests();
+
+            keys.shiftInPlace(-1);
+            updateGraph.startCycleForUnitTests();
+            source.shift(keys, 1);
+            assertNull(source.get(firstKey - 1));
+            for (int ii = 0; ii < runLength; ++ii) {
+                assertEquals(expected[ii], source.get(firstKey + ii));
+                assertEquals(expected[ii + 1], source.getPrev(firstKey + ii));
+            }
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
 }
