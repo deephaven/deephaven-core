@@ -1,0 +1,1 @@
+{"file":"reference/table-operations/create/blink-to-append-only.md","objects":{"tt1":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},"appendOnlyLimited":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}}}}

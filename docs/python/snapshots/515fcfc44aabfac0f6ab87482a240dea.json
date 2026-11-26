@@ -1,0 +1,1 @@
+{"file":"reference/table-operations/create/function_generated_table.md","objects":{"tt":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},"result":{"type":"Table","data":{"columns":[{"name":"Count","type":"int"}],"rows":[]}}}}

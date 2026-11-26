@@ -8,22 +8,22 @@ title: from_constituent_tables
 
 ```python syntax
 PartitionedTable.from_constituent_tables(
-  tables: List[Table],
-  constituent_table_columns: List[Column]
+  tables: Sequence[Table],
+  constituent_table_columns: TableDefinitionLike | None = None
 ) -> PartitionedTable
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="tables" type="List[Table]">
+<Param name="tables" type="Sequence[Table]">
 
 The constituent tables.
 
 </Param>
-<Param name="constituent_table_columns" type="List[Column]">
+<Param name="constituent_table_columns" type="TableDefinitionLike | None" optional>
 
-A list of column definitions compatible with all the constituent tables. Default is `None`. When `constituent_table_columns` is not provided, it will be set to the column definitions of the first table in the provided constituent tables.
+The column definitions compatible with all the constituent tables, as a [`TableDefinitionLike`](../create/TableDefinitionLike.md). Default is `None`. When `constituent_table_columns` is not provided, it will be set to the column definitions of the first table in the provided constituent tables.
 
 </Param>
 </ParamTable>
@@ -49,4 +49,5 @@ result = pt.table
 
 ## Related documentation
 
+- [`TableDefinitionLike`](../create/TableDefinitionLike.md)
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTable.from_constituent_tables)

@@ -7,6 +7,8 @@ This guide covers [function-generated tables](../reference/table-operations/crea
 - One or more trigger tables tick.
 - A refresh interval is reached.
 
+The refresh interval is checked once per [update cycle](../conceptual/table-update-model.md), so the function runs on the first cycle after the interval elapses, and never more than once per cycle.
+
 Use a function-generated table to ingest data from external sources into a ticking table. A refresh that produces a new table replaces the whole result, so when the input is already a Deephaven table, use regular table operations, many of which update incrementally.
 
 ## Usage pattern

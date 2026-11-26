@@ -57,13 +57,13 @@ print(partitioned_table.constituent_tables)
 
 ## `constituent_table_columns`
 
-The `constituent_table_columns` method returns the column definitions of the constituent tables.
+The `constituent_table_columns` property returns the column definitions of the constituent tables.
 
 > [!NOTE]
 > All constituent tables in a `PartitionedTable` have the same column definitions.
 
 ```python syntax
-PartitionedTable.constituent_table_columns -> List[Column]
+PartitionedTable.constituent_table_columns -> Sequence[ColumnDefinition]
 ```
 
 Here is an example:

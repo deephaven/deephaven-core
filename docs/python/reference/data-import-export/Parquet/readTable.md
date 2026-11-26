@@ -9,12 +9,12 @@ The `read` method reads a single Parquet file, metadata file, or directory with 
 ```python syntax
 read(
     path: str,
-    col_instructions: Optional[list[ColumnInstruction]] = None,
+    col_instructions: list[ColumnInstruction] | None = None,
     is_legacy_parquet: bool = False,
     is_refreshing: bool = False,
-    file_layout: Optional[ParquetFileLayout] = None,
-    table_definition: Union[Dict[str, DType], List[Column], None] = None,
-    special_instructions: Optional[s3.S3Instructions] = None
+    file_layout: ParquetFileLayout | None = None,
+    table_definition: TableDefinitionLike | None = None,
+    special_instructions: s3.S3Instructions | None = None
 ) -> Table
 ```
 
@@ -26,7 +26,7 @@ read(
 The Parquet file, metadata file, or directory to read, as a local path or URI (such as `s3://...`).
 
 </Param>
-<Param name="col_instructions" type="list[ColumnInstruction]" optional>
+<Param name="col_instructions" type="list[ColumnInstruction] | None" optional>
 
 One or more optional [`ColumnInstruction`](./ColumnInstruction.md) objects that provide instructions for how to read particular columns in the file. Set `unsigned_long_target` on a `ColumnInstruction` to choose the Deephaven type for an unsigned 64-bit integer (`UINT_64`) column.
 
@@ -41,17 +41,17 @@ Whether or not the Parquet data is legacy.
 Whether or not the Parquet data represents a refreshing source.
 
 </Param>
-<Param name="file_layout" type="Optional[ParquetFileLayout]" optional>
+<Param name="file_layout" type="ParquetFileLayout | None" optional>
 
 The Parquet file layout. The default is `None`, which infers the layout.
 
 </Param>
-<Param name="table_definition" type="Union[Dict[str, DType], List[Column], None]" optional>
+<Param name="table_definition" type="TableDefinitionLike | None" optional>
 
-The table definition. The default is `None`, which infers the table definition from the Parquet file(s).
+The table definition, as a [`TableDefinitionLike`](../../table-operations/create/TableDefinitionLike.md). The default is `None`, which infers the table definition from the Parquet file(s).
 
 </Param>
-<Param name="special_instructions" type="Optional[s3.S3Instructions]" optional>
+<Param name="special_instructions" type="s3.S3Instructions | None" optional>
 
 Special instructions for reading Parquet files. Mostly used when reading from nonlocal filesystems, such as AWS S3 buckets. Default is `None`.
 
@@ -236,5 +236,6 @@ Additionally, the `S3.maxFragmentSize` [configuration property](../../../how-to-
 - [Export Parquet files](../../../how-to-guides/data-import-export/parquet-export.md)
 - [`write_table`](./writeTable.md)
 - [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
+- [`TableDefinitionLike`](../../table-operations/create/TableDefinitionLike.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(java.lang.String))
 - [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read)

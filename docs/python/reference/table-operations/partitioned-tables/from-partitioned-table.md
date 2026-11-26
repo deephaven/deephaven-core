@@ -12,11 +12,11 @@ The `from_partitioned_table` method creates a new `PartitionedTable` from an und
 ```python syntax
 PartitionedTable.from_partitioned_table(
   table: Table,
-  key_cols: Union[str, List[str]] = None,
-  unique_keys: bool = None,
-  constituent_column: str = None,
-  constituent_table_columns: List[Column] = None,
-  constituent_changes_permitted: bool = None,
+  key_cols: str | Sequence[str] | None = None,
+  unique_keys: bool | None = None,
+  constituent_column: str | None = None,
+  constituent_table_columns: TableDefinitionLike | None = None,
+  constituent_changes_permitted: bool | None = None,
 ) -> PartitionedTable
 ```
 
@@ -28,35 +28,35 @@ PartitionedTable.from_partitioned_table(
 The underlying `PartitionedTable`.
 
 </Param>
-<Param name="key_cols" type="Union[str, List[str]]" optional>
+<Param name="key_cols" type="str | Sequence[str] | None" optional>
 
 The key column(s) of `table`.
 
 If `None`, the names of _all_ columns with a non-Table data type will be used as key columns.
 
 </Param>
-<Param name="unique_keys" type="bool" optional>
+<Param name="unique_keys" type="bool | None" optional>
 
 Whether the keys in `table` are guaranteed to be unique.
 
 If `None`, the value defaults to `False`.
 
 </Param>
-<Param name="constituent_column" type="str" optional>
+<Param name="constituent_column" type="str | None" optional>
 
 The constituent column name in `table`.
 
 If `None`, the value defaults to the name of the first column with a Table data type (usually `__CONSTITUENT__`).
 
 </Param>
-<Param name="constituent_table_columns" type="List[Column]" optional>
+<Param name="constituent_table_columns" type="TableDefinitionLike | None" optional>
 
-The column definitions of the constituent table.
+The column definitions of the constituent table, as a [`TableDefinitionLike`](../create/TableDefinitionLike.md).
 
 If `None`, the value defaults to the column definitions of the first cell (constituent table) in the constituent column. Consequently, the constituent column cannot be empty.
 
 </Param>
-<Param name="constituent_changes_permitted" type="bool" optional>
+<Param name="constituent_changes_permitted" type="bool | None" optional>
 
 Whether the constituent tables can be changed.
 
@@ -96,4 +96,5 @@ new_pt = PartitionedTable.from_partitioned_table(
 
 ## Related documentation
 
+- [`TableDefinitionLike`](../create/TableDefinitionLike.md)
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTable.from_partitioned_table)

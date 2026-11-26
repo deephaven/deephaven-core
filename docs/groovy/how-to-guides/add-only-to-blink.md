@@ -53,7 +53,7 @@ If all you need is a blink time table, you don't need [`AddOnlyToBlinkTableAdapt
 - [Incremental update model](../conceptual/table-update-model.md)
 - [Aggregations in Deephaven](../conceptual/aggregations.md)
 - [Create a time table](../how-to-guides/time-table.md)
-- [`addOnlyToBlink`](../reference/table-operations/create/addOnlyToBlink.md)
+- [`AddOnlyToBlinkTableAdapter.toBlink`](../reference/table-operations/create/addOnlyToBlink.md)
 - [`blinkToAppendOnly`](../reference/table-operations/create/blink-to-append-only.md)
 - [`countBy`](../reference/table-operations/group-and-aggregate/countBy.md)
 - [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md)

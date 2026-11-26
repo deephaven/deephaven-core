@@ -70,7 +70,7 @@ result1 = makeTableAndScope(1)
 t1 = result1[0]
 // ... wait for a while
 result1[1].release()
-// The released table no longer updates. Drop the variable too, so nothing refers to it.
+// The released table no longer updates. Drop the variable so the console does not hold a handle to it.
 t1 = null
 result1 = null
 result2 = makeTableAndScope(2)
@@ -143,7 +143,7 @@ try ( SafeCloseable ignored = LivenessScopeStack.open() ) {
     consoleScope.manage(ticks)
 }
 
-// The released table no longer updates. Drop the variable too, so nothing refers to it.
+// The released table no longer updates. Drop the variable so the console does not hold a handle to it.
 evens = null
 ```
 
@@ -260,7 +260,7 @@ try ( SafeCloseable ignored = LivenessScopeStack.open(scope, false) ) {
 
 // ... later, when you no longer need everyThird
 scope.release()
-// The released table no longer updates. Drop the variable too, so nothing refers to it.
+// The released table no longer updates. Drop the variable so the console does not hold a handle to it.
 everyThird = null
 ```
 
