@@ -18,7 +18,7 @@ from deephaven import read_csv
 
 read_csv(
     path: str,
-    header: Optional[dict[str, DType]] = None,
+    header: dict[str, DType] | None = None,
     headless: bool = False,
     header_row: int = 0,
     skip_rows: int = 0,

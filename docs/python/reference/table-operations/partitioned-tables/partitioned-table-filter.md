@@ -11,14 +11,14 @@ The `filter` method creates a new `PartitionedTable` containing only the rows me
 
 ```python syntax
 filter(
-  filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
+  filters: str | Filter | Sequence[str] | Sequence[Filter]
 ) -> PartitionedTable
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="filters" type="Union[str, Filter, Sequence[str], Sequence[Filter]]">
+<Param name="filters" type="str | Filter | Sequence[str] | Sequence[Filter]">
 
 The filter conditions or Filter objects to apply.
 

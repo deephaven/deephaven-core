@@ -59,14 +59,13 @@ source_meta = source.meta_table
 
 ### Optional return values
 
-Python's `Optional` type hint declares that a function can return `None`. When you call such a function in a [query string](./query-string-overview.md), Deephaven stores each `None` return as a [null value](./null-inf-nan.md). In the following example, `source_meta` shows that `X` is a `long` column, and every row where [`ii`](../reference/query-language/variables/special-variables.md) is even holds a [null value](./null-inf-nan.md):
+A `| None` type hint, such as `int | None`, declares that a function can return `None`. When you call such a function in a [query string](./query-string-overview.md), Deephaven stores each `None` return as a [null value](./null-inf-nan.md). In the following example, `source_meta` shows that `X` is a `long` column, and every row where [`ii`](../reference/query-language/variables/special-variables.md) is even holds a [null value](./null-inf-nan.md):
 
 ```python order=source,source_meta
 from deephaven import empty_table
-from typing import Optional
 
 
-def my_optional_return_func(value: int) -> Optional[int]:
+def my_optional_return_func(value: int) -> int | None:
     if value % 2 == 0:
         return None
     return 2 * value
@@ -182,21 +181,20 @@ source_meta = source.meta_table
 
 A parameter hint also decides how a [null value](./null-inf-nan.md) reaches the function:
 
-- Without `Optional`, Deephaven passes the [null value](./null-inf-nan.md) of a primitive column as is, so a null `long` arrives in Python as the integer `-9223372036854775808`.
-- With an `Optional` parameter hint, such as `value: Optional[int]`, Deephaven passes each [null value](./null-inf-nan.md) as `None`.
+- With a plain numeric hint such as `value: int`, or with `object | None`, Deephaven passes the [null value](./null-inf-nan.md) of a primitive column as is, so a null `long` arrives in Python as the integer `-9223372036854775808`.
+- With a numeric hint that allows `None`, such as `value: int | None`, Deephaven passes each [null value](./null-inf-nan.md) as `None`.
 
 In the following example, `X` uses the built-in constant [`NULL_LONG`](./built-in-constants.md#null-constants) to hold a [null value](./null-inf-nan.md) in every row where [`ii`](../reference/query-language/variables/special-variables.md) is even. `is_none` never receives `None`, so `IsNone` is `false` in every row. `is_none_optional` receives `None` for each null, so `IsNoneOptional` is `true` in the rows where `X` is null:
 
 ```python order=source
 from deephaven import empty_table
-from typing import Optional
 
 
 def is_none(value: int) -> bool:
     return value is None
 
 
-def is_none_optional(value: Optional[int]) -> bool:
+def is_none_optional(value: int | None) -> bool:
     return value is None
 
 

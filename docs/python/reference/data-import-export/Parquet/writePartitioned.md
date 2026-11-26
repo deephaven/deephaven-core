@@ -8,26 +8,26 @@ The `write_partitioned` method writes a table to disk in Parquet format with par
 
 ```python syntax
 write_partitioned(
-    table: Union[Table, PartitionedTable],
+    table: Table | PartitionedTable,
     destination_dir: str,
-    table_definition: TableDefinitionLike = None,
-    col_instructions: list[ColumnInstruction] = None,
-    compression_codec_name: str = None,
-    max_dictionary_keys: int = None,
-    max_dictionary_size: int = None,
-    target_page_size: int = None,
-    base_name: str = None,
-    generate_metadata_files: bool = None,
-    index_columns: Sequence[Sequence[str]] = None,
-    row_group_info: RowGroupInfo = None,
-    special_instructions: s3.S3Instructions = None,
+    table_definition: TableDefinitionLike | None = None,
+    col_instructions: list[ColumnInstruction] | None = None,
+    compression_codec_name: str | None = None,
+    max_dictionary_keys: int | None = None,
+    max_dictionary_size: int | None = None,
+    target_page_size: int | None = None,
+    base_name: str | None = None,
+    generate_metadata_files: bool | None = None,
+    index_columns: Sequence[Sequence[str]] | None = None,
+    row_group_info: RowGroupInfo | None = None,
+    special_instructions: s3.S3Instructions | None = None,
 )
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="table" type="Union[Table, PartitionedTable]">
+<Param name="table" type="Table | PartitionedTable">
 
 The source table or [partitioned table](../../table-operations/group-and-aggregate/partitionBy.md) to write.
 
@@ -37,37 +37,37 @@ The source table or [partitioned table](../../table-operations/group-and-aggrega
 The path or URI to the destination root directory in which the partitioned Parquet data is stored. Non-existing directories in the provided path are created.
 
 </Param>
-<Param name="table_definition" type="TableDefinitionLike" optional>
+<Param name="table_definition" type="TableDefinitionLike | None" optional>
 
 The table definition to use for writing, instead of the definitions implied by the table. Default is `None`, which uses the column definitions implied by the table. This definition can skip some columns or add additional columns with null values.
 
 </Param>
-<Param name="col_instructions" type="list[ColumnInstruction]" optional>
+<Param name="col_instructions" type="list[ColumnInstruction] | None" optional>
 
 One or more optional [`ColumnInstruction`](./ColumnInstruction.md) objects that contain instructions for writing particular columns in the table.
 
 </Param>
-<Param name="compression_codec_name" type="str" optional>
+<Param name="compression_codec_name" type="str | None" optional>
 
 The compression codec to use. See the [`write`](./writeTable.md) parameters for available options. If not specified, defaults to `SNAPPY`.
 
 </Param>
-<Param name="max_dictionary_keys" type="int" optional>
+<Param name="max_dictionary_keys" type="int | None" optional>
 
 The maximum number of unique dictionary keys the writer is allowed to add to a dictionary page before switching to non-dictionary encoding. If not specified, defaults to 2^20 (1,048,576).
 
 </Param>
-<Param name="max_dictionary_size" type="int" optional>
+<Param name="max_dictionary_size" type="int | None" optional>
 
 The maximum number of bytes the writer adds to the dictionary before switching to non-dictionary encoding. Only evaluated for String columns. If not specified, defaults to 2^20 (1,048,576).
 
 </Param>
-<Param name="target_page_size" type="int" optional>
+<Param name="target_page_size" type="int | None" optional>
 
 The target page size in bytes. If not specified, defaults to 2^20 bytes (1 MiB).
 
 </Param>
-<Param name="base_name" type="str" optional>
+<Param name="base_name" type="str | None" optional>
 
 The base name for the individual partitioned files. If not specified, defaults to `{uuid}`, so files have names of the format `<uuid>.parquet`. The following tokens are available:
 
@@ -76,22 +76,22 @@ The base name for the individual partitioned files. If not specified, defaults t
 - `{i}` — Replaced with an auto-incremented integer for files in a directory. For example, `table-{i}` results in `PC=partition1/table-0.parquet`, `PC=partition1/table-1.parquet`, etc.
 
 </Param>
-<Param name="generate_metadata_files" type="bool" optional>
+<Param name="generate_metadata_files" type="bool | None" optional>
 
 Whether to generate Parquet `_metadata` and `_common_metadata` files. Defaults to `False`. Generating these files speeds up reading partitioned data because they contain metadata (including schema) about the entire dataset.
 
 </Param>
-<Param name="index_columns" type="Sequence[Sequence[str]]" optional>
+<Param name="index_columns" type="Sequence[Sequence[str]] | None" optional>
 
 Sequence of sequences containing the column names for indexes to persist. The write operation stores the index info as sidecar tables. For example, `[["Col1"], ["Col1", "Col2"]]` stores indexes for `["Col1"]` and `["Col1", "Col2"]`. By default, indexes to write are determined by those present on the source table.
 
 </Param>
-<Param name="row_group_info" type="RowGroupInfo" optional>
+<Param name="row_group_info" type="RowGroupInfo | None" optional>
 
 Requested `RowGroup` instructions, as returned by a call to `RowGroupInfo`.
 
 </Param>
-<Param name="special_instructions" type="s3.S3Instructions" optional>
+<Param name="special_instructions" type="s3.S3Instructions | None" optional>
 
 Special instructions for writing Parquet files to a non-local file system, like S3. Default is `None`.
 

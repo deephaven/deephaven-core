@@ -317,7 +317,7 @@ def object_val(
         object_val({ "name": str, "age": int })
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
-    simplify by using a dict[str, Union[JsonValueType, ObjectField]]. For example,
+    simplify by using a dict[str, JsonValueType | ObjectField]. For example,
 
     .. code-block:: python
 
@@ -330,7 +330,7 @@ def object_val(
         some_method({ "name": str, "age": int })
 
     Args:
-        fields (dict[str, Union[JsonValueType, ObjectField]]): the fields
+        fields (dict[str, JsonValueType | ObjectField]): the fields
         allow_unknown_fields (bool): if unknown fields are allow, by default is True
         allow_missing (bool): if the object is allowed to be missing, by default is True
         allow_null (bool): if the object is allowed to be a JSON null type, by default is True
@@ -403,15 +403,15 @@ def typed_object_val(
 
     Args:
         type_field (str): the type-discriminating field
-        shared_fields (dict[str, Union[JsonValueType, ObjectField]]): the shared fields
+        shared_fields (dict[str, JsonValueType | ObjectField]): the shared fields
         objects (dict[str, JsonValueType]): the individual objects, keyed by their
             type-discriminated value. The values must be object options.
         allow_unknown_types (bool): if unknown types are allow, by default is True
         allow_missing (bool): if the object is allowed to be missing, by default is True
         allow_null (bool): if the object is allowed to be a JSON null type, by default is True
-        on_missing (Optional[str]): the type value to use when the JSON value is missing and allow_missing is True,
+        on_missing (str | None): the type value to use when the JSON value is missing and allow_missing is True,
             default is None
-        on_null (Optional[str]): the type value to use when the JSON value is null and allow_null is True, default is
+        on_null (str | None): the type value to use when the JSON value is null and allow_null is True, default is
             None
 
     Returns:
@@ -568,7 +568,7 @@ def tuple_val(
         some_method((tuple_type_1, tuple_type_2))
 
     Args:
-        values (Union[tuple[JsonValueType, ...], dict[str, JsonValueType]]): the tuple value types
+        values (tuple[JsonValueType, ...] | dict[str, JsonValueType]): the tuple value types
         allow_missing (bool): if the array is allowed to be missing, by default is True
         allow_null (bool): if the array is allowed to be a JSON null type, by default is True
     Returns:
@@ -628,8 +628,8 @@ def bool_val(
         allow_string (bool): if the bool value is allowed to be a JSON string type, default is False
         allow_missing (bool): if the bool value is allowed to be missing, default is True
         allow_null (bool): if the bool value is allowed to be a JSON null type, default is True
-        on_missing (Optional[bool]): the value to use when the JSON value is missing and allow_missing is True, default is None
-        on_null (Optional[bool]): the value to use when the JSON value is null and allow_null is True, default is None
+        on_missing (bool | None): the value to use when the JSON value is missing and allow_missing is True, default is None
+        on_null (bool | None): the value to use when the JSON value is null and allow_null is True, default is None
 
     Returns:
         the bool value
@@ -670,8 +670,8 @@ def char_val(
     Args:
         allow_missing (bool): if the char value is allowed to be missing, default is True
         allow_null (bool): if the char value is allowed to be a JSON null type, default is True
-        on_missing (Optional[str]): the value to use when the JSON value is missing and allow_missing is True, default is None. If specified, must be a single character.
-        on_null (Optional[str]): the value to use when the JSON value is null and allow_null is True, default is None. If specified, must be a single character.
+        on_missing (str | None): the value to use when the JSON value is missing and allow_missing is True, default is None. If specified, must be a single character.
+        on_null (str | None): the value to use when the JSON value is null and allow_null is True, default is None. If specified, must be a single character.
 
     Returns:
         the char value
@@ -715,8 +715,8 @@ def byte_val(
         allow_string (bool): if the byte value is allowed to be a JSON string type, default is False
         allow_missing (bool): if the byte value is allowed to be missing, default is True
         allow_null (bool): if the byte value is allowed to be a JSON null type, default is True
-        on_missing (Optional[int]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (int | None): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (int | None): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the byte value
@@ -762,8 +762,8 @@ def short_val(
         allow_string (bool): if the short value is allowed to be a JSON string type, default is False
         allow_missing (bool): if the short value is allowed to be missing, default is True
         allow_null (bool): if the short value is allowed to be a JSON null type, default is True
-        on_missing (Optional[int]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (int | None): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (int | None): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the short value
@@ -809,8 +809,8 @@ def int_val(
         allow_string (bool): if the int value is allowed to be a JSON string type, default is False
         allow_missing (bool): if the int value is allowed to be missing, default is True
         allow_null (bool): if the int value is allowed to be a JSON null type, default is True
-        on_missing (Optional[int]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (int | None): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (int | None): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the int value
@@ -869,8 +869,8 @@ def long_val(
         allow_string (bool): if the long value is allowed to be a JSON string type, default is False
         allow_missing (bool): if the long value is allowed to be missing, default is True
         allow_null (bool): if the long value is allowed to be a JSON null type, default is True
-        on_missing (Optional[int]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (int | None): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (int | None): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the long value
@@ -914,8 +914,8 @@ def float_val(
         allow_string (bool): if the float value is allowed to be a JSON string type, default is False
         allow_missing (bool): if the float value is allowed to be missing, default is True
         allow_null (bool): if the float value is allowed to be a JSON null type, default is True
-        on_missing (Optional[float]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[float]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (float | None): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (float | None): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the float value
@@ -972,8 +972,8 @@ def double_val(
         allow_string (bool): if the double value is allowed to be a JSON string type, default is False
         allow_missing (bool): if the double value is allowed to be missing, default is True
         allow_null (bool): if the double value is allowed to be a JSON null type, default is True
-        on_missing (Optional[float]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[float]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (float | None): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (float | None): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the double value
@@ -1034,8 +1034,8 @@ def string_val(
         allow_bool (bool): if the string value is allowed to be a JSON boolean type, default is False
         allow_missing (bool): if the double value is allowed to be missing, default is True
         allow_null (bool): if the double value is allowed to be a JSON null type, default is True
-        on_missing (Optional[str]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[str]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (str | None): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (str | None): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the String value
@@ -1113,8 +1113,8 @@ def instant_val(
             when number_format is True.
         allow_string (bool): if the Instant value is allowed to be a JSON string type, default is False. Is only
             relevant when number_format is True.
-        on_missing (Optional[InstantLike]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[InstantLike]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (InstantLike | None): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (InstantLike | None): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the Instant value
@@ -1186,8 +1186,8 @@ def big_integer_val(
         allow_decimal (bool): if the BigInteger value is allowed to be a JSON decimal type, default is False.
         allow_missing (bool): if the BigInteger value is allowed to be missing, default is True
         allow_null (bool): if the BigInteger value is allowed to be a JSON null type, default is True
-        on_missing (Optional[Union[int, str]]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[Union[int, str]]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (int | str | None): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (int | str | None): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the BigInteger value
@@ -1231,8 +1231,8 @@ def big_decimal_val(
         allow_string (bool): if the BigDecimal value is allowed to be a JSON string type, default is False.
         allow_missing (bool): if the BigDecimal value is allowed to be missing, default is True
         allow_null (bool): if the BigDecimal value is allowed to be a JSON null type, default is True
-        on_missing (Optional[Union[float, str]]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[Union[float, str]]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (float | str | None): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (float | str | None): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the BigDecimal value
@@ -1287,14 +1287,14 @@ def skip_val(
         object_val({ "name": str, "age": skip_val() }, allow_unknown_fields=False)
 
     Args:
-        allow_missing (Optional[bool]): if a missing JSON value is allowed, by default is None
-        allow_null (Optional[bool]): if a JSON null type is allowed, by default is None
-        allow_int (Optional[bool]): if a JSON integer type is allowed, by default is None
-        allow_decimal (Optional[bool]): if a JSON decimal type is allowed, by default is None
-        allow_string (Optional[bool]): if a JSON string type is allowed, by default is None
-        allow_bool (Optional[bool]): if a JSON boolean type is allowed, by default is None
-        allow_object (Optional[bool]): if a JSON object type is allowed, by default is None
-        allow_array (Optional[bool]): if a JSON array type is allowed, by default is None
+        allow_missing (bool | None): if a missing JSON value is allowed, by default is None
+        allow_null (bool | None): if a JSON null type is allowed, by default is None
+        allow_int (bool | None): if a JSON integer type is allowed, by default is None
+        allow_decimal (bool | None): if a JSON decimal type is allowed, by default is None
+        allow_string (bool | None): if a JSON string type is allowed, by default is None
+        allow_bool (bool | None): if a JSON boolean type is allowed, by default is None
+        allow_object (bool | None): if a JSON object type is allowed, by default is None
+        allow_array (bool | None): if a JSON array type is allowed, by default is None
         allow_by_default (bool): the default behavior for the other arguments when they are set to None, by default is True
 
     Returns:

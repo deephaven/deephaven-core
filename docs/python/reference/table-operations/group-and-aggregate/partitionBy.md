@@ -7,13 +7,13 @@ title: partition_by
 ## Syntax
 
 ```
-table.partition_by(by: Union[str, list[str]], drop_keys: bool = False) -> PartitionedTable
+table.partition_by(by: str | list[str], drop_keys: bool = False) -> PartitionedTable
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="by" type="Union[str, list[str]]">
+<Param name="by" type="str | list[str]">
 
 The column(s) by which to group data.
 

@@ -152,11 +152,11 @@ def barrage_session(
             "user:password"; when auth_type is 'Anonymous', it will be ignored; when auth_type is a custom-built
             authenticator, it must conform to the specific requirement of the authenticator
         use_tls (bool): if True, use a TLS connection.  Defaults to False
-        tls_root_certs (Optional[bytes]): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
+        tls_root_certs (bytes | None): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
              If not None implies use a TLS connection and the use_tls argument should have been passed
              as True. Defaults to None
-        extra_headers (Optional[dict[str, str]]): extra headers to set when configuring the gRPC channel. Defaults to None.
-        accept_compression (Optional[Union[str, Sequence[str]]]): the compression type, or types, that the session
+        extra_headers (dict[str, str] | None): extra headers to set when configuring the gRPC channel. Defaults to None.
+        accept_compression (str | Sequence[str] | None): the compression type, or types, that the session
             accepts, such as "gzip", "zstd" and "snappy". The remote server compresses only tables that allow one of
             them. None accepts every supported type; an empty sequence accepts none, so data is always sent
             uncompressed. Defaults to None.

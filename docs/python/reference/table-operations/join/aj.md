@@ -19,8 +19,8 @@ When more than one right table row has the same exact match keys and the same cl
 ```
 left.aj(
     table: Table,
-    on: Union[str, Sequence[str]],
-    joins: Union[str, Sequence[str]] = None,
+    on: str | Sequence[str],
+    joins: str | Sequence[str] | None = None,
 ) -> Table
 ```
 
@@ -32,7 +32,7 @@ left.aj(
 The table data is added from (the right table).
 
 </Param>
-<Param name="on" type="Union[str, Sequence[str]]">
+<Param name="on" type="str | Sequence[str]">
 
 Columns from the left and right tables used to join on.
 
@@ -46,7 +46,7 @@ Columns from the left and right tables used to join on.
 The first `N-1` match columns are exactly matched. The last match column is used to find the key values from the right table that are closest to the values in the left table without going over.
 
 </Param>
-<Param name="joins" type="Union[str, Sequence[str]]" optional>
+<Param name="joins" type="str | Sequence[str] | None" optional>
 
 Columns from the right table to be added to the left table based on key may be specified in this list:
 

@@ -95,7 +95,7 @@ def time_table(
         period (DurationLike):
             time interval between new row additions, can be expressed as an integer in nanoseconds,
             a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time duration types.
-        start_time (Optional[InstantLike]):
+        start_time (InstantLike | None):
             start time for adding new rows, defaults to None which means use the current time
             as the start time.
         blink_table (bool): if the time table should be a blink table, defaults to False
@@ -135,7 +135,7 @@ def new_table(cols: Sequence[InputColumn] | Mapping[str, Sequence]) -> Table:
     determined by Pandas' type inference logic.
 
     Args:
-        cols (Union[Sequence[InputColumn], Mapping[str, Sequence]]): a list of InputColumns or a mapping of columns
+        cols (Sequence[InputColumn] | Mapping[str, Sequence]): a list of InputColumns or a mapping of columns
             names and column data.
 
     Returns:
@@ -334,8 +334,8 @@ class InputTable(Table):
 
         Args:
             table (Table): the table that provides the rows to write
-            on_success (Optional[Callable[[], None]]): the success callback function, default is None
-            on_error (Optional[Callable[[Exception], None]]): the error callback function, default is None. When None, a default
+            on_success (Callable[[], None] | None): the success callback function, default is None
+            on_error (Callable[[Exception], None] | None): the error callback function, default is None. When None, a default
                 callback function will be provided that simply prints out the received exception. If the callback
                 function itself raises an exception, the new exception will be logged in the Deephaven server log and
                 will not be further processed by the server.
@@ -379,8 +379,8 @@ class InputTable(Table):
 
         Args:
             table (Table): the table with the keys to delete
-            on_success (Optional[Callable[[], None]]): the success callback function, default is None
-            on_error (Optional[Callable[[Exception], None]]): the error callback function, default is None. When None, a default
+            on_success (Callable[[], None] | None): the success callback function, default is None
+            on_error (Callable[[Exception], None] | None): the error callback function, default is None. When None, a default
                 callback function will be provided that simply prints out the received exception. If the callback
                 function itself raises an exception, the new exception will be logged in the Deephaven server log and
                 will not be further processed by the server.
@@ -432,9 +432,9 @@ def input_table(
     The keyed input table has keys for each row and supports addition/deletion/modification of rows by the keys.
 
     Args:
-        col_defs (Optional[TableDefinitionLike]): the table definition
-        init_table (Optional[Table]): the initial table
-        key_cols (Optional[Union[str, Sequence[str]]]): the name(s) of the key column(s)
+        col_defs (TableDefinitionLike | None): the table definition
+        init_table (Table | None): the initial table
+        key_cols (str | Sequence[str] | None): the name(s) of the key column(s)
 
     Returns:
         an InputTable
@@ -497,7 +497,7 @@ def function_generated_table(
     refresh_interval_ms: int | None = None,
     exec_ctx: ExecutionContext | None = None,
     args: tuple = (),
-    kwargs: dict = {},
+    kwargs: dict | None = None,
     copy_data: bool = True,
     blink_table: bool = False,
     table_definition: TableDefinitionLike | None = None,
@@ -530,21 +530,22 @@ def function_generated_table(
     or only compute on-demand inputs under a LivenessScope.
 
     Args:
-        table_generator (Callable[..., Optional[Table]]): The table generator function. This function must return a Table, or None
+        table_generator (Callable[..., Table | None]): The table generator function. This function must return a Table, or None
             to decline producing a new table, in which case the previous cycle's result is retained (or, for a blink
             table, cleared). If the very first invocation returns None, 'table_definition' must be provided so the
             result's columns are known.
-        source_tables (Optional[Union[Table, Sequence[Table]]]): Source tables used by the 'table_generator' function. The
+        source_tables (Table | Sequence[Table] | None): Source tables used by the 'table_generator' function. The
             'table_generator' is rerun when any of these tables tick.
-        refresh_interval_ms (Optional[int]): Interval (in milliseconds) at which the 'table_generator' function is
+        refresh_interval_ms (int | None): Interval (in milliseconds) at which the 'table_generator' function is
             rerun. The interval is checked once per update cycle, so the 'table_generator' runs on the first cycle
             after the interval elapses, and never more than once per cycle. A non-positive interval is treated the same
             as no trigger at all, producing a static result. An interval greater than 2,147,483,647 ms (about 24.8 days)
             raises an error.
-        exec_ctx (Optional[ExecutionContext]): A custom execution context. If 'None', the current
+        exec_ctx (ExecutionContext | None): A custom execution context. If 'None', the current
             execution context is used.
         args (tuple): Optional tuple of positional arguments to pass to table_generator. Defaults to ()
-        kwargs (dict): Optional dictionary of keyword arguments to pass to table_generator. Defaults to {}
+        kwargs (dict | None): Optional dictionary of keyword arguments to pass to table_generator. Defaults to None,
+            meaning no keyword arguments are passed
         copy_data (bool): When True (the default), the generated data is copied into the result's own column sources
             and the result uses a flat, contiguous row set. When False, the result delegates directly to the generated
             table's column sources, avoiding the copy and adopting the generated table's row set as-is: the added rows
@@ -557,7 +558,7 @@ def function_generated_table(
             are removed on the next cycle whether or not 'table_generator' runs again. On a cycle where
             'table_generator' returns None, the blink result is cleared. Requires a refresh trigger
             ('refresh_interval_ms' or 'source_tables'). Defaults to False.
-        table_definition (Optional[TableDefinitionLike]): When provided, it is authoritative: it defines the result's
+        table_definition (TableDefinitionLike | None): When provided, it is authoritative: it defines the result's
             columns and their order, and every table the 'table_generator' produces must be compatible with it. Defaults
             to None, in which case the generated table's definition is used.
 
@@ -578,7 +579,7 @@ def function_generated_table(
 
     def table_generator_function():
         with exec_ctx:
-            result = table_generator(*args, **kwargs)
+            result = table_generator(*args, **(kwargs if kwargs is not None else {}))
 
         # A None result means "no new table"; the previously produced result is retained for the next cycle.
         if result is None:

@@ -13,13 +13,13 @@ title: to_pd_timedelta
 ## Syntax
 
 ```python syntax
-to_pd_timedelta(dt: Union[None, Duration]) -> pandas.Timedelta
+to_pd_timedelta(dt: Duration | None) -> pandas.Timedelta
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="dt" type="Union[None, Duration]">
+<Param name="dt" type="Duration | None">
 
 A Java Duration to convert to a `pandas.Timedelta`. If `None` is provided, `None` is returned.
 

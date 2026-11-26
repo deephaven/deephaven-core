@@ -7,15 +7,15 @@ title: last
 ## Syntax
 
 ```
-last(cols: Union[str, list[str]]) -> Aggregation
+last(cols: str | list[str] | None = None) -> Aggregation
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str] | None" optional>
 
-The source column(s) for the calculations.
+The source column(s) for the calculations. Leave it out only when you pass this aggregation to [`agg_all_by`](./AggAllBy.md), which applies it to every non-key column.
 
 - `["X"]` will output the last value in the `X` column for each group.
 - `["Y = X"]` will output the last value in the `X` column for each group and rename it to `Y`.

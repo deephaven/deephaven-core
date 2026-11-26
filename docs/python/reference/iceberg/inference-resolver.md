@@ -10,7 +10,7 @@ The `InferenceResolver` class provides inference options for mapping Iceberg fie
 InferenceResolver(
     infer_partitioning_columns: bool = False,
     fail_on_unsupported_types: bool = False,
-    schema_provider: Optional[SchemaProvider] = None
+    schema_provider: SchemaProvider | None = None
 )
 ```
 
@@ -27,7 +27,7 @@ Whether partitioning columns should be inferred based on the latest Iceberg `Par
 Whether inference should fail if any Iceberg fields cannot be mapped to Deephaven columns. Defaults to `False`.
 
 </Param>
-<Param name="schema_provider" type="Optional[SchemaProvider]" Optional>
+<Param name="schema_provider" type="SchemaProvider | None" Optional>
 
 The Iceberg schema to use for inference. If not specified, the current schema from the Iceberg table is used.
 

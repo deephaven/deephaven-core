@@ -119,7 +119,7 @@ class _BaseLivenessScope(JObjectWrapper):
         """Preserves a query graph node (usually a Table) to keep it live for the outer scope.
 
         Args:
-            referent (Union[JObjectWrapper, jpy.JType]): an object to preserve in the next outer liveness scope
+            referent (JObjectWrapper | jpy.JType): an object to preserve in the next outer liveness scope
 
         Raises:
             DHError if the object isn't a liveness node, or this instance isn't currently at the top of the stack
@@ -151,7 +151,7 @@ class _BaseLivenessScope(JObjectWrapper):
         a Python wrapper around a LivenessReferent
 
         Args:
-            referent (Union[JObjectWrapper, jpy.JType]): the object to manage by this scope
+            referent (JObjectWrapper | jpy.JType): the object to manage by this scope
 
         Returns: None
 
@@ -171,7 +171,7 @@ class _BaseLivenessScope(JObjectWrapper):
         a Python wrapper around a LivenessReferent
 
         Args:
-            referent (Union[JObjectWrapper, jpy.JType]): the object to unmanage from this scope
+            referent (JObjectWrapper | jpy.JType): the object to unmanage from this scope
 
         Returns: None
 

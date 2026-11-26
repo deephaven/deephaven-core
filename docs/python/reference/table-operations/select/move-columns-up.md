@@ -7,13 +7,13 @@ The `move_columns_up` method creates a new table with specified columns appearin
 ## Syntax
 
 ```
-move_columns_up(cols: Union[str, Sequence[str]]) -> Table
+move_columns_up(cols: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, Sequence[str]]">
+<Param name="cols" type="str | Sequence[str]">
 
 Columns to move to the left side of the new table.
 

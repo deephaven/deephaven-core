@@ -86,14 +86,14 @@ def table_publisher(
     Args:
         name (str): the name, used for logging
         col_defs (TableDefinitionLike): the table definition for the resulting blink table
-        on_flush_callback (Optional[Callable[[TablePublisher], None]]): the on-flush callback, if present, is called
+        on_flush_callback (Callable[[TablePublisher], None] | None): the on-flush callback, if present, is called
             once at the beginning of each update graph cycle. This is a pattern that allows publishers to add any data
             they may have been batching. Do note though, this blocks the update cycle from proceeding, so
             implementations should take care to not do extraneous work.
-        on_shutdown_callback (Optional[Callable[[], None]]): the on-shutdown callback, if present, is called one time
+        on_shutdown_callback (Callable[[], None] | None): the on-shutdown callback, if present, is called one time
             when the caller should stop adding new data and release any related resources as soon as practicable since
             adding data won't have any downstream effects
-        update_graph (Optional[UpdateGraph]): the update graph the resulting table will belong to. If unset, the update
+        update_graph (UpdateGraph | None): the update graph the resulting table will belong to. If unset, the update
             graph of the current execution context will be used.
         chunk_size (int): the chunk size, the size at which chunks will be filled from the source table during an add,
             defaults to 2048

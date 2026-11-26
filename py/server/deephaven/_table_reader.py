@@ -66,7 +66,7 @@ def _table_reader_all(
 
     Args:
         table (Table):  The table to read.
-        cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+        cols (str | Sequence[str] | None): The columns to read. If None, all columns are read.
         emitter (Callable[[Sequence[Column], jpy.JType], T): The function that takes the column definitions
             and the column data in the form of Java arrays and returns a Python object, usually a collection, such as
             dictionary, tuple.
@@ -114,7 +114,7 @@ def _table_reader_all_dict(
 
     Args:
         table (Table):  The table to read.
-        cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+        cols (str | Sequence[str] | None): The columns to read. If None, all columns are read.
         row_set (jpy.JType): The row set to read.
         prev (bool): If True, read the previous values. Default is False.
         to_numpy (bool): If True, convert the column data to numpy arrays. Default is True.
@@ -159,7 +159,7 @@ def _table_reader_chunk(
 
     Args:
         table (Table):  The table to read.
-        cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+        cols (str | Sequence[str] | None): The columns to read. If None, all columns are read.
         emitter (Callable[[Sequence[Column], jpy.JType], Iterable[T]]): The function that takes the column definitions
             and the column data in the form of Java arrays and returns an Iterable.
         row_set (jpy.JType): The row set to read.
@@ -216,7 +216,7 @@ def _table_reader_chunk_dict(
 
     Args:
         table (Table):  The table to read.
-        cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+        cols (str | Sequence[str] | None): The columns to read. If None, all columns are read.
         row_set (jpy.JType): The row set to read.
         chunk_size (int): The number of rows to read at a time. Default is 2048.
         prev (bool): If True, read the previous values. Default is False.
@@ -262,7 +262,7 @@ def _table_reader_chunk_tuple(
 
     Args:
         table (Table): The table to read.
-        cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+        cols (str | Sequence[str] | None): The columns to read. If None, all columns are read.
         tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
         chunk_size (int): The number of rows to read at a time. Default is 2048.
 
@@ -317,7 +317,7 @@ def _table_reader_row_dict(
 
     Args:
         table (Table): The table to read.
-        cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+        cols (str | Sequence[str] | None): The columns to read. If None, all columns are read.
         chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python boundary
             crossings. Default is 2048.
 
@@ -373,7 +373,7 @@ def _table_reader_row_tuple(
 
     Args:
         table (Table): The table to read.
-        cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read. Default is None.
+        cols (str | Sequence[str] | None): The columns to read. If None, all columns are read. Default is None.
         tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
         chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python boundary
             crossings. Default is 2048.

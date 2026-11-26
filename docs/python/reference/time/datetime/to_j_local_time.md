@@ -14,13 +14,13 @@ title: to_j_local_time
 ## Syntax
 
 ```python syntax
-to_j_local_time(dt: Union[None, LocalTime, int, str, datetime.time.datetime.datetime, numpy.datetime64, pandas.Timestamp]) -> LocalTime
+to_j_local_time(dt: LocalTime | int | str | datetime.time | datetime.datetime | numpy.datetime64 | pandas.Timestamp | None) -> LocalTime
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="dt" type="Union[None, LocalTime, int, str, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]">
+<Param name="dt" type="LocalTime | int | str | datetime.time | datetime.datetime | numpy.datetime64 | pandas.Timestamp | None">
 
 A Python local time or local time string.
 

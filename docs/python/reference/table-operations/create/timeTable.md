@@ -8,8 +8,8 @@ The `time_table` method creates a time table that adds new rows at a specified i
 
 ```python syntax
 time_table(
-  period: Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta],
-  start_time: Optional[InstantLike] = None,
+  period: dtypes.Duration | int | str | datetime.timedelta | np.timedelta64 | pd.Timedelta,
+  start_time: InstantLike | None = None,
   blink_table: bool = False,
   ) -> Table
 ```
@@ -17,7 +17,7 @@ time_table(
 ## Parameters
 
 <ParamTable>
-<Param name="period" type="Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]">
+<Param name="period" type="dtypes.Duration | int | str | datetime.timedelta | np.timedelta64 | pd.Timedelta">
 
 The time interval between new row additions. Can be given as:
 
@@ -29,7 +29,7 @@ The time interval between new row additions. Can be given as:
 - A [pandas.Timedelta](https://pandas.pydata.org/docs/reference/api/pandas.Timedelta.html) object.
 
 </Param>
-<Param name="start_time" type="Optional[InstantLike]" optional>
+<Param name="start_time" type="InstantLike | None" optional>
 
 The value of the [date-time](../../query-language/types/date-time.md) in the first row of the table. Can be an `Instant`, `int` (nanoseconds since the Epoch), `str`, `datetime.datetime`, `numpy.datetime64`, or `pandas.Timestamp`. String inputs can use any format that [`DateTimeUtils.parseInstant`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseInstant(java.lang.String)) accepts, such as `YYYY-MM-DDThh:mm:ss.dddddddd TZ`, or an integer number of seconds, milliseconds, microseconds, or nanoseconds since the Epoch. See the [details on the `start_time` parameter](#details-on-the-start_time-parameter) for information on default behavior.
 

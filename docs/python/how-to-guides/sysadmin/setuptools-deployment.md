@@ -51,7 +51,7 @@ name = "my-dh-library"
 version = "0.1.0"
 description = "Reusable Deephaven query functions"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "deephaven-core>=42.7",
 ]
@@ -127,7 +127,7 @@ The package metadata declares the runtime dependencies and the installed command
 name = "my-dh-cli"
 version = "0.1.0"
 description = "A command-line Deephaven CSV query"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = ["deephaven-server>=42.7", "click"]
 
 [project.scripts]
@@ -203,7 +203,7 @@ The `[project]` table declares `pydeephaven` as the dependency. It also declares
 name = "my-dh-client-library"
 version = "0.1.0"
 description = "Reusable functions for a remote Deephaven server"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = ["pydeephaven>=42.7", "pyarrow"]
 ```
 
@@ -280,7 +280,7 @@ The `pyproject.toml` declares the dependencies and the console script in the sam
 name = "my-dh-client"
 version = "0.1.0"
 description = "A command-line Deephaven client"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = ["pydeephaven>=42.7", "pyarrow", "click"]
 
 [project.scripts]
@@ -293,7 +293,6 @@ The command below does the same work as the embedded-server command, but on a se
 import keyword
 import os
 from pathlib import Path
-from typing import Optional
 
 import click
 import pyarrow.csv as pacsv
@@ -313,7 +312,7 @@ from pydeephaven import Session
     "--name", default=None, help="Name to bind the result under [default: file stem]"
 )
 def main(
-    input_file: str, host: str, port: int, auth_type: str, name: Optional[str]
+    input_file: str, host: str, port: int, auth_type: str, name: str | None
 ) -> None:
     """Upload a CSV file to a running Deephaven server and process it there."""
     name = name or Path(input_file).stem

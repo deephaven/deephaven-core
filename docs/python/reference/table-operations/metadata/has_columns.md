@@ -7,13 +7,13 @@ The `has_columns` method is used to check whether a table contains a column (or 
 ## Syntax
 
 ```python syntax
-source.has_columns(cols: Union[str, Sequence[str]])
+source.has_columns(cols: str | Sequence[str])
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cols" type="Union[str, Sequence[str]]">
+<Param name="cols" type="str | Sequence[str]">
 
 The column name(s).
 

@@ -9,7 +9,7 @@ The `read_csv` method will read a CSV file into an in-memory table.
 ```python syntax
 read_csv(
     path: str,
-    header: dict[str, dht.DType] = None,
+    header: dict[str, dht.DType] | None = None,
     headless: bool = False,
     header_row: int = 0
     skip_rows: int = 0,
@@ -35,7 +35,7 @@ read_csv(
 The file to load into a table. Note that compressed files _are_ accepted: paths ending in ".tar.zip", ".tar.bz2", ".tar.gz", ".tar.7z", ".tar.zst", ".zip", ".bz2", ".gz", ".7z", ".zst", or ".tar" will automatically be decompressed before they are read.
 
 </Param>
-<Param name="header" type="dict" optional>
+<Param name="header" type="dict | None" optional>
 
 Define a dictionary for the header and the data type: `[str, DataType]`. Default is `None`.
 

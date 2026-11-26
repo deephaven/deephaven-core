@@ -7,13 +7,13 @@ The `add_calendar` method adds a new business calendar to the set of available o
 ## Syntax
 
 ```python syntax
-add_calendar(cal: Union[BusinessCalendar, str]) -> None
+add_calendar(cal: BusinessCalendar | str) -> None
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="cal" type="Union[BusinessCalendar, str]">
+<Param name="cal" type="BusinessCalendar | str">
 
 A `BusinessCalendar` or path to a business calendar file. Supported file format is XML. See [here](https://raw.githubusercontent.com/deephaven/examples/main/Calendar/TestCalendar_2024.calendar) for an example of a calendar XML file, and [here](https://github.com/deephaven/deephaven-core/blob/main/engine/time/src/main/java/io/deephaven/time/calendar/BusinessCalendarXMLParser.java#L32) for more information on calendar XML file format.
 

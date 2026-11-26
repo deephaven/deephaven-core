@@ -12,7 +12,7 @@ The `to_pandas` method converts a Deephaven table to a `pandas.DataFrame`.
 ```python syntax
 to_pandas(
   table: Table,
-  cols: list[str] = None,
+  cols: list[str] | None = None,
   dtype_backend: str = 'numpy_nullable',
   conv_null: bool = True
 ) -> pandas.DataFrame
@@ -26,7 +26,7 @@ to_pandas(
 The source table to convert.
 
 </Param>
-<Param name="cols" type="list[str]" optional>
+<Param name="cols" type="list[str] | None" optional>
 
 The source table columns to convert. If not specified, all columns are converted.
 

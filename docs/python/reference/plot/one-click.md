@@ -7,7 +7,7 @@ The `one_click` method creates a [`SelectableDataSet`](../../reference/query-lan
 ## Syntax
 
 ```python syntax
-one_click(t: Table, by: list[str] = None, require_all_filters: bool = False) -> SelectableDataSet
+one_click(t: Table, by: list[str] | None = None, require_all_filters: bool = False) -> SelectableDataSet
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ one_click(t: Table, by: list[str] = None, require_all_filters: bool = False) -> 
 The source table.
 
 </Param>
-<Param name="by" type="list[str]" optional>
+<Param name="by" type="list[str] | None" optional>
 
 The selected columns.
 

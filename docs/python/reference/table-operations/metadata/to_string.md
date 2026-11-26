@@ -7,7 +7,7 @@ The `to_string` method returns the first _n_ rows of a table as a pipe-delimited
 ## Syntax
 
 ```python syntax
-source.to_string(num_rows: int = 10, cols: Union[str, Sequence[str]] = None) -> str
+source.to_string(num_rows: int = 10, cols: str | Sequence[str] | None = None) -> str
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ source.to_string(num_rows: int = 10, cols: Union[str, Sequence[str]] = None) -> 
 The number of rows from the beginning of the table to return. Default is 10.
 
 </Param>
-<Param name="cols" type="Union[str, Sequence[str]]" optional>
+<Param name="cols" type="str | Sequence[str] | None" optional>
 
 The columns name(s) to include in the string. Default is `None`, which includes all columns.
 

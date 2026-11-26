@@ -22,8 +22,8 @@ For columns appended to the left table (joins), cell values equal aggregations o
 ```python syntax
 range_join(
     table: Table,
-    on: Union[str, list[str]],
-    aggs: Union[Aggregation, list[Aggregation]]
+    on: str | list[str],
+    aggs: Aggregation | list[Aggregation]
 ) -> Table
 ```
 
@@ -35,13 +35,13 @@ range_join(
 The right table of the join.
 
 </Param>
-<Param name="on" type="Union[str, Sequence[str]]">
+<Param name="on" type="str | Sequence[str]">
 
 The match expression(s) on which the tables will be joined.
 This parameter must include zero-or-more [exact match expressions](#exact-match-expressions), and exactly one [range match expression](#range-match-expression) as described below.
 
 </Param>
-<Param name="aggs" type="Union[Aggregation, list[Aggregation]]">
+<Param name="aggs" type="Aggregation | list[Aggregation]">
 
 The aggregation(s) to perform over the responsive ranges from the right table for each row from this table. Only [`group`](../group-and-aggregate/AggGroup.md) aggregations are supported.
 
