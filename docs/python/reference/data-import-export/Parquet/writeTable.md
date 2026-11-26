@@ -10,16 +10,16 @@ The `write` method will write a table to a standard Parquet file.
 write(
     table: Table,
     path: str,
-    table_definition: Optional[TableDefinitionLike] = None,
-    col_instructions: Optional[list[ColumnInstruction]] = None,
-    compression_codec_name: Optional[str] = None,
-    max_dictionary_keys: Optional[int] = None,
-    max_dictionary_size: Optional[int] = None,
-    target_page_size: Optional[int] = None,
-    generate_metadata_files: Optional[bool] = None,
-    index_columns: Optional[Sequence[Sequence[str]]] = None,
-    row_group_info: Optional[RowGroupInfo] = None,
-    special_instructions: Optional[s3.S3Instructions] = None,
+    table_definition: TableDefinitionLike | None = None,
+    col_instructions: list[ColumnInstruction] | None = None,
+    compression_codec_name: str | None = None,
+    max_dictionary_keys: int | None = None,
+    max_dictionary_size: int | None = None,
+    target_page_size: int | None = None,
+    generate_metadata_files: bool | None = None,
+    index_columns: Sequence[Sequence[str]] | None = None,
+    row_group_info: RowGroupInfo | None = None,
+    special_instructions: s3.S3Instructions | None = None,
 )
 ```
 
@@ -36,17 +36,17 @@ The table to write to file.
 Path name of the file where the table will be stored. The file name should end with the `.parquet` extension. If the path includes non-existing directories, they are created.
 
 </Param>
-<Param name="table_definition" type="TableDefinitionLike" optional>
+<Param name="table_definition" type="TableDefinitionLike | None" optional>
 
 The table definition to use for writing, instead of the definitions implied by the table. This definition can be used to skip some columns or add additional columns with null values.
 
 </Param>
-<Param name="col_instructions" type="list[ColumnInstruction]" optional>
+<Param name="col_instructions" type="list[ColumnInstruction] | None" optional>
 
 One or more optional [`ColumnInstruction`](./ColumnInstruction.md) objects that contain instructions for how to write particular columns in the table.
 
 </Param>
-<Param name="compression_codec_name" type="str" optional>
+<Param name="compression_codec_name" type="str | None" optional>
 
 The [compression codec](https://www.javadoc.io/doc/org.apache.parquet/parquet-common/1.18.1/org/apache/parquet/hadoop/metadata/CompressionCodecName.html) to use.
 
@@ -64,32 +64,32 @@ Options are:
 If not specified, defaults to `SNAPPY`.
 
 </Param>
-<Param name="max_dictionary_keys" type="int" optional>
+<Param name="max_dictionary_keys" type="int | None" optional>
 
 The maximum number of unique dictionary keys the writer is allowed to add to a dictionary page before switching to non-dictionary encoding. If not specified, the default value is 2^20 (1,048,576).
 
 </Param>
-<Param name="max_dictionary_size" type="int" optional>
+<Param name="max_dictionary_size" type="int | None" optional>
 
 The maximum number of bytes the writer should add to the dictionary before switching to non-dictionary encoding. If not specified, the default value is 2^20 (1,048,576).
 
 </Param>
-<Param name="target_page_size" type="int" optional>
+<Param name="target_page_size" type="int | None" optional>
 
 The target page size in bytes. If not specified, defaults to 2^20 bytes (1 MiB).
 
 </Param>
-<Param name="generate_metadata_files" type="bool" optional>
+<Param name="generate_metadata_files" type="bool | None" optional>
 
 Whether to generate Parquet `_metadata` and `_common_metadata` files. These files can help speed up reading of partitioned Parquet data. Defaults to `False`.
 
 </Param>
-<Param name="index_columns" type="Sequence[Sequence[str]]" optional>
+<Param name="index_columns" type="Sequence[Sequence[str]] | None" optional>
 
 Sequence of sequences containing the column names for indexes to persist. The write operation will store the index info for the provided columns as sidecar tables. For example, if the input is `[["Col1"], ["Col1", "Col2"]]`, the write operation will store the index info for `["Col1"]` and for `["Col1", "Col2"]`. By default, data indexes to write are determined by those present on the source table.
 
 </Param>
-<Param name="row_group_info" type="RowGroupInfo" optional>
+<Param name="row_group_info" type="RowGroupInfo | None" optional>
 
 The Row Group configuration for writing. Available options are:
 
@@ -99,7 +99,7 @@ The Row Group configuration for writing. Available options are:
 - `RowGroupInfo.by_groups(groups, max_rows)`: Splits each unique group into a Row Group. If `max_rows` is set, Row Groups exceeding that size are split further.
 
 </Param>
-<Param name="special_instructions" type="s3.S3Instructions" optional>
+<Param name="special_instructions" type="s3.S3Instructions | None" optional>
 
 Special instructions for writing Parquet files to S3 or other remote storage. See [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions).
 

@@ -7,7 +7,7 @@ title: cum_count_where
 ## Syntax
 
 ```
-cum_count_where(col: str, filters: Union[str, Filter, List[str], List[Filter]]) -> UpdateByOperation
+cum_count_where(col: str, filters: str | Filter | list[str] | list[Filter]) -> UpdateByOperation
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ cum_count_where(col: str, filters: Union[str, Filter, List[str], List[Filter]]) 
 The name of the column that will contain the count of values that pass the filters.
 
 </Param>
-<Param name="filters" type="Union[str, Filter, Sequence[str], Sequence[Filter]]">
+<Param name="filters" type="str | Filter | Sequence[str] | Sequence[Filter]">
 
 Formulas for filtering as a list of [Strings](../../query-language/types/strings.md).
 

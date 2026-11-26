@@ -9,13 +9,13 @@ When the `select_distinct` method is used on multiple columns, it looks for dist
 ## Syntax
 
 ```
-select_distinct(formulas: Union[str, Sequence[str]]) -> Table
+select_distinct(formulas: str | Sequence[str] | None = None) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="formulas" type="Union[str, Sequence[str]]">
+<Param name="formulas" type="str | Sequence[str] | None" optional>
 
 Key columns.
 

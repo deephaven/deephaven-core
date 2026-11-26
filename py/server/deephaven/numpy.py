@@ -94,7 +94,7 @@ def to_numpy(table: Table, cols: Sequence[str] | None = None) -> np.ndarray:
 
     Args:
         table (Table): the source table
-        cols (Optional[Sequence[str]]): the names of the columns; if None, all columns are included, default is
+        cols (Sequence[str] | None): the names of the columns; if None, all columns are included, default is
             None
     Returns:
         a numpy ndarray

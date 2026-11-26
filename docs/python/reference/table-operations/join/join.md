@@ -12,9 +12,9 @@ The output table contains rows that have matching values in both tables. Rows th
 ```
 left.join(
     table: Table,
-    on: Union[str, Sequence[str]] = None,
-    joins: Union[str, Sequence[str]] = None,
-    reserve_bits: int = None,
+    on: str | Sequence[str] | None = None,
+    joins: str | Sequence[str] | None = None,
+    reserve_bits: int | None = None,
 ) -> Table
 ```
 
@@ -26,7 +26,7 @@ left.join(
 The table data is added from (the right table).
 
 </Param>
-<Param name="on" type="Union[str, Sequence[str]]" optional>
+<Param name="on" type="str | Sequence[str] | None" optional>
 
 Columns from the left and right tables used to join on.
 
@@ -36,7 +36,7 @@ Columns from the left and right tables used to join on.
 - If this argument is omitted or left empty, a cross-join is performed. The result is a table with every possible combination of rows from the two tables.
 
 </Param>
-<Param name="joins" type="Union[str, Sequence[str]]" optional>
+<Param name="joins" type="str | Sequence[str] | None" optional>
 
 Columns from the right table to be added to the left table based on key may be specified in this list:
 
@@ -45,7 +45,7 @@ Columns from the right table to be added to the left table based on key may be s
 - `["Y = X"]` will add column `X` from right table to left table and rename it to be `Y`.
 
 </Param>
-<Param name="reserve_bits" type="int" optional>
+<Param name="reserve_bits" type="int | None" optional>
 
 The number of bits of each result row key to reserve for the right table rows that match a left table row, between 1 and 62 (inclusive). The default value is `None`, which uses the configured value (10 bits unless configured otherwise). A join whose result can never change, such as a join of two static tables, ignores `reserve_bits` and uses just enough bits for its right rows.
 

@@ -10,7 +10,7 @@ The `where_in` method returns a new table containing rows from the source table,
 ## Syntax
 
 ```python syntax
-table.where_in(filter_table: Table, cols: Union[str, list[str]]) -> Table
+table.where_in(filter_table: Table, cols: str | list[str]) -> Table
 ```
 
 ## Parameters
@@ -21,7 +21,7 @@ table.where_in(filter_table: Table, cols: Union[str, list[str]]) -> Table
 The table containing the set of values to filter on.
 
 </Param>
-<Param name="cols" type="Union[str, list[str]]">
+<Param name="cols" type="str | list[str]">
 
 A list of columns (as [Strings](../../query-language/types/strings.md)) to match between the two tables.
 

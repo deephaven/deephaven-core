@@ -10,8 +10,8 @@ windowing unit. Ticks are row counts. The rolling count can be calculated using 
 ```
 rolling_count_where_tick(
     col: str,
-    filters: Union[str, Filter, List[str], List[Filter]],
-    rev_ticks: int = 0,
+    filters: str | Filter | list[str] | list[Filter],
+    rev_ticks: int,
     fwd_ticks: int = 0) -> UpdateByOperation:
 ```
 
@@ -23,7 +23,7 @@ rolling_count_where_tick(
 The name of the column that will contain the count of values that pass the filters.
 
 </Param>
-<Param name="filters" type="Union[str, Filter, Sequence[str], Sequence[Filter]]">
+<Param name="filters" type="str | Filter | Sequence[str] | Sequence[Filter]">
 
 Formulas for filtering as a list of [Strings](../../query-language/types/strings.md).
 
@@ -35,7 +35,7 @@ Any filter is permitted, as long as it is not refreshing and does not use row po
 The look-behind window size in rows. If positive, it defines the maximum number of rows _before_ the current row that will be used. If negative, it defines the minimum number of rows _after_ the current row that will be used. Includes the current row.
 
 </Param>
-<Param name="fwd_ticks" type="int">
+<Param name="fwd_ticks" type="int" optional>
 
 The look-forward window size in rows. If positive, it defines the maximum number of rows _after_ the current row that will be used. If negative, it defines the minimum number of rows _before_ the current row that will be used.
 

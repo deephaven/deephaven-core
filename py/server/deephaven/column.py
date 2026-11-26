@@ -107,9 +107,9 @@ class InputColumn:
         Args:
             name (str): the column name
             data_type (DType): the column data type
-            component_type (Optional[DType]): the column component type, None by default
+            component_type (DType | None): the column component type, None by default
             column_type (ColumnType): the column type, NORMAL by default
-            input_data (Optional[Any]): the input data, by default is None
+            input_data (Any | None): the input data, by default is None
 
         Returns:
             a new InputColumn
@@ -161,7 +161,7 @@ def col_def(
     Args:
         name (str): the column name
         data_type (DType): the column data type
-        component_type (Optional[DType]): the column component type, None by default
+        component_type (DType | None): the column component type, None by default
         column_type (ColumnType): the column type, ColumnType.NORMAL by default
 
     Returns:

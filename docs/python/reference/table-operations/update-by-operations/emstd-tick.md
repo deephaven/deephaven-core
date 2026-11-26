@@ -29,7 +29,7 @@ Where:
 emstd_tick(
     decay_ticks: int,
     cols: list[str],
-    op_control: OperationControl = None,
+    op_control: OperationControl | None = None,
 ) -> UpdateByOperation
 ```
 

@@ -22,13 +22,13 @@ When using `update_view`, the new columns are not stored in memory. Rather, a fo
 ## Syntax
 
 ```
-update_view(formulas: Union[str, Sequence[str]]) -> Table
+update_view(formulas: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="formulas" type="Union[str, Sequence[str]]">
+<Param name="formulas" type="str | Sequence[str]">
 
 Formulas to compute columns in the new table; e.g., `"X = A * sqrt(B)"`.
 

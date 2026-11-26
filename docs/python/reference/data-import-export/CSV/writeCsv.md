@@ -7,7 +7,7 @@ The `write_csv` method will write a table to a standard CSV file.
 ## Syntax
 
 ```python syntax
-write(table: Table, path: str, cols: list[str])
+write(table: Table, path: str, cols: list[str] | None = None)
 ```
 
 > [!NOTE]
@@ -27,7 +27,7 @@ Path name of the file where the table will be stored.
 
 </Param>
 
-<Param name="cols" type="list[str]" optional>
+<Param name="cols" type="list[str] | None" optional>
 
 The source column(s) to include in the CSV file. The default value is all source columns.
 

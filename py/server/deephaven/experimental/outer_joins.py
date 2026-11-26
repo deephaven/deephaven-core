@@ -35,12 +35,12 @@ def full_outer_join(
     Args:
         l_table (Table): the left table
         r_table (Table): the right table
-        on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal expression,
+        on (str | Sequence[str] | None): the column(s) to match, can be a common name or an equal expression,
             i.e. "col_a = col_b" for different column names; default is None
-        joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from right table to the result
+        joins (str | Sequence[str] | None): the column(s) to be added from right table to the result
             table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from
             the right table except those whose names match a left table column in on
-        reserve_bits (Optional[int]): the number of bits to reserve for the right row, between 1 and 62
+        reserve_bits (int | None): the number of bits to reserve for the right row, between 1 and 62
             (inclusive); default is None, meaning the configured value is used, which is 10 bits by default.
 
     Returns:
@@ -80,12 +80,12 @@ def left_outer_join(
     Args:
         l_table (Table): the left table
         r_table (Table): the right table
-        on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal expression,
+        on (str | Sequence[str] | None): the column(s) to match, can be a common name or an equal expression,
             i.e. "col_a = col_b" for different column names
-        joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from right table to the result
+        joins (str | Sequence[str] | None): the column(s) to be added from right table to the result
             table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from
             the right table except those whose names match a left table column in on
-        reserve_bits (Optional[int]): the number of bits to reserve for the right row, between 1 and 62
+        reserve_bits (int | None): the number of bits to reserve for the right row, between 1 and 62
             (inclusive); default is None, meaning the configured value is used, which is 10 bits by default.
 
     Returns:

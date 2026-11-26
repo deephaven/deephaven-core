@@ -256,7 +256,7 @@ def j_lambda(
         func (Callable): Any Python Callable or object with an 'apply' method that accepts the same arguments
             (number and type) the target Java lambda type
         lambda_jtype (jpy.JType): The Java lambda interface to wrap the provided callable in
-        return_dtype (Optional[DType]): The expected return type if conversion should be applied.  None (the default) does not
+        return_dtype (DType | None): The expected return type if conversion should be applied.  None (the default) does not
             attempt to convert the return value and returns a Java Object.
     """
     coerce_to_type = return_dtype.qst_type.clazz() if return_dtype is not None else None
@@ -273,7 +273,7 @@ def to_sequence(v: Any | None = None, wrapped: bool = False) -> Sequence[Any]:
     for the convenience of the users, e.g. both x= "abc" and x = ["abc"] are valid arguments.
 
     Args:
-        v (Optional[Any]): the input value(s) to be converted to a sequence
+        v (Any | None): the input value(s) to be converted to a sequence
         wrapped (bool): if True, the input value(s) will remain wrapped in a JPy object; otherwise, the input
             value(s) will be unwrapped. Defaults to False.
 
@@ -304,7 +304,7 @@ def to_str_sequence(v: str | Sequence[str], what: str = "value") -> Sequence[str
     reject rather than as an empty sequence, and every element must be a string.
 
     Args:
-        v (Union[str, Sequence[str]]): one string, or a sequence of strings
+        v (str | Sequence[str]): one string, or a sequence of strings
         what (str): what each value is, for the error message. Defaults to "value"
 
     Returns:
@@ -475,7 +475,7 @@ def j_table_definition(
     """Deprecated for removal next release, prefer TableDefinition. Produce a Deephaven TableDefinition from user input.
 
     Args:
-        table_definition (Optional[TableDefinitionLike]): the table definition as a dictionary of column
+        table_definition (TableDefinitionLike | None): the table definition as a dictionary of column
             names and their corresponding data types or a list of Column objects
 
     Returns:

@@ -940,7 +940,7 @@ A dynamic plot redraws to show only the rows that match the value a user picks i
 The [`one_click`](../../reference/plot/one-click.md) method creates a [`SelectableDataSet`](../../reference/query-language/types/SelectableDataSet.md) from a table:
 
 ```python syntax
-one_click(t: Table, by: Optional[list[str]] = None, require_all_filters: bool = False) -> SelectableDataSet
+one_click(t: Table, by: list[str] | None = None, require_all_filters: bool = False) -> SelectableDataSet
 ```
 
 - `t` is the table containing the data.

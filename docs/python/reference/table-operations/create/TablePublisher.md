@@ -30,17 +30,17 @@ The name of the publisher, used for logging.
 The blink table's column definitions. See [`TableDefinitionLike`](./TableDefinitionLike.md) for the accepted forms.
 
 </Param>
-<Param name="on_flush_callback" type="Callable" optional>
+<Param name="on_flush_callback" type="Callable | None" optional>
 
 If present, the on-flush callback runs once at the beginning of each [update graph cycle](../../../conceptual/dag.md#update-graph-cycles). It receives this `TablePublisher`, so it can call [`add`](#methods) to publish any data it has been batching. The callback blocks the update cycle until it returns, so it should avoid extraneous work. The default is `None`.
 
 </Param>
-<Param name="on_shutdown_callback" type="Callable" optional>
+<Param name="on_shutdown_callback" type="Callable | None" optional>
 
 An on-shutdown callback function. The publisher calls it one time when the caller should stop adding new data and release any related resources — for example, because the caller called [`publish_failure`](#methods), the blink table is no longer reachable, or an internal failure occurred. The default is `None`.
 
 </Param>
-<Param name="update_graph" type="UpdateGraph" optional>
+<Param name="update_graph" type="UpdateGraph | None" optional>
 
 The [update graph](../../../conceptual/dag.md) that the resulting table belongs to. The default is `None`, which uses the update graph of the current [execution context](../../../conceptual/execution-context.md).
 

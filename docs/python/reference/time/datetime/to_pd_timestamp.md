@@ -13,13 +13,13 @@ title: to_pd_timestamp
 ## Syntax
 
 ```python syntax
-to_pd_timestamp(dt: Union[None, Instant, ZonedDateTime]) -> pandas.Timestamp
+to_pd_timestamp(dt: Instant | ZonedDateTime | None) -> pandas.Timestamp
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="dt" type="Union[None, Instant, ZonedDateTime]">
+<Param name="dt" type="Instant | ZonedDateTime | None">
 
 A Java date-time to convert to a `pandas.Timestamp`. If `None` is provided, `None` is returned.
 

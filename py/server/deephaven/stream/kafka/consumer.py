@@ -182,24 +182,24 @@ def consume(
             Once the table-specific properties are stripped, the remaining one is used to call the constructor of
             org.apache.kafka.clients.consumer.KafkaConsumer; pass any KafkaConsumer specific desired configuration here
         topic (str): the Kafka topic name
-        partitions (Optional[Sequence[int]]) : a list of integer partition numbers, default is None which means all partitions
-        offsets (Optional[dict[int, int]]) : a mapping between partition numbers and offset numbers, and can be one of the
+        partitions (Sequence[int] | None) : a list of integer partition numbers, default is None which means all partitions
+        offsets (dict[int, int] | None) : a mapping between partition numbers and offset numbers, and can be one of the
             predefined ALL_PARTITIONS_SEEK_TO_BEGINNING, ALL_PARTITIONS_SEEK_TO_END or ALL_PARTITIONS_DONT_SEEK.
             The default is None which works the same as  ALL_PARTITIONS_DONT_SEEK. The offset numbers may be one
             of the predefined SEEK_TO_BEGINNING, SEEK_TO_END, or DONT_SEEK.
-        key_spec (Optional[KeyValueSpec]): specifies how to map the Key field in Kafka messages to Deephaven column(s).
+        key_spec (KeyValueSpec | None): specifies how to map the Key field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(), avro_spec(), json_spec(),
             protobuf_spec(), or object_processor_spec() in this module, or the predefined KeyValueSpec.IGNORE or
             KeyValueSpec.FROM_PROPERTIES. The default is None, which works the same as KeyValueSpec.FROM_PROPERTIES:
             the single resulting column's name and type come from the kafka_config properties that
             KeyValueSpec.FROM_PROPERTIES describes.
-        value_spec (Optional[KeyValueSpec]): specifies how to map the Value field in Kafka messages to Deephaven column(s).
+        value_spec (KeyValueSpec | None): specifies how to map the Value field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(), avro_spec(), json_spec(),
             protobuf_spec(), or object_processor_spec() in this module, or the predefined KeyValueSpec.IGNORE or
             KeyValueSpec.FROM_PROPERTIES. The default is None, which works the same as KeyValueSpec.FROM_PROPERTIES:
             the single resulting column's name and type come from the kafka_config properties that
             KeyValueSpec.FROM_PROPERTIES describes.
-        table_type (Optional[TableType]): a TableType, default is None, meaning to use TableType.blink()
+        table_type (TableType | None): a TableType, default is None, meaning to use TableType.blink()
 
     Returns:
         a Deephaven live table that will update based on Kafka messages consumed for the given topic
@@ -240,24 +240,24 @@ def consume_to_partitioned_table(
             Once the table-specific properties are stripped, the remaining one is used to call the constructor of
             org.apache.kafka.clients.consumer.KafkaConsumer; pass any KafkaConsumer specific desired configuration here
         topic (str): the Kafka topic name
-        partitions (Optional[Sequence[int]]): a list of integer partition numbers, default is None which means all partitions
-        offsets (Optional[dict[int, int]]): a mapping between partition numbers and offset numbers, and can be one of the
+        partitions (Sequence[int] | None): a list of integer partition numbers, default is None which means all partitions
+        offsets (dict[int, int] | None): a mapping between partition numbers and offset numbers, and can be one of the
             predefined ALL_PARTITIONS_SEEK_TO_BEGINNING, ALL_PARTITIONS_SEEK_TO_END or ALL_PARTITIONS_DONT_SEEK.
             The default is None which works the same as  ALL_PARTITIONS_DONT_SEEK. The offset numbers may be one
             of the predefined SEEK_TO_BEGINNING, SEEK_TO_END, or DONT_SEEK.
-        key_spec (Optional[KeyValueSpec]): specifies how to map the Key field in Kafka messages to Deephaven column(s).
+        key_spec (KeyValueSpec | None): specifies how to map the Key field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(), avro_spec(), json_spec(),
             protobuf_spec(), or object_processor_spec() in this module, or the predefined KeyValueSpec.IGNORE or
             KeyValueSpec.FROM_PROPERTIES. The default is None, which works the same as KeyValueSpec.FROM_PROPERTIES:
             the single resulting column's name and type come from the kafka_config properties that
             KeyValueSpec.FROM_PROPERTIES describes.
-        value_spec (Optional[KeyValueSpec]): specifies how to map the Value field in Kafka messages to Deephaven column(s).
+        value_spec (KeyValueSpec | None): specifies how to map the Value field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(), avro_spec(), json_spec(),
             protobuf_spec(), or object_processor_spec() in this module, or the predefined KeyValueSpec.IGNORE or
             KeyValueSpec.FROM_PROPERTIES. The default is None, which works the same as KeyValueSpec.FROM_PROPERTIES:
             the single resulting column's name and type come from the kafka_config properties that
             KeyValueSpec.FROM_PROPERTIES describes.
-        table_type (Optional[TableType]): a TableType, specifying the type of the expected result's constituent tables,
+        table_type (TableType | None): a TableType, specifying the type of the expected result's constituent tables,
             default is None, meaning to use TableType.blink()
 
     Returns:
@@ -386,26 +386,26 @@ def protobuf_spec(
     the classpath.
 
     Args:
-        schema (Optional[str]): the schema subject name. When set, this will fetch the protobuf message descriptor from
+        schema (str | None): the schema subject name. When set, this will fetch the protobuf message descriptor from
             the schema registry. Either this, or message_class, must be set.
-        schema_version (Optional[int]): the schema version, or None for latest, default is None. For purposes of
+        schema_version (int | None): the schema version, or None for latest, default is None. For purposes of
             reproducibility across restarts where schema changes may occur, it is advisable for callers to set this.
             This will ensure the resulting table definition will not change across restarts. This gives the caller an
             explicit opportunity to update any downstream consumers when updating schema_version if necessary.
-        schema_message_name (Optional[str]): the fully-qualified protobuf message name, for example
+        schema_message_name (str | None): the fully-qualified protobuf message name, for example
             "com.example.MyMessage". This message's descriptor will be used as the basis for the resulting table's
             definition. If None, the first message descriptor in the protobuf schema will be used. The default is None.
             It is advisable for callers to explicitly set this.
-        message_class (Optional[str]): the fully-qualified Java class name for the protobuf message on the current
+        message_class (str | None): the fully-qualified Java class name for the protobuf message on the current
             classpath, for example "com.example.MyMessage" or "com.example.OuterClass$MyMessage". When this is set, the
             schema registry will not be used. Either this, or schema, must be set.
-        include (Optional[Sequence[str]]): the '/' separated paths to include. The final path may be a '*' to additionally
+        include (Sequence[str] | None): the '/' separated paths to include. The final path may be a '*' to additionally
             match everything that starts with path. For example, include=["/foo/bar"] will include the field path
             name paths [], ["foo"], and ["foo", "bar"]. include=["/foo/bar/*"] will additionally include any field path
             name paths that start with ["foo", "bar"]:  ["foo", "bar", "baz"],  ["foo", "bar", "baz", "zap"], etc. When
             multiple includes are specified, the fields will be included when any of the components matches. Default is
             None, which includes all paths.
-        protocol (Optional[ProtobufProtocol]): the wire protocol for this payload. When schema is set,
+        protocol (ProtobufProtocol | None): the wire protocol for this payload. When schema is set,
             ProtobufProtocol.serdes() will be used by default. When message_class is set, ProtobufProtocol.raw() will
             be used by default.
     Returns:
@@ -458,7 +458,7 @@ def avro_spec(
             'kafka_config' parameter in the call to consume() should include the key 'schema.registry.url' with
             the value of the Schema Server URL for fetching the schema definition
         schema_version (str): the schema version to fetch from schema service, default is 'latest'
-        mapping (Optional[dict[str, str]]): a mapping from Avro field path (dotted for nested fields, such as
+        mapping (dict[str, str] | None): a mapping from Avro field path (dotted for nested fields, such as
             parent.child) to Deephaven table column name. When 'mapping' is None or empty, every field is included
             and each column is named after its field path with dots replaced by double underscores, so parent.child
             becomes the column parent__child. When 'mapping' is given, the fields it names get the column names it
@@ -512,10 +512,10 @@ def json_spec(
     """Creates a spec for how to use JSON data when consuming a Kafka stream to a Deephaven table.
 
     Args:
-        col_defs (Union[TableDefinitionLike, Sequence[tuple[str, DType]]]): the table definition, preferably specified as
+        col_defs (TableDefinitionLike | Sequence[tuple[str, DType]]): the table definition, preferably specified as
             TableDefinitionLike. A list of tuples with two elements, a string for column name and a Deephaven type for
             column data type also works, but is deprecated for removal.
-        mapping (Optional[dict]): a dict mapping JSON fields to column names defined in the col_defs
+        mapping (dict | None): a dict mapping JSON fields to column names defined in the col_defs
             argument.  Fields starting with a '/' character are interpreted as a JSON Pointer (see RFC 6901,
             ISSN: 2070-1721 for details, essentially nested fields are represented like "/parent/nested").
             Fields not starting with a '/' character are interpreted as toplevel field names.
@@ -559,7 +559,7 @@ def simple_spec(col_name: str, data_type: DType | None = None) -> KeyValueSpec:
 
     Args:
         col_name (str): the Deephaven column name
-        data_type (Optional[DType]): the column data type
+        data_type (DType | None): the column data type
 
     Returns:
         a KeyValueSpec

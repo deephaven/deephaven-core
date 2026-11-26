@@ -7,7 +7,7 @@ The `move_columns` method creates a new table with specified columns moved to a 
 ## Syntax
 
 ```
-move_columns(idx: int, cols: Union[str, Sequence[str]]) -> Table
+move_columns(idx: int, cols: str | Sequence[str]) -> Table
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ move_columns(idx: int, cols: Union[str, Sequence[str]]) -> Table
 Column index where the specified columns will be moved in the new table. The index is zero-based, so column index number 2 would be the third column.
 
 </Param>
-<Param name="cols" type="Union[str, Sequence[str]]">
+<Param name="cols" type="str | Sequence[str]">
 
 Columns to be moved.
 

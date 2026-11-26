@@ -8,26 +8,26 @@ The `input_table` method creates an input table, which allows users to manually 
 
 ```python syntax
 input_table(
-    col_defs: Optional[TableDefinitionLike] = None,
-    init_table: Optional[Table] = None,
-    key_cols: Optional[Union[str, Sequence[str]]] = None,
+    col_defs: TableDefinitionLike | None = None,
+    init_table: Table | None = None,
+    key_cols: str | Sequence[str] | None = None,
     ) -> InputTable
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="col_defs" type="Optional[TableDefinitionLike]" optional>
+<Param name="col_defs" type="TableDefinitionLike | None" optional>
 
 A set of column definitions that define the column names and types in the input table. Provide exactly one of `col_defs` and `init_table`: the call raises an error if both are given or if both are `None`.
 
 </Param>
-<Param name="init_table" type="Optional[Table]" optional>
+<Param name="init_table" type="Table | None" optional>
 
 The table from which the input table will be created. Provide exactly one of `col_defs` and `init_table`: the call raises an error if both are given or if both are `None`.
 
 </Param>
-<Param name="key_cols" type="Optional[Union[str, Sequence[str]]]" optional>
+<Param name="key_cols" type="str | Sequence[str] | None" optional>
 
 One or more key column names. The default value is `None`, which results in an append-only input table. If not `None`, it becomes a keyed input table, which allows for the creation and modification of pre-existing cells.
 

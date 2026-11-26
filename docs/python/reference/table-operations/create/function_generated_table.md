@@ -21,7 +21,7 @@ function_generated_table(
   refresh_interval_ms: int | None = None,
   exec_ctx: ExecutionContext | None = None,
   args: tuple = (),
-  kwargs: dict = {},
+  kwargs: dict | None = None,
   copy_data: bool = True,
   blink_table: bool = False,
   table_definition: TableDefinitionLike | None = None,
@@ -65,9 +65,9 @@ A custom [execution context](../../../conceptual/execution-context.md) in which 
 A tuple of positional arguments to pass to `table_generator`. Defaults to `()`.
 
 </Param>
-<Param name="kwargs" type="dict" optional>
+<Param name="kwargs" type="dict | None" optional>
 
-A dictionary of keyword arguments to pass to `table_generator`. Defaults to `{}`.
+Dictionary of keyword arguments to pass to `table_generator`. Defaults to `None`, meaning no keyword arguments are passed.
 
 </Param>
 <Param name="copy_data" type="bool" optional>

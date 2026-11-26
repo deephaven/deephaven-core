@@ -15,7 +15,7 @@ def _to_sequence(v: Any | None = None) -> Sequence[Any]:
     (adapted from table_listener.py)
 
     Args:
-        v (Optional[Any]) : The input argument
+        v (Any | None) : The input argument
 
     Returns:
         A sequence containing 0, 1, or multiple values
@@ -38,7 +38,7 @@ def canonicalize_cols_param(
 
     Args:
         table (dhc.ClientTable) : The table to consult to get the column names from if necessary
-        col_names (Optional[Union[str, Sequence[str]]]) : The column names to canonicalize
+        col_names (str | Sequence[str] | None) : The column names to canonicalize
 
     Returns:
         The canonicalized column names

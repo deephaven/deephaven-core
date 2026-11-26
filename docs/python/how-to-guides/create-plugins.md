@@ -71,7 +71,7 @@ Next, define the message stream handler, a subclass of [`MessageStream`](/core/p
 
 ```python skip-test
 from deephaven.plugin.object_type import MessageStream
-from typing import List, Any
+from typing import Any
 import traceback
 import json
 
@@ -89,7 +89,7 @@ class ExampleServiceMessageStream(MessageStream):
         # The server must send an initial message; send an empty payload to acknowledge the connection
         self.client_connection.on_data(b"", [])
 
-    def on_data(self, payload: bytes, references: List[Any]):
+    def on_data(self, payload: bytes, references: list[Any]):
         """Called when the client sends a message to the server."""
 
         # Deserialize the input JSON bytes
@@ -194,7 +194,7 @@ This module provides a server-side plugin for accessing an ExampleService object
 
 from deephaven.plugin.object_type import BidirectionalObjectType, MessageStream
 from deephaven.plugin import Registration, Callback
-from typing import List, Any
+from typing import Any
 from deephaven.table import Table
 import traceback
 import json
@@ -225,7 +225,7 @@ class ExampleServiceMessageStream(MessageStream):
         # The server must send an initial message; send an empty payload to acknowledge the connection
         self.client_connection.on_data(b"", [])
 
-    def on_data(self, payload: bytes, references: List[Any]):
+    def on_data(self, payload: bytes, references: list[Any]):
         """Called when the client sends a message to the server."""
 
         # Deserialize the input JSON bytes

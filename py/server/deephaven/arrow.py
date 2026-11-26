@@ -147,7 +147,7 @@ def to_table(pa_table: pa.Table, cols: Sequence[str] | None = None) -> Table:
 
     Args:
         pa_table(pa.Table): the pyarrow table
-        cols (Optional[Sequence[str]]): the pyarrow table column names, default is None which means including all columns
+        cols (Sequence[str] | None): the pyarrow table column names, default is None which means including all columns
 
     Returns:
         a new table
@@ -236,7 +236,7 @@ def to_arrow(table: Table, cols: Sequence[str] | None = None) -> pa.Table:
 
     Args:
         table (Table): the Deephaven table
-        cols (Optional[Sequence[str]]): the table column names, default is None which means including all columns
+        cols (Sequence[str] | None): the table column names, default is None which means including all columns
 
     Returns:
         a pyarrow table

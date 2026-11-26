@@ -7,7 +7,7 @@ The `weighted_sum_by` method creates a new table containing the weighted sum for
 ## Syntax
 
 ```python syntax
-weighted_sum_by(wcol: str, by: Union[str, list[str]] = None) -> Table
+weighted_sum_by(wcol: str, by: str | list[str] | None = None) -> Table
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ weighted_sum_by(wcol: str, by: Union[str, list[str]] = None) -> Table
 The name of the weight column.
 
 </Param>
-<Param name="by" type="Union[str, list[str]]" optional>
+<Param name="by" type="str | list[str] | None" optional>
 
 The column(s) by which to group data.
 
