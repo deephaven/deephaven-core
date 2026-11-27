@@ -7,14 +7,14 @@ The Deephaven server is a Java library. The [production application](../../getti
 Build a custom application when you want to:
 
 - Package Deephaven together with your own Java code and dependencies in a single application.
-- Create tables in Java when the server starts and publish them to clients and the web UI.
+- Create static and ticking tables in Java when the server starts, and publish them to clients and the web UI.
 - Replace or remove server components, such as the authorization rules.
 
-If you only need to add JARs to a standard server, you don't need a custom application. See [Install and use Java packages](../install-and-use-java-packages.md) instead.
+If you only need to add JARs to a prebuilt Deephaven server, such as the production application or a Docker image, you don't need a custom application. See [Install and use Java packages](../install-and-use-java-packages.md) instead.
 
 ## Prerequisites
 
-- Java 17.0.5 or later. Deephaven's web server, Jetty 12, requires Java 17. By default, the server doesn't start on earlier Java 17 releases because of a JVM bug ([JDK-8287432](https://bugs.openjdk.org/browse/JDK-8287432)); if you can't upgrade, the startup error names a JVM workaround.
+- Java 17.0.5 or later. Deephaven's web server, Jetty 12, requires Java 17. Earlier Java 17 releases have a JVM bug ([JDK-8287432](https://bugs.openjdk.org/browse/JDK-8287432)), so by default the server refuses to start on them. If you can't upgrade, the startup error names a JVM workaround.
 - A build tool that resolves Maven artifacts, such as Gradle or Maven. The examples in this guide use Gradle.
 - Familiarity with [Dagger](https://dagger.dev/), the dependency injection framework that assembles the Deephaven server. You need only the basics: components, modules, and the `@Provides`, `@Binds`, and `@IntoSet` annotations.
 
@@ -22,9 +22,9 @@ If you only need to add JARs to a standard server, you don't need a custom appli
 
 The production application's entry point, `io.deephaven.server.jetty.JettyMain`, is short. A custom application follows the same three steps:
 
-1. Call `MainHelper.init`. It initializes logging, loads the Deephaven [configuration](./config-file.md), and installs process-wide handlers for shutdown and uncaught errors. Call it before anything else touches Deephaven classes.
-2. Build a Dagger component. The component wires together every server service: the gRPC and Arrow Flight APIs, the web UI, authentication, the console, and [Application Mode](../application-mode.md). A component factory, a subclass of `ComponentFactoryBase`, builds the component from the configuration.
-3. Get the server from the component and call `run`, which starts the server and returns once it is listening. Call `join` to block until the server shuts down.
+1. Call [`MainHelper.init`](/core/javadoc/io/deephaven/server/runner/MainHelper.html). It initializes logging, loads the Deephaven [configuration](./config-file.md), and installs process-wide handlers for shutdown and uncaught errors. Call it before anything else touches Deephaven classes.
+2. Build a Dagger component. The component wires together every server service: the gRPC and [Arrow Flight](../data-import-export/arrow-flight.md) APIs, the web UI, authentication, the console, and [Application Mode](../application-mode.md). A component factory, a subclass of [`ComponentFactoryBase`](/core/javadoc/io/deephaven/server/runner/ComponentFactoryBase.html), builds the component from the configuration.
+3. Get the server from the component and call [`run`](/core/javadoc/io/deephaven/server/runner/DeephavenApiServer.html), which starts the server and returns once it is listening. Call [`join`](/core/javadoc/io/deephaven/server/runner/DeephavenApiServer.html) to block until the server shuts down.
 
 The production application's component factory, `CommunityComponentFactory`, belongs to the `server-jetty-app` project, which isn't published to Maven Central. A custom application defines its own component and factory using the modules in the published `deephaven-server-jetty` artifact. The rest of this guide walks through how to do that.
 
@@ -33,7 +33,20 @@ The production application's component factory, `CommunityComponentFactory`, bel
 
 ## Set up the build
 
-The following `build.gradle` file creates an application named `my-deephaven-app`. Replace `<version>` with the Deephaven version you want, such as the [latest release](https://github.com/deephaven/deephaven-core/releases/latest) without its leading `v`.
+The build asks for a Java 17 [toolchain](https://docs.gradle.org/current/userguide/toolchains.html). If no Java 17 installation is on your machine, Gradle downloads one, but only if a toolchain download repository is configured. Create a project directory, and add a `settings.gradle` file at its root with the Foojay toolchain resolver plugin:
+
+```groovy skip-test
+plugins {
+    // Lets Gradle download the Java 17 toolchain that build.gradle asks for, if it isn't installed.
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+rootProject.name = 'my-deephaven-app'
+```
+
+Without the plugin, a machine with no Java 17 installation fails the build with `Cannot find a Java installation on your machine ... matching: {languageVersion=17 ...}`.
+
+The following `build.gradle` file creates an application named `my-deephaven-app`. Replace `<version>` with the Deephaven version you want, such as the [latest release](https://github.com/deephaven/deephaven-core/releases/latest) without its leading `v`. Replace `<dagger-version>` and `<logback-version>` as described in the list after the file.
 
 ```groovy skip-test
 plugins {
@@ -99,7 +112,7 @@ application {
 
 Keep the following in mind:
 
-- **The Confluent repository is required.** `deephaven-server-jetty` depends on Deephaven's Kafka integration at runtime, and some of its dependencies are published only to Confluent's Maven repository. Without that repository, dependency resolution fails with errors such as `Could not find org.apache.kafka:kafka-clients`.
+- **The Confluent repository is required.** `deephaven-server-jetty` depends on Deephaven's [Kafka integration](../overview-kafka.md) at runtime, and some of its dependencies are published only to Confluent's Maven repository. Without that repository, dependency resolution fails with errors such as `Could not find org.apache.kafka:kafka-clients`.
 - **Match the Dagger version to Deephaven's.** Use the Dagger version listed as a dependency in the `deephaven-server` POM for your Deephaven version. Deephaven's published JARs contain Dagger-generated code that calls into Dagger's runtime (`dagger.internal.*`) classes, so a mismatched Dagger version can fail at runtime with a linkage error such as `NoSuchMethodError`.
 - **Pick a Logback version.** Use the Logback version that Deephaven builds and tests against: look up the `logback` entry in [`gradle/libs.versions.toml`](https://github.com/deephaven/deephaven-core/blob/main/gradle/libs.versions.toml) at the tag for your Deephaven version (for example, `v<version>`). For the Logback configuration file, see [Configure logging](#configure-logging).
 - **Pass the JVM arguments that apply to your build.** The first four are the same arguments that the production application's `start` script passes. If you launch the application another way, such as from your IDE or a container, pass them there too.
@@ -108,15 +121,21 @@ Keep the following in mind:
   - `--add-exports java.base/jdk.internal.misc=ALL-UNNAMED` is required only if you include `deephaven-clock-impl`.
   - `-Dio.netty.noUnsafe=false` is required on Java 25 and later, and harmless on earlier versions.
   - `-Ddeephaven.application=my-deephaven-app` sets the application name used for the data, cache, and config directories; see [Configure the server](#configure-the-server) for what it controls and why you should set it.
-- **Pick a console language.** The server's default console language is Python, which requires a Python environment that the JVM can load. Setting `deephaven.console.type` to `groovy` gives you a Groovy console with no extra setup. Setting it to `none` disables the console, but only if the component also includes `NoConsoleSessionModule`; see [Write the component factory](#write-the-component-factory).
+- **Pick a console language.** The example build sets `deephaven.console.type` to `groovy`, so the server starts a Groovy console that needs no Python setup. Without that property, the server starts a Python console, which needs two more things:
+  - A Python interpreter with the `deephaven-core` package installed, usually from a virtual environment that is active when the application starts. See [Set up the Python environment](/core/docs/how-to-guides/configuration/custom-java-application/#set-up-the-python-environment) in the Python version of this guide.
+  - The `runtimeOnly 'io.deephaven:deephaven-extensions-json-jackson'` dependency, which some Python API calls need.
+
+  Setting `deephaven.console.type` to `none` disables the console, but only if the component also includes [`NoConsoleSessionModule`](/core/javadoc/io/deephaven/server/console/NoConsoleSessionModule.html); see [Write the component factory](#write-the-component-factory).
 
 Deephaven's optional integrations are separate artifacts. Add the ones you use as runtime dependencies. For example, the production application also includes `deephaven-engine-sql`, `deephaven-extensions-s3`, `deephaven-extensions-iceberg-s3`, and `deephaven-extensions-json-jackson`.
 
-Flight SQL needs an extra step, because its artifact doesn't register the service with the server by itself. Add `deephaven-extensions-flight-sql` as an `implementation` dependency, not `runtimeOnly`, so that your code can reference `FlightSqlModule`. Then include that module in your Dagger component, as described in [Write the component factory](#write-the-component-factory).
+[Flight SQL](../flight-sql.md) needs an extra step, because its artifact doesn't register the service with the server by itself. Add `deephaven-extensions-flight-sql` as an `implementation` dependency, not `runtimeOnly`, so that your code can reference [`FlightSqlModule`](/core/javadoc/io/deephaven/server/flightsql/FlightSqlModule.html). Then include that module in your Dagger component, as described in [Write the component factory](#write-the-component-factory).
 
 ## Write the component factory
 
 The component factory builds the Dagger component. Dagger generates the component's implementation at compile time, naming the generated class based on the interface's nesting: `MyComponentFactory.MyComponent` becomes `DaggerMyComponentFactory_MyComponent`.
+
+Put each class in this guide in its own file under `src/main/java/com/example/`, for example `src/main/java/com/example/MyComponentFactory.java`.
 
 ```java
 package com.example;
@@ -194,25 +213,30 @@ public final class MyComponentFactory extends ComponentFactoryBase<MyComponentFa
 
 The included modules supply the server:
 
-| Module                             | Provides                                                                                                   |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `JettyServerModule`                | The Jetty web server, which serves the gRPC APIs and the web UI.                                           |
-| `CommunityDefaultsModule`          | The standard set of Deephaven services, such as sessions, tables, consoles, plugins, and Application Mode. |
-| `CommunityAuthorizationModule`     | The default authorization provider, which lets every authenticated user do everything.                     |
-| `TicketResolversFromServiceLoader` | Ticket resolvers that plugins on the classpath register through Java's `ServiceLoader`.                    |
-| `ClientChannelFactoryModule`       | Outgoing connections from this server to other Deephaven servers. It requires the `@UserAgent` string.     |
-| `SslConfigModule`                  | The TLS configuration for those outgoing connections.                                                      |
+| Module                                                                                                               | Provides                                                                                                                            |
+| -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [`JettyServerModule`](/core/javadoc/io/deephaven/server/jetty/JettyServerModule.html)                                | The Jetty web server, which serves the gRPC APIs and the web UI                                                                     |
+| [`CommunityDefaultsModule`](/core/javadoc/io/deephaven/server/runner/CommunityDefaultsModule.html)                   | The standard set of Deephaven services, such as sessions, tables, consoles, plugins, and [Application Mode](../application-mode.md) |
+| [`CommunityAuthorizationModule`](/core/javadoc/io/deephaven/server/auth/CommunityAuthorizationModule.html)           | The default authorization provider, which lets every authenticated user do everything                                               |
+| [`TicketResolversFromServiceLoader`](/core/javadoc/io/deephaven/server/runner/TicketResolversFromServiceLoader.html) | Ticket resolvers that plugins on the classpath register through Java's `ServiceLoader`                                              |
+| [`ClientChannelFactoryModule`](/core/javadoc/io/deephaven/server/session/ClientChannelFactoryModule.html)            | Outgoing connections from this server to other Deephaven servers                                                                    |
+| [`SslConfigModule`](/core/javadoc/io/deephaven/server/session/SslConfigModule.html)                                  | The TLS configuration for those outgoing connections                                                                                |
+
+[`ClientChannelFactoryModule`](/core/javadoc/io/deephaven/server/session/ClientChannelFactoryModule.html) requires the `@UserAgent` string that `MyModule` provides.
 
 > [!WARNING]
-> `CommunityAuthorizationModule` binds `CommunityAuthorizationProvider`, which installs "allow all" authorization wiring for every service it covers: consoles, tables, input tables, storage, partitioned and hierarchical tables, applications, and more. Authentication alone only controls who can connect; with this module included, every authenticated user can do everything on the server. Deployments that need restricted or least-privilege access must replace `CommunityAuthorizationModule` with their own `AuthorizationProvider` binding, as described below, rather than relying on authentication alone to restrict access.
+> [`CommunityAuthorizationModule`](/core/javadoc/io/deephaven/server/auth/CommunityAuthorizationModule.html) lets every authenticated user do everything on the server. It binds [`CommunityAuthorizationProvider`](/core/javadoc/io/deephaven/server/auth/CommunityAuthorizationProvider.html), which allows all operations in every service it covers, including consoles, tables, input tables, storage, partitioned and hierarchical tables, and applications. Authentication controls only who can connect. To restrict what users can do, replace [`CommunityAuthorizationModule`](/core/javadoc/io/deephaven/server/auth/CommunityAuthorizationModule.html) with your own [`AuthorizationProvider`](/core/javadoc/io/deephaven/server/auth/AuthorizationProvider.html) binding, as the next paragraph describes.
 
-To change a part of the server, replace the module that provides it. For example, the `jetty-app-custom` example leaves out `CommunityAuthorizationModule` and binds its own `AuthorizationProvider`, which disables the input table service. Don't include both: Dagger rejects two bindings for the same type.
+To change a part of the server, replace the module that provides it. For example, the `jetty-app-custom` example leaves out [`CommunityAuthorizationModule`](/core/javadoc/io/deephaven/server/auth/CommunityAuthorizationModule.html) and binds its own [`AuthorizationProvider`](/core/javadoc/io/deephaven/server/auth/AuthorizationProvider.html), which disables the input table service. Don't include both: Dagger rejects two bindings for the same type.
 
-To add an optional integration that registers its own services, such as Flight SQL, add its module to the `@Module(includes = {...})` list. For example, include `io.deephaven.server.flightsql.FlightSqlModule` from `deephaven-extensions-flight-sql` to enable Flight SQL, or `io.deephaven.server.console.NoConsoleSessionModule` from the `deephaven-server` artifact to support `-Ddeephaven.console.type=none`, since `CommunityDefaultsModule` only registers the Python and Groovy console bindings.
+To add an optional integration that registers its own services, add its module to the `@Module(includes = {...})` list:
+
+- For [Flight SQL](../flight-sql.md), include [`io.deephaven.server.flightsql.FlightSqlModule`](/core/javadoc/io/deephaven/server/flightsql/FlightSqlModule.html) from `deephaven-extensions-flight-sql`.
+- To support `-Ddeephaven.console.type=none`, include [`io.deephaven.server.console.NoConsoleSessionModule`](/core/javadoc/io/deephaven/server/console/NoConsoleSessionModule.html) from the `deephaven-server` artifact. [`CommunityDefaultsModule`](/core/javadoc/io/deephaven/server/runner/CommunityDefaultsModule.html) registers only the Python and Groovy consoles.
 
 ## Publish tables at startup
 
-An `ApplicationState.Factory` creates objects when the server starts and exposes them to clients by name. It is the Java equivalent of an [Application Mode script](../application-mode-script.md). The factory runs with the server's [execution context](../../conceptual/execution-context.md) already open.
+An [`ApplicationState.Factory`](/core/javadoc/io/deephaven/appmode/ApplicationState.Factory.html) creates objects when the server starts and exposes them to clients by name. It is the Java equivalent of an [Application Mode script](../application-mode-script.md). The factory runs with the server's [execution context](../../conceptual/execution-context.md) already open.
 
 ```java
 package com.example;
@@ -258,7 +282,7 @@ public final class MyApplication implements ApplicationState.Factory {
 Two details matter here:
 
 - **Keep the tables alive.** Deephaven releases tables that nothing references. Creating the tables inside a [liveness scope](../../conceptual/liveness-scope-concept.md) that the factory holds in a field keeps them alive for as long as the server runs.
-- **Lock the update graph when creating a refreshing table.** Some operations on a refreshing table, such as calling [`update`](../../reference/table-operations/select/update.md) on a [time table](../../reference/table-operations/create/timeTable.md), must run under the update graph's shared lock. Without it, the server fails to start with `IllegalStateException: May not initiate serial table operations`. Other operations don't require the lock but work correctly while it's held, so the simplest rule is to create the table under it. Keep the locked block short, because update cycles can't run while you hold the lock. Operations on static tables, such as [`emptyTable`](../../reference/table-operations/create/emptyTable.md), don't need the lock.
+- **Lock the update graph when you create a refreshing table.** Calling [`update`](../../reference/table-operations/select/update.md) on a [time table](../../reference/table-operations/create/timeTable.md) requires the update graph's shared lock; without it, the server fails to start with `IllegalStateException: May not initiate serial table operations`. Create every refreshing table inside the locked block, and keep the block short, because update cycles wait while you hold the lock. Static tables, such as one from [`emptyTable`](../../reference/table-operations/create/emptyTable.md), don't need the lock.
 
 The application's ID is the second constructor argument (after the listener), here `com.example.MyApplication`. Clients fetch the fields with an application ticket made from the ID and the field name.
 
@@ -290,9 +314,9 @@ public final class MyServerMain {
 }
 ```
 
-Because `run` doesn't block, your application can do other work after the server starts, then call `join` when it has nothing left to do.
+Because [`run`](/core/javadoc/io/deephaven/server/runner/DeephavenApiServer.html) doesn't block, your application can do other work after the server starts, then call [`join`](/core/javadoc/io/deephaven/server/runner/DeephavenApiServer.html) when it has nothing left to do.
 
-`MainHelper.init` accepts an optional single argument: the path of a properties file whose entries are loaded as system properties before anything else.
+[`MainHelper.init`](/core/javadoc/io/deephaven/server/runner/MainHelper.html) accepts an optional single argument: the path of a properties file whose entries are loaded as system properties before anything else.
 
 ## Configure logging
 
@@ -325,6 +349,8 @@ The `LevelChangePropagator` listener copies Logback's log levels to Java's built
 
 ## Run the application
 
+These commands use the Gradle wrapper. If your project doesn't have one, run `gradle wrapper` once, or use `gradle` in place of `./gradlew`.
+
 Start the application with Gradle:
 
 ```bash
@@ -340,16 +366,27 @@ Or build a distribution with a launch script, and run that:
 
 The generated launch script includes the JVM arguments from `applicationDefaultJvmArgs` and adds anything in the `JAVA_OPTS` environment variable.
 
-When the server is ready, the log shows `Server started on port 10000`. By default, the server uses [pre-shared key authentication](../authentication/auth-psk.md) with a generated key, and logs a URL that includes the key. The default key comes from `java.util.Random`, which isn't cryptographically secure, so set your own strong key with `-Dauthentication.psk=<key>` (see [Configure the server](#configure-the-server)) or choose another authentication handler before you expose the server beyond your own machine:
+When the server is ready, the log shows `Server started on port 10000`. By default, the server uses [pre-shared key authentication](../authentication/auth-psk.md) with a generated key, and logs a URL that includes the key:
 
 ```text
 Connect automatically to Web UI with http://localhost:10000/?psk=<key>
 ```
 
+The generated key comes from `java.util.Random`, which isn't cryptographically secure. Unless you set `http.host`, the server listens on all network interfaces, so other machines can reach it as soon as it starts. Set your own strong key with `-Dauthentication.psk=<key>`, as described in [Configure the server](#configure-the-server), or choose another authentication handler. To accept only local connections, set `-Dhttp.host=localhost`.
+
 > [!WARNING]
-> The pre-shared key is a superuser credential: anyone who presents it is authenticated as a superuser. The log line above, including the key and the clickable URL, goes to both stdout and the log buffer that the web UI's **Log** panel reads from (see [Configure logging](#configure-logging)). Restrict access to these logs, whether on disk, in a collection system, or in the running server's own UI, to avoid leaking superuser access.
+> The [pre-shared key](../authentication/auth-psk.md) is a superuser credential: anyone who presents it is authenticated as a superuser. The log line above, including the key and the clickable URL, goes to both stdout and the log buffer that the web UI's **Log** panel reads from (see [Configure logging](#configure-logging)). Restrict access to these logs, whether on disk, in a collection system, or in the running server's own UI, to avoid leaking superuser access.
 
 Open that URL to use the web UI. The Groovy console works as it does in any Deephaven server, and the **Panels** menu lists the `ticking` and `staticTable` fields from `MyApplication`.
+
+The application's fields aren't variables in the console. To use them in Groovy code, [resolve](../use-uris.md) them by their application URI, which combines the application ID and the field name:
+
+```groovy skip-test
+import static io.deephaven.uri.ResolveTools.resolve
+
+ticking = resolve("dh:///app/com.example.MyApplication/field/ticking")
+staticTable = resolve("dh:///app/com.example.MyApplication/field/staticTable")
+```
 
 ## Configure the server
 
@@ -365,15 +402,42 @@ For example, to set the key and port when using the launch script:
 JAVA_OPTS="-Dauthentication.psk=YOUR_PASSWORD_HERE -Dhttp.port=8080" ./build/install/my-deephaven-app/bin/my-deephaven-app
 ```
 
+`./gradlew run` doesn't read `JAVA_OPTS`, and `-D` flags on its command line set properties for Gradle, not for the server. To set properties for `./gradlew run`, add them to `applicationDefaultJvmArgs` in `build.gradle`.
+
 ## Related documentation
 
+- [Liveness scope concept](../../conceptual/liveness-scope-concept.md)
+- [Execution Context](../../conceptual/execution-context.md)
 - [Install and run the Deephaven production application](../../getting-started/production-application.md)
 - [Configure the production application](./configure-production-application.md)
+- [Configure the Deephaven Docker application](./docker-application.md)
 - [Deephaven configuration files](./config-file.md)
 - [Configuration properties](./configuration-properties.md)
 - [Application Mode](../application-mode.md)
-- [Liveness scope concept](../../conceptual/liveness-scope-concept.md)
-- [Execution Context](../../conceptual/execution-context.md)
+- [Use Application Mode scripts](../application-mode-script.md)
 - [Pre-shared key authentication](../authentication/auth-psk.md)
 - [Install and use Java packages](../install-and-use-java-packages.md)
+- [Connecting to a Deephaven Flight SQL server](../flight-sql.md)
+- [Kafka overview](../overview-kafka.md)
+- [Arrow Flight and Deephaven](../data-import-export/arrow-flight.md)
+- [Use URIs to share tables](../use-uris.md)
+- [Run Deephaven from your own Java application (Python)](/core/docs/how-to-guides/configuration/custom-java-application/)
 - [What is an UpdateGraphConflictException and how do I fix it?](../../reference/community-questions/update-graph-conflict-exception.md)
+- [`resolve`](../../reference/data-import-export/uri.md)
+- [`emptyTable`](../../reference/table-operations/create/emptyTable.md)
+- [`timeTable`](../../reference/table-operations/create/timeTable.md)
+- [`update`](../../reference/table-operations/select/update.md)
+- [`ApplicationState.Factory` Javadoc](/core/javadoc/io/deephaven/appmode/ApplicationState.Factory.html)
+- [`AuthorizationProvider` Javadoc](/core/javadoc/io/deephaven/server/auth/AuthorizationProvider.html)
+- [`ClientChannelFactoryModule` Javadoc](/core/javadoc/io/deephaven/server/session/ClientChannelFactoryModule.html)
+- [`CommunityAuthorizationModule` Javadoc](/core/javadoc/io/deephaven/server/auth/CommunityAuthorizationModule.html)
+- [`CommunityAuthorizationProvider` Javadoc](/core/javadoc/io/deephaven/server/auth/CommunityAuthorizationProvider.html)
+- [`CommunityDefaultsModule` Javadoc](/core/javadoc/io/deephaven/server/runner/CommunityDefaultsModule.html)
+- [`ComponentFactoryBase` Javadoc](/core/javadoc/io/deephaven/server/runner/ComponentFactoryBase.html)
+- [`DeephavenApiServer` Javadoc](/core/javadoc/io/deephaven/server/runner/DeephavenApiServer.html)
+- [`FlightSqlModule` Javadoc](/core/javadoc/io/deephaven/server/flightsql/FlightSqlModule.html)
+- [`JettyServerModule` Javadoc](/core/javadoc/io/deephaven/server/jetty/JettyServerModule.html)
+- [`MainHelper` Javadoc](/core/javadoc/io/deephaven/server/runner/MainHelper.html)
+- [`NoConsoleSessionModule` Javadoc](/core/javadoc/io/deephaven/server/console/NoConsoleSessionModule.html)
+- [`SslConfigModule` Javadoc](/core/javadoc/io/deephaven/server/session/SslConfigModule.html)
+- [`TicketResolversFromServiceLoader` Javadoc](/core/javadoc/io/deephaven/server/runner/TicketResolversFromServiceLoader.html)
