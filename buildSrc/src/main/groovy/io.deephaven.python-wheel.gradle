@@ -38,7 +38,7 @@ def buildWheel = Docker.registerDockerTask(project, 'buildWheel') { config ->
         // set up the container, env vars - things that aren't likely to change
         action.from 'deephaven/python:local-build as sources'
         action.arg 'DEEPHAVEN_VERSION'
-        action.environmentVariable 'DEEPHAVEN_VERSION', project.version.toString()
+        action.environmentVariable 'DEEPHAVEN_VERSION', PythonVersion.deephavenVersion(project)
         action.workingDir '/usr/src/app'
         action.copyFile '/src', '.'
         action.from 'sources as build'

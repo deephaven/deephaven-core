@@ -93,7 +93,7 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
                       pip3 install --upgrade pip; \\
                       pip3 install -r requirements-dev.txt'''
 
-        environmentVariable 'DEEPHAVEN_VERSION', project.version
+        environmentVariable 'DEEPHAVEN_VERSION', PythonVersion.deephavenVersion(project)
         runCommand 'pip install .'
         runCommand 'pip install coverage'
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
