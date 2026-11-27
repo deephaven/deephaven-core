@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static io.deephaven.replication.ReplicationUtils.replicatedDir;
+import static io.deephaven.replication.ReplicationUtils.wrapJavadoc;
 
 /**
  * Generates the MegaMerge kernels, which merge a sorted chunk into a sorted array source with a parallel array of row
@@ -53,6 +54,8 @@ public class GenerateMegaMergeKernels {
 
     private static final String PACKAGE = "io.deephaven.engine.table.impl.sort.megamerge";
     private static final File SOURCE_ROOT = new File(replicatedDir("engine/table", TASK));
+    /** The indentation of the kernel classes' members, for wrapping their javadoc. */
+    private static final int MEMBER_INDENT = 4;
 
     private static final ClassName ANY = ClassName.get(Any.class);
     private static final ClassName INDICES = ClassName.get(Indices.class);
@@ -148,10 +151,11 @@ public class GenerateMegaMergeKernels {
         TypeSpec emit() {
             return TypeSpec.classBuilder(kernelClass)
                     .addModifiers(Modifier.PUBLIC)
-                    .addJavadoc("Merges a sorted chunk of $L into a sorted run of $L in $L order, moving the "
-                            + "parallel long row keys\nwith their values.\n",
+                    .addJavadoc("$L", wrapJavadoc(String.format(
+                            "Merges a sorted chunk of %s into a sorted run of %s in %s order, moving the parallel "
+                                    + "long row keys with their values.\n",
                             chunks.plural, chunks.plural,
-                            direction == Direction.DESCENDING ? "descending" : "ascending")
+                            direction == Direction.DESCENDING ? "descending" : "ascending"), 0))
                     .addMethod(MethodSpec.constructorBuilder()
                             .addModifiers(Modifier.PRIVATE)
                             .addStatement("throw new $T()", UnsupportedOperationException.class)
@@ -236,67 +240,51 @@ public class GenerateMegaMergeKernels {
                             + "keysChunk.size(), false)")
                     .addStatement("destinationValues.ensureCapacity(destinationOffset + destinationSize + "
                             + "valuesChunk.size(), false)")
-                    .addCode("\n")
                     .addComment("find the location of run2[0] in run1")
                     .addStatement("final $T run2lo = valuesChunk.get(0)", valueType)
-                    .addStatement("final long mergeStartPosition =\n"
+                    .addStatement("final long mergeStartPosition = "
                             + "upperBound(destinationValues, destinationOffset, destinationOffset + destinationSize, "
                             + "run2lo)")
-                    .addCode("\n")
                     .beginControlFlow("if (mergeStartPosition == destinationOffset + destinationSize)")
-                    .addStatement("copyChunkToDest(keysChunk, valuesChunk, destinationKeys, destinationValues, 0,\n"
+                    .addStatement("copyChunkToDest(keysChunk, valuesChunk, destinationKeys, destinationValues, 0, "
                             + "destinationSize + destinationOffset, valuesChunk.size())")
                     .addStatement("return")
                     .endControlFlow()
-                    .addCode("\n")
                     .addStatement("final long mergeLength = destinationSize + valuesChunk.size()")
-                    .addCode("\n")
                     .addStatement("long destCursor = destinationOffset + destinationSize - 1")
                     .addStatement("int chunkCursor = keysChunk.size() - 1")
-                    .addCode("\n")
                     .addStatement("$T val1 = destinationValues.getUnsafe(destCursor)", valueType)
                     .addStatement("$T val2 = valuesChunk.get(chunkCursor)", valueType)
-                    .addCode("\n")
                     .addStatement("final long mergeEnd = destinationOffset + mergeLength")
-                    .addCode("\n")
                     .addStatement("long ii = mergeEnd - 1")
-                    .addCode("\n")
                     .addStatement("int minGallop = $T.INITIAL_GALLOP", TIMSORT_UTILS)
-                    .addCode("\n")
                     .beginControlFlow("no_data_left: while (ii >= mergeStartPosition)")
                     .addStatement("int destWins = 0")
                     .addStatement("int chunkWins = 0")
-                    .addCode("\n")
                     .beginControlFlow("if (minGallop < 2)")
                     .addStatement("minGallop = 2")
                     .endControlFlow()
-                    .addCode("\n")
                     .beginControlFlow("while (destWins < minGallop && chunkWins < minGallop)")
                     .beginControlFlow("if (geq(val2, val1))")
                     .addStatement("destinationValues.set(ii, val2)")
                     .addStatement("destinationKeys.set(ii--, keysChunk.get(chunkCursor))")
-                    .addCode("\n")
                     .beginControlFlow("if (--chunkCursor < 0)")
                     .addStatement("break no_data_left")
                     .endControlFlow()
                     .addStatement("val2 = valuesChunk.get(chunkCursor)")
-                    .addCode("\n")
                     .addStatement("chunkWins++")
                     .addStatement("destWins = 0")
                     .nextControlFlow("else")
                     .addStatement("destinationValues.set(ii, val1)")
                     .addStatement("destinationKeys.set(ii--, destinationKeys.getLong(destCursor))")
-                    .addCode("\n")
                     .beginControlFlow("if (--destCursor < mergeStartPosition)")
                     .addStatement("break no_data_left")
                     .endControlFlow()
                     .addStatement("val1 = destinationValues.getUnsafe(destCursor)")
-                    .addCode("\n")
                     .addStatement("destWins++")
                     .addStatement("chunkWins = 0")
                     .endControlFlow()
                     .endControlFlow()
-                    .addCode("\n")
                     .addComment("we are in galloping mode now, if we had run out of data then we should have already "
                             + "bailed out to")
                     .addComment("no_data_left")
@@ -304,44 +292,36 @@ public class GenerateMegaMergeKernels {
                     .addComment("if we had a lot of things from run2, we take the next thing from run1 then find it "
                             + "in run2")
                     .addStatement("final int copyUntil2 = gallopBackward(valuesChunk, 0, chunkCursor, val1, true)")
-                    .addCode("\n")
                     .addStatement("final int gallopLength2 = chunkCursor - copyUntil2 + 1")
                     .beginControlFlow("if (gallopLength2 > 1)")
                     .addStatement("copyChunkToDest(keysChunk, valuesChunk, destinationKeys, destinationValues, "
-                            + "copyUntil2,\nii - gallopLength2 + 1, gallopLength2)")
+                            + "copyUntil2, ii - gallopLength2 + 1, gallopLength2)")
                     .addStatement("chunkCursor -= gallopLength2")
                     .addStatement("ii -= gallopLength2")
-                    .addCode("\n")
                     .beginControlFlow("if (chunkCursor < 0)")
                     .addStatement("break no_data_left")
                     .endControlFlow()
-                    .addCode("\n")
                     .addStatement("val2 = valuesChunk.get(chunkCursor)")
-                    .addCode("\n")
                     .addStatement("minGallop--")
                     .endControlFlow()
-                    .addCode("\n")
                     .addComment("if we had a lot of things from run1, we take the next thing from run2 and then find "
                             + "it in run1")
                     .addStatement("final long copyUntil1 = gallopBackward(destinationValues, mergeStartPosition, "
                             + "destCursor, val2, false)")
-                    .addCode("\n")
                     .addStatement("final long gallopLength1 = destCursor - copyUntil1 + 1")
                     .beginControlFlow("if (gallopLength1 > 1)")
                     .addStatement("moveInDest(destinationKeys, destinationValues, copyUntil1, ii - gallopLength1 + 1, "
                             + "gallopLength1)")
                     .addStatement("destCursor -= gallopLength1")
                     .addStatement("ii -= gallopLength1")
-                    .addCode("\n")
                     .beginControlFlow("if (destCursor < mergeStartPosition)")
                     .addStatement("break no_data_left")
                     .endControlFlow()
                     .addStatement("val1 = destinationValues.getUnsafe(destCursor)")
                     .addStatement("minGallop--")
                     .endControlFlow()
-                    .addCode("\n")
                     .beginControlFlow(
-                            "if (gallopLength1 < $T.INITIAL_GALLOP\n$>$>&& gallopLength2 < $T.INITIAL_GALLOP$<$<)",
+                            "if (gallopLength1 < $T.INITIAL_GALLOP && gallopLength2 < $T.INITIAL_GALLOP)",
                             TIMSORT_UTILS, TIMSORT_UTILS)
                     .addComment("undo the possible subtraction from above")
                     .addStatement("minGallop += 2")
@@ -349,10 +329,9 @@ public class GenerateMegaMergeKernels {
                     .endControlFlow()
                     .endControlFlow()
                     .endControlFlow()
-                    .addCode("\n")
                     .beginControlFlow("if (chunkCursor >= 0)")
                     .addStatement("copyChunkToDest(keysChunk, valuesChunk, destinationKeys, destinationValues, 0, "
-                            + "ii - chunkCursor,\nchunkCursor + 1)")
+                            + "ii - chunkCursor, chunkCursor + 1)")
                     .endControlFlow()
                     .build();
         }
@@ -424,13 +403,13 @@ public class GenerateMegaMergeKernels {
 
         private MethodSpec emitUpperBound() {
             return MethodSpec.methodBuilder("upperBound")
-                    .addJavadoc("When we binary search in run 1, we must identify a position for the search value "
-                            + "that is <em>after</em> our\ntest values, because the values from run 2 may never be "
-                            + "inserted before an equal value from run 1.\n"
+                    .addJavadoc("$L", wrapJavadoc("When we binary search in run 1, we must identify a position for "
+                            + "the search value that is <em>after</em> our test values, because the values from run 2 "
+                            + "may never be inserted before an equal value from run 1.\n"
                             + "\n@param lo the inclusive lower bound of the search"
                             + "\n@param hi the exclusive upper bound of the search"
                             + "\n@return the position of the first element that is > searchValue, or hi if there is "
-                            + "no such element\n")
+                            + "no such element\n", MEMBER_INDENT))
                     .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                     .returns(long.class)
                     .addParameter(valueSource(), "values")
@@ -460,7 +439,6 @@ public class GenerateMegaMergeKernels {
                     .addParameter(lowerParam())
                     .addComment("lt or leq")
                     .addStatement("final int compareLimit = lower ? -1 : 0")
-                    .addCode("\n")
                     .beginControlFlow("while (lo < hi)")
                     .addStatement("final $T mid = (lo + hi) >>> 1", positionType)
                     .addStatement("final $T testValue = valuesToSort.$L(mid)", valueType(), getter)
@@ -473,26 +451,25 @@ public class GenerateMegaMergeKernels {
                     .addStatement("hi = mid")
                     .endControlFlow()
                     .endControlFlow()
-                    .addCode("\n")
                     .addStatement("return lo")
                     .build();
         }
 
         private static final String GALLOP_BACKWARD_JAVADOC =
                 "Returns {@code bound(valuesToSort, lo, hi, searchValue, lower)}, probing hi - 1, hi - 2, hi - 4, "
-                        + "hi - 8, ... before\nthe binary search, so the number of comparisons is logarithmic in the "
+                        + "hi - 8, ... before the binary search, so the number of comparisons is logarithmic in the "
                         + "distance from the result to hi.\n<p>\n";
 
         private MethodSpec emitSourceGallopBackward() {
             return emitGallopBackward(valueSource(), long.class, "getUnsafe", false,
                     "The search in run 1 passes lower = false, as values from run 2 may never be inserted before an "
-                            + "equal value from\nrun 1.\n");
+                            + "equal value from run 1.\n");
         }
 
         private MethodSpec emitChunkGallopBackward() {
             return emitGallopBackward(chunks.chunkOfWildcard(), int.class, "get", true,
                     "The search in run 2 passes lower = true, as values from run 1 may never be inserted after an "
-                            + "equal value from\nrun 2.\n");
+                            + "equal value from run 2.\n");
         }
 
         private MethodSpec emitGallopBackward(final TypeName valuesType, final Class<?> positionType,
@@ -502,7 +479,7 @@ public class GenerateMegaMergeKernels {
                 lo.addAnnotation(SAME_PARAMETER_VALUE);
             }
             return MethodSpec.methodBuilder("gallopBackward")
-                    .addJavadoc(GALLOP_BACKWARD_JAVADOC + javadocTail)
+                    .addJavadoc("$L", wrapJavadoc(GALLOP_BACKWARD_JAVADOC + javadocTail, MEMBER_INDENT))
                     .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                     .returns(positionType)
                     .addParameter(valuesType, "valuesToSort")
@@ -513,16 +490,14 @@ public class GenerateMegaMergeKernels {
                     .addComment("lt or leq")
                     .addStatement("final int compareLimit = lower ? -1 : 0")
                     .addStatement("final $T maxDistance = hi - lo", positionType)
-                    .addCode("\n")
                     .addComment("every element at or after searchHi is after the result")
                     .addStatement("$T searchHi = hi", positionType)
                     .addStatement("$T distance = 0", positionType)
-                    .beginControlFlow("while (distance < maxDistance\n$>$>&& doComparison(valuesToSort.$L(hi - 1 - "
-                            + "distance), searchValue) > compareLimit$<$<)", getter)
+                    .beginControlFlow("while (distance < maxDistance && doComparison(valuesToSort.$L(hi - 1 - "
+                            + "distance), searchValue) > compareLimit)", getter)
                     .addStatement("searchHi = hi - 1 - distance")
                     .addStatement("distance = distance < (maxDistance >> 1) ? (distance << 1) + 1 : maxDistance")
                     .endControlFlow()
-                    .addCode("\n")
                     .addStatement("return bound(valuesToSort, hi - distance, searchHi, searchValue, lower)")
                     .build();
         }
