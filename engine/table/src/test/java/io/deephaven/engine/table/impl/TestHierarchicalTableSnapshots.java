@@ -401,6 +401,25 @@ public class TestHierarchicalTableSnapshots {
     }
 
     @Test
+    public void testTreeNodeSortByArrayColumn() {
+        final Table source = newTable(
+                intCol("ID", 1, 2, 3, 4),
+                intCol("Parent", NULL_INT, 1, 1, 1),
+                col("Arr", new int[] {9}, new int[] {3}, new int[] {1, 2}, new int[] {1}));
+        final TreeTable treeTable = source.tree("ID", "Parent");
+        final TreeTable sortedTree = treeTable.withNodeOperations(treeTable.makeNodeOperationsRecorder().sort("Arr"));
+
+        final Table expandAllKeys = newTable(
+                intCol(sortedTree.getRowDepthColumn().name(), 0),
+                intCol("ID", NULL_INT),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+        final Table snapshot = snapshotToTable(sortedTree, sortedTree.makeSnapshotState(), expandAllKeys,
+                ColumnName.of("Action"), null, RowSetFactory.flat(4));
+        assertTableEquals(newTable(intCol("ID", 1, 4, 3, 2)), snapshot.view("ID"));
+        freeSnapshotTableChunks(snapshot);
+    }
+
+    @Test
     public void testMissingKeyTree() {
         final QueryTable source = TstUtils.testRefreshingTable(intCol("ID", 1, 2, 3), intCol("Parent", NULL_INT, 1, 2),
                 intCol("SortColumn", 0, 0, 0), intCol("Sentinel", 100, 200, 300));

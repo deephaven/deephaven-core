@@ -48,11 +48,12 @@ public abstract class ComparatorSortColumn implements SortSpec {
      * Does the comparator for this column respect equality?
      *
      * <p>
-     * More formally, if Comparator.compare(a, b) == 0, then Objects.equals(a, b) must be true. Certain comparators do
-     * not meet this requirement. For example, {@link String#CASE_INSENSITIVE_ORDER} produces zero for "apple" and
-     * "Apple", even though those values are not equal. For equality respecting comparators, the engine may use more
-     * optimizations than for those comparators that do not. If respects equality is incorrectly specified as true, the
-     * results of the sort are undefined.
+     * More formally, Comparator.compare(a, b) == 0 exactly when Objects.equals(a, b) is true: values that tie are
+     * equal, and equal values tie. Certain comparators do not meet this requirement. For example,
+     * {@link String#CASE_INSENSITIVE_ORDER} produces zero for "apple" and "Apple", even though those values are not
+     * equal. For equality respecting comparators, the engine may use more optimizations than for those comparators that
+     * do not, such as ordering the groups of a data index or a symbol table, whose values are grouped by equals. If
+     * respects equality is incorrectly specified as true, the results of the sort are undefined.
      * </p>
      *
      * @return true if this comparator respects equality

@@ -101,7 +101,7 @@ public class LongLongMegaMergeKernel {
                     destinationValues.set(ii, val1);
                     destinationKeys.set(ii--, destinationKeys.getLong(destCursor));
 
-                    if (--destCursor < (int) mergeStartPosition) {
+                    if (--destCursor < mergeStartPosition) {
                         break no_data_left;
                     }
                     val1 = destinationValues.getUnsafe(destCursor);

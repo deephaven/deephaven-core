@@ -187,6 +187,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             final boolean modifiedNeedsSorting =
                     upstream.modifiedColumnSet().containsAny(sortColumnSet) && upstream.modified().isNonempty();
             final long REVERSE_LOOKUP_NO_ENTRY_VALUE = reverseLookup.defaultReturnValue();
+            SortHelpers.checkTickingSortSize(parent.getRowSet().size());
 
             // We use these in enough places that we might as well just grab them (and check their sizes) here.
             upstream.added().intSize("validating added elements");

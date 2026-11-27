@@ -133,6 +133,11 @@ public final class NullableLongLongMaps {
      */
     public static final double AMAC_LOAD_FACTOR_FLOOR = 0.8;
 
+    /**
+     * The most entries a map holds; a put of a new key into a map of this many entries throws.
+     */
+    public static final int MAXIMUM_SIZE = HashMapLockFreeKnVn.SIZE_LIMIT4 - 1;
+
     private NullableLongLongMaps() {}
 
     /**

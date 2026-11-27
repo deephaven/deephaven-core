@@ -271,7 +271,8 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
                 }
                 final ColumnDefinition<Object> defToSort = getDefinition().getColumn(columnName);
                 final Class<Object> dataType = defToSort.getDataType();
-                if (!dataType.isPrimitive() && !Comparable.class.isAssignableFrom(dataType)) {
+                if (!dataType.isPrimitive() && !Comparable.class.isAssignableFrom(dataType)
+                        && ComparatorRegistry.INSTANCE.getComparator(dataType) == null) {
                     throw new NotSortableColumnException(columnName + " is not a sortable type: " + dataType);
                 }
             }

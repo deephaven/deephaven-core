@@ -49,6 +49,7 @@ import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps;
 import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.SafeCloseable;
@@ -130,6 +131,25 @@ public class SortHelpers {
     public static long parallelSortSegmentSize = Configuration.getInstance()
             .getLongWithDefault("QueryTable.parallelSortSegmentSize", 1L << 18);
 
+    /**
+     * The most rows a ticking sort holds. Its initial sort maps the rows with an array, which a sort of at least
+     * {@link #megaSortSize} rows does not produce, and its reverse lookup holds at most
+     * {@link NullableLongLongMaps#MAXIMUM_SIZE} rows.
+     */
+    static long maximumTickingSortSize() {
+        return Math.min(megaSortSize - 1L, NullableLongLongMaps.MAXIMUM_SIZE);
+    }
+
+    /**
+     * Throws a {@link SizeException} when a ticking sort of size rows exceeds {@link #maximumTickingSortSize()}.
+     */
+    static void checkTickingSortSize(final long size) {
+        final long maximumSize = maximumTickingSortSize();
+        if (size > maximumSize) {
+            throw new SizeException("Cannot sort a ticking table", size, maximumSize);
+        }
+    }
+
     interface SortMapping extends LongSizedDataStructure {
         long size();
 
@@ -205,12 +225,12 @@ public class SortHelpers {
         }
 
         /**
-         * A mapping of this size exists only for sorts of at least {@link #megaSortSize} rows, which the ticking and
-         * blink sorts that require an array mapping do not support.
+         * A mapping of this size exists only for sorts of at least {@link #megaSortSize} rows, which a ticking sort,
+         * whose initial sort requires an array mapping, does not support.
          */
         @NotNull
         public long[] getArrayMapping() {
-            throw new SizeException("Cannot sort a ticking or blink table", size, megaSortSize - 1);
+            throw new SizeException("Cannot sort a ticking table", size, megaSortSize - 1);
         }
 
         @Override
@@ -442,15 +462,21 @@ public class SortHelpers {
                 rowSetToSort, usePrev);
     }
 
+    /**
+     * Maps the packed symbol IDs of a symbol table column to sort ranks. Null maps to its own rank, nullRank; the ranks
+     * of the distinct symbols are numbered around it.
+     */
     private static class SparseSymbolMapping {
         private final int maxMapping;
         private final int minTrailing;
         private final int[][] lookupTable;
+        private final int nullRank;
 
-        private SparseSymbolMapping(int maxMapping, int minTrailing, int[][] lookupTable) {
+        private SparseSymbolMapping(int maxMapping, int minTrailing, int[][] lookupTable, int nullRank) {
             this.maxMapping = maxMapping;
             this.minTrailing = minTrailing;
             this.lookupTable = lookupTable;
+            this.nullRank = nullRank;
         }
 
         private int getMaxMapping() {
@@ -458,22 +484,16 @@ public class SortHelpers {
         }
 
         private byte lookupByte(long symTabId) {
-            if (symTabId == QueryConstants.NULL_LONG) {
-                return QueryConstants.NULL_BYTE;
-            }
-            return (byte) doIntLookup(symTabId);
+            return (byte) lookupInt(symTabId);
         }
 
         private short lookupShort(long symTabId) {
-            if (symTabId == QueryConstants.NULL_LONG) {
-                return QueryConstants.NULL_SHORT;
-            }
-            return (short) doIntLookup(symTabId);
+            return (short) lookupInt(symTabId);
         }
 
         private int lookupInt(long symTabId) {
             if (symTabId == QueryConstants.NULL_LONG) {
-                return QueryConstants.NULL_INT;
+                return nullRank;
             }
             return doIntLookup(symTabId);
         }
@@ -484,9 +504,15 @@ public class SortHelpers {
             return lookupTable[region][id];
         }
 
+        /**
+         * Create the mapping of each packed symbol ID in originalSymbol to the rank of its distinct value, from the
+         * value's position in sorted order in mappedIndex. Null has nullRank; values that sort above null are adjusted
+         * to be one more than the ordering without nulls.
+         */
         private static SparseSymbolMapping createMapping(
                 @NotNull final LongChunk<Values> originalSymbol,
-                @NotNull final LongChunk<Values> mappedIndex) {
+                @NotNull final LongChunk<Values> mappedIndex,
+                final int nullRank) {
             // figure out what the maximum region is, and determine how many bits of it there are
             int maxUpperPart = 0;
             int minTrailing = 32;
@@ -508,20 +534,22 @@ public class SortHelpers {
 
             final int[][] lookupTable = new int[maxShiftedRegion + 1][maxSymbol + 1];
 
-            // maxMapping ends up being the number of unique string values that we have. We compute it so that we can
-            // map symbol IDs to these unique integers using the narrowest primitive sorting kernel possible.
-            int maxMapping = 0;
+            // maxMapping ends up being the largest rank, at most the number of unique values that we have. We compute
+            // it so that we can map symbol IDs to these unique integers using the narrowest primitive sorting kernel
+            // possible.
+            int maxMapping = nullRank;
 
             for (int ii = 0; ii < originalSymbol.size(); ++ii) {
                 final long symTabId = originalSymbol.get(ii);
                 final int region = (int) (symTabId >> (32 + minTrailing));
                 final int id = (int) symTabId;
-                final int mappedId = Math.toIntExact(mappedIndex.get(ii));
+                final int position = Math.toIntExact(mappedIndex.get(ii));
+                final int mappedId = position >= nullRank ? position + 1 : position;
                 maxMapping = Math.max(maxMapping, mappedId);
                 lookupTable[region][id] = mappedId;
             }
 
-            return new SparseSymbolMapping(maxMapping, minTrailing, lookupTable);
+            return new SparseSymbolMapping(maxMapping, minTrailing, lookupTable, nullRank);
         }
     }
 
@@ -533,6 +561,10 @@ public class SortHelpers {
             final boolean comparatorRespectsEquality,
             final RowSet rowSet,
             final boolean usePrev) {
+        if (rowSet.size() >= megaSortSize) {
+            // the symbol table sort sorts every row in one chunk; a sort this large sorts chunks and merges them
+            return getSortMappingOne(order, columnSource, comparator, rowSet, usePrev);
+        }
         final int sortSize = rowSet.intSize();
 
         final ColumnSource<Long> reinterpreted = columnSource.reinterpret(long.class);
@@ -567,28 +599,33 @@ public class SortHelpers {
 
         final int symbolEntries = idMapping.intSize();
 
-        final SparseSymbolMapping mapping;
-
-        try (final WritableLongChunk<Values> originalSymbol = WritableLongChunk.makeWritableChunk(symbolEntries);
-                final WritableLongChunk<Values> mappedIndex = WritableLongChunk.makeWritableChunk(symbolEntries)) {
-            final ColumnSource<?> idSource = idMapping.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
-            try (final ColumnSource.FillContext idContext = idSource.makeFillContext(symbolEntries)) {
-                idSource.fillChunk(idContext, originalSymbol, idMapping.getRowSet());
-            }
-
-            final ColumnSource<?> sortedRowSetSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
-            try (final ColumnSource.FillContext sortedIndexContext =
-                    sortedRowSetSource.makeFillContext(symbolEntries)) {
-                sortedRowSetSource.fillChunk(sortedIndexContext, mappedIndex, idMapping.getRowSet());
-            }
-
-            mapping = SparseSymbolMapping.createMapping(originalSymbol, mappedIndex);
-        }
-
         // Read the symbol table values into the unmappedValues chunk. The reinterpreted source provides the region and
         // the symbol ID within the region as a packed long, which we then unpack in the type-specific loops below.
         try (final WritableLongChunk<Values> unmappedValues =
                 makeAndFillValues(usePrev, rowSet, reinterpreted).asWritableLongChunk()) {
+
+            // Natural order puts null before every value. A comparator places null itself; it respects equality, so
+            // null ties no value. The comparator is asked only when a row to sort holds null.
+            final int nullRank = comparator == null || !containsNull(unmappedValues)
+                    ? 0
+                    : symbolsOrderedBeforeNull(comparator, groupedSymbols);
+
+            final SparseSymbolMapping mapping;
+            try (final WritableLongChunk<Values> originalSymbol = WritableLongChunk.makeWritableChunk(symbolEntries);
+                    final WritableLongChunk<Values> mappedIndex = WritableLongChunk.makeWritableChunk(symbolEntries)) {
+                final ColumnSource<?> idSource = idMapping.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
+                try (final ColumnSource.FillContext idContext = idSource.makeFillContext(symbolEntries)) {
+                    idSource.fillChunk(idContext, originalSymbol, idMapping.getRowSet());
+                }
+
+                final ColumnSource<?> sortedRowSetSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
+                try (final ColumnSource.FillContext sortedIndexContext =
+                        sortedRowSetSource.makeFillContext(symbolEntries)) {
+                    sortedRowSetSource.fillChunk(sortedIndexContext, mappedIndex, idMapping.getRowSet());
+                }
+
+                mapping = SparseSymbolMapping.createMapping(originalSymbol, mappedIndex, nullRank);
+            }
 
             // Mapped values generic is the chunk of unique integer keys for the sort operation, using the narrowest
             // possible primitive type (byte, short, or int).
@@ -599,9 +636,9 @@ public class SortHelpers {
                 final WritableByteChunk<Any> mappedValues;
                 mappedValues = WritableByteChunk.makeWritableChunk(rowSet.intSize());
                 for (int ii = 0; ii < unmappedValues.size(); ++ii) {
-                    // symTabId is the packed ID, nulls get converted to the right kind of null, other values are pulled
-                    // apart into region and id; and then used as offsets in the lookup table to get the unique sorted
-                    // id and the mapped value is added to the mappedValues chunk
+                    // symTabId is the packed ID, null maps to the null rank, other values are pulled apart into
+                    // region and id; and then used as offsets in the lookup table to get the unique sorted id and the
+                    // mapped value is added to the mappedValues chunk
                     mappedValues.set(ii, mapping.lookupByte(unmappedValues.get(ii)));
                 }
                 sortContext = LongSortKernel.makeContext(ChunkType.Byte, order, sortSize, false);
@@ -609,9 +646,9 @@ public class SortHelpers {
             } else if (mapping.getMaxMapping() <= Short.MAX_VALUE) {
                 final WritableShortChunk<Any> mappedValues = WritableShortChunk.makeWritableChunk(rowSet.intSize());
                 for (int ii = 0; ii < unmappedValues.size(); ++ii) {
-                    // symTabId is the packed ID, nulls get converted to the right kind of null, other values are pulled
-                    // apart into region and id; and then used as offsets in the lookup table to get the unique sorted
-                    // id and the mapped value is added to the mappedValues chunk
+                    // symTabId is the packed ID, null maps to the null rank, other values are pulled apart into
+                    // region and id; and then used as offsets in the lookup table to get the unique sorted id and the
+                    // mapped value is added to the mappedValues chunk
                     mappedValues.set(ii, mapping.lookupShort(unmappedValues.get(ii)));
                 }
                 sortContext = LongSortKernel.makeContext(ChunkType.Short, order, sortSize, false);
@@ -619,9 +656,9 @@ public class SortHelpers {
             } else {
                 final WritableIntChunk<Any> mappedValues = WritableIntChunk.makeWritableChunk(rowSet.intSize());
                 for (int ii = 0; ii < unmappedValues.size(); ++ii) {
-                    // symTabId is the packed ID, nulls get converted to the right kind of null, other values are pulled
-                    // apart into region and id; and then used as offsets in the lookup table to get the unique sorted
-                    // id and the mapped value is added to the mappedValues chunk
+                    // symTabId is the packed ID, null maps to the null rank, other values are pulled apart into
+                    // region and id; and then used as offsets in the lookup table to get the unique sorted id and the
+                    // mapped value is added to the mappedValues chunk
                     mappedValues.set(ii, mapping.lookupInt(unmappedValues.get(ii)));
 
                 }
@@ -642,6 +679,38 @@ public class SortHelpers {
 
             return new ArraySortMapping(rowKeysArray);
         }
+    }
+
+    private static boolean containsNull(@NotNull final LongChunk<Values> packedSymbolIds) {
+        for (int ii = 0; ii < packedSymbolIds.size(); ++ii) {
+            if (packedSymbolIds.get(ii) == QueryConstants.NULL_LONG) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The number of distinct values in sortedSymbols, a symbol table sorted by comparator, that comparator orders
+     * before null.
+     */
+    private static int symbolsOrderedBeforeNull(
+            @NotNull final Comparator comparator,
+            @NotNull final Table sortedSymbols) {
+        final ColumnSource<?> symbols = sortedSymbols.getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
+        final RowSet symbolRows = sortedSymbols.getRowSet();
+        int low = 0;
+        int high = symbolRows.intSize();
+        while (low < high) {
+            final int middle = (low + high) >>> 1;
+            // noinspection unchecked
+            if (comparator.compare(symbols.get(symbolRows.get(middle)), null) < 0) {
+                low = middle + 1;
+            } else {
+                high = middle;
+            }
+        }
+        return low;
     }
 
     private static SortMapping getSortMappingOne(final SortingOrder order,
