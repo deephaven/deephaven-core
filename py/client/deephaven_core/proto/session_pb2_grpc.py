@@ -48,11 +48,6 @@ class SessionServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.NewSession = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.SessionService/NewSession',
-                request_serializer=deephaven__core_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
-                response_deserializer=deephaven__core_dot_proto_dot_session__pb2.HandshakeResponse.FromString,
-                _registered_method=True)
         self.RefreshSessionToken = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.SessionService/RefreshSessionToken',
                 request_serializer=deephaven__core_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
@@ -106,17 +101,6 @@ class SessionServiceServicer(object):
     Some parts of the API return a Flight.Ticket that does not need to be released. It is not an error to attempt to
     release them.
     """
-
-    def NewSession(self, request, context):
-        """
-        Handshake between client and server to create a new session. The response includes a metadata header name and the
-        token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
-
-        Deprecated: Please use Flight's Handshake or http authorization headers instead.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
 
     def RefreshSessionToken(self, request, context):
         """
@@ -191,11 +175,6 @@ class SessionServiceServicer(object):
 
 def add_SessionServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'NewSession': grpc.unary_unary_rpc_method_handler(
-                    servicer.NewSession,
-                    request_deserializer=deephaven__core_dot_proto_dot_session__pb2.HandshakeRequest.FromString,
-                    response_serializer=deephaven__core_dot_proto_dot_session__pb2.HandshakeResponse.SerializeToString,
-            ),
             'RefreshSessionToken': grpc.unary_unary_rpc_method_handler(
                     servicer.RefreshSessionToken,
                     request_deserializer=deephaven__core_dot_proto_dot_session__pb2.HandshakeRequest.FromString,
@@ -255,33 +234,6 @@ class SessionService(object):
     Some parts of the API return a Flight.Ticket that does not need to be released. It is not an error to attempt to
     release them.
     """
-
-    @staticmethod
-    def NewSession(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/io.deephaven.proto.backplane.grpc.SessionService/NewSession',
-            deephaven__core_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
-            deephaven__core_dot_proto_dot_session__pb2.HandshakeResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
 
     @staticmethod
     def RefreshSessionToken(request,

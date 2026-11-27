@@ -358,7 +358,7 @@ def console = ConsoleServiceGrpc.newBlockingStub(channel)
         .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(bearer))
 ```
 
-The server can rotate the token. Each response carries the current token in its `authorization` header. A client that runs longer than the session timeout must keep sending the newest one, as the [Java client](./java-client.md) does. Older clients called `SessionService.NewSession` instead. `session.proto` marks that method deprecated in favor of these headers or Flight's handshake.
+The server can rotate the token. Each response carries the current token in its `authorization` header. A client that runs longer than the session timeout must keep sending the newest one, as the [Java client](./java-client.md) does.
 
 ### Start a console
 

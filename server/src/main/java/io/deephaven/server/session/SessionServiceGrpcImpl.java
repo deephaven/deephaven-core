@@ -7,7 +7,6 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import com.github.f4b6a3.uuid.exception.InvalidUuidException;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
-import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.csv.util.MutableObject;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -76,28 +75,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     }
 
     @Override
-    public void newSession(
-            @NotNull final HandshakeRequest request,
-            @NotNull final StreamObserver<HandshakeResponse> responseObserver) {
-        // TODO: once jsapi is updated to use flight auth, then newSession can be deprecated or removed
-        final AuthContext authContext = new AuthContext.SuperUser();
-
-        final SessionState session = service.newSession(authContext);
-        responseObserver.onNext(HandshakeResponse.newBuilder()
-                .setMetadataHeader(ByteString.copyFromUtf8(Auth2Constants.AUTHORIZATION_HEADER))
-                .setSessionToken(session.getExpiration().getBearerTokenAsByteString())
-                .setTokenDeadlineTimeMillis(session.getExpiration().deadlineMillis)
-                .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
-                .build());
-
-        responseObserver.onCompleted();
-    }
-
-    @Override
     public void refreshSessionToken(
             @NotNull final HandshakeRequest request,
             @NotNull final StreamObserver<HandshakeResponse> responseObserver) {
-        // TODO: once jsapi is updated to use flight auth, then newSession can be deprecated or removed
         if (request.getAuthProtocol() != 0) {
             responseObserver.onError(
                     Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Protocol version not allowed."));

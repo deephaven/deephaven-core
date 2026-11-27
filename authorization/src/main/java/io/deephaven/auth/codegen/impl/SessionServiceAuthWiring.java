@@ -30,8 +30,6 @@ public interface SessionServiceAuthWiring extends ServiceAuthWiring<SessionServi
                 ServerServiceDefinition.builder(service.getServiceDescriptor());
 
         serviceBuilder.addMethod(ServiceAuthWiring.intercept(
-                service, "NewSession", null, this::onMessageReceivedNewSession));
-        serviceBuilder.addMethod(ServiceAuthWiring.intercept(
                 service, "RefreshSessionToken", null, this::onMessageReceivedRefreshSessionToken));
         serviceBuilder.addMethod(ServiceAuthWiring.intercept(
                 service, "CloseSession", null, this::onMessageReceivedCloseSession));
@@ -48,15 +46,6 @@ public interface SessionServiceAuthWiring extends ServiceAuthWiring<SessionServi
 
         return serviceBuilder.build();
     }
-
-    /**
-     * Authorize a request to NewSession.
-     *
-     * @param authContext the authentication context of the request
-     * @param request the request to authorize
-     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke NewSession
-     */
-    void onMessageReceivedNewSession(AuthContext authContext, HandshakeRequest request);
 
     /**
      * Authorize a request to RefreshSessionToken.
@@ -124,8 +113,6 @@ public interface SessionServiceAuthWiring extends ServiceAuthWiring<SessionServi
             TerminationNotificationRequest request);
 
     class AllowAll implements SessionServiceAuthWiring {
-        public void onMessageReceivedNewSession(AuthContext authContext, HandshakeRequest request) {}
-
         public void onMessageReceivedRefreshSessionToken(AuthContext authContext,
                 HandshakeRequest request) {}
 
@@ -146,10 +133,6 @@ public interface SessionServiceAuthWiring extends ServiceAuthWiring<SessionServi
     }
 
     class DenyAll implements SessionServiceAuthWiring {
-        public void onMessageReceivedNewSession(AuthContext authContext, HandshakeRequest request) {
-            ServiceAuthWiring.operationNotAllowed();
-        }
-
         public void onMessageReceivedRefreshSessionToken(AuthContext authContext,
                 HandshakeRequest request) {
             ServiceAuthWiring.operationNotAllowed();
@@ -185,12 +168,6 @@ public interface SessionServiceAuthWiring extends ServiceAuthWiring<SessionServi
 
     class TestUseOnly implements SessionServiceAuthWiring {
         public SessionServiceAuthWiring delegate;
-
-        public void onMessageReceivedNewSession(AuthContext authContext, HandshakeRequest request) {
-            if (delegate != null) {
-                delegate.onMessageReceivedNewSession(authContext, request);
-            }
-        }
 
         public void onMessageReceivedRefreshSessionToken(AuthContext authContext,
                 HandshakeRequest request) {

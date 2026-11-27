@@ -24,13 +24,6 @@ const _ = grpc.SupportPackageIsVersion7
 type SessionServiceClient interface {
 	// Deprecated: Do not use.
 	//
-	// Handshake between client and server to create a new session. The response includes a metadata header name and the
-	// token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
-	//
-	// Deprecated: Please use Flight's Handshake or http authorization headers instead.
-	NewSession(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error)
-	// Deprecated: Do not use.
-	//
 	// Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
 	// token that should replace the existing token for subsequent requests.
 	//
@@ -73,16 +66,6 @@ type sessionServiceClient struct {
 
 func NewSessionServiceClient(cc grpc.ClientConnInterface) SessionServiceClient {
 	return &sessionServiceClient{cc}
-}
-
-// Deprecated: Do not use.
-func (c *sessionServiceClient) NewSession(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error) {
-	out := new(HandshakeResponse)
-	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.SessionService/NewSession", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 // Deprecated: Do not use.
@@ -178,13 +161,6 @@ func (c *sessionServiceClient) TerminationNotification(ctx context.Context, in *
 type SessionServiceServer interface {
 	// Deprecated: Do not use.
 	//
-	// Handshake between client and server to create a new session. The response includes a metadata header name and the
-	// token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
-	//
-	// Deprecated: Please use Flight's Handshake or http authorization headers instead.
-	NewSession(context.Context, *HandshakeRequest) (*HandshakeResponse, error)
-	// Deprecated: Do not use.
-	//
 	// Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
 	// token that should replace the existing token for subsequent requests.
 	//
@@ -226,9 +202,6 @@ type SessionServiceServer interface {
 type UnimplementedSessionServiceServer struct {
 }
 
-func (UnimplementedSessionServiceServer) NewSession(context.Context, *HandshakeRequest) (*HandshakeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method NewSession not implemented")
-}
 func (UnimplementedSessionServiceServer) RefreshSessionToken(context.Context, *HandshakeRequest) (*HandshakeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RefreshSessionToken not implemented")
 }
@@ -261,24 +234,6 @@ type UnsafeSessionServiceServer interface {
 
 func RegisterSessionServiceServer(s grpc.ServiceRegistrar, srv SessionServiceServer) {
 	s.RegisterService(&SessionService_ServiceDesc, srv)
-}
-
-func _SessionService_NewSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HandshakeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SessionServiceServer).NewSession(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/io.deephaven.proto.backplane.grpc.SessionService/NewSession",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionServiceServer).NewSession(ctx, req.(*HandshakeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _SessionService_RefreshSessionToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -417,10 +372,6 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "io.deephaven.proto.backplane.grpc.SessionService",
 	HandlerType: (*SessionServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "NewSession",
-			Handler:    _SessionService_NewSession_Handler,
-		},
 		{
 			MethodName: "RefreshSessionToken",
 			Handler:    _SessionService_RefreshSessionToken_Handler,
