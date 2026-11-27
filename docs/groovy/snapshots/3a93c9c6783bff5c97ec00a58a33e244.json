@@ -1,0 +1,1 @@
+{"file":"reference/table-operations/create/emptyTable.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"X","type":"int"},{"name":"Y","type":"int"}],"rows":[[{"value":"5"},{"value":"0"}],[{"value":"5"},{"value":"1"}],[{"value":"5"},{"value":"2"}],[{"value":"5"},{"value":"3"}],[{"value":"5"},{"value":"4"}]]}}}}

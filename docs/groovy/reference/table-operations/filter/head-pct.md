@@ -5,7 +5,7 @@ title: headPct
 The `headPct` method returns a table with a specific percentage of rows from the beginning of the source table.
 
 > [!CAUTION]
-> Attempting to use `headPct` on a [blink table](../../../conceptual/table-types.md#specialization-3-blink) will raise an error.
+> Attempting to use `headPct` on a [blink table](../../../conceptual/table-types.md#specialization-3-blink) throws an error.
 
 ## Syntax
 

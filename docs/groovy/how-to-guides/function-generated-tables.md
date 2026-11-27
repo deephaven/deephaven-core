@@ -23,6 +23,8 @@ The function runs once when the table is created. Pass either source tables or a
 - With source tables, the function re-runs whenever any of them ticks. Every source table must be a refreshing (ticking) table.
 - With a refresh interval, the function re-runs once per interval, given in milliseconds.
 
+The refresh interval is checked once per [update cycle](../conceptual/table-update-model.md), so the function runs on the first cycle after the interval elapses, and never more than once per cycle.
+
 A refresh interval of zero or less produces a static result, as does passing no source tables. The function then runs once and never re-runs.
 
 The user-defined `tableGenerator` function can source its data from anywhere. It must return a table with the same column names and types on every invocation. The result takes its columns from the first generated table, or from the spec's [`tableDefinition`](#specify-the-table-definition) when you build the table from a [`FunctionGeneratedTableSpec`](/core/javadoc/io/deephaven/engine/table/impl/util/FunctionGeneratedTableSpec.html).

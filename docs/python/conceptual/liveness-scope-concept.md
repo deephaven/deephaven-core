@@ -113,7 +113,7 @@ def make_table_and_scope(a: int):
 t1, s1 = make_table_and_scope(1)
 # ... wait for a while
 s1.release()
-# The released table no longer updates. Drop the variable too, so nothing refers to it.
+# The released table no longer updates. Drop the variable so the console does not hold a handle to it.
 t1 = None
 t2, s2 = make_table_and_scope(2)
 # ... wait for a while again
@@ -139,7 +139,7 @@ with liveness_scope() as outer_scope:
     # evens is released here, and outer_scope now manages ticks
     outer_scope.preserve(ticks)
 
-# The released table no longer updates. Drop the variable too, so nothing refers to it.
+# The released table no longer updates. Drop the variable so the console does not hold a handle to it.
 evens = None
 ```
 
@@ -156,7 +156,7 @@ Scopes created by both the [`liveness_scope`](../reference/engine/liveness-scope
 Scopes created directly from the [`LivenessScope`](../reference/engine/LivenessScope.md) class also have these methods:
 
 - [`open`](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope.open) opens the scope for use in a `with` statement.
-- [`release`](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope.release) closes the scope and drops its references to everything it manages.
+- [`release`](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope.release) releases the scope, dropping its references to everything it manages.
 
 ## Example: release a query's intermediate tables
 
@@ -262,7 +262,7 @@ with scope.open():
 
 # ... later, when you no longer need every_third
 scope.release()
-# The released table no longer updates. Drop the variable too, so nothing refers to it.
+# The released table no longer updates. Drop the variable so the console does not hold a handle to it.
 every_third = None
 ```
 

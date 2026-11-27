@@ -1244,11 +1244,11 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
-                    "label": "addOnlyToBlink",
+                    "label": "AddOnlyToBlinkTableAdapter.toBlink",
                     "path": "reference/table-operations/create/addOnlyToBlink.md"
                   },
                   {
-                    "label": "blinkToAppendOnly",
+                    "label": "BlinkTableTools.blinkToAppendOnly",
                     "path": "reference/table-operations/create/blink-to-append-only.md"
                   },
                   {

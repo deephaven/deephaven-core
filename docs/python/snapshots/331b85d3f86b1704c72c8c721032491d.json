@@ -1,0 +1,1 @@
+{"file":"reference/table-operations/create/function_generated_table.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"X","type":"int"},{"name":"Y","type":"double"}],"rows":[[{"value":"4"},{"value":"-25.4937"}],[{"value":"9"},{"value":"14.7319"}],[{"value":"1"},{"value":"23.9580"}],[{"value":"7"},{"value":"44.6745"}],[{"value":"2"},{"value":"-44.2738"}]]}}}}

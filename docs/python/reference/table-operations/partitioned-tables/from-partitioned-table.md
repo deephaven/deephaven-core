@@ -12,10 +12,10 @@ The `from_partitioned_table` method creates a new `PartitionedTable` from an und
 ```python syntax
 PartitionedTable.from_partitioned_table(
   table: Table,
-  key_cols: str | list[str] | None = None,
+  key_cols: str | Sequence[str] | None = None,
   unique_keys: bool | None = None,
   constituent_column: str | None = None,
-  constituent_table_columns: list[Column] | None = None,
+  constituent_table_columns: TableDefinitionLike | None = None,
   constituent_changes_permitted: bool | None = None,
 ) -> PartitionedTable
 ```
@@ -28,7 +28,7 @@ PartitionedTable.from_partitioned_table(
 The underlying `PartitionedTable`.
 
 </Param>
-<Param name="key_cols" type="str | list[str] | None" optional>
+<Param name="key_cols" type="str | Sequence[str] | None" optional>
 
 The key column(s) of `table`.
 
@@ -49,9 +49,9 @@ The constituent column name in `table`.
 If `None`, the value defaults to the name of the first column with a Table data type (usually `__CONSTITUENT__`).
 
 </Param>
-<Param name="constituent_table_columns" type="list[Column] | None" optional>
+<Param name="constituent_table_columns" type="TableDefinitionLike | None" optional>
 
-The column definitions of the constituent table.
+The column definitions of the constituent table, as a [`TableDefinitionLike`](../create/TableDefinitionLike.md).
 
 If `None`, the value defaults to the column definitions of the first cell (constituent table) in the constituent column. Consequently, the constituent column cannot be empty.
 
@@ -96,4 +96,5 @@ new_pt = PartitionedTable.from_partitioned_table(
 
 ## Related documentation
 
+- [`TableDefinitionLike`](../create/TableDefinitionLike.md)
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTable.from_partitioned_table)

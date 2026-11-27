@@ -5,7 +5,7 @@ title: slice
 The `slice` method returns a table that is a subset of another table based on row positions.
 
 > [!CAUTION]
-> Attempting to use `slice` on a [blink table](../../../conceptual/table-types.md#specialization-3-blink) will raise an error.
+> Attempting to use `slice` on a [blink table](../../../conceptual/table-types.md#specialization-3-blink) throws an error.
 
 ## Syntax
 

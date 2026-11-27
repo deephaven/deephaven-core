@@ -243,7 +243,7 @@ t_sum = t.view(["X", "Group"]).sum_by("Group")
 
 ![Two Deephaven tables — table 't' is a blink table and 't_sum' is aggregated with `sum_by`](../assets/conceptual/table-types/table-types-3.gif)
 
-These specialized aggregation semantics are not always what you want. The blink attribute is the table marker that turns on blink table semantics. To disable the semantics, call [`remove_blink`](../reference/table-operations/create/remove-blink.md) on the blink table. It returns a child table with the same rows as the parent blink table but without the blink attribute. The result still follows the blink table update pattern, where each cycle removes all previous rows and contains only the new ones:
+These specialized aggregation semantics are not always what you want. The blink attribute is the table marker that turns on blink table semantics. To disable the semantics, call [`remove_blink`](../reference/table-operations/create/remove-blink.md) on the blink table. It returns a child table with the same rows as the parent blink table but without the blink attribute. Because the result is no longer marked as a blink table, formulas that use the special variables `i`, `ii`, or `k`, or column array expressions other than a simple constant offset such as `X_[i-1]`, raise an error on it, so apply such formulas before calling `remove_blink`. The result still follows the blink table update pattern, where each cycle removes all previous rows and contains only the new ones:
 
 ```python test-set=4 ticking-table order=null
 t_no_blink = t.remove_blink()
@@ -316,7 +316,7 @@ t_append_only = blink_to_append_only(t)
 
 ### Create a blink table from an add-only table
 
-Use [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md) to convert an add-only table to a blink table. The conversion helps when the upstream add-only table is not fully in memory, or when you want [blink table aggregation semantics](#specialized-semantics-for-blink-tables). If the upstream table already holds all its rows in memory, the conversion increases memory use rather than reducing it, because the upstream table still keeps every row.
+Use [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md) to convert an add-only table to a blink table. The conversion helps when the upstream add-only table is not fully in memory, or when you want [blink table aggregation semantics](#specialized-semantics-for-blink-tables). If the upstream table already holds all its rows in memory, the conversion increases memory use rather than reducing it: the upstream table still keeps every row, and the blink table adds its own row set and listener.
 
 The following example converts an append-only time table to a blink table:
 

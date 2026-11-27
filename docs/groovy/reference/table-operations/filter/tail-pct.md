@@ -5,7 +5,7 @@ title: tailPct
 The `tailPct` method returns a table with a specific percentage of rows from the end of the source table.
 
 > [!CAUTION]
-> Attempting to use `tailPct` on a [blink table](../../../conceptual/table-types.md#specialization-3-blink) will raise an error.
+> Attempting to use `tailPct` on a [blink table](../../../conceptual/table-types.md#specialization-3-blink) throws an error.
 
 ## Syntax
 

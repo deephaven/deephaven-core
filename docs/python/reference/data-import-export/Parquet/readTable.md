@@ -13,7 +13,7 @@ read(
     is_legacy_parquet: bool = False,
     is_refreshing: bool = False,
     file_layout: ParquetFileLayout | None = None,
-    table_definition: dict[str, DType] | list[Column] | None = None,
+    table_definition: TableDefinitionLike | None = None,
     special_instructions: s3.S3Instructions | None = None
 ) -> Table
 ```
@@ -46,9 +46,9 @@ Whether or not the Parquet data represents a refreshing source.
 The Parquet file layout. The default is `None`, which infers the layout.
 
 </Param>
-<Param name="table_definition" type="dict[str, DType] | list[Column] | None" optional>
+<Param name="table_definition" type="TableDefinitionLike | None" optional>
 
-The table definition. The default is `None`, which infers the table definition from the Parquet file(s).
+The table definition, as a [`TableDefinitionLike`](../../table-operations/create/TableDefinitionLike.md). The default is `None`, which infers the table definition from the Parquet file(s).
 
 </Param>
 <Param name="special_instructions" type="s3.S3Instructions | None" optional>
@@ -236,5 +236,6 @@ Additionally, the `S3.maxFragmentSize` [configuration property](../../../how-to-
 - [Export Parquet files](../../../how-to-guides/data-import-export/parquet-export.md)
 - [`write_table`](./writeTable.md)
 - [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
+- [`TableDefinitionLike`](../../table-operations/create/TableDefinitionLike.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(java.lang.String))
 - [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read)
