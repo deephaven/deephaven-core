@@ -90,7 +90,7 @@ def pyClientTickingWheel = { String pythonTag -> Docker.registerDockerTask(proje
         environmentVariable([
                 PREFIX: prefix,
                 PYTHON_TAG: pythonTag,
-                DEEPHAVEN_VERSION: project.version.toString()
+                DEEPHAVEN_VERSION: PythonVersion.deephavenVersion(project)
         ])
     }
     parentContainers = [ project.tasks.getByPath(':cpp-client:cppClientPy') ]

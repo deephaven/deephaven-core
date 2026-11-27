@@ -33,10 +33,11 @@ jobs:
       # still builds and archives the wheels, so it never fails (and pages Slack) before GCP is
       # wired up -- and it doubles as a kill switch that needs no revert PR.
       GAR_REPOSITORY: ${{ vars.NIGHTLY_WHEELS_GAR_REPOSITORY }}
-      # Same workload identity pool and provider the iris repository uses; see its
-      # .github/actions/gcloud-setup/action.yml.
-      GAR_WIF_PROVIDER: projects/249788155593/locations/global/workloadIdentityPools/gh-actions/providers/dh-ent
-      GAR_SERVICE_ACCOUNT: jenkins-agent@deephaven-testing.iam.gserviceaccount.com
+      # A pool for public repositories only, and a service account that can only upload to the
+      # nightly wheel repository. GCP accepts tokens only from this workflow on main, for the
+      # schedule and workflow_dispatch events.
+      GAR_WIF_PROVIDER: projects/249788155593/locations/global/workloadIdentityPools/gh-actions-public/providers/deephaven-core
+      GAR_SERVICE_ACCOUNT: dh-nightly-wheels-publisher@deephaven-testing.iam.gserviceaccount.com
 
     steps:
       - name: Checkout
@@ -64,7 +65,12 @@ jobs:
         #
         # `assemble` pulls in the buildWheel task without re-running the check suite, which
         # nightly-check-ci.yml already covers.
-        run: ./gradlew py-server:assemble py-client:assemble
+        #
+        # -PnightlyWheels stamps both wheels with the same version made from the checked-out
+        # commit, such as 44.0.dev20261124053012+g1a2b3c4d5e6f: the committer time in UTC, then
+        # the hash. PythonVersion in buildSrc documents the scheme. Deephaven Enterprise's
+        # nightly CI depends on it.
+        run: ./gradlew -PnightlyWheels py-server:assemble py-client:assemble
 
       - name: Collect wheels
         # Gather both packages into one directory so the archive and the upload each take a
@@ -109,12 +115,32 @@ jobs:
           # username.
           TWINE_USERNAME: oauth2accesstoken
           TWINE_PASSWORD: ${{ steps.auth.outputs.access_token }}
+        # The version comes from the commit, so a run on a commit that is already published makes
+        # the same wheels, and the index rejects a re-upload. Such a wheel is skipped, which keeps
+        # a re-run, or a night with no new merges, green. The check reads the index's simple page
+        # because twine's --skip-existing does not document support for Artifact Registry.
         run: |
           set -eu
           python -m pip install --upgrade twine
-          twine upload \
-            --repository-url "https://${GAR_LOCATION}-python.pkg.dev/${GAR_PROJECT}/${GAR_REPOSITORY}/" \
-            build/nightly-wheels/*.whl
+          index="https://${GAR_LOCATION}-python.pkg.dev/${GAR_PROJECT}/${GAR_REPOSITORY}"
+          to_upload=()
+          for wheel in build/nightly-wheels/*.whl; do
+            name="$(basename "${wheel}")"
+            # The project name is the part before the first "-", with "_" written as "-".
+            project="$(echo "${name%%-*}" | tr '_' '-' | tr '[:upper:]' '[:lower:]')"
+            # A project that has never been uploaded has no page yet, so a 404 means "not there".
+            page="$(curl -sS -H "Authorization: Bearer ${TWINE_PASSWORD}" "${index}/simple/${project}/" || true)"
+            if grep -qF "${name}" <<< "${page}"; then
+              echo "Already published, skipping: ${name}"
+            else
+              to_upload+=("${wheel}")
+            fi
+          done
+          if [ "${#to_upload[@]}" -eq 0 ]; then
+            echo "Every wheel is already published."
+            exit 0
+          fi
+          twine upload --repository-url "${index}/" "${to_upload[@]}"
 
       - name: Slack Nightly Failure
         uses: slackapi/slack-github-action@v2.1.0
