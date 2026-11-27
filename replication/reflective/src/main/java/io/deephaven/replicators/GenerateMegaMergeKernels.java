@@ -287,7 +287,7 @@ public class GenerateMegaMergeKernels {
                     .addStatement("destinationValues.set(ii, val1)")
                     .addStatement("destinationKeys.set(ii--, destinationKeys.getLong(destCursor))")
                     .addCode("\n")
-                    .beginControlFlow("if (--destCursor < (int) mergeStartPosition)")
+                    .beginControlFlow("if (--destCursor < mergeStartPosition)")
                     .addStatement("break no_data_left")
                     .endControlFlow()
                     .addStatement("val1 = destinationValues.getUnsafe(destCursor)")
