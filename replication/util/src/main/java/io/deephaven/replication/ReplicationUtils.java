@@ -537,6 +537,21 @@ public class ReplicationUtils {
         }
     }
 
+    /**
+     * Wraps each line of {@code javadoc} at spaces so that, once emitted as a javadoc comment on an element indented by
+     * {@code indent} spaces, no line extends past column 120. JavaPoet wraps code, but not javadoc.
+     *
+     * @param javadoc the javadoc text, with lines separated by newlines
+     * @param indent the indentation of the documented element
+     * @return the wrapped javadoc
+     */
+    public static String wrapJavadoc(final String javadoc, final int indent) {
+        final int width = 120 - indent - " * ".length();
+        return Arrays.stream(javadoc.split("\n", -1))
+                .map(line -> WordUtils.wrap(line, width, "\n", false))
+                .collect(Collectors.joining("\n"));
+    }
+
     @NotNull
     public static String className(@NotNull final String sourceClassJavaPath) {
         final String javaFileName = ReplicatePrimitiveCode.javaFileName(sourceClassJavaPath);

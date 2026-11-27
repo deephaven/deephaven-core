@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicationUtils;
 import io.deephaven.util.compare.ObjectComparisons;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -16,7 +15,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
@@ -27,9 +25,6 @@ public class ReplicateSortKernel {
     public static void main(String[] args) throws IOException {
         replicateLongToInt();
         replicateLongToByte();
-
-        doCharMegaMergeReplication(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/megamerge/CharLongMegaMergeKernel.java");
 
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
@@ -47,27 +42,6 @@ public class ReplicateSortKernel {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java");
         fixupObjectPermute(charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java"));
-    }
-
-    private static void doCharMegaMergeReplication(String sourceClassJavaPath) throws IOException {
-        // replicate char to each of the other types
-        final List<String> megaMergePaths = charToAllButBoolean(TASK, sourceClassJavaPath);
-        final String objectSortPath = charToObject(TASK, sourceClassJavaPath);
-        megaMergePaths.add(sourceClassJavaPath);
-        megaMergePaths.add(objectSortPath);
-
-        // now replicate each type to a descending kernel, and swap the sense of gt, lt, geq, and leq
-        for (final String path : megaMergePaths) {
-            final String descendingPath = replicatedOutputPath(TASK,
-                    path.replace("LongMegaMergeKernel", "LongMegaMergeDescendingKernel"));
-            if (path.contains("Object")) {
-                FileUtils.copyFile(new File(path), new File(descendingPath));
-                fixupObjectMegaMerge(objectSortPath, true);
-                fixupObjectMegaMerge(descendingPath, false);
-            } else {
-                invertSense(path, descendingPath);
-            }
-        }
     }
 
     private static void replicateLongToInt() throws IOException {
@@ -110,67 +84,6 @@ public class ReplicateSortKernel {
         final File file = new File(byteSortKernelPath);
         final List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         FileUtils.writeLines(file, replaceRegion(lines, "lngcase", indent(longCase, 16)));
-    }
-
-    private static void invertSense(String path, String descendingPath) throws IOException {
-        final File file = new File(path);
-
-        final List<String> lines =
-                ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
-
-        FileUtils.writeLines(new File(descendingPath), invertComparisons(lines));
-    }
-
-    @NotNull
-    private static List<String> ascendingNameToDescendingName(String sourceFile, List<String> lines) {
-        lines = globalReplacements(
-                lines.stream().dropWhile(line -> line.startsWith("//")).collect(Collectors.toList()),
-                "TimsortKernel", "TimsortDescendingKernel", "\\BLongMegaMergeKernel", "LongMegaMergeDescendingKernel");
-
-        // the header names the Char class that every variant is replicated from, and follows the class name
-        // replacements because their patterns also match the source class name
-        final String charClassName = ReplicationUtils.className(sourceFile)
-                .replaceFirst("^(Byte|Short|Int|Long|Float|Double|Object)", "Char")
-                .replace("LongMegaMergeDescendingKernel", "LongMegaMergeKernel");
-        return Stream.concat(ReplicationUtils.fileHeaderStream(TASK, charClassName), lines.stream())
-                .collect(Collectors.toList());
-    }
-
-    private static void fixupObjectMegaMerge(String objectPath, boolean ascending) throws IOException {
-        final File objectFile = new File(objectPath);
-        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-
-        if (!ascending) {
-            lines = ascendingNameToDescendingName(objectPath, lines);
-            lines = invertObjectComparisons(lines);
-        }
-
-        lines = fixupChunkAttributes(lines);
-
-        FileUtils.writeLines(objectFile, fixupColumnSourceGetObject(lines));
-    }
-
-    /**
-     * Make the comparison functions region descending by swapping the arguments of {@code ObjectComparisons.compare}. A
-     * compareTo result may be {@code Integer.MIN_VALUE}, which negation leaves negative, so the descending Object
-     * comparison never negates.
-     *
-     * @param lines the lines of the file to fix up
-     * @return the fixed up lines
-     */
-    private static List<String> invertObjectComparisons(List<String> lines) {
-        final List<String> descendingComment = Collections.singletonList(
-                "    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)");
-        lines = applyFixup(lines, "comparison functions", "(\\s+return )ObjectComparisons\\.compare\\(lhs, rhs\\);",
-                m -> Collections.singletonList(m.group(1) + "ObjectComparisons.compare(rhs, lhs);"));
-        if (lines.stream().noneMatch(line -> line.contains("ObjectComparisons.compare(rhs, lhs);"))) {
-            throw new IllegalStateException("comparison functions region does not use ObjectComparisons.compare");
-        }
-        return insertRegion(lines, "comparison functions", descendingComment);
-    }
-
-    private static List<String> fixupColumnSourceGetObject(List<String> lines) {
-        return globalReplacements(lines, "getObject\\(", "get\\(");
     }
 
     private static void fixupObjectPermute(String objectPath) throws IOException {
