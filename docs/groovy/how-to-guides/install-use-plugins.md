@@ -34,6 +34,9 @@ On a Groovy server, how you install a plugin depends on how it is packaged:
 
 The server loads plugins only when it starts, so restart the server after you install a plugin.
 
+> [!NOTE]
+> The web IDE loads plugins only when the page loads. After you install a new plugin and restart the server, you may need to refresh any browser tabs that already have the IDE open so that they use the latest plugins.
+
 ### Extend Docker images for JS plugins
 
 First, follow the steps in [Launch Deephaven from pre-built images](../getting-started/docker-install.md).

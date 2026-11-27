@@ -36,6 +36,9 @@ How you install a plugin depends on how it is packaged:
 
 You can install some plugins with `pip`. Install them into the Python environment the server runs in. The server loads plugins only when it starts, so restart the server after you install a plugin.
 
+> [!NOTE]
+> The web IDE loads plugins only when the page loads. After you install a new plugin and restart the server, you may need to refresh any browser tabs that already have the IDE open so that they use the latest plugins.
+
 In Docker, don't run `pip install` inside a running container. Add the `pip install` line to a custom image instead. The server then loads the plugin when the container starts, and the plugin survives container restarts. For example, the following Dockerfile adds the [theme pack](https://pypi.org/project/deephaven-plugin-theme-pack/):
 
 ```docker title="Dockerfile"
