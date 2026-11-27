@@ -1212,6 +1212,14 @@ csv_manual_header = read_csv(
     headless=True,
 )
 
+# import headerless CSV, name the columns in file order, and set some types by name
+csv_named_types = read_csv(
+    "https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro_headerless.csv",
+    header=["Year", "Rotten Tom Score", "Title"],
+    col_types={"Rotten Tom Score": dht.int64, "Year": dht.int64},
+    headless=True,
+)
+
 # !!! WRITE CSV !!!
 # export / write CSV to local /data/ directory
 from deephaven import write_csv

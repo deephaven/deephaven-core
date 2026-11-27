@@ -40,7 +40,7 @@ write_csv(source, "/data/Cosine.csv", cols=["X", "CosX"])
 
 [`read_csv`](../data-import-export/CSV/readCsv.md) reads a CSV file from a server path or a URL. Options handle files with no header row and other delimiters.
 
-```python test-set=1 order=result,iris,deniro_default,deniro_header,deniro_tsv,deniro_psv
+```python test-set=1 order=result,iris,deniro_default,deniro_header,deniro_types,deniro_tsv,deniro_psv
 from deephaven import read_csv
 
 # Read the file written in the previous section
@@ -57,14 +57,20 @@ deniro_default = read_csv(
     headless=True,
 )
 
-# Read a file with no header row, providing column names and types in file column order
+# Read a file with no header row, providing column names in file column order and some types by name
 import deephaven.dtypes as dht
 
-header = {"Year": dht.int64, "Score": dht.int64, "Title": dht.string}
 deniro_header = read_csv(
     "https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro_headerless.csv",
-    header=header,
+    header=["Year", "Score", "Title"],
+    col_types={"Year": dht.int64, "Score": dht.int64},
     headless=True,
+)
+
+# Set the types of some columns by name, in any order; the others are inferred
+deniro_types = read_csv(
+    "https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro.csv",
+    col_types={"Title": dht.string, "Score": dht.double},
 )
 
 # Read files with other delimiters
