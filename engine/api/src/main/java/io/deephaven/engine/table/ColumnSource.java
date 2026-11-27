@@ -7,7 +7,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,22 +37,6 @@ public interface ColumnSource<T>
         }
         return ChunkType.fromElementType(dataType);
     }
-
-    /**
-     * Return a {@link RowSet row set} where the values in the column source match the given keys.
-     *
-     * @param usePrev Whether to use the previous values for the ColumnSource
-     * @param matchOptions How the match should be performed; whether should be inverted, case sensitive, etc.
-     * @param selection Restrict results to this row set
-     * @param keys The keys to match in the column
-     *
-     * @return The rows that match the given keys
-     */
-    WritableRowSet match(
-            boolean usePrev,
-            MatchOptions matchOptions,
-            @NotNull RowSet selection,
-            Object... keys);
 
     /**
      * ColumnSource implementations that track previous values have the option to not actually start tracking previous

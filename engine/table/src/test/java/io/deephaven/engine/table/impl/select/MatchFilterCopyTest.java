@@ -4,15 +4,18 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.intCol;
@@ -21,6 +24,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class MatchFilterCopyTest {
@@ -125,5 +130,38 @@ public class MatchFilterCopyTest {
         DataIndexer.getOrCreateDataIndex(table, "X").table();
 
         assertTableEquals(newTable(intCol("X", 0)), table.where("X == i"));
+    }
+
+    /**
+     * A copy or rename made before the chunk filter is first built still shares the one that the original, or any other
+     * copy, builds later, so the set of values is built once for all of them.
+     */
+    @Test
+    public void copiesAndRenamesShareTheChunkFilterBuiltLater() {
+        final Table table = data();
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "X", 1, 3, 5, 7);
+        filter.init(table.getDefinition());
+        final MatchFilter copy = (MatchFilter) filter.copy();
+        final MatchFilter renamed = (MatchFilter) filter.renamedFilter(Map.of("X", "Z")).orElseThrow();
+
+        final ChunkFilter builtByCopy = copy.chunkFilter().orElseThrow();
+        assertSame(builtByCopy, filter.chunkFilter().orElseThrow());
+        assertSame(builtByCopy, renamed.chunkFilter().orElseThrow());
+        assertSame(builtByCopy, ((MatchFilter) renamed.copy()).chunkFilter().orElseThrow());
+    }
+
+    /**
+     * The chunk filters are built from the values that {@link MatchFilter#init} converts, so a filter that has not been
+     * initialized cannot match.
+     */
+    @Test
+    public void uninitializedFilterCannotMatch() {
+        final Table table = data();
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "X", 1, 3);
+        assertThrows(IllegalStateException.class, filter::chunkFilter);
+        assertThrows(IllegalStateException.class,
+                () -> filter.filter(table.getRowSet(), table.getRowSet(), table, false));
+        assertThrows(IllegalStateException.class,
+                () -> filter.filterInverse(table.getRowSet(), table.getRowSet(), table, false));
     }
 }

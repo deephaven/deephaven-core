@@ -10,10 +10,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
 import io.deephaven.engine.table.impl.util.JobScheduler;
@@ -100,16 +97,6 @@ public abstract class AbstractColumnSource<T> implements
     @Override
     public ColumnSource<T> getPrevSource() {
         return new PrevColumnSource<>(this);
-    }
-
-    @Override
-    public WritableRowSet match(
-            final boolean usePrev,
-            final MatchOptions matchOptions,
-            @NotNull final RowSet selection,
-            final Object... keys) {
-        return ChunkFilter.applyChunkFilter(selection, this, usePrev,
-                ChunkMatchFilterFactory.getChunkFilter(type, matchOptions, keys));
     }
 
     @Override

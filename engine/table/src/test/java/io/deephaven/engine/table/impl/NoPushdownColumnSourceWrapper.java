@@ -7,10 +7,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.SharedContext;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,15 +30,6 @@ public class NoPushdownColumnSourceWrapper<T> implements ColumnSource<T> {
     @Override
     public Class<?> getComponentType() {
         return delegate.getComponentType();
-    }
-
-    @Override
-    public WritableRowSet match(
-            final boolean usePrev,
-            @NotNull final MatchOptions matchOptions,
-            @NotNull final RowSet selection,
-            final Object... keys) {
-        return delegate.match(usePrev, matchOptions, selection, keys);
     }
 
     @Override

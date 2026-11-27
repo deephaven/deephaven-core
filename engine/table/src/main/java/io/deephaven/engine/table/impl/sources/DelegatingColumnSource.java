@@ -8,32 +8,29 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
+/**
+ * A column source that reads every value from a delegate column source.
+ * <p>
+ * Pushdown filtering is deliberately not forwarded to the delegate. A subclass may override the reads to change the
+ * values or the type it presents, as {@code SnapshotUtils}' direct-vector source does, and a forwarded pushdown would
+ * still answer from the delegate's values. A filter on a delegating column source therefore scans the values through
+ * {@link #fillChunk}, and a subclass that can answer a filter without a scan, such as
+ * {@link io.deephaven.engine.table.impl.by.AggregationKeyColumnSource}, implements the pushdown methods itself.
+ */
 public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> implements FillUnordered<Values> {
     final ColumnSource<R> delegate;
 
     public DelegatingColumnSource(Class<T> type, Class<?> componentType, ColumnSource<R> delegate) {
         super(type, componentType);
         this.delegate = delegate;
-    }
-
-    @Override
-    public WritableRowSet match(
-            final boolean usePrev,
-            @NotNull final MatchOptions matchOptions,
-            @NotNull RowSet selection,
-            Object... keys) {
-        return delegate.match(usePrev, matchOptions, selection, keys);
     }
 
     @Override
