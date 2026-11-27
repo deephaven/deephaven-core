@@ -78,11 +78,11 @@ qoptt = pm.query_operation_performance_tree_table()
 
 Which process records a statistic depends on its side of the connection:
 
-- **Sender statistics:** the process that publishes the table records them.
+- **Publisher statistics:** the process that publishes the table records them.
 - **Receiver statistics:** a process that subscribes to or snapshots a table through the Java Barrage client records them, in its own subscription metrics table. This includes the [Java client](../../how-to-guides/java-client.md) and a Deephaven server that uses [`barrage_session`](../data-import-export/barrage/barrage-session.md) or a [URI](../../how-to-guides/use-uris.md).
   Clients such as [`pydeephaven`](../../getting-started/pyclient-quickstart.md) and the JavaScript client record no receiver statistics.
 
-For details, see [Barrage metrics for performance monitoring](../../how-to-guides/performance/barrage-performance.md).
+For details, see [Monitor and tune Barrage performance](../../how-to-guides/performance/barrage-performance.md).
 
 Access the subscription and snapshot metrics tables as follows:
 
@@ -100,7 +100,7 @@ snaps = barrage_snapshot_performance_log()
 
 The `TableId` and `TableKey` columns identify what each row describes:
 
-- For sender statistics, `TableId` is the source table's `System.identityHashCode`, written in hexadecimal.
+- For publisher statistics, `TableId` is the source table's `System.identityHashCode`, written in hexadecimal.
 - For receiver statistics, `TableId` is the identity hash code of the subscriber's local copy of the table.
 - Subscriptions to one table at different [update intervals](../../how-to-guides/performance/barrage-performance.md#update-interval) are tracked separately but share the same `TableId` and `TableKey`.
 - For [tree table](../../how-to-guides/tree-table.md) and [rollup table](../../how-to-guides/rollup-table.md) subscriptions, `TableId` is the identity hash code of the subscription rather than of a table.
@@ -146,22 +146,22 @@ A statistic with no samples in an interval has no row. The subscription metrics 
 | Pct50, Pct75, Pct90, Pct95, Pct99 | The 50th, 75th, 90th, 95th, and 99th percentiles of the samples                                                                             |
 | Max                               | The largest sample                                                                                                                          |
 
-The following table lists the `StatType` values. Its Sender / Receiver column says which side records each one. For where in an update's life each statistic is recorded, see [Interpret Barrage metrics](../../conceptual/barrage-metrics.md).
+The following table lists the `StatType` values. Its Publisher / Receiver column says which side records each one. For where in an update's life each statistic is recorded, see [Interpret Barrage metrics](../../conceptual/barrage-metrics.md).
 
-| StatType             | Sender / Receiver | Description                                                                                                                                                                                                                                                                          |
-| -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single [update graph cycle](../../conceptual/dag.md#update-graph-cycles)                                                                                                                                                   |
-| AggregateNanos       | Sender            | The time it took to aggregate pending updates into a message; recorded for every compaction and for every range a propagation packages, even a range of one update                                                                                                                   |
-| PropagateNanos       | Sender            | The elapsed time of one propagation phase: writing one message to the subscribers it goes to                                                                                                                                                                                         |
-| SnapshotNanos        | Sender            | The time it took to take one snapshot step for a new or changed subscription; for [tree table](../../how-to-guides/tree-table.md) and [rollup table](../../how-to-guides/rollup-table.md) subscriptions, every update is sent as a snapshot and records a value                      |
-| UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                                                                                                                                                                                                           |
-| WriteNanos           | Sender            | The elapsed time of one write of the update, to one subscriber or to every subscriber that shares an update                                                                                                                                                                          |
-| WriteBytes           | Sender            | The size in bytes of one write of the update, every message in it including dictionary batches; recorded once for each subscriber it was sent to                                                                                                                                     |
-| PendingDeltaCount    | Sender            | How many [pending updates](../../how-to-guides/performance/barrage-performance.md#compact-pending-deltas) the server was holding, un-propagated, after recording an update graph cycle's changes; a compacted update counts once, even though it stands for every cycle it coalesced |
-| PendingDeltaBytes    | Sender            | Approximate heap footprint, in bytes, of the chunk storage those pending updates own                                                                                                                                                                                                 |
-| DeserializationNanos | Receiver          | The time it took to read and deserialize one incoming gRPC message; an update split across several messages records one value per message                                                                                                                                            |
-| ProcessUpdateNanos   | Receiver          | The time it took to apply a single message (update or snapshot): during an [update graph cycle](../../conceptual/dag.md#update-graph-cycles) for a subscription, or as the message arrives for a snapshot                                                                            |
-| RefreshNanos         | Receiver          | The time it took to apply all queued messages during a single [update graph cycle](../../conceptual/dag.md#update-graph-cycles); recorded only for subscriptions, once per cycle, even when nothing is queued                                                                        |
+| StatType             | Publisher / Receiver | Description                                                                                                                                                                                                                                                                          |
+| -------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| EnqueueNanos         | Publisher            | The time it took to record changes that occurred during a single [update graph cycle](../../conceptual/dag.md#update-graph-cycles)                                                                                                                                                   |
+| AggregateNanos       | Publisher            | The time it took to aggregate pending updates into a message; recorded for every compaction and for every range a propagation packages, even a range of one update                                                                                                                   |
+| PropagateNanos       | Publisher            | The elapsed time of one propagation phase: writing one message to the subscribers it goes to                                                                                                                                                                                         |
+| SnapshotNanos        | Publisher            | The time it took to take one snapshot step for a new or changed subscription; for [tree table](../../how-to-guides/tree-table.md) and [rollup table](../../how-to-guides/rollup-table.md) subscriptions, every update is sent as a snapshot and records a value                      |
+| UpdateJobNanos       | Publisher            | The time it took to run one full cycle of the off-thread propagation logic                                                                                                                                                                                                           |
+| WriteNanos           | Publisher            | The elapsed time of one write of the update, to one subscriber or to every subscriber that shares an update                                                                                                                                                                          |
+| WriteBytes           | Publisher            | The size in bytes of one write of the update, every message in it including dictionary batches; recorded once for each subscriber it was sent to                                                                                                                                     |
+| PendingDeltaCount    | Publisher            | How many [pending updates](../../how-to-guides/performance/barrage-performance.md#compact-pending-deltas) the server was holding, un-propagated, after recording an update graph cycle's changes; a compacted update counts once, even though it stands for every cycle it coalesced |
+| PendingDeltaBytes    | Publisher            | Approximate heap footprint, in bytes, of the chunk storage those pending updates own                                                                                                                                                                                                 |
+| DeserializationNanos | Receiver             | The time it took to read and deserialize one incoming gRPC message; an update split across several messages records one value per message                                                                                                                                            |
+| ProcessUpdateNanos   | Receiver             | The time it took to apply a single message (update or snapshot): during an [update graph cycle](../../conceptual/dag.md#update-graph-cycles) for a subscription, or as the message arrives for a snapshot                                                                            |
+| RefreshNanos         | Receiver             | The time it took to apply all queued messages during a single [update graph cycle](../../conceptual/dag.md#update-graph-cycles); recorded only for subscriptions, once per cycle, even when nothing is queued                                                                        |
 
 ### Barrage snapshot metrics
 
@@ -191,7 +191,7 @@ The following server-side flags change the behavior of [Barrage metrics](../../h
 - [Deephaven's live directed acyclic graph (DAG)](../../conceptual/dag.md)
 - [Deephaven's table types](../../conceptual/table-types.md)
 - [How to use Deephaven's performance tables](../../how-to-guides/performance/performance-tables.md)
-- [Barrage metrics for performance monitoring](../../how-to-guides/performance/barrage-performance.md)
+- [Monitor and tune Barrage performance](../../how-to-guides/performance/barrage-performance.md)
 - [Extract data with a Java client](../../how-to-guides/java-client.md)
 - [Use URIs to share tables](../../how-to-guides/use-uris.md)
 - [Tree tables](../../how-to-guides/tree-table.md)

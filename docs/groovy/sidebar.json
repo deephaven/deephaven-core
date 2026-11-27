@@ -846,7 +846,7 @@
                     "path": "how-to-guides/performance/track-processing-time.md"
                   },
                   {
-                    "label": "Barrage metrics",
+                    "label": "Monitor and tune Barrage performance",
                     "path": "how-to-guides/performance/barrage-performance.md"
                   },
                   {
