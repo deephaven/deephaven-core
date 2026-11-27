@@ -13,7 +13,7 @@ Example:
     >>> import pydeephaven as dh
     >>> session = dh.Session() # assuming Deephaven Community Edition is running locally with the default configuration
     >>> table = session.time_table(period=1000000000).update(formulas=["Col1 = i"])
-    >>> listener_handle = dh.table_listener.listen(table, lambda update : print(update.added()))
+    >>> listener_handle = dh.listen(table, lambda update : print(update.added()))
     >>> listener_handle.start()
     >>> # data starts printing asynchronously here
     >>> listener_handle.stop()

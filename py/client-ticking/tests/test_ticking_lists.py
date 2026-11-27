@@ -10,6 +10,8 @@ from collections import defaultdict
 import pyarrow as pa
 import pydeephaven as dh
 
+from pydeephaven_ticking.table_listener import TableUpdate
+
 
 class TickingListsTestCase(unittest.TestCase):
     queue = queue.Queue()
@@ -56,6 +58,49 @@ class TickingListsTestCase(unittest.TestCase):
 
         if timed_out:
             self.fail("Test timed out")
+
+    def test_null_and_empty_list_cells(self) -> None:
+        """A null list cell arrives as None and an empty one as [], without killing the subscription."""
+        session = dh.Session()
+        try:
+            table = session.empty_table(size=3).update(
+                formulas=[
+                    "Ints = ii == 0 ? null : (ii == 1 ? new int[0] : new int[] {(int) ii})",
+                    "Strings = ii == 0 ? null : (ii == 1 ? new String[0] : new String[] {`s` + ii})",
+                    "Doubles = ii == 0 ? null : (ii == 1 ? new double[0] : new double[] {(double) ii})",
+                ]
+            )
+            updates: queue.Queue[dict[str, pa.Array]] = queue.Queue()
+            errors: list[Exception] = []
+
+            def on_update(update: TableUpdate) -> None:
+                added = update.added()
+                if added:
+                    updates.put(added)
+
+            listener_handle = dh.listen(table, on_update, errors.append)
+            listener_handle.start()
+            try:
+                added = updates.get(block=True, timeout=10)
+            except queue.Empty:
+                added = None
+            finally:
+                listener_handle.stop()
+
+            if errors:
+                raise errors[0]
+            self.assertIsNotNone(added, "timed out waiting for the snapshot")
+            self.assertEqual(
+                pa.array([None, [], [2]], pa.list_(pa.int32())), added["Ints"]
+            )
+            self.assertEqual(
+                pa.array([None, [], ["s2"]], pa.list_(pa.string())), added["Strings"]
+            )
+            self.assertEqual(
+                pa.array([None, [], [2.0]], pa.list_(pa.float64())), added["Doubles"]
+            )
+        finally:
+            session.close()
 
     def handle_update(self, update):
         added = update.added()

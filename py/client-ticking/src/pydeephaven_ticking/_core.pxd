@@ -61,13 +61,13 @@ cdef extern from "deephaven/dhcore/container/container.h" namespace "deephaven::
 cdef extern from "deephaven/dhcore/container/row_sequence.h" namespace "deephaven::dhcore::container":
     cdef cppclass CRowSequence "deephaven::dhcore::container::RowSequence":
         @staticmethod
-        shared_ptr[CRowSequence] CreateSequential(uint64_t begin, uint64_t end)
+        shared_ptr[CRowSequence] CreateSequential(uint64_t begin, uint64_t end) except +
 
         CRowSequence()
         CRowSequence(CRowSequence other)
 
-        shared_ptr[CRowSequence] Take(size_t size)
-        shared_ptr[CRowSequence] Drop(size_t size)
+        shared_ptr[CRowSequence] Take(size_t size) except +
+        shared_ptr[CRowSequence] Drop(size_t size) except +
 
         size_t Size()
         bool Empty()
@@ -84,17 +84,17 @@ cdef extern from "deephaven/dhcore/clienttable/client_table.h" namespace "deepha
 
         shared_ptr[CSchema] Schema()
 
-        string ToString(bool wantHeaders, wantRowNumbers) except +
-        string ToString(bool wantHeaders, wantRowNumbers, shared_ptr[CRowSequence] rowSequence) except +
-        string ToString(bool wantHeaders, wantRowNumbers, vector[shared_ptr[CRowSequence]] rowSequences) except +
+        string ToString(bool wantHeaders, bool wantRowNumbers) except +
+        string ToString(bool wantHeaders, bool wantRowNumbers, shared_ptr[CRowSequence] rowSequence) except +
+        string ToString(bool wantHeaders, bool wantRowNumbers, vector[shared_ptr[CRowSequence]] rowSequences) except +
 
 cdef extern from "deephaven/dhcore/clienttable/schema.h" namespace "deephaven::dhcore::clienttable":
     cdef cppclass CSchema "deephaven::dhcore::clienttable::Schema":
         @staticmethod
-        shared_ptr[CSchema] Create(const vector[string] &names, const vector[ElementTypeId] &types)
+        shared_ptr[CSchema] Create(const vector[string] &names, const vector[ElementTypeId] &types) except +
 
         @staticmethod
-        shared_ptr[CSchema] Create(const vector[string] &names, const vector[CElementType] &types)
+        shared_ptr[CSchema] Create(const vector[string] &names, const vector[CElementType] &types) except +
 
         CSchema()
 
@@ -122,7 +122,7 @@ cdef extern from "deephaven/dhcore/ticking/ticking.h" namespace "deephaven::dhco
 cdef extern from "deephaven/dhcore/column/buffer_column_source.h" namespace "deephaven::dhcore::column":
     cdef cppclass CNumericBufferColumnSource "deephaven::dhcore::column::NumericBufferColumnSource" [T]:
         @staticmethod
-        shared_ptr[CNumericBufferColumnSource[T]] CreateUntyped(const void *start, size_t size)
+        shared_ptr[CNumericBufferColumnSource[T]] CreateUntyped(const void *start, size_t size) except +
 
         void FillChunk(const CRowSequence &rows, CChunk *destData, CGenericChunk[bool] *optionalDestNullFlags) except +
 
@@ -181,43 +181,40 @@ cdef extern from "deephaven/dhcore/utility/cython_support.h" namespace "deephave
     cdef cppclass CCythonSupport "deephaven::dhcore::utility::CythonSupport":
         @staticmethod
         shared_ptr[CColumnSource] CreateBooleanColumnSource(const uint8_t *dataBegin, const uint8_t *dataEnd,
-            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements)
+            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements) except +
 
         @staticmethod
         shared_ptr[CColumnSource] CreateStringColumnSource(const char *textBegin, const char *textEnd,
             const uint32_t *offsetsBegin, const uint32_t *offsetsEnd,
-            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements)
+            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements) except +
 
         @staticmethod
         shared_ptr[CColumnSource] CreateDateTimeColumnSource(const int64_t *dataBegin, const int64_t *dataEnd,
-            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements)
+            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements) except +
 
         @staticmethod
         shared_ptr[CColumnSource] CreateLocalDateColumnSource(const int64_t *dataBegin, const int64_t *dataEnd,
-            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements)
+            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements) except +
 
         @staticmethod
         shared_ptr[CColumnSource] CreateLocalTimeColumnSource(const int64_t *dataBegin, const int64_t *dataEnd,
-            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements)
+            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements) except +
 
         @staticmethod
         shared_ptr[CColumnSource] SlicesToColumnSource(
                 const CColumnSource &data, size_t data_size,
-                const CColumnSource &lengths, size_t lengths_size)
+                const CColumnSource &lengths, size_t lengths_size) except +
 
         @staticmethod
-        shared_ptr[CColumnSource] ContainerToColumnSource(shared_ptr[CContainerBase] data)
-
-        @staticmethod
-        string WhatADump(const CColumnSource &data, size_t size)
+        shared_ptr[CColumnSource] ContainerToColumnSource(shared_ptr[CContainerBase] data) except +
 
 cdef extern from "deephaven/dhcore/ticking/barrage_processor.h" namespace "deephaven::dhcore::ticking":
     cdef cppclass CBarrageProcessor "deephaven::dhcore::ticking::BarrageProcessor":
         @staticmethod
-        string CreateSubscriptionRequestCython(const void *ticket_bytes, size_t size)
+        string CreateSubscriptionRequestCython(const void *ticket_bytes, size_t size) except +
 
         CBarrageProcessor()
-        CBarrageProcessor(shared_ptr[CSchema] schema)
+        CBarrageProcessor(shared_ptr[CSchema] schema) except +
 
         optional[CTickingUpdate] ProcessNextChunk(const vector[shared_ptr[CColumnSource]] &sources,
             const vector[size_t] &sizes, void *metadata, size_t metadataSize) except +
