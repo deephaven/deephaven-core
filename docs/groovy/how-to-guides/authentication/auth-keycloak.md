@@ -152,7 +152,7 @@ The `START_OPTS` properties set up the login. The [`AuthHandlers`](../configurat
 The `authentication.client.configuration.list` property names the properties that the web UI can read, so the browser knows which Keycloak server and realm to send users to. The [Web Defaults](../configuration/configure-web.md) guide describes the related `client.configuration.list` property, which works the same way for general web UI settings. The web UI turns on the Keycloak [plugin](../configuration/js-plugins.md) only when `AuthHandlers` includes the OIDC handler, and the plugin reads the URL, realm, and client ID from the other three properties.
 
 > [!IMPORTANT]
-> The Keycloak URL must be reachable from two places: the `deephaven` container, which reads Keycloak's configuration at startup, and your browser, which is redirected there to sign in. The address `10.222.1.10` is on the Docker network. Your browser can reach it with Docker Engine on Linux, but not on Docker Desktop. To run the example on Docker Desktop:
+> The Keycloak URL must be reachable from two places: the `deephaven` container, which reads Keycloak's configuration at startup, and your browser, which is redirected there to sign in. The address `10.222.1.10` is on the Docker network. Your browser can reach it only with rootful Docker Engine on Linux. To run the example on Docker Desktop or [rootless Docker Engine](https://docs.docker.com/engine/security/rootless/troubleshoot/):
 >
 > - Add `127.0.0.1 keycloak` to your hosts file: `/etc/hosts` on macOS and Linux, or `C:\Windows\System32\drivers\etc\hosts` on Windows.
 > - Change `authentication.oidc.keycloak.url` to `http://keycloak:8080`.
