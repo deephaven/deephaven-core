@@ -29,11 +29,13 @@ public final class AddOnlyToBlinkTableAdapter {
 
     /**
      * Convert an {@link Table#ADD_ONLY_TABLE_ATTRIBUTE add-only} or {@link Table#APPEND_ONLY_TABLE_ATTRIBUTE
-     * append-only} table to a {@link Table#BLINK_TABLE_ATTRIBUTE blink} table. The callee must guarantee that the
-     * passed in table is {@link Table#isRefreshing() refreshing} and only delivers additions in its updates.
+     * append-only} table to a {@link Table#BLINK_TABLE_ATTRIBUTE blink} table. The caller must guarantee that the
+     * passed-in table only delivers additions in its updates. If the table is already a blink table, it is returned
+     * unchanged.
      *
      * @param table An add-only or append-only table
      * @return A blink table based on the input table
+     * @throws IllegalArgumentException if the table is not {@link Table#isRefreshing() refreshing}
      */
     public static Table toBlink(@NotNull final Table table) {
         if (!table.isRefreshing()) {

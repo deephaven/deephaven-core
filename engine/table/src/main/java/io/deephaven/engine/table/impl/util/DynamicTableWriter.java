@@ -116,7 +116,7 @@ public final class DynamicTableWriter implements TableWriter {
     }
 
     /**
-     * Creates a write object that would write an object at a given location
+     * Creates a TableWriter that produces an in-memory table with the columns of {@code definition}.
      *
      * @param definition The table definition to create the dynamic table writer for
      */
@@ -125,9 +125,10 @@ public final class DynamicTableWriter implements TableWriter {
     }
 
     /**
-     * Creates a write object that would write an object at a given location
+     * Creates a TableWriter that produces an in-memory table with the columns of {@code definition}.
      *
      * @param definition The table definition to create the dynamic table writer for
+     * @param constantValues a Map of columns with constant values
      */
     public DynamicTableWriter(TableDefinition definition, Map<String, Object> constantValues) {
         this(definition.getColumnNamesArray(), definition.getColumnTypesArray(), constantValues);
@@ -145,12 +146,12 @@ public final class DynamicTableWriter implements TableWriter {
     }
 
     /**
-     * Returns a row writer, which allocates the row. You may get setters for the row, and then call addRowToTableIndex
-     * when you are finished. Because the row is allocated when you call this function, it is possible to get several
-     * Row objects before calling addRowToTableIndex.
+     * Returns a row writer, which allocates the row. You may get setters for the row, and then call
+     * {@link Row#writeRow()} when you are finished. Because the row is allocated when you call this function, it is
+     * possible to get several Row objects before calling {@link Row#writeRow()}.
      * <p>
      * This contrasts with {@code DynamicTableWriter.getSetter}, which allocates a single row; and you must call
-     * {@code DynamicTableWriter.addRowToTableIndex} before advancing to the next row.
+     * {@link #writeRow()} before advancing to the next row.
      *
      * @return a Row from which you can retrieve setters and call write row.
      */
@@ -161,8 +162,8 @@ public final class DynamicTableWriter implements TableWriter {
 
     /**
      * Returns a RowSetter for the given column. If required, a Row object is allocated. You can not mix calls with
-     * {@code getSetter} and {@code getRowWriter}. After setting each column, you must call {@code addRowToTableIndex},
-     * before beginning to write the next row.
+     * {@code getSetter} and {@code getRowWriter}. After setting each column, you must call {@link #writeRow()}, before
+     * beginning to write the next row.
      *
      * @param name column name.
      * @return a RowSetter for the given column

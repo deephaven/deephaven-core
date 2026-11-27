@@ -104,7 +104,7 @@ class _BaseLivenessScope(JObjectWrapper):
         self.j_scope = _JLivenessScope()
 
     def _release(self) -> None:
-        """Closes the LivenessScope and releases all the query graph resources.
+        """Releases the scope, dropping its references to every query graph resource it manages.
 
         Raises:
             DHError if this instance has been released too many times
@@ -208,7 +208,7 @@ class LivenessScope(_BaseLivenessScope):
         super().__init__()
 
     def release(self) -> None:
-        """Closes the LivenessScope and releases all the managed resources.
+        """Releases the scope, dropping its references to everything it manages.
 
         Raises:
             DHError if this instance has been released too many times

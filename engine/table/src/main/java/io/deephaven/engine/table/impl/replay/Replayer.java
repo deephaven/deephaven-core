@@ -214,6 +214,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      *
      * @param dataSource historical table to replay
      * @param timeColumn column in the table containing timestamps
+     * @param groupingColumn column whose values define the groups; rows within each group are replayed in order
      * @return dynamic, replayed version of the table.
      */
     @Override

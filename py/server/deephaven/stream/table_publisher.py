@@ -65,6 +65,8 @@ class TablePublisher(JObjectWrapper):
         on-shutdown callback will be invoked if it hasn't already been, this publisher will no longer be alive, and
         future calls to add will silently return without publishing. These effects may resolve asynchronously.
 
+        The failure is passed to listeners as a Java RuntimeException whose message is str(failure).
+
         Args:
             failure (Exception): the failure
         """
