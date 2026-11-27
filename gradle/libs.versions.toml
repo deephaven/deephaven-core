@@ -84,7 +84,7 @@ protobuf-gradle-plugin = "0.10.1"
 randelshofer = "2.0.1"
 rdblue = "0.1.1"
 # When bumping selenium, also bump the docker image in docker/registry/selenium/gradle.properties to the same version
-selenium = "4.53.0"
+selenium = "4.54.0"
 slf4j = "2.0.20"
 snappy = "1.1.10.12"
 zstd-jni = "1.5.7-28"
