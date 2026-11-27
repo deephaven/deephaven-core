@@ -4,25 +4,23 @@ title: Does it make any difference if I separate table operations or chain them 
 
 <em>I have a query in which I create a series of tables via various table operations. I only really need a couple of the resultant tables as output. Does creating tables I don't need along the way affect performance?</em>
 
-<p></p>
-
 The short answer is **most of the time, it does _not_**. We actually encourage users to create intermediate tables during query writing, as they make debugging significantly easier. The following hypothetical queries will be similarly performant:
 
 ```groovy skip-test
 t1 = someTable
 t2 = someOtherTable
-a = t1.where("X")
-b = a.aggBy("Y")
-tFinal = b.naturalJoin(t2)
+a = t1.where("X > 10")
+b = a.sumBy("Y")
+tFinal = b.naturalJoin(t2, "Y")
 ```
 
 ```groovy skip-test
 t1 = someTable
 t2 = someOtherTable
-tFinal = t1.where("X").aggBy("Y").naturalJoin(t2)
+tFinal = t1.where("X > 10").sumBy("Y").naturalJoin(t2, "Y")
 ```
 
-Chaining table operations like in the latter hypothetical example is mostly beneficial for those who prefer it stylistically. A notable exception to this rule of thumb is [`updateBy`](../table-operations/update-by-operations/updateBy.md), which optimizes multiple operations that are chained together:
+Chaining operations, as in the second example, is mostly a matter of style. A notable exception is [`updateBy`](../table-operations/update-by-operations/updateBy.md): passing several operations to a single `updateBy` call is faster than applying them one at a time in separate calls, whether those calls are chained or not:
 
 ```groovy order=:log,result6,result5,result4,result3,result2,result1,source
 import java.time.*
@@ -34,7 +32,7 @@ getId = {
     return options[current().nextInt(options.size())]
 }
 
-startTime = Instant.parse("2024-01-02T09:20:00Z")
+startTime = Instant.parse("2024-03-01T09:20:00Z")
 
 source = emptyTable(1000000).update(
     "Timestamp = startTime + (long)(ii * SECOND / 10)",
@@ -43,7 +41,7 @@ source = emptyTable(1000000).update(
     "Price = randomDouble(10.0, 100.0)"
 )
 
-cumSumOp = CumSum("TotalPrice = Total")
+cumSumOp = CumSum("CumTotal = Total")
 cumMaxOp = CumMax("MaxPrice = Price")
 rollingMinOp = RollingMin("Timestamp", 60 * SECOND, "RecentMinPrice = Price")
 rollingAvgOp = RollingAvg("Timestamp", 60 * SECOND, "RecentAvgPrice = Price")
@@ -81,7 +79,7 @@ source = emptyTable(1000000).update(
     "Price = randomDouble(10.0, 100.0)"
 )
 
-cumSumOp = CumSum("TotalPrice = Total")
+cumSumOp = CumSum("CumTotal = Total")
 cumMaxOp = CumMax("MaxPrice = Price")
 rollingMinOp = RollingMin("Timestamp", 60 * SECOND, "RecentMinPrice = Price")
 rollingAvgOp = RollingAvg("Timestamp", 60 * SECOND, "RecentAvgPrice = Price")
@@ -96,6 +94,8 @@ end = now()
 elapsed = Duration.between(start, end).toMillis() / 1000.0
 println String.format("Total time elapsed: %.4f seconds.", elapsed)
 ```
+
+The single `updateBy` call finishes faster because it groups the rows by `ID` once and computes all five operations together.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
