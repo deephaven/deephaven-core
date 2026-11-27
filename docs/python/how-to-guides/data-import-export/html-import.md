@@ -2,11 +2,11 @@
 title: Read HTML files into Deephaven tables
 ---
 
-While Deephaven does not have its own methods for reading HTML tables, you can read them with [pandas](https://pandas.pydata.org/docs/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/). This guide demonstrates multiple ways to pull data from HTML tables, such as those on web pages, into Deephaven tables.
+While Deephaven does not have its own methods for reading HTML tables, you can read them with [pandas](https://pandas.pydata.org/docs/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/). This guide demonstrates both ways to pull data from HTML tables, such as tables on web pages, into Deephaven. It then shows how to give the imported columns the correct data types.
 
 ## Example table and setup
 
-We'll use this HTML table in the examples below:
+Let's use this HTML table in the [pandas](https://pandas.pydata.org/docs/index.html) and [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) examples below. The [Data types](#data-types) section uses a separate table of stock trades.
 
 <table style={{width:"100%", borderCollapse:"collapse", fontFamily:"sans-serif", fontSize:"14px"}}>
 <thead>
@@ -138,12 +138,16 @@ We'll use this HTML table in the examples below:
 </tbody>
 </table>
 
-The examples read this table from a string of HTML, `html_str`, rather than from a web page, so reading the table doesn't need a network connection. The following code defines `html_str` and installs BeautifulSoup and [lxml](https://lxml.de/), the HTML parser the examples use:
+The examples read this table from a string of HTML, `html_str`, rather than from a web page, so reading the table doesn't need a network connection. `html_str` holds the same text values as the table above, without its colors or `title` attributes.
+
+The following code defines `html_str` and installs [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) and [lxml](https://lxml.de/), the HTML parser the examples use:
 
 ```python test-set=html-import order=null
 import os
+import shlex
+import sys
 
-os.system("pip install beautifulsoup4 lxml")
+os.system(f"{shlex.quote(sys.executable)} -m pip install beautifulsoup4 lxml")
 
 html_str = """
 <table>
@@ -180,11 +184,15 @@ html_str = """
 """
 ```
 
+For other ways to install packages, see [Install and use Python packages](../install-and-use-python-packages.md).
+
 ## `pandas.read_html`
 
-[`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) is a convenient method for reading HTML tables into a list of pandas DataFrames. The method also reads tables from a URL or a local file. To read HTML that is already in a string, wrap the string in [`io.StringIO`](https://docs.python.org/3/library/io.html#io.StringIO). pandas 2.1 deprecated passing literal HTML as a plain string, and pandas 3 treats a plain string as a URL or file path.
+[`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) reads HTML tables from a URL, a local file, or a file-like object that holds HTML, and returns one pandas DataFrame for each `<table>` element.
 
-Let's start with [`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html). The following example reads the color table in `html_str` and converts it to a Deephaven table with [`to_table`](../../reference/pandas/to-table.md). The [Example table and setup](#example-table-and-setup) section defines `html_str` and installs lxml, the parser that `read_html` uses by default. `read_html` returns one DataFrame for each `<table>` element in its input, so the example converts the first one:
+To read HTML that is already in a string, wrap the string in [`io.StringIO`](https://docs.python.org/3/library/io.html#io.StringIO). pandas 2.1 deprecated passing literal HTML as a plain string, and pandas 3 treats a plain string as a URL or file path.
+
+Let's start with [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html). The following example reads the color table in `html_str` and converts the first DataFrame to a Deephaven table with [`to_table`](../../reference/pandas/to-table.md). The [Example table and setup](#example-table-and-setup) section defines `html_str` and installs [lxml](https://lxml.de/), the parser that [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) uses by default:
 
 ```python test-set=html-import order=deephaven_theme_colors
 from deephaven import pandas as dhpd
@@ -198,14 +206,19 @@ deephaven_theme_colors = dhpd.to_table(dfs[0])
 
 This approach is simple, but you have little control over the column names or which part of each cell it reads:
 
-- [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) names each column after its header cell. The `Shades` header spans 11 columns, so pandas repeats the name and makes each copy unique: `Shades`, `Shades.1`, and so on through `Shades.10`. Deephaven column names must be valid Java identifiers, so [`to_table`](../../reference/pandas/to-table.md) replaces characters that a column name can't contain, such as `.`, with `_`, which gives `Shades_1` through `Shades_10`.
-- By default, [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) keeps only the text of each cell. Its `extract_links` argument can also keep link URLs, but `read_html` doesn't return any other cell attributes. An empty cell becomes `NaN`, so if a table stores its values in attributes such as `title` instead of in the cell text, those columns contain only `NaN` values.
+- [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) names each column after its header cell. The `Shades` header spans 11 columns, so pandas repeats the name and makes each copy unique: `Shades`, `Shades.1`, and so on through `Shades.10`.
+- Deephaven column names can't contain `.`, so [`to_table`](../../reference/pandas/to-table.md) renames these columns, here to `Shades_1` through `Shades_10`.
+- By default, [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) keeps only the text of each cell. Its `extract_links` argument can also keep link URLs, but [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) doesn't return any other cell attributes. An empty cell becomes `NaN`, so if a table stores its values in attributes such as `title` instead of in the cell text, those columns contain only `NaN` values.
+
+To read a local file or a web page instead, pass its path or URL to [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) in place of `io.StringIO(html_str)`, for example `pd.read_html("/path/to/file.html")`.
 
 ## BeautifulSoup
 
 [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) is a Python library for pulling data out of HTML and XML files. It takes more code than [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html), but you decide what to read from each cell and what to name each column.
 
-In this example, we'll use [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) to read the color table in `html_str` and convert it to a Deephaven table with [`new_table`](../../reference/table-operations/create/newTable.md) and [`string_col`](../../reference/table-operations/create/stringCol.md). The [Example table and setup](#example-table-and-setup) section defines `html_str` and installs BeautifulSoup. The `Shades` header spans 11 columns, so the code generates a name for each of them. The result matches the [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) example's result, so you can compare the two approaches:
+In this example, let's use [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) to read the color table in `html_str` and convert it to a Deephaven table with [`new_table`](../../reference/table-operations/create/newTable.md) and [`string_col`](../../reference/table-operations/create/stringCol.md). The [Example table and setup](#example-table-and-setup) section defines `html_str` and installs BeautifulSoup.
+
+The `Shades` header spans 11 columns, so the code generates a name for each of them. The output matches the table from the [`read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) example, so you can compare the two approaches:
 
 ```python test-set=html-import order=deephaven_theme_colors
 from deephaven.column import string_col
@@ -237,24 +250,38 @@ deephaven_theme_colors = new_table(
 
 If a table stores a cell's value in an attribute, such as `title`, instead of in the cell text, replace `td.text.strip()` with `td.get("title", td.text.strip())`. The cells in `html_str` have no `title` attribute, so this change doesn't alter the example's result.
 
-To read a table from a local HTML file, open the file and pass it to [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) in place of `html_str`, for example `with open("/path/to/file.html") as f: soup = BeautifulSoup(f, "lxml")`. To read a table from a web page, download the page first and pass the result to `BeautifulSoup`. For example, install the [`requests`](https://requests.readthedocs.io/) library with `pip install requests` and use `requests.get(url).content`.
+To read a table from a local HTML file, open the file and pass the file object to [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) in place of `html_str`:
+
+```python skip-test
+with open("/path/to/file.html") as f:
+    soup = BeautifulSoup(f, "lxml")
+```
+
+To read a table from a web page, install the [`requests`](https://requests.readthedocs.io/) library the same way the [setup code](#example-table-and-setup) installs BeautifulSoup: add `requests` to its `pip install` command. Then pass the downloaded page content to [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/):
+
+```python skip-test
+import requests
+
+url = "https://example.com/page-with-table.html"
+soup = BeautifulSoup(requests.get(url).content, "lxml")
+```
 
 ## Data types
 
-HTML tables store all data as plain text and have no concept of data types, so check each column's type after you import a table. Each tool handles types differently:
+HTML tables store all data as plain text and have no concept of data types, so check each column's type after you import a table, for example with [`meta_table`](../../reference/table-operations/metadata/meta_table.md). Each tool handles types differently:
 
-- By default, [`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) converts columns of numeric text to numeric columns but leaves other values, such as dates, as strings.
+- [`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) converts columns of numeric text to numeric columns by default, but leaves other values, such as dates, as strings.
 - [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) returns every value as a string.
-- [`to_table`](../../reference/pandas/to-table.md) gives each Deephaven column the type that matches the DataFrame column's type, so a column of text becomes a `String` column. `to_table` doesn't parse text, so numbers stored as strings stay strings.
+- [`to_table`](../../reference/pandas/to-table.md) gives each Deephaven column the type that matches the DataFrame column's type, so a column of text becomes a `String` column. [`to_table`](../../reference/pandas/to-table.md) doesn't parse text, so numbers stored as strings stay strings.
 
 Whether you use [pandas](https://pandas.pydata.org/docs/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), you can set each column's data type in either of two places:
 
 - In the Deephaven table, with [`update`](../../reference/table-operations/select/update.md) or another of Deephaven's [selection](../use-select-view-update.md) methods.
-- In the DataFrame, with the pandas [`astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) method.
+- In a pandas DataFrame, with the pandas [`astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) method, before you convert the DataFrame with [`to_table`](../../reference/pandas/to-table.md). If you read the table with BeautifulSoup, put the rows in a DataFrame first, as the example below does.
 
-The examples in this section use a small HTML table of stock trades with `Symbol`, `Price`, `Size`, and `Timestamp` columns. We'll read it with [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), so every column starts as text. With [`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html), `Price` and `Size` would already be numeric, and only `Timestamp` would need converting. The code puts the rows in a pandas DataFrame, so both typing methods below can start from the same data.
+The examples in this section use a small HTML table of stock trades with `Symbol`, `Price`, `Size`, and `Timestamp` columns. Let's read it with [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), so every column starts as text. With [`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html), `Price` and `Size` would already be numeric, and only `Timestamp` would need converting.
 
-The following code reads the table into `trades_df`, a DataFrame of strings. It then uses [`to_table`](../../reference/pandas/to-table.md) to convert `trades_df` to `trades`, a Deephaven table of `String` columns:
+The following code reads the table into `trades_df`, a DataFrame of strings, and converts it with [`to_table`](../../reference/pandas/to-table.md) to `trades`, a table of `String` columns. Both ways of setting types below start from this data. The [Example table and setup](#example-table-and-setup) section installs BeautifulSoup and [lxml](https://lxml.de/).
 
 ```python test-set=html-import order=trades
 from deephaven import pandas as dhpd
@@ -287,9 +314,9 @@ trades_df = pd.DataFrame(trade_rows, columns=trade_columns)
 trades = dhpd.to_table(trades_df)
 ```
 
-### Typing with `update`
+### Set types with `update`
 
-In this example, we start from `trades`, the table of `String` columns created in [Data types](#data-types). It sets the correct type for each column with Deephaven's [`update`](../../reference/table-operations/select/update.md) method, using Java's `Double.parseDouble` and `Integer.parseInt` methods and the built-in [`parseInstant`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseInstant(java.lang.String)) function:
+This example starts from `trades`, the table of `String` columns created in [Data types](#data-types). It sets the correct type for each column with Deephaven's [`update`](../../reference/table-operations/select/update.md) method, using the [Java](../java-classes.md#methods-and-constructors) `Double.parseDouble` and `Integer.parseInt` methods and the [built-in](../built-in-functions.md) [`parseInstant`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseInstant(java.lang.String)) function:
 
 ```python test-set=html-import order=trades_typed
 trades_typed = trades.update(
@@ -301,9 +328,9 @@ trades_typed = trades.update(
 )
 ```
 
-### Typing with `astype`
+### Set types with `astype`
 
-In this example, we start from `trades_df`, the DataFrame of strings created in [Data types](#data-types). It sets each column's type with [`astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) before it converts the DataFrame to a Deephaven table. [`to_table`](../../reference/pandas/to-table.md) turns the `float64` column into a `double` column, the `int32` column into an `int` column, and the `datetime64` column into an `Instant` column:
+This example starts from `trades_df`, the DataFrame of strings created in [Data types](#data-types). It sets each column's type with [`astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) before it converts the DataFrame to a Deephaven table. [`to_table`](../../reference/pandas/to-table.md) turns the `float64` column into a `double` column, the `int32` column into an `int` column, and the `datetime64` column into an `Instant` column:
 
 ```python test-set=html-import order=trades_from_astype
 trades_from_astype = dhpd.to_table(
@@ -317,9 +344,19 @@ trades_from_astype = dhpd.to_table(
 )
 ```
 
+Either way, the result is an ordinary Deephaven table, so you can filter it, aggregate it, or join it with your other tables, including tables that update in real time.
+
 ## Related documentation
 
 - [Convert tables to HTML strings](./html-export.md)
+- [Install and use Python packages](../install-and-use-python-packages.md)
+- [Convert between Deephaven tables and pandas DataFrames](../use-pandas.md)
+- [Select and create columns](../use-select-view-update.md)
+- [Java objects and classes in query strings](../java-classes.md)
+- [Built-in query language functions](../built-in-functions.md)
 - [`to_table`](../../reference/pandas/to-table.md)
 - [`new_table`](../../reference/table-operations/create/newTable.md)
+- [`string_col`](../../reference/table-operations/create/stringCol.md)
 - [`update`](../../reference/table-operations/select/update.md)
+- [`meta_table`](../../reference/table-operations/metadata/meta_table.md)
+- [`parseInstant` Javadoc](/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseInstant(java.lang.String))

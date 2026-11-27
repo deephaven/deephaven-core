@@ -22,11 +22,11 @@ The Deephaven table to convert to an HTML table.
 
 ## Returns
 
-A string containing an HTML `<table>` element. The string is a point-in-time copy of the table's rows at the moment of the call. If the table is ticking, the string does not update; call `html` again to get the latest rows.
+A string containing an HTML `<table>` element. The string is a copy of the table's rows at the moment of the call. If the table is ticking, the string does not update. `html` reads the table without taking a snapshot or a lock. Called from the console or an [Application Mode](../../app-mode/application-mode-config.md) script, which run under the update graph's [exclusive lock](../../../conceptual/query-engine/engine-locking.md#exclusive-lock), it reads a table that cannot change during the call. Called from code that runs without the lock, such as a separate thread, the copy can mix values from before and after an update; there, call `html(table.snapshot())` for a consistent copy, and call it again to get the latest rows.
 
 ## Examples
 
-The `html` method takes one argument — the table to convert. The example below creates a table with a comma-containing string value and a null value, then converts it to HTML.
+The `html` method takes one argument: the table to convert. The example below creates a table with a comma-containing string value and a null value, then converts it to HTML.
 
 ```groovy order=:log,table
 table = newTable(
@@ -48,10 +48,12 @@ println(htmlTable)
 > `html` builds the whole table into a single in-memory string, so use it only on small tables to avoid running out of memory.
 
 > [!NOTE]
-> Since HTML tables represent all data as plain, untyped text, all typing will be lost. String values are escaped with CSV rules, not HTML rules, so a value that contains HTML markup becomes active markup in any page that displays the output. `Instant` values are formatted in the server JVM's default time zone, and null values are written as `(null)`.
+> HTML tables represent all data as plain, untyped text, so the output carries no column type information. `html` escapes string values with CSV rules, not HTML rules, so a value that contains HTML markup becomes active markup in any page that displays the output. `html` formats `Instant` values in the server JVM's default time zone and writes null values as `(null)`.
 
 ## Related documentation
 
 - [Convert tables to HTML strings](../../../how-to-guides/data-import-export/html-export.md)
+- [Multithreading: Synchronization, locks, and snapshots](../../../conceptual/query-engine/engine-locking.md)
+- [Application Mode configuration](../../app-mode/application-mode-config.md)
 - [Read HTML files](../../../how-to-guides/data-import-export/html-import.md)
 - [`html` Javadoc](/core/javadoc/io/deephaven/engine/util/TableTools.html#html(io.deephaven.engine.table.Table))
