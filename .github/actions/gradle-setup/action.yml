@@ -12,6 +12,21 @@ inputs:
     description: "'false' to skip gradle/actions/setup-gradle, for jobs that use another Gradle action."
     required: false
     default: 'true'
+  maven-central-mirror-url:
+    description: >-
+      URL of a Maven Central mirror; when non-empty, the action writes it, with the username and password, to the Gradle
+      user home's gradle.properties and installs the init script that routes Maven Central through it. Empty means no
+      mirror.
+    required: false
+    default: ''
+  maven-central-mirror-username:
+    description: 'Username for the mirror; set together with the password, or neither.'
+    required: false
+    default: ''
+  maven-central-mirror-password:
+    description: 'Password for the mirror; set together with the username, or neither.'
+    required: false
+    default: ''
 
 outputs:
   cache-hit:
@@ -56,3 +71,45 @@ runs:
       uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
       with:
         cache-provider: external
+
+    # Routes Maven Central through the internal mirror (see the init script, which reads these Gradle properties and
+    # fails if the URL is missing, so it is only installed when there is a mirror). The user-level properties and init
+    # script apply to every Gradle invocation in the job, buildSrc and other Gradle actions included.
+    - name: Setup Maven Central mirror
+      if: ${{ inputs.maven-central-mirror-url != '' }}
+      shell: bash
+      env:
+        MIRROR_URL: ${{ inputs.maven-central-mirror-url }}
+        MIRROR_USERNAME: ${{ inputs.maven-central-mirror-username }}
+        MIRROR_PASSWORD: ${{ inputs.maven-central-mirror-password }}
+        PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      run: |
+        # Dependabot-triggered runs get variables but not the repository secrets (only Dependabot secrets), so the
+        # username can be set while the password is empty. Build without the mirror there. Anywhere else, a missing
+        # password is a misconfiguration, and the init script fails the build.
+        if [[ -n "$MIRROR_USERNAME" && -z "$MIRROR_PASSWORD" && "$PR_AUTHOR" == "dependabot[bot]" ]]; then
+          echo "::notice::Maven Central mirror password is unavailable to Dependabot; resolving from Maven Central directly."
+          exit 0
+        fi
+        if [[ -n "$MIRROR_PASSWORD" ]]; then
+          echo "::add-mask::$MIRROR_PASSWORD"
+        fi
+        gradle_home="${GRADLE_USER_HOME:-$HOME/.gradle}"
+        mkdir -p "$gradle_home/init.d"
+        cp .github/gradle/maven-central-mirror.init.gradle "$gradle_home/init.d/"
+        # Java properties syntax: backslashes are escapes.
+        escape() { printf '%s' "${1//\\/\\\\}"; }
+        # The file may already exist (umask only affects new files), so restrict it before the secret is written.
+        umask 077
+        properties="$gradle_home/gradle.properties"
+        touch "$properties"
+        chmod 600 "$properties"
+        {
+          echo "mavenCentralMirrorUrl=$(escape "$MIRROR_URL")"
+          if [[ -n "$MIRROR_USERNAME" ]]; then
+            echo "mavenCentralMirrorUsername=$(escape "$MIRROR_USERNAME")"
+          fi
+          if [[ -n "$MIRROR_PASSWORD" ]]; then
+            echo "mavenCentralMirrorPassword=$(escape "$MIRROR_PASSWORD")"
+          fi
+        } >> "$properties"

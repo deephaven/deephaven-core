@@ -191,6 +191,10 @@ jobs:
 
       - name: Setup Gradle
         uses: ./.github/actions/gradle-setup
+        with:
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
       # Needed only to push the deps image; pulls are anonymous.
       - name: Login to GitHub Container Registry

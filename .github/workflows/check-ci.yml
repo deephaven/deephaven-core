@@ -47,6 +47,9 @@ jobs:
       - uses: ./.github/actions/gradle-suite
         with:
           gradle-task: check
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
   # The categorized suites that Nightly Check CI runs on a push. Running them here as well lets
   # auto-merge on an engine/ or coverage/ pull request be gated on them. github.head_ref is empty for
@@ -65,6 +68,9 @@ jobs:
       - uses: ./.github/actions/gradle-suite
         with:
           gradle-task: testSerial
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
   test-parallel:
     runs-on: ubuntu-24.04
@@ -79,6 +85,9 @@ jobs:
       - uses: ./.github/actions/gradle-suite
         with:
           gradle-task: testParallel
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
 
   test-out-of-band:
     runs-on: ubuntu-24.04
@@ -93,3 +102,6 @@ jobs:
       - uses: ./.github/actions/gradle-suite
         with:
           gradle-task: testOutOfBand
+          maven-central-mirror-url: ${{ vars.MAVEN_CENTRAL_MIRROR_URL }}
+          maven-central-mirror-username: ${{ vars.MAVEN_CENTRAL_MIRROR_USERNAME }}
+          maven-central-mirror-password: ${{ secrets.MAVEN_CENTRAL_MIRROR_PASSWORD }}
