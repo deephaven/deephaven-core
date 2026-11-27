@@ -1347,7 +1347,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     /**
      * Adding new columns to the table based on other columns using {@code updateView} mechanics. Rollup tables are
-     * supported but Tree tables will throw an {@link UnsupportedOperationException} if this function is called.
+     * supported but Tree tables will throw an {@code UnsupportedOperationException} if this function is called.
      *
      * @param customColumns
      * @return {@link CustomColumn} array

@@ -27,7 +27,7 @@ public class LongWrapper {
      * otherwise only contain the digits 0-9.
      *
      * @param str A string representation of an integer.
-     * @return A wrapper for the parsed value, or {@code null} if the parsed value is {@link QueryConstants#NULL_LONG}.
+     * @return A wrapper for the parsed value, or {@code null} if the parsed value is {@code QueryConstants.NULL_LONG}.
      */
     public static LongWrapper ofString(String str) {
         return of(Long.parseLong(str));

@@ -77,10 +77,12 @@ public class FilterCondition {
      * parsed as a number, the column will be filtered to numbers which equal, or can be "rounded" effectively to this
      * number. On String columns, the given value will match any column which contains this string in a case-insensitive
      * search. An optional second argument can be passed, an array of {@link FilterValue} from the columns to limit this
-     * search to (see {@link Column#filter}).
-     * 
-     * @param value
-     * @param columns
+     * search to (see {@link Column#filter} or {@link FilterValue#ofColumn(String)}). The resulting condition cannot be
+     * negated with {@link #not()}.
+     *
+     * @param value the value to search for, from {@link FilterValue#ofString(Object)}; a value from
+     *        {@code FilterValue.ofNumber} matches nothing
+     * @param columns an optional array of {@link FilterValue} from the columns to limit this search to, defaults to all
      * @return {@link FilterCondition}
      */
     @JsMethod(namespace = "dh.FilterCondition")
@@ -105,7 +107,7 @@ public class FilterCondition {
     }
 
     /**
-     * The opposite of this condition.
+     * The opposite of this condition. A condition from {@link #search(FilterValue, FilterValue[])} cannot be negated.
      * 
      * @return {@link FilterCondition}
      */

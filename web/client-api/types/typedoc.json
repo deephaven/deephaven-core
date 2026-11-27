@@ -1,0 +1,36 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["dist/index.d.ts"],
+  "out": "/out/documentation",
+  "hideGenerator": true,
+  "disableSources": true,
+  "customCss": "theme.css",
+  // Listed in sidebar order; a guide not listed here is not published. The commented-out ones are stubs.
+  "projectDocuments": [
+    // "guides/start-here.md",
+    // "guides/connect.md",
+    "guides/read-data.md",
+    "guides/values.md",
+    "guides/filters.md",
+    // "guides/errors.md",
+    // "guides/typescript.md",
+    "guides/mutable-table.md",
+    "guides/table-operations.md"
+    // "guides/pending-tables.md",
+    // "guides/ownership.md"
+  ],
+  "alwaysCreateEntryPointModule": false,
+  "searchInDocuments": true,
+  "externalSymbolLinkMappings": {
+    "typescript": {
+      "Promise": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
+      "Map": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map",
+      "Set": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set",
+      "Error": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error",
+      "AbortSignal": "https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal",
+      "Date": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
+      "Uint8Array": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array",
+      "NumberConstructor.NaN": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/NaN"
+    }
+  }
+}

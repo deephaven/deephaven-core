@@ -1,15 +1,18 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
 }
 
 configurations {
     dts
+    js
     typedoc
     npmModule
 }
 dependencies {
     dts project(path: ':web-client-api', configuration: 'dts')
+    js project(path: ':web-client-api', configuration: 'js')
 }
 
 // https://docs.npmjs.com/cli/v11/configuring-npm/package-json#version
@@ -29,12 +32,19 @@ def typedocAndTarball = Docker.registerDockerTask(project, 'typedoc') {
             into 'dist'
         }
         from 'tsconfig.json'
+        from 'typedoc.json'
         from 'package.json'
         from 'package-lock.json'
         from '.npmrc'
 
         from('src/main/docker') {
             include 'theme.css'
+        }
+        from('guides') {
+            into 'guides'
+        }
+        from('examples') {
+            into 'examples'
         }
     }
     dockerfile {
@@ -49,32 +59,87 @@ def typedocAndTarball = Docker.registerDockerTask(project, 'typedoc') {
                       mv dist/types.d.ts dist/index.d.ts; \\
                       npm version $VERSION; \\
                       npm ci; \\
+                      node_modules/.bin/tsc -p examples/tsconfig.json; \\
                       npm pack; \\
                       mkdir /out; \\
                       mv deephaven-jsapi-types*.tgz /out/; \\
-                      node_modules/.bin/typedoc dist/index.d.ts \\
-                           --out /out/documentation \\
-                           --hideGenerator \\
-                           --disableSources \\
-                           --customCss theme.css; \\
+                      node_modules/.bin/typedoc
                       ''')
     }
     parentContainers = [ Docker.registryTask(project, 'node') ] // deephaven/node
     containerOutPath = '/out'
     copyOut {
-        into layout.buildDirectory
+        // A directory of its own, since this Sync deletes whatever else is in its destination
+        into layout.buildDirectory.dir('typedoc')
     }
 }
 
 artifacts {
-    typedoc(layout.buildDirectory.dir('documentation')) {
+    typedoc(layout.buildDirectory.dir('typedoc/documentation')) {
         builtBy typedocAndTarball
     }
-    npmModule(layout.buildDirectory.files('deephaven-jsapi-types*.tgz').singleFile) {
+    npmModule(layout.buildDirectory.files('typedoc/deephaven-jsapi-types*.tgz').singleFile) {
         builtBy typedocAndTarball
     }
 }
 
 tasks.named('assemble').configure {
     dependsOn typedocAndTarball
+}
+
+// start a server for the examples to run against
+String randomSuffix = UUID.randomUUID().toString();
+deephavenDocker {
+    envVars.set([
+            'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
+    ])
+    containerName.set "dh-server-for-ts-examples-${randomSuffix}"
+    networkName.set "ts-examples-network-${randomSuffix}"
+}
+
+// Runs each example function against that server with the built API, failing if any of them rejects
+def runExamples = Docker.registerDockerTask(project, 'runExamples') {
+    copyIn {
+        from(configurations.dts) {
+            into 'dist'
+        }
+        from(configurations.js) {
+            include 'jsapi/dh-core.js'
+        }
+        from 'package.json'
+        from 'package-lock.json'
+        from '.npmrc'
+        from('examples') {
+            into 'examples'
+        }
+        from('src/test/node') {
+            include 'run-examples.mjs'
+        }
+    }
+    copyOut {
+        into layout.buildDirectory.dir('run-examples')
+    }
+    dockerfile {
+        from Docker.localImageName('node')
+        copyFile('.', '/project')
+        runCommand('''set -eux; \\
+                      cd /project/; \\
+                      mv dist/types.d.ts dist/index.d.ts; \\
+                      npm ci; \\
+                      node_modules/.bin/tsc -p examples/tsconfig.json --noEmit false --outDir compiled; \\
+                      mkdir /out
+                      ''')
+        environmentVariable 'DH_SERVER', "http://${deephavenDocker.containerName.get()}:10000"
+    }
+    containerDependencies.dependsOn = [deephavenDocker.healthyTask]
+    containerDependencies.finalizedBy = deephavenDocker.endTask
+    network = deephavenDocker.networkName.get()
+    parentContainers = [ Docker.registryTask(project, 'node') ]
+    // The API connects over a WebSocket, which Node 20 has only behind this flag
+    entrypoint = ['node', '--experimental-websocket', '/project/run-examples.mjs', '/project/jsapi/dh-core.js',
+                  '/project/compiled/use-cases.js', '/out/run-examples.txt']
+}
+deephavenDocker.shouldLogIfTaskFails runExamples
+tasks.named('check').configure {
+    dependsOn runExamples
 }

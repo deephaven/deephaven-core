@@ -104,7 +104,7 @@ jobs:
             py/embedded-server/build/wheel/
             py/client/build/wheel/
             py/client-ticking/build/wheel/
-            web/client-api/types/build/*.tgz
+            web/client-api/types/build/typedoc/*.tgz
 
       - name: Publish deephaven-core to PyPi
         id: publish-deephaven-core
@@ -141,7 +141,7 @@ jobs:
       - name: Publish @deephaven/jsapi-types to npmjs
         id: publish-deephaven-jsapi-types
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        run: npm publish --provenance --tag latest web/client-api/types/build/deephaven-jsapi-types-*.tgz
+        run: npm publish --provenance --tag latest web/client-api/types/build/typedoc/deephaven-jsapi-types-*.tgz
         continue-on-error: true
 
       - uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
