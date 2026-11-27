@@ -6,9 +6,9 @@ title: How do I automatically execute Groovy code based on a Deephaven table col
 
 <p></p>
 
-Yes. This is common in algorithmic trading. There are two ways it can be achieved:
+Yes. This is common in algorithmic trading, and you can do it in two ways:
 
-The first is by using [`where`](../table-operations/filter/where.md) and an [`update`](../table-operations/select/update.md) operation. The following example prints to the console when new data in the `X` column is greater than 0.5:
+The first is by using [`where`](../table-operations/filter/where.md) and an [`update`](../table-operations/select/update.md) operation. The following example creates a [`timeTable`](../table-operations/create/timeTable.md) and prints to the console when new data in the `X` column is greater than 0.5:
 
 ```groovy order=events,t
 t = timeTable("PT00:00:01").update("X = random()")
@@ -21,9 +21,9 @@ doSomething = { x ->
 events = t.where("X > 0.5").update("DidIt = doSomething(X)")
 ```
 
-Alternatively, the same behavior can be accomplished with a [table listener](../../how-to-guides/table-listeners-groovy.md). Table listeners listen to ticking tables for new data. Table listeners can be used to trigger external actions, such as Groovy code, upon table updates. You can set the listener to trigger code based on new data meeting one or more criteria such as a value being in a certain range or a string containing a particular substring.
+Alternatively, use a [table listener](../../how-to-guides/table-listeners-groovy.md) to get the same behavior. Table listeners watch ticking tables for new data and can trigger external actions, such as Groovy code, when the table updates. The listener's `onUpdate` method receives a `TableUpdate`. Iterate over its added row keys and read each value from the table's column source.
 
-The following example prints `Doing stuff` any time a new value in the `X` column of our table is greater than 0.5:
+The following example uses an `InstrumentedTableUpdateListenerAdapter` to print `Doing stuff` any time a new value in the `X` column of our table is greater than 0.5:
 
 ```groovy order=t
 import io.deephaven.engine.table.TableUpdate
@@ -35,13 +35,13 @@ myTableListener = new InstrumentedTableUpdateListenerAdapter(t, false) {
 
     @Override
     public void onUpdate(TableUpdate upstream) {
-        it1 = upstream.added.iterator()
-        println "X"
-        colSrc = t.getColumnSource("X")
+        def iter = upstream.added().iterator()
+        println "New rows in t"
+        def colSrc = t.getColumnSource("X")
 
-        while (it1.hasNext()) {
-            it = it1.next()
-            xData = colSrc.getDouble(it)
+        while (iter.hasNext()) {
+            def rowKey = iter.next()
+            def xData = colSrc.getDouble(rowKey)
 
             if (xData > 0.5) {
                 println "Doing stuff"
