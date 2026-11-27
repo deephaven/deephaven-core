@@ -258,14 +258,14 @@ public class GenerateTimsortKernels {
 
     // every primitive compares with its io.deephaven.util.compare class, so the kernels share the engine's
     // null-aware ordering (nulls first; NULL_CHAR is not the smallest char in Java order, and NaN is not comparable)
-    private static final KeyKind CHAR_KIND = comparisonsKind("Char", CHAR_CHUNKS, CharComparisons.class);
-    private static final KeyKind BYTE_KIND = comparisonsKind("Byte", BYTE_CHUNKS, ByteComparisons.class);
-    private static final KeyKind SHORT_KIND = comparisonsKind("Short", SHORT_CHUNKS, ShortComparisons.class);
-    private static final KeyKind INT_KIND = comparisonsKind("Int", INT_CHUNKS, IntComparisons.class);
-    private static final KeyKind LONG_KIND = comparisonsKind("Long", LONG_CHUNKS, LongComparisons.class);
-    private static final KeyKind FLOAT_KIND = comparisonsKind("Float", FLOAT_CHUNKS, FloatComparisons.class);
-    private static final KeyKind DOUBLE_KIND = comparisonsKind("Double", DOUBLE_CHUNKS, DoubleComparisons.class);
-    private static final KeyKind OBJECT_KIND = new KeyKind("Object", OBJECT_CHUNKS, new ObjectCompare());
+    static final KeyKind CHAR_KIND = comparisonsKind("Char", CHAR_CHUNKS, CharComparisons.class);
+    static final KeyKind BYTE_KIND = comparisonsKind("Byte", BYTE_CHUNKS, ByteComparisons.class);
+    static final KeyKind SHORT_KIND = comparisonsKind("Short", SHORT_CHUNKS, ShortComparisons.class);
+    static final KeyKind INT_KIND = comparisonsKind("Int", INT_CHUNKS, IntComparisons.class);
+    static final KeyKind LONG_KIND = comparisonsKind("Long", LONG_CHUNKS, LongComparisons.class);
+    static final KeyKind FLOAT_KIND = comparisonsKind("Float", FLOAT_CHUNKS, FloatComparisons.class);
+    static final KeyKind DOUBLE_KIND = comparisonsKind("Double", DOUBLE_CHUNKS, DoubleComparisons.class);
+    static final KeyKind OBJECT_KIND = new KeyKind("Object", OBJECT_CHUNKS, new ObjectCompare());
     private static final KeyKind COMPARATOR_KIND = new KeyKind("Comparator", OBJECT_CHUNKS, new ComparatorCompare());
 
     /** A single sorted key column. Each key column may eventually carry its own direction. */

@@ -2,61 +2,50 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharLongMegaMergeKernel and run "./gradlew replicateSortKernel" to regenerate
+// ****** Run GenerateMegaMergeKernels or ./gradlew generateMegaMergeKernels to regenerate
 //
 // @formatter:off
-
 package io.deephaven.engine.table.impl.sort.megamerge;
 
-import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.util.compare.ShortComparisons;
-import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
-import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
-import io.deephaven.engine.table.impl.sources.ShortArraySource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Indices;
-import io.deephaven.chunk.ShortChunk;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.LongChunk;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
+import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.util.compare.IntComparisons;
+import java.lang.Override;
+import java.lang.SuppressWarnings;
+import java.lang.UnsupportedOperationException;
 
-public class ShortLongMegaMergeDescendingKernel {
-    private ShortLongMegaMergeDescendingKernel() {
+/**
+ * Merges a sorted chunk of Integers into a sorted run of Integers in ascending order, moving the parallel long row keys
+ * with their values.
+ */
+public class IntLongMegaMergeKernel {
+    private IntLongMegaMergeKernel() {
         throw new UnsupportedOperationException();
     }
 
-    // region Context
-    public static class ShortLongMegaMergeDescendingKernelContext<ATTR extends Any, KEY_INDICES extends Indices>
-            implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
-        @SuppressWarnings("rawtypes")
-        private static final ShortLongMegaMergeDescendingKernelContext INSTANCE = new ShortLongMegaMergeDescendingKernelContext();
-
-        @Override
-        public void merge(LongArraySource indexDestinationSource, WritableColumnSource<?> valuesDestinationSource,
-                long destinationOffset, long destinationSize, LongChunk<KEY_INDICES> indexKeys,
-                Chunk<ATTR> valuesToMerge) {
-            ShortLongMegaMergeDescendingKernel.merge(indexDestinationSource, (ShortArraySource) valuesDestinationSource,
-                    destinationOffset, destinationSize, indexKeys, valuesToMerge.asShortChunk());
-        }
-    }
-    // endregion Context
-
-    public static <ATTR extends Any, KEY_INDICES extends Indices> ShortLongMegaMergeDescendingKernelContext<ATTR, KEY_INDICES> createContext() {
-        // noinspection unchecked
-        return ShortLongMegaMergeDescendingKernelContext.INSTANCE;
+    @SuppressWarnings("unchecked")
+    public static <ATTR extends Any, KEY_INDICES extends Indices> IntLongMegaMergeKernelContext<ATTR, KEY_INDICES> createContext(
+            ) {
+        return IntLongMegaMergeKernelContext.INSTANCE;
     }
 
-    static public <ATTR extends Any, KEY_INDICES extends Indices> void merge(LongArraySource destinationKeys,
-            ShortArraySource destinationValues,
-            long destinationOffset,
-            long destinationSize,
-            LongChunk<KEY_INDICES> keysChunk,
-            ShortChunk<ATTR> valuesChunk) {
+    public static <ATTR extends Any, KEY_INDICES extends Indices> void merge(
+            LongArraySource destinationKeys, IntegerArraySource destinationValues,
+            long destinationOffset, long destinationSize, LongChunk<KEY_INDICES> keysChunk,
+            IntChunk<ATTR> valuesChunk) {
         destinationKeys.ensureCapacity(destinationOffset + destinationSize + keysChunk.size(), false);
         destinationValues.ensureCapacity(destinationOffset + destinationSize + valuesChunk.size(), false);
 
         // find the location of run2[0] in run1
-        final short run2lo = valuesChunk.get(0);
+        final int run2lo = valuesChunk.get(0);
         final long mergeStartPosition =
                 upperBound(destinationValues, destinationOffset, destinationOffset + destinationSize, run2lo);
 
@@ -71,8 +60,8 @@ public class ShortLongMegaMergeDescendingKernel {
         long destCursor = destinationOffset + destinationSize - 1;
         int chunkCursor = keysChunk.size() - 1;
 
-        short val1 = destinationValues.getUnsafe(destCursor);
-        short val2 = valuesChunk.get(chunkCursor);
+        int val1 = destinationValues.getUnsafe(destCursor);
+        int val2 = valuesChunk.get(chunkCursor);
 
         final long mergeEnd = destinationOffset + mergeLength;
 
@@ -154,7 +143,8 @@ public class ShortLongMegaMergeDescendingKernel {
 
                 if (gallopLength1 < TimsortUtils.INITIAL_GALLOP
                         && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
-                    minGallop += 2; // undo the possible subtraction from above
+                    // undo the possible subtraction from above
+                    minGallop += 2;
                     break;
                 }
             }
@@ -166,47 +156,49 @@ public class ShortLongMegaMergeDescendingKernel {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private static <ATTR extends Any, KEY_INDICES extends Indices> void copyChunkToDest(
-            LongChunk<KEY_INDICES> keysChunk, ShortChunk<ATTR> valuesChunk, LongArraySource destinationKeys,
-            ShortArraySource destinationValues, int sourceStart, long destStart, int length) {
-        destinationValues.copyFromChunk(destStart, length, (ShortChunk) valuesChunk, sourceStart);
+            LongChunk<KEY_INDICES> keysChunk, IntChunk<ATTR> valuesChunk,
+            LongArraySource destinationKeys, IntegerArraySource destinationValues, int sourceStart,
+            long destStart, int length) {
+        destinationValues.copyFromChunk(destStart, length, (IntChunk) valuesChunk, sourceStart);
         destinationKeys.copyFromChunk(destStart, length, keysChunk, sourceStart);
     }
 
-    private static void moveInDest(LongArraySource destinationKeys, ShortArraySource destinationValues,
-            long sourceStart, long destStart, long length) {
+    private static void moveInDest(LongArraySource destinationKeys,
+            IntegerArraySource destinationValues, long sourceStart, long destStart, long length) {
         destinationKeys.move(sourceStart, destStart, length);
         destinationValues.move(sourceStart, destStart, length);
     }
 
-    // region comparison functions
-    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
-    private static int doComparison(short lhs, short rhs) {
-        return -1 * ShortComparisons.compare(lhs, rhs);
+    private static int doComparison(int lhs, int rhs) {
+        return IntComparisons.compare(lhs, rhs);
     }
-    // endregion comparison functions
 
-    private static boolean geq(short lhs, short rhs) {
+    private static boolean geq(int lhs, int rhs) {
         return doComparison(lhs, rhs) >= 0;
     }
 
-    // when we binary search in 1, we must identify a position for search value that is *after* our test values;
-    // because the values from run 2 may never be inserted before an equal value from run 1
-    //
-    // lo is inclusive, hi is exclusive
-    //
-    // returns the position of the first element that is > searchValue or hi if there is no such element
-    private static long upperBound(ShortArraySource values, long lo, long hi, short searchValue) {
+    /**
+     * When we binary search in run 1, we must identify a position for the search value that is <em>after</em> our
+     * test values, because the values from run 2 may never be inserted before an equal value from run 1.
+     *
+     * @param lo the inclusive lower bound of the search
+     * @param hi the exclusive upper bound of the search
+     * @return the position of the first element that is > searchValue, or hi if there is no such element
+     */
+    private static long upperBound(IntegerArraySource values, long lo, long hi, int searchValue) {
         return bound(values, lo, hi, searchValue, false);
     }
 
-    private static long bound(ShortArraySource valuesToSort, long lo, long hi, short searchValue,
+    private static long bound(IntegerArraySource valuesToSort, long lo, long hi, int searchValue,
             @SuppressWarnings("SameParameterValue") final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
 
         while (lo < hi) {
             final long mid = (lo + hi) >>> 1;
-            final short testValue = valuesToSort.getUnsafe(mid);
+            final int testValue = valuesToSort.getUnsafe(mid);
             final boolean moveLo = doComparison(testValue, searchValue) <= compareLimit;
             if (moveLo) {
                 // For bound, (testValue OP searchValue) means that the result somewhere later than 'mid' [OP=lt or leq]
@@ -219,14 +211,17 @@ public class ShortLongMegaMergeDescendingKernel {
         return lo;
     }
 
-    // returns bound(valuesToSort, lo, hi, searchValue, lower), probing hi - 1, hi - 2, hi - 4, hi - 8, ... before the
-    // binary search, so the number of comparisons is logarithmic in the distance from the result to hi
-    //
-    // the search in run 1 passes lower = false, as values from run 2 may never be inserted before an equal value from
-    // run 1
-    private static long gallopBackward(ShortArraySource valuesToSort, long lo, long hi, short searchValue,
-            @SuppressWarnings("SameParameterValue") final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
+    /**
+     * Returns {@code bound(valuesToSort, lo, hi, searchValue, lower)}, probing hi - 1, hi - 2, hi - 4, hi - 8, ... before
+     * the binary search, so the number of comparisons is logarithmic in the distance from the result to hi.
+     * <p>
+     * The search in run 1 passes lower = false, as values from run 2 may never be inserted before an equal value from
+     * run 1.
+     */
+    private static long gallopBackward(IntegerArraySource valuesToSort, long lo, long hi,
+            int searchValue, @SuppressWarnings("SameParameterValue") final boolean lower) {
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
         final long maxDistance = hi - lo;
 
         // every element at or after searchHi is after the result
@@ -241,14 +236,18 @@ public class ShortLongMegaMergeDescendingKernel {
         return bound(valuesToSort, hi - distance, searchHi, searchValue, lower);
     }
 
-    // returns bound(valuesToSort, lo, hi, searchValue, lower), probing hi - 1, hi - 2, hi - 4, hi - 8, ... before the
-    // binary search, so the number of comparisons is logarithmic in the distance from the result to hi
-    //
-    // the search in run 2 passes lower = true, as values from run 1 may never be inserted after an equal value from
-    // run 2
-    private static int gallopBackward(ShortChunk<?> valuesToSort, @SuppressWarnings("SameParameterValue") int lo,
-            int hi, short searchValue, @SuppressWarnings("SameParameterValue") final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
+    /**
+     * Returns {@code bound(valuesToSort, lo, hi, searchValue, lower)}, probing hi - 1, hi - 2, hi - 4, hi - 8, ... before
+     * the binary search, so the number of comparisons is logarithmic in the distance from the result to hi.
+     * <p>
+     * The search in run 2 passes lower = true, as values from run 1 may never be inserted after an equal value from
+     * run 2.
+     */
+    private static int gallopBackward(IntChunk<?> valuesToSort,
+            @SuppressWarnings("SameParameterValue") int lo, int hi, int searchValue,
+            @SuppressWarnings("SameParameterValue") final boolean lower) {
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
         final int maxDistance = hi - lo;
 
         // every element at or after searchHi is after the result
@@ -263,13 +262,14 @@ public class ShortLongMegaMergeDescendingKernel {
         return bound(valuesToSort, hi - distance, searchHi, searchValue, lower);
     }
 
-    private static int bound(ShortChunk<?> valuesToSort, int lo, int hi, short searchValue,
+    private static int bound(IntChunk<?> valuesToSort, int lo, int hi, int searchValue,
             @SuppressWarnings("SameParameterValue") final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
 
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final short testValue = valuesToSort.get(mid);
+            final int testValue = valuesToSort.get(mid);
             final boolean moveLo = doComparison(testValue, searchValue) <= compareLimit;
             if (moveLo) {
                 // For bound, (testValue OP searchValue) means that the result somewhere later than 'mid' [OP=lt or leq]
@@ -280,5 +280,17 @@ public class ShortLongMegaMergeDescendingKernel {
         }
 
         return lo;
+    }
+
+    public static class IntLongMegaMergeKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
+        @SuppressWarnings("rawtypes")
+        private static final IntLongMegaMergeKernelContext INSTANCE = new IntLongMegaMergeKernelContext();
+
+        @Override
+        public void merge(LongArraySource indexDestinationSource,
+                WritableColumnSource<?> valuesDestinationSource, long destinationOffset,
+                long destinationSize, LongChunk<KEY_INDICES> indexKeys, Chunk<ATTR> valuesToMerge) {
+            IntLongMegaMergeKernel.merge(indexDestinationSource, (IntegerArraySource) valuesDestinationSource, destinationOffset, destinationSize, indexKeys, valuesToMerge.asIntChunk());
+        }
     }
 }

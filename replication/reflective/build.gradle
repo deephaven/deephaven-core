@@ -43,6 +43,7 @@ def replicators = [
     generateArrowColumnTestSources: 'GenerateArrowColumnSourceTests',
     generateQueryLanguageFunctions: 'GenerateQueryLanguageFunctions',
     generateTimsortKernels: 'GenerateTimsortKernels',
+    generateMegaMergeKernels: 'GenerateMegaMergeKernels',
 ]
 
 def replicateAllTasks = registerReplicators(replicators)
