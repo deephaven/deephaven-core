@@ -336,7 +336,7 @@ bearer = dict(call.initial_metadata())["authorization"]
 auth = [("authorization", bearer)]
 ```
 
-The server can rotate the token. Each response carries the current token in its `authorization` header. A client that runs longer than the session timeout must keep sending the newest one, as [`pydeephaven`](/core/client-api/python/code/pydeephaven.html) does. Older clients called `SessionService.NewSession` instead. `session.proto` marks that method deprecated in favor of these headers or Flight's handshake.
+The server can rotate the token. Each response carries the current token in its `authorization` header. A client that runs longer than the session timeout must keep sending the newest one, as [`pydeephaven`](/core/client-api/python/code/pydeephaven.html) does.
 
 ### Start a console
 
