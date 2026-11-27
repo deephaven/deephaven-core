@@ -317,15 +317,17 @@ growing_appends_{1} = merge([_base, appended_{1}.update_view(["Slow = (long) exp
         auto appended = thm.FetchTable(fmt::format("appended_{}", run));
         appended.AddTable(thm.EmptyTable(kAppendedRows).Update("K = 9_000_000 + ii", "Price = ii * 2.5"));
       },
-      // The appended rows lie beyond the region the snapshot has delivered, so their delta reaches
-      // the client with no data for them: an update that adds nothing. The rows themselves follow in
-      // a later round.
+      // The appended rows lie past the end of the table as of the last snapshot round, and the server
+      // sends a growing subscription every row that later lands there as an update. So the delta
+      // brings every appended row, with its data, while the base rows are still being delivered.
       .delta_observed = [](const std::vector<Reported> &since) {
-        return std::any_of(since.begin(), since.end(),
-            [](const Reported &r) { return r.added == 0 && r.removed == 0; });
+        return std::any_of(since.begin(), since.end(), [](const Reported &r) {
+          return r.added == static_cast<size_t>(kAppendedRows)
+              && r.rows_before < static_cast<size_t>(kBaseRows);
+        });
       },
-      .delta_description = "the delta appending rows beyond the delivered region arrives as an update "
-          "that adds nothing",
+      .delta_description = "the delta appending rows past the end of the table brings every appended "
+          "row while the base rows are still being delivered",
       .is_complete = [](const ClientTable &t) { return IsComplete(t, kBaseRows + kAppendedRows); },
   });
 

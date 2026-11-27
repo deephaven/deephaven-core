@@ -75,10 +75,12 @@ public class GrowingSubscriptionTest {
         using var rows = manager.EmptyTable(appendedRows).Update("K = 9_000_000 + ii", "Price = ii * 2.5");
         appended.AddTable(rows);
       },
-      // The appended rows lie beyond the region the snapshot has delivered, so their delta reaches the client with
-      // no data for them: an update that adds nothing. The rows themselves follow in a later round.
-      DeltaObserved = since => since.Any(r => r.Added == 0 && r.Removed == 0),
-      DeltaDescription = "the delta appending rows beyond the delivered region arrives as an update that adds nothing",
+      // The appended rows lie past the end of the table as of the last snapshot round, and the server sends a
+      // growing subscription every row that later lands there as an update. So the delta brings every appended
+      // row, with its data, while the base rows are still being delivered.
+      DeltaObserved = since => since.Any(r => r.Added == (UInt64)appendedRows && r.RowsBefore < BaseRows),
+      DeltaDescription = "the delta appending rows past the end of the table brings every appended row while " +
+          "the base rows are still being delivered",
       SettlesAt = BaseRows + appendedRows,
     });
 

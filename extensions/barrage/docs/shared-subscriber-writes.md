@@ -58,7 +58,7 @@ Deliver: gRPC transport threads, then the client (step 7)
    to `pendingDeltas`. `schedulePropagation` arranges the next propagation job at the update
    interval, and compaction may coalesce the queue before then (see `delta-coalescing.md`).
 2. **Coalesce.** The propagation job applies subscription changes, takes a snapshot
-   for growing subscriptions, and coalesces the pending deltas with `aggregateUpdatesInRange` into
+   for viewport requests and growing full subscriptions, and coalesces the pending deltas with `aggregateUpdatesInRange` into
    one `BarrageMessage` per phase. Chunks move from the deltas into the message without copying.
 3. **Prepare the phase.** `propagateToSubscribers`:
    - resets any shared dictionary that has outgrown the table (`maybeResetSharedDictionaries`),
@@ -67,7 +67,9 @@ Deliver: gRPC transport threads, then the client (step 7)
    - builds one `BarrageMessageWriterImpl` for the message. Its row-set writers and per-chunk column
      writer contexts are built once and shared by every view; string payloads, for example, are
      serialized here, once;
-   - runs the units in parallel (`forEachInParallel`).
+   - runs the units in parallel (`forEachInParallel`): first the viewport units, then, once every
+     viewport unit has finished, the full units (see the
+     [write order](growing-subscriptions.md#write-order) in `growing-subscriptions.md`).
 4. **A single subscription.** `propagateSingle` calls
    `listener.onNext(bmw.getSubView(...))`. `MessageViewAdapter`, holding the gRPC stream's lock,
    drains the view: `processBatches` and `getInputStream` build each batch's column data, then the
@@ -124,14 +126,16 @@ propagated message:
 | `subscribedColumns` | A view writes an empty field node and no modified rows for every column its subscription leaves out |
 
 Any other subscription's view also depends on its own state: a viewport subscription is sent only
-its viewport's rows, a growing one only the rows it has so far, and one with a snapshot viewport is
+its viewport's rows, a growing full subscription only the rows it has so far, and one with a snapshot viewport is
 sent the deltas before this cycle's snapshot as its previous viewport, columns and direction see
 them. Each of those is a unit by itself. When grouping is off, no keys are made and every
 subscription is a unit by itself. A unit of one takes the per-subscriber path.
 
 Groups are rebuilt on every phase from the phase's targets, so there is no group state to keep in
 step with subscriptions being added, removed or finishing growth. Units are sorted largest first,
-so the longest writes start first.
+so among the full units the longest writes start first. Every viewport unit still runs before any
+full unit, whatever the units' sizes (see the [write order](growing-subscriptions.md#write-order)
+in `growing-subscriptions.md`).
 
 ## Streaming delivery
 
@@ -251,8 +255,8 @@ The work around one propagated update runs as follows.
 | Compacting pending deltas | The server scheduler | The update-graph thread appending deltas | The job's run lock (`tryLock`, so it never waits for a propagation) and the monitor for the splice |
 | A producer's propagation job | The server scheduler's concurrent pool (`scheduler.poolSize`) | Other producers' jobs, for other tables or update intervals | The job's run lock: one job per producer at a time |
 | The phases of one job | The job's thread | Nothing else in the same job | Order: pre-snapshot deltas, blink flush, snapshot, post-snapshot deltas, each finished before the next starts |
-| The units of one phase | The propagation scheduler: the job's thread plus up to `BarrageMessageProducer.propagationThreads - 1` helpers from a pool every producer shares | Each other: groups and single subscriptions | `forEachInParallel` returns only when every unit has finished. A refused helper job runs on the job's thread, so a busy pool means fewer units at once, never a wait |
-| A snapshot phase's writes | The same propagation scheduler | Each other, one per growing subscription | As for units |
+| The units of one phase | The propagation scheduler: the job's thread plus up to `BarrageMessageProducer.propagationThreads - 1` helpers from a pool every producer shares | Viewport units with each other, then full units with each other: groups and single subscriptions | `forEachInParallel` runs two `invokeParallel` calls, the viewport units' and then the full units', and returns only when every unit has finished. Full units wait for every viewport unit to finish. A refused helper job runs on the job's thread, so a busy pool means fewer units at once within each call |
+| A snapshot phase's writes | The same propagation scheduler | Each other, one per subscription the snapshot serves: viewport requests' writes first, then growing full subscriptions' | As for units |
 | Inside a group: catch-ups and the shared encode | The unit's one thread, in turn | Nothing else in the group | The group's thread. Each message is captured and copied to every member before the next is encoded |
 | Inside a group: copying one message to its members | The group's thread, plus propagation helpers when the round reaches `parallelCopyMinBytes` | Each other; the group's thread waits for the round | `invokeParallel` returns only when every copy of the round has run. A refused helper job runs on the group's thread |
 | Inside a single subscription: encoding and handing to gRPC | The unit's one thread | Nothing else for that subscription | The gRPC stream's lock in `MessageViewAdapter` |
@@ -264,6 +268,12 @@ What this means in practice:
 
 - **Across tables, everything can overlap.** Each producer's job is independent, and the
   propagation helpers are shared, so a busy table cannot monopolize them beyond its own phases.
+- **Viewport writes finish before full writes start.** A viewport subscriber's write is small
+  and usually feeds a UI that someone is watching, while a full subscriber's write grows with the
+  table. Each phase therefore writes every viewport unit before any full unit, so a large group's
+  copies never delay a viewport subscriber's update. A full subscriber pays for the order with the
+  time the viewport writes take, which is small next to the full write. A viewport unit's failure
+  that the unit does not handle stops the phase before any full unit starts.
 - **Within a phase, parallelism is by unit, and within a group by copy.** N identical subscribers
   form one unit, whose encode runs on one thread while its copies can spread over the propagation
   helpers. N subscribers written alone would instead spread N encodes over up to
