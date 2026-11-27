@@ -18,7 +18,7 @@ Java is an object-oriented programming language where classes serve as blueprint
 1. **Primitive types**: Basic data types like `int`, `double`, and `boolean` that are not objects.
 2. **Objects**: Instances of classes that bundle data and methods together.
 
-For performance reasons, Deephaven tables primarily use [primitive types](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html) for numeric columns. Other columns, such as text and timestamp columns, hold Java objects. [query strings](./query-string-overview.md) can call those objects' methods, as the rest of this guide shows.
+For performance reasons, Deephaven tables primarily use [primitive types](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html) for numeric columns. Other columns, such as text and timestamp columns, hold Java objects. [Query strings](./query-string-overview.md) can call those objects' methods, as the rest of this guide shows.
 
 ### Common Java objects in Deephaven
 

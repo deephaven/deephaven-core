@@ -2,7 +2,7 @@
 title: Groovy classes and objects in query strings
 ---
 
-Using your own Groovy [variables](./groovy-variables.md), [closures](./groovy-closures.md), classes, and objects in Deephaven [query strings](./query-string-overview.md) is one of Deephaven's most powerful features. Using Groovy classes in query strings follows a few basic rules. This guide shows how to make a Groovy class available to query strings and how to use its variables and methods there.
+Using your own Groovy [variables](./groovy-variables.md), [closures](./groovy-closures.md), classes, and objects in Deephaven [query strings](./query-string-overview.md) is one of Deephaven's most powerful features. This guide shows how to make a Groovy class available to query strings and how to use its variables and methods there.
 
 ## Classes and objects in Groovy
 

@@ -23,7 +23,7 @@ grades = ParquetTools.readTable("/data/examples/ParquetExamples/grades/grades.pa
 
 The [`io.deephaven.extensions.s3`](/core/javadoc/io/deephaven/extensions/s3/package-summary.html) package supports reading from S3. This package contains the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class, which holds the settings Deephaven uses to connect to the S3 instance. Learn more about this class in the [Parquet instructions document](./parquet-instructions.md#s3instructions-methods).
 
-Use `ParquetTools.readTable` to read a single Parquet file from S3, where the `source` argument is the S3 URI of the Parquet file (for example, `s3://bucket/key.parquet`). Pass connection details in the optional second argument, `readInstructions`, which takes a [`ParquetInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html) object. To build it, call [`ParquetInstructions.builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html#builder()), pass an `S3Instructions` instance to the builder's [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method, and call [`build`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#build()). [Optional arguments](#optional-arguments) lists the other builder methods that apply when reading.
+Use `ParquetTools.readTable` to read a single Parquet file from S3, where the `source` argument is the S3 URI of the Parquet file (for example, `s3://bucket/key.parquet`). Pass connection details in the optional second argument, `readInstructions`, which takes a [`ParquetInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html) object. To build it, call [`ParquetInstructions.builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html#builder()), pass an [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) instance to the builder's [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method, and call [`build`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#build()). [Optional arguments](#optional-arguments) lists the other builder methods that apply when reading.
 
 ```groovy test-set=2 docker-config=rustfs
 import io.deephaven.parquet.table.ParquetTools
@@ -57,7 +57,7 @@ A partitioned Parquet directory spreads the data for one table across many Parqu
 - A _key-value_ partitioned directory names each subdirectory after a partition column and its value, such as `Year=2024/`.
 - A _flat_ partitioned directory keeps all of its Parquet files in a single directory, with no subdirectories and no partition columns.
 
-Either kind can also contain the Parquet metadata files `_metadata` and `_common_metadata`, which describe the whole dataset. A directory that contains a `_metadata` file is read as a third layout, [metadata-partitioned](./parquet-formats.md#metadata-partitioned-directories), which avoids opening each Parquet file to read its metadata. Deephaven chooses this layout automatically when it infers the layout, or you can pass `ParquetFileLayout.METADATA_PARTITIONED` to `setFileLayout`. Either way, `_metadata` is required. `_common_metadata` is optional. Deephaven infers the partitioning columns from it: they are the columns that `_common_metadata` lists and `_metadata` does not.
+Either kind can also contain the Parquet metadata files `_metadata` and `_common_metadata`, which describe the whole dataset. A directory that contains a `_metadata` file is read as a third layout, [metadata-partitioned](./parquet-formats.md#metadata-partitioned-directories), which avoids opening each Parquet file to read its metadata. Deephaven chooses this layout automatically when it infers the layout, or you can pass `ParquetFileLayout.METADATA_PARTITIONED` to [`setFileLayout`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setFileLayout(io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout)). Either way, `_metadata` is required. `_common_metadata` is optional. Deephaven infers the partitioning columns from it: they are the columns that `_common_metadata` lists and `_metadata` does not.
 
 When Deephaven reads a partitioned Parquet directory, it returns a single table that contains the data from every file. For a key-value partitioned directory, each partition column appears as a column in the result. To work with each partition as a separate table, call [`partitionBy`](../../reference/table-operations/group-and-aggregate/partitionBy.md) on the result. See the [guide on partitioned tables](../../how-to-guides/partitioned-tables.md) for more information.
 
@@ -84,7 +84,7 @@ gradesProvided = ParquetTools.readTable(
 )
 ```
 
-To read through the metadata files, pass [`ParquetFileLayout.METADATA_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#METADATA_PARTITIONED) to the `setFileLayout` method.
+To read through the metadata files, pass [`ParquetFileLayout.METADATA_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#METADATA_PARTITIONED) to the [`setFileLayout`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setFileLayout(io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout)) method.
 
 ```groovy test-set=3
 // read through the metadata files
@@ -96,7 +96,7 @@ gradesMetadata = ParquetTools.readTable(
 
 #### From S3
 
-Use `ParquetTools.readTable` to read a key-value partitioned Parquet directory from S3. Pass an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method. To skip the check for a `_metadata` file, pass `ParquetFileLayout.KV_PARTITIONED` to the `setFileLayout` method. Pass the built `ParquetInstructions` as the `readInstructions` argument. For performance, run Deephaven in the same AWS region as the bucket, as described in [Read a single Parquet file from S3](#from-s3). Reading from S3 differs from reading locally only in the S3 path and the `S3Instructions` passed through `setSpecialInstructions`; the layout arguments work the same way.
+Use `ParquetTools.readTable` to read a key-value partitioned Parquet directory from S3. Pass an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method. To skip the check for a `_metadata` file, pass `ParquetFileLayout.KV_PARTITIONED` to the [`setFileLayout`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setFileLayout(io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout)) method. Pass the built `ParquetInstructions` as the `readInstructions` argument. For performance, run Deephaven in the same AWS region as the bucket, as described in [Read a single Parquet file from S3](#from-s3). Reading from S3 differs from reading locally only in the S3 path and the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) passed through [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)); the layout arguments work the same way.
 
 ```groovy test-set=4 order=gradesInferred,gradesProvided docker-config=rustfs
 import io.deephaven.parquet.table.ParquetTools
@@ -135,7 +135,7 @@ gradesProvided = ParquetTools.readTable(
 )
 ```
 
-To read an S3-hosted dataset through its metadata files, pass `ParquetFileLayout.METADATA_PARTITIONED` to the `setFileLayout` method.
+To read an S3-hosted dataset through its metadata files, pass `ParquetFileLayout.METADATA_PARTITIONED` to the [`setFileLayout`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setFileLayout(io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout)) method.
 
 ```groovy test-set=4 docker-config=rustfs
 // read through the metadata files
@@ -160,7 +160,7 @@ A flat partitioned Parquet directory is a single directory of Parquet files with
 
 #### From local storage
 
-Read local flat partitioned Parquet directories into Deephaven tables with `ParquetTools.readTable`, which can infer the directory layout. To skip the check for a `_metadata` file, pass [`ParquetFileLayout.FLAT_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#FLAT_PARTITIONED) to the `setFileLayout` method and pass the resulting `ParquetInstructions` as the `readInstructions` argument.
+Read local flat partitioned Parquet directories into Deephaven tables with `ParquetTools.readTable`, which can infer the directory layout. To skip the check for a `_metadata` file, pass [`ParquetFileLayout.FLAT_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#FLAT_PARTITIONED) to the [`setFileLayout`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setFileLayout(io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout)) method and pass the resulting `ParquetInstructions` as the `readInstructions` argument.
 
 ```groovy test-set=5 order=gradesInferred,gradesProvided
 import io.deephaven.parquet.table.ParquetTools
@@ -177,7 +177,7 @@ gradesProvided = ParquetTools.readTable(
 )
 ```
 
-To read through the metadata files, pass `ParquetFileLayout.METADATA_PARTITIONED` to the `setFileLayout` method.
+To read through the metadata files, pass `ParquetFileLayout.METADATA_PARTITIONED` to the [`setFileLayout`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setFileLayout(io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout)) method.
 
 ```groovy test-set=5
 // read through the metadata files
@@ -189,7 +189,7 @@ gradesMetadata = ParquetTools.readTable(
 
 #### From S3
 
-Use `ParquetTools.readTable` to read a flat partitioned Parquet directory from S3. Pass an instance of the `S3Instructions` class to the `setSpecialInstructions` method. To skip the check for a `_metadata` file, pass `ParquetFileLayout.FLAT_PARTITIONED` to the `setFileLayout` method. Pass the built `ParquetInstructions` as the `readInstructions` argument. For performance, run Deephaven in the same AWS region as the bucket, as described in [Read a single Parquet file from S3](#from-s3).
+Use `ParquetTools.readTable` to read a flat partitioned Parquet directory from S3. Pass an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method. To skip the check for a `_metadata` file, pass `ParquetFileLayout.FLAT_PARTITIONED` to the [`setFileLayout`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setFileLayout(io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout)) method. Pass the built `ParquetInstructions` as the `readInstructions` argument. For performance, run Deephaven in the same AWS region as the bucket, as described in [Read a single Parquet file from S3](#from-s3).
 
 ```groovy test-set=6 order=gradesInferred,gradesProvided docker-config=rustfs
 import io.deephaven.parquet.table.ParquetTools
@@ -228,7 +228,7 @@ gradesProvided = ParquetTools.readTable(
 )
 ```
 
-Reading a flat directory from S3 differs from reading it locally only in the S3 path and the `S3Instructions` passed through `setSpecialInstructions`. To read a flat S3 dataset through its metadata files, pass `ParquetFileLayout.METADATA_PARTITIONED` to `setFileLayout` and follow the key-value S3 metadata example above.
+Reading a flat directory from S3 differs from reading it locally only in the S3 path and the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) passed through [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)). To read a flat S3 dataset through its metadata files, pass `ParquetFileLayout.METADATA_PARTITIONED` to [`setFileLayout`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setFileLayout(io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout)) and follow the key-value S3 metadata example above.
 
 ## Optional arguments
 
@@ -245,7 +245,7 @@ The method also takes an optional second argument, `readInstructions`, which is 
 - [`addColumnCodec`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#addColumnCodec(java.lang.String,java.lang.String)): Sets the [`ObjectCodec`](/core/javadoc/io/deephaven/util/codec/ObjectCodec.html) class that converts a column's values to and from bytes, for types with no language-agnostic Parquet representation. This is not a compression codec.
 - [`setUnsignedLongTarget`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setUnsignedLongTarget(java.lang.String,io.deephaven.parquet.table.ParquetInstructions.UnsignedLongTarget)): Sets the Deephaven type to read an unsigned 64-bit integer (`UINT_64`) column as, provided as an [`UnsignedLongTarget`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.UnsignedLongTarget.html). If you don't call this method, Deephaven reads such columns as `BigInteger`. It applies only when Deephaven infers the table definition.
 
-See the [Parquet instructions guide](./parquet-instructions.md) for the `ParquetInstructions.Builder` and `S3Instructions` methods most users need. The Javadoc is the complete API reference.
+See the [Parquet instructions guide](./parquet-instructions.md) for the `ParquetInstructions.Builder` and [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) methods most users need. The Javadoc is the complete API reference.
 
 ## Related documentation
 

@@ -156,10 +156,10 @@ For the [ticking](../../conceptual/table-types.md#standard-streaming-tables) tab
 
 ![The above `upl_update` table](../../assets/how-to/perf-ratio.png)
 
-In the image above, `Update([Y])`, which calls `slow`, takes a whopping 25% of each full interval while `td` ticks:
+In the image above, `Update([Y])`, which calls `slow`, takes 25% of each full interval while `td` ticks:
 
 - The [ticking](../../conceptual/table-types.md#standard-streaming-tables) table `td` adds one row every second.
-- For each new row, the engine sits and waits a quarter of a second for `slow` to return.
+- For each new row, the engine waits a quarter of a second for `slow` to return.
 
 Clearly, `slow` is the bottleneck in this code. Real slowdowns are rarely this obvious, but [sorting](../../reference/table-operations/sort/sort-descending.md) by `Ratio` puts the operations worth optimizing at the top.
 

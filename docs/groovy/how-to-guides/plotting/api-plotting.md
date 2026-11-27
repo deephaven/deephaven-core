@@ -682,7 +682,7 @@ f = figure(2, 1)
 
 ### One row, two columns
 
-Let's instead place the subplots side by side by giving the figure one row and two columns. The series `Y` appears on the left, and `Z` on the right.
+To place subplots side by side, give the figure one row and two columns. The series `Y` appears on the left, and `Z` on the right.
 
 ```groovy test-set=11 order=f
 f = figure(1, 2)

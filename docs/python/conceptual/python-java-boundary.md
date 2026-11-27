@@ -46,7 +46,7 @@ class Table:
 - `j_table.update(*formulas)` calls the Java [`update`](/core/javadoc/io/deephaven/api/TableOperations.html#update(java.lang.String...)) method through [jpy](../how-to-guides/use-jpy.md).
 - `Table(j_table=...)` wraps the Java result in a new Python [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table), which [`update`](../reference/table-operations/select/update.md) returns.
 
-Much of Deephaven's Python API looks like this under the hood. This thin-wrapper design serves two purposes: convenience and speed. The thin wrappers make the API feel Pythonic and add only a small overhead for each operation. The Java query engine still does the actual work, so table operations keep the concurrency and efficiency it offers.
+Much of Deephaven's Python API looks like this under the hood. This thin-wrapper design keeps the API convenient without giving up the engine's speed. The thin wrappers make the API feel Pythonic and add only a small overhead for each operation. The Java query engine still does the actual work, so table operations keep the concurrency and efficiency it offers.
 
 ## Why crossing the boundary affects performance
 

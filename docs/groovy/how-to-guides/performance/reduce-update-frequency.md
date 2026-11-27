@@ -27,7 +27,7 @@ result = source.snapshotWhen(trigger)
 
 ![The ticking `source`, `trigger`, and `result` tables above](../../assets/how-to/snapshot-when-basic.gif)
 
-The `trigger` time table adds its first row right away, so the first snapshot appears almost immediately. After that, `result` and its downstream tables change once every 5 seconds instead of every second. This design pattern is useful for reducing the amount of data that must be processed.
+The `trigger` time table adds its first row right away, so the first snapshot appears almost immediately. After that, `result` and its downstream tables change once every 5 seconds instead of every second.
 
 Each snapshot replaces the entire result, so every update sends all rows of `source` downstream. To pass along only the rows that changed since the previous snapshot, pass the [`INCREMENTAL`](/core/javadoc/io/deephaven/api/snapshot/SnapshotWhenOptions.Flag.html#INCREMENTAL) flag. The flag needs `import io.deephaven.api.snapshot.SnapshotWhenOptions` at the top of your script:
 
