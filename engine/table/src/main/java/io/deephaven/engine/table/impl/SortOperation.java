@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.SortSpec;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.*;
@@ -38,6 +39,20 @@ import static io.deephaven.engine.table.impl.SortHelpers.AllowSymbolTable.ALLOW_
 import static io.deephaven.engine.table.impl.SortHelpers.AllowSymbolTable.DISALLOW_SYMBOL_TABLE;
 
 public class SortOperation implements QueryTable.MemoizableOperation<QueryTable> {
+    /**
+     * Rows per run of a refreshing sort's initial layout; zero or less lays the rows out in one dense run. Runs that
+     * fill whole blocks of the sort's row redirection keep its memory proportional to the rows, and the free keys
+     * between runs absorb inserts without shifting the rest of the result.
+     */
+    public static int INITIAL_LAYOUT_RUN_SIZE = Configuration.getInstance()
+            .getIntegerWithDefault("QueryTable.intradaySort.initialLayout.runSize", 1024);
+    /**
+     * Keys from the start of one run of a refreshing sort's initial layout to the start of the next; a stride smaller
+     * than the run size lays the runs out without gaps.
+     */
+    public static int INITIAL_LAYOUT_STRIDE = Configuration.getInstance()
+            .getIntegerWithDefault("QueryTable.intradaySort.initialLayout.stride", 16384);
+
     static final Map<String, Object> IDENTITY_REDIRECTION_ATTRIBUTES;
     // The "+" sign is not valid in a column, therefore we can be sure that this is a proper sentinel value.
     static final String IDENTITY_REDIRECTION_VALUE = "+IDENTITY_REDIRECTION";
@@ -341,16 +356,27 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
             sortMapping = SortHelpers.createSortRowRedirection();
 
-            // Center the keys around middleKeyToUse
-            final long offset = SortListener.REBALANCE_MIDPOINT - sortedKeys.length / 2;
-            final TrackingRowSet resultRowSet = (sortedKeys.length == 0
-                    ? RowSetFactory.empty()
-                    : RowSetFactory.fromRange(offset, offset + sortedKeys.length - 1)).toTracking();
+            // Runs of runSize rows start every stride keys, and the layout is centered around the rebalance midpoint.
+            final int runSize =
+                    INITIAL_LAYOUT_RUN_SIZE <= 0 ? Math.max(1, sortedKeys.length) : INITIAL_LAYOUT_RUN_SIZE;
+            final long stride = Math.max(runSize, INITIAL_LAYOUT_STRIDE);
+            final long runCount = (sortedKeys.length + runSize - 1) / runSize;
+            final long keySpan =
+                    runCount == 0 ? 0 : (runCount - 1) * stride + (sortedKeys.length - (runCount - 1) * runSize);
+            final long unalignedOffset = SortListener.REBALANCE_MIDPOINT - keySpan / 2;
+            final long offset = unalignedOffset - Math.floorMod(unalignedOffset, stride);
+            final RowSetBuilderSequential resultBuilder = RowSetFactory.builderSequential();
+            for (long run = 0; run < runCount; ++run) {
+                final long runStart = offset + run * stride;
+                final long runRows = Math.min(runSize, sortedKeys.length - run * runSize);
+                resultBuilder.appendRange(runStart, runStart + runRows - 1);
+            }
+            final TrackingRowSet resultRowSet = resultBuilder.build().toTracking();
 
             final NullableLongLongMap.ScalarAccess reverseLookupAccess =
                     new NullableLongLongMap.ScalarAccess(reverseLookup);
-            for (int i = 0; i < sortedKeys.length; i++) {
-                reverseLookupAccess.put(sortedKeys[i], i + offset);
+            for (int ii = 0; ii < sortedKeys.length; ii++) {
+                reverseLookupAccess.put(sortedKeys[ii], offset + (ii / runSize) * stride + ii % runSize);
             }
 
             // fillFromChunk may convert the provided RowSequence to a KeyRanges (or RowKeys) chunk that is owned by

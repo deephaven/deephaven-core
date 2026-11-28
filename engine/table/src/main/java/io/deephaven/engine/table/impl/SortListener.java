@@ -33,9 +33,9 @@ public class SortListener extends BaseTable.ListenerImpl {
     // Do I get my own logger?
     private static final Logger log = LoggerFactory.getLogger(SortListener.class);
 
-    // We like this key because it's in the middle of the (positive 32 bit signed integer) space.
+    // Refreshing sorts center their initial layout on this key, leaving room to grow in both directions.
     public static final long REBALANCE_MIDPOINT =
-            Configuration.getInstance().getLongWithDefault("QueryTable.intradaySort.rebalance.midpoint", 1L << 30);
+            Configuration.getInstance().getLongWithDefault("QueryTable.intradaySort.rebalance.midpoint", 1L << 33);
     public static final int REBALANCE_RANGE_SIZE =
             Configuration.getInstance().getIntegerWithDefault("QueryTable.intradaySort.rebalance.rangeSize", 64);
     public static final int REBALANCE_GAP_SIZE =
