@@ -40,6 +40,23 @@ public class SortListener extends BaseTable.ListenerImpl {
             Configuration.getInstance().getIntegerWithDefault("QueryTable.intradaySort.rebalance.rangeSize", 64);
     public static final int REBALANCE_GAP_SIZE =
             Configuration.getInstance().getIntegerWithDefault("QueryTable.intradaySort.rebalance.gapSize", 64);
+    /**
+     * When true, spread mode inserts gaps within the window that started it, and past the window stops once the free
+     * keys ahead can hold its backlog and the rows still to add, which then shift into them. When false, spread mode
+     * inserts gaps until its pass ends.
+     */
+    public static boolean REBALANCE_BOUNDED_SPREAD = Configuration.getInstance()
+            .getBooleanWithDefault("QueryTable.intradaySort.rebalance.boundedSpread", true);
+    /**
+     * The keys of the window that starts spread mode when positive; otherwise the square root of the result's size.
+     */
+    public static int REBALANCE_SPREAD_WINDOW = Configuration.getInstance()
+            .getIntegerWithDefault("QueryTable.intradaySort.rebalance.spreadWindow", 128);
+    /**
+     * Past the window that started spread mode, gaps stop once the backlog fits in the free keys of this many windows.
+     */
+    public static int REBALANCE_SPREAD_LOOKAHEAD_WINDOWS = Configuration.getInstance()
+            .getIntegerWithDefault("QueryTable.intradaySort.rebalance.spreadLookaheadWindows", 1);
     public static final boolean REBALANCE_EFFORT_TRACKER_ENABLED = Configuration.getInstance()
             .getBooleanWithDefault("QueryTable.intradaySort.rebalance.effortTracker.enabled", false);
 
@@ -434,7 +451,8 @@ public class SortListener extends BaseTable.ListenerImpl {
         // resultRowSet.size() >= Integer.MAX_VALUE^2, which we won't reach because we'll run out of memory long
         // before.
         final int minimumRunLength = REBALANCE_RANGE_SIZE + REBALANCE_GAP_SIZE;
-        final int maximumRunLength = Math.max(minimumRunLength, (int) Math.sqrt(resultRowSet.size()));
+        final int maximumRunLength = REBALANCE_SPREAD_WINDOW > 0 ? Math.max(minimumRunLength, REBALANCE_SPREAD_WINDOW)
+                : Math.max(minimumRunLength, (int) Math.sqrt(resultRowSet.size()));
 
         try (final RowSet.SearchIterator gapEvictionIter =
                 (qs.direction == -1) ? resultRowSet.reverseIterator() : resultRowSet.searchIterator();
@@ -496,6 +514,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                 final boolean spreadMode = sizeToAdd + sizeToShift >= maximumRunLength;
 
                 long writesUntilGap = REBALANCE_RANGE_SIZE;
+                boolean gapsAllowed = spreadMode;
                 boolean backlogged = false;
 
                 // stay in this loop until we might need to enable spreading; don't leave this loop while backlog is
@@ -505,9 +524,15 @@ public class SortListener extends BaseTable.ListenerImpl {
                     // Add anything prior to the next possible backlog item.
                     while (qs.hasMoreToAdd()
                             && qs.isBefore(desiredOutputKey, backlogIter.currentValue() + qs.direction)) {
-                        if (spreadMode && --writesUntilGap == 0) {
-                            destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
-                            writesUntilGap = REBALANCE_RANGE_SIZE;
+                        if (gapsAllowed && --writesUntilGap == 0) {
+                            if (REBALANCE_BOUNDED_SPREAD && !qs.isBefore(destKey, maxRunKey)
+                                    && backlogFitsAhead(qs, destKey, backlogIter.currentValue(),
+                                            REBALANCE_SPREAD_LOOKAHEAD_WINDOWS * maximumRunLength)) {
+                                gapsAllowed = false;
+                            } else {
+                                destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
+                                writesUntilGap = REBALANCE_RANGE_SIZE;
+                            }
                         }
 
                         checkDestinationSlotOk(destKey);
@@ -530,9 +555,15 @@ public class SortListener extends BaseTable.ListenerImpl {
                     final boolean writesPending = qs.hasMoreToAdd();
                     while (((!writesPending || qs.isBefore(backlogKey, desiredOutputKey))
                             && qs.isBefore(backlogKey, destKey))) {
-                        if (spreadMode && --writesUntilGap == 0) {
-                            destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
-                            writesUntilGap = REBALANCE_RANGE_SIZE;
+                        if (gapsAllowed && --writesUntilGap == 0) {
+                            if (REBALANCE_BOUNDED_SPREAD && !qs.isBefore(destKey, maxRunKey)
+                                    && backlogFitsAhead(qs, destKey, backlogIter.currentValue(),
+                                            REBALANCE_SPREAD_LOOKAHEAD_WINDOWS * maximumRunLength)) {
+                                gapsAllowed = false;
+                            } else {
+                                destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
+                                writesUntilGap = REBALANCE_RANGE_SIZE;
+                            }
                         }
 
                         // insert this item
@@ -577,6 +608,52 @@ public class SortListener extends BaseTable.ListenerImpl {
         // Note: modRemoved.intersect(modAdded) is not guaranteed to be empty
         resultRowSet.remove(modRemoved.build());
         resultRowSet.insert(modAdded.build());
+    }
+
+    /**
+     * Whether the rows displaced by spread mode's writes so far, from backlogKey up to destKey, and the rows still to
+     * add whose output keys are within minimumLookahead keys of destKey, fit in the free keys ahead of destKey. The
+     * keys ahead span minimumLookahead keys, or four times the rows to place when that is more, so the rows fit when
+     * the keys ahead are at most three quarters full. When they fit, shifting them without further gaps ends within
+     * that span.
+     */
+    private boolean backlogFitsAhead(final QueueState qs, final long destKey, final long backlogKey,
+            final long minimumLookahead) {
+        final long backlog = qs.isBefore(backlogKey, destKey)
+                ? (qs.direction == 1 ? rowsInKeyRange(backlogKey, destKey - 1)
+                        : rowsInKeyRange(destKey + 1, backlogKey))
+                : 0;
+        long adds = 0;
+        if (qs.hasMoreToAdd()) {
+            final long addsEnd = destKey + minimumLookahead * qs.direction;
+            final long addedLookaheadIdx;
+            if (qs.direction == -1) {
+                addedLookaheadIdx = qs.twiddleIfNegative(
+                        Arrays.binarySearch(qs.addedOutputKeys, 0, qs.addedCurrent, addsEnd));
+            } else {
+                addedLookaheadIdx = qs.twiddleIfNegative(
+                        Arrays.binarySearch(qs.addedOutputKeys, qs.addedCurrent, qs.addedEnd, addsEnd));
+            }
+            adds = Math.max(0, qs.direction * (addedLookaheadIdx - qs.addedCurrent));
+        }
+        final long toPlace = backlog + adds;
+        final long lookahead = Math.max(minimumLookahead, 4 * toPlace);
+        final long lookaheadEnd = destKey + lookahead * qs.direction;
+        final long rowsAhead = qs.direction == 1 ? rowsInKeyRange(destKey, lookaheadEnd - 1)
+                : rowsInKeyRange(lookaheadEnd + 1, destKey);
+        return toPlace <= lookahead - rowsAhead;
+    }
+
+    /** The number of rows of resultRowSet whose keys are in [firstKey, lastKey]. */
+    private long rowsInKeyRange(final long firstKey, final long lastKey) {
+        if (firstKey > lastKey) {
+            return 0;
+        }
+        final long first = resultRowSet.find(firstKey);
+        final long last = resultRowSet.find(lastKey);
+        final long firstPosition = first < 0 ? -first - 1 : first;
+        final long endPosition = last < 0 ? -last - 1 : last + 1;
+        return endPosition - firstPosition;
     }
 
     private long insertAGap(final long destinationSlot, final QueueState qs,
