@@ -57,6 +57,12 @@ public class SortListener extends BaseTable.ListenerImpl {
      */
     public static int REBALANCE_SPREAD_LOOKAHEAD_WINDOWS = Configuration.getInstance()
             .getIntegerWithDefault("QueryTable.intradaySort.rebalance.spreadLookaheadWindows", 1);
+    /**
+     * When true, after placing a key the placement loop gallops over the following keys against the result row after
+     * the placement, giving every key that sorts before that row the same placement without searching the row set.
+     */
+    public static boolean PLACE_RUNS_BEFORE_NEXT_ROW = Configuration.getInstance()
+            .getBooleanWithDefault("QueryTable.intradaySort.placeRunsBeforeNextRow", true);
     public static final boolean REBALANCE_EFFORT_TRACKER_ENABLED = Configuration.getInstance()
             .getBooleanWithDefault("QueryTable.intradaySort.rebalance.effortTracker.enabled", false);
 
@@ -283,9 +289,16 @@ public class SortListener extends BaseTable.ListenerImpl {
                     : ArrayTypeUtils.EMPTY_LONG_ARRAY;
 
             try (final RowSet.SearchIterator ait = resultRowSet.searchIterator()) {
+                long after = -1;
+                // The keys [ii, sameAfterEnd) all follow after: none sorts at or above the row after it.
+                int sameAfterEnd = 0;
                 for (int ii = 0; ii < addedInputKeys.length; ++ii) {
-                    targetComparator.setTarget(addedInputKeys[ii]);
-                    final long after = ait.binarySearchValue(targetComparator, SortingOrder.Ascending.direction);
+                    if (ii >= sameAfterEnd) {
+                        targetComparator.setTarget(addedInputKeys[ii]);
+                        after = ait.binarySearchValue(targetComparator, SortingOrder.Ascending.direction);
+                        sameAfterEnd = PLACE_RUNS_BEFORE_NEXT_ROW ? endBeforeNextRow(ait, after, addedInputKeys, ii + 1)
+                                : ii + 1;
+                    }
                     final long outputKey = after == -1 ? indexKeyForLeftmostInsert : after;
                     final long curr =
                             modifiedNeedsSorting ? currentOutputKeys.get(ii) : REVERSE_LOOKUP_NO_ENTRY_VALUE;
@@ -678,6 +691,61 @@ public class SortListener extends BaseTable.ListenerImpl {
         }
 
         return gapEnd;
+    }
+
+    /**
+     * Find the end of the run of keys, starting at {@code from}, that sort before the result row following
+     * {@code after}, leaving {@code ait} on that row. The key at {@code from - 1} was placed at {@code after}, so it
+     * sorts before that row.
+     *
+     * @param ait the search iterator, positioned on {@code after} unless after is -1
+     * @param after the result row the key at {@code from - 1} follows, or -1 when it precedes every row
+     * @param keys the keys to place, in sorted order
+     * @param from the first key to test
+     * @return one past the last key that sorts before the result row following after
+     */
+    private int endBeforeNextRow(final RowSet.SearchIterator ait, final long after, final long[] keys,
+            final int from) {
+        final long nextRow;
+        if (after == -1) {
+            if (resultRowSet.isEmpty()) {
+                return keys.length;
+            }
+            nextRow = resultRowSet.firstRowKey();
+        } else {
+            if (!ait.hasNext()) {
+                return keys.length;
+            }
+            nextRow = ait.nextLong();
+        }
+        // keys[low] sorts before nextRow; keys[high] does not, or high is keys.length.
+        int low = from - 1;
+        int high = keys.length;
+        int step = 1;
+        while (step < high - low) {
+            final int probe = low + step;
+            if (sortsBefore(keys[probe], nextRow)) {
+                low = probe;
+                step <<= 1;
+            } else {
+                high = probe;
+                break;
+            }
+        }
+        while (high - low > 1) {
+            final int mid = (low + high) >>> 1;
+            if (sortsBefore(keys[mid], nextRow)) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+        return low + 1;
+    }
+
+    private boolean sortsBefore(final long inputKey, final long resultRow) {
+        targetComparator.setTarget(inputKey);
+        return targetComparator.compareTargetTo(resultRow, SortingOrder.Ascending.direction) < 0;
     }
 
     /**
