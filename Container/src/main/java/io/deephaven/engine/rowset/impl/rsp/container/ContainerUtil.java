@@ -245,6 +245,95 @@ public final class ContainerUtil {
     }
 
     /**
+     * Same contract as {@link #search(short[], int, int, TargetComparator)}, galloping forward from {@code begin}: it
+     * probes begin + 1, begin + 3, begin + 7, ... until a probe compares below the target, then bisects the last step.
+     */
+    public static int gallopSearch(final short[] array, final int begin, final int end, final TargetComparator comp) {
+        if (end <= begin) {
+            return -1;
+        }
+        int high = end - 1;
+        int c = comp.directionFrom(toIntUnsigned(array[high]));
+        if (c >= 0) {
+            return high;
+        }
+        int low = begin;
+        c = comp.directionFrom(toIntUnsigned(array[low]));
+        if (c <= 0) {
+            return c == 0 ? low : -1;
+        }
+        // comp.directionFrom(array[low]) > 0 and comp.directionFrom(array[high]) < 0.
+        int step = 1;
+        while (step < high - low) {
+            final int probe = low + step;
+            c = comp.directionFrom(toIntUnsigned(array[probe]));
+            if (c < 0) {
+                high = probe;
+                break;
+            }
+            if (c == 0) {
+                return probe;
+            }
+            low = probe;
+            step <<= 1;
+        }
+        while (high - low > 1) {
+            final int mid = (low + high) >>> 1;
+            c = comp.directionFrom(toIntUnsigned(array[mid]));
+            if (c < 0) {
+                high = mid;
+            } else if (c > 0) {
+                low = mid;
+            } else {
+                return mid;
+            }
+        }
+        return low;
+    }
+
+    /**
+     * Same contract as {@link #rangeSearch(int, int, TargetComparator)}, galloping forward from {@code begin}.
+     */
+    public static int gallopRangeSearch(final int begin, final int end, final TargetComparator comp) {
+        if (begin >= end) {
+            return -1;
+        }
+        int low = begin;
+        int c = comp.directionFrom(low);
+        if (c <= 0) {
+            return c == 0 ? low : -1;
+        }
+        // Values at or above high compare below the target; end itself is outside the range and never probed.
+        int high = end;
+        int step = 1;
+        while (step < high - low) {
+            final int probe = low + step;
+            c = comp.directionFrom(probe);
+            if (c < 0) {
+                high = probe;
+                break;
+            }
+            if (c == 0) {
+                return probe;
+            }
+            low = probe;
+            step <<= 1;
+        }
+        while (high - low > 1) {
+            final int mid = (low + high) >>> 1;
+            c = comp.directionFrom(mid);
+            if (c < 0) {
+                high = mid;
+            } else if (c > 0) {
+                low = mid;
+            } else {
+                return mid;
+            }
+        }
+        return low;
+    }
+
+    /**
      * Compares the two specified {@code short} values, treating them as unsigned values between {@code 0} and
      * {@code 2^16 - 1} inclusive.
      *

@@ -209,4 +209,49 @@ final class RunContainerRangeIterator implements SearchRangeIterator {
         assert (start != -1);
         return true;
     }
+
+    @Override
+    public boolean gallopSearch(final ContainerUtil.TargetComparator comp) {
+        if (end == -1) {
+            if (!hasNext()) {
+                return false;
+            }
+            next();
+        }
+        if (comp.directionFrom(start) < 0) {
+            return false;
+        }
+        final int initialPos = pos;
+        int posStart = start;
+        // we know comp.directionFrom(start) >= 0; every run after right starts at a value comparing below the target.
+        int right = parent.nbrruns - 1;
+        int step = 1;
+        while (step <= right - pos) {
+            final int probe = pos + step;
+            final int probeStart = runStart(probe);
+            if (comp.directionFrom(probeStart) < 0) {
+                right = probe - 1;
+                break;
+            }
+            pos = probe;
+            posStart = probeStart;
+            step <<= 1;
+        }
+        while (pos < right) {
+            final int mid = (pos + right + 1) >>> 1;
+            final int midStart = runStart(mid);
+            if (comp.directionFrom(midStart) < 0) {
+                right = mid - 1;
+            } else {
+                pos = mid;
+                posStart = midStart;
+            }
+        }
+        end = runLast(pos) + 1;
+        start = pos == initialPos
+                ? ContainerUtil.gallopRangeSearch(posStart, end, comp)
+                : ContainerUtil.rangeSearch(posStart, end, comp);
+        assert (start != -1);
+        return true;
+    }
 }

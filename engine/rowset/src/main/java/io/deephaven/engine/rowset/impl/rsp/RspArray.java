@@ -25,6 +25,8 @@ import java.util.PrimitiveIterator;
 import java.util.function.IntToLongFunction;
 import java.util.function.LongConsumer;
 
+import io.deephaven.engine.rowset.impl.RowSetUtils;
+
 import static io.deephaven.engine.rowset.impl.RowSetUtils.Comparator;
 
 /**
@@ -1567,6 +1569,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     public int searchSpanIndex(final int startPos, final Comparator comp) {
+        if (RowSetUtils.GALLOP_SEARCH) {
+            return gallopSpanIndex(startPos, comp);
+        }
         int i = binarySearchKeys(startPos, size, comp);
         if (i < 0) {
             i = -i - 2;
@@ -1575,6 +1580,45 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
         }
         return i;
+    }
+
+    private int gallopSpanIndex(final int startPos, final Comparator comp) {
+        if (startPos >= size) {
+            return startPos;
+        }
+        int low = startPos;
+        int c = comp.directionToTargetFrom(firstValueAtIndex(low));
+        if (c <= 0) {
+            return startPos;
+        }
+        // Spans at or after high start at a value comparing below the target; size itself is never probed.
+        int high = size;
+        int step = 1;
+        while (step < high - low) {
+            final int probe = low + step;
+            c = comp.directionToTargetFrom(firstValueAtIndex(probe));
+            if (c < 0) {
+                high = probe;
+                break;
+            }
+            if (c == 0) {
+                return probe;
+            }
+            low = probe;
+            step <<= 1;
+        }
+        while (high - low > 1) {
+            final int mid = (low + high) >>> 1;
+            c = comp.directionToTargetFrom(firstValueAtIndex(mid));
+            if (c < 0) {
+                high = mid;
+            } else if (c > 0) {
+                low = mid;
+            } else {
+                return mid;
+            }
+        }
+        return low;
     }
 
     public long getSpanCardinalityAtIndexMaybeAcc(final int i) {

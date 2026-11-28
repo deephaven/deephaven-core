@@ -370,8 +370,9 @@ public abstract class SingleRange implements OrderedLongSet {
             } else if (tc.compareTargetTo(curr, dir) < 0) {
                 return -1;
             }
-            return curr = RowSetUtils.rangeSearch(curr, last,
-                    (long k) -> tc.compareTargetTo(k, dir));
+            final RowSetUtils.Comparator comp = (long k) -> tc.compareTargetTo(k, dir);
+            return curr = RowSetUtils.GALLOP_SEARCH ? RowSetUtils.gallopRangeSearch(curr, last, comp)
+                    : RowSetUtils.rangeSearch(curr, last, comp);
         }
     }
 
