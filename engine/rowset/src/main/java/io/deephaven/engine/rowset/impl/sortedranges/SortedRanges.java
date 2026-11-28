@@ -778,6 +778,68 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return minPos;
         }
 
+        private static int gallopSearchPos(
+                final MutableLong outData,
+                final SortedRanges sar,
+                final RowSetUtils.Comparator comp, final int startPos) { // startPos points to the beginning of a
+                                                                         // range.
+            final long endPosUnpackedData = sar.unpackedGet(sar.count - 1);
+            final long endPosUnpackedValue = Math.abs(endPosUnpackedData);
+            int c = comp.directionToTargetFrom(endPosUnpackedValue);
+            if (c >= 0) {
+                outData.set(endPosUnpackedData);
+                return sar.count - 1;
+            }
+            int maxPos = sar.count - 1;
+            final long startPosUnpackedValue = sar.unpackedGet(startPos);
+            c = comp.directionToTargetFrom(startPosUnpackedValue);
+            if (c <= 0) {
+                if (c == 0) {
+                    outData.set(startPosUnpackedValue);
+                    return startPos;
+                }
+                return startPos - 1;
+            }
+            int minPos = startPos;
+            long minPosUnpackedData = startPosUnpackedValue;
+            int step = 1;
+            while (step < maxPos - minPos) {
+                final int probePos = minPos + step;
+                final long probeUnpackedData = sar.unpackedGet(probePos);
+                c = comp.directionToTargetFrom(Math.abs(probeUnpackedData));
+                if (c < 0) {
+                    maxPos = probePos;
+                    break;
+                }
+                if (c == 0) {
+                    outData.set(probeUnpackedData);
+                    return probePos;
+                }
+                minPos = probePos;
+                minPosUnpackedData = probeUnpackedData;
+                step <<= 1;
+            }
+            while (maxPos - minPos > 1) {
+                final int midPos = (minPos + maxPos) / 2;
+                final long midPosUnpackedData = sar.unpackedGet(midPos);
+                final long midPosUnpackedValue = Math.abs(midPosUnpackedData);
+                c = comp.directionToTargetFrom(midPosUnpackedValue);
+                if (c > 0) {
+                    minPos = midPos;
+                    minPosUnpackedData = midPosUnpackedData;
+                    continue;
+                }
+                if (c < 0) {
+                    maxPos = midPos;
+                    continue;
+                }
+                outData.set(midPosUnpackedData);
+                return midPos;
+            }
+            outData.set(minPosUnpackedData);
+            return minPos;
+        }
+
         @Override
         public long binarySearchValue(final RowSet.TargetComparator comp, final int dir) {
             pendingNext = false;
@@ -802,8 +864,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     }
                     return -1;
                 }
-                currRangeStart = RowSetUtils.rangeSearch(currRangeStart, currRangeEnd,
-                        (final long v) -> comp.compareTargetTo(v, dir));
+                final RowSetUtils.Comparator rangeComp = (final long v) -> comp.compareTargetTo(v, dir);
+                currRangeStart = RowSetUtils.GALLOP_SEARCH
+                        ? RowSetUtils.gallopRangeSearch(currRangeStart, currRangeEnd, rangeComp)
+                        : RowSetUtils.rangeSearch(currRangeStart, currRangeEnd, rangeComp);
                 return currRangeStart;
             }
             if (sar == null || nextRangeIdx == sar.count) {
@@ -813,7 +877,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
             final RowSetUtils.Comparator ixComp = (final long v) -> comp.compareTargetTo(v, dir);
             final MutableLong outValue = new MutableLong();
-            final int i = searchPos(outValue, sar, ixComp, nextRangeIdx);
+            final int i = RowSetUtils.GALLOP_SEARCH ? gallopSearchPos(outValue, sar, ixComp, nextRangeIdx)
+                    : searchPos(outValue, sar, ixComp, nextRangeIdx);
             if (i < nextRangeIdx) {
                 currRangeStart = currRangeEnd;
                 return currRangeStart;

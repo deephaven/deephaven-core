@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -114,6 +115,62 @@ public class RowSetUtils {
          * @return -1 if target &lt; value; 0 if value == target; +1 if value &lt; target.
          */
         int directionToTargetFrom(final long value);
+    }
+
+    /**
+     * When true, forward searches that continue from a search iterator's current position gallop rather than bisect to
+     * the end of the row set.
+     */
+    public static boolean GALLOP_SEARCH = Configuration.getInstance()
+            .getBooleanForClassWithDefault(RowSetUtils.class, "gallopSearch", true);
+
+    /**
+     * Same contract as {@link #rangeSearch(long, long, Comparator)}, galloping forward from {@code begin}.
+     */
+    public static long gallopRangeSearch(final long begin, final long end, final Comparator comp) {
+        long low = begin;
+        int c = comp.directionToTargetFrom(low);
+        if (c <= 0) {
+            return low;
+        }
+        // The smallest probed key comparing below the target, or -1 before one is found.
+        long high = -1;
+        long step = 1;
+        while (step <= end - low) {
+            final long probe = low + step;
+            c = comp.directionToTargetFrom(probe);
+            if (c < 0) {
+                high = probe;
+                break;
+            }
+            if (c == 0) {
+                return probe;
+            }
+            low = probe;
+            step = step > (Long.MAX_VALUE >> 1) ? Long.MAX_VALUE : step << 1;
+        }
+        if (high == -1) {
+            if (low == end) {
+                return low;
+            }
+            c = comp.directionToTargetFrom(end);
+            if (c >= 0) {
+                return end;
+            }
+            high = end;
+        }
+        while (high - low > 1) {
+            final long mid = low + (high - low) / 2;
+            c = comp.directionToTargetFrom(mid);
+            if (c < 0) {
+                high = mid;
+            } else if (c > 0) {
+                low = mid;
+            } else {
+                return mid;
+            }
+        }
+        return low;
     }
 
     /**

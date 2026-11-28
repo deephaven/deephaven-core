@@ -33,13 +33,36 @@ public class SortListener extends BaseTable.ListenerImpl {
     // Do I get my own logger?
     private static final Logger log = LoggerFactory.getLogger(SortListener.class);
 
-    // We like this key because it's in the middle of the (positive 32 bit signed integer) space.
+    // Refreshing sorts center their initial layout on this key, leaving room to grow in both directions.
     public static final long REBALANCE_MIDPOINT =
-            Configuration.getInstance().getLongWithDefault("QueryTable.intradaySort.rebalance.midpoint", 1L << 30);
+            Configuration.getInstance().getLongWithDefault("QueryTable.intradaySort.rebalance.midpoint", 1L << 33);
     public static final int REBALANCE_RANGE_SIZE =
             Configuration.getInstance().getIntegerWithDefault("QueryTable.intradaySort.rebalance.rangeSize", 64);
     public static final int REBALANCE_GAP_SIZE =
             Configuration.getInstance().getIntegerWithDefault("QueryTable.intradaySort.rebalance.gapSize", 64);
+    /**
+     * When true, spread mode inserts gaps within the window that started it, and past the window stops once the free
+     * keys ahead can hold its backlog and the rows still to add, which then shift into them. When false, spread mode
+     * inserts gaps until its pass ends.
+     */
+    public static boolean REBALANCE_BOUNDED_SPREAD = Configuration.getInstance()
+            .getBooleanWithDefault("QueryTable.intradaySort.rebalance.boundedSpread", true);
+    /**
+     * The keys of the window that starts spread mode when positive; otherwise the square root of the result's size.
+     */
+    public static int REBALANCE_SPREAD_WINDOW = Configuration.getInstance()
+            .getIntegerWithDefault("QueryTable.intradaySort.rebalance.spreadWindow", 128);
+    /**
+     * Past the window that started spread mode, gaps stop once the backlog fits in the free keys of this many windows.
+     */
+    public static int REBALANCE_SPREAD_LOOKAHEAD_WINDOWS = Configuration.getInstance()
+            .getIntegerWithDefault("QueryTable.intradaySort.rebalance.spreadLookaheadWindows", 1);
+    /**
+     * When true, after placing a key the placement loop gallops over the following keys against the result row after
+     * the placement, giving every key that sorts before that row the same placement without searching the row set.
+     */
+    public static boolean PLACE_RUNS_BEFORE_NEXT_ROW = Configuration.getInstance()
+            .getBooleanWithDefault("QueryTable.intradaySort.placeRunsBeforeNextRow", true);
     public static final boolean REBALANCE_EFFORT_TRACKER_ENABLED = Configuration.getInstance()
             .getBooleanWithDefault("QueryTable.intradaySort.rebalance.effortTracker.enabled", false);
 
@@ -266,9 +289,16 @@ public class SortListener extends BaseTable.ListenerImpl {
                     : ArrayTypeUtils.EMPTY_LONG_ARRAY;
 
             try (final RowSet.SearchIterator ait = resultRowSet.searchIterator()) {
+                long after = -1;
+                // The keys [ii, sameAfterEnd) all follow after: none sorts at or above the row after it.
+                int sameAfterEnd = 0;
                 for (int ii = 0; ii < addedInputKeys.length; ++ii) {
-                    targetComparator.setTarget(addedInputKeys[ii]);
-                    final long after = ait.binarySearchValue(targetComparator, SortingOrder.Ascending.direction);
+                    if (ii >= sameAfterEnd) {
+                        targetComparator.setTarget(addedInputKeys[ii]);
+                        after = ait.binarySearchValue(targetComparator, SortingOrder.Ascending.direction);
+                        sameAfterEnd = PLACE_RUNS_BEFORE_NEXT_ROW ? endBeforeNextRow(ait, after, addedInputKeys, ii + 1)
+                                : ii + 1;
+                    }
                     final long outputKey = after == -1 ? indexKeyForLeftmostInsert : after;
                     final long curr =
                             modifiedNeedsSorting ? currentOutputKeys.get(ii) : REVERSE_LOOKUP_NO_ENTRY_VALUE;
@@ -434,7 +464,8 @@ public class SortListener extends BaseTable.ListenerImpl {
         // resultRowSet.size() >= Integer.MAX_VALUE^2, which we won't reach because we'll run out of memory long
         // before.
         final int minimumRunLength = REBALANCE_RANGE_SIZE + REBALANCE_GAP_SIZE;
-        final int maximumRunLength = Math.max(minimumRunLength, (int) Math.sqrt(resultRowSet.size()));
+        final int maximumRunLength = REBALANCE_SPREAD_WINDOW > 0 ? Math.max(minimumRunLength, REBALANCE_SPREAD_WINDOW)
+                : Math.max(minimumRunLength, (int) Math.sqrt(resultRowSet.size()));
 
         try (final RowSet.SearchIterator gapEvictionIter =
                 (qs.direction == -1) ? resultRowSet.reverseIterator() : resultRowSet.searchIterator();
@@ -496,6 +527,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                 final boolean spreadMode = sizeToAdd + sizeToShift >= maximumRunLength;
 
                 long writesUntilGap = REBALANCE_RANGE_SIZE;
+                boolean gapsAllowed = spreadMode;
                 boolean backlogged = false;
 
                 // stay in this loop until we might need to enable spreading; don't leave this loop while backlog is
@@ -505,9 +537,15 @@ public class SortListener extends BaseTable.ListenerImpl {
                     // Add anything prior to the next possible backlog item.
                     while (qs.hasMoreToAdd()
                             && qs.isBefore(desiredOutputKey, backlogIter.currentValue() + qs.direction)) {
-                        if (spreadMode && --writesUntilGap == 0) {
-                            destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
-                            writesUntilGap = REBALANCE_RANGE_SIZE;
+                        if (gapsAllowed && --writesUntilGap == 0) {
+                            if (REBALANCE_BOUNDED_SPREAD && !qs.isBefore(destKey, maxRunKey)
+                                    && backlogFitsAhead(qs, destKey, backlogIter.currentValue(),
+                                            REBALANCE_SPREAD_LOOKAHEAD_WINDOWS * maximumRunLength)) {
+                                gapsAllowed = false;
+                            } else {
+                                destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
+                                writesUntilGap = REBALANCE_RANGE_SIZE;
+                            }
                         }
 
                         checkDestinationSlotOk(destKey);
@@ -530,9 +568,15 @@ public class SortListener extends BaseTable.ListenerImpl {
                     final boolean writesPending = qs.hasMoreToAdd();
                     while (((!writesPending || qs.isBefore(backlogKey, desiredOutputKey))
                             && qs.isBefore(backlogKey, destKey))) {
-                        if (spreadMode && --writesUntilGap == 0) {
-                            destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
-                            writesUntilGap = REBALANCE_RANGE_SIZE;
+                        if (gapsAllowed && --writesUntilGap == 0) {
+                            if (REBALANCE_BOUNDED_SPREAD && !qs.isBefore(destKey, maxRunKey)
+                                    && backlogFitsAhead(qs, destKey, backlogIter.currentValue(),
+                                            REBALANCE_SPREAD_LOOKAHEAD_WINDOWS * maximumRunLength)) {
+                                gapsAllowed = false;
+                            } else {
+                                destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
+                                writesUntilGap = REBALANCE_RANGE_SIZE;
+                            }
                         }
 
                         // insert this item
@@ -579,6 +623,52 @@ public class SortListener extends BaseTable.ListenerImpl {
         resultRowSet.insert(modAdded.build());
     }
 
+    /**
+     * Whether the rows displaced by spread mode's writes so far, from backlogKey up to destKey, and the rows still to
+     * add whose output keys are within minimumLookahead keys of destKey, fit in the free keys ahead of destKey. The
+     * keys ahead span minimumLookahead keys, or four times the rows to place when that is more, so the rows fit when
+     * the keys ahead are at most three quarters full. When they fit, shifting them without further gaps ends within
+     * that span.
+     */
+    private boolean backlogFitsAhead(final QueueState qs, final long destKey, final long backlogKey,
+            final long minimumLookahead) {
+        final long backlog = qs.isBefore(backlogKey, destKey)
+                ? (qs.direction == 1 ? rowsInKeyRange(backlogKey, destKey - 1)
+                        : rowsInKeyRange(destKey + 1, backlogKey))
+                : 0;
+        long adds = 0;
+        if (qs.hasMoreToAdd()) {
+            final long addsEnd = destKey + minimumLookahead * qs.direction;
+            final long addedLookaheadIdx;
+            if (qs.direction == -1) {
+                addedLookaheadIdx = qs.twiddleIfNegative(
+                        Arrays.binarySearch(qs.addedOutputKeys, 0, qs.addedCurrent, addsEnd));
+            } else {
+                addedLookaheadIdx = qs.twiddleIfNegative(
+                        Arrays.binarySearch(qs.addedOutputKeys, qs.addedCurrent, qs.addedEnd, addsEnd));
+            }
+            adds = Math.max(0, qs.direction * (addedLookaheadIdx - qs.addedCurrent));
+        }
+        final long toPlace = backlog + adds;
+        final long lookahead = Math.max(minimumLookahead, 4 * toPlace);
+        final long lookaheadEnd = destKey + lookahead * qs.direction;
+        final long rowsAhead = qs.direction == 1 ? rowsInKeyRange(destKey, lookaheadEnd - 1)
+                : rowsInKeyRange(lookaheadEnd + 1, destKey);
+        return toPlace <= lookahead - rowsAhead;
+    }
+
+    /** The number of rows of resultRowSet whose keys are in [firstKey, lastKey]. */
+    private long rowsInKeyRange(final long firstKey, final long lastKey) {
+        if (firstKey > lastKey) {
+            return 0;
+        }
+        final long first = resultRowSet.find(firstKey);
+        final long last = resultRowSet.find(lastKey);
+        final long firstPosition = first < 0 ? -first - 1 : first;
+        final long endPosition = last < 0 ? -last - 1 : last + 1;
+        return endPosition - firstPosition;
+    }
+
     private long insertAGap(final long destinationSlot, final QueueState qs,
             final DirectionalResettableBuilderSequential modRemoved,
             final SortMappingAggregator mappingChanges,
@@ -601,6 +691,61 @@ public class SortListener extends BaseTable.ListenerImpl {
         }
 
         return gapEnd;
+    }
+
+    /**
+     * Find the end of the run of keys, starting at {@code from}, that sort before the result row following
+     * {@code after}, leaving {@code ait} on that row. The key at {@code from - 1} was placed at {@code after}, so it
+     * sorts before that row.
+     *
+     * @param ait the search iterator, positioned on {@code after} unless after is -1
+     * @param after the result row the key at {@code from - 1} follows, or -1 when it precedes every row
+     * @param keys the keys to place, in sorted order
+     * @param from the first key to test
+     * @return one past the last key that sorts before the result row following after
+     */
+    private int endBeforeNextRow(final RowSet.SearchIterator ait, final long after, final long[] keys,
+            final int from) {
+        final long nextRow;
+        if (after == -1) {
+            if (resultRowSet.isEmpty()) {
+                return keys.length;
+            }
+            nextRow = resultRowSet.firstRowKey();
+        } else {
+            if (!ait.hasNext()) {
+                return keys.length;
+            }
+            nextRow = ait.nextLong();
+        }
+        // keys[low] sorts before nextRow; keys[high] does not, or high is keys.length.
+        int low = from - 1;
+        int high = keys.length;
+        int step = 1;
+        while (step < high - low) {
+            final int probe = low + step;
+            if (sortsBefore(keys[probe], nextRow)) {
+                low = probe;
+                step <<= 1;
+            } else {
+                high = probe;
+                break;
+            }
+        }
+        while (high - low > 1) {
+            final int mid = (low + high) >>> 1;
+            if (sortsBefore(keys[mid], nextRow)) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+        return low + 1;
+    }
+
+    private boolean sortsBefore(final long inputKey, final long resultRow) {
+        targetComparator.setTarget(inputKey);
+        return targetComparator.compareTargetTo(resultRow, SortingOrder.Ascending.direction) < 0;
     }
 
     /**

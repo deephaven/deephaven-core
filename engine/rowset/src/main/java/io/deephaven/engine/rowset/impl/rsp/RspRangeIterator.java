@@ -294,8 +294,10 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
      *
      */
     public void search(final Comparator comp) {
+        final boolean gallop = RowSetUtils.GALLOP_SEARCH;
         if (!hasNext()) {
-            start = RowSetUtils.rangeSearch(start, end, comp);
+            start = gallop ? RowSetUtils.gallopRangeSearch(start, end, comp)
+                    : RowSetUtils.rangeSearch(start, end, comp);
             return;
         }
         int c = comp.directionToTargetFrom(end);
@@ -304,7 +306,8 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
                 start = end;
                 return;
             }
-            start = RowSetUtils.rangeSearch(start, end - 1, comp);
+            start = gallop ? RowSetUtils.gallopRangeSearch(start, end - 1, comp)
+                    : RowSetUtils.rangeSearch(start, end - 1, comp);
             return;
         }
         final long oldSpanKey = p.spanKey();
@@ -340,7 +343,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
         }
         final long spanKey = p.spanKey();
         final ContainerUtil.TargetComparator rcomp = (int v) -> comp.directionToTargetFrom(spanKey | v);
-        final boolean found = ri.search(rcomp);
+        final boolean found = gallop && oldSpanKey == targetSpanKey ? ri.gallopSearch(rcomp) : ri.search(rcomp);
         if (found) {
             nextInterval();
             return;

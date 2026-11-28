@@ -54,4 +54,15 @@ public interface SearchRangeIterator extends RangeIterator {
      *         0, there is no guarantee as of which one will be left as current iterator position.
      */
     boolean search(ContainerUtil.TargetComparator comp);
+
+    /**
+     * Same contract as {@link #search(ContainerUtil.TargetComparator)}, for a target expected near the current
+     * position: implementations gallop forward from the current position rather than bisecting to the end.
+     *
+     * @param comp a comparator used to search forward from the current iterator position
+     * @return as {@link #search(ContainerUtil.TargetComparator)}
+     */
+    default boolean gallopSearch(final ContainerUtil.TargetComparator comp) {
+        return search(comp);
+    }
 }

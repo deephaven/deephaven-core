@@ -64,6 +64,7 @@ def createJmhTask = {
 
 createJmhTask('jmhRunSort', 'SortBenchmark')
 createJmhTask('jmhRunSortMulti', 'SortMultiBenchmark')
+createJmhTask('jmhRunSortLayout', 'SortLayoutBenchmark', [], '12g')
 createJmhTask('jmhRunRangeFilter', 'RangeFilterBenchmark')
 createJmhTask('jmhRunNaturalJoin', 'NaturalJoinBenchmark')
 createJmhTask('jmhRunNaturalJoinIncrementalUpdate', 'NaturalJoinIncrementalUpdateBenchmark')

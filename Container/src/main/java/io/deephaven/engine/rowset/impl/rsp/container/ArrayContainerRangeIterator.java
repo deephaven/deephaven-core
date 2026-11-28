@@ -143,4 +143,44 @@ final class ArrayContainerRangeIterator implements SearchRangeIterator {
         setRangeBoundariesFor(parent.content[i], i);
         return true;
     }
+
+    @Override
+    public boolean gallopSearch(final ContainerUtil.TargetComparator comp) {
+        if (nextPos == 0) {
+            if (!hasNext()) {
+                return false;
+            }
+            next();
+        }
+        int c = comp.directionFrom(end - 1);
+        if (c <= 0) {
+            if (c == 0) {
+                start = end - 1;
+                return true;
+            }
+            if (start == end - 1) {
+                return false;
+            }
+            c = comp.directionFrom(start);
+            if (c < 0) {
+                return false;
+            }
+            if (c == 0) {
+                return true;
+            }
+            int j = ContainerUtil.gallopRangeSearch(start + 1, end - 1, comp);
+            if (j == -1) {
+                return true;
+            }
+            start = j;
+            return true;
+        }
+        int i = ContainerUtil.gallopSearch(parent.content, nextPos, parent.cardinality, comp);
+        if (i < 0) {
+            setRangeBoundariesFor(start, nextPos - 1);
+            return true;
+        }
+        setRangeBoundariesFor(parent.content[i], i);
+        return true;
+    }
 }
